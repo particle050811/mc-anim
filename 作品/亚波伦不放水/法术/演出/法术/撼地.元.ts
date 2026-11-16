@@ -11,8 +11,8 @@ export default defineSpellMeta({
   长秒: (fistVanishTick + 20) / 20,
   hitSec: fistEmergeTick / 20,
   // EarthFistSpell：目标处 RUMBLE；破土时 WALL_ERUPT（音高 0.85～1.05）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.rumble.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.wall_erupt.1', 秒: fistEmergeTick / 20, 音高: 0.95 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.rumble.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.wall_erupt.1', sec: fistEmergeTick / 20, 音高: 0.95 },
   ],
 });

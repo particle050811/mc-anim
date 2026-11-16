@@ -14,9 +14,9 @@ import meta, { magicBoltHitTick, magicBoltGroundTick, magicBoltPath } from './ma
 import magicBoltParticlePng from 'asset:贴图/法术/goety/particle/magic_bolt';
 import { mulberry32 } from '@engine/core/数学.ts';
 
-const magicBoltParticleClass: ParticleClass = { 帧: [png(magicBoltParticlePng)], 选帧: '按年龄', 摩擦: 1, 混合: '半透明', 大小: (age, lifetime) => Math.max(0, 1 - age / lifetime) };
+const magicBoltParticleClass: ParticleClass = { frame: [png(magicBoltParticlePng)], 选帧: '按年龄', 摩擦: 1, blend: '半透明', size: (age, lifetime) => Math.max(0, 1 - age / lifetime) };
 
-const MagicBolt: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const MagicBolt: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const trajectory = magicBoltPath(from, target);
   const hitTick = magicBoltHitTick(from, target);
@@ -28,16 +28,16 @@ const MagicBolt: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
     const [pos, speedVec] = [trajectory(n), sub(trajectory(n + 1), trajectory(n))];
     // roll 每刻 += 2π × rotSpeed（±0.05），这里只给出生时的随机角，不转
     boltSpawns.push({ 刻: n, 位: [pos[0] + speedVec[0], pos[1] + speedVec[1], pos[2] + speedVec[2] + 0.5], 寿命: 20, radius: 0.5, angleRad: r() * Math.PI * 2 });
-    witchSpawns.push({ 种: 'witch', 刻: n, p: [pos[0] + r() / 2, pos[1] - r() / 2, pos[2] + 0.5], 种子: seed * 61 + n });
+    witchSpawns.push({ kind: 'witch', 刻: n, p: [pos[0] + r() / 2, pos[1] - r() / 2, pos[2] + 0.5], seed: seed * 61 + n });
   }
   for (const n of eachTick(hitTick, Math.min(tick, hitTick + magicBoltGroundTick))) {
     const [angle, randDistance] = [r() * Math.PI * 2, Math.sqrt(r()) * 0.5];
-    witchSpawns.push({ 种: 'witch', 刻: n, p: [hitPos[0] + Math.cos(angle) * randDistance, hitPos[1] + Math.sin(angle) * randDistance, target[2]], 种子: seed * 67 + n });
+    witchSpawns.push({ kind: 'witch', 刻: n, p: [hitPos[0] + Math.cos(angle) * randDistance, hitPos[1] + Math.sin(angle) * randDistance, target[2]], seed: seed * 67 + n });
   }
   return (
     <>
-      <TexturedParticles 类={magicBoltParticleClass} spawns={boltSpawns} 秒={sec} />
-      <VanillaParticles spawns={witchSpawns} 秒={sec} />
+      <TexturedParticles type={magicBoltParticleClass} spawns={boltSpawns} sec={sec} />
+      <VanillaParticles spawns={witchSpawns} sec={sec} />
     </>
   );
 };

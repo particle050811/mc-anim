@@ -19,8 +19,8 @@ describe.skipIf(!hasOldTable || !listSentenceModules(workRoot).length)('句口�
     const lipTable: Record<string, unknown> = {};
     const lineTable: Record<string, unknown> = {};
     for (const v of oldTable.values()) {
-      lipTable[v.oldId] = v.口型;
-      lineTable[v.oldId] = v.台词;
+      lipTable[v.oldId] = v.lip;
+      lineTable[v.oldId] = v.lines;
     }
     const legacyLip = buildLipData(lipTable, lineTable);
     let compared = 0;
@@ -29,12 +29,12 @@ describe.skipIf(!hasOldTable || !listSentenceModules(workRoot).length)('句口�
       const oldId = oldTable.get(id)!.oldId;
       const startFrame = 12.5;
       for (let f = 0; f < startFrame + Math.ceil(sentence.文件秒数 * 24) + 12; f++) {
-        expect(sentenceLip([{ 句: sentence, 帧: startFrame }], sentence.角色, f, 24)).toEqual(legacyLip.mouthAt([{ id: oldId, 帧: startFrame }], sentence.角色, f, 24));
+        expect(sentenceLip([{ 句: sentence, frame: startFrame }], sentence.character, f, 24)).toEqual(legacyLip.mouthAt([{ id: oldId, frame: startFrame }], sentence.character, f, 24));
         const pose = { headPitch: 0.1, headYaw: -0.2 };
-        expect(sentenceNod(pose, [{ 句: sentence, 帧: startFrame }], sentence.角色, f, 24)).toEqual(legacyLip.withTalkNod(pose, [{ id: oldId, 帧: startFrame }], sentence.角色, f, 24));
+        expect(sentenceNod(pose, [{ 句: sentence, frame: startFrame }], sentence.character, f, 24)).toEqual(legacyLip.withTalkNod(pose, [{ id: oldId, frame: startFrame }], sentence.character, f, 24));
         compared++;
       }
-      expect(sentenceLip([{ 句: sentence, 帧: startFrame }], '别人', startFrame + 5, 24)).toBeUndefined();
+      expect(sentenceLip([{ 句: sentence, frame: startFrame }], '别人', startFrame + 5, 24)).toBeUndefined();
     }
     expect(compared).toBeGreaterThan(1000);
   });

@@ -32,9 +32,9 @@ const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#202226' }}>
-      <ThreeCanvas width={v.宽} height={v.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={v.width} height={v.height} gl={{ antialias: true }}>
         <color attach="background" args={['#202226']} />
-        {v.远景 ? <FirstPersonRig 眼={farEye} 看={farLookAt} fov={fov} /> : <FirstPersonRig 眼={eyePos(playerFeet)} 看={lookAt} fov={fov} />}
+        {v.farView ? <FirstPersonRig 眼={farEye} 看={farLookAt} fov={fov} /> : <FirstPersonRig 眼={eyePos(playerFeet)} 看={lookAt} fov={fov} />}
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.9} />
           <directionalLight position={[2, -3, 5]} intensity={1.6} />
@@ -49,7 +49,7 @@ const picture: React.FC = () => {
       </ThreeCanvas>
       {v.chatTick !== undefined && <ChatOverlay lines={chatLines} 刻={v.chatTick} s={chatScale} />}
       <div style={{ position: 'absolute', right: 20, top: 16, fontFamily: uiFontFamily, fontSize: 20, color: '#f2f2f2', textShadow: '0 1px 3px #000' }}>
-        核对-聊天栏爱心 · {v.名}
+        核对-聊天栏爱心 · {v.name}
       </div>
     </AbsoluteFill>
   );

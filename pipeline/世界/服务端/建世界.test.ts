@@ -54,7 +54,7 @@ afterAll(() => {
 });
 
 const makeWorldDecl = (datapacks: string[], extra = '') =>
-  parseDecl(`"名称" = "测试新世界"\n"服务端" = "某服务端"\n"维度" = "minecraft:overworld"\n"种子" = 1752\n"Forge" = "1.20.1-47.4.10"\n"数据包" = ${JSON.stringify(datapacks)}\n${extra}`, '测试新世界');
+  parseDecl(`"displayName" = "测试新世界"\n"server" = "某服务端"\n"dimension" = "minecraft:overworld"\n"seed" = 1752\n"Forge" = "1.20.1-47.4.10"\n"datapacks" = ${JSON.stringify(datapacks)}\n${extra}`, '测试新世界');
 
 const setupServer = (mcaiClass?: string) => {
   const server = makeTempDir();
@@ -68,15 +68,15 @@ const setupServer = (mcaiClass?: string) => {
 
 describe('建新世界', () => {
   it('server.properties：改三项，没有就追加，level-type 的冒号转义', () => {
-    expect(rewriteProps('level-seed=1\nlevel-type=minecraft\\:normal\ngenerate-structures=true\nmotd=甲\n', { 种子: '116', worldType: 'minecraft:normal', 生成结构: false })).toBe(
+    expect(rewriteProps('level-seed=1\nlevel-type=minecraft\\:normal\ngenerate-structures=true\nmotd=甲\n', { seed: '116', worldType: 'minecraft:normal', generateStructures: false })).toBe(
       'level-seed=116\nlevel-type=minecraft\\:normal\ngenerate-structures=false\nmotd=甲\n',
     );
-    expect(rewriteProps('motd=甲', { 种子: '-7', worldType: 'minecraft:large_biomes', 生成结构: true })).toBe('motd=甲\nlevel-seed=-7\nlevel-type=minecraft\\:large_biomes\ngenerate-structures=true\n');
+    expect(rewriteProps('motd=甲', { seed: '-7', worldType: 'minecraft:large_biomes', generateStructures: true })).toBe('motd=甲\nlevel-seed=-7\nlevel-type=minecraft\\:large_biomes\ngenerate-structures=true\n');
   });
 
   it('声明的 世界类型、生成结构 默认 normal、true，可改', () => {
-    expect(makeWorldDecl([])).toMatchObject({ worldType: 'minecraft:normal', 生成结构: true });
-    expect(makeWorldDecl([], '"生成结构" = false\n"世界类型" = "minecraft:large_biomes"\n')).toMatchObject({ worldType: 'minecraft:large_biomes', 生成结构: false });
+    expect(makeWorldDecl([])).toMatchObject({ worldType: 'minecraft:normal', generateStructures: true });
+    expect(makeWorldDecl([], '"generateStructures" = false\n"世界类型" = "minecraft:large_biomes"\n')).toMatchObject({ worldType: 'minecraft:large_biomes', generateStructures: false });
   });
 
   it('数据包：sourcing/datapacks 里的目录、服务端 世界数据包/ 里的 zip 都找得到，找不到列出找过的地方', async () => {
@@ -94,23 +94,23 @@ describe('建新世界', () => {
     fs.mkdirSync(path.join(world, 'datapacks'));
     fs.cpSync(path.join(import.meta.dirname, '../../../sourcing/datapacks/暮色放大4倍'), path.join(world, 'datapacks', '暮色放大4倍'), { recursive: true });
     fs.cpSync(path.join(import.meta.dirname, '../../../sourcing/datapacks/通用/不生成龙巢'), path.join(world, 'datapacks', '不生成龙巢'), { recursive: true });
-    expect(requiredStartupLogs(world)).toEqual([{ 包: '暮色放大4倍', 行: '暮色地标网格：64 区块' }]);
+    expect(requiredStartupLogs(world)).toEqual([{ pack: '暮色放大4倍', 行: '暮色地标网格：64 区块' }]);
     fs.rmSync(world, { recursive: true });
   });
 
   it.skipIf(process.platform === 'win32')('建世界：放数据包、临时改属性、核对模组认出、建出 level.dat，属性文件改回原文', async () => {
     const server = setupServer('mcai/TwilightGrid.class'), saveDir = path.join(server, '新世界');
     const logs: string[] = [];
-    const r = await buildWorld({ 声明: makeWorldDecl(['通用/不生成龙巢', '暮色放大4倍'], '"生成结构" = false\n'), serverDir: server, 存档: saveDir, 说: (s) => logs.push(s), commands: ['say 你好', 'expect:收到 say 你好'] }).catch((e) => {
+    const r = await buildWorld({ decl: makeWorldDecl(['通用/不生成龙巢', '暮色放大4倍'], '"generateStructures" = false\n'), serverDir: server, save: saveDir, 说: (s) => logs.push(s), commands: ['say 你好', 'expect:收到 say 你好'] }).catch((e) => {
       throw new Error(`${e.message}\n${logs.join('\n')}`);
     });
-    expect(r.数据包).toEqual(['不生成龙巢', '暮色放大4倍']);
-    expect(r.核对).toEqual(['暮色地标网格：64 区块']);
+    expect(r.datapacks).toEqual(['不生成龙巢', '暮色放大4倍']);
+    expect(r.verify).toEqual(['暮色地标网格：64 区块']);
     expect(fs.existsSync(path.join(saveDir, 'level.dat'))).toBe(true);
     expect(fs.readFileSync(path.join(server, 'server.properties'), 'utf8')).toBe('level-seed=20260930\nlevel-type=minecraft\\:normal\ngenerate-structures=true\nmotd=原样\n');
     expect(fs.existsSync(path.join(saveDir, 'datapacks', '暮色放大4倍', 'data', 'mcai', 'twilight_x4.json'))).toBe(true);
     // 假服务端开服时看到的属性和数据包（它打出来的行在 说 里没有，这里只验结果；属性在下面单独验）
-    await expect(buildWorld({ 声明: makeWorldDecl([]), serverDir: server, 存档: saveDir, 说: () => {} })).rejects.toThrow(/世界已经有了/);
+    await expect(buildWorld({ decl: makeWorldDecl([]), serverDir: server, save: saveDir, 说: () => {} })).rejects.toThrow(/世界已经有了/);
     fs.rmSync(server, { recursive: true });
   }, 30_000);
 
@@ -118,9 +118,9 @@ describe('建新世界', () => {
     const server = setupServer(), saveDir = path.join(server, '新世界');
     const logLines: string[] = [];
     // 每行回调接不到（建世界不转发服务端输出），改看沙盒外的证据：直接起一个同样的假服务端读属性
-    fs.writeFileSync(path.join(server, 'server.properties'), rewriteProps(fs.readFileSync(path.join(server, 'server.properties'), 'utf8'), { 种子: '1752', worldType: 'minecraft:normal', 生成结构: false }));
+    fs.writeFileSync(path.join(server, 'server.properties'), rewriteProps(fs.readFileSync(path.join(server, 'server.properties'), 'utf8'), { seed: '1752', worldType: 'minecraft:normal', generateStructures: false }));
     const { Server: serverClass } = await import('./服务端.ts');
-    const s = await serverClass.起({ 目录: server, 存档: saveDir, allowNewWorld: true, onLine: (l) => logLines.push(l), 提示: () => {} });
+    const s = await serverClass.start({ 目录: server, save: saveDir, allowNewWorld: true, onLine: (l) => logLines.push(l), 提示: () => {} });
     await s.停();
     expect(logLines.find((l) => l.startsWith('PROPS '))).toBe('PROPS level-seed=1752 level-type=minecraft\\:normal generate-structures=false');
     fs.rmSync(server, { recursive: true });
@@ -128,13 +128,13 @@ describe('建新世界', () => {
 
   it.skipIf(process.platform === 'win32')('数据包缺、mcai 缺类、日志里没认出：都拒绝，且不留下半截世界目录', async () => {
     const server = setupServer(), saveDir = path.join(server, '新世界');
-    await expect(buildWorld({ 声明: makeWorldDecl(['没有这个包']), serverDir: server, 存档: saveDir, 说: () => {} })).rejects.toThrow(/找不到数据包/);
+    await expect(buildWorld({ decl: makeWorldDecl(['没有这个包']), serverDir: server, save: saveDir, 说: () => {} })).rejects.toThrow(/找不到数据包/);
     expect(fs.existsSync(saveDir)).toBe(false);
-    await expect(buildWorld({ 声明: makeWorldDecl(['暮色放大4倍']), serverDir: server, 存档: saveDir, 说: () => {} })).rejects.toThrow(/没有暮色地标网格/);
+    await expect(buildWorld({ decl: makeWorldDecl(['暮色放大4倍']), serverDir: server, save: saveDir, 说: () => {} })).rejects.toThrow(/没有暮色地标网格/);
     expect(fs.existsSync(saveDir)).toBe(false);
     writeZip(path.join(server, 'mods', 'mcai-0.1.0.jar'), { 'mcai/TwilightGrid.class': '' });
     process.env.FAKE_LOG = '无';
-    await expect(buildWorld({ 声明: makeWorldDecl(['暮色放大4倍']), serverDir: server, 存档: saveDir, 说: () => {} })).rejects.toThrow(/没有「暮色地标网格：64 区块」/);
+    await expect(buildWorld({ decl: makeWorldDecl(['暮色放大4倍']), serverDir: server, save: saveDir, 说: () => {} })).rejects.toThrow(/没有「暮色地标网格：64 区块」/);
     delete process.env.FAKE_LOG;
     expect(fs.readFileSync(path.join(server, 'server.properties'), 'utf8')).toContain('motd=原样');
     expect(fs.readFileSync(path.join(server, 'server.properties'), 'utf8')).toContain('level-seed=20260930');
@@ -143,7 +143,7 @@ describe('建新世界', () => {
     const otherServer = setupServer(), otherWorld = path.join(otherServer, '已有杂物');
     fs.mkdirSync(otherWorld);
     fs.writeFileSync(path.join(otherWorld, '文件'), '');
-    await expect(buildWorld({ 声明: makeWorldDecl([]), serverDir: otherServer, 存档: otherWorld, 说: () => {} })).rejects.toThrow(/不是世界/);
+    await expect(buildWorld({ decl: makeWorldDecl([]), serverDir: otherServer, save: otherWorld, 说: () => {} })).rejects.toThrow(/不是世界/);
     fs.rmSync(otherServer, { recursive: true });
   }, 30_000);
 
@@ -152,10 +152,10 @@ describe('建新世界', () => {
     fs.mkdirSync(path.join(server, '旧世界'));
     fs.writeFileSync(path.join(server, '旧世界', 'level.dat'), '');
     const b = makeNewWorldSandbox(server, '新世界', '测试', root);
-    expect(fs.existsSync(path.join(b.服务端, 'server.properties'))).toBe(true);
-    expect(fs.existsSync(path.join(b.服务端, '旧世界'))).toBe(false);
-    expect(b.存档).toBe(path.join(b.根, '新世界'));
-    expect(fs.existsSync(b.存档)).toBe(false);
+    expect(fs.existsSync(path.join(b.server, 'server.properties'))).toBe(true);
+    expect(fs.existsSync(path.join(b.server, '旧世界'))).toBe(false);
+    expect(b.save).toBe(path.join(b.root, '新世界'));
+    expect(fs.existsSync(b.save)).toBe(false);
     for (const d of [server, root]) fs.rmSync(d, { recursive: true });
   });
 });
@@ -165,19 +165,19 @@ describe('装 Forge 服务端', () => {
     const root = makeTempDir(), serverDir = path.join(root, '新服务端');
     const installerPath = path.join(root, 'installer.jar');
     fs.writeFileSync(installerPath, '');
-    const r = await installServer({ 声明: makeWorldDecl([]), 目录: serverDir, installerPath: installerPath, 说: () => {} });
+    const r = await installServer({ decl: makeWorldDecl([]), 目录: serverDir, installerPath: installerPath, 说: () => {} });
     expect(r).toMatchObject({ loaderInstalled: true, missingMods: [], eula: '没写' });
     expect(fs.existsSync(path.join(serverDir, 'libraries/net/minecraftforge/forge/1.20.1-47.4.10/unix_args.txt'))).toBe(true);
     expect(fs.readFileSync(path.join(serverDir, 'server.properties'), 'utf8')).toBe(defaultProps('新服务端'));
     expect(fs.existsSync(path.join(serverDir, 'eula.txt'))).toBe(false);
-    const r2 = await installServer({ 声明: makeWorldDecl([]), 目录: serverDir, installerPath: installerPath, acceptEula: true, 说: () => {} });
+    const r2 = await installServer({ decl: makeWorldDecl([]), 目录: serverDir, installerPath: installerPath, acceptEula: true, 说: () => {} });
     expect(r2).toMatchObject({ loaderInstalled: false, eula: '已写' });
     expect(fs.readFileSync(path.join(serverDir, 'eula.txt'), 'utf8')).toContain('eula=true');
     // 不是空目录又不是装好的 Forge：不往里装
     const misc = path.join(root, '杂');
     fs.mkdirSync(misc);
     fs.writeFileSync(path.join(misc, '别人的文件'), '');
-    await expect(installServer({ 声明: makeWorldDecl([]), 目录: misc, installerPath: installerPath, 说: () => {} })).rejects.toThrow(/不是空的/);
+    await expect(installServer({ decl: makeWorldDecl([]), 目录: misc, installerPath: installerPath, 说: () => {} })).rejects.toThrow(/不是空的/);
     fs.rmSync(root, { recursive: true });
   }, 30_000);
 });

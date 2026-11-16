@@ -22,9 +22,9 @@ const picture: React.FC = () => {
   const songFrame = startFrame + useSnappedFrame();
   return (
     <>
-      <FilmPost grade={tone.grade} 种子={songFrame}>
+      <FilmPost grade={tone.grade} seed={songFrame}>
         <SelectWorld
-          状态={{ framing: normalFraming, pointAt: pointingAt(songFrame), selected: isSelectedAt(songFrame), frameCursor: boxCursorOn(songFrame, startFrame), cursor: cursorAt(songFrame), iconMap: oldIcon }}
+          state={{ framing: normalFraming, pointAt: pointingAt(songFrame), selected: isSelectedAt(songFrame), frameCursor: boxCursorOn(songFrame, startFrame), cursor: cursorAt(songFrame), iconMap: oldIcon }}
         />
         <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.outlineColor }} />
       </FilmPost>

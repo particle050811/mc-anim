@@ -2,27 +2,27 @@
 # 只预生成远处地标周围的小块（区块表是 anim world far landmarks 排的），烘成补充包，导入范围外先用它、再用远景包兜底。
 # 不往 暮色放大-1752 的存档里补：那样重烘会改正式段用的 暮色放大-1752-扩展。
 
-"名称" = "暮色放大-1752-远地标"
-"服务端" = "取材服务端"
-"维度" = "twilightforest:twilight_forest"
-"种子" = 1752
+"displayName" = "暮色放大-1752-远地标"
+"server" = "取材服务端"
+"dimension" = "twilightforest:twilight_forest"
+"seed" = 1752
 "Forge" = "1.20.1-47.4.10"
-"模组" = ["twilightforest", "create", "iceandfire", "tconstruct", "mantle", "quark", "zeta", "touhoulittlemaid", "mcai"]
-"另需模组文件" = ["citadel-2.6.3-1.20.1.jar"]
-"数据包" = ["通用/不生成龙巢", "暮色放大4倍"]
+"mods" = ["twilightforest", "create", "iceandfire", "tconstruct", "mantle", "quark", "zeta", "touhoulittlemaid", "mcai"]
+"extraModFiles" = ["citadel-2.6.3-1.20.1.jar"]
+"datapacks" = ["通用/不生成龙巢", "暮色放大4倍"]
 
-["预生成"]
+["pregen"]
 
-[["预生成"."块"]]
-"名" = "远地标"
-"形状" = "区块表"
-"文件" = "暮色放大-1752-远地标.区块.json"
-"依据" = "anim world far landmarks 暮色放大-1752 <地标.json> --camera-box -11191,-887,-2935,5192 --view-dist 10000：镜头框是 7 座首领地标的外包框（暮色放大-1752 原矩形四边各收 2 km），视距是试看的最远雾"
+[["pregen"."tile"]]
+"name" = "远地标"
+"shape" = "区块表"
+"file" = "暮色放大-1752-远地标.区块.json"
+"basis" = "anim world far landmarks 暮色放大-1752 <地标.json> --camera-box -11191,-887,-2935,5192 --view-dist 10000：镜头框是 7 座首领地标的外包框（暮色放大-1752 原矩形四边各收 2 km），视距是试看的最远雾"
 
 # 原点和 暮色放大-1752 一样，区段的格子对得上，渲染时同一个区段导入包没有才用这个包
-["烘焙"]
-"原点" = [-6144, 0, 2048]
+["bake"]
+"origin" = [-6144, 0, 2048]
 
-[["烘焙"."包"]]
-"名" = "暮色放大-1752-远地标"
-"来源" = "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙"
+[["bake"."pack"]]
+"name" = "暮色放大-1752-远地标"
+"source" = "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙"

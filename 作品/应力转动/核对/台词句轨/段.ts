@@ -2,4 +2,4 @@
 // 第 6、7 章的段还走旧 台词轨.tsx，改不改走句模块要用户定，这里不碰它们。
 import { defineSeg } from '@engine/段/段定义.ts';
 
-export default defineSeg({ 场: '核对', 秒: 3, 宽: 1280, 高: 720, 地形: [] });
+export default defineSeg({ scene: '核对', sec: 3, width: 1280, height: 720, terrain: [] });

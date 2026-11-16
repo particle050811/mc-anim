@@ -50,7 +50,7 @@ const brakeStartSec = timeline.secFractional(geom.shootTime + geom.arrowArriveTi
 const brakeEndSec = timeline.secFractional(geom.shootTime + geom.arrowArriveTime(brakeEndDist));
 const followCam = (storyTime: number): Cam => {
   const arrowState = geom.arrowState(storyTime);
-  const dist = arrowState.阶段 === '来' ? Math.max(0, geom.incomingArrowDist(storyTime - geom.shootTime)) : geom.deflectDist;
+  const dist = arrowState.stage === '来' ? Math.max(0, geom.incomingArrowDist(storyTime - geom.shootTime)) : geom.deflectDist;
   const brakeWeight = smoothstep01((timeline.secFractional(storyTime) - brakeStartSec) / (brakeEndSec - brakeStartSec));
   const followPose = followCamPose(Math.min(dist, brakeEndDist));
   const camPos = lerpV(followPose.pos, sideCamPos, brakeWeight);

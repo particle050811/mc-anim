@@ -23,7 +23,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const laserPng = png(guardianBeamPng);
 const bubbleImg = png(bubblePng);
 
-const GuardianRay: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const GuardianRay: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const chargeUpTick = guardLightTick(options);
   if (tick >= chargeUpTick) return null;
@@ -53,15 +53,15 @@ const GuardianRay: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: 
   }
   return (
     <>
-      <Beam 起={from} end={end} 图={laserPng} 半宽={0.2} planeCount={2} angleRad={angleRad} u={[0, 0.4999]} vStart={v0} vEnd={beamLength * 2.5 + v0} 混合="镂空" repeat 色={color} />
+      <Beam start={from} end={end} image={laserPng} halfWidth={0.2} planeCount={2} angleRad={angleRad} u={[0, 0.4999]} vStart={v0} vEnd={beamLength * 2.5 + v0} blend="镂空" repeat 色={color} />
       <SquareTubeFaces
-        quads={[{ 点: [ringPoint(3 * q), ringPoint(q), ringPoint(7 * q), ringPoint(5 * q)], uv: [[0.5, uvHalfV + 0.5], [1, uvHalfV + 0.5], [1, uvHalfV], [0.5, uvHalfV]] }]}
-        图={laserPng}
-        混合="镂空"
+        quads={[{ points: [ringPoint(3 * q), ringPoint(q), ringPoint(7 * q), ringPoint(5 * q)], uv: [[0.5, uvHalfV + 0.5], [1, uvHalfV + 0.5], [1, uvHalfV], [0.5, uvHalfV]] }]}
+        image={laserPng}
+        blend="镂空"
         repeat
         色={color}
       />
-      <QuadGroup 图={bubbleImg} 项={bubbles} 混合="镂空" />
+      <QuadGroup image={bubbleImg} items={bubbles} blend="镂空" />
     </>
   );
 };

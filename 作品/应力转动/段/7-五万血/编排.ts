@@ -24,7 +24,7 @@ export const lines: { id: string; startSec: number; text: string; estDuration: n
   { id: '7-2-1-李樱-溜了', startSec: slipLineSec, text: '溜了溜了。', estDuration: timeline.slipLineDur },
 ];
 // 给 mouthAt 的句子：它的 帧 和 fps 是同一个单位，这里都用秒（fps 传 1）
-export const mouthCues = lines.map(({ id, startSec }) => ({ id, 帧: startSec }));
+export const mouthCues = lines.map(({ id, startSec }) => ({ id, frame: startSec }));
 
 // ---------- 机位 ----------
 const feet = geom.roofFeet;
@@ -73,12 +73,12 @@ const jadeCamera = (sec: number): Cam => {
 // 监守者的血：第 1 场命中表（../7-1/戏/伤害.ts）按这一刻算，镜 Jade 里风矢打中它，框里的数跟着掉
 export const wardenHealthAt = (sec: number) => ({ max: K71.wardenMaxHp, now: K71.wardenHpAt(wideTime(sec)) });
 // Jade 界面：引线从监守者头顶往上长（0.3 秒），够到框时框出来（Jade 自己约 1/12 秒淡入）。点：头顶（站直 3.125 格，见 模型/角色/监守者.tsx），场景坐标
-export const jade = (sec: number): { 点: V3; lineScale: number; 框: number } | null => {
+export const jade = (sec: number): { points: V3; lineScale: number; box: number } | null => {
   if (sec >= jadeShotEnd) return null;
   const lineK = Math.min(1, Math.max(0, (sec - timeline.jadeLineSec) / 0.3));
   const boxK = Math.min(1, Math.max(0, (sec - timeline.jadeLineSec - 0.3) * 12 + 0.5));
   const p = K71.wardenState(wideTime(sec)).p;
-  return { 点: [p[0], p[1], p[2] + 3.125], lineScale: lineK, 框: lineK < 1 ? 0 : boxK };
+  return { points: [p[0], p[1], p[2] + 3.125], lineScale: lineK, box: lineK < 1 ? 0 : boxK };
 };
 
 // ---------- 镜 3 ----------

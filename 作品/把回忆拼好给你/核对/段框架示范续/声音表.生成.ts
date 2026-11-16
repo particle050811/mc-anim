@@ -3,14 +3,14 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/把回忆拼好给你/entity.firework_rocket.blast": {
-      "时长": 1,
-      "峰值": 1.1,
-      "响度": -25.1,
+      "duration": 1,
+      "peakDb": 1.1,
+      "loudness": -25.1,
       "sha": "9377171cf33d"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

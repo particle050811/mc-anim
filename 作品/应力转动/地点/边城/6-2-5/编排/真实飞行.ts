@@ -20,10 +20,10 @@ import { odometer, cloudPierceSec, brakeSec, endSec } from './时间线.ts';
 // - 种子 11：试了六个种子，大弯只来自侧向漂移，11 的弯最看得出又不晕。
 const SEED = 11;
 // realFlight 的「帧」按 fps 换成物理秒：这里给 fps 1，帧、止帧、前、后都直接是秒（全局秒 = 物理时间）
-const anchors: Anchor[] = [{ 帧: 0, 止帧: cloudPierceSec, 后: 3 }, { 帧: brakeSec, 止帧: endSec, 前: 4 }];
+const anchors: Anchor[] = [{ frame: 0, 止帧: cloudPierceSec, 后: 3 }, { frame: brakeSec, 止帧: endSec, 前: 4 }];
 const noShake = { amplitude: 0 };
 const smoothParams = { vertical: { drift: 0 }, gust: { admittance: 0 }, bump: { pitch: noShake, roll: noShake, facing: noShake, heave: noShake } };
-const basePerturb = realFlight({ 种子: SEED, 起帧: 0, 止帧: endSec, fps: 1, distAt: odometer, anchors: anchors, 参数: smoothParams });
+const basePerturb = realFlight({ seed: SEED, 起帧: 0, 止帧: endSec, fps: 1, distAt: odometer, anchors: anchors, params: smoothParams });
 // 水平弧长（地形跟随用的那条 z = 0 的水平航线）和 ROUTE 里程互换：整条航线 的第 i 个点就是 ROUTE 的第 i + 2 个航点（前面是 W0、W1）
 const flatTable = fullRoute.horizArcLen;
 const routeTable = flatTable.map((_, i) => ROUTE.waypointArcLen(i + 2));

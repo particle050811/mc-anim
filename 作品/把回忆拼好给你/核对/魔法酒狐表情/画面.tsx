@@ -32,18 +32,18 @@ const picture: React.FC = () => {
   const gaze = v.头 === '看玩家' ? magicalWineFoxLookAt(liYing, v.眼) : undefined;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
         <color attach="background" args={['#5a5e66']} />
         <FirstPersonRig 眼={v.眼} 看={v.看} fov={v.fov} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
           <Ground />
-          {v.九胡 ? <Jiuhu pose={jiuHu} tail={(v.秒 ?? 0) * 2} /> : <MagicalWineFox pose={liYing} 看={gaze} expression={v.expression} blink={v.blink} 秒={v.秒} />}
+          {v.九胡 ? <Jiuhu pose={jiuHu} tail={(v.sec ?? 0) * 2} /> : <MagicalWineFox pose={liYing} 看={gaze} expression={v.expression} blink={v.blink} sec={v.sec} />}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
+        <div>{v.name}</div>
         {v.九胡 && <div style={{ fontSize: 16 }}>九胡站着，尾巴相位 = 秒 × 2，和同一秒的魔法酒狐比</div>}
       </div>
     </AbsoluteFill>

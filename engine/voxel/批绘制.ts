@@ -33,10 +33,10 @@ export type BatchItem = {
   attributes: THREE.GLBufferAttribute[]; // position、uv、tex、col，容器由 容器池.ts 管，`传` 过才有
   面: number;
   shortIndex: boolean; // 用 16 位共用索引
-  段: number[]; // 各朝向组的起点（面号），见 网格.ts
+  segment: number[]; // 各朝向组的起点（面号），见 网格.ts
   upload: () => void; // 第一次被哪个视锥碰到才传顶点
-  原点: number[]; // 体素块原点（世界组里的坐标，米）
-  缩放: number; // 顶点整数 → 米
+  origin: number[]; // 体素块原点（世界组里的坐标，米）
+  scale: number; // 顶点整数 → 米
   boundingSphere: THREE.Sphere; // 包围球（世界组里的坐标）
   vao: (WebGLVertexArrayObject | undefined)[]; // 按属性布局号
 };
@@ -57,14 +57,14 @@ export const buildBatchItem = (ctx: WebGL2RenderingContext, group: FaceGroup, is
     attributes,
     面: group.n,
     shortIndex: isPlant && group.n <= plantShortFaceLimit,
-    段: group.段,
+    segment: group.segment,
     upload: () => {
       if (!pendingUpload) return;
       for (let i = 0; i < 4; i++) uploadVertices(ctx, attributes[i]!, pendingUpload[i]!);
       pendingUpload = null;
     },
-    原点: origin,
-    缩放: 1 / k,
+    origin: origin,
+    scale: 1 / k,
     boundingSphere,
     vao: [],
   };
@@ -81,22 +81,22 @@ export const releaseBatchItems = (ctx: WebGL2RenderingContext, items: BatchItem[
 };
 
 // ---- 共用索引：批绘制自己的两个容器（three 那份只有它自己拿得到）。长的按用到的最大面数翻倍长，换下来的还被旧 VAO 指着，没人指了由浏览器回收 ----
-type IndexBuffers = { shortIndex: WebGLBuffer | null; 长: WebGLBuffer | null; longFaceCount: number };
+type IndexBuffers = { shortIndex: WebGLBuffer | null; length: WebGLBuffer | null; longFaceCount: number };
 const indexBuffers = new WeakMap<WebGL2RenderingContext, IndexBuffers>();
 // 要在自己的 VAO 绑着时调：ELEMENT_ARRAY_BUFFER 的绑定记在当前 VAO 上
 const bindIndex = (gl: WebGL2RenderingContext, batchItem: BatchItem) => {
   let s = indexBuffers.get(gl);
-  if (!s) indexBuffers.set(gl, (s = { shortIndex: null, 长: null, longFaceCount: 0 }));
+  if (!s) indexBuffers.set(gl, (s = { shortIndex: null, length: null, longFaceCount: 0 }));
   if (batchItem.shortIndex) {
     if (s.shortIndex) return gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.shortIndex);
     s.shortIndex = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.shortIndex);
     return gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, quadIndices(new Uint16Array(plantShortFaceLimit * 6)), gl.STATIC_DRAW);
   }
-  if (s.长 && s.longFaceCount >= batchItem.面) return gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.长);
-  s.longFaceCount = Math.max(batchItem.面, s.长 ? s.longFaceCount * 2 : 1 << 16);
-  s.长 = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.长);
+  if (s.length && s.longFaceCount >= batchItem.面) return gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.length);
+  s.longFaceCount = Math.max(batchItem.面, s.length ? s.longFaceCount * 2 : 1 << 16);
+  s.length = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, s.length);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, quadIndices(new Uint32Array(s.longFaceCount * 6)), gl.STATIC_DRAW);
 };
 
@@ -155,10 +155,10 @@ let warned = false;
 
 /** 一类材质（或阴影）的代理物体。每帧 `清` 之后按挑区段的先后 `加`，有东西才挂进世界组 */
 export class ClassBatch extends THREE.Mesh {
-  项: BatchItem[] = [];
+  items: BatchItem[] = [];
   // 项 i 要画的段：段[段起[i]] 到 段[段起[i + 1]]，两个一对（起点、个数，单位是索引）
   drawRangeStarts: number[] = [0];
-  段: number[] = [];
+  segment: number[] = [];
   private 见 = new Int32Array(1024); // 这一遍在视锥里的项号
   private farDepths = new Float64Array(1024); // 排序用：各项离镜头的纵深
   private shadowFrustum: THREE.Frustum | null = null;
@@ -176,17 +176,17 @@ export class ClassBatch extends THREE.Mesh {
   }
 
   reset(refPoint: number[]) {
-    this.项.length = 0;
+    this.items.length = 0;
     this.drawRangeStarts.length = 1;
-    this.段.length = 0;
+    this.segment.length = 0;
     this.position.set(refPoint[0]!, refPoint[1]!, refPoint[2]!);
     this.updateMatrix();
   }
 
   /** 只画看得见的几组朝向：连续几组并成一段。只给了前 7 组时，裙边四组跟着各自朝向走（和 材质.ts 的 pickDirs 同一个算法） */
   加(batchItem: BatchItem, visibleFlags: boolean[]) {
-    const groupStart = batchItem.段;
-    const faceGroupStarts = this.段;
+    const groupStart = batchItem.segment;
+    const faceGroupStarts = this.segment;
     const origLength = faceGroupStarts.length;
     let startIndex = -1;
     for (let k = 0; k <= groupCount; k++) {
@@ -198,13 +198,13 @@ export class ClassBatch extends THREE.Mesh {
       }
     }
     if (faceGroupStarts.length === origLength) return;
-    this.项.push(batchItem);
+    this.items.push(batchItem);
     this.drawRangeStarts.push(faceGroupStarts.length);
   }
 
   // three 挑物体时调（主画面每次 render 一次，阴影遍每级一次）。主画面不画阴影那个、阴影遍只画阴影那个；逐区段的剔除在画的时候做
   override intersectsFrustum(frustum: THREE.Frustum | THREE.FrustumArray) {
-    if (this.shadow !== shadowFrustums.has(frustum as THREE.Frustum) || !this.项.length) return false;
+    if (this.shadow !== shadowFrustums.has(frustum as THREE.Frustum) || !this.items.length) return false;
     if (this.shadow) this.shadowFrustum = frustum as THREE.Frustum;
     return true;
   }
@@ -212,7 +212,7 @@ export class ClassBatch extends THREE.Mesh {
   // 逐区段视锥剔除，在里面的传顶点、项号记进 `见`，返回个数。
   // 世界组挂在转成 Y 朝上的父节点下：不逐项把包围球乘到世界里，把六个面换到世界组自己的坐标里比（父节点只有旋转平移，半径不变）
   private cull(worldPlanes: THREE.Plane[]) {
-    const items = this.项;
+    const items = this.items;
     const n = items.length;
     if (this.见.length < n) {
       this.见 = new Int32Array(n * 2);
@@ -256,7 +256,7 @@ export class ClassBatch extends THREE.Mesh {
     if (this.parent) _projView.multiply(this.parent.matrixWorld);
     const e = _projView.elements;
     const row = camera.projectionMatrix.elements[11] ? 3 : 2;
-    const { 见: visible, farDepths, 项: items } = this;
+    const { 见: visible, farDepths, items: items } = this;
     for (let i = 0; i < n; i++) {
       const k = visible[i]!;
       const c = items[k]!.boundingSphere.center;
@@ -281,14 +281,14 @@ export class ClassBatch extends THREE.Mesh {
       warned = true;
       return;
     }
-    const { 见: visible, 项: items, drawRangeStarts, 段: faceGroupStarts } = this;
+    const { 见: visible, items: items, drawRangeStarts, segment: faceGroupStarts } = this;
     const R = this.position;
     const origVao = gl.getParameter(gl.VERTEX_ARRAY_BINDING) as WebGLVertexArrayObject | null;
     for (let i = 0; i < n; i++) {
       const k = visible[i]!;
       const batchItem = items[k]!;
       gl.bindVertexArray(batchItem.vao[programLocs.layoutId] ?? (batchItem.vao[programLocs.layoutId] = buildVao(gl, batchItem, programLocs)));
-      gl.uniform4f(programLocs.displacement, batchItem.原点[0]! - R.x, batchItem.原点[1]! - R.y, batchItem.原点[2]! - R.z, batchItem.缩放);
+      gl.uniform4f(programLocs.displacement, batchItem.origin[0]! - R.x, batchItem.origin[1]! - R.y, batchItem.origin[2]! - R.z, batchItem.scale);
       const indexType = batchItem.shortIndex ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT;
       const indexWidth = batchItem.shortIndex ? 2 : 4;
       for (let j = drawRangeStarts[k]!, endIndex = drawRangeStarts[k + 1]!; j < endIndex; j += 2) gl.drawElements(gl.TRIANGLES, faceGroupStarts[j + 1]!, indexType, faceGroupStarts[j]! * indexWidth);

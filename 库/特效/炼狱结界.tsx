@@ -62,7 +62,7 @@ const s2l = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 
 
 export type RevelationCageProps = {
   /** 时间（秒）：原版是 Blaze3D.getTime()，只管转动；0 = 没转 */
-  秒: number;
+  sec: number;
   /** 整体倍数，默认原版结界的 5.8905764（顶点离中心约 9.70 格）；死亡演出是 11.781153 × 进度 */
   radiusFactor?: number;
   /** 0～1，默认 1；淡入淡出用 炼狱结界透明度 算了传进来 */
@@ -75,7 +75,7 @@ export type RevelationCageProps = {
   颜色?: readonly [number, number, number];
 };
 
-export const RevelationCageWire: React.FC<RevelationCageProps> = ({ 秒: sec, radiusFactor = revelationCageVanilla.radiusFactor, opacity = 1, edgeScale = 1, lineWidth, 颜色: color = revelationCageVanilla.颜色 }) => {
+export const RevelationCageWire: React.FC<RevelationCageProps> = ({ sec: sec, radiusFactor = revelationCageVanilla.radiusFactor, opacity = 1, edgeScale = 1, lineWidth, 颜色: color = revelationCageVanilla.颜色 }) => {
   const gl = useThree((s) => s.gl);
   // 画布尺寸变了要重取实际像素
   useThree((s) => s.size);
@@ -87,7 +87,7 @@ export const RevelationCageWire: React.FC<RevelationCageProps> = ({ 秒: sec, ra
     const idx: number[] = [];
     lineSegs.forEach((s, i) => {
       // 原版 LINES 模式一段 4 个顶点：起点两个、终点两个，偶数号往 +、奇数号往 −，索引 0,1,2, 3,2,1
-      for (const [p, sd] of [[s.起, 1], [s.起, -1], [s.止, 1], [s.止, -1]] as const) {
+      for (const [p, sd] of [[s.start, 1], [s.start, -1], [s.end, 1], [s.end, -1]] as const) {
         pos.push(...p);
         nor.push(...s.normal);
         side.push(sd);

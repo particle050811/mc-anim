@@ -62,14 +62,14 @@ const planeGeometry = (x0: number, x1: number, z0: number, z1: number, u0: numbe
 // 空框：template_item_frame.json 里朝外那面（模型的 north 面，挂在北墙上转 180° 朝南）。[x0, y0, x1, y1] 是模型像素（y 往上）、离墙几个像素、用哪张贴图；
 // north 面的 uv 正好等于从南边看过去的 [左, 上, 右, 下]
 const emptyFramePlanes = [
-  { 框: [3, 3, 13, 13], wallOffset: 0.5, 图: 'back' },
-  { 框: [2, 2, 14, 3], wallOffset: 1, 图: 'wood' },
-  { 框: [2, 13, 14, 14], wallOffset: 1, 图: 'wood' },
-  { 框: [2, 3, 3, 13], wallOffset: 1, 图: 'wood' },
-  { 框: [13, 3, 14, 13], wallOffset: 1, 图: 'wood' },
+  { box: [3, 3, 13, 13], wallOffset: 0.5, image: 'back' },
+  { box: [2, 2, 14, 3], wallOffset: 1, image: 'wood' },
+  { box: [2, 13, 14, 14], wallOffset: 1, image: 'wood' },
+  { box: [2, 3, 3, 13], wallOffset: 1, image: 'wood' },
+  { box: [13, 3, 14, 13], wallOffset: 1, image: 'wood' },
 ] as const;
 
-const emptyFrameGeometry = emptyFramePlanes.map(({ 框: [x0, y0, x1, y1] }) => planeGeometry(x0 / 16 - 0.5, x1 / 16 - 0.5, y0 / 16, y1 / 16, x0 / 16, (16 - y1) / 16, x1 / 16, (16 - y0) / 16));
+const emptyFrameGeometry = emptyFramePlanes.map(({ box: [x0, y0, x1, y1] }) => planeGeometry(x0 / 16 - 0.5, x1 / 16 - 0.5, y0 / 16, y1 / 16, x0 / 16, (16 - y1) / 16, x1 / 16, (16 - y0) / 16));
 const fullCellGeometry = planeGeometry(-0.5, 0.5, 0, 1, 0, 0, 1, 1);
 
 /** 一只荧光物品展示框（画 null = 空的） */
@@ -80,7 +80,7 @@ export const GlowFrame: React.FC<{ i: number; k: number; photo: PhotoSource | nu
       {mapTexture ? (
         <mesh geometry={fullCellGeometry} material={mapTexture} position={[0, -mapWallOffset, 0]} />
       ) : (
-        emptyFramePlanes.map((p, n) => <mesh key={n} geometry={emptyFrameGeometry[n]} material={frameMaterial(p.图 === 'back' ? backPanelUrl : woodFrameUrl)} position={[0, -p.wallOffset / 16, 0]} />)
+        emptyFramePlanes.map((p, n) => <mesh key={n} geometry={emptyFrameGeometry[n]} material={frameMaterial(p.image === 'back' ? backPanelUrl : woodFrameUrl)} position={[0, -p.wallOffset / 16, 0]} />)
       )}
     </group>
   );
@@ -99,7 +99,7 @@ export const HandHeldMapArt: React.FC<{ photo: PhotoSource; sideLength?: MapSize
 
 /** 一张不在框里、也不挂在手上的地图画（场景内容，Z 朝上）：正面朝南、边 格见方，角 = 左下角（场景坐标）。
  *  第 8 句她把照片往空框里放的那几帧用它（从手边挪进框，最后一帧和框里那张重合）；同框里一样满亮 */
-export const MapArtCard: React.FC<{ photo: PhotoSource; sideLength?: MapSize; 角: readonly [number, number, number]; side: number }> = ({ photo, sideLength = 32, 角: corner, side }) => (
+export const MapArtCard: React.FC<{ photo: PhotoSource; sideLength?: MapSize; angle: readonly [number, number, number]; side: number }> = ({ photo, sideLength = 32, angle: corner, side }) => (
   <mesh geometry={fullCellGeometry} material={mapMaterial(photo, sideLength)} position={[corner[0] + side / 2, corner[1], corner[2]]} scale={side} />
 );
 

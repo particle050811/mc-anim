@@ -52,7 +52,7 @@ const UiCamera: React.FC<{ uiWidth: number; uiHeight: number }> = ({ uiWidth, ui
 const lights = [new THREE.Vector3(-0.275, -0.212, 1.188).normalize(), new THREE.Vector3(-0.266, -1.202, 0.119).normalize()];
 
 /** 叠在画面上的物品激活动画。宽、高：画面像素；s：界面缩放；秒：触发后几秒；偏：offX、offY（−1～1）；物品：平面物品的贴图层（item/generated） */
-export const ItemActivate: React.FC<{ 宽: number; 高: number; s: number; 秒: number; offset: readonly [number, number]; items: ItemLayer[] }> = ({ 宽: width, 高: height, s, 秒: sec, offset, items }) => {
+export const ItemActivate: React.FC<{ width: number; height: number; s: number; sec: number; offset: readonly [number, number]; items: ItemLayer[] }> = ({ width: width, height: height, s, sec: sec, offset, items }) => {
   const [uiWidth, uiHeight] = [Math.ceil(width / s), Math.ceil(height / s)];
   const activeParams = itemActivateParams(sec, offset, uiWidth, uiHeight);
   if (!activeParams) return null;

@@ -27,40 +27,40 @@ export const periods = [
 export type PeriodName = (typeof periods)[number]['节'];
 
 /** 一格：行 = 节们 的下标，列 = 星期们 的下标；跨行、跨列是合并了几格；字 '' 是留空的格；疏 = 字间拉开一个字宽（01 里合并的大格这么排） */
-export type TimetableCell = { 行: number; 列: number; rowSpan: number; colSpan: number; 字: string; sparse?: true };
+export type TimetableCell = { 行: number; 列: number; rowSpan: number; colSpan: number; char: string; sparse?: true };
 
-const rowCells = (row: number, chars: readonly string[], startColumn = 0): TimetableCell[] => chars.map((text, i) => ({ 行: row, 列: startColumn + i, rowSpan: 1, colSpan: 1, 字: text }));
+const rowCells = (row: number, chars: readonly string[], startColumn = 0): TimetableCell[] => chars.map((text, i) => ({ 行: row, 列: startColumn + i, rowSpan: 1, colSpan: 1, char: text }));
 
 export const timetableCells: readonly TimetableCell[] = [
   ...rowCells(0, ['语文', '英语', '语文', '英语', '语文', '英语']),
-  { 行: 0, 列: 6, rowSpan: 3, colSpan: 1, 字: '' }, // 周日 9:00 前返校，之前留空
+  { 行: 0, 列: 6, rowSpan: 3, colSpan: 1, char: '' }, // 周日 9:00 前返校，之前留空
   ...rowCells(1, ['语', '数', '英', '语', '数', '语']),
   ...rowCells(2, ['数', '英', '语', '数', '语', '英']),
-  { 行: 3, 列: 0, rowSpan: 1, colSpan: 6, 字: '跑操', sparse: true },
-  { 行: 3, 列: 6, rowSpan: 4, colSpan: 1, 字: '数学培优班' },
+  { 行: 3, 列: 0, rowSpan: 1, colSpan: 6, char: '跑操', sparse: true },
+  { 行: 3, 列: 6, rowSpan: 4, colSpan: 1, char: '数学培优班' },
   ...rowCells(4, ['英', '语', '数', '英', '英', '数']),
   ...rowCells(5, ['物', '化', '化', '物', '化', '物']),
   ...rowCells(6, ['化', '物', '物', '化', '物', '化']),
-  { 行: 7, 列: 0, rowSpan: 1, colSpan: 7, 字: '午餐·午休', sparse: true },
-  { 行: 8, 列: 0, rowSpan: 1, colSpan: 1, 字: '物' },
-  { 行: 8, 列: 1, rowSpan: 2, colSpan: 1, 字: '选考走班' },
-  { 行: 8, 列: 2, rowSpan: 1, colSpan: 1, 字: '化' },
-  { 行: 8, 列: 3, rowSpan: 2, colSpan: 1, 字: '选考走班' },
-  { 行: 8, 列: 4, rowSpan: 1, colSpan: 1, 字: '化' },
-  { 行: 8, 列: 5, rowSpan: 1, colSpan: 1, 字: '英' },
-  { 行: 8, 列: 6, rowSpan: 4, colSpan: 1, 字: '自修', sparse: true },
-  { 行: 9, 列: 0, rowSpan: 1, colSpan: 1, 字: '数' },
-  { 行: 9, 列: 2, rowSpan: 1, colSpan: 1, 字: '英' },
-  { 行: 9, 列: 4, rowSpan: 1, colSpan: 1, 字: '语' },
-  { 行: 9, 列: 5, rowSpan: 3, colSpan: 1, 字: '周测', sparse: true },
+  { 行: 7, 列: 0, rowSpan: 1, colSpan: 7, char: '午餐·午休', sparse: true },
+  { 行: 8, 列: 0, rowSpan: 1, colSpan: 1, char: '物' },
+  { 行: 8, 列: 1, rowSpan: 2, colSpan: 1, char: '选考走班' },
+  { 行: 8, 列: 2, rowSpan: 1, colSpan: 1, char: '化' },
+  { 行: 8, 列: 3, rowSpan: 2, colSpan: 1, char: '选考走班' },
+  { 行: 8, 列: 4, rowSpan: 1, colSpan: 1, char: '化' },
+  { 行: 8, 列: 5, rowSpan: 1, colSpan: 1, char: '英' },
+  { 行: 8, 列: 6, rowSpan: 4, colSpan: 1, char: '自修', sparse: true },
+  { 行: 9, 列: 0, rowSpan: 1, colSpan: 1, char: '数' },
+  { 行: 9, 列: 2, rowSpan: 1, colSpan: 1, char: '英' },
+  { 行: 9, 列: 4, rowSpan: 1, colSpan: 1, char: '语' },
+  { 行: 9, 列: 5, rowSpan: 3, colSpan: 1, char: '周测', sparse: true },
   ...rowCells(10, ['英', '语', '数', '数', '英']),
   ...rowCells(11, ['自', '自', '自', '自', '自']),
-  { 行: 12, 列: 0, rowSpan: 1, colSpan: 5, 字: '晚餐', sparse: true },
-  { 行: 12, 列: 5, rowSpan: 4, colSpan: 1, 字: '' }, // 周六周测完放学，晚上留空
+  { 行: 12, 列: 0, rowSpan: 1, colSpan: 5, char: '晚餐', sparse: true },
+  { 行: 12, 列: 5, rowSpan: 4, colSpan: 1, char: '' }, // 周六周测完放学，晚上留空
   // 只有一行高，不能疏：疏了一字一行竖着排要 18 像素，格子里只有 9（用户 11-03「晚餐那个字的 排列跳出边框了」）
-  { 行: 12, 列: 6, rowSpan: 1, colSpan: 1, 字: '晚餐' },
-  { 行: 13, 列: 0, rowSpan: 3, colSpan: 5, 字: '自修', sparse: true },
-  { 行: 13, 列: 6, rowSpan: 3, colSpan: 1, 字: '自修', sparse: true },
+  { 行: 12, 列: 6, rowSpan: 1, colSpan: 1, char: '晚餐' },
+  { 行: 13, 列: 0, rowSpan: 3, colSpan: 5, char: '自修', sparse: true },
+  { 行: 13, 列: 6, rowSpan: 3, colSpan: 1, char: '自修', sparse: true },
 ];
 
 export const timetableTitle = '高三（　　）班　课程表';

@@ -11,11 +11,11 @@ import { laugh } from '../../场/2-隐世之境/重逢参数.ts';
 const mainCutEvents = { ...mainCut15TailEvents, ...mainCutLine15Events };
 
 export type View = {
-  名: string;
+  name: string;
   /** 照片 = 合照照片；拍立得 = 合照拍立得；重逢 = 2-重逢 那一镜（硬切前）；靠肩 = 15 尾那一镜 */
-  种: '照片' | '拍立得' | '重逢' | '靠肩';
+  kind: '照片' | '拍立得' | '重逢' | '靠肩';
   /** 歌曲帧（照片、拍立得 不用） */
-  帧?: number;
+  frame?: number;
   /** 整片后期，不给 = 开 */
   withPost?: boolean;
   /** 靠肩她头顶的气泡，不给 = 合照参数 的 靠肩气泡 */
@@ -33,16 +33,16 @@ export type View = {
 
 const events = mainCutEvents;
 export const views: readonly View[] = [
-  { 名: '照片-合照（干净）', 种: '照片' },
-  { 名: '照片-合照（后期关）', 种: '照片', withPost: false },
-  { 名: '硬切前：2-重逢 末帧', 种: '重逢', 帧: events.cutToTail.帧 - 1 },
-  { 名: '硬切后：靠肩头一帧', 种: '靠肩', 帧: events.leanStart.帧 },
-  { 名: '靠好', 种: '靠肩', 帧: events.leanOnShoulder.帧 },
-  { 名: '对比-靠肩带气泡', 种: '靠肩', 帧: events.leanOnShoulder.帧, showBubble: true },
-  { 名: '对比-靠肩背景褪色', 种: '靠肩', 帧: events.leanOnShoulder.帧, fade: true },
-  { 名: '新合照套成第 11 句那样的拍立得（片里没露）', 种: '拍立得' },
-  { 名: '对比-窗外画到 x 26（窗外的深色木头、樱花树冠）', 种: '靠肩', 帧: events.leanOnShoulder.帧, cameraRig: { ...shoulderRig, depth: 12 } },
-  { 名: '大环境-东墙全深（N 10，看两个人站在主厅哪里）', 种: '靠肩', 帧: events.leanOnShoulder.帧, cameraRig: { 种: '正交', facing: '东', N: 10, topDepth: 2, 看: [shoulderRig.看[0], shoulderRig.看[1], 2.5], section: 1.3 } },
-  { 名: '对比-窗里补樱花林（小样，片里不开：窗景）', 种: '靠肩', 帧: events.groupPhotoClick.帧 - 1, windowView: true },
-  { 名: 'B 站多封面第三张：2-重逢 她笑了以后（段尾前一帧），封面帧的机位，挂「(✿◠‿◠)」，不带歌词', 种: '重逢', 帧: events.cutToTail.帧 - 1, bubbleText: laugh.bubbleText, coverRig: true },
+  { name: '照片-合照（干净）', kind: '照片' },
+  { name: '照片-合照（后期关）', kind: '照片', withPost: false },
+  { name: '硬切前：2-重逢 末帧', kind: '重逢', frame: events.cutToTail.frame - 1 },
+  { name: '硬切后：靠肩头一帧', kind: '靠肩', frame: events.leanStart.frame },
+  { name: '靠好', kind: '靠肩', frame: events.leanOnShoulder.frame },
+  { name: '对比-靠肩带气泡', kind: '靠肩', frame: events.leanOnShoulder.frame, showBubble: true },
+  { name: '对比-靠肩背景褪色', kind: '靠肩', frame: events.leanOnShoulder.frame, fade: true },
+  { name: '新合照套成第 11 句那样的拍立得（片里没露）', kind: '拍立得' },
+  { name: '对比-窗外画到 x 26（窗外的深色木头、樱花树冠）', kind: '靠肩', frame: events.leanOnShoulder.frame, cameraRig: { ...shoulderRig, depth: 12 } },
+  { name: '大环境-东墙全深（N 10，看两个人站在主厅哪里）', kind: '靠肩', frame: events.leanOnShoulder.frame, cameraRig: { kind: '正交', facing: '东', N: 10, topDepth: 2, 看: [shoulderRig.看[0], shoulderRig.看[1], 2.5], section: 1.3 } },
+  { name: '对比-窗里补樱花林（小样，片里不开：窗景）', kind: '靠肩', frame: events.groupPhotoClick.frame - 1, windowView: true },
+  { name: 'B 站多封面第三张：2-重逢 她笑了以后（段尾前一帧），封面帧的机位，挂「(✿◠‿◠)」，不带歌词', kind: '重逢', frame: events.cutToTail.frame - 1, bubbleText: laugh.bubbleText, coverRig: true },
 ];

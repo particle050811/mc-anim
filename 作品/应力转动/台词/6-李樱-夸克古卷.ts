@@ -1,18 +1,18 @@
-// 由 anim voice 生成（校验 1cb6c903a2cb），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-夸克古卷（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 a42c1f581453），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-夸克古卷（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-夸克古卷",
-  "角色": "李樱",
-  "念": "对了，夸克模组的古卷能够突破一级附魔上限，若是把保护4突破到保护5，能把免伤从64%提升到80%！",
-  "配音": "配音/6-李樱-夸克古卷",
-  "成品sha": "d7868c38330a",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "对了，夸克模组的古卷能够突破一级附魔上限，若是把保护4突破到保护5，能把免伤从64%提升到80%！",
+  "voice": "配音/6-李樱-夸克古卷",
+  "finishedSha": "d7868c38330a",
+  "mouthOpen": 0.03,
   "有声长": 8.427,
-  "时长": 8.607,
+  "duration": 8.607,
   "文件秒数": 8.607,
   "手修": true,
-  "字": [
+  "char": [
     ["对",0.16,0.32],
     ["了",0.32,0.48],
     ["夸",0.72,0.96],

@@ -32,7 +32,7 @@ const overworldPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight
             add={cloud.加?.map((a) => [a[0], a[1], a[2]] as [number, number, number])}
             near={cloud.aroundCamera && [cloud.aroundCamera[0], cloud.aroundCamera[1]]}
             clear={cloud.clearRect && [cloud.clearRect[0], cloud.clearRect[1], cloud.clearRect[2], cloud.clearRect[3]]}
-            seaY={cloud.海平面}
+            seaY={cloud.seaLevel}
             exposure={cloud.exposure}
           />
         )}
@@ -41,9 +41,9 @@ const overworldPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight
           {gameTime !== null && <VanillaStarMoon gameTime={gameTime} tiltDeg={e.orbitTilt} weather={e.weather} />}
         </group>
         {e.shadow ? (
-          <ShadowMainLight lightDir={lighting.lightDir} normalize 色={lightColor} 强={mix.direct * lighting.directMult} shadowFar={e.shadow.far ?? shadowFarFor(fogFarEnd(e.fog))} splitDist={Math.max(300, 2 * eyeHeight)} />
+          <ShadowMainLight lightDir={lighting.lightDir} normalize 色={lightColor} strength={mix.direct * lighting.directMult} shadowFar={e.shadow.far ?? shadowFarFor(fogFarEnd(e.fog))} splitDist={Math.max(300, 2 * eyeHeight)} />
         ) : (
-          <ParallelMainLight lightDir={lighting.lightDir} 色={lightColor} 强={mix.direct * lighting.directMult} cameraPos={cameraPos} />
+          <ParallelMainLight lightDir={lighting.lightDir} 色={lightColor} strength={mix.direct * lighting.directMult} cameraPos={cameraPos} />
         )}
         <hemisphereLight args={[SKY.skyLight, SKY.groundLight, mix.skylight * lighting.skyLightMult]} position={[0, 0, 1]} />
         <ambientLight intensity={mix.ambient * lighting.skyLightMult} />

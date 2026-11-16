@@ -3,74 +3,74 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/block.chest.close.2": {
-      "时长": 0.631375,
-      "峰值": 0,
-      "响度": -16.5,
+      "duration": 0.631375,
+      "peakDb": 0,
+      "loudness": -16.5,
       "sha": "08c2e383401f"
     },
     "音效/block.deepslate.break.1": {
-      "时长": 1,
-      "峰值": -6.4,
-      "响度": -30.5,
+      "duration": 1,
+      "peakDb": -6.4,
+      "loudness": -30.5,
       "sha": "13c0c2a22254"
     },
     "音效/block.deepslate.break.2": {
-      "时长": 0.866729,
-      "峰值": -6.6,
-      "响度": -32.6,
+      "duration": 0.866729,
+      "peakDb": -6.6,
+      "loudness": -32.6,
       "sha": "8c2b92cba456"
     },
     "音效/block.deepslate.break.3": {
-      "时长": 0.921708,
-      "峰值": -6.2,
-      "响度": -29.5,
+      "duration": 0.921708,
+      "peakDb": -6.2,
+      "loudness": -29.5,
       "sha": "337166a0c5f8"
     },
     "音效/block.sculk.break.12": {
-      "时长": 1.596396,
-      "峰值": -14.7,
-      "响度": -34.3,
+      "duration": 1.596396,
+      "peakDb": -14.7,
+      "loudness": -34.3,
       "sha": "6fef9ee267f5"
     },
     "音效/block.sculk.break.13": {
-      "时长": 1.419771,
-      "峰值": -13.7,
-      "响度": -36.3,
+      "duration": 1.419771,
+      "peakDb": -13.7,
+      "loudness": -36.3,
       "sha": "16764846abc4"
     },
     "音效/block.sculk.break.5": {
-      "时长": 1.599688,
-      "峰值": -9.6,
-      "响度": -33.2,
+      "duration": 1.599688,
+      "peakDb": -9.6,
+      "loudness": -33.2,
       "sha": "05aa316a80fc"
     },
     "音效/block.sculk.break.7": {
-      "时长": 1.793521,
-      "峰值": -15.5,
-      "响度": -36.9,
+      "duration": 1.793521,
+      "peakDb": -15.5,
+      "loudness": -36.9,
       "sha": "7900163aa314"
     },
     "音效/efn.parry.3": {
-      "时长": 1.173333,
-      "峰值": 0.3,
-      "响度": -9,
+      "duration": 1.173333,
+      "peakDb": 0.3,
+      "loudness": -9,
       "sha": "98f632cab9df"
     },
     "音效/efn.whoosh_light_1": {
-      "时长": 0.8,
-      "峰值": -8.7,
-      "响度": -26.3,
+      "duration": 0.8,
+      "peakDb": -8.7,
+      "loudness": -26.3,
       "sha": "59556b7733a6"
     },
     "音效/item.elytra.flying": {
-      "时长": 10.220333,
-      "峰值": -12.3,
-      "响度": -24.9,
+      "duration": 10.220333,
+      "peakDb": -12.3,
+      "loudness": -24.9,
       "sha": "0f51f0fd6647"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

@@ -26,7 +26,7 @@ const { airHorizontalDrag: airDrag, groundHorizontalDrag: groundDrag, standingVe
 
 export type DashSettings = {
   /** 起点脚底（本地坐标，z 是绝对高） */
-  起: V3;
+  start: V3;
   /** 视线的水平朝向（单位向量） */
   dir: readonly [number, number];
   /** 视线仰角（度，往上为正；游戏里 xRot 往下为正，= −仰角） */
@@ -40,7 +40,7 @@ export type DashSettings = {
 export type DashTrail = {
   settings: DashSettings;
   /** 第 k 刻末的脚底（k = 0 是起点） */
-  点: readonly V3[];
+  points: readonly V3[];
   /** 第 k 刻末在不在地上 */
   onGround: readonly boolean[];
   /** 第一次落地是第几刻 */
@@ -58,7 +58,7 @@ export const calcDash = (settings: DashSettings): DashTrail => {
   const pushSpeed = valetteinDash.pushSpeed;
   // 站在地上时竖直速度是 −0.0784（上一刻的重力），push 加在它上面
   let v: [number, number, number] = [settings.dir[0] * Math.cos(elevationRad) * pushSpeed, settings.dir[1] * Math.cos(elevationRad) * pushSpeed, Math.sin(elevationRad) * pushSpeed + standingVertSpeed];
-  let p: V3 = [...settings.起];
+  let p: V3 = [...settings.start];
   let onGround = false; // setOnGround(false)
   const points: V3[] = [p];
   const groundFlags: boolean[] = [true];
@@ -88,15 +88,15 @@ export const calcDash = (settings: DashSettings): DashTrail => {
     groundFlags.push(landed);
   }
   const lastPoint = points[points.length - 1]!;
-  return { settings: settings, 点: points, onGround: groundFlags, landTick, farDist: Math.hypot(lastPoint[0] - settings.起[0], lastPoint[1] - settings.起[1]) };
+  return { settings: settings, points: points, onGround: groundFlags, landTick, farDist: Math.hypot(lastPoint[0] - settings.start[0], lastPoint[1] - settings.start[1]) };
 };
 
 /** 冲出去后第 秒 秒的脚底：两刻之间线性插（同游戏的 partialTick）；冲之前在起点，算完以后停在最后一刻 */
 export const dashPos = (track: DashTrail, sec: number): V3 => {
   const tick = Math.max(0, sec * 20);
   const k = Math.floor(tick);
-  if (k >= track.点.length - 1) return track.点[track.点.length - 1]!;
-  const [a, b] = [track.点[k]!, track.点[k + 1]!];
+  if (k >= track.points.length - 1) return track.points[track.points.length - 1]!;
+  const [a, b] = [track.points[k]!, track.points[k + 1]!];
   const f = tick - k;
   return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
 };

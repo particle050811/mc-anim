@@ -22,9 +22,9 @@ export default defineSpellMeta({
   长秒: (monsoonActiveTick + monsoonRainTicks + 10) / 20,
   hitSec: monsoonActiveTick / 20,
   // MonsoonCloud 出生：LIGHTNING_BOLT_THUNDER 音量 0.5、音高 1.25；施法音 prepare_spell。落雷的 thunderbolt 声按种子 1 的那一发排（段里种子不同时声音可能和画面差几刻，见 季风.tsx）
-  声音: [
-    { 资产: '音效/entity.lightning_bolt.thunder.1', 秒: 0, 音量: 0.5, 音高: 1.25 },
-    { 资产: '音效/诡厄巫法/goety.prepare_spell.1', 秒: 0 },
-    ...monsoonStrikeTicks(1).map((t) => ({ 资产: '音效/诡厄巫法/goety.thunderbolt.1', 秒: t / 20 })),
+  sound: [
+    { asset: '音效/entity.lightning_bolt.thunder.1', sec: 0, 音量: 0.5, 音高: 1.25 },
+    { asset: '音效/诡厄巫法/goety.prepare_spell.1', sec: 0 },
+    ...monsoonStrikeTicks(1).map((t) => ({ asset: '音效/诡厄巫法/goety.thunderbolt.1', sec: t / 20 })),
   ],
 });

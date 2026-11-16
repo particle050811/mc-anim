@@ -16,15 +16,15 @@ import { sideNoteFile, type Sidecar } from './参考像素.ts';
 import { sameVersion, sampleKey, type ApprovalRecord } from './认可.ts';
 
 /** 这条认可记录在这个平台的认可参考文件 */
-export const referenceFile = (approval: ApprovalRecord, hostPlatform: string, work?: string) => approvRefFile(approval.段, approval.指纹, sampleKey(approval), hostPlatform, work);
+export const referenceFile = (approval: ApprovalRecord, hostPlatform: string, work?: string) => approvRefFile(approval.segment, approval.fingerprint, sampleKey(approval), hostPlatform, work);
 
-export type ApprovedMaster = { 文件: string; 字节sha: string };
+export type ApprovedMaster = { file: string; byteSha: string };
 
 /** 认可那一版的切片：认可那版指纹的段签（现在的、历史/ 里的）有和认可记录同一版的，切片又对得上那份段签。不是 null */
 export const findApprovedMaster = async (approval: ApprovalRecord): Promise<ApprovedMaster | null> => {
-  const segStamps = [readSegStamp(approval.段, approval.指纹), ...readSegStampHistory(approval.段, approval.指纹).map((h) => h.segStamp)].filter((s): s is SegStamp => !!s && sameVersion(s.签名, approval));
-  const sliceFile = segPicturePath(approval.段, approval.指纹);
-  for (const segStamp of segStamps) if (await matchesMaster(segStamp, sliceFile)) return { 文件: sliceFile, 字节sha: segStamp.母版.字节sha };
+  const segStamps = [readSegStamp(approval.segment, approval.fingerprint), ...readSegStampHistory(approval.segment, approval.fingerprint).map((h) => h.segStamp)].filter((s): s is SegStamp => !!s && sameVersion(s.signature, approval));
+  const sliceFile = segPicturePath(approval.segment, approval.fingerprint);
+  for (const segStamp of segStamps) if (await matchesMaster(segStamp, sliceFile)) return { file: sliceFile, byteSha: segStamp.master.byteSha };
   return null;
 };
 
@@ -61,14 +61,14 @@ export const prepareRef = async (approval: ApprovalRecord, hostPlatform: string)
   fs.mkdirSync(path.dirname(refPath), { recursive: true });
   const tmp = path.join(path.dirname(refPath), `${path.basename(refPath, '.mkv')}.写入中-${process.pid}.mkv`);
   try {
-    await writeRefFrames(master.文件, approval.帧数, approval.间隔, tmp);
-    const frames = sampleFrames(approval.帧数, approval.间隔);
+    await writeRefFrames(master.file, approval.frameCount, approval.interval, tmp);
+    const frames = sampleFrames(approval.frameCount, approval.interval);
     const v = videoInfo(tmp);
-    if (v.帧数 !== frames.length || v.宽 !== approval.宽 || v.高 !== approval.高) return '对不上';
+    if (v.frameCount !== frames.length || v.width !== approval.width || v.height !== approval.height) return '对不上';
     const yuv: string[] = [];
-    for await (const y of sampledStream(tmp, frames, frames, approval.宽, approval.高, 'yuv420p')) yuv.push(sha(y));
+    for await (const y of sampledStream(tmp, frames, frames, approval.width, approval.height, 'yuv420p')) yuv.push(sha(y));
     if (yuv.length !== frames.length) return '对不上';
-    writeSidecar(refPath, { 抽样键: sampleKey(approval), 帧: frames, yuv, 来源: '切片', 母版字节sha: master.字节sha, 记于: new Date().toISOString() });
+    writeSidecar(refPath, { 抽样键: sampleKey(approval), frame: frames, yuv, source: '切片', 母版字节sha: master.byteSha, recordedAt: new Date().toISOString() });
     fs.renameSync(tmp, refPath);
     return '从切片';
   } finally {

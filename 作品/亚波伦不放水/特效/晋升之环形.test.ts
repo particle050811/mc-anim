@@ -41,7 +41,7 @@ describe('候选', () => {
     it(`${candidateName}：受光的网格法线和三角绕向一致`, () => {
       const [a, b, c, n, f] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
       for (const ringLayer of ringBody.layers)
-        for (const { 类: matKind, geo } of ringLayer.parts) {
+        for (const { type: matKind, geo } of ringLayer.parts) {
           if (matKind === '光' || matKind === '芒') continue;
           const [p, nor] = [geo.getAttribute('position'), geo.getAttribute('normal')];
           let backFaceCount = 0;

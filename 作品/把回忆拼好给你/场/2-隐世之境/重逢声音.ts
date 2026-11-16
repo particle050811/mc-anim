@@ -4,13 +4,13 @@ import { events as mainCutEvents } from '../../分镜/正片第15句.ts';
 import type { SongSound } from '../../声音/跨段音效.ts';
 
 /** 原版木门开门声两条里取第一条（0.35 秒，一开门就响，没有空白头）；原版音量 0.9、音高 0.9～1 随机，这里按 1 */
-export const doorSoundFile = { 资产: '音效/block.wooden_door.open.1', 时长秒: 0.348 } as const;
+export const doorSoundFile = { asset: '音效/block.wooden_door.open.1', durationSec: 0.348 } as const;
 export const doorOpenGain = 0.3;
 
 export const doorOpenSound: SongSound = {
-  资产: doorSoundFile.资产,
-  名: '推门',
-  起帧: mainCutEvents.doorPush.帧,
-  时长秒: doorSoundFile.时长秒,
+  asset: doorSoundFile.asset,
+  name: '推门',
+  起帧: mainCutEvents.doorPush.frame,
+  durationSec: doorSoundFile.durationSec,
   增益: () => doorOpenGain,
 };

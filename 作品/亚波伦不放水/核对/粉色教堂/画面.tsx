@@ -33,18 +33,18 @@ const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: skyColor }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
         <color attach="background" args={[skyColor]} />
         <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ChurchLighting />
           <PinkChurch />
-          {v.yaBoLun && <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} 秒={0.5} act={stand} />}
+          {v.yaBoLun && <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} sec={0.5} act={stand} />}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

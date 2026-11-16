@@ -43,7 +43,7 @@ const edgePoints: readonly [number, number, number][] = (() => {
   return points;
 })();
 
-const Tear: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed, options }) => {
+const Tear: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const { warmup: tearWarmupTick, burstTick: tearBurstTick } = tearBeat(options);
   const active = tick >= tearWarmupTick;
@@ -62,14 +62,14 @@ const Tear: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种�
   for (let t = 0; t < endTick; t++) {
     const r = mulberry32(seed * 7919 + t);
     if (t < tearWarmupTick) {
-      particles.push({ 种: 'portal', 刻: t, p: [target[0] + (r() - 0.5), target[1] + (r() - 0.5), target[2] + 0.5], v: [0, 0, 0], 种子: seed * 31 + t });
+      particles.push({ kind: 'portal', 刻: t, p: [target[0] + (r() - 0.5), target[1] + (r() - 0.5), target[2] + 0.5], v: [0, 0, 0], seed: seed * 31 + t });
     } else if (t < tearWarmupTick + tearOpenTicks) {
       for (const [bx, by, bz] of edgePoints) {
         if (r() >= 1 / 25) continue;
         const f = -0.5 + r();
         const f1 = -2 + r();
         const f2 = -0.5 + r();
-        particles.push({ 种: 'portal', 刻: t, p: [target[0], target[1], target[2] + 1.6], v: [(f + bx) * 0.5, -(f2 + bz) * 0.5, (f1 + by) * 0.5], 种子: seed * 53 + t * 1009 + particles.length });
+        particles.push({ kind: 'portal', 刻: t, p: [target[0], target[1], target[2] + 1.6], v: [(f + bx) * 0.5, -(f2 + bz) * 0.5, (f1 + by) * 0.5], seed: seed * 53 + t * 1009 + particles.length });
       }
     }
   }
@@ -92,10 +92,10 @@ const Tear: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种�
 
   return (
     <>
-      {!hasBurst && <Quad 图={textures[stage]!} 位={tearCenter} 半宽={size / 2} 混合="镂空" />}
-      <VanillaParticles spawns={particles} 秒={sec} />
-      {hasBurst && <ShockwaveRing 位={[target[0], target[1], target[2] + 0.5]} 刻={tick - tearBurstTick} 大小={8} 色={burstColor} 速={0} />}
-      {hasBurst && <TexturedParticles 类={dragonBreathClass} spawns={breaths} 秒={sec} />}
+      {!hasBurst && <Quad image={textures[stage]!} 位={tearCenter} halfWidth={size / 2} blend="镂空" />}
+      <VanillaParticles spawns={particles} sec={sec} />
+      {hasBurst && <ShockwaveRing 位={[target[0], target[1], target[2] + 0.5]} 刻={tick - tearBurstTick} size={8} 色={burstColor} 速={0} />}
+      {hasBurst && <TexturedParticles type={dragonBreathClass} spawns={breaths} sec={sec} />}
     </>
   );
 };

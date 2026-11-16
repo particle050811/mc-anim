@@ -3,7 +3,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 
 export type View = {
-  名: string;
+  name: string;
   cameraRig?: { 眼: V3; 看: V3; fov: number; nearClip?: number };
   hasLiYing?: boolean;
   bodyFacing?: number;
@@ -28,15 +28,15 @@ const roofLookEast = { 眼: [18, -12.5, 18] as V3, 看: [80, -22, 8] as V3, fov:
 const lookGroundHole = { 眼: [14, -15.1, 1.62] as V3, 看: [14, -16.6, -0.8] as V3, fov: 70 };
 
 export const views: readonly View[] = [
-  { 名: '门口-带她', hasLiYing: true },
-  { 名: '门口-去掉她', hasLiYing: false },
-  { 名: '门口-成片画幅的封面：气泡、原版聊天栏（片里这一帧不挂）', hasLiYing: true, showBubble: true, chatMode: '片' },
-  { 名: '封面：气泡、封面聊天行', hasLiYing: true, showBubble: true, chatMode: '封面' },
-  { 名: '封面-安全区', hasLiYing: true, showBubble: true, chatMode: '封面', safeArea: true },
-  { 名: '对比-身子朝向-35（侧到 90°）', hasLiYing: true, showBubble: true, bodyFacing: -35 },
-  { 名: '对比-不加门光', hasLiYing: true, doorLight: false },
-  { 名: '平面图', hasLiYing: true, cameraRig: floorPlan, showAnnotation: true },
-  { 名: '窗外-门口望东窗（视角 20）', hasLiYing: false, cameraRig: doorLookEastWindow },
-  { 名: '窗外-屋顶往东看', hasLiYing: false, cameraRig: roofLookEast },
-  { 名: '南头地洞', hasLiYing: false, cameraRig: lookGroundHole },
+  { name: '门口-带她', hasLiYing: true },
+  { name: '门口-去掉她', hasLiYing: false },
+  { name: '门口-成片画幅的封面：气泡、原版聊天栏（片里这一帧不挂）', hasLiYing: true, showBubble: true, chatMode: '片' },
+  { name: '封面：气泡、封面聊天行', hasLiYing: true, showBubble: true, chatMode: '封面' },
+  { name: '封面-安全区', hasLiYing: true, showBubble: true, chatMode: '封面', safeArea: true },
+  { name: '对比-身子朝向-35（侧到 90°）', hasLiYing: true, showBubble: true, bodyFacing: -35 },
+  { name: '对比-不加门光', hasLiYing: true, doorLight: false },
+  { name: '平面图', hasLiYing: true, cameraRig: floorPlan, showAnnotation: true },
+  { name: '窗外-门口望东窗（视角 20）', hasLiYing: false, cameraRig: doorLookEastWindow },
+  { name: '窗外-屋顶往东看', hasLiYing: false, cameraRig: roofLookEast },
+  { name: '南头地洞', hasLiYing: false, cameraRig: lookGroundHole },
 ];

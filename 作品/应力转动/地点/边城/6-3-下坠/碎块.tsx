@@ -52,7 +52,7 @@ const unit = (rand: () => number): V3 => {
 
 export type FxParams = {
   impact: number; // 物理时刻
-  中心: V3; // 井心（撞击点所在那一格的格心、地面高度，编排.ts 的 井心）
+  center: V3; // 井心（撞击点所在那一格的格心、地面高度，编排.ts 的 井心）
   groundZ: number;
   caveCeilingZ: number;
   ancientCityFloorZ: number;
@@ -63,7 +63,7 @@ export type FxParams = {
 // 所有碎块按参数生成一次
 const build = (fx: FxParams): DebrisPiece[] => {
   const out: DebrisPiece[] = [];
-  const [cx, cy] = fx.中心;
+  const [cx, cy] = fx.center;
   const cells = fillCells();
   const isShaftColumn = (c: FillCell) => pitSurfaceZAt(c.dx, c.dy) === null; // 一直通到古城洞顶的那几列
   const texOf = (c: FillCell): TexName => (c.topZ - c.bottomZ < 1 ? c.topTex : c.side); // 石半砖的侧面贴图是半格高的，碎块用顶面的平滑石头

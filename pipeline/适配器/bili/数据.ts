@@ -7,36 +7,36 @@ import { dataPath } from '../../环境/配置.ts';
 import { importPackage, latestPackage } from '../平台/存放.ts';
 
 type TierPoint = { duration_key: number; num: number };
-type RawPart = { cid: number; 标题: string; 时长: number; 留存: { viewer_quit?: TierPoint[]; peer_viewer_quit?: TierPoint[]; dm?: TierPoint[] } | null; 弹幕: { progress: number; msg: string }[] };
+type RawPart = { cid: number; title: string; duration: number; retention: { viewer_quit?: TierPoint[]; peer_viewer_quit?: TierPoint[]; dm?: TierPoint[] } | null; danmaku: { progress: number; msg: string }[] };
 type RawSubmission = {
   bvid: string;
-  标题: string;
-  时长: number;
-  发布: number;
-  对比: { stat: Record<string, number> } | null;
-  总览: { stat?: Record<string, number>; gender?: { male: number; female: number }; play_proportion?: Record<string, number> } | null;
-  播放分析: { arc_audience?: { tip?: string }; guest_interact?: Record<string, unknown> } | null;
-  分P: RawPart[];
-  评论: { msg: string }[];
+  title: string;
+  duration: number;
+  release: number;
+  comparison: { stat: Record<string, number> } | null;
+  overview: { stat?: Record<string, number>; gender?: { male: number; female: number }; play_proportion?: Record<string, number> } | null;
+  playAnalysis: { arc_audience?: { tip?: string }; guest_interact?: Record<string, unknown> } | null;
+  parts: RawPart[];
+  commentCount: { msg: string }[];
 };
-export type RawBundle = { 版本: number; 取于: string; 稿件: RawSubmission[]; 错误: unknown[]; 请求数: number; 停于风控: string | null };
+export type RawBundle = { version: number; fetchedAt: string; submissions: RawSubmission[]; errors: unknown[]; requestCount: number; stoppedByRiskControl: string | null };
 
-export type RetentionPoint = { 秒: number; 留存: number };
+export type RetentionPoint = { sec: number; retention: number };
 export type Submission = {
   bvid: string;
   /** 同 bvid，平台无关代码用 */
   id: string;
-  标题: string;
-  时长: number;
-  发布: string;
-  指标: {
+  title: string;
+  duration: number;
+  release: string;
+  metrics: {
     plays: number;
     likes: number;
     coins: number;
     favorites: number;
     shares: number;
-    评论: number;
-    弹幕: number;
+    commentCount: number;
+    danmaku: number;
     newFans: number;
     /** 以下都是 0～1 的比例 */
     completionRate: number;
@@ -53,11 +53,11 @@ export type Submission = {
   vsPast: { coverCtr: '高于' | '低于' | null; threeSecBounceRate: '高于' | '低于' | null; interactRate: '高于' | '低于' | null };
   platformReading: string | null;
   /** 第一个分 P 的留存曲线，含 (0, 1)；取不到是空数组 */
-  留存: RetentionPoint[];
+  retention: RetentionPoint[];
   peerRetention: RetentionPoint[];
   /** 弹幕出现的秒数（第一个分 P） */
   danmakuSec: number[];
-  弹幕: { 秒: number; 文本: string }[];
+  danmaku: { sec: number; text: string }[];
 };
 
 const perTenThousand = (v: unknown) => (typeof v === 'number' ? v / 10000 : null);
@@ -65,32 +65,32 @@ const compareLabel = (v: unknown) => (v === 1 ? '高于' : v === 2 ? '低于' : 
 
 export const retentionCurve = (buckets: TierPoint[] | undefined): RetentionPoint[] => {
   if (!buckets?.length) return [];
-  const curvePoints = buckets.filter((d) => d.num >= 0).map((d) => ({ 秒: d.duration_key, 留存: d.num / 10000 }));
-  return [{ 秒: 0, 留存: 1 }, ...curvePoints.sort((a, b) => a.秒 - b.秒)];
+  const curvePoints = buckets.filter((d) => d.num >= 0).map((d) => ({ sec: d.duration_key, retention: d.num / 10000 }));
+  return [{ sec: 0, retention: 1 }, ...curvePoints.sort((a, b) => a.sec - b.sec)];
 };
 
 export const parsePackage = (rawPack: RawBundle): Submission[] =>
-  rawPack.稿件.map((s) => {
-    const st = s.对比?.stat ?? {};
-    const overview = s.总览?.stat ?? {};
-    const p = s.分P[0];
-    const g = (s.播放分析?.guest_interact ?? {}) as Record<string, number>;
+  rawPack.submissions.map((s) => {
+    const st = s.comparison?.stat ?? {};
+    const overview = s.overview?.stat ?? {};
+    const p = s.parts[0];
+    const g = (s.playAnalysis?.guest_interact ?? {}) as Record<string, number>;
     const statOf = (k: string) => (typeof st[k] === 'number' ? st[k]! : typeof overview[k] === 'number' ? overview[k]! : 0);
-    const danmaku = (p?.弹幕 ?? []).map((d) => ({ 秒: d.progress / 1000, 文本: d.msg })).sort((a, b) => a.秒 - b.秒);
+    const danmaku = (p?.danmaku ?? []).map((d) => ({ sec: d.progress / 1000, text: d.msg })).sort((a, b) => a.sec - b.sec);
     return {
       bvid: s.bvid,
       id: s.bvid,
-      标题: s.标题,
-      时长: s.时长,
-      发布: new Date(s.发布 * 1000).toISOString(),
-      指标: {
+      title: s.title,
+      duration: s.duration,
+      release: new Date(s.release * 1000).toISOString(),
+      metrics: {
         plays: statOf('play'),
         likes: statOf('like'),
         coins: statOf('coin'),
         favorites: statOf('fav'),
         shares: statOf('share'),
-        评论: statOf('comment'),
-        弹幕: statOf('dm'),
+        commentCount: statOf('comment'),
+        danmaku: statOf('dm'),
         newFans: st.total_new_attention_cnt ?? overview.fan ?? 0,
         completionRate: (st.full_play_ratio ?? 0) / 10000,
         coverCtr: perTenThousand(st.tm_rate),
@@ -102,11 +102,11 @@ export const parsePackage = (rawPack: RawBundle): Submission[] =>
       median: { coverCtr: perTenThousand(st.tm_rate_med), threeSecBounceRate: perTenThousand(st.crash_rate_med), interactRate: perTenThousand(st.interact_rate_med) },
       beatPeers: { coverCtr: perTenThousand(g.tm_pass_rate ?? st.tm_pass_rate), threeSecBounceRate: perTenThousand(g.crash_pass_rate), interactRate: perTenThousand(g.interact_pass_rate) },
       vsPast: { coverCtr: compareLabel(g.tm_compare), threeSecBounceRate: compareLabel(g.crash_compare), interactRate: compareLabel(g.interact_compare) },
-      platformReading: s.播放分析?.arc_audience?.tip || null,
-      留存: retentionCurve(p?.留存?.viewer_quit),
-      peerRetention: retentionCurve(p?.留存?.peer_viewer_quit).filter((x) => x.秒 <= s.时长),
-      danmakuSec: danmaku.map((d) => d.秒),
-      弹幕: danmaku,
+      platformReading: s.playAnalysis?.arc_audience?.tip || null,
+      retention: retentionCurve(p?.retention?.viewer_quit),
+      peerRetention: retentionCurve(p?.retention?.peer_viewer_quit).filter((x) => x.sec <= s.duration),
+      danmakuSec: danmaku.map((d) => d.sec),
+      danmaku: danmaku,
     };
   });
 
@@ -114,7 +114,7 @@ export const parsePackage = (rawPack: RawBundle): Submission[] =>
 
 export const biliRoot = () => dataPath('平台', 'bilibili');
 
-export const importData = (file: string, root = biliRoot()) => importPackage<RawBundle>(file, root, (rawPack) => Array.isArray(rawPack.稿件));
+export const importData = (file: string, root = biliRoot()) => importPackage<RawBundle>(file, root, (rawPack) => Array.isArray(rawPack.submissions));
 
 export const latestData = (root = biliRoot()) => {
   const latestPacket = latestPackage<RawBundle>(root);

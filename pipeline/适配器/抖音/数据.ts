@@ -10,23 +10,23 @@ import type { CurveDraft } from '../平台/图与排名.ts';
 type KeyValue = { key: string; value: number };
 type RawWork = {
   id: string;
-  标题: string;
-  时长毫秒: number;
-  发布: number;
-  指标: Record<string, string> | null;
-  留存: { 本作: KeyValue[]; 同类作者: KeyValue[] } | null;
-  跳出: { 本作: KeyValue[]; 同类作者: KeyValue[] } | null;
-  进度: { 跳过: KeyValue[]; 回看: KeyValue[] } | null;
-  来源: KeyValue[] | null;
-  搜索词: { 看后搜: { keyword: string; percent: number }[]; 搜到: { keyword: string; percent: number }[] } | null;
+  title: string;
+  durationMs: number;
+  release: number;
+  metrics: Record<string, string> | null;
+  retention: { ownWork: KeyValue[]; peerAuthors: KeyValue[] } | null;
+  bounce: { ownWork: KeyValue[]; peerAuthors: KeyValue[] } | null;
+  progress: { skipped: KeyValue[]; rewatch: KeyValue[] } | null;
+  source: KeyValue[] | null;
+  searchTerms: { searchAfterWatch: { keyword: string; percent: number }[]; searchHits: { keyword: string; percent: number }[] } | null;
 };
-export type DouyinRawPackage = { 版本: number; 平台: '抖音'; 取于: string; 作品: RawWork[]; 错误: unknown[]; 请求数: number; 停于风控: string | null; 说明?: string };
+export type DouyinRawPackage = { version: number; platform: '抖音'; fetchedAt: string; work: RawWork[]; errors: unknown[]; requestCount: number; stoppedByRiskControl: string | null; note?: string };
 
 export type DouyinWork = CurveDraft & {
-  指标: {
+  metrics: {
     plays: number;
     likes: number;
-    评论: number;
+    commentCount: number;
     shares: number;
     favorites: number;
     newFans: number;
@@ -41,10 +41,10 @@ export type DouyinWork = CurveDraft & {
     likeRate: number | null;
     fanViewShare: number | null;
   };
-  跳过: { 秒: number; 值: number }[];
-  回看: { 秒: number; 值: number }[];
-  来源: { 名: string; share: number }[];
-  看后搜: { keyword: string; share: number }[];
+  skipped: { sec: number; value: number }[];
+  rewatch: { sec: number; value: number }[];
+  source: { name: string; share: number }[];
+  searchAfterWatch: { keyword: string; share: number }[];
 };
 
 const sourceNames: Record<string, string> = { homepage_hot: '推荐', follow: '关注', homepage: '个人主页', message: '私信', familiar: '朋友', search: '搜索', other: '其他' };
@@ -55,29 +55,29 @@ export const formatMinSec = (k: string) => {
   return (m ?? 0) * 60 + (s ?? 0);
 };
 export const douyinCurve = (keyValues: KeyValue[] | undefined): RetentionPoint[] => {
-  const curvePoints = (keyValues ?? []).filter((d) => d.value >= 0).map((d) => ({ 秒: formatMinSec(d.key), 留存: d.value })).sort((a, b) => a.秒 - b.秒);
-  return curvePoints.length && curvePoints[0]!.秒 === 0 ? curvePoints : curvePoints.length ? [{ 秒: 0, 留存: 1 }, ...curvePoints] : [];
+  const curvePoints = (keyValues ?? []).filter((d) => d.value >= 0).map((d) => ({ sec: formatMinSec(d.key), retention: d.value })).sort((a, b) => a.sec - b.sec);
+  return curvePoints.length && curvePoints[0]!.sec === 0 ? curvePoints : curvePoints.length ? [{ sec: 0, retention: 1 }, ...curvePoints] : [];
 };
 /** 标题取描述里第一个 # 或换行之前 */
 export const douyinTitle = (desc: string) => desc.split(/[#\n]/)[0]!.trim().slice(0, 40);
 
 export const parseDouyin = (rawPack: DouyinRawPackage): DouyinWork[] =>
-  rawPack.作品.map((a) => {
-    const m = a.指标 ?? {};
-    const duration = a.时长毫秒 / 1000;
+  rawPack.work.map((a) => {
+    const m = a.metrics ?? {};
+    const duration = a.durationMs / 1000;
     return {
       id: a.id,
-      标题: douyinTitle(a.标题),
-      时长: duration,
-      发布: new Date(a.发布 * 1000).toISOString(),
-      留存: douyinCurve(a.留存?.本作).filter((p) => p.秒 <= duration),
-      peerRetention: douyinCurve(a.留存?.同类作者).filter((p) => p.秒 <= duration),
+      title: douyinTitle(a.title),
+      duration: duration,
+      release: new Date(a.release * 1000).toISOString(),
+      retention: douyinCurve(a.retention?.ownWork).filter((p) => p.sec <= duration),
+      peerRetention: douyinCurve(a.retention?.peerAuthors).filter((p) => p.sec <= duration),
       danmakuSec: [],
-      弹幕: [],
-      指标: {
+      danmaku: [],
+      metrics: {
         plays: optNum(m.view_count) ?? 0,
         likes: optNum(m.like_count) ?? 0,
-        评论: optNum(m.comment_count) ?? 0,
+        commentCount: optNum(m.comment_count) ?? 0,
         shares: optNum(m.share_count) ?? 0,
         favorites: optNum(m.favorite_count) ?? 0,
         newFans: optNum(m.subscribe_count) ?? 0,
@@ -91,13 +91,13 @@ export const parseDouyin = (rawPack: DouyinRawPackage): DouyinWork[] =>
         likeRate: optNum(m.like_rate),
         fanViewShare: optNum(m.fan_view_proportion),
       },
-      跳过: (a.进度?.跳过 ?? []).map((d) => ({ 秒: Number(d.key), 值: d.value })),
-      回看: (a.进度?.回看 ?? []).map((d) => ({ 秒: Number(d.key), 值: d.value })),
-      来源: (a.来源 ?? []).map((d) => ({ 名: sourceNames[d.key] ?? d.key, share: d.value })).sort((x, y) => y.share - x.share),
-      看后搜: (a.搜索词?.看后搜 ?? []).map((d) => ({ keyword: d.keyword, share: d.percent })),
+      skipped: (a.progress?.skipped ?? []).map((d) => ({ sec: Number(d.key), value: d.value })),
+      rewatch: (a.progress?.rewatch ?? []).map((d) => ({ sec: Number(d.key), value: d.value })),
+      source: (a.source ?? []).map((d) => ({ name: sourceNames[d.key] ?? d.key, share: d.value })).sort((x, y) => y.share - x.share),
+      searchAfterWatch: (a.searchTerms?.searchAfterWatch ?? []).map((d) => ({ keyword: d.keyword, share: d.percent })),
     };
   });
 
 export const douyinRoot = () => dataPath('平台', '抖音');
-export const importDouyin = (file: string, root = douyinRoot()) => importPackage<DouyinRawPackage>(file, root, (rawPack) => rawPack.平台 === '抖音' && Array.isArray(rawPack.作品));
+export const importDouyin = (file: string, root = douyinRoot()) => importPackage<DouyinRawPackage>(file, root, (rawPack) => rawPack.platform === '抖音' && Array.isArray(rawPack.work));
 export const latestDouyin = (root = douyinRoot()) => latestPackage<DouyinRawPackage>(root);

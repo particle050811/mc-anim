@@ -22,10 +22,10 @@ export default defineSpellMeta({
   长秒: (iceBlockHitTick + 40) / 20,
   hitSec: iceBlockHitTick / 20,
   // IceChunkSpell：ICE_CHUNK_SUMMON；IceChunk.tick：第 1 刻 IDLE、第 85 刻 DROP；onHit：HIT（音量 2）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.ice_chunk_summon', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.ice_chunk_idle', 秒: 1 / 20 },
-    { 资产: '音效/诡厄巫法/goety.ice_chunk_drop', 秒: (iceBlockHoverTick - 15) / 20 },
-    { 资产: '音效/诡厄巫法/goety.ice_chunk_hit', 秒: iceBlockHitTick / 20, 音量: 2 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.ice_chunk_summon', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.ice_chunk_idle', sec: 1 / 20 },
+    { asset: '音效/诡厄巫法/goety.ice_chunk_drop', sec: (iceBlockHoverTick - 15) / 20 },
+    { asset: '音效/诡厄巫法/goety.ice_chunk_hit', sec: iceBlockHitTick / 20, 音量: 2 },
   ],
 });

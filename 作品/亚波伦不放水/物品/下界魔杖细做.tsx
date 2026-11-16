@@ -241,9 +241,9 @@ class GeoBin {
   }
 }
 
-type CorePart = { 类: '晶体' | '熔核'; geometry: THREE.BufferGeometry; 位: Vec3 };
+type CorePart = { type: '晶体' | '熔核'; geometry: THREE.BufferGeometry; 位: Vec3 };
 type VariantDef = {
-  名: string;
+  name: string;
   /** 全长（像素）：杖尾 y = 0 到最高处 */
   fullLength: number;
   /** 握点的高度 */
@@ -284,7 +284,7 @@ const buildVariantFirst = () => {
   const bladePath = spline([[2.2, 32.25], [3.4, 33.5], [3.95, 35.5], [4.15, 37.7], [4.55, 40.1], [5.25, 42.7]], 48);
   const bladeWidth = (t: number) => 0.54 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.75);
   k.加('铁', wandColors.iron, ...rotateCopies(sweepSection(bladePath, (t) => spindle(Math.max(1e-3, bladeWidth(t)), Math.max(1e-3, 0.16 * Math.sqrt(bladeWidth(t) / 0.54))), spindleHard()), 4, 45));
-  return { bin: k, core: { 类: '晶体', geometry: crystalGeometry(1.4, 2.5, 2.5, 0.45, 8), 位: [0, 36.3, 0] } satisfies CorePart };
+  return { bin: k, core: { type: '晶体', geometry: crystalGeometry(1.4, 2.5, 2.5, 0.45, 8), 位: [0, 36.3, 0] } satisfies CorePart };
 };
 
 // ── 乙 下界器物 ──
@@ -330,7 +330,7 @@ const buildVariantSecond = () => {
   const clawThickness = (t: number) => Math.max(1e-3, 0.3 * Math.min(1, (1 - t) / 0.3) ** 0.8);
   k.加('金', wandColors.gold, ...rotateCopies(sweepSection(clawPath, (t) => spindle(clawThickness(t), clawThickness(t) * 0.62), spindleHard()), 6, 0));
   k.加('金', wandColors.gold, ring(41.0, pathRadiusAt(clawPath, 41.0), 0.12));
-  return { bin: k, core: { 类: '熔核', geometry: new THREE.SphereGeometry(2.1, 56, 40), 位: [0, 37.3, 0] } satisfies CorePart };
+  return { bin: k, core: { type: '熔核', geometry: new THREE.SphereGeometry(2.1, 56, 40), 位: [0, 37.3, 0] } satisfies CorePart };
 };
 
 // ── 丙 权杖 ──
@@ -339,7 +339,7 @@ const crescent = { 心: 47.9, R: 5.5, r: 4.5, d: 1.5, halfThickness: 0.42 };
 const crescentSection = (φ: number) => {
   const c = -crescent.d * Math.cos(φ * radPerDeg);
   const innerRadius = c + Math.sqrt(Math.max(0, c * c - crescent.d ** 2 + crescent.r ** 2));
-  return { 中: (crescent.R + innerRadius) / 2, 半宽: Math.max(0, (crescent.R - innerRadius) / 2) };
+  return { 中: (crescent.R + innerRadius) / 2, halfWidth: Math.max(0, (crescent.R - innerRadius) / 2) };
 };
 const crescentAngle = (() => {
   const y = (crescent.R ** 2 - crescent.r ** 2 + crescent.d ** 2) / (2 * crescent.d);
@@ -364,12 +364,12 @@ const buildVariantThird = () => {
   // 新月：黑曜，平的两面、内外两边磨出刃；立在 XY 平面里
   const margin = 4; // 月尖前这几度交给金尖
   const φs = Array.from({ length: 121 }, (_, i) => -(crescentAngle - margin) + (2 * (crescentAngle - margin) * i) / 120);
-  k.加('黑曜', wandColors.obsidian, sweepSection(φs.map((φ) => crescentPoint(φ, crescentSection(φ).中)), (t) => { const s = crescentSection(φs[Math.round(t * 120)] ?? 0); return spindle(Math.max(0.02, s.半宽), crescent.halfThickness * Math.min(1, 0.3 + s.半宽 / 0.7), 9); }, spindleHard(9)));
+  k.加('黑曜', wandColors.obsidian, sweepSection(φs.map((φ) => crescentPoint(φ, crescentSection(φ).中)), (t) => { const s = crescentSection(φs[Math.round(t * 120)] ?? 0); return spindle(Math.max(0.02, s.halfWidth), crescent.halfThickness * Math.min(1, 0.3 + s.halfWidth / 0.7), 9); }, spindleHard(9)));
   // 金尖：包住月尖最后一截，再往前伸出一个尖
   for (const sign of [1, -1]) {
     const startAngle = crescentAngle - 24;
     const curve = Array.from({ length: 25 }, (_, i) => sign * (startAngle + ((crescentAngle + 5 - startAngle) * i) / 24)).map((φ) => crescentPoint(φ, crescentSection(Math.min(Math.abs(φ), crescentAngle)).中));
-    k.加('金', wandColors.gold, sweepSection(curve, (t) => { const w = crescentSection(startAngle + (crescentAngle - startAngle) * Math.min(1, t / 0.83)).半宽; const a = t < 0.83 ? w + 0.07 : Math.max(1e-3, (0.09 * (1 - t)) / 0.17); return spindle(a, Math.max(1e-3, Math.min(crescent.halfThickness * Math.min(1, 0.3 + w / 0.7) + 0.07, 0.12 + a))); }, spindleHard()));
+    k.加('金', wandColors.gold, sweepSection(curve, (t) => { const w = crescentSection(startAngle + (crescentAngle - startAngle) * Math.min(1, t / 0.83)).halfWidth; const a = t < 0.83 ? w + 0.07 : Math.max(1e-3, (0.09 * (1 - t)) / 0.17); return spindle(a, Math.max(1e-3, Math.min(crescent.halfThickness * Math.min(1, 0.3 + w / 0.7) + 0.07, 0.12 + a))); }, spindleHard()));
   }
   // 金线：两面各一道，顺着新月的中线
   for (const z of [1, -1]) {
@@ -387,14 +387,14 @@ const buildVariantThird = () => {
   // 前后各一只金爪，和新月一起把芯围住
   const clawPath = spline([[1.2, 42.9], [2.45, 44.3], [2.95, 46.7], [2.6, 49.1], [1.85, 50.7]], 40);
   k.加('金', wandColors.gold, ...rotateCopies(sweepSection(clawPath, (t) => spindle(Math.max(1e-3, 0.27 * Math.min(1, (1 - t) / 0.4) ** 0.8), Math.max(1e-3, 0.17 * Math.min(1, (1 - t) / 0.4) ** 0.8)), spindleHard()), 2, 90));
-  return { bin: k, core: { 类: '晶体', geometry: crystalGeometry(1.5, 2.9, 2.9, 0.5, 8), 位: [0, 48.5, 0] } satisfies CorePart };
+  return { bin: k, core: { type: '晶体', geometry: crystalGeometry(1.5, 2.9, 2.9, 0.5, 8), 位: [0, 48.5, 0] } satisfies CorePart };
 };
 
 export type RefinedVariant = '甲' | '乙' | '丙';
 export const refinedVariants: Record<RefinedVariant, VariantDef> = {
-  甲: { 名: '忠实细做', fullLength: 44, grip: 17, coreHeight: 36.3, halo: [11, 0.7], coreGlow: 2.2, build: buildVariantFirst },
-  乙: { 名: '下界器物', fullLength: 45.4, grip: 17.5, coreHeight: 37.3, halo: [12, 0.65], coreGlow: 2.4, build: buildVariantSecond },
-  丙: { 名: '权杖', fullLength: 52.4, grip: 21.5, coreHeight: 48.5, halo: [12, 0.7], coreGlow: 2.4, selfRotation: 45, build: buildVariantThird },
+  甲: { name: '忠实细做', fullLength: 44, grip: 17, coreHeight: 36.3, halo: [11, 0.7], coreGlow: 2.2, build: buildVariantFirst },
+  乙: { name: '下界器物', fullLength: 45.4, grip: 17.5, coreHeight: 37.3, halo: [12, 0.65], coreGlow: 2.4, build: buildVariantSecond },
+  丙: { name: '权杖', fullLength: 52.4, grip: 21.5, coreHeight: 48.5, halo: [12, 0.7], coreGlow: 2.4, selfRotation: 45, build: buildVariantThird },
 };
 
 /** 一款在杖空间里的几个点（单位格，杖尾在原点）：尾、握点、芯、最高处 */
@@ -415,9 +415,9 @@ const getFinished = (variant: RefinedVariant): FinishedWand => {
     c = {
       pieces: parts.出(),
       core,
-      material: buildStaffMaterials({ 位: core.位, 色: '#ff8a2a', 强: k.coreGlow }),
+      material: buildStaffMaterials({ 位: core.位, 色: '#ff8a2a', strength: k.coreGlow }),
       moltenGlow: moltenGlowMaterial(),
-      coreMaterial: core.类 === '晶体' ? crystalMaterial() : moltenCoreMaterial(),
+      coreMaterial: core.type === '晶体' ? crystalMaterial() : moltenCoreMaterial(),
       haloMaterial: haloMaterial('#ff7a1c', k.halo[1], k.halo[0]),
     };
     finishedCache.set(variant, c);

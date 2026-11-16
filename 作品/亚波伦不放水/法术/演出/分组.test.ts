@@ -58,7 +58,7 @@ describe('法术演出注册表', () => {
       const spellTiming = spellDuration(meta, [-10, 0, 7], [0, 0, 0]);
       expect(spellTiming.长秒).toBeGreaterThan(0);
       if (spellTiming.hitSec !== undefined) expect(spellTiming.hitSec).toBeLessThan(spellTiming.长秒);
-      for (const spellSound of spellSoundAt(meta, [-10, 0, 7], [0, 0, 0])) expect(spellSound.秒).toBeGreaterThanOrEqual(0);
+      for (const spellSound of spellSoundAt(meta, [-10, 0, 7], [0, 0, 0])) expect(spellSound.sec).toBeGreaterThanOrEqual(0);
     }
   });
 });

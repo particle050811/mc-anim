@@ -17,7 +17,7 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 export default defineSpellMeta({
   id: 'ice_storm',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // IceStormSpell：WIND_BLAST 音高 0.75
-  声音: [{ 资产: '音效/诡厄巫法/goety.wind_blast.1', 秒: 0, 音高: 0.75 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.wind_blast.1', sec: 0, 音高: 0.75 }],
 });

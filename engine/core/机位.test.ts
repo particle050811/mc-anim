@@ -61,7 +61,7 @@ describe('机位正本', () => {
   });
   it('转透视参数、从透视参数来回不变；roll 非 0 报错', () => {
     const p = J.toPerspectiveParams(rigFirst, 16 / 9);
-    expect(p.种).toBe('透视');
+    expect(p.kind).toBe('透视');
     const camera = J.fromPerspectiveParams(p, 16 / 9);
     expect(camera.lens).toBeCloseTo(26, 9);
     expect(() => J.toPerspectiveParams({ ...rigFirst, roll: 90 }, 1)).toThrow(/roll/);

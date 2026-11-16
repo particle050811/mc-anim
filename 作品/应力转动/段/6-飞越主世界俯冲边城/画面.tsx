@@ -14,11 +14,11 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
 const cuts = [
-  { 段: '6-2-5', picture: FlyOverworld, 从: 0, 到: playSec625('6-2-5') },
-  { 段: '6-2-6', picture: BorderTownAhead, 从: boundaryFrameSec, 到: playSec625('6-2-6') },
-  { 段: '6-3-1', picture: BackToBorderTown, 从: boundaryFrameSec, 到: segPlaySec('6-3-1') },
-  { 段: '6-3-2', picture: RollerPonder, 从: boundaryFrameSec, 到: segPlaySec('6-3-2') },
-  { 段: '6-3-3', picture: DiveIn, 从: boundaryFrameSec, 到: segPlaySec('6-3-3') },
+  { segment: '6-2-5', picture: FlyOverworld, 从: 0, dest: playSec625('6-2-5') },
+  { segment: '6-2-6', picture: BorderTownAhead, 从: boundaryFrameSec, dest: playSec625('6-2-6') },
+  { segment: '6-3-1', picture: BackToBorderTown, 从: boundaryFrameSec, dest: segPlaySec('6-3-1') },
+  { segment: '6-3-2', picture: RollerPonder, 从: boundaryFrameSec, dest: segPlaySec('6-3-2') },
+  { segment: '6-3-3', picture: DiveIn, 从: boundaryFrameSec, dest: segPlaySec('6-3-3') },
 ];
 
-export default definePicture(seg, soundUrl, () => <SegmentStitch cuts={cuts} 每秒={1} />);
+export default definePicture(seg, soundUrl, () => <SegmentStitch cuts={cuts} perSec={1} />);

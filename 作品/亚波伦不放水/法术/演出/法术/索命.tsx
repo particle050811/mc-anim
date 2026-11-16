@@ -17,7 +17,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const bloodColor = hexColor(0xd91516);
 
-const Killing: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const Killing: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const eye: Vec3 = [target[0], target[1], target[2] + 1.62];
   const r = mulberry32(seed * 7919 + 3);
@@ -27,14 +27,14 @@ const Killing: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
     const windLife = 20 + Math.floor(r() * 20);
     const startAngle = r() * 360;
     const anglePerTick = (10 + r() * 10) * (Math.floor(r() * 3) - 1);
-    return { 到: scatterPoint, gatherLife, windLife, startAngle, anglePerTick };
+    return { dest: scatterPoint, gatherLife, windLife, startAngle, anglePerTick };
   });
   return (
     <>
-      <ElectricArc 起={from} end={[target[0], target[1], target[2] + 0.9]} settings={arcPresets.thunderBolt} 刻={tick} lifeTicks={killingArcTicks} 色={bloodColor} 种子={seed} />
+      <ElectricArc start={from} end={[target[0], target[1], target[2] + 0.9]} settings={arcPresets.thunderBolt} 刻={tick} lifeTicks={killingArcTicks} 色={bloodColor} seed={seed} />
       {chains.map((item, i) => (
         <React.Fragment key={i}>
-          <GatherStream 从={eye} 到={item.到} age={tick} 寿命={item.gatherLife} 色={bloodColor} />
+          <GatherStream 从={eye} dest={item.dest} age={tick} 寿命={item.gatherLife} 色={bloodColor} />
           {tick < item.windLife && (
             <WindBand
               // (0, 0, 1) 绕游戏的 Y 轴转 角：游戏 (sin, 0, cos) → 场景 (sin, −cos, 0)
@@ -44,7 +44,7 @@ const Killing: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
               }}
               age={tick}
               段数={4}
-              高={0.5}
+              height={0.5}
               色={bloodColor}
               opacity={1 - Math.floor(tick) / item.windLife}
             />

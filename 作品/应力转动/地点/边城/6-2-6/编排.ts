@@ -8,7 +8,7 @@ import { BORDER_TOWN } from '../../边城轮廓.tsx';
 import { borderTownPos } from '../../主世界116.ts';
 
 export const segmentId = '6-2-6';
-const T0 = choreo625.segmentTable['6-2-6'].起;
+const T0 = choreo625.segmentTable['6-2-6'].start;
 // 末格（段内秒）：第 3 场从这一刻接
 export const lastSec = choreo625.segmentSpanSec('6-2-6');
 const toSegSec = (T: number) => T - T0;

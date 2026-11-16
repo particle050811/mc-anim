@@ -37,7 +37,7 @@ export const ScenePicture: React.FC<{ s: number; cam: Cam; wideShot?: boolean; m
   const wool = play.wool(sec);
   const sensorClock = play.sensorClock(sec);
   return (
-    <AncientCity4xCanvas 段="7-2" cam={cam} width={width} height={height} hide={HIDE} wool={wool.placed} growingWool={wool.长} chestOpening={play.chestOpeningAt(sec)}>
+    <AncientCity4xCanvas segment="7-2" cam={cam} width={width} height={height} hide={HIDE} wool={wool.placed} growingWool={wool.length} chestOpening={play.chestOpeningAt(sec)}>
       {ly.在 && !pov && (
         <LiYing
           pose={ly.pose}
@@ -47,14 +47,14 @@ export const ScenePicture: React.FC<{ s: number; cam: Cam; wideShot?: boolean; m
         />
       )}
       {geom.sensors.map((b, i) => (
-        <SculkSensor key={i} p={geom.blockBottomCenter(b)} 秒={sensorClock} secSinceActive={sec - play.latestActiveSec(i, sec)} seed={i + 1} />
+        <SculkSensor key={i} p={geom.blockBottomCenter(b)} sec={sensorClock} secSinceActive={sec - play.latestActiveSec(i, sec)} seed={i + 1} />
       ))}
       {play.vibrations.map((v, i) => (
-        <VibrationSignal key={i} from={v.from} to={v.to} sec={sec - v.t} 帧={i * 3} />
+        <VibrationSignal key={i} from={v.from} to={v.to} sec={sec - v.t} frame={i * 3} />
       ))}
       <ShriekRings p={play.shriek.p} sec={sec - play.shriek.t} />
-      <VanillaParticles spawns={play.useParticles} 秒={sec} />
-      <VanillaParticles spawns={play.teleportAwayParticles} 秒={sec} />
+      <VanillaParticles spawns={play.useParticles} sec={sec} />
+      <VanillaParticles spawns={play.teleportAwayParticles} sec={sec} />
       {wideShot && <SceneActors t={play.wideTime(sec)} />}
     </AncientCity4xCanvas>
   );

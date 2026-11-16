@@ -89,7 +89,7 @@ const smokeColorFrom = hexColor(0xb8e5ff);
 const smokeColorTo = hexColor(0x015687);
 const mixColor = (t: number): RgbColor => [0, 1, 2].map((i) => smokeColorFrom[i]! + (smokeColorTo[i]! - smokeColorFrom[i]!) * t) as unknown as RgbColor;
 // getQuadSize：大小 × clamp(年龄 ÷ 寿命 × 32, 0, 1)，出生后很快长到满
-const smokeParticleClass: ParticleClass = { 帧: [png(smokePng)], 选帧: '随机', 摩擦: 0.96, 重力: -0.1, 混合: '镂空', 大小: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
+const smokeParticleClass: ParticleClass = { frame: [png(smokePng)], 选帧: '随机', 摩擦: 0.96, 重力: -0.1, blend: '镂空', size: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
 
 const smokeAt = (pos: Vec3, lastTick: number, seed: number): ParticleBirth[] => {
   const smokeSpawns: ParticleBirth[] = [];
@@ -102,7 +102,7 @@ const smokeAt = (pos: Vec3, lastTick: number, seed: number): ParticleBirth[] => 
       速: [((r() * 2 - 1) / 10) * 0.5, ((r() * 2 - 1) / 10) * 0.5, 0.1 + r() / 10],
       寿命: lifetime,
       radius: 0.2,
-      种子: t,
+      seed: t,
       // 颜色随年龄渐变：出生表每帧重排，直接按当前年龄给
       色: mixColor(Math.min(1, Math.max(0, (lastTick - t) / lifetime))),
     });
@@ -123,8 +123,8 @@ const SingleTuft: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick 
       <group rotation={[0, degToRad(90), 0]}>
         <group scale={[-f, -1.25, f]}>
           <group position={[0, -1.45, 0]}>
-            <ModelPart 模型={iceBouquetModel} 图={image} 画法="镂空" opacity={0.15} partPoses={partPoses} />
-            <ModelPart 模型={iceBouquetModel} 图={image} 画法="加色" partPoses={partPoses} />
+            <ModelPart model={iceBouquetModel} image={image} 画法="镂空" opacity={0.15} partPoses={partPoses} />
+            <ModelPart model={iceBouquetModel} image={image} 画法="加色" partPoses={partPoses} />
           </group>
         </group>
       </group>
@@ -132,7 +132,7 @@ const SingleTuft: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick 
   );
 };
 
-const GhostFire: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const GhostFire: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const tufts = tuftPoints(target, seed);
   return (
@@ -140,7 +140,7 @@ const GhostFire: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 
       {tufts.map((pos, i) => (
         <React.Fragment key={i}>
           <SingleTuft 位={pos} 刻={tick} />
-          <TexturedParticles 类={smokeParticleClass} spawns={smokeAt(pos, tick, seed + i)} 秒={sec} />
+          <TexturedParticles type={smokeParticleClass} spawns={smokeAt(pos, tick, seed + i)} sec={sec} />
         </React.Fragment>
       ))}
     </>

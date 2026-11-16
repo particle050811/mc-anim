@@ -44,7 +44,7 @@ const dustColor = hexColor(0x7f7d7d);
 
 const circlePoints = (center: Vec3, radius: number, seed: number): Vec3[] => scatterInCircle(center, radius, 0, seed).map((spawn) => spawn.位);
 
-const EarthShake: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const EarthShake: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const debris: DebrisBirth[] = [];
   for (let t = 0; t < Math.min(fistEmergeTick - 1, tick); t++) debris.push(...scatterInCircle(target, 1.5, t, seed * 211 + t));
@@ -58,14 +58,14 @@ const EarthShake: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: t
           <group rotation={[0, degToRad(90 - (gameHorizAngleRad(from, target) * 180) / Math.PI), 0]}>
             <group scale={[-1, -1, 1]}>
               <group position={[0, -1, 0]}>
-                <ModelPart 模型={earthFistModel} 图={image} partPoses={partPoses} />
+                <ModelPart model={earthFistModel} image={image} partPoses={partPoses} />
               </group>
             </group>
           </group>
         </MinecraftSpace>
       )}
-      <BlockDebris spawns={debris} 秒={sec} ground={target[2]} />
-      <DustCloud spawns={dustCloudSpawns(circlePoints(target, 1.5, seed * 3 + 1), fistEmergeTick, 1, dustColor, seed)} 秒={sec} />
+      <BlockDebris spawns={debris} sec={sec} ground={target[2]} />
+      <DustCloud spawns={dustCloudSpawns(circlePoints(target, 1.5, seed * 3 + 1), fistEmergeTick, 1, dustColor, seed)} sec={sec} />
     </>
   );
 };

@@ -173,7 +173,7 @@ const SkyDome: React.FC<{ 心: readonly number[] }> = ({ 心: center }) => {
 };
 
 /** 一团加色的光（朝着镜头的片） */
-const LightSpot: React.FC<{ 位: readonly number[]; 大: number; 色: string; 强?: number }> = ({ 位: pos, 大: size, 色: color, 强: spotStrength = 1 }) => {
+const LightSpot: React.FC<{ 位: readonly number[]; 大: number; 色: string; strength?: number }> = ({ 位: pos, 大: size, 色: color, strength: spotStrength = 1 }) => {
   const spotTexImg = useMemo(() => {
     const c = document.createElement('canvas');
     c.width = c.height = 128;
@@ -202,7 +202,7 @@ const PlaceRig: React.FC<{ cameraRig: Cam; far?: number }> = ({ cameraRig, far }
 
 const Cage: React.FC<{ settings: NonNullable<Plan['cage']> }> = ({ settings }) => (
   <group position={[settings.心[0], settings.心[1], settings.心[2]]}>
-    <RevelationCageGlow 秒={settings.秒} radiusFactor={settings.radiusFactor} appearance={settings.appearance} />
+    <RevelationCageGlow sec={settings.sec} radiusFactor={settings.radiusFactor} appearance={settings.appearance} />
   </group>
 );
 
@@ -223,9 +223,9 @@ const diagLookRig = (d: readonly number[], aimCenter: readonly number[], setting
   const right = [Math.cos(α), -Math.sin(α), 0];
   const up = [-Math.sin(ε) * Math.sin(α), -Math.sin(ε) * Math.cos(α), Math.cos(ε)];
   // 圆心那个深度上画面的宽、高（格）：把镜头横着、竖着挪，圆心就落到 盘心 给的位置
-  const width = (2 * settings.距 * 18) / lens;
+  const width = (2 * settings.dist * 18) / lens;
   const [shiftRight, shiftUp] = [-(settings.wheelCenter[0] - 0.5) * width, (settings.wheelCenter[1] - 0.5) * (width / aspectRatio)];
-  const pos = [0, 1, 2].map((i) => aimCenter[i]! - forward[i]! * settings.距 + right[i]! * shiftRight + up[i]! * shiftUp) as [number, number, number];
+  const pos = [0, 1, 2].map((i) => aimCenter[i]! - forward[i]! * settings.dist + right[i]! * shiftRight + up[i]! * shiftUp) as [number, number, number];
   return { pos, tgt: [pos[0] + forward[0]!, pos[1] + forward[1]!, pos[2] + forward[2]!], lens };
 };
 
@@ -233,7 +233,7 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
   const aspectRatio = useThree((s) => s.size.width / s.size.height);
   const params: MultiRingParams = { 放: v.wheel.放, 刻: 40, dimLevel: v.wheel.dimLevel };
   const yaBoLun = v.yaBoLun;
-  const yaBoLunProps = { pose: { loc: [...yaBoLun.位], yaw: yaBoLun.yaw ?? 180 }, 秒: 1.4, act: yaBoLun.act === '悬停' ? hover : stand, bonePose: yaBoLun.bonePose };
+  const yaBoLunProps = { pose: { loc: [...yaBoLun.位], yaw: yaBoLun.yaw ?? 180 }, sec: 1.4, act: yaBoLun.act === '悬停' ? hover : stand, bonePose: yaBoLun.bonePose };
   // 杖尖在哪、朝哪：和画她用同一份属性算
   // 杖握在手里是六稿起的挂法；五稿及以前的旧案照旧握法画，画面不动
   const newGrip = !!v.obliqueWheel || !!v.pointWand;
@@ -245,11 +245,11 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
     if (v.obliqueWheel) return diagLookRig(staff.axis, aimCenter, v.obliqueWheel, v.cameraRig.lens, aspectRatio);
     if (v.pointWand?.lookMid) {
       // 扫角度用：镜头位置照 θ 反算，但对准盘心和她胸口的中点，哪个角度她和盘都在画里
-      const camPos = staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, 距: v.pointWand.距, lens: v.cameraRig.lens, discCenterPicture: [0.5, 0.5], aspectRatio }).pos;
+      const camPos = staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, dist: v.pointWand.dist, lens: v.cameraRig.lens, discCenterPicture: [0.5, 0.5], aspectRatio }).pos;
       const chest = [v.yaBoLun.位[0], v.yaBoLun.位[1], v.yaBoLun.位[2] + 1];
       return { pos: camPos, tgt: [0, 1, 2].map((i) => (aimCenter[i]! + chest[i]!) / 2) as [number, number, number], lens: v.cameraRig.lens };
     }
-    if (v.pointWand) return staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, 距: v.pointWand.距, lens: v.cameraRig.lens, discCenterPicture: v.pointWand.wheelCenter, aspectRatio });
+    if (v.pointWand) return staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, dist: v.pointWand.dist, lens: v.cameraRig.lens, discCenterPicture: v.pointWand.wheelCenter, aspectRatio });
     if (!v.wheelCentered) return v.cameraRig;
     const viewDir = sightDir(v.cameraRig);
     const depth = [0, 1, 2].reduce((sum, i) => sum + (aimCenter[i]! - v.cameraRig.pos[i]!) * viewDir[i]!, 0);
@@ -263,17 +263,17 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
   const backOffRatio = (v.wheel.backOff ?? 0) / eyeToTip;
   const wheelWand = { tip: [0, 1, 2].map((i) => staff.tip[i]! + (staff.tip[i]! - eye[i]!) * backOffRatio) as [number, number, number], axis: staff.axis };
   const headPos = [yaBoLun.位[0], yaBoLun.位[1], yaBoLun.位[2] + 1.4] as const;
-  const wandGlow = useMemo(() => v.wandTipGlow && <LightSpot 位={staffHeadCore} 大={1.1} 色="#ff8a30" 强={0.9} />, [v.wandTipGlow]);
+  const wandGlow = useMemo(() => v.wandTipGlow && <LightSpot 位={staffHeadCore} 大={1.1} 色="#ff8a30" strength={0.9} />, [v.wandTipGlow]);
   const wandMount = useMemo(() => ({ RightHandLocator: <HeldNetherWand>{wandGlow}</HeldNetherWand> }), [wandGlow]);
   const { facing, ...placement } = v.wheel.placement;
   return (
     <>
-      <PlaceRig cameraRig={cameraRig} far={v.远景 ? 1400 : undefined} />
-      {v.远景 ? <ScreenAo /> : <fog attach="fog" args={[fogColor, 16, 70]} />}
+      <PlaceRig cameraRig={cameraRig} far={v.farView ? 1400 : undefined} />
+      {v.farView ? <ScreenAo /> : <fog attach="fog" args={[fogColor, 16, 70]} />}
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        {!v.远景 && <SkyDome 心={cameraRig.pos} />}
+        {!v.farView && <SkyDome 心={cameraRig.pos} />}
         {/* 真下界自己带灯（地点/真下界.tsx），再加这几盏会把地形照得比用户看过的亮 */}
-        {!v.远景 && (
+        {!v.farView && (
           <>
             <ambientLight color="#ffffff" intensity={0.3 * Math.PI} />
             <directionalLight position={[-2.5, -6, 4]} color="#fff2ea" intensity={0.55 * Math.PI} />
@@ -281,7 +281,7 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
             <directionalLight position={[2, 7, -4]} color="#ff8a5c" intensity={0.35 * Math.PI} />
           </>
         )}
-        {v.远景 ? <RealNether cameraPos={cameraRig.pos} 光={netherBrighter} /> : <Terrain />}
+        {v.farView ? <RealNether cameraPos={cameraRig.pos} 光={netherBrighter} /> : <Terrain />}
         <AntiDark lift={v.figureBrighten ?? 0}>{newGrip ? <GirlYaBoLun {...yaBoLunProps} holdWand gripOffset={gripOffset} wandOverlay={wandGlow} /> : <GirlYaBoLun {...yaBoLunProps} attach={wandMount} />}</AntiDark>
         {v.steve && <Steve pose={steveLookAt(stevePose(v.steve.位, 0), [...(v.steve.看 ?? headPos)])} mcLight={1} />}
         {v.cage && <Cage settings={v.cage} />}
@@ -326,8 +326,8 @@ const picture: React.FC = () => {
         <>
           <CropFrame centerLine={v.cropCenterLine} />
           <div style={{ position: 'absolute', left: 14, top: 10, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 18, lineHeight: 1.4, textShadow: '0 1px 3px #000', maxWidth: width * 0.5 }}>
-            <div>{v.名}</div>
-            <div style={{ fontSize: 13 }}>{v.说明}</div>
+            <div>{v.name}</div>
+            <div style={{ fontSize: 13 }}>{v.note}</div>
           </div>
         </>
       )}

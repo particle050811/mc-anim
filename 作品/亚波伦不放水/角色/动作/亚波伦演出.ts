@@ -164,7 +164,7 @@ export const poses: Record<PoseName, PoseDef> = {
 
 /** 一条：从 起 秒开始往 做 这个姿势过渡，到 到 秒摆好（不写 = 起 + 0.4 秒），之后保持到下一条的 起。第一条从它的 起 之前就是这个姿势。
  *  缓：过渡的曲线，默认两头缓（smoothstep）；线性 = 出手那一下（打戏的出手段用线性，到位那一帧直接到，不在末尾减速） */
-export type PerformanceBar = { 起: number; 到?: number; pose: PoseName; ease?: '线性' };
+export type PerformanceBar = { start: number; dest?: number; pose: PoseName; ease?: '线性' };
 
 type TimeValue<T> = T | ((sec: number) => T);
 const valueAt = <T>(x: TimeValue<T>, sec: number): T => (typeof x === 'function' ? (x as (sec: number) => T)(sec) : x);
@@ -176,7 +176,7 @@ export type PerformanceSettings = {
   /** 身子朝哪（度，0 朝北、180 朝南）；不给 = 水平上朝着目标 */
   yaw?: TimeValue<number>;
   /** 杖指着谁（史蒂夫、结界中心） */
-  目标: TimeValue<V3>;
+  target: TimeValue<V3>;
   /** 每次出手的时刻（秒）：杖小幅抖一下 */
   swingTimes?: readonly number[];
   /** 弹簧（头发、胸）：默认 '推进' */
@@ -199,9 +199,9 @@ export type DragSettings = { perSpeed: number; perAccel: number; limit: number; 
 
 export type PerformanceSnapshot = {
   /** 直接摊给 <娘化亚波伦 {...属性} 持杖 /> */
-  props: { pose: { loc: V3; yaw: number }; 秒: number; act: YaBoLunAct; bonePose: Record<string, BonePose> };
+  props: { pose: { loc: V3; yaw: number }; sec: number; act: YaBoLunAct; bonePose: Record<string, BonePose> };
   /** 这一刻在两条之间：从哪个姿势到哪个、走了多少（0～1，已缓动） */
-  transition: { 从: PoseName; 到: PoseName; 比: number };
+  transition: { 从: PoseName; dest: PoseName; 比: number };
 };
 
 
@@ -226,13 +226,13 @@ export const floatOffsetAt = (sec: number): V3 => [0.04 * Math.sin((2 * Math.PI 
 export const transitionAt = (axis: readonly PerformanceBar[], sec: number): PerformanceSnapshot['transition'] => {
   if (!axis.length) throw new Error('亚波伦演出：轴是空的');
   let i = 0;
-  while (i + 1 < axis.length && axis[i + 1]!.起 <= sec) i++;
+  while (i + 1 < axis.length && axis[i + 1]!.start <= sec) i++;
   const keyframe = axis[i]!;
-  if (i === 0) return { 从: keyframe.pose, 到: keyframe.pose, 比: 1 };
-  const endSec = keyframe.到 ?? keyframe.起 + 0.4;
-  const t = endSec <= keyframe.起 ? 1 : Math.min(1, Math.max(0, (sec - keyframe.起) / (endSec - keyframe.起)));
+  if (i === 0) return { 从: keyframe.pose, dest: keyframe.pose, 比: 1 };
+  const endSec = keyframe.dest ?? keyframe.start + 0.4;
+  const t = endSec <= keyframe.start ? 1 : Math.min(1, Math.max(0, (sec - keyframe.start) / (endSec - keyframe.start)));
   // 上一条还没摆好就被这一条接走：从上一条的目标姿势出发（不追中间态），段里别把两条排得比过渡还密
-  return { 从: axis[i - 1]!.pose, 到: keyframe.pose, 比: keyframe.ease === '线性' ? t : smoothstep01(t) };
+  return { 从: axis[i - 1]!.pose, dest: keyframe.pose, 比: keyframe.ease === '线性' ? t : smoothstep01(t) };
 };
 
 const diffStep = 1 / 60;
@@ -326,7 +326,7 @@ export const dragAngles = (settings: DragSettings, posAt: (sec: number) => V3, y
 
 export const definePerformance = (settings: PerformanceSettings) => {
   const posAt = (sec: number) => valueAt(settings.位, sec);
-  const targetAt = (sec: number) => valueAt(settings.目标, sec);
+  const targetAt = (sec: number) => valueAt(settings.target, sec);
   const yaw = (sec: number) => {
     if (settings.yaw !== undefined) return valueAt(settings.yaw, sec);
     const [p, q] = [posAt(sec), targetAt(sec)];
@@ -334,17 +334,17 @@ export const definePerformance = (settings: PerformanceSettings) => {
     return (Math.atan2(-(q[0] - p[0]), q[1] - p[1]) * 180) / Math.PI;
   };
   const flyWeight = (sec: number) => {
-    const { 从: fromIndex, 到: toIndex, 比: progress } = transitionAt(settings.timeline, sec);
+    const { 从: fromIndex, dest: toIndex, 比: progress } = transitionAt(settings.timeline, sec);
     return lerp(poses[fromIndex].fly, poses[toIndex].fly, progress);
   };
   const h = 1 / 120;
   const act = defineAct({
     主: (sec) => {
       const w = flyWeight(sec);
-      return w <= 0 ? [{ 名: 'idle' }] : w >= 1 ? [{ 名: 'fly' }] : [{ 名: 'idle' }, { 名: 'fly', weight: w }];
+      return w <= 0 ? [{ name: 'idle' }] : w >= 1 ? [{ name: 'fly' }] : [{ name: 'idle' }, { name: 'fly', weight: w }];
     },
     // 头发、胸的弹簧吃速度：竖直速度按米/秒（YSM wiki）；水平速度 YSM 的单位没查到，飞行时写的是 20，这里按 10 格/秒 ≈ 20 估
-    环境: (sec) => {
+    env: (sec) => {
       const breakPoints = settings.breakpoints ?? [];
       const [rangeStart, endSec] = noCross(breakPoints, sec - h, sec + h) ? [sec - h, sec + h] : noCross(breakPoints, sec - 2 * h, sec) ? [sec - 2 * h, sec] : [sec, sec + 2 * h];
       const [a, b] = [posAt(rangeStart), posAt(endSec)];
@@ -358,7 +358,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
     const cached = stateCache.get(sec);
     if (cached) return cached;
     const transition = transitionAt(settings.timeline, sec);
-    const [fromPose, toPose] = [poses[transition.从], poses[transition.到]];
+    const [fromPose, toPose] = [poses[transition.从], poses[transition.dest]];
     const k = transition.比;
     const floatWeight = lerp(fromPose.hover, toPose.hover, k);
     const [basePos, floatOffset] = [posAt(sec), floatOffsetAt(sec)];
@@ -371,7 +371,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
       const [a, b] = [fromPose.手[boneName]?.rot ?? bottomRot, toPose.手[boneName]?.rot ?? bottomRot];
       blended[boneName] = { rot: [0, 1, 2].map((j) => lerp(a[j]!, b[j]!, k)) };
     }
-    const aimPose = (aimMode: '目标' | '上') => aimStaff({ pose, 秒: sec, act, bonePose: blended, aim: aimMode === '目标' ? { 点: targetAt(sec) } : { dir: [0, 0, 1] } });
+    const aimPose = (aimMode: '目标' | '上') => aimStaff({ pose, sec: sec, act, bonePose: blended, aim: aimMode === '目标' ? { points: targetAt(sec) } : { dir: [0, 0, 1] } });
     let bonePose = blended;
     if (fromPose.staffFacing && fromPose.staffFacing === toPose.staffFacing) bonePose = aimPose(fromPose.staffFacing);
     else if (fromPose.staffFacing || toPose.staffFacing) {
@@ -405,7 +405,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
       const wrist = bonePose.RightHand?.rot ?? [0, 0, 0];
       bonePose = { ...bonePose, RightHand: { rot: [wrist[0]! - staffShake, wrist[1]!, wrist[2]!] } };
     }
-    const moment: PerformanceSnapshot = { props: { pose, 秒: sec, act, bonePose }, transition };
+    const moment: PerformanceSnapshot = { props: { pose, sec: sec, act, bonePose }, transition };
     stateCache.set(sec, moment);
     return moment;
   };

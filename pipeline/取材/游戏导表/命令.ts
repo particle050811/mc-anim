@@ -59,10 +59,10 @@ export const checkDir = async (dir: string) => {
   if (!hasBiomes && !hasBlockFile) throw new UsageError(`${dir} 里没有 群系色.json 或 方块表.json`);
   let biomeReport: ReturnType<typeof checkBiomes> | undefined, blockReport: ReturnType<typeof checkBlocks> | undefined;
   if (hasBiomes) {
-    const handWritten = readJson<BiomeTable>(resolveAsset(handWrittenBiomeColorAsset, assetLock).文件);
+    const handWritten = readJson<BiomeTable>(resolveAsset(handWrittenBiomeColorAsset, assetLock).file);
     biomeReport = checkBiomes(readJson<BiomeTable>(biomeFile), handWritten, await loadCurrentColorRule(handWritten));
   }
-  if (hasBlockFile) blockReport = checkBlocks(readJson<BlockTable>(blockFile), readJson<BlockTable>(resolveAsset(handWrittenBlockTableAsset, assetLock).文件));
+  if (hasBlockFile) blockReport = checkBlocks(readJson<BlockTable>(blockFile), readJson<BlockTable>(resolveAsset(handWrittenBlockTableAsset, assetLock).file));
   fs.writeFileSync(path.join(dir, '核对.md'), reportText(biomeReport, blockReport));
   fs.writeFileSync(path.join(dir, '核对.json'), JSON.stringify({ 群系: biomeReport, 方块: blockReport }, null, 1) + '\n');
   return { 群系: biomeReport, 方块: blockReport };
@@ -72,8 +72,8 @@ const mcai = (argv: string[]) => runForeground([...mcaiCommand(), ...argv], { en
 
 export const gameExportCommands: Record<string, Command> = {
   gamedata: {
-    用法: 'gamedata export [--to <目录>] [--only 群系|方块] [--blocks <通配,…>]  |  gamedata verify <目录>',
-    说明: '游戏开着时导出群系色表、方块表（取材 mod 的 biomes、blocks），并和手写的 群系色.json、方块表.json 逐项核对；默认写到 run/草稿/<UTC>-工作-游戏导表/',
+    usage: 'gamedata export [--to <目录>] [--only 群系|方块] [--blocks <通配,…>]  |  gamedata verify <目录>',
+    note: '游戏开着时导出群系色表、方块表（取材 mod 的 biomes、blocks），并和手写的 群系色.json、方块表.json 逐项核对；默认写到 run/草稿/<UTC>-工作-游戏导表/',
     跑: async (args, runRecord) => {
       const [subcommand, ...rest] = args;
       if (subcommand === 'verify') {
@@ -84,21 +84,21 @@ export const gameExportCommands: Record<string, Command> = {
         return 0;
       }
       if (subcommand !== 'export') throw new UsageError('子命令是 export 或 verify');
-      const p = parseArgs(rest, { 值: ['--to', '--only', '--blocks'] });
-      const onlyKind = p.值['--only'];
+      const p = parseArgs(rest, { value: ['--to', '--only', '--blocks'] });
+      const onlyKind = p.value['--only'];
       if (onlyKind && onlyKind !== '群系' && onlyKind !== '方块') throw new UsageError('--only 是 群系 或 方块');
-      const dir = p.值['--to'] ? path.resolve(p.值['--to']) : newPreviewDir('工作-游戏导表');
+      const dir = p.value['--to'] ? path.resolve(p.value['--to']) : newPreviewDir('工作-游戏导表');
       fs.mkdirSync(dir, { recursive: true });
       if (onlyKind !== '方块') {
         const code = await mcai(['biomes', `out=${path.join(dir, '群系色')}`]);
         if (code) return code;
       }
       if (onlyKind !== '群系') {
-        const code = await mcai(['blocks', `out=${path.join(dir, '方块表')}`, ...(p.值['--blocks'] ? [`only=${p.值['--blocks']}`] : [])]);
+        const code = await mcai(['blocks', `out=${path.join(dir, '方块表')}`, ...(p.value['--blocks'] ? [`only=${p.value['--blocks']}`] : [])]);
         if (code) return code;
       }
       await checkDir(dir);
-      runRecord.产物.push(dir);
+      runRecord.artifacts.push(dir);
       console.log(`导出、核对写在 ${dir}（核对.md）`);
       return 0;
     },

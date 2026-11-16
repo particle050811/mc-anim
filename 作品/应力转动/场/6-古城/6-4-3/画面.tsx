@@ -86,11 +86,11 @@ export const DeflectView: React.FC<{ g: number; cam?: Cam; liying?: LiyingFn; fx
   const flow = useMemo(() => choreo.airflow(g), [g]);
   const crit = choreo.critParticles(g);
   return (
-    <AncientCity4xCanvas 段="6-4-3" cam={cam ?? choreo.camera(g)} width={width} height={height} hide={choreo.HIDE} chestOpening={choreo.openChest(g)} wool={choreo.WOOL_NAMES}>
+    <AncientCity4xCanvas segment="6-4-3" cam={cam ?? choreo.camera(g)} width={width} height={height} hide={choreo.HIDE} chestOpening={choreo.openChest(g)} wool={choreo.WOOL_NAMES}>
       <LiYingWithBlade pose={ly.pose} bladeOn={ly.bladeOn} blade={ly.blade} bladeSide={ly.bladeSide} mouth={mouth} />
       <HuangPan pose={withTalkNod(hp.pose, lipCues([shoutLine]), '黄叛', g, 1)} bow={hp.bow} />
       <LiuXinzhong pose={choreo.liuxinzhong(g)} />
-      {(arrow.阶段 === '来' || arrow.阶段 === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
+      {(arrow.stage === '来' || arrow.stage === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
       {fan.opacity > 0 && (
         <group position={fan.pos} quaternion={fanQuat} scale={fan.sideLength}>
           <EncasedFan spin={fan.spin} thickBlades ghost opacity={fan.opacity} />
@@ -100,10 +100,10 @@ export const DeflectView: React.FC<{ g: number; cam?: Cam; liying?: LiyingFn; fx
       {crit.length > 0 && <ParticleQuads tex={critTexture} items={crit} />}
       <BlockDebris data={DEBRIS} atlas={ATLAS_C} bursts={choreo.debrisBursts(g)} fixWinding />
       {choreo.sensorStates(g).map((q, i) => (
-        <SculkSensor key={i} p={q.p} 秒={q.sec} secSinceActive={q.secSinceActive} seed={i + 1} />
+        <SculkSensor key={i} p={q.p} sec={q.sec} secSinceActive={q.secSinceActive} seed={i + 1} />
       ))}
       {choreo.vibrations.map((v, i) => (
-        <VibrationSignal key={i} from={v.from} to={v.to} sec={choreo.storySecAt(g) - v.t} 帧={i * 3} />
+        <VibrationSignal key={i} from={v.from} to={v.to} sec={choreo.storySecAt(g) - v.t} frame={i * 3} />
       ))}
       {choreo.shriek && <ShriekRings p={choreo.shriek.p} sec={choreo.storySecAt(g) - choreo.shriek.t} />}
       <DeflectBladeTrail sec={choreo.storySecAt(g)} liying={liying} fx={fx} />

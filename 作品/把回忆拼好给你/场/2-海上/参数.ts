@@ -42,7 +42,7 @@ export const lightPath = {
   startDist: 0.5,
   比: 1.13,
   thickStart: 2.5,
-  宽: 0.8,
+  width: 0.8,
   spread: 0.05,
   cuts: 3,
   jitter: 0.75,
@@ -106,8 +106,8 @@ export const personBoatSunset = 0.35;
  *  到位时太阳和它底下的光路在左边三分之一，船和你们俩在右边、头顶压着海平线，中间一大片海（Agent 暂定）。
  *  高 1.1：比原来（0.9）高一点，画面下沿离镜头两格多，近处水纹一格贴图像素有十几个页面像素；再高船就掉出画面下沿，要拉远，人就小了 */
 export const seaCamera = {
-  匹配: { east: 1.7, south: 2.4, 高: 1.1, yawOffset: 14, pitchDeg: -3, fov: 36 },
-  arrive: { east: 2.6, south: 2.1, 高: 1.1, yawOffset: 17, pitchDeg: 1, fov: 52 },
+  match: { east: 1.7, south: 2.4, height: 1.1, yawOffset: 14, pitchDeg: -3, fov: 36 },
+  arrive: { east: 2.6, south: 2.1, height: 1.1, yawOffset: 17, pitchDeg: 1, fov: 52 },
 } as const;
 
 // ---------- 叠化、浪 ----------
@@ -125,7 +125,7 @@ export const grainCell = 2;
 /** 模糊溶解：眼睛那层糊到多少、海那层从多少糊变清楚（高斯模糊半径，页面像素） */
 export const blurAmounts = { 眼: 10, 海: 4 } as const;
 /** 按亮度溶解：眼睛那一镜的亮度（sRGB 数值，0～1）从 起 到 止 依次透掉，一个亮度的透明度从 1 到 0 要走过 边宽 这么多亮度 */
-export const brightnessDissolve = { 起: 0.3, 止: 0.95, edgeWidth: 0.12 } as const;
+export const brightnessDissolve = { start: 0.3, end: 0.95, edgeWidth: 0.12 } as const;
 /** 浪的像素：一格多少页面像素 */
 export const waveCell = 8;
 /** 浪头起伏：振幅、波长（格），浪头横着漂多快（每进 1 漂几格） */

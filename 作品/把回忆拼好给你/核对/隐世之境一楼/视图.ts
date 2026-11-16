@@ -4,9 +4,9 @@
 import type { V3 } from '@engine/model/parts.tsx';
 
 export type View = {
-  名: string;
-  宽: number;
-  高: number;
+  name: string;
+  width: number;
+  height: number;
   cameraRig: { 眼: V3; 看: V3; fov: number };
   /** 盖在画面上的游戏截图的不透明度：0 不盖，1 只看截图，中间是叠加 */
   screenshot?: number;
@@ -29,17 +29,17 @@ const hallLookEast = { 眼: [9.5, -12.5, 1.6825] as V3, 看: [16.5, -12.5, 1] as
 const hallLookNorth = { 眼: [12.5, -16.5, 2.2] as V3, 看: [12.5, -9, 1.2] as V3, fov: 70 };
 
 export const views: readonly View[] = [
-  { 名: '一楼机位', 宽: 1280, 高: 720, cameraRig: firstFloorRig },
-  { 名: '一楼机位-游戏截图', 宽: 1280, 高: 720, cameraRig: firstFloorRig, screenshot: 1 },
-  { 名: '一楼机位-叠加', 宽: 1280, 高: 720, cameraRig: firstFloorRig, screenshot: 0.5 },
-  { 名: '一楼机位-灯位', 宽: 1280, 高: 720, cameraRig: firstFloorRig, showLamps: true },
-  { 名: '主厅鸟瞰-灯位', 宽: 1280, 高: 720, cameraRig: hallBirdsEye, showLamps: true, liftTop: true },
-  { 名: '一楼机位-成片灯-灰盒', 宽: 1280, 高: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '灰盒' },
-  { 名: '一楼机位-成片灯-酒狐', 宽: 1280, 高: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '酒狐' },
-  { 名: '一楼机位-成片灯-酒狐-不压色调', 宽: 1280, 高: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '酒狐', keepTone: true },
-  { 名: '主厅东望-成片灯', 宽: 1280, 高: 720, cameraRig: hallLookEast, filmLamp: true, figure: '灰盒' },
-  { 名: '主厅北望-成片灯', 宽: 1280, 高: 720, cameraRig: hallLookNorth, filmLamp: true, figure: '灰盒' },
+  { name: '一楼机位', width: 1280, height: 720, cameraRig: firstFloorRig },
+  { name: '一楼机位-游戏截图', width: 1280, height: 720, cameraRig: firstFloorRig, screenshot: 1 },
+  { name: '一楼机位-叠加', width: 1280, height: 720, cameraRig: firstFloorRig, screenshot: 0.5 },
+  { name: '一楼机位-灯位', width: 1280, height: 720, cameraRig: firstFloorRig, showLamps: true },
+  { name: '主厅鸟瞰-灯位', width: 1280, height: 720, cameraRig: hallBirdsEye, showLamps: true, liftTop: true },
+  { name: '一楼机位-成片灯-灰盒', width: 1280, height: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '灰盒' },
+  { name: '一楼机位-成片灯-酒狐', width: 1280, height: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '酒狐' },
+  { name: '一楼机位-成片灯-酒狐-不压色调', width: 1280, height: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '酒狐', keepTone: true },
+  { name: '主厅东望-成片灯', width: 1280, height: 720, cameraRig: hallLookEast, filmLamp: true, figure: '灰盒' },
+  { name: '主厅北望-成片灯', width: 1280, height: 720, cameraRig: hallLookNorth, filmLamp: true, figure: '灰盒' },
 ];
 
-export const pageWidth = Math.max(...views.map((v) => v.宽));
-export const pageHeight = Math.max(...views.map((v) => v.高));
+export const pageWidth = Math.max(...views.map((v) => v.width));
+export const pageHeight = Math.max(...views.map((v) => v.height));

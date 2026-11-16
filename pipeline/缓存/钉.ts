@@ -16,7 +16,7 @@ import { KeepSet, addDelivery, addApprovals, sizeText, scanKeyDir, pinReasons, t
 export const referenceFileLookup = (work: string) => (file: string, hostPlatform: string) => {
   try {
     const r = readApproval(file);
-    return r ? approvRefFile(r.段, r.指纹, sampleKey(r), hostPlatform, work) : null;
+    return r ? approvRefFile(r.segment, r.fingerprint, sampleKey(r), hostPlatform, work) : null;
   } catch {
     return null;
   }
@@ -38,19 +38,19 @@ export const scanKey = (cacheKind: CacheKind, segKey: string, work = workName())
   return r;
 };
 
-export type DeleteOldResult = { removed: string[]; deletedSize: number; 留: { 文件: string; 理由: string }[] };
+export type DeleteOldResult = { removed: string[]; deletedSize: number; 留: { file: string; reason: string }[] };
 
-type SplitOldOptions = { runRecord?: Pick<RunRecord, 'log'>; 作品?: string; now?: number };
+type SplitOldOptions = { runRecord?: Pick<RunRecord, 'log'>; work?: string; now?: number };
 
 /** 当前们：这段现在的指纹（切片一段有画面、声音两个） */
 const splitOld = (cacheKind: CacheKind, segKey: string, level: string, currentFingerprints: readonly string[], o: SplitOldOptions, warn: (s: string) => void) => {
   const keepPrefixes = new Set(currentFingerprints.map((x) => x.slice(0, 16)));
-  const oldFiles = scanKey(cacheKind, segKey, o.作品).media.filter((f) => !keepPrefixes.has(f.指纹) && f.级别 === level);
+  const oldFiles = scanKey(cacheKind, segKey, o.work).media.filter((f) => !keepPrefixes.has(f.fingerprint) && f.level === level);
   if (!oldFiles.length) return { removed: [], 留: [] };
   const keep = pinnedSet(warn);
   const now = o.now ?? Date.now();
-  const classified = oldFiles.map((f) => ({ f, 理由: pinReasons(f, keep, now) }));
-  return { removed: classified.filter((x) => !x.理由.length).map((x) => x.f), 留: classified.filter((x) => x.理由.length) };
+  const classified = oldFiles.map((f) => ({ f, reason: pinReasons(f, keep, now) }));
+  return { removed: classified.filter((x) => !x.reason.length).map((x) => x.f), 留: classified.filter((x) => x.reason.length) };
 };
 
 /** 渲段命中（已是最新）时先问一声：有要删的才过闸，没旧的、旧的都钉着不用等闸。只看不删 */
@@ -72,17 +72,17 @@ export const deleteOld = (cacheKind: CacheKind, segKey: string, level: string, c
     if (!(o.mainCheckout ?? inMainCheckout())) {
       const oldFiles = [...classified.removed, ...classified.留.map((x) => x.f)];
       if (oldFiles.length) console.log(`   ${segKey}：这是 worktree，同级别的旧${cacheKind} ${oldFiles.length} 个不自动删（可能是主检出的当前指纹）；合并后主检出出这段或 anim cache gc 再清`);
-      for (const f of oldFiles) r.留.push({ 文件: f.路径, 理由: 'worktree 不自动删' });
+      for (const f of oldFiles) r.留.push({ file: f.path, reason: 'worktree 不自动删' });
       return r;
     }
     for (const f of classified.removed) {
-      fs.rmSync(f.路径, { force: true });
-      r.removed.push(f.路径);
-      r.deletedSize += f.大小;
+      fs.rmSync(f.path, { force: true });
+      r.removed.push(f.path);
+      r.deletedSize += f.size;
     }
-    for (const { f, 理由: reasons } of classified.留) r.留.push({ 文件: f.路径, 理由: [...new Set(reasons.map((x) => `${x.类}（${x.说明}）`))].join('、') });
+    for (const { f, reason: reasons } of classified.留) r.留.push({ file: f.path, reason: [...new Set(reasons.map((x) => `${x.type}（${x.note}）`))].join('、') });
     if (r.removed.length) console.log(`   ${segKey}：删了同级别的旧${cacheKind} ${r.removed.length} 个，${sizeText(r.deletedSize)}`);
-    for (const x of r.留) console.log(`   ${segKey}：旧${cacheKind} ${x.文件.split(/[\\/]/).pop()} 留着：${x.理由}`);
+    for (const x of r.留) console.log(`   ${segKey}：旧${cacheKind} ${x.file.split(/[\\/]/).pop()} 留着：${x.reason}`);
   } catch (e) {
     warn(`${segKey} 的旧${cacheKind}没删成（${(e as Error).message.split('\n')[0]}），之后 anim cache gc 再清`);
   }

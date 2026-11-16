@@ -40,7 +40,7 @@ const newBlockGroup = () => {
  */
 export const vanillaCherryTree = (seed: number): PlacedBlock[] => {
   const blockGroup = newBlockGroup();
-  const placeBlock = (blockState: string, x: number, y: number, z: number) => blockGroup.放({ 状态: blockState, 位: [x, y, z] });
+  const placeBlock = (blockState: string, x: number, y: number, z: number) => blockGroup.放({ state: blockState, 位: [x, y, z] });
   const r = mulberry32(seed * 2654435761 + 97);
   const treeHeight = 7 + randInt(r, 0, 1);
   const branchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -3));
@@ -123,14 +123,14 @@ export const vanillaOak = (seed: number): PlacedBlock[] => {
   const blockGroup = newBlockGroup();
   const r = mulberry32(seed * 40503 + 11);
   const treeHeight = 4 + randInt(r, 0, 2);
-  for (let k = 0; k < treeHeight; k++) blockGroup.放({ 状态: 'minecraft:oak_log[axis=y]', 位: [0, 0, k] });
+  for (let k = 0; k < treeHeight; k++) blockGroup.放({ state: 'minecraft:oak_log[axis=y]', 位: [0, 0, k] });
   for (let dz = -3; dz <= 0; dz++) {
     const ring = dz >= -1 ? 1 : 2;
     for (let dx = -ring; dx <= ring; dx++)
       for (let dy = -ring; dy <= ring; dy++) {
         const corner = Math.abs(dx) === ring && Math.abs(dy) === ring;
         if (corner && (dz === 0 || r() < 0.5)) continue;
-        blockGroup.放({ 状态: 'minecraft:oak_leaves', 位: [dx, dy, treeHeight + dz] });
+        blockGroup.放({ state: 'minecraft:oak_leaves', 位: [dx, dy, treeHeight + dz] });
       }
   }
   return blockGroup.全();
@@ -153,16 +153,16 @@ const getOakBlocks = (seed: number) => {
 };
 
 /** 一棵树：出 = 生长到几时冒出来（0～1，见 冒出）；原有的橡树 −1，一直在 */
-export type ForestTree = { x: number; y: number; 种: '樱' | '橡'; 种子: number; 出: number };
+export type ForestTree = { x: number; y: number; kind: '樱' | '橡'; seed: number; 出: number };
 type PendingTree = Omit<ForestTree, '出'>;
 
 // ---------- 中景：她种下的那片樱花林 ----------
 
 /** 中景：N = 4（近景 N 8、10 的一半上下），顶面同近景（往里每排画面上升 32 成片像素）；铺 行 排、x 左～右；屋子东边（x > 林东）只有零星几棵原有的橡树 */
 /** 地左：地比树往左多铺一截（树照 左 种，改 左 树位全挪）。第 12 句末横移出卧室、2-时差 接入那几帧林子往左看得更远，原来左沿露出地的断面（核查 10-24） */
-export const midGrove = { N: 4, topDepth: 2, 行: 6, left: -36, groundLeft: -56, right: 32, 种子: 1310, forestEast: 2 } as const;
+export const midGrove = { N: 4, topDepth: 2, 行: 6, left: -36, groundLeft: -56, right: 32, seed: 1310, forestEast: 2 } as const;
 
-const midNoise = simplex2(midGrove.种子);
+const midNoise = simplex2(midGrove.seed);
 
 /** 中景 (x, y) 那一列地面顶的高度（整数格）：往里慢慢抬，左右按噪声起伏；最前一排是 0（接近景草地的后沿） */
 export const midGroundHeight = (x: number, y: number): number =>
@@ -179,7 +179,7 @@ const midTreePos: readonly PendingTree[] = (() => {
     const xx = x + Math.round((hash2(x, 3, 7) - 0.5) * 2);
     const inCherryZone = xx <= midGrove.forestEast;
     if (!inCherryZone && hash2(x, 5, 9) < 0.45) continue;
-    out.push({ x: xx, y: row, 种: inCherryZone ? '樱' : '橡', 种子: 7000 + n });
+    out.push({ x: xx, y: row, kind: inCherryZone ? '樱' : '橡', seed: 7000 + n });
   }
   return out;
 })();
@@ -192,12 +192,12 @@ const layGround = (left: number, right: number, rows: number, heightAt: (x: numb
       const bottom = y === 0 ? -3 : Math.min(h, heightAt(x, y - 1)) - 1;
       const g = biomeAt?.(x, y);
       const treeBelow = treeCells.has(`${x},${y}`);
-      blockGroup.放({ 状态: treeBelow ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [x, y, h - 1], 群系: g });
-      for (let k = h - 2; k >= bottom; k--) blockGroup.放({ 状态: 'minecraft:dirt', 位: [x, y, k] });
+      blockGroup.放({ state: treeBelow ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [x, y, h - 1], biome: g });
+      for (let k = h - 2; k >= bottom; k--) blockGroup.放({ state: 'minecraft:dirt', 位: [x, y, k] });
       if (treeBelow || blockGroup.有(x, y, h)) continue;
       const s = hash2(x, y, 31);
-      if (s < grassRate) blockGroup.放({ 状态: 'minecraft:grass', 位: [x, y, h], 群系: g });
-      else if (s < grassRate + 0.03) blockGroup.放({ 状态: hash2(x, y, 37) < 0.5 ? 'minecraft:dandelion' : 'minecraft:poppy', 位: [x, y, h] });
+      if (s < grassRate) blockGroup.放({ state: 'minecraft:grass', 位: [x, y, h], biome: g });
+      else if (s < grassRate + 0.03) blockGroup.放({ state: hash2(x, y, 37) < 0.5 ? 'minecraft:dandelion' : 'minecraft:poppy', 位: [x, y, h] });
     }
 };
 
@@ -218,15 +218,15 @@ export const midBlocks = (growth: number): PlacedBlock[] => {
     const h = midGroundHeight(t.x, t.y);
     treeCells.add(`${t.x},${t.y}`);
     const root: Position = [t.x, t.y, h];
-    const bs = shiftBlocks(t.种 === '橡' ? getOakBlocks(t.种子) : getCherryBlocks(t.种子), root);
+    const bs = shiftBlocks(t.kind === '橡' ? getOakBlocks(t.seed) : getCherryBlocks(t.seed), root);
     // 钻进地里的枝叶不放（原版树只长在空气里）
     for (const b of bs) if (b.位[2] >= midGroundHeight(b.位[0], b.位[1]) && b.位[1] >= 0 && b.位[1] < midGrove.行 + 4) blockGroup.放(b);
-    if (t.种 === '樱')
+    if (t.kind === '樱')
       for (let dx = -2; dx <= 2; dx++)
         for (let dy = -1; dy <= 1; dy++) {
           const x = t.x + dx, y = t.y + dy;
           if ((dx || dy) && y >= 0 && y < midGrove.行 && hash2(x, y, 41) < 0.6 && !blockGroup.有(x, y, midGroundHeight(x, y)))
-            blockGroup.放({ 状态: `minecraft:pink_petals[facing=${['north', 'east', 'south', 'west'][(x + y + 8) % 4]},flower_amount=${(Math.abs(x * 3 + y) % 3) + 2}]`, 位: [x, y, midGroundHeight(x, y)] });
+            blockGroup.放({ state: `minecraft:pink_petals[facing=${['north', 'east', 'south', 'west'][(x + y + 8) % 4]},flower_amount=${(Math.abs(x * 3 + y) % 3) + 2}]`, 位: [x, y, midGroundHeight(x, y)] });
         }
   });
   layGround(midGrove.groundLeft, midGrove.right, midGrove.行, midGroundHeight, blockGroup, treeCells);
@@ -239,9 +239,9 @@ export const midBlocks = (growth: number): PlacedBlock[] => {
 /** 远景：N = 2，纯侧面（顶面 0：远处的地往里不再上抬，只看得出山的轮廓）；铺 行 排。
  *  山：樱花林那座山在 山心x（屋子西边，同第 1 句「屋子在樱花林边上」），山高、山半径（格）；别处是平原的缓坡，屋子东边（东坡x）一道矮坡 */
 /** 地左：同 中景 的 地左 */
-export const farLayer = { N: 2, topDepth: 0, 行: 14, left: -60, groundLeft: -100, right: 60, 种子: 20230607, mountainCenterX: -30, mountainCenterY: 9, mountainHeight: 11, mountainRadius: 26, topRadius: 8, eastSlopeX: 30 } as const;
+export const farLayer = { N: 2, topDepth: 0, 行: 14, left: -60, groundLeft: -100, right: 60, seed: 20230607, mountainCenterX: -30, mountainCenterY: 9, mountainHeight: 11, mountainRadius: 26, topRadius: 8, eastSlopeX: 30 } as const;
 
-const farNoise = simplex2(farLayer.种子);
+const farNoise = simplex2(farLayer.seed);
 const onMountain = (x: number, y: number) => Math.hypot(x - farLayer.mountainCenterX, (y - farLayer.mountainCenterY) * 2) < farLayer.mountainRadius * 0.75;
 
 /** 远景 (x, y) 那一列地面顶的高度（整数格）：平原两三格的缓坡，西边一座樱花林的山 */
@@ -261,8 +261,8 @@ const farTreePos: readonly PendingTree[] = (() => {
       const xx = x + Math.round((hash2(x, y, 51) - 0.5) * 3);
       const seed = 9000 + x * 37 + y;
       if (onMountain(xx, y)) {
-        if (hash2(x, y, 53) < 0.85) out.push({ x: xx, y, 种: '樱', 种子: seed });
-      } else if (hash2(x, y, 57) < 0.12) out.push({ x: xx, y, 种: '橡', 种子: seed });
+        if (hash2(x, y, 53) < 0.85) out.push({ x: xx, y, kind: '樱', seed: seed });
+      } else if (hash2(x, y, 57) < 0.12) out.push({ x: xx, y, kind: '橡', seed: seed });
     }
   return out;
 })();
@@ -282,7 +282,7 @@ const arranged = (() => {
   const revealTimes = new Map<PendingTree, number>();
   /** 一层：N、顶面、地面高 用来算树冠在画面上的位置（这一层的格）；页们(r, K) = 第 r 个冒出来的在第几页 */
   const arrangeLayer = (ts: readonly PendingTree[], N: number, topDepth: number, groundHeight: (x: number, y: number) => number, pageOf: (r: number, K: number) => number) => {
-    const cherryTrees = ts.filter((t) => t.种 === '樱');
+    const cherryTrees = ts.filter((t) => t.kind === '樱');
     const visibleTrees = cherryTrees.filter((t) => {
       const nx = (t.x * N) / popOut.nearCount;
       return nx >= popOut.visibleRange[0] && nx <= popOut.visibleRange[1];
@@ -328,8 +328,8 @@ export const farBlocks = (growth: number): PlacedBlock[] => {
   const treeCells = new Set(presentTrees.map((t) => `${t.x},${t.y}`));
   for (const t of presentTrees) {
     const root: Position = [t.x, t.y, farGroundHeight(t.x, t.y)];
-    const bs = t.种 === '橡' ? shiftBlocks(getOakBlocks(t.种子), root) : shiftBlocks(getCherryBlocks(t.种子), root);
-    for (const b of bs) if (b.位[2] >= farGroundHeight(b.位[0], b.位[1])) blockGroup.放({ ...b, 群系: t.种 === '樱' ? 'minecraft:cherry_grove' : undefined });
+    const bs = t.kind === '橡' ? shiftBlocks(getOakBlocks(t.seed), root) : shiftBlocks(getCherryBlocks(t.seed), root);
+    for (const b of bs) if (b.位[2] >= farGroundHeight(b.位[0], b.位[1])) blockGroup.放({ ...b, biome: t.kind === '樱' ? 'minecraft:cherry_grove' : undefined });
   }
   layGround(farLayer.groundLeft, farLayer.right, farLayer.行, farGroundHeight, blockGroup, treeCells, (x, y) => (onMountain(x, y) ? 'minecraft:cherry_grove' : undefined), 0);
   farCache.set(cacheKey, (out = blockGroup.全()));

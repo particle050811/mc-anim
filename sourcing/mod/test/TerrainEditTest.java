@@ -287,7 +287,7 @@ public class TerrainEditTest {
         JsonObject bad = json(cases.resolve("bad-cases.json")).getAsJsonObject();
         RegistryOps<JsonElement> testOps = RegistryOps.create(JsonOps.INSTANCE, test);
         int nBad = 0;
-        for (JsonElement b : bad.getAsJsonArray("错例")) {
+        for (JsonElement b : bad.getAsJsonArray("badCases")) {
             DataResult<DensityFunction> r = DensityFunction.DIRECT_CODEC.parse(testOps, b.getAsJsonArray().get(1));
             check(r.error().isPresent(), "错例「" + b.getAsJsonArray().get(0).getAsString() + "」读进来了");
             nBad++;
@@ -295,7 +295,7 @@ public class TerrainEditTest {
         System.out.println("错例：" + nBad + " 条");
 
         // ---------- 4、5. 和离线版逐位比 ----------
-        long seed = json(cases.resolve("points.json")).getAsJsonObject().get("种子").getAsLong();
+        long seed = json(cases.resolve("points.json")).getAsJsonObject().get("seed").getAsLong();
         Map<String, List<Pt>> casePts = points(offline.resolve("用例.txt")), realPts = points(offline.resolve("真包.txt"));
         Map<String, DensityFunction> caseFns = compare("用例", test, seed, casePts, 0);
         compare("真包", real, 116, realPts, 1e-5);

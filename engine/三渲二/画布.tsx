@@ -13,8 +13,8 @@ import { mergeShading, type ShadingSceneParams, type ShadingOptions } from './�
 
 export type ToonCanvasParams = {
   /** 画布的 CSS 尺寸（取偶数）；整页就是 1280×720 */
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   cameraRig: CameraRigParams;
   /** 背景（天空）色，sRGB */
   天?: string;
@@ -34,16 +34,16 @@ export type ToonCanvasParams = {
  *  画布自己没给 光影 时照这里的样式（自己给了，null 也算，就照自己的）；场景事实两边合起来，画布自己给的优先（试看换了样式也照用） */
 export const shadingScope = createContext<{ shading?: ShadingOptions | null; shadingScene?: ShadingSceneParams }>({});
 
-export const ToonCanvas: React.FC<ToonCanvasParams> = ({ 宽: width, 高: height, cameraRig: params, 天: sky, outline, flatShade: flatOn = true, shading: ownShade, shadingScene: ownShadingScene, style, children, ...paintProps }) => {
-  const camera = useMemo(() => newCamera(params.种), [params.种]);
+export const ToonCanvas: React.FC<ToonCanvasParams> = ({ width: width, height: height, cameraRig: params, 天: sky, outline, flatShade: flatOn = true, shading: ownShade, shadingScene: ownShadingScene, style, children, ...paintProps }) => {
+  const camera = useMemo(() => newCamera(params.kind), [params.kind]);
   const scope = useContext(shadingScope);
   const shading = ownShade === undefined ? scope.shading : ownShade;
   const shadingScene = { ...scope.shadingScene, ...ownShadingScene };
   return (
-    <ThreeCanvas key={params.种} width={width} height={height} gl={{ antialias: false }} flat dpr={canvasDpr(1)} camera={camera} style={style}>
+    <ThreeCanvas key={params.kind} width={width} height={height} gl={{ antialias: false }} flat dpr={canvasDpr(1)} camera={camera} style={style}>
       {sky && <color attach="background" args={[sky]} />}
-      <CameraRig 参数={params} />
-      {shading ? <ShadingRender options={mergeShading(shading, shadingScene)} tint={paintProps.tint} /> : <OutlineRender 参数={outline} />}
+      <CameraRig params={params} />
+      {shading ? <ShadingRender options={mergeShading(shading, shadingScene)} tint={paintProps.tint} /> : <OutlineRender params={outline} />}
       <group rotation={[-Math.PI / 2, 0, 0]}>{flatOn ? <FlatShade {...paintProps}>{children}</FlatShade> : children}</group>
     </ThreeCanvas>
   );

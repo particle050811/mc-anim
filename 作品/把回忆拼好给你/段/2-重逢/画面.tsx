@@ -41,16 +41,16 @@ const picture: React.FC = () => {
       {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
       <shadingScope.Provider value={{ shading: shadingBySeg[segKey] }}>
         <ReunionPicture
-          帧={frame}
-          种子={f}
+          frame={frame}
+          seed={f}
           shadingScene={shadingScene}
-          叠层={
+          overlay={
             <>
-              <SakuraWind 秒={frame / fps} windTime={bellWind} 源={bellInPicture} scatterCenter={windScatterCenter} />
+              <SakuraWind sec={frame / fps} windTime={bellWind} 源={bellInPicture} scatterCenter={windScatterCenter} />
               <RuneLyric lines={lyricLines} 样式={lyricStyle} />
               {chatAlpha > 0 && (
                 <div style={{ position: 'absolute', inset: 0, opacity: chatAlpha }}>
-                  <JoinGameChat 帧={frame} />
+                  <JoinGameChat frame={frame} />
                 </div>
               )}
             </>

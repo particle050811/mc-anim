@@ -22,12 +22,12 @@ const up = (p: V3, h: number): V3 => [p[0], p[1], p[2] + h];
 // 三镜各只留一个完整动作、切在刚离地的半空里，焦距跟着收紧（全程远景他只有几个像素大，看不清跳多远）
 const yardEnd = jumpBuild.takeoffSec('P1') + 5 / 24;
 // 场子：蹬离 F1 1/12 秒就切，再往后他翻到场子北墙后面、被墙挡住，画面只剩一块羊毛。#212：落地前 1/3 秒，他正从画面右上角飞进来
-const arenaWindow = { 起: jumpBuild.takeoffSec('P4') - 1 / 12, 止: jumpBuild.takeoffSec('F1') + 1 / 12 };
-const chestWindow = { 起: jumpBuild.landSec('B') - 1 / 3, 止: jumpBuild.takeoffSec('B') + 1 / 6 };
+const arenaWindow = { start: jumpBuild.takeoffSec('P4') - 1 / 12, end: jumpBuild.takeoffSec('F1') + 1 / 12 };
+const chestWindow = { start: jumpBuild.landSec('B') - 1 / 3, end: jumpBuild.takeoffSec('B') + 1 / 6 };
 export const cutPlan = jumpBuild.cutWindows([
-  { 名: '大院', 起: 0, 止: yardEnd },
-  { 名: '场子', ...arenaWindow },
-  { 名: '#212', ...chestWindow },
+  { name: '大院', start: 0, end: yardEnd },
+  { name: '场子', ...arenaWindow },
+  { name: '#212', ...chestWindow },
 ]);
 export const END = cutPlan.totalSec;
 export const storySec = cutPlan.storySec;
@@ -35,7 +35,7 @@ const windows = cutPlan.windows;
 
 // ---------- 箱子 ----------
 // 开 #212：开盖、已开贴图都由画布按 模型/物品/箱子.tsx 算
-export const openChest = (t: number): ChestOpening => ({ chestId: chestB.chestId, 开: jumpBuild.openLidSecB, closeSec: jumpBuild.closeLidSecB, 秒: t });
+export const openChest = (t: number): ChestOpening => ({ chestId: chestB.chestId, 开: jumpBuild.openLidSecB, closeSec: jumpBuild.closeLidSecB, sec: t });
 
 // ---------- 机位（t 是剧情秒） ----------
 const torsoAt = (t: number) => up(jumpBuild.footAt(t), 1.1);
@@ -61,21 +61,21 @@ const cam1 = (f: number): Cam => (f < cut1b ? cam1a(f) : cam1b(f));
 // 镜头 2 场子：机位在场子西头、高出场子地面 11 米（头顶净空 18～27 格），往东看场子东墙：他落上东墙头（P4）一蹲，迎着镜头扑进场子落在十几米外的 F1，
 //   就势往北一蹬（往 P5）。焦距：远处 55 毫米（五十五米外）、扑进场子拉到 24。
 const C2_POS: VKey[] = [
-  [windows[1].起, G4(-894.0, -40.0, 223.5)],
-  [windows[1].止, G4(-895.0, -40.0, 222.5)],
+  [windows[1].start, G4(-894.0, -40.0, 223.5)],
+  [windows[1].end, G4(-895.0, -40.0, 222.5)],
 ];
-const LENS2: Key[] = [[windows[1].起, 55], [jumpBuild.takeoffSec('P4'), 55], [(jumpBuild.takeoffSec('P4') + jumpBuild.landSec('F1')) / 2, 40], [jumpBuild.landSec('F1') - 1 / 3, 28], [jumpBuild.landSec('F1'), 24]];
+const LENS2: Key[] = [[windows[1].start, 55], [jumpBuild.takeoffSec('P4'), 55], [(jumpBuild.takeoffSec('P4') + jumpBuild.landSec('F1')) / 2, 40], [jumpBuild.landSec('F1') - 1 / 3, 28], [jumpBuild.landSec('F1'), 24]];
 const cam2 = (f: number): Cam => ({ pos: sampleV(C2_POS, f) as V3, tgt: halfFollow(f, 3.0, 0.6), lens: sample(LENS2, f) });
 // 镜头 3 #212：#212 在 5 格矮墙围着的小屋里，南墙比他脚底高 3 米、东边的墙矮。机位在屋子东南、大道上空（离 B 18 米、比他脚底高 9.5 米，越过东边矮墙看得见屋里）往西北看：
 //   他从机位右前方飞过、从画面右上角落进来（P6 → B 这一跳横着过画面），落在箱子跟前；看点从他和 B 之间收到 B（只跟三分之一，人在画面里看得出在动），
 //   落地后看点停在 B、开箱时慢慢推近；转身往西一跳往左上飞远，看点再跟一半多、焦距放开一点
 const C3_POS: VKey[] = [
-  [windows[2].起, G4(-952.0, -38.5, 205.0)],
-  [windows[2].止, G4(-953.5, -38.7, 204.5)],
+  [windows[2].start, G4(-952.0, -38.5, 205.0)],
+  [windows[2].end, G4(-953.5, -38.7, 204.5)],
 ];
 const torsoOnB = torsoAt(jumpBuild.landSec('B') + 1 / 60); // 落地后头一帧
-const FOLLOW3: Key[] = [[windows[2].起, 0.35], [jumpBuild.landSec('B'), 0], [jumpBuild.takeoffSec('B'), 0], [windows[2].止, 0.6]];
-const LENS3: Key[] = [[windows[2].起, 28], [jumpBuild.landSec('B'), 28], [jumpBuild.takeoffSec('B') - 1 / 4, 36], [windows[2].止, 32]];
+const FOLLOW3: Key[] = [[windows[2].start, 0.35], [jumpBuild.landSec('B'), 0], [jumpBuild.takeoffSec('B'), 0], [windows[2].end, 0.6]];
+const LENS3: Key[] = [[windows[2].start, 28], [jumpBuild.landSec('B'), 28], [jumpBuild.takeoffSec('B') - 1 / 4, 36], [windows[2].end, 32]];
 const cam3 = (f: number): Cam => {
   const torso = torsoAt(f);
   const k = sample(FOLLOW3, f);

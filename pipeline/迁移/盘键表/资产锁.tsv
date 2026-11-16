@@ -1,0 +1,10 @@
+# 格式：资产锁　位置：assets/资产锁/*.json、作品/*/资产锁/*.json
+# 读写：pipeline/资产/资产锁.ts、音频量.ts　分类：Git　现有 3270 个文件（3270 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+后缀	suffix
+响度	loudness
+大小	size
+峰值	peakDb
+库	lib
+时长	duration

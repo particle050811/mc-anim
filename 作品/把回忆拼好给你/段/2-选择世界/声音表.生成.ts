@@ -3,14 +3,14 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

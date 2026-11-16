@@ -56,7 +56,7 @@ describe('命令行文本', () => {
   });
 
   it('extract 的步骤：取输出的参数 POSIX 写 $(…)，Windows 写 [… 的输出]', () => {
-    const argv = ['java', { 输出: ['find', 'a b'] }, 'x_*.png'];
+    const argv = ['java', { output: ['find', 'a b'] }, 'x_*.png'];
     expect(displayCommand(argv, 'posix')).toBe(`java $(find 'a b') 'x_*.png'`);
     expect(displayCommand(argv, 'windows')).toBe('java [find "a b" 的输出] x_*.png');
   });

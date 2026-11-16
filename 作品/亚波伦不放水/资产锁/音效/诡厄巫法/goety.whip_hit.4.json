@@ -1,9 +1,9 @@
 {
+  "duration": 0.260063,
+  "lib": "store",
+  "loudness": -70,
+  "peakDb": 1.2,
   "sha256": "994d10daa52736bb473ff58daea22a1945ca4aa50e183bef3e244f6d86a35c82",
-  "后缀": ".ogg",
-  "响度": -70,
-  "大小": 5641,
-  "峰值": 1.2,
-  "库": "store",
-  "时长": 0.260063
+  "size": 5641,
+  "suffix": ".ogg"
 }

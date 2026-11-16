@@ -8,10 +8,10 @@ import { launchFrom, launchTarget, type Launch, type SceneCtx } from './出手�
 export * from './出手表.ts';
 
 /** 画这一刻还在演的每一发；放在场景坐标的 group 里 */
-export const CastLaunches: React.FC<{ 表: readonly Launch[]; 秒: number; sceneCtx: SceneCtx }> = ({ 表: shotTable, 秒: sec, sceneCtx }) => (
+export const CastLaunches: React.FC<{ 表: readonly Launch[]; sec: number; sceneCtx: SceneCtx }> = ({ 表: shotTable, sec: sec, sceneCtx }) => (
   <>
     {shotTable.map((cast, i) =>
-      sec < cast.秒 || (cast.止 !== undefined && sec >= cast.止) ? null : <SpellPerformance key={`${cast.id}-${i}`} id={cast.id} 秒={(cast.clock?.(sec) ?? sec) - cast.秒} from={cast.follow?.(sec) ?? launchFrom(cast, sceneCtx)} 目标={launchTarget(cast, sceneCtx)} 种子={cast.种子 ?? 101 + i * 7} options={cast.options} />,
+      sec < cast.sec || (cast.end !== undefined && sec >= cast.end) ? null : <SpellPerformance key={`${cast.id}-${i}`} id={cast.id} sec={(cast.clock?.(sec) ?? sec) - cast.sec} from={cast.follow?.(sec) ?? launchFrom(cast, sceneCtx)} target={launchTarget(cast, sceneCtx)} seed={cast.seed ?? 101 + i * 7} options={cast.options} />,
     )}
   </>
 );

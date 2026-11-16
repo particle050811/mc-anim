@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 06b48ae179e2），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-不算白跑（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 493eb58dc1c8），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-不算白跑（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-不算白跑",
-  "角色": "李樱",
-  "念": "不过，这一趟也不算白跑。",
-  "配音": "配音/6-李樱-不算白跑",
-  "成品sha": "1faea75cb4d2",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "不过，这一趟也不算白跑。",
+  "voice": "配音/6-李樱-不算白跑",
+  "finishedSha": "1faea75cb4d2",
+  "mouthOpen": 0.03,
   "有声长": 1.85,
-  "时长": 2.018,
+  "duration": 2.018,
   "文件秒数": 2.018,
-  "字": [
+  "char": [
     ["不",0.08,0.24],
     ["过",0.24,0.72],
     ["这",0.72,0.88],

@@ -39,7 +39,7 @@ const arrowMesh = (() => {
   };
 })();
 
-export const ArrowShape: React.FC<{ 位: Vec3; /** 飞行方向（场景坐标） */ dir: Vec3; 图: Png; 缩放?: number }> = ({ 位: pos, dir, 图: image, 缩放: scale = 1 }) => {
+export const ArrowShape: React.FC<{ 位: Vec3; /** 飞行方向（场景坐标） */ dir: Vec3; image: Png; scale?: number }> = ({ 位: pos, dir, image: image, scale: scale = 1 }) => {
   const [vx, vy, vz] = [dir[0], dir[2], -dir[1]];
   const yaw = (Math.atan2(vx, vz) * 180) / Math.PI;
   const pitch = (Math.atan2(vy, Math.hypot(vx, vz)) * 180) / Math.PI;
@@ -51,7 +51,7 @@ export const ArrowShape: React.FC<{ 位: Vec3; /** 飞行方向（场景坐标�
         <group rotation={[0, 0, degToRad(pitch)]}>
           <group rotation={[degToRad(45), 0, 0]}>
             <group scale={scaleVec}>
-              <mesh position={[-4, 0, 0]} geometry={arrowMesh()} material={faceMaterial(image, { 混合: '镂空' })} frustumCulled={false} />
+              <mesh position={[-4, 0, 0]} geometry={arrowMesh()} material={faceMaterial(image, { blend: '镂空' })} frustumCulled={false} />
             </group>
           </group>
         </group>

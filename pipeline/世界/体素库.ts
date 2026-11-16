@@ -19,7 +19,7 @@ export const VOXEL_MODULES = ['区段包.ts', '区段.ts', '区段解码.ts', '�
 /** 烘焙和编辑校验要的方块知识；测试里可以换成小表 */
 export type BlockKnowledge = {
   voxelValue: (blockState: string) => number;
-  群系名: readonly string[];
+  biomeNames: readonly string[];
   tint: Uint8Array;
   opaque: Uint8Array;
   full: Uint8Array;
@@ -30,7 +30,7 @@ export type BlockKnowledge = {
   allStates: readonly string[];
 };
 
-export type VoxelLib = { sectionPack: typeof sectionPackModule; 区段: typeof sectionModule; sectionDecoder: typeof sectionDecodeModule; 生成: typeof generateModule; 群系色: typeof biomeColorModule; blockTable: typeof blockTableModule; knowledge: BlockKnowledge };
+export type VoxelLib = { sectionPack: typeof sectionPackModule; sections: typeof sectionModule; sectionDecoder: typeof sectionDecodeModule; generated: typeof generateModule; biomeColor: typeof biomeColorModule; blockTable: typeof blockTableModule; knowledge: BlockKnowledge };
 
 const ASSET_HOOK_MARK = Symbol.for('mc-anim.node资产钩子');
 export const registerAssetHook = () => {
@@ -48,7 +48,7 @@ export const loadVoxelLib = () =>
     const [sectionPack, section, sectionDecoder, generator, biomeColor, blockTable] = await Promise.all([loadModule<typeof sectionPackModule>('区段包.ts'), loadModule<typeof sectionModule>('区段.ts'), loadModule<typeof sectionDecodeModule>('区段解码.ts'), loadModule<typeof generateModule>('生成.ts'), loadModule<typeof biomeColorModule>('群系色.ts'), loadModule<typeof blockTableModule>('真实方块表.ts')]);
     const knowledge: BlockKnowledge = {
       voxelValue: blockTable.voxelFromState,
-      群系名: blockTable.biomeNames,
+      biomeNames: blockTable.biomeNames,
       tint: blockTable.blockProps.tint,
       opaque: blockTable.blockProps.opaque,
       full: blockTable.blockProps.full,
@@ -57,5 +57,5 @@ export const loadVoxelLib = () =>
       biomeCell: biomeColor.biomeCell,
       allStates: blockTable.blockNames,
     };
-    return { sectionPack, 区段: section, sectionDecoder, 生成: generator, 群系色: biomeColor, blockTable, knowledge };
+    return { sectionPack, sections: section, sectionDecoder, generated: generator, biomeColor: biomeColor, blockTable, knowledge };
   })());

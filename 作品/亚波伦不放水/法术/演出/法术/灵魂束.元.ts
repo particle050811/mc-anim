@@ -18,12 +18,12 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 export default defineSpellMeta({
   id: 'soul_bolt',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // SoundUtil.playSoulBolt：三声一起响；命中 SoulBolt.onHit 的 BOLT_IMPACT。同一事件有几个变体的取第 1 个
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.soul_bolt_cast', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.vex_vapor.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.cast_spell_two.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.bolt_impact.1', 秒: 0, fromHit: true },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.soul_bolt_cast', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.vex_vapor.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.cast_spell_two.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.bolt_impact.1', sec: 0, fromHit: true },
   ],
 });

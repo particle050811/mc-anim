@@ -13,8 +13,8 @@ import { blockProps, blockTint, faceStride, faceTable, voxelFromState } from '..
 
 export type CellPos = readonly [number, number, number];
 /** 状态：方块 id 或方块状态（"minecraft:oak_stairs[facing=east,half=bottom,shape=straight]"）；亮：这一格乘的亮度（sRGB 数值，默认 1）；群系：染色用，不给按 拼搭选项.群系 */
-export type PlacedBlock = { 状态: string; 位: CellPos; brightness?: number; 群系?: string };
-export type AssemblyOptions = { 原点?: V3; 群系?: string; frontPlants?: boolean };
+export type PlacedBlock = { state: string; 位: CellPos; brightness?: number; biome?: string };
+export type AssemblyOptions = { origin?: V3; biome?: string; frontPlants?: boolean };
 
 /** 自己发光的方块：游戏里亮度拉满，这里画成不受光 */
 export const glowBlocks = new Set(['minecraft:torch', 'minecraft:wall_torch', 'minecraft:soul_torch', 'minecraft:soul_wall_torch', 'minecraft:lantern', 'minecraft:soul_lantern', 'minecraft:glowstone']);
@@ -50,12 +50,12 @@ const isCross = (faces: Float32Array) => {
 
 /** 方块们 → 各类面的缓冲。纯计算，不建 three 对象 */
 export const assembleBuffers = (blocks: readonly PlacedBlock[], options: AssemblyOptions = {}) => {
-  const [ox, oy, oz] = options.原点 ?? [0, 0, 0];
+  const [ox, oy, oz] = options.origin ?? [0, 0, 0];
   const occupied = new Map<string, number>();
   for (const b of blocks) {
     const k = posKey(...b.位);
     if (occupied.has(k)) throw new Error(`格 ${k} 放了两个方块`);
-    occupied.set(k, lookupBlock(b.状态));
+    occupied.set(k, lookupBlock(b.state));
   }
   const { rows, cols } = blockAtlas(); // 列数：高倍材质包图集会多于 16 列（真实方块图集.ts）
   const buffers: Record<PassKind, MeshBuffer> = { 实心: emptyBuffer(), 镂空: emptyBuffer(), 半透明: emptyBuffer(), 发光: emptyBuffer() };
@@ -76,11 +76,11 @@ export const assembleBuffers = (blocks: readonly PlacedBlock[], options: Assembl
     const [i, j, k] = b.位;
     const faces = faceTable[v]!;
     const n = faces.length / faceStride;
-    const id = b.状态.split('[')[0]!;
+    const id = b.state.split('[')[0]!;
     const renderLayer = blockProps.layer[v]!;
     const blockClass: PassKind = glowBlocks.has(id) ? '发光' : renderLayer === 2 || renderLayer === 3 ? '半透明' : renderLayer === 1 ? '镂空' : '实心';
     const brightness = toLinear(b.brightness ?? 1);
-    const tint = new THREE.Color(blockTint(v, b.群系 ?? options.群系 ?? 'minecraft:plains', i, -j));
+    const tint = new THREE.Color(blockTint(v, b.biome ?? options.biome ?? 'minecraft:plains', i, -j));
     const whiteColor = [brightness, brightness, brightness];
     const shadedTint = [tint.r * brightness, tint.g * brightness, tint.b * brightness];
     const x0 = i + ox, y0 = j + oy, z0 = k + oz;
@@ -155,8 +155,8 @@ export const assemblyMeshes = (blocks: readonly PlacedBlock[], options: Assembly
 };
 
 /** 方块们要各帧同一个数组（或按内容 useMemo），换了就重建网格（旧几何随即释放，R3F 不替 primitive 释放） */
-export const BlockAssembly: React.FC<{ blocks: readonly PlacedBlock[] } & AssemblyOptions> = ({ blocks, 原点: origin, 群系: biome, frontPlants }) => {
-  const meshes = useMemo(() => assemblyMeshes(blocks, { 原点: origin, 群系: biome, frontPlants }), [blocks, origin?.[0], origin?.[1], origin?.[2], biome, frontPlants]);
+export const BlockAssembly: React.FC<{ blocks: readonly PlacedBlock[] } & AssemblyOptions> = ({ blocks, origin: origin, biome: biome, frontPlants }) => {
+  const meshes = useMemo(() => assemblyMeshes(blocks, { origin: origin, biome: biome, frontPlants }), [blocks, origin?.[0], origin?.[1], origin?.[2], biome, frontPlants]);
   useEffect(() => () => meshes.forEach((m) => m.geometry.dispose()), [meshes]);
   return (
     <group>

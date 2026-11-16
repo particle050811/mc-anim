@@ -57,7 +57,7 @@ export const warden = (segSec: number) => {
   const turn = smoothstep01(rampIn(t, tendrilSec + 0.05, tendrilSec + 0.3));
   // 钻出前：整个埋在地下（钻出动画第 0 秒的姿势）
   return {
-    秒: gameSecAt(segSec),
+    sec: gameSecAt(segSec),
     钻出: animSec <= WARDEN.emergeSec ? Math.max(0, animSec) : undefined,
     tendril: tendril,
     headYaw: wardenHeadYawTo(liuPoseAt(segSec).loc) * turn,

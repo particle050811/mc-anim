@@ -11,7 +11,7 @@ export const originalFadeInSec = legacyFrameSec(3);
 export const clickGain = 0.7;
 /** 咔哒文件本身的两个数（ffmpeg 解码实测，不是暂定）：开头约 0.11 秒近乎静音，主音的峰在 0.13 秒；文件长 0.88 秒。
  *  cue 照 起音秒 提前，主音才落在咔哒定格那一帧（也就是那一拍）上 */
-export const clickSound = { onsetSec: 0.13, 时长秒: 0.88 } as const;
+export const clickSound = { onsetSec: 0.13, durationSec: 0.88 } as const;
 /** 聊天栏的 GUI 缩放：1280×720 里 2.5 和游戏界面尺寸「大」差不多 */
 export const chatScale = 2.5;
 /** 世界那一遍的竖直视角（度）：先用原版默认 70，推镜时从这里收窄 */
@@ -48,7 +48,7 @@ export const lyricStyle = {
 /** 咔哒定格成拍立得（特效/拍立得.tsx）：秒数都从定格帧那一刻往后数（24 fps 时 5、20、13、12 帧）。背景先用浅纸纹，不做同一帧模糊（用户要再加）。
  *  缩放 0.64：加上白边，斜放的卡片约占画面宽 68%、上下各留约 45 像素；再大卡片就顶到画面上下边 */
 export const polaroidStyle = {
-  缩放: 0.64,
+  scale: 0.64,
   tiltDeg: -3,
   whiteFlashSec: legacyFrameSec(5),
   shrinkSec: legacyFrameSec(20),

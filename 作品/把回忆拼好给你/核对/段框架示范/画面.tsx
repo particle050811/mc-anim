@@ -7,16 +7,16 @@ import soundUrl from './声音地址.生成.ts';
 const sparkCount = 16;
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 事件: events, 段: thisSegment } = useSeg(seg);
+  const { sec: sec, events: events, segment: thisSegment } = useSeg(seg);
   const riseProgress = interpolate(sec, [events.launch, events.burst], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const scatter = interpolate(sec, [events.burst, events.burst + 0.75], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const dim = interpolate(sec, [events.burst + 0.25, thisSegment.秒], [1, 0.25], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const centerX = thisSegment.宽 / 2;
-  const blastPointY = thisSegment.高 * 0.32;
-  const rocketY = interpolate(riseProgress, [0, 1], [thisSegment.高 * 0.95, blastPointY]);
+  const dim = interpolate(sec, [events.burst + 0.25, thisSegment.sec], [1, 0.25], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const centerX = thisSegment.width / 2;
+  const blastPointY = thisSegment.height * 0.32;
+  const rocketY = interpolate(riseProgress, [0, 1], [thisSegment.height * 0.95, blastPointY]);
   return (
     <AbsoluteFill style={{ background: 'linear-gradient(#0b1030, #1d2450)' }}>
-      <svg width={thisSegment.宽} height={thisSegment.高}>
+      <svg width={thisSegment.width} height={thisSegment.height}>
         {sec >= events.launch && sec < events.burst && <rect x={centerX - 3} y={rocketY} width={6} height={18} fill="#f4d58d" />}
         {sec >= events.burst &&
           Array.from({ length: sparkCount }, (_, i) => {

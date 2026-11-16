@@ -9,21 +9,21 @@ const segKey = '1-一如既往';
 const clock = segClock(segKey);
 
 // 原声：固定增益，开头淡入（第 f 帧乘 (f 帧的秒 + 1/24 秒) / 淡入秒，到满为止：第 0 帧算已经走了 1/24 秒，同 24 fps 时）。definePicture 照这条 cue 出声
-const originalGainFrames = Array.from({ length: clock.帧数 }, (_, f) => Math.round(originalGain * Math.min(1, (f / fps + legacyFrameSec(1)) / originalFadeInSec) * 1e6) / 1e6);
+const originalGainFrames = Array.from({ length: clock.frameCount }, (_, f) => Math.round(originalGain * Math.min(1, (f / fps + legacyFrameSec(1)) / originalFadeInSec) * 1e6) / 1e6);
 
 // 咔哒：女仆相机的快门声，比定格那一帧早 起音秒 起放，主音落在定格（闪白）那一帧；放满整个文件。definePicture 照这条 cue 出声
 const clickStartFrame = segEventFrames(segKey).clickFreeze - Math.round(clickSound.onsetSec * fps);
-const clickFrameCount = Math.min(Math.ceil(clickSound.时长秒 * fps), clock.帧数 - clickStartFrame);
+const clickFrameCount = Math.min(Math.ceil(clickSound.durationSec * fps), clock.frameCount - clickStartFrame);
 
 export default defineSeg({
-  场: '1-隐世之境一楼',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '1-隐世之境一楼',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
-  声音: [
-    { ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: { 每秒: fps, 值: originalGainFrames } },
-    toAssetCue({ 帧: clickStartFrame, 资产: '音效/车万女仆/item.camera_use', 名: '咔哒', 帧数: clickFrameCount, 增益: clickGain }),
+  sound: [
+    { ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: { perSec: fps, value: originalGainFrames } },
+    toAssetCue({ frame: clickStartFrame, asset: '音效/车万女仆/item.camera_use', name: '咔哒', frameCount: clickFrameCount, 增益: clickGain }),
   ],
 });

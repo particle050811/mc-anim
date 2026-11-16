@@ -123,9 +123,9 @@ const drawButton = (ctx: CanvasRenderingContext2D, x: number, y: number, icon: r
 
 // ---------- 整个界面 ----------
 export type NoteBox = {
-  字: string;
+  char: string;
   ponderPalette: PaletteName;
-  点: [number, number] | null; // 被指的点（界面像素）；null = 不指东西（照 TextWindowElement：画面中间偏上，y 用 高度）
+  points: [number, number] | null; // 被指的点（界面像素）；null = 不指东西（照 TextWindowElement：画面中间偏上，y 用 高度）
   fallbackY?: number; // 不指东西时的 y（TextWindowElement 的 y 参数）
   nearTarget?: boolean; // placeNearTarget：框不离被指的点太远（x 不超过点 + 50）
   fade: number; // 0～1
@@ -184,19 +184,19 @@ export const drawProgressBar = (ctx: CanvasRenderingContext2D, progress: number,
 // 说明框：照 TextWindowElement.render
 export const drawTextWindow = (ctx: CanvasRenderingContext2D, textWindow: NoteBox, alpha: number) => {
   if (textWindow.fade < 0.0625) return;
-  const anchor: [number, number] = textWindow.点 ?? [uiWidth / 2, (uiHeight - 200) / 2 + (textWindow.fallbackY ?? 0) - 8];
+  const anchor: [number, number] = textWindow.points ?? [uiWidth / 2, (uiHeight - 200) / 2 + (textWindow.fallbackY ?? 0) - 8];
   const distFromMid = (uiHeight / 2 - anchor[1] - 10) / 100;
   let tx = uiWidth * (0.75 + distFromMid * distFromMid * (0.625 - 0.75));
-  if (textWindow.nearTarget && textWindow.点) tx = Math.min(tx, anchor[0] + 50);
+  if (textWindow.nearTarget && textWindow.points) tx = Math.min(tx, anchor[0] + 50);
   tx = Math.floor(tx);
   const tw = Math.floor(Math.min(uiWidth - tx, 180));
-  const lines = wrapText(textWindow.字, tw);
+  const lines = wrapText(textWindow.char, tw);
   const bw = Math.max(...lines.map(textWidth));
   const bh = lines.length * lineHeight - 1;
   const y = Math.floor(anchor[1]);
   drawBox(ctx, tx - 10, y + 3, bw, bh, ponderColors.black, ponderColors.textWindowBorder, alpha);
   const textColor = textColorFor(textWindow.ponderPalette);
-  if (textWindow.点) {
+  if (textWindow.points) {
     const x1 = anchor[0] + (tx - anchor[0]) * textWindow.fade;
     rect(ctx, Math.min(anchor[0], x1), y, Math.max(anchor[0], x1), y + 1, textColor, alpha);
     grad(ctx, Math.min(anchor[0], x1), y + 1, Math.max(anchor[0], x1), y + 2, [255, 0x49, 0x49, 0x49], [255, 0x39, 0x39, 0x39], alpha);

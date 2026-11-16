@@ -16,7 +16,7 @@ describe('天体：照原版 timeOfDay', () => {
     expect(noon.moon.z).toBeCloseTo(-6, 6);
     const morning = celestialPosition(0, arc);
     expect(morning.sun.x).toBeGreaterThan(5);
-    expect(morning.sun.高).toBeGreaterThan(0);
+    expect(morning.sun.height).toBeGreaterThan(0);
     const dusk = celestialPosition(12000, arc);
     expect(dusk.sun.x).toBeLessThan(-5);
     expect(celestialPosition(18000, arc).moon.z).toBeCloseTo(6, 6);
@@ -32,7 +32,7 @@ describe('天体：照原版 timeOfDay', () => {
     for (const N of [6, 8]) {
       const framing = fullScreenFraming(N);
       const arc = defaultSkyArc(framing, 1280, 720);
-      const topY = framing.中心[1] + 720 / framing.pxPerCell;
+      const topY = framing.center[1] + 720 / framing.pxPerCell;
       const halfWidth = 1280 / framing.pxPerCell;
       expect(celestialPosition(6000, arc).sun.z + 1).toBeLessThan(topY);
       expect(Math.abs(celestialPosition(0, arc).sun.x) + 1).toBeLessThan(halfWidth);
@@ -43,7 +43,7 @@ describe('天体：照原版 timeOfDay', () => {
 describe('樱花树：树苗或整棵（用户 10-25 起不再一截截长）', () => {
   it('不到 1 是树苗，到 1 才长成', () => {
     expect([0, 0.5, 0.99, 1].map(isTreeGrown)).toEqual([false, false, false, true]);
-    expect(cherryTreeBlocks(false, [-5, 1, 0])).toEqual([{ 状态: 'minecraft:cherry_sapling', 位: [-5, 1, 0] }]);
+    expect(cherryTreeBlocks(false, [-5, 1, 0])).toEqual([{ state: 'minecraft:cherry_sapling', 位: [-5, 1, 0] }]);
   });
 
   it('整棵树顶 9 格（比屋脊 6.5 格高），格子不重复，地上有花簇', () => {
@@ -51,7 +51,7 @@ describe('樱花树：树苗或整棵（用户 10-25 起不再一截截长）', 
     expect(Math.max(...treeBlocks.map((b) => b.位[2] + 1))).toBe(9);
     const cellKeys = treeBlocks.map((b) => b.位.join(','));
     expect(new Set(cellKeys).size).toBe(cellKeys.length);
-    expect(treeBlocks.some((b) => b.状态.startsWith('minecraft:pink_petals'))).toBe(true);
+    expect(treeBlocks.some((b) => b.state.startsWith('minecraft:pink_petals'))).toBe(true);
   });
 });
 
@@ -59,13 +59,13 @@ describe('门口取景：贴图像素落在整像素上', () => {
   it('N 是偶数，地面线、门边落在偶数像素（预览级 1280×720 也对齐）', () => {
     expect(pixelCount % 2).toBe(0);
     expect(pxPerCell).toBe(16 * pixelCount);
-    expect(framing.中心[1] * pxPerCell).toBe(1440 / 2 - groundLineFromBottom());
+    expect(framing.center[1] * pxPerCell).toBe(1440 / 2 - groundLineFromBottom());
     expect(groundLineFromBottom()).toBe(300);
     expect([6, 8, 10].map((N) => groundLineFromBottom(N) % 2)).toEqual([0, 0, 0]);
     expect(() => fullScreenFraming(7)).toThrow();
     const h = halfScreenFraming(1280, splitDoorFrac);
-    expect(Math.abs(h.中心[0] * pxPerCell - Math.round(h.中心[0] * pxPerCell))).toBeLessThan(1e-9);
-    expect(Math.abs(Math.round(h.中心[0] * pxPerCell)) % 2).toBe(0);
+    expect(Math.abs(h.center[0] * pxPerCell - Math.round(h.center[0] * pxPerCell))).toBeLessThan(1e-9);
+    expect(Math.abs(Math.round(h.center[0] * pxPerCell)) % 2).toBe(0);
     expect(() => halfScreenFraming(1280, 0.7001)).toThrow();
     expect(() => halfScreenFraming(1280, 0.5 + 1 / 1280)).toThrow();
   });
@@ -74,13 +74,13 @@ describe('门口取景：贴图像素落在整像素上', () => {
     for (const N of [6, 8]) {
       const framing = fullScreenFraming(N);
       const halfWidth = 1280 / framing.pxPerCell;
-      expect(-9.5).toBeGreaterThanOrEqual(framing.中心[0] - halfWidth);
-      expect(8.5).toBeLessThanOrEqual(framing.中心[0] + halfWidth);
-      expect(treeTopHeight(N)).toBeLessThanOrEqual(framing.中心[1] + 720 / framing.pxPerCell);
+      expect(-9.5).toBeGreaterThanOrEqual(framing.center[0] - halfWidth);
+      expect(8.5).toBeLessThanOrEqual(framing.center[0] + halfWidth);
+      expect(treeTopHeight(N)).toBeLessThanOrEqual(framing.center[1] + 720 / framing.pxPerCell);
     }
     const h = halfScreenFraming(1280, splitDoorFrac);
-    expect(-9.5).toBeGreaterThanOrEqual(h.中心[0] - 640 / pxPerCell);
-    expect(doorBoxRight).toBeLessThanOrEqual(h.中心[0] + 640 / pxPerCell - 0.5);
+    expect(-9.5).toBeGreaterThanOrEqual(h.center[0] - 640 / pxPerCell);
+    expect(doorBoxRight).toBeLessThanOrEqual(h.center[0] + 640 / pxPerCell - 0.5);
   });
 });
 
@@ -100,9 +100,9 @@ describe('门这个机位的整屏镜头（第 8、9、10 句，第 15 句开头
 
   it('屋脊（斜投影里往里 3 格的屋顶）还在画里，屋子西边的屋檐也在', () => {
     const framing = fullScreenShot.framing;
-    const topY = framing.中心[1] + 720 / framing.pxPerCell;
+    const topY = framing.center[1] + 720 / framing.pxPerCell;
     expect(6.5 + (3 * orthoTop) / fullScreenShotCount).toBeLessThan(topY);
-    expect(-1.5).toBeGreaterThan(framing.中心[0] - 1280 / framing.pxPerCell);
+    expect(-1.5).toBeGreaterThan(framing.center[0] - 1280 / framing.pxPerCell);
   });
 });
 
@@ -111,6 +111,6 @@ describe('侧剖面机位：看点在剖面上，斜投影往里抬', () => {
     const project = sideProjection(framing, 1280, 720, 2);
     expect(project(0, 0)).toEqual({ x: 640, y: 720 - groundLineFromBottom() / 2 });
     expect(project(0, 0).y - project(0, 0, 3).y).toBeCloseTo((3 * 2 / pixelCount) * pxPerCell / 2, 9);
-    expect(sideRig(framing, 2)).toEqual({ 种: '正交', N: pixelCount, topDepth: 2, 看: [0, 0, framing.中心[1]], facing: '北' });
+    expect(sideRig(framing, 2)).toEqual({ kind: '正交', N: pixelCount, topDepth: 2, 看: [0, 0, framing.center[1]], facing: '北' });
   });
 });

@@ -20,7 +20,7 @@ const ATLAS = png(CloudCottage_ATLAS);
 
 // 镜头：世界坐标的镜头位置，飞散的碎块离镜头太近就淡出（模型/特效/方块飞溅.tsx 的 近隐；镜头在屋外侧视，一般碰不到）
 export const GiantScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPos: camPos }) => {
-  const show = t > choreo.visibleWindow.起 && t < choreo.visibleWindow.止;
+  const show = t > choreo.visibleWindow.start && t < choreo.visibleWindow.end;
   return (
     <group position={choreo.cottageOrigin}>
       <CloudCottage hide={choreo.hideFor(t)} />

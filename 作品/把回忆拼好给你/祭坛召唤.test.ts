@@ -91,8 +91,8 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     const expected = [
       [mainCutEvents.activateAltar, 9.48], [mainCutEvents.liYingAppears, 9.91], [mainCutEvents.altarCloseUp, 10.33], [mainCutEvents.offerCake, 10.76], [mainCutEvents.pushToEye, 11.19],
     ] as const;
-    for (const [e, sec] of expected) expect(Math.abs(e.秒 - sec)).toBeLessThan(0.5 / fps + 0.01);
-    expect(events.cutFrame).toBe(mainCutEvents.altarCloseUp.帧);
+    for (const [e, sec] of expected) expect(Math.abs(e.sec - sec)).toBeLessThan(0.5 / fps + 0.01);
+    expect(events.cutFrame).toBe(mainCutEvents.altarCloseUp.frame);
     const order = [segWindow.起帧, events.tapAltar, events.appear, events.cutFrame, events.handOffFrame, events.photo, events.pushInEye, lastFrame];
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect((events.tapAltar - segWindow.起帧) / fps).toBeGreaterThan(1);
@@ -141,8 +141,8 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
 
   it('够得着：你的眼睛离她的碰撞箱在 3 格内（原版生存模式实体交互距离）', () => {
     const [hx, hy] = params.liYing.feet;
-    const w = params.hearts.宽 / 2;
-    expect(distToBox(youEyePos, [hx - w, hy - w, 0], [hx + w, hy + w, params.hearts.高])).toBeLessThan(3);
+    const w = params.hearts.width / 2;
+    expect(distToBox(youEyePos, [hx - w, hy - w, 0], [hx + w, hy + w, params.hearts.height])).toBeLessThan(3);
   });
 
   it('背景不是超平坦：远景看得到的那片地（祭坛北边、东西两边）高低差好几格；祭坛脚下压平', () => {
@@ -188,9 +188,9 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
 
   it('镜头：近景各关键机位按拍落定；「光」那一帧切（远景 → 近景），末帧落在 末态.ts 的 末机', () => {
     const keys = keyRigs();
-    expect(keys.map((k) => k.帧)).toEqual([events.cutFrame, events.handOffFrame, events.pushInEye, lastFrame]);
+    expect(keys.map((k) => k.frame)).toEqual([events.cutFrame, events.handOffFrame, events.pushInEye, lastFrame]);
     for (const k of keys) {
-      const c = shotAt(k.帧);
+      const c = shotAt(k.frame);
       expect(distance(c.眼, k.眼)).toBeLessThan(1e-9);
       expect(distance(c.看, k.看)).toBeLessThan(1e-9);
       expect(c.fov).toBeCloseTo(k.fov, 9);
@@ -227,7 +227,7 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     for (let g = events.cutFrame; g < lastFrame; g += 0.25) expect(L(g + 0.25)).toBeLessThanOrEqual(L(g) + 1e-12);
     const ε = 1e-4;
     const eyeSpeed = (a: number, b: number) => sub(shotAt(b).眼, shotAt(a).眼).map((v) => v / (b - a));
-    for (const k of keyRigs().slice(1, -1)) expect(distance(eyeSpeed(k.帧 - ε, k.帧), eyeSpeed(k.帧, k.帧 + ε))).toBeLessThan(1e-3);
+    for (const k of keyRigs().slice(1, -1)) expect(distance(eyeSpeed(k.frame - ε, k.frame), eyeSpeed(k.frame, k.frame + ε))).toBeLessThan(1e-3);
     // 远景各条轨的关键帧上也不突然起速（24 fps 时的段内帧）
     for (const f of [4, 5, 10, 21, 22]) {
       const g = segWindow.起帧 + legacyFrameSec(f) * fps;
@@ -255,8 +255,8 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
               expect(inPicture(project(g, p)), `歌曲帧 ${g} 前柱 ${p.map((v) => v.toFixed(2))}`).toBe(false);
   });
 
-  it(`驯服爱心（种子 ${params.hearts.种子}）：照片那一帧 7 颗都整个在画里，照片前后不顶到歌词那一条，到末帧不从她脸前压过去，推眼睛时在 390 宽的手机上半边不过 40 像素`, () => {
-    const hearts = tamingHearts(params.liYing.feet, params.hearts.宽, params.hearts.高, frameToTick(events.handOffFrame), params.hearts.种子);
+  it(`驯服爱心（种子 ${params.hearts.seed}）：照片那一帧 7 颗都整个在画里，照片前后不顶到歌词那一条，到末帧不从她脸前压过去，推眼睛时在 390 宽的手机上半边不过 40 像素`, () => {
+    const hearts = tamingHearts(params.liYing.feet, params.hearts.width, params.hearts.height, frameToTick(events.handOffFrame), params.hearts.seed);
     /** 她两眼中间（模型实测） */
     const headPos: Vec3 = [0, -0.03, 1.24];
     let inPictureCount = 0;
@@ -284,20 +284,20 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
 
   it('光柱在推眼睛之前退完；驯服爱心（活 17 刻）在末帧前没了，最后一帧干净', () => {
     expect(lightPillar(events.pushInEye)).toEqual([]);
-    expect(lightPillar(events.appear)).toHaveLength(params.lightParams.lightPillar.宽.length);
+    expect(lightPillar(events.appear)).toHaveLength(params.lightParams.lightPillar.width.length);
     expect(frameToTick(lastFrame) - frameToTick(events.handOffFrame)).toBeGreaterThan(17);
   });
 
   it('cue：只有原声和祭坛合成声（拆盒声跟盒子一起删了）；原声铺满整段，合成声文件头对着点祭坛、峰值配到同一档，不过段尾', () => {
     const soundCues = toFrameCues(seg);
-    expect(soundCues.map((c) => c.名)).toEqual(['原声', '祭坛合成']);
-    expect(soundCues[0]).toMatchObject({ 帧: 0, 帧数: frameCountOf(seg), 入点秒: segWindow.起帧 / fps, 增益: params.originalGain });
+    expect(soundCues.map((c) => c.name)).toEqual(['原声', '祭坛合成']);
+    expect(soundCues[0]).toMatchObject({ frame: 0, frameCount: frameCountOf(seg), 入点秒: segWindow.起帧 / fps, 增益: params.originalGain });
     const soundCue = soundCues[1]!;
-    expect(soundCue.帧).toBe(events.tapAltar - segWindow.起帧);
-    expect(20 * Math.log10(soundCue.增益 as number) + params.soundFx.祭坛.峰值).toBeCloseTo(params.soundFx.峰值, 3);
+    expect(soundCue.frame).toBe(events.tapAltar - segWindow.起帧);
+    expect(20 * Math.log10(soundCue.增益 as number) + params.soundFx.祭坛.peakDb).toBeCloseTo(params.soundFx.peakDb, 3);
     for (const c of soundCues) {
-      expect(c.帧).toBeGreaterThanOrEqual(0);
-      expect(c.帧 + (c.帧数 as number)).toBeLessThanOrEqual(frameCountOf(seg));
+      expect(c.frame).toBeGreaterThanOrEqual(0);
+      expect(c.frame + (c.frameCount as number)).toBeLessThanOrEqual(frameCountOf(seg));
     }
   });
 });

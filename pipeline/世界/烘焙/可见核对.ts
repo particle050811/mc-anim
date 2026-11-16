@@ -22,7 +22,7 @@ export const loadMesh = async (voxelLib: VoxelLib, info: PackageInfo) => {
   registerAssetHook();
   const load = <T>(fileName: string) => import(pathToFileURL(path.join(codeRoot(), 'engine', 'voxel', fileName)).href) as Promise<T>;
   const [mesh, importSection] = await Promise.all([load<typeof meshModule>('网格.ts'), load<typeof importSectionModule>('导入区段.ts')]);
-  const ctx = { info, tables: voxelLib.sectionPack.buildPackTables(info), variesByPos: info.群系.map(voxelLib.群系色.variesByPos), cutBoxes: [], flattenAreas: [] };
+  const ctx = { info, tables: voxelLib.sectionPack.buildPackTables(info), variesByPos: info.biome.map(voxelLib.biomeColor.variesByPos), cutBoxes: [], flattenAreas: [] };
   return (d: SectionData): SectionMesh => mesh.buildSectionMesh(importSection.importedSectionVoxels(d, ctx), d.L >= 1);
 };
 
@@ -33,7 +33,7 @@ const sameFace = (a: FaceGroup, i: number, b: FaceGroup, j: number) => {
   return true;
 };
 const sameGroup = (a: FaceGroup, b: FaceGroup, g0: number, g1: number) => {
-  const x0 = a.段[g0]!, x1 = a.段[g1]!, y0 = b.段[g0]!, y1 = b.段[g1]!;
+  const x0 = a.segment[g0]!, x1 = a.segment[g1]!, y0 = b.segment[g0]!, y1 = b.segment[g1]!;
   if (x1 - x0 !== y1 - y0) return false;
   const n = x1 - x0;
   return !bytesOf(a.pos, x0 * 24, n * 24).compare(bytesOf(b.pos, y0 * 24, n * 24)) && !bytesOf(a.uv, x0 * 16, n * 16).compare(bytesOf(b.uv, y0 * 16, n * 16)) && !bytesOf(a.tex, x0 * 32, n * 32).compare(bytesOf(b.tex, y0 * 32, n * 32)) && !bytesOf(a.col, x0 * 16, n * 16).compare(bytesOf(b.col, y0 * 16, n * 16));
@@ -50,7 +50,7 @@ const compareFaces = (oldMesh: SectionMesh, newMesh: SectionMesh, nz: number, to
   for (const m of materials) {
     const a = oldMesh[m], b = newMesh[m];
     for (let group = 0; group < 7; group++) {
-      let i = a.段[group]!;
+      let i = a.segment[group]!;
       const markMissing = (q: number) => {
         tally.少++;
         const lo = [Infinity, Infinity, Infinity], center = [0, 0, 0];
@@ -68,14 +68,14 @@ const compareFaces = (oldMesh: SectionMesh, newMesh: SectionMesh, nz: number, to
         if (!touching) for (let t = 0; t < 3 && !touching; t++) for (const d of [-0.26, 0.26]) { const q = center.slice(); q[t]! += d; if (isTouching(q[0]!, q[1]!, q[2]!)) { touching = true; break; } }
         if (!touching) tally.少的不贴++;
       };
-      for (let j = b.段[group]!; j < b.段[group + 1]!; j++) {
+      for (let j = b.segment[group]!; j < b.segment[group + 1]!; j++) {
         let k = i;
-        while (k < a.段[group + 1]! && !sameFace(a, k, b, j)) k++;
-        if (k === a.段[group + 1]!) { tally.多++; continue; }
+        while (k < a.segment[group + 1]! && !sameFace(a, k, b, j)) k++;
+        if (k === a.segment[group + 1]!) { tally.多++; continue; }
         for (; i < k; i++) markMissing(i);
         i = k + 1;
       }
-      for (; i < a.段[group + 1]!; i++) markMissing(i);
+      for (; i < a.segment[group + 1]!; i++) markMissing(i);
     }
   }
   return tally;
@@ -84,7 +84,7 @@ const compareFaces = (oldMesh: SectionMesh, newMesh: SectionMesh, nz: number, to
 /** 四组裙边各盖住哪些格（墙面上每格被几个面盖着） */
 const skirtCover = (m: SectionMesh, nz: number) => {
   const cover = new Uint8Array(4 * 32 * nz);
-  for (const k of materials) for (let d = 0; d < 4; d++) for (let q = m[k].段[7 + d]!; q < m[k].段[8 + d]!; q++) {
+  for (const k of materials) for (let d = 0; d < 4; d++) for (let q = m[k].segment[7 + d]!; q < m[k].segment[8 + d]!; q++) {
     let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
     for (let v = 0; v < 4; v++) { const u = m[k].pos[q * 12 + v * 3 + (d < 2 ? 1 : 0)]! / 64, z = m[k].pos[q * 12 + v * 3 + 2]! / 64; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, z); v1 = Math.max(v1, z); }
     for (let u = Math.floor(u0); u < Math.ceil(u1); u++) for (let z = Math.floor(v0); z < Math.ceil(v1); z++) cover[(d * 32 + u) * nz + z]!++;

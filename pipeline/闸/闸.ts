@@ -36,23 +36,23 @@ export type GateEnv = SchedulerEnv & {
 export const resolveEnv = (e: Partial<GateEnv> = {}): GateEnv => ({ ...resolveSchedulerEnv(e), memFloor: e.memFloor ?? Number(config('渲染内存下限')), readMemory: e.readMemory ?? readMemory, readPressure: e.readPressure ?? readPressure,
     load1Min: e.load1Min ?? load1Min, coreCount: e.coreCount ?? coreCount, sleep: e.sleep ?? sleep, queueIntervalMs: e.queueIntervalMs ?? 1000,
     // 注入锁目录的调用必须显式注入进程清理，测试不能碰真 Chrome。
-    readMachine: e.readMachine ?? (e.lockDir ? () => ({ 负载: 0, 核: 10, 闸: null, 压力: null, free: null, 压缩: null, swap: null, 换出: null, GPU: null, 热: null, 盘: null, 孤儿: 0, 进程: '' }) : readMachineSnapshot),
+    readMachine: e.readMachine ?? (e.lockDir ? () => ({ load: 0, cores: 10, gate: null, pressure: null, free: null, compressed: null, swap: null, swapOut: null, GPU: null, thermal: null, disk: null, orphans: 0, processes: '' }) : readMachineSnapshot),
     clearOrphans: e.clearOrphans ?? (e.lockDir ? () => [] : clearOrphans) });
 export type LockHandle = {
-    文件: string;
-    票: string;
-    任务: string;
-    声明: TaskDecl;
-    拿锁时: number;
+    file: string;
+    ticket: string;
+    task: string;
+    decl: TaskDecl;
+    lockAcquiredAt: number;
     放: (outcome?: string) => void;
-    心跳: (frame?: number) => void;
+    heartbeat: (frame?: number) => void;
 };
 type QueueOptions = Partial<GateEnv> & {
     intervalMs?: number;
     waitHint?: (s: string) => void;
     canAdmit?: (ticket: Ticket) => boolean;
     canOvertake?: (ticket: Ticket) => boolean;
-    声明?: TaskDecl;
+    decl?: TaskDecl;
     recheckInLock?: (ticket: Ticket) => boolean;
     /** 这一轮没轮到或锁被活进程拿着，准入没被调：等资源的状态要结束，等的是锁或队列。 */
     onLeaveAdmit?: (ticket: Ticket) => void;
@@ -62,20 +62,20 @@ type QueueOptions = Partial<GateEnv> & {
 const writeTicketState = (t: Ticket) => promptOnly('票状态', () => writeTicket(t));
 /** 票主人每轮对一次，不一样才写：记被越、改调度 可能用旧内容盖过票，只在状态变化时写的话，等内存告警和 看 的标记就一直缺。 */
 const setTicketState = (t: Ticket, stuckOn: string, waitMemStart?: number) => {
-    const c = t.内容!;
-    if ((c.卡在 ?? '') === stuckOn && c.等内存起 === waitMemStart)
+    const c = t.content!;
+    if ((c.stuckOn ?? '') === stuckOn && c.等内存起 === waitMemStart)
         return;
     if (stuckOn)
-        c.卡在 = stuckOn;
+        c.stuckOn = stuckOn;
     else
-        delete c.卡在;
+        delete c.stuckOn;
     if (waitMemStart === undefined)
         delete c.等内存起;
     else
         c.等内存起 = waitMemStart;
     writeTicketState(t);
 };
-const withoutProcesses = ({ 进程: _, ...m }: MachineSnapshot) => m;
+const withoutProcesses = ({ processes: _, ...m }: MachineSnapshot) => m;
 /** 进日志的读数。进程表太大不进；读不到不能影响过闸。 */
 const machineReading = (e: GateEnv) => { try {
     return withoutProcesses(e.readMachine());
@@ -102,42 +102,42 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
     // 到返回柄为止任何一步抛错都要放锁、交棒，否则同进程下一次过闸永远挂在 await 前。
     try {
         ownsTask = !hasTask(e.lockDir);
-        const taskDecl = opts.声明 ?? { 种: process.argv[2] ?? '脚本', 用途: process.env.ANIM_PURPOSE ?? '未声明' };
-        taskDecl.种 ??= process.argv[2] ?? '脚本';
-        taskDecl.用途 ??= process.env.ANIM_PURPOSE ?? '未声明';
-        if (process.env.ANIM_PRIORITY === 'low') taskDecl.低优先 = true;
-        taskDecl.预计秒 ??= estimate(taskDecl, path.dirname(e.logDir));
+        const taskDecl = opts.decl ?? { kind: process.argv[2] ?? '脚本', purpose: process.env.ANIM_PURPOSE ?? '未声明' };
+        taskDecl.kind ??= process.argv[2] ?? '脚本';
+        taskDecl.purpose ??= process.env.ANIM_PURPOSE ?? '未声明';
+        if (process.env.ANIM_PRIORITY === 'low') taskDecl.lowPriority = true;
+        taskDecl.estimatedSec ??= estimate(taskDecl, path.dirname(e.logDir));
         const task = taskHandle = openTask(e, taskDecl);
-        clearTicket = () => promptOnly('删票', () => clearTaskTickets(dir, task.info.任务));
+        clearTicket = () => promptOnly('删票', () => clearTaskTickets(dir, task.info.task));
         clearTicket();
-        let t = claimTicket(dir, e.localHost, { ...task.info, 声明: taskDecl }, e.nowMs());
-        task.update(taskDecl, t.名, '排队');
-        const yieldCmd = readDirective(e, task.info.任务);
-        if (yieldCmd?.动作 === '让路' && yieldCmd.至 && yieldCmd.至 > e.nowMs() && yieldCmd.票 !== t.名) {
-            t.内容!.暂缓至 = yieldCmd.至;
-            t.内容!.暂缓因 = yieldCmd.为什么;
-            t.内容!.原序 = String(t.时间);
+        let t = claimTicket(dir, e.localHost, { ...task.info, decl: taskDecl }, e.nowMs());
+        task.update(taskDecl, t.name, '排队');
+        const yieldCmd = readDirective(e, task.info.task);
+        if (yieldCmd?.动作 === '让路' && yieldCmd.至 && yieldCmd.至 > e.nowMs() && yieldCmd.ticket !== t.name) {
+            t.content!.暂缓至 = yieldCmd.至;
+            t.content!.暂缓因 = yieldCmd.why;
+            t.content!.原序 = String(t.time);
             t = setOrder(t, String(900000000000000 + e.nowMs()));
             writeTicketState(t);
-            console.error(`== 调度让路：${yieldCmd.为什么}；下一张票暂缓至 ${new Date(yieldCmd.至).toISOString()}`);
-            deleteDirective(e, task.info.任务);
+            console.error(`== 调度让路：${yieldCmd.why}；下一张票暂缓至 ${new Date(yieldCmd.至).toISOString()}`);
+            deleteDirective(e, task.info.task);
         }
         const startMs = e.nowMs();
         let origWait = '', lastMonitor = 0;
-        const logEvent = (eventName: string, fields: Record<string, unknown> = {}) => task.logEvent(eventName, { 票: t.名, 锁: lockName, 声明: taskDecl, ...fields });
+        const logEvent = (eventName: string, fields: Record<string, unknown> = {}) => task.logEvent(eventName, { ticket: t.name, lock: lockName, decl: taskDecl, ...fields });
         const monitorDue = () => e.nowMs() - lastMonitor >= 3000;
         const monitor = (machine?: MachineSnapshot) => { if (!monitorDue())
             return; lastMonitor = e.nowMs(); promptOnly('监测', () => {
             // 说的是自己的告警当场打到 stderr：调用方（子 Agent）不挂 盯 也看得到自己卡住了
             for (const a of monitorRound(e, readState(e, () => machine ?? e.readMachine(), false)))
                 if (a.pid === process.pid)
-                    console.error(`!! 告警 ${a.类} ${a.对象}：${Math.round(a.值)} ≥ ${Math.round(a.阈值)}（第 ${a.次数} 次）。${a.类 === '无帧' ? '这么久没出新帧，多半卡住了；别原样重跑，先缩小范围查是哪样东西卡' : ''}`);
+                    console.error(`!! 告警 ${a.type} ${a.subject}：${Math.round(a.value)} ≥ ${Math.round(a.threshold)}（第 ${a.attempts} 次）。${a.type === '无帧' ? '这么久没出新帧，多半卡住了；别原样重跑，先缩小范围查是哪样东西卡' : ''}`);
         }); };
         const cleanOrphans = () => promptOnly('清孤儿', () => { for (const p of e.clearOrphans())
-            logEvent('清孤儿', { 进程: p }); });
+            logEvent('清孤儿', { processes: p }); });
         const onReclaim = (pid: number | null) => {
             const info = readJson<{ pid: number }>(infoFile);
-            logEvent('回收死锁', { 原持有者: info?.pid === pid ? info : { pid } });
+            logEvent('回收死锁', { prevHolder: info?.pid === pid ? info : { pid } });
             cleanOrphans();
         };
         // 观测快照只供日志和监测复用；准入仍独立现读内存、压力、负载。
@@ -153,16 +153,16 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
             await e.sleep(opts.intervalMs ?? e.queueIntervalMs ?? 1000);
             roundMachine = monitorDue() ? await sampleMachine() : undefined;
         };
-        const readQueueState = () => { const tickets = listTickets(dir); return { 深度: tickets.filter(x => x.名 !== t.名).length, 前面: tickets.filter(x => x.名 < t.名).slice(0, 3).map(x => x.名), 持锁: holderPid(file) }; };
+        const readQueueState = () => { const tickets = listTickets(dir); return { depth: tickets.filter(x => x.name !== t.name).length, ahead: tickets.filter(x => x.name < t.name).slice(0, 3).map(x => x.name), lockHolders: holderPid(file) }; };
         withdrawTicket = registerCleanup(clearTicket);
         const queueState = readQueueState();
         roundMachine = await sampleMachine();
-        logEvent('领票', { 队: queueState, 机: roundReading() });
+        logEvent('领票', { queue: queueState, machine: roundReading() });
         promptOnly('领票提示', () => {
-            const occupancy = queueOccupancy(readOccupancy(e), lockName), ahead = occupancy.票.filter(q => !q.死 && q.名 < t.名), liveLocks = occupancy.持锁.filter(x => !x.死);
+            const occupancy = queueOccupancy(readOccupancy(e), lockName), ahead = occupancy.ticket.filter(q => !q.死 && q.name < t.name), liveLocks = occupancy.lockHolders.filter(x => !x.死);
             if (!ahead.length && !liveLocks.length)
                 return;
-            const { 秒: waitSec, unresolved } = waitAhead({ 持锁: liveLocks, 票: ahead }, e.nowMs());
+            const { sec: waitSec, unresolved } = waitAhead({ lockHolders: liveLocks, ticket: ahead }, e.nowMs());
             (opts.waitHint ?? (s => console.error(`== 资源闸：${lockName}排队（${s}）`)))(`前面 ${ahead.length} 张，约${unresolved ? '≥' : ''}${(waitSec / 60).toFixed(1)} 分`);
         });
         for (;;) {
@@ -175,20 +175,20 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
             monitor(roundMachine);
             // 每个等待者每轮都回收，不看队位和准入：只靠队首的话，全队暂缓时没人回收。
             promptOnly('回收死锁', () => reclaimDeadLock(file, e.localHost, onReclaim));
-            const myTickets = listTickets(dir).filter(x => x.内容?.任务 === task.info.任务 && x.pid === process.pid);
+            const myTickets = listTickets(dir).filter(x => x.content?.task === task.info.task && x.pid === process.pid);
             // 写旧路径和改名撞上时会出两张：改名后的那张才算数。
-            const other = myTickets.find(x => x.名 !== t.名) ?? myTickets[0];
+            const other = myTickets.find(x => x.name !== t.name) ?? myTickets[0];
             for (const x of myTickets)
                 if (x !== other)
-                    promptOnly('删票', () => fs.rmSync(x.文件, { force: true }));
+                    promptOnly('删票', () => fs.rmSync(x.file, { force: true }));
             if (other)
                 t = other;
             else {
-                const oldName = t.名;
-                t = claimTicket(dir, e.localHost, { ...task.info, 声明: taskDecl }, e.nowMs());
-                logEvent('票丢失', { 原名: oldName, 新名: t.名 });
+                const oldName = t.name;
+                t = claimTicket(dir, e.localHost, { ...task.info, decl: taskDecl }, e.nowMs());
+                logEvent('票丢失', { 原名: oldName, 新名: t.name });
             }
-            if (t.内容?.暂缓至 && t.内容.暂缓至 <= e.nowMs()) {
+            if (t.content?.暂缓至 && t.content.暂缓至 <= e.nowMs()) {
                 try {
                     t = requeueTail(t);
                 }
@@ -196,14 +196,14 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
                     await pause();
                     continue;
                 }
-                delete t.内容!.暂缓至;
-                delete t.内容!.暂缓因;
-                t.内容!.起 = e.nowMs();
+                delete t.content!.暂缓至;
+                delete t.content!.暂缓因;
+                t.content!.start = e.nowMs();
                 writeTicketState(t);
-                logEvent('恢复', { 原因: '暂缓到期回队尾' });
+                logEvent('恢复', { cause: '暂缓到期回队尾' });
             }
             try {
-                fs.utimesSync(t.文件, new Date(), new Date());
+                fs.utimesSync(t.file, new Date(), new Date());
             }
             catch {
                 await pause();
@@ -215,22 +215,22 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
                     liveTickets.push(q);
                 else {
                     try {
-                        fs.unlinkSync(q.文件);
-                        logEvent('清死票', { 原信息: q });
+                        fs.unlinkSync(q.file);
+                        logEvent('清死票', { origInfo: q });
                         cleanOrphans();
                     }
                     catch { /* 另一读者先回收 */ }
                 }
             }
-            const grant = readDirective(e, task.info.任务);
+            const grant = readDirective(e, task.info.task);
             if (grant?.动作 === '放行' && (grant.至 ?? 0) <= e.nowMs()) {
-                console.error(`!! 放行授权已过期（${grant.为什么}）：这张票回到正常判断，还要放行请重发`);
-                logEvent('放行过期', { 至: grant.至, 为什么: grant.为什么 });
-                deleteDirective(e, task.info.任务);
+                console.error(`!! 放行授权已过期（${grant.why}）：这张票回到正常判断，还要放行请重发`);
+                logEvent('放行过期', { 至: grant.至, why: grant.why });
+                deleteDirective(e, task.info.task);
             }
             const skipQueue = opts.canOvertake?.(t) ?? false;
-            const deferred = Boolean(t.内容?.暂缓至 && t.内容.暂缓至 > e.nowMs());
-            const myTurn = skipQueue || (!deferred && liveTickets[0]?.名 === t.名), held = lockHeld(file, e.localHost);
+            const deferred = Boolean(t.content?.暂缓至 && t.content.暂缓至 > e.nowMs());
+            const myTurn = skipQueue || (!deferred && liveTickets[0]?.name === t.name), held = lockHeld(file, e.localHost);
             if (myTurn && !held) {
                 if ((opts.canAdmit?.(t) ?? true) && tryAcquire(file, e.localHost, onReclaim)) {
                     if (!opts.recheckInLock || opts.recheckInLock(t))
@@ -240,19 +240,19 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
             }
             else
                 opts.onLeaveAdmit?.(t);
-            const waitText = deferred ? `暂缓至 ${new Date(t.内容!.暂缓至!).toISOString()}${t.内容!.暂缓因 ? `：${t.内容!.暂缓因}` : ''}` : held ? `锁在 pid ${holderPid(file) ?? '?'} 手里` : myTurn ? '等资源' : '前面还有人排队';
+            const waitText = deferred ? `暂缓至 ${new Date(t.content!.暂缓至!).toISOString()}${t.content!.暂缓因 ? `：${t.content!.暂缓因}` : ''}` : held ? `锁在 pid ${holderPid(file) ?? '?'} 手里` : myTurn ? '等资源' : '前面还有人排队';
             if (waitText !== origWait) {
                 opts.waitHint?.(waitText);
-                logEvent('排队', { 等谁: holderPid(file), 前面: liveTickets.slice(0, 3).map(x => x.名), 状态: waitText });
+                logEvent('排队', { waitingOn: holderPid(file), ahead: liveTickets.slice(0, 3).map(x => x.name), state: waitText });
                 origWait = waitText;
             }
             await pause();
         }
         const acquiredAt = e.nowMs();
-        task.update(taskDecl, t.名, '持锁');
+        task.update(taskDecl, t.name, '持锁');
         // 正常轮到时前面没有活票；还有的就是被放行越过了。
-        promptOnly('被越计数', () => recordOvertaken(listTickets(dir).filter(q => q.名 < t.名), e.localHost));
-        logEvent('拿锁', { 等锁秒: (acquiredAt - startMs) / 1000, 等内存秒: opts.waitMemorySec?.() ?? 0, 被越次数: t.内容?.已被越 ?? 0, 队: readQueueState(), 机: roundReading() ?? machineReading(e) });
+        promptOnly('被越计数', () => recordOvertaken(listTickets(dir).filter(q => q.name < t.name), e.localHost));
+        logEvent('拿锁', { lockWaitSec: (acquiredAt - startMs) / 1000, memoryWaitSec: opts.waitMemorySec?.() ?? 0, overtakenCount: t.content?.已被越 ?? 0, queue: readQueueState(), machine: roundReading() ?? machineReading(e) });
         clearTicket();
         withdrawTicket();
         let lastWrite = 0, framesDone = 0, frameTime = acquiredAt, finished = false;
@@ -264,11 +264,11 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
             if (lastWrite && e.nowMs() - lastWrite < 5000)
                 return;
             lastWrite = e.nowMs();
-            promptOnly('信息文件', () => writeJson(infoFile, { pid: process.pid, 任务: task.info.任务, 票: t.名, 发起: task.info.发起, 声明: taskDecl, 拿锁时: acquiredAt, 心跳: lastWrite, 帧时: frameTime, 已出帧: framesDone, 总帧: taskDecl.帧数 }));
+            promptOnly('信息文件', () => writeJson(infoFile, { pid: process.pid, task: task.info.task, ticket: t.name, initiator: task.info.initiator, decl: taskDecl, lockAcquiredAt: acquiredAt, heartbeat: lastWrite, frameTime: frameTime, framesDone: framesDone, totalFrames: taskDecl.frameCount }));
         };
         heartbeat();
         const timeLimit = Number(process.env.ANIM_TIME_LIMIT);
-        const limitTimer = lockName === '渲染' && timeLimit > 0 ? setTimeout(() => { logEvent('限时杀', { 限时: timeLimit, 已跑秒: (e.nowMs() - task.info.起) / 1000 }); process.exit(124); }, timeLimit * 1000) : undefined;
+        const limitTimer = lockName === '渲染' && timeLimit > 0 ? setTimeout(() => { logEvent('限时杀', { 限时: timeLimit, elapsedSec: (e.nowMs() - task.info.start) / 1000 }); process.exit(124); }, timeLimit * 1000) : undefined;
         limitTimer?.unref();
         const timer = setInterval(() => { heartbeat(); monitor(); }, 30000);
         timer.unref();
@@ -282,34 +282,34 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
             unregisterExit();
             const interrupted = outcome === '被杀' || outcome === '退出';
             // 中断时在退出钩子里，不开子进程读内存，要快。被杀事件靠 当时 说明，所以不清。
-            logEvent('放锁', { 持锁秒: (e.nowMs() - acquiredAt) / 1000, 结果: outcome, 已出帧: framesDone, 队: readQueueState(), 机: interrupted ? { 负载: e.load1Min() } : machineReading(e) });
+            logEvent('放锁', { lockHoldSec: (e.nowMs() - acquiredAt) / 1000, result: outcome, framesDone: framesDone, queue: readQueueState(), machine: interrupted ? { load: e.load1Min() } : machineReading(e) });
             if (outcome !== '成')
-                promptOnly('重复失败', () => { const a = reportRepeatedStillFail(e.logDir, { 声明: taskDecl, 工作区: task.info.发起.工作区, 任务: task.info.任务, pid: process.pid, 会话: task.info.发起.会话 }, e.nowMs()); if (a)
-                    console.error(`!! 告警 静帧重复失败 ${a.对象}：同一批帧连着 ${a.值} 次没出来，别再原样重跑`); });
+                promptOnly('重复失败', () => { const a = reportRepeatedStillFail(e.logDir, { decl: taskDecl, workspace: task.info.initiator.workspace, task: task.info.task, pid: process.pid, session: task.info.initiator.session }, e.nowMs()); if (a)
+                    console.error(`!! 告警 静帧重复失败 ${a.subject}：同一批帧连着 ${a.value} 次没出来，别再原样重跑`); });
             if (!interrupted)
-                task.update(taskDecl, t.名, '');
+                task.update(taskDecl, t.name, '');
             // 持锁期间 anim sched 的改名可能和删票撞上，留下的票会挡住后来者，放锁前再扫一次。
             clearTicket();
             dropLock();
             handOver();
             if (ownsTask && !interrupted)
-                task.结束(outcome === '成' ? 0 : 1);
+                task.endedAt(outcome === '成' ? 0 : 1);
         };
-        return { 文件: file, 票: t.名, 任务: task.info.任务, 声明: taskDecl, 拿锁时: acquiredAt, 放: release, 心跳: heartbeat };
+        return { file: file, ticket: t.name, task: task.info.task, decl: taskDecl, lockAcquiredAt: acquiredAt, 放: release, heartbeat: heartbeat };
     }
     catch (err) {
         clearTicket();
         withdrawTicket();
         dropLock();
         handOver();
-        taskHandle?.update(taskHandle.info.声明, taskHandle.info.票, '');
+        taskHandle?.update(taskHandle.info.decl, taskHandle.info.ticket, '');
         if (ownsTask)
-            taskHandle?.结束(failExitCode(err));
+            taskHandle?.endedAt(failExitCode(err));
         throw err;
     }
 };
-export const gateHeartbeat = (frame?: number) => lockContext.getStore()?.心跳(frame);
-export const currentTicket = () => lockContext.getStore()?.票;
+export const gateHeartbeat = (frame?: number) => lockContext.getStore()?.heartbeat(frame);
+export const currentTicket = () => lockContext.getStore()?.ticket;
 const checkReentry = () => { if (lockContext.getStore())
     throw Error('禁止嵌套过闸：当前调用已经持有渲染锁'); const pid = Number(process.env[ancestorLockEnv]); if (pid && pid !== process.pid && processAlive(pid))
     throw Error(`祖先 pid ${pid} 持有渲染锁，子进程不能再次过闸`); };
@@ -322,17 +322,17 @@ const takeRenderGate = async (hint: (s: string) => void, env: Partial<GateEnv>, 
             const elapsedSec = (e.nowMs() - stuckStartMs) / 1000;
             if (stuckOn === '内存')
                 waitMemorySec += elapsedSec;
-            openTask(e, taskDecl).logEvent(`等${stuckOn}止`, { 票: t.名, 锁: '渲染', 秒: elapsedSec, 机: machineReading(e) });
+            openTask(e, taskDecl).logEvent(`等${stuckOn}止`, { ticket: t.name, lock: '渲染', sec: elapsedSec, machine: machineReading(e) });
             stuckOn = '';
             alarmed = false;
         }
         checkTicket(t);
     };
-    const handle = await queueAcquire('渲染', { ...e, 声明: taskDecl, waitHint: s => hint(`渲染排队（${s}）`), canOvertake: t => Boolean(getPassGrant(e, t.内容!.任务)), onLeaveAdmit: stopStuck, waitMemorySec: () => waitMemorySec, canAdmit: t => {
-            if (taskDecl.不开渲染)
+    const handle = await queueAcquire('渲染', { ...e, decl: taskDecl, waitHint: s => hint(`渲染排队（${s}）`), canOvertake: t => Boolean(getPassGrant(e, t.content!.task)), onLeaveAdmit: stopStuck, waitMemorySec: () => waitMemorySec, canAdmit: t => {
+            if (taskDecl.noRender)
                 return true;
-            const m = e.readMemory(), pressure = e.readPressure(), grant = getPassGrant(e, t.内容!.任务), load = taskDecl.需负载 ? e.load1Min() : null;
-            const memPass = (pressure !== 4 || grant?.强) && (grant || !m || enoughMemory(m, e.memFloor));
+            const m = e.readMemory(), pressure = e.readPressure(), grant = getPassGrant(e, t.content!.task), load = taskDecl.needsLoad ? e.load1Min() : null;
+            const memPass = (pressure !== 4 || grant?.strength) && (grant || !m || enoughMemory(m, e.memFloor));
             const loadPass = grant || load === null || load < e.coreCount() * 0.8;
             const blockReason = !memPass ? '内存' : !loadPass ? '负载' : '';
             if (blockReason !== stuckOn) {
@@ -342,27 +342,27 @@ const takeRenderGate = async (hint: (s: string) => void, env: Partial<GateEnv>, 
                     stuckStartMs = e.nowMs();
                     if (blockReason === '内存') {
                         hint(`渲染等内存（${m ? readingNote(m) : '无读数'}，下限 ${e.memFloor}%，压力 ${pressure ?? '?'}）`);
-                        openTask(e, taskDecl).logEvent('等内存起', { 票: t.名, 锁: '渲染', 读数: m, 压力: pressure, 阈值: e.memFloor, 机: machineReading(e) });
+                        openTask(e, taskDecl).logEvent('等内存起', { ticket: t.name, lock: '渲染', reading: m, pressure: pressure, threshold: e.memFloor, machine: machineReading(e) });
                     }
                     else {
                         hint(`渲染等负载（${load}，上限 ${e.coreCount()}×0.8）`);
-                        openTask(e, taskDecl).logEvent('等负载起', { 票: t.名, 锁: '渲染', 负载: load, 机: machineReading(e) });
+                        openTask(e, taskDecl).logEvent('等负载起', { ticket: t.name, lock: '渲染', load: load, machine: machineReading(e) });
                     }
                 }
             }
             checkTicket(t);
             if (stuckOn === '内存' && !alarmed && e.nowMs() - stuckStartMs >= 180000) {
-                hint(`告警：等内存已满 3 分钟，票 ${t.名}；锁未占用，请主 Agent 决定`);
+                hint(`告警：等内存已满 3 分钟，票 ${t.name}；锁未占用，请主 Agent 决定`);
                 alarmed = true;
             }
             if (!blockReason && grant)
-                ticketReading = { 票: t.名, 压力: pressure, 读数: m, 强: grant.强 };
+                ticketReading = { ticket: t.name, pressure: pressure, reading: m, strength: grant.strength };
             return !blockReason;
         } });
     if (ticketReading)
         openTask(e, taskDecl).logEvent('单票放行', ticketReading);
     hint('放行渲染');
-    consumePassGrant(e, handle.任务);
+    consumePassGrant(e, handle.task);
     return handle;
 };
 export const passRenderGate = async <T>(fn: () => Promise<T>, hint: (s: string) => void = s => console.error(`== 资源闸：${s}`), env: Partial<GateEnv> = {}, taskDecl: TaskDecl = {}): Promise<T> => {
@@ -395,10 +395,10 @@ export const passGate = async <T>(fn: () => Promise<T>, hint: (s: string) => voi
         }
         catch { /* 首次 */ }
         const lockInfo = readJson<{
-            秒: number;
+            sec: number;
             pid: number;
         }>(lastAllowFile + '.信息.json');
-        return lockInfo?.秒 === epochSec && !processAlive(lockInfo.pid) || e.nowMs() / 1000 - epochSec >= 60;
+        return lockInfo?.sec === epochSec && !processAlive(lockInfo.pid) || e.nowMs() / 1000 - epochSec >= 60;
     };
     try {
         const stopMemWait = (t: Ticket) => {
@@ -406,21 +406,21 @@ export const passGate = async <T>(fn: () => Promise<T>, hint: (s: string) => voi
                 return;
             const elapsedSec = (e.nowMs() - memWaitStartMs) / 1000;
             waitMemorySec += elapsedSec;
-            task.logEvent('等内存止', { 票: t.名, 锁: '放行', 秒: elapsedSec, 机: lastReading });
+            task.logEvent('等内存止', { ticket: t.name, lock: '放行', sec: elapsedSec, machine: lastReading });
             memWaitStartMs = undefined;
         };
-        const handle = await queueAcquire('放行', { ...e, 声明: taskDecl, canOvertake: t => Boolean(getPassGrant(e, t.内容!.任务)), onLeaveAdmit: t => { stuckOn = ''; stopMemWait(t); setTicketState(t, '', undefined); }, waitMemorySec: () => waitMemorySec, canAdmit: t => {
-                const grant = getPassGrant(e, t.内容!.任务), m = e.readMemory(), pressure = e.readPressure(), load = e.load1Min();
-                lastReading = { 负载: load, 闸: m?.空闲百分比, 压力: pressure };
-                const reasonItems = [!grant && !intervalOk() ? '间隔' : '', !grant && load !== null && load >= e.coreCount() * 0.8 ? '负载' : '', !taskDecl.不开渲染 && ((pressure === 4 && !grant?.强) || (!grant && m && !enoughMemory(m, e.memFloor))) ? '内存' : ''].filter(Boolean).join('、');
+        const handle = await queueAcquire('放行', { ...e, decl: taskDecl, canOvertake: t => Boolean(getPassGrant(e, t.content!.task)), onLeaveAdmit: t => { stuckOn = ''; stopMemWait(t); setTicketState(t, '', undefined); }, waitMemorySec: () => waitMemorySec, canAdmit: t => {
+                const grant = getPassGrant(e, t.content!.task), m = e.readMemory(), pressure = e.readPressure(), load = e.load1Min();
+                lastReading = { load: load, gate: m?.freePercent, pressure: pressure };
+                const reasonItems = [!grant && !intervalOk() ? '间隔' : '', !grant && load !== null && load >= e.coreCount() * 0.8 ? '负载' : '', !taskDecl.noRender && ((pressure === 4 && !grant?.strength) || (!grant && m && !enoughMemory(m, e.memFloor))) ? '内存' : ''].filter(Boolean).join('、');
                 if (!reasonItems.includes('内存'))
                     stopMemWait(t);
                 if (reasonItems && reasonItems !== stuckOn) {
-                    hint(`等资源（卡在${reasonItems}；负载 ${load ?? '?'}，内存 ${m?.空闲百分比 ?? '?'}%，压力 ${pressure ?? '?'}）`);
-                    task.logEvent('放行等起', { 票: t.名, 锁: '放行', 卡在: reasonItems, 机: lastReading });
+                    hint(`等资源（卡在${reasonItems}；负载 ${load ?? '?'}，内存 ${m?.freePercent ?? '?'}%，压力 ${pressure ?? '?'}）`);
+                    task.logEvent('放行等起', { ticket: t.name, lock: '放行', stuckOn: reasonItems, machine: lastReading });
                     if (reasonItems.includes('内存') && memWaitStartMs === undefined) {
                         memWaitStartMs = e.nowMs();
-                        task.logEvent('等内存起', { 票: t.名, 锁: '放行', 读数: m, 压力: pressure, 阈值: e.memFloor, 机: lastReading });
+                        task.logEvent('等内存起', { ticket: t.name, lock: '放行', reading: m, pressure: pressure, threshold: e.memFloor, machine: lastReading });
                     }
                 }
                 if (reasonItems)
@@ -428,15 +428,15 @@ export const passGate = async <T>(fn: () => Promise<T>, hint: (s: string) => voi
                 stuckOn = reasonItems;
                 setTicketState(t, reasonItems, memWaitStartMs);
                 return !reasonItems;
-            }, recheckInLock: t => Boolean(getPassGrant(e, t.内容!.任务)) || intervalOk() });
+            }, recheckInLock: t => Boolean(getPassGrant(e, t.content!.task)) || intervalOk() });
         try {
             const epochSec = Math.floor(e.nowMs() / 1000);
             promptOnly('上次放行', () => {
                 fs.writeFileSync(lastAllowFile, `${epochSec}\n`);
-                writeJson(lastAllowFile + '.信息.json', { 秒: epochSec, pid: process.pid, 任务: task.info.任务 });
+                writeJson(lastAllowFile + '.信息.json', { sec: epochSec, pid: process.pid, task: task.info.task });
             });
-            task.logEvent('放行', { 票: handle.票, 锁: '放行', 等秒: (e.nowMs() - startMs) / 1000, 卡在: [...stuckSeen], 机: lastReading });
-            consumePassGrant(e, handle.任务);
+            task.logEvent('放行', { ticket: handle.ticket, lock: '放行', waitSec: (e.nowMs() - startMs) / 1000, stuckOn: [...stuckSeen], machine: lastReading });
+            consumePassGrant(e, handle.task);
         }
         finally {
             handle.放();
@@ -451,17 +451,17 @@ export const passGate = async <T>(fn: () => Promise<T>, hint: (s: string) => voi
     }
     finally {
         if (ownsTask)
-            task.结束(code);
+            task.endedAt(code);
     }
 };
 /** 项间只在占锁满 120 秒且有人等、或明确让路时交棒；打包和浏览器由调用者保留。 */
 export const openGateBatch = (taskDecl: TaskDecl, env: Partial<GateEnv> = {}) => {
     checkReentry();
-    if (taskDecl.连贯 && !taskDecl.连贯.为什么?.trim())
+    if (taskDecl.连贯 && !taskDecl.连贯.why?.trim())
         throw Error('连贯批必须写为什么');
     // 只有一项的批没有下一个让路点；项数没声明时还可能有下一项。
-    const canYield = taskDecl.项数 !== 1;
-    const e = resolveEnv(env), ownsTask = !hasTask(e.lockDir), task = openTask(e, { ...taskDecl, 种: '批', 可让路: canYield });
+    const canYield = taskDecl.itemCount !== 1;
+    const e = resolveEnv(env), ownsTask = !hasTask(e.lockDir), task = openTask(e, { ...taskDecl, kind: '批', canYield: canYield });
     let handle: LockHandle | null = null, finished = false, busy = false, itemsDone = 0, exitCode = 0;
     return {
         runTask: async <T>(taskItem: TaskDecl, fn: () => Promise<T>): Promise<T> => {
@@ -469,9 +469,9 @@ export const openGateBatch = (taskDecl: TaskDecl, env: Partial<GateEnv> = {}) =>
                 throw Error('批已结束或并发调用一项；批内一次一路');
             busy = true;
             try {
-                handle ??= await takeRenderGate(s => console.error(`== 资源闸：${s}`), e, { ...taskDecl, ...taskItem, 种: '批', 可让路: canYield });
-                Object.assign(handle.声明, taskItem);
-                handle.心跳(0);
+                handle ??= await takeRenderGate(s => console.error(`== 资源闸：${s}`), e, { ...taskDecl, ...taskItem, kind: '批', canYield: canYield });
+                Object.assign(handle.decl, taskItem);
+                handle.heartbeat(0);
                 const startMs = e.nowMs();
                 process.env[ancestorLockEnv] = String(process.pid);
                 try {
@@ -479,12 +479,12 @@ export const openGateBatch = (taskDecl: TaskDecl, env: Partial<GateEnv> = {}) =>
                 }
                 finally {
                     delete process.env[ancestorLockEnv];
-                    task.logEvent('批项', { 票: handle.票, 第几项: ++itemsDone, 秒: (e.nowMs() - startMs) / 1000, 声明: taskItem });
-                    const instruction = readDirective(e, task.info.任务), yielding = instruction?.动作 === '让路' && instruction.至! > e.nowMs();
+                    task.logEvent('批项', { ticket: handle.ticket, 第几项: ++itemsDone, sec: (e.nowMs() - startMs) / 1000, decl: taskItem });
+                    const instruction = readDirective(e, task.info.task), yielding = instruction?.动作 === '让路' && instruction.至! > e.nowMs();
                     const otherTickets = listTickets(path.join(e.lockDir, '渲染.排队')).filter(t => t.pid !== process.pid && ticketAlive(t, e.localHost));
                     // 低优先的批：有普通票在等就让，不等满 120 秒
-                    const lowPriorityYield = handle.声明.低优先 && otherTickets.some(t => !isLowPriorityTicket(t));
-                    if (yielding || (!taskDecl.连贯 && (lowPriorityYield || (otherTickets.length && e.nowMs() - handle.拿锁时 >= 120000)))) {
+                    const lowPriorityYield = handle.decl.lowPriority && otherTickets.some(t => !isLowPriorityTicket(t));
+                    if (yielding || (!taskDecl.连贯 && (lowPriorityYield || (otherTickets.length && e.nowMs() - handle.lockAcquiredAt >= 120000)))) {
                         handle.放('让路');
                         handle = null;
                     }
@@ -498,10 +498,10 @@ export const openGateBatch = (taskDecl: TaskDecl, env: Partial<GateEnv> = {}) =>
                 busy = false;
             }
         },
-        结束: () => { if (busy)
+        endedAt: () => { if (busy)
             throw Error('批项还在跑，不能提前结束'); if (finished)
             return; finished = true; handle?.放(); handle = null; if (ownsTask)
-            task.结束(exitCode); },
+            task.endedAt(exitCode); },
     };
 };
 export const lazyPassGate = (passGateFn: (fn: () => Promise<void>) => Promise<void> = passGate) => { let p: Promise<void> | undefined; return () => p ??= passGateFn(async () => { }); };

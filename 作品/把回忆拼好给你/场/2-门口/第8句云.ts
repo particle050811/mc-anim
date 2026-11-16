@@ -33,7 +33,7 @@ export const line8Cloud = (frame: number): DistantCloud => ({ drift: cloudDrift(
 /** 光影开 Photon 云时的光影场（门口画布 的 光影场）：接第 7 句的 Photon 雨云（场/2-雷雨/末态.ts：海平面、各层高度、洞比、软边），
  *  洞是开到头的 云洞半径；雨停了，曝光倍 1、云底不再被光柱照亮 */
 export const line8ShadingScene: ShadingSceneParams = {
-  海平面: endRainCloud.海平面,
-  cloudLayers: endRainCloud.层,
+  seaLevel: endRainCloud.seaLevel,
+  cloudLayers: endRainCloud.layers,
   cloud: { hole: [cabinSkyCloud.holeCenter[0], cabinSkyCloud.holeCenter[1], cloudHoleRadius * endRainCloud.holeRatio, endRainCloud.softEdge] },
 };

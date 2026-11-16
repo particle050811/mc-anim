@@ -61,10 +61,10 @@ export const splitRings = (N: number, options: { ringCount?: number; splitMode?:
     const weightSum = freeSlots.reduce((a, k) => a + weights[k]!, 0);
     const saturated = freeSlots.filter((k) => (remain * weights[k]!) / weightSum > ringCapacities[k]!);
     if (saturated.length === 0) {
-      const shares = freeSlots.map((k) => ({ k, 值: (remain * weights[k]!) / weightSum }));
-      for (const { k, 值: value } of shares) allocated[k] = Math.floor(value + 1e-9);
+      const shares = freeSlots.map((k) => ({ k, value: (remain * weights[k]!) / weightSum }));
+      for (const { k, value: value } of shares) allocated[k] = Math.floor(value + 1e-9);
       let remainder = remain - shares.reduce((a, { k }) => a + allocated[k]!, 0);
-      const ranked = [...shares].sort((a, b) => b.值 - Math.floor(b.值 + 1e-9) - (a.值 - Math.floor(a.值 + 1e-9)) || a.k - b.k);
+      const ranked = [...shares].sort((a, b) => b.value - Math.floor(b.value + 1e-9) - (a.value - Math.floor(a.value + 1e-9)) || a.k - b.k);
       for (let i = 0; remainder > 0; i = (i + 1) % ranked.length) {
         const k = ranked[i]!.k;
         if (allocated[k]! < ringCapacities[k]!) {
@@ -82,7 +82,7 @@ export const splitRings = (N: number, options: { ringCount?: number; splitMode?:
 };
 
 /** 把排好序的 N 项按每圈格数切开：返回每项在第几圈第几格，不重不漏 */
-export const placeCells = (cellsPerRing: readonly number[]): { ring: number; 格: number }[] => cellsPerRing.flatMap((n, ring) => Array.from({ length: n }, (_, ringCell) => ({ ring, 格: ringCell })));
+export const placeCells = (cellsPerRing: readonly number[]): { ring: number; cell: number }[] => cellsPerRing.flatMap((n, ring) => Array.from({ length: n }, (_, ringCell) => ({ ring, cell: ringCell })));
 
 export type OpenClose = {
   /** 每圈弹开用几刻，默认原版的 2.5 */
@@ -103,7 +103,7 @@ export const defaultOpenClose: OpenClose = { ticksPerRing: radialWheelConst.open
 export const openDoneTick = (ringCount: number, ringOpen: OpenClose = defaultOpenClose) => (ringCount - 1) * ringOpen.ringGapTick + ringOpen.ticksPerRing;
 
 export type RingState = {
-  进度: number;
+  progress: number;
   /** 这一圈还在弹：只画带子，不画图标（照原版 isReady() 才画图标） */
   animating: boolean;
   内: number;
@@ -124,7 +124,7 @@ export const RingState = (k: number, tick: number, ringShape: RingShape = defaul
   const fullRing = ringRadius(k, ringShape);
   const innerRadius = k === 0 ? (animating ? Math.max(0.1, ringShape.fullInnerRadius * progress) : ringShape.fullInnerRadius) : fullRing.内;
   const outerRadius = k === 0 ? (innerRadius * (ringShape.fullInnerRadius + ringShape.ringWidth)) / ringShape.fullInnerRadius : innerRadius + ringShape.ringWidth * progress;
-  return { 进度: progress, animating, 内: innerRadius, outerRadius, iconRadius: (innerRadius + outerRadius) / 2, angleRad: ringRotation(k, tick, ringOpen) };
+  return { progress: progress, animating, 内: innerRadius, outerRadius, iconRadius: (innerRadius + outerRadius) / 2, angleRad: ringRotation(k, tick, ringOpen) };
 };
 
 /** 第 k 圈在打开后第几刻整体转了多少弧度（正 = 顺时针）；还没弹到这一圈也照算 */
@@ -144,12 +144,12 @@ export type MoveOut = {
 export const defaultMoveOut: MoveOut = { startScale: 0.25, roll: -60 };
 
 /** 第 k 圈的图标在打开后第 刻 刻走到哪：比例 = 离圆心是落定半径的几成；缩放；卷 = 多转的弧度。那一圈弹完以后返回 null（照常画） */
-export const moveOutState = (k: number, tick: number, ringOpen: OpenClose = defaultOpenClose, moveOut: MoveOut = defaultMoveOut): { ratio: number; 缩放: number; roll: number } | null => {
+export const moveOutState = (k: number, tick: number, ringOpen: OpenClose = defaultOpenClose, moveOut: MoveOut = defaultMoveOut): { ratio: number; scale: number; roll: number } | null => {
   const endTick = k * ringOpen.ringGapTick + ringOpen.ticksPerRing;
   if (tick >= endTick) return null;
   const p = Math.max(0, tick) / endTick;
   const e = p * p * (3 - 2 * p);
-  return { ratio: e, 缩放: moveOut.startScale + (1 - moveOut.startScale) * e, roll: (moveOut.roll * (1 - e) * Math.PI) / 180 };
+  return { ratio: e, scale: moveOut.startScale + (1 - moveOut.startScale) * e, roll: (moveOut.roll * (1 - e) * Math.PI) / 180 };
 };
 
 /** 收盘（原创，第 5 幕）：开始收后第 收刻 刻，照张开倒着走：最外圈先缩回、最里一圈最后缩回圆心（等效于张开到第「开完刻 − 收刻」刻）；

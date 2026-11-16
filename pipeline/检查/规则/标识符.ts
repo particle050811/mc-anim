@@ -34,7 +34,7 @@ export const hanIdentifiers = (file: string, source: string): Map<string, number
 /** 全仓代码里现有的中文标识符：名字 → 文件 → 行号 */
 export const currentHanIdentifiers = (c: CheckContext): Map<string, Map<string, number[]>> => {
   const byName = new Map<string, Map<string, number[]>>();
-  for (const p of c.文件()) {
+  for (const p of c.file()) {
     if (!codeExtRegex.test(p)) continue;
     for (const [name, lines] of hanIdentifiers(p, c.读(p))) (byName.get(name) ?? byName.set(name, new Map()).get(name)!).set(p, lines);
   }
@@ -43,7 +43,7 @@ export const currentHanIdentifiers = (c: CheckContext): Map<string, Map<string, 
 
 /** 基线在 main 分叉点上的样子；拿不到（不在 git、没有 main、那时还没这张表）给 null */
 const baselineAtMergeBase = (c: CheckContext): string | null => {
-  const git = (...a: string[]) => execFileSync('git', ['-C', c.根, '-c', 'core.quotepath=false', ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const git = (...a: string[]) => execFileSync('git', ['-C', c.root, '-c', 'core.quotepath=false', ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   try {
     return git('show', `${git('merge-base', 'HEAD', 'main').trim()}:${hanBaselinePath}`);
   } catch {

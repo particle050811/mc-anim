@@ -11,39 +11,39 @@ import timeline from '../../场/1-台地/时间线.ts';
 import soundTable from './声音表.生成.ts';
 
 /** 召唤声音 的名 → 怎么放（不在表里的不放） */
-const ritualLoudness: Record<string, { 峰值: number } | { 响度: number }> = {
-  仪式开始: { 峰值: -10 },
-  仪式完成: { 峰值: -10 },
-  雷声: { 峰值: -10 },
-  仪式循环: { 响度: -28 },
-  使徒低语: { 峰值: -18 },
-  祭品被吃: { 峰值: -18 },
+const ritualLoudness: Record<string, { peakDb: number } | { loudness: number }> = {
+  仪式开始: { peakDb: -10 },
+  仪式完成: { peakDb: -10 },
+  雷声: { peakDb: -10 },
+  仪式循环: { loudness: -28 },
+  使徒低语: { peakDb: -18 },
+  祭品被吃: { peakDb: -18 },
 };
 
 export default windowSeg(timeline, {
-  起: '开始',
-  止: 'summonDone',
-  地形: [realNetherPack],
+  start: '开始',
+  end: 'summonDone',
+  terrain: [realNetherPack],
   soundTable,
-  声音: ({ 放: play, 事件: events }) => {
+  sound: ({ 放: play, events: events }) => {
     const sounds: ReturnType<typeof play>[] = [];
     // 仪式：多选一的取第一个；扣灵魂（幽匿催发体绽放声，13 个文件）一秒一声，轮着用
     let cycleIndex = 0;
     for (const summonSound of summonSounds(summonPlans.短)) {
-      const sec = events.placeRing + summonSound.秒;
-      if (summonSound.名.startsWith('扣灵魂')) {
-        sounds.push(play(summonSound.资产[cycleIndex++ % summonSound.资产.length]!, sec, { 峰值: -18, 名: summonSound.名 }));
+      const sec = events.placeRing + summonSound.sec;
+      if (summonSound.name.startsWith('扣灵魂')) {
+        sounds.push(play(summonSound.asset[cycleIndex++ % summonSound.asset.length]!, sec, { peakDb: -18, name: summonSound.name }));
         continue;
       }
-      const loudLevel = ritualLoudness[summonSound.名];
-      if (loudLevel) sounds.push(play(summonSound.资产[0]!, sec, { ...loudLevel, 名: summonSound.名 }));
+      const loudLevel = ritualLoudness[summonSound.name];
+      if (loudLevel) sounds.push(play(summonSound.asset[0]!, sec, { ...loudLevel, name: summonSound.name }));
     }
     // 编排的钟（现身后几秒）→ 段内秒
     const segSec = (t: number) => events.yaBoLunAppears + t;
-    for (const [i, t] of act1Steps.entries()) sounds.push(play(`音效/block.stone.step.${(i % 6) + 1}`, segSec(t), { 峰值: -18, 名: `脚步${i + 1}` }));
+    for (const [i, t] of act1Steps.entries()) sounds.push(play(`音效/block.stone.step.${(i % 6) + 1}`, segSec(t), { peakDb: -18, name: `脚步${i + 1}` }));
     // 拔剑：原版没有拔剑声，借穿装备的声音
-    sounds.push(play('音效/item.armor.equip_generic.1', segSec(act1.drawSwordSec), { 峰值: -18, 名: '拔剑' }));
-    sounds.push(play('音效/诡厄巫法/goety.wind.1', segSec(act1.staffFlick[0]), { 峰值: -18, 名: '甩杖' }));
+    sounds.push(play('音效/item.armor.equip_generic.1', segSec(act1.drawSwordSec), { peakDb: -18, name: '拔剑' }));
+    sounds.push(play('音效/诡厄巫法/goety.wind.1', segSec(act1.staffFlick[0]), { peakDb: -18, name: '甩杖' }));
     return sounds;
   },
 });

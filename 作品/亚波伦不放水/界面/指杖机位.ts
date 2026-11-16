@@ -35,7 +35,7 @@ export type StaffRigParams = {
   /** 镜头偏到 d 的哪一侧：绕 d 的方位角（度），0 = 偏向 盘面基 的 u（上），90 = 偏向 v */
   azimuthDeg: number;
   /** 镜头到盘心几格 */
-  距: number;
+  dist: number;
   lens: number;
   /** 盘心落在画面的哪（宽、高的比例，左上角起） */
   discCenterPicture: readonly [number, number];
@@ -47,7 +47,7 @@ export type StaffRigParams = {
  * 朝向：不滚转，转到盘心正好落在 盘心画面（只转不挪，θ 不变）。设画面上盘心的方向在镜头坐标里是 (X, Y, 1)（右、上、前），
  * g = 镜头指向盘心的单位向量，仰角 ε 由 g.z·n = Y·cosε + sinε 解，方位角 α 由 g 的水平方位减去 atan2(X, cosε − Y·sinε)
  */
-export const staffRig = ({ 心: aimCenter, d, θ, azimuthDeg, 距: distance, lens, discCenterPicture, aspectRatio }: StaffRigParams): Cam => {
+export const staffRig = ({ 心: aimCenter, d, θ, azimuthDeg, dist: distance, lens, discCenterPicture, aspectRatio }: StaffRigParams): Cam => {
   const { u, v } = plateBasis(d);
   const w = addVec(addVec([0, 0, 0], u, Math.cos(azimuthDeg * radPerDeg)), v, Math.sin(azimuthDeg * radPerDeg));
   const pos = addVec(addVec(aimCenter, d, distance * Math.cos(θ * radPerDeg)), w, distance * Math.sin(θ * radPerDeg));
@@ -83,7 +83,7 @@ export const cameraElevation = (cameraRig: Pick<Cam, 'pos' | 'tgt'>): number => 
  * 画面上一圈点（椭圆的边，像素比例的坐标：x 朝右、y 朝下）的长轴、短轴：长轴 = 相距最远的两点，短轴 = 垂直长轴方向上的宽。
  * 透视下圆投出来还是椭圆，但它的短轴不一定正好在「盘面里朝镜头偏的那条直径」的投影上，所以照投出来的边实量
  */
-export const ellipseAxes = (outline: readonly (readonly [number, number])[]): { longDir: [number, number]; 长: number; minor: number } => {
+export const ellipseAxes = (outline: readonly (readonly [number, number])[]): { longDir: [number, number]; length: number; minor: number } => {
   let [maxDist, firstIndex, secondIdx] = [-1, 0, 0];
   for (let i = 0; i < outline.length; i++)
     for (let j = i + 1; j < outline.length; j++) {
@@ -93,7 +93,7 @@ export const ellipseAxes = (outline: readonly (readonly [number, number])[]): { 
   const majorLength = Math.sqrt(maxDist);
   const longDir: [number, number] = [(outline[secondIdx]![0] - outline[firstIndex]![0]) / majorLength, (outline[secondIdx]![1] - outline[firstIndex]![1]) / majorLength];
   const perpProj = outline.map((p) => -p[0] * longDir[1] + p[1] * longDir[0]);
-  return { longDir, 长: majorLength, minor: Math.max(...perpProj) - Math.min(...perpProj) };
+  return { longDir, length: majorLength, minor: Math.max(...perpProj) - Math.min(...perpProj) };
 };
 
 export type SelfCheckInput = {
@@ -214,7 +214,7 @@ export const pictureSelfCheck = ({ cameraRig, aspectRatio, 心: aimCenter, d, ra
     staffAngleDeg: Math.atan2(wandLine[1], wandLine[0]) / radPerDeg,
     shortAxisWandOffset: angleBetween(wandLine, shortAxis),
     longAxisTiltDeg: angleBetween(ellipseAxis.longDir, [0, 1]),
-    shortLongRatio: ellipseAxis.minor / ellipseAxis.长,
+    shortLongRatio: ellipseAxis.minor / ellipseAxis.length,
     plateToHerRatio: (bottom - top) / (bodyBox[3] - bodyBox[1]),
     discBox: [left, top, right, bottom],
     plateInFrame: insideCount / steps,

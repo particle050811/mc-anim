@@ -1,0 +1,47 @@
+# 格式：平台数据　位置：<数据根>/平台/<平台>/<时>/数据.json
+# 读写：pipeline/适配器/bili、抖音　分类：数据根　现有 3 个文件（3 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+作品	work
+停于风控	stoppedByRiskControl
+分P	parts
+列表项	listItem
+发布	release
+取于	fetchedAt
+同类作者	peerAuthors
+回复数	replyCount
+回看	rewatch
+对比	comparison
+平台	platform
+弹幕	danmaku
+总览	overview
+指标	metrics
+搜到	searchHits
+搜索词	searchTerms
+播放分析	playAnalysis
+播放趋势	playTrend
+时长	duration
+时长毫秒	durationMs
+是回复	isReply
+本作	ownWork
+来源	source
+标题	title
+概况0	overview0
+概况1	overview1
+概况2	overview2
+涨粉趋势	followerTrend
+版本	version
+留存	retention
+看后搜	searchAfterWatch
+稿件	submissions
+统计	stats
+评论	commentCount
+详情	details
+说明	note
+请求数	requestCount
+账号	account
+跳出	bounce
+跳过	skipped
+转粉	fanConversion
+进度	progress
+错误	errors

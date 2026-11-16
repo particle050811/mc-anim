@@ -8,26 +8,26 @@ import { describe, expect, it } from 'vitest';
 import { bytesAttachmentName, terrainAttachmentName, pullRelease, compareReleaseLock, readReleaseManifest, type ExpectedRelease } from './发布.ts';
 import { missingAttachmentCount, type ReleaseLock } from './发布锁.ts';
 
-const releaseTable = { 仓库: 'a/b', 标签: 'assets-v1', 段: ['6'] };
+const releaseTable = { repo: 'a/b', label: 'assets-v1', segment: ['6'] };
 const s1 = '1'.repeat(64);
 const s2 = '2'.repeat(64);
-const expected: ExpectedRelease = { 字节: [s1, s2], 私有库字节: [], 地形: [{ 包: '主世界', 版本: 'abc123' }], 段数: 1, privateFiles: [], issues: [] };
+const expected: ExpectedRelease = { bytes: [s1, s2], privateLibBytes: [], terrain: [{ pack: '主世界', version: 'abc123' }], 段数: 1, privateFiles: [], issues: [] };
 const releaseLock = (o: Partial<ReleaseLock> = {}): ReleaseLock => ({
-  仓库: 'a/b',
-  标签: 'assets-v1',
-  附件: [
-    { 名: bytesAttachmentName([s1, s2]), sha256: 'x', 大小: 1, 字节: [s1, s2] },
-    { 名: terrainAttachmentName('abc123'), sha256: 'y', 大小: 1, 地形: { 包: '主世界', 版本: 'abc123' } },
+  repo: 'a/b',
+  label: 'assets-v1',
+  attachments: [
+    { name: bytesAttachmentName([s1, s2]), sha256: 'x', size: 1, bytes: [s1, s2] },
+    { name: terrainAttachmentName('abc123'), sha256: 'y', size: 1, terrain: { pack: '主世界', version: 'abc123' } },
   ],
   ...o,
 });
 
 describe('挂 Release 发字节', () => {
   it('随发布.toml 要仓库、ASCII 标签、非空段', () => {
-    expect(readReleaseManifest('"仓库" = "a/b"\n"标签" = "assets-v1"\n"段" = ["6", "核对"]')).toEqual({ 仓库: 'a/b', 标签: 'assets-v1', 段: ['6', '核对'] });
-    expect(() => readReleaseManifest('"仓库" = "a"\n"标签" = "v1"\n"段" = ["6"]')).toThrow();
-    expect(() => readReleaseManifest('"仓库" = "a/b"\n"标签" = "版本一"\n"段" = ["6"]')).toThrow();
-    expect(() => readReleaseManifest('"仓库" = "a/b"\n"标签" = "v1"\n"段" = []')).toThrow();
+    expect(readReleaseManifest('"repo" = "a/b"\n"label" = "assets-v1"\n"segment" = ["6", "核对"]')).toEqual({ repo: 'a/b', label: 'assets-v1', segment: ['6', '核对'] });
+    expect(() => readReleaseManifest('"repo" = "a"\n"label" = "v1"\n"segment" = ["6"]')).toThrow();
+    expect(() => readReleaseManifest('"repo" = "a/b"\n"label" = "版本一"\n"segment" = ["6"]')).toThrow();
+    expect(() => readReleaseManifest('"repo" = "a/b"\n"label" = "v1"\n"segment" = []')).toThrow();
   });
 
   it('附件名只用 ASCII，字节附件名跟着内容变', () => {
@@ -42,21 +42,21 @@ describe('挂 Release 发字节', () => {
   it('发布锁和现算的一致就没问题；少字节、换了地形版本、换了标签都报', () => {
     expect(compareReleaseLock(releaseLock(), expected, releaseTable)).toEqual([]);
     expect(compareReleaseLock(undefined, expected, releaseTable)).toEqual(['没有 发布锁.json']);
-    expect(compareReleaseLock(releaseLock(), { ...expected, 字节: [s1, s2, '3'.repeat(64)] }, releaseTable).join()).toMatch(/少 1 件字节/);
-    expect(compareReleaseLock(releaseLock(), { ...expected, 地形: [{ 包: '主世界', 版本: 'def456' }] }, releaseTable).join()).toMatch(/terrain-def456\.tar/);
-    expect(compareReleaseLock(releaseLock({ 标签: 'assets-v0' }), expected, releaseTable).join()).toMatch(/assets-v0/);
-    expect(compareReleaseLock(releaseLock(), { ...expected, 私有库字节: ['3'.repeat(64)] }, releaseTable).join()).toMatch(/少 1 件私有\/ 库的字节/);
+    expect(compareReleaseLock(releaseLock(), { ...expected, bytes: [s1, s2, '3'.repeat(64)] }, releaseTable).join()).toMatch(/少 1 件字节/);
+    expect(compareReleaseLock(releaseLock(), { ...expected, terrain: [{ pack: '主世界', version: 'def456' }] }, releaseTable).join()).toMatch(/terrain-def456\.tar/);
+    expect(compareReleaseLock(releaseLock({ label: 'assets-v0' }), expected, releaseTable).join()).toMatch(/assets-v0/);
+    expect(compareReleaseLock(releaseLock(), { ...expected, privateLibBytes: ['3'.repeat(64)] }, releaseTable).join()).toMatch(/少 1 件私有\/ 库的字节/);
   });
 
   it('附件缺：数一下数据根还缺的字节、地形包目录在不在', () => {
     const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-发布-'));
     try {
-      const [bytesEntry, terrainAttach] = releaseLock().附件 as [ReleaseLock['附件'][number], ReleaseLock['附件'][number]];
+      const [bytesEntry, terrainAttach] = releaseLock().attachments as [ReleaseLock['attachments'][number], ReleaseLock['attachments'][number]];
       expect(missingAttachmentCount(bytesEntry, dataRoot)).toBe(2);
       fs.mkdirSync(path.join(dataRoot, 'store', '11'), { recursive: true });
       fs.writeFileSync(path.join(dataRoot, 'store', '11', s1), '');
       expect(missingAttachmentCount(bytesEntry, dataRoot)).toBe(1);
-      const withPrivate = { ...bytesEntry, 私有库字节: ['3'.repeat(64)] };
+      const withPrivate = { ...bytesEntry, privateLibBytes: ['3'.repeat(64)] };
       expect(missingAttachmentCount(withPrivate, dataRoot)).toBe(2);
       fs.mkdirSync(path.join(dataRoot, '私有', '33'), { recursive: true });
       fs.writeFileSync(path.join(dataRoot, '私有', '33', '3'.repeat(64)), '');
@@ -81,7 +81,7 @@ describe('挂 Release 发字节', () => {
     const savedNoProxy = process.env.NO_PROXY;
     process.env.NO_PROXY = '127.0.0.1';
     try {
-      await expect(pullRelease(releaseLock({ 附件: [releaseLock().附件[1]!] }), dataRoot, `http://127.0.0.1:${port}`)).rejects.toThrow(/Release assets-v1 上没有 terrain-abc123\.tar.*anim assets pack --upload/);
+      await expect(pullRelease(releaseLock({ attachments: [releaseLock().attachments[1]!] }), dataRoot, `http://127.0.0.1:${port}`)).rejects.toThrow(/Release assets-v1 上没有 terrain-abc123\.tar.*anim assets pack --upload/);
       expect(requestLog).toEqual(['HEAD /a/b/releases/download/assets-v1/terrain-abc123.tar']);
       expect(fs.existsSync(path.join(dataRoot, 'terrain'))).toBe(false);
     } finally {
@@ -116,7 +116,7 @@ describe('挂 Release 发字节', () => {
     process.env.NO_PROXY = '127.0.0.1';
     try {
       const sha256 = crypto.createHash('sha256').update(tarBytes).digest('hex');
-      await pullRelease({ 仓库: 'a/b', 标签: 'assets-v1', 附件: [{ 名: attachName, sha256, 大小: tarBytes.length, 字节: [publicRecord], 私有库字节: [privateSha] }] }, dataRoot, `http://127.0.0.1:${port}`);
+      await pullRelease({ repo: 'a/b', label: 'assets-v1', attachments: [{ name: attachName, sha256, size: tarBytes.length, bytes: [publicRecord], privateLibBytes: [privateSha] }] }, dataRoot, `http://127.0.0.1:${port}`);
       expect(fs.readFileSync(path.join(dataRoot, 'store', publicRecord.slice(0, 2), publicRecord), 'utf8')).toBe('公开的');
       expect(fs.readFileSync(path.join(dataRoot, '私有', privateSha.slice(0, 2), privateSha), 'utf8')).toBe('以前私有的歌');
       expect(fs.existsSync(path.join(dataRoot, 'store', privateSha.slice(0, 2), privateSha))).toBe(false);

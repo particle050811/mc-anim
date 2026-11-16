@@ -144,7 +144,7 @@ const landingSec = (z0: number, vz: number, gravity: number, half: number, groun
 };
 // 矛管：点 = 矛尖路线上的点 [x, y, z, 相对这次撞击的物理秒数]，半径 = 管的半径（格）；粒子倍速：粒子时钟比物理时钟快多少（慢放的近景按特效倍速）；
 // 密度：每格每轴几份粒子（原版 4）。各段 编排.ts 里做成常量（同一个对象），哪些格子在管里只算一次
-export type SpearTube = { 点: number[][]; radius: number; particleClockScale: number; density?: number };
+export type SpearTube = { points: number[][]; radius: number; particleClockScale: number; density?: number };
 const open = (B?: DebrisBurst) => !!B && (B.sec >= 0 || !!B.hidden);
 
 // 一格（中心、尺寸）离矛尖路线最近的那一点：距离、矛尖到那一点的时刻（相对撞击）、位置和路线方向。路线按 0.1 格细分
@@ -157,9 +157,9 @@ export const closestOnTube = (center: number[], size: number[], tube: SpearTube)
     const gaps = [0, 1, 2].map((k) => Math.max(0, Math.abs(point[k] - center[k]) - size[k] / 2));
     return Math.hypot(gaps[0], gaps[1], gaps[2]);
   };
-  for (let i = 0; i + 1 < tube.点.length; i++) {
-    const segStart = tube.点[i];
-    const segEnd = tube.点[i + 1];
+  for (let i = 0; i + 1 < tube.points.length; i++) {
+    const segStart = tube.points[i];
+    const segEnd = tube.points[i + 1];
     const steps = Math.max(1, Math.ceil(Math.hypot(segEnd[0] - segStart[0], segEnd[1] - segStart[1], segEnd[2] - segStart[2]) / 0.1));
     for (let k = 0; k <= steps; k++) {
       const frac = k / steps;

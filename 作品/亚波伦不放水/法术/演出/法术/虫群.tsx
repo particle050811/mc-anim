@@ -18,7 +18,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const [flyFrame1, secondFrame, flyFrame3] = [fly1Png, fly2Png, fly3Png].map(png);
 const breathKind: BreathParticleClass = {
-  帧: [flyFrame1!, secondFrame!, flyFrame3!, secondFrame!],
+  frame: [flyFrame1!, secondFrame!, flyFrame3!, secondFrame!],
   帧号: (age) => Math.floor((age * 3) / swarmParticleLifeTicks),
   寿命: swarmParticleLifeTicks,
   重力: -0.1,
@@ -28,13 +28,13 @@ const breathKind: BreathParticleClass = {
   jitterVert: 1 / 100,
 };
 
-const swarm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const swarm: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const dir = sub([target[0], target[1], target[2] + 0.9], from);
   const spawns: BreathBirth[] = [];
   for (let n = Math.max(0, Math.floor(tick) - swarmParticleLifeTicks); n <= Math.min(Math.floor(tick), swarmDurTicks - 1); n++)
-    for (const spawn of scatterBreath(from, dir, 2, 0.3, 5, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(mulberry32(spawn.种子 + 9)()) * 3 });
-  return <BreathParticles 类={breathKind} spawns={spawns} 秒={sec} />;
+    for (const spawn of scatterBreath(from, dir, 2, 0.3, 5, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(mulberry32(spawn.seed + 9)()) * 3 });
+  return <BreathParticles type={breathKind} spawns={spawns} sec={sec} />;
 };
 
 export default defineSpellPerformance(meta, swarm);

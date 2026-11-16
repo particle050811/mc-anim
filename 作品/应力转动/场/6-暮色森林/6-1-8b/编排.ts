@@ -23,7 +23,7 @@ import { toppleDuration, deathToFlatRatio, knockbackOffsetAt } from '@库/特效
 
 const cottageFrame = twilightLandmark('云中小屋');
 if (cottageFrame.转 !== 0) throw new Error('6-1-8b：云中小屋转了向，toWorld、戏.tsx 的摆放要改成按 地标位 / 到世界');
-export const cottageOrigin = cottageFrame.原点;
+export const cottageOrigin = cottageFrame.origin;
 export const V = 320;
 export const FLOOR = 10;
 // 穿刺方位（度，0 = 北、顺时针）；YAW 是编排用的朝向（0 = 北、往左为正）= 360 − 方位 = 15
@@ -59,7 +59,7 @@ export const toWorld = (p: number[]): V3 => [p[0] + cottageOrigin[0], p[1] + cot
 const impactA = wallA(SOUTH_FACE);
 const exitA = wallA(NORTH_FACE);
 export const pierceLine = {
-  名: '巨人',
+  name: '巨人',
   V,
   facing: cottageFrame.facing(YAW),
   tip: (a: number) => toWorld(tipLocal(a)),
@@ -84,7 +84,7 @@ export const T_TOPPLE = toppleDuration(GIANT.chest, V);
 export const T_DEATH = T_TOUCH.map((t) => t + T_TOPPLE * deathToFlatRatio);
 // 起、止 的毫秒零头是对着配乐拉回来的：时钟改按真时刻算、6-1-3 放平改真值以后（用户 11-16 定 1/24 秒的格一处不留），照原样放慢穿刺在画面上晚半秒多；
 // 调 起（放慢 80 倍，差 1 毫秒画面上差 0.08 秒）让六次穿刺在配乐里的位置和改之前用户看过的一样（一镜到底/路线/时钟.ts）
-export const slowMo = { 起: T_SOUTH + 0.0021331, 止: T_DEATH[1] + 0.004 };
+export const slowMo = { start: T_SOUTH + 0.0021331, end: T_DEATH[1] + 0.004 };
 export const fxSpeed = 28;
 
 // ---------- 墙 ----------
@@ -113,7 +113,7 @@ const AWAY: V3 = [0.9 * FX - 0.38 * RX, 0.9 * FY - 0.38 * RY, 0.2];
 // 矛管（用户 2026-10-02 追加）：矛尖连钻头虚影扫过的那一管方块当场崩成原版破坏粒子，不整块飞（模型/特效/方块飞溅.tsx）；
 // 点的时刻相对各自那次撞击（南墙、北墙）。常量对象：哪些格子在管里只算一次
 const tubeFor = (impactTime: number): SpearTube => ({
-  点: Array.from({ length: 27 }, (_, k) => {
+  points: Array.from({ length: 27 }, (_, k) => {
     const dist = k - 9;
     return [...tipLocal(dist), dist / V - impactTime];
   }),
@@ -167,5 +167,5 @@ export const deathPos = (i: number): V3 => {
   const knockback = knockbackOffsetAt(knockbackDir, T_DEATH[i] - T_TOUCH[i]);
   return [giantDef.at[0] + knockback[0], giantDef.at[1] + knockback[1], giantDef.at[2] + knockback[2] + GIANT.height / 2];
 };
-export const visibleWindow = { 起: -40, 止: 30 };
+export const visibleWindow = { start: -40, end: 30 };
 export { TIP_LOCAL };

@@ -24,7 +24,7 @@ const deadPid = () => spawnSync(process.execPath, ['-e', '0']).pid!;
 
 /** 起一个子进程，ready 行打出来以后返回；它一直挂着直到被杀 */
 const spawnLockHolder = (cmd: string, args: string[], env: NodeJS.ProcessEnv = {}) =>
-  new Promise<{ pid: number; 输出: string; kill: () => Promise<void> }>((resolve, reject) => {
+  new Promise<{ pid: number; output: string; kill: () => Promise<void> }>((resolve, reject) => {
     const child = spawn(cmd, args, { env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'inherit'] });
     let out = '';
     child.stdout.setEncoding('utf8');
@@ -33,7 +33,7 @@ const spawnLockHolder = (cmd: string, args: string[], env: NodeJS.ProcessEnv = {
       if (out.includes('\n'))
         resolve({
           pid: child.pid!,
-          输出: out.trim(),
+          output: out.trim(),
           kill: () =>
             new Promise((r) => {
               child.once('exit', () => r());
@@ -52,7 +52,7 @@ const spawnNodeLockHolder = (f: string) =>
 describe('锁协议', () => {
   it('拿到以后别的进程拿不到，放了才能拿', async () => {
     const child = await spawnNodeLockHolder(file);
-    expect(child.输出).toBe('true');
+    expect(child.output).toBe('true');
     expect(holderPid(file)).toBe(child.pid);
     expect(tryAcquire(file, localHost)).toBe(false);
     await child.kill();
@@ -110,7 +110,7 @@ describe('pid 被复用', () => {
       reclaimDeadLock(file, localHost, p => reclaimed.push(p));
       expect(fs.existsSync(file)).toBe(false);
       expect(reclaimed).toEqual([c.pid]);
-      const ticketFile = path.join(dir, '票'), ticket = { 名: '票', 文件: ticketFile, pid: c.pid!, 主机: hostSlug(localHost), 时间: 0, 内容: null };
+      const ticketFile = path.join(dir, '票'), ticket = { name: '票', file: ticketFile, pid: c.pid!, host: hostSlug(localHost), time: 0, content: null };
       fs.writeFileSync(ticketFile, '');
       expect(ticketAlive(ticket, localHost)).toBe(true);
       fs.utimesSync(ticketFile, tenMinutesAgo(), tenMinutesAgo());

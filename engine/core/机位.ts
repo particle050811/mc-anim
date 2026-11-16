@@ -15,7 +15,7 @@ export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
 
 /** 三渲二的透视机位参数（engine/三渲二/机位.tsx 照它摆 three 相机） */
 export type PerspectiveRigParams = {
-  种: '透视';
+  kind: '透视';
   眼: V3;
   看: V3;
   /** 竖直视角（度），原版默认 70 */
@@ -98,7 +98,7 @@ export const lerpRig = (a: Cam, b: Cam, k: number, options: InterpRigOptions = {
 };
 
 /** 一串关键机位按帧插值：帧在两个关键机位之间时，进度先过 缓动（默认不缓，线性）再插；两头之外停在端点 */
-export const rigTrack = (keyframes: readonly (readonly [帧: number, rig: Cam])[], frame: number, ease: (t: number) => number = (t) => t, options?: InterpRigOptions): Cam => {
+export const rigTrack = (keyframes: readonly (readonly [frame: number, rig: Cam])[], frame: number, ease: (t: number) => number = (t) => t, options?: InterpRigOptions): Cam => {
   if (!keyframes.length) throw new Error('机位轨至少要一个关键机位');
   if (frame <= keyframes[0]![0]) return keyframes[0]![1];
   for (let i = 0; i < keyframes.length - 1; i++) {
@@ -115,7 +115,7 @@ export type PlaceCameraOptions = { near?: number; far?: number };
 /** Cam → 三渲二的透视机位参数（竖直视角按宽高比换；roll 那边没有，给了非 0 的 roll 就报错） */
 export const toPerspectiveParams = (c: Cam, aspectRatio: number, options: PlaceCameraOptions = {}): PerspectiveRigParams => {
   if (c.roll && c.roll % 360 !== 0) throw new Error(`三渲二的透视机位不支持 roll：${c.roll}`);
-  return { 种: '透视', 眼: c.pos, 看: c.tgt, fov: lensToFov(c.lens, aspectRatio), near: options.near, farPlane: options.far };
+  return { kind: '透视', 眼: c.pos, 看: c.tgt, fov: lensToFov(c.lens, aspectRatio), near: options.near, farPlane: options.far };
 };
 
 /** 三渲二的透视机位参数 → Cam（视角不给按原版默认 70） */

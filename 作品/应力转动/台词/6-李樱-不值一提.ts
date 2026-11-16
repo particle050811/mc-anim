@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 d22896967a23），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-不值一提（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 6488bd75a95e），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-不值一提（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-不值一提",
-  "角色": "李樱",
-  "念": "暮色的boss就算加强了十倍，也不过如此。",
-  "配音": "配音/6-李樱-不值一提",
-  "成品sha": "ebfdf78e48fe",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "暮色的boss就算加强了十倍，也不过如此。",
+  "voice": "配音/6-李樱-不值一提",
+  "finishedSha": "ebfdf78e48fe",
+  "mouthOpen": 0.03,
   "有声长": 3.212,
-  "时长": 3.392,
+  "duration": 3.392,
   "文件秒数": 3.392,
-  "字": [
+  "char": [
     ["暮",0.16,0.32],
     ["色",0.32,0.4],
     ["的",0.4,0.48],

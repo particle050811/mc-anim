@@ -34,8 +34,8 @@ const liuHead = (t: number): V3 => {
 const shot1From = G4(-875.5, -35.0, 233.6);
 const shot1To = G4(-875.3, -35.0, 233.8);
 const shots: SpeedRampShot[] = [
-  { 起: startT, cam: (t): Cam => ({ pos: lerpV(shot1From, shot1To, smoothstep01((t - startT) / (shot1End - startT))), tgt: lerpV(huangHead(t), play.wardenChest(t), 0.5), lens: 22 }) },
-  { 起: shot1End, cam: (t): Cam => ({ pos: shot2Pos, tgt: lerpV(play.wardenChest(t), liuHead(t), 0.5), lens: 16 }) },
+  { start: startT, cam: (t): Cam => ({ pos: lerpV(shot1From, shot1To, smoothstep01((t - startT) / (shot1End - startT))), tgt: lerpV(huangHead(t), play.wardenChest(t), 0.5), lens: 22 }) },
+  { start: shot1End, cam: (t): Cam => ({ pos: shot2Pos, tgt: lerpV(play.wardenChest(t), liuHead(t), 0.5), lens: 16 }) },
 ];
 export const camera = buildCameraRig(speedRamp, shots);
 export const shotIndex = (sec: number) => (timeAt(sec) >= shot1End ? 1 : 0);

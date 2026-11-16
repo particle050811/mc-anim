@@ -16,13 +16,13 @@ export const tearBeat = (options?: SpellOptions) => {
 const makeSounds = (options?: SpellOptions): SpellSound[] => {
   const { warmup, burstTick } = tearBeat(options);
   return [
-    { 资产: '音效/诡厄巫法/goety.void_prepare_spell.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.rumble.1', 秒: 0, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.rumble.2', 秒: warmup / 3 / 20, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.rumble.3', 秒: (warmup * 2) / 3 / 20, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.void_rift_open', 秒: warmup / 20, 音量: 5 },
-    { 资产: '音效/block.respawn_anchor.deplete.1', 秒: burstTick / 20, 音量: 5, 音高: 0.5 },
-    { 资产: '音效/entity.generic.explode.1', 秒: burstTick / 20, 音量: 5, 音高: 0.5 },
+    { asset: '音效/诡厄巫法/goety.void_prepare_spell.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.rumble.1', sec: 0, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.rumble.2', sec: warmup / 3 / 20, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.rumble.3', sec: (warmup * 2) / 3 / 20, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.void_rift_open', sec: warmup / 20, 音量: 5 },
+    { asset: '音效/block.respawn_anchor.deplete.1', sec: burstTick / 20, 音量: 5, 音高: 0.5 },
+    { asset: '音效/entity.generic.explode.1', sec: burstTick / 20, 音量: 5, 音高: 0.5 },
   ];
 };
 
@@ -30,7 +30,7 @@ export default defineSpellMeta({
   id: 'rupture',
   长秒: (tearBurstTick + 30) / 20,
   hitSec: tearBurstTick / 20,
-  时长: (unusedStart, unusedTarget, options) => ({ 长秒: (tearBeat(options).burstTick + 30) / 20, hitSec: tearBeat(options).burstTick / 20 }),
-  声音: makeSounds(),
+  duration: (unusedStart, unusedTarget, options) => ({ 长秒: (tearBeat(options).burstTick + 30) / 20, hitSec: tearBeat(options).burstTick / 20 }),
+  sound: makeSounds(),
   soundsFor: makeSounds,
 });

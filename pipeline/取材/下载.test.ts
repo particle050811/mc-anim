@@ -19,18 +19,18 @@ const mappingContent = '# 映射文件头\nnet.minecraft.A -> a:\n';
 const sha = (algorithm: string, s: string) => crypto.createHash(algorithm).update(s).digest('hex');
 
 const jars = (sha256 = sha('sha256', mappingContent)) => `
-[["Mojang"."映射"]]
+[["Mojang"."mappings"]]
 "id" = "映射甲"
-"根" = "数据"
-"到" = "cache/映射/甲.txt"
-"也认" = ["游戏:缓存/甲.txt"]
-"下载" = "https://example.invalid/甲.txt"
+"root" = "数据"
+"dest" = "cache/映射/甲.txt"
+"alsoAccept" = ["游戏:缓存/甲.txt"]
+"download" = "https://example.invalid/甲.txt"
 "sha256" = "${sha256}"
 "sha1" = "${sha('sha1', mappingContent)}"
-[["模组"]]
+[["mods"]]
 "id" = "模组乙"
-"到" = "mods/乙.jar"
-"下载" = "https://example.invalid/乙.jar"
+"dest" = "mods/乙.jar"
+"download" = "https://example.invalid/乙.jar"
 "sha256" = "${'0'.repeat(64)}"
 `;
 
@@ -39,7 +39,7 @@ describe('jars.toml 的根和也认', () => {
     expect(splitPosition('游戏:缓存/a.txt')).toEqual(['游戏', '缓存/a.txt']);
     expect(splitPosition('缓存/a.txt')).toEqual(['游戏', '缓存/a.txt']);
     expect(() => splitPosition('别处:a.txt')).toThrow(/根只认/);
-    expect(() => parseManifest('', '[["模组"]]\n"id" = "x"\n"根" = "别处"\n"到" = "a"\n')).toThrow(/根只认/);
+    expect(() => parseManifest('', '[["mods"]]\n"id" = "x"\n"root" = "别处"\n"dest" = "a"\n')).toThrow(/根只认/);
   });
 
   it('「到」在就用它；不在找也认的位置；都没有返回「到」', () => {
@@ -73,17 +73,17 @@ describe('anim extract --download', () => {
     const fakeDownload = (content: string) => (_: string, destPath: string) => fs.writeFileSync(destPath, content);
     const badDownloads = downloadList(parseManifest('', jars('f'.repeat(64))), [], jarRecordPath);
     const [badResult] = download(badDownloads, fakeDownload(mappingContent));
-    expect(badResult).toMatchObject({ 状态: '失败', 说明: expect.stringMatching(/下到的 sha256/) });
-    expect(fs.readdirSync(path.dirname(badResult!.到))).toEqual([]);
+    expect(badResult).toMatchObject({ state: '失败', note: expect.stringMatching(/下到的 sha256/) });
+    expect(fs.readdirSync(path.dirname(badResult!.dest))).toEqual([]);
 
     const downloadItems = downloadList(parseManifest('', jars()), [], jarRecordPath);
-    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ 状态: '下好' });
-    expect(fs.readFileSync(downloadItems[0]!.到, 'utf8')).toBe(mappingContent);
-    expect(download(downloadItems, () => { throw new Error('不该再下'); })[0]).toMatchObject({ 状态: '已有' });
+    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ state: '下好' });
+    expect(fs.readFileSync(downloadItems[0]!.dest, 'utf8')).toBe(mappingContent);
+    expect(download(downloadItems, () => { throw new Error('不该再下'); })[0]).toMatchObject({ state: '已有' });
 
-    fs.writeFileSync(downloadItems[0]!.到, '被改过');
-    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ 状态: '失败', 说明: expect.stringMatching(/没覆盖/) });
-    expect(fs.readFileSync(downloadItems[0]!.到, 'utf8')).toBe('被改过');
+    fs.writeFileSync(downloadItems[0]!.dest, '被改过');
+    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ state: '失败', note: expect.stringMatching(/没覆盖/) });
+    expect(fs.readFileSync(downloadItems[0]!.dest, 'utf8')).toBe('被改过');
   });
 
   it('下载出错（网断）记失败、不留临时文件', () => {
@@ -93,7 +93,7 @@ describe('anim extract --download', () => {
       fs.writeFileSync(destPath, '半截');
       throw new Error('curl: (6) Could not resolve host');
     });
-    expect(r).toMatchObject({ 状态: '失败', 说明: expect.stringMatching(/Could not resolve/) });
-    expect(fs.readdirSync(path.dirname(downloadItems[0]!.到))).toEqual([]);
+    expect(r).toMatchObject({ state: '失败', note: expect.stringMatching(/Could not resolve/) });
+    expect(fs.readdirSync(path.dirname(downloadItems[0]!.dest))).toEqual([]);
   });
 });

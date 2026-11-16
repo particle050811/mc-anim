@@ -6,7 +6,7 @@ import * as mainCutLine15Tail from './正片15尾.ts';
 
 export const eventDefs = {
   // 片尾（开场与片尾这一路）：54.65 = 第 32 小节下拍，55.50 = 第 130 拍
-  outroRecolor: { 在: { beat: 130 }, 依据: '三稿片尾 55.50：「啪」地回色，新合照换掉旧图标、上次游玩换成这次，构图回到第 0 镜，停到原声放完（0.5 秒）' },
+  outroRecolor: { 在: { beat: 130 }, basis: '三稿片尾 55.50：「啪」地回色，新合照换掉旧图标、上次游玩换成这次，构图回到第 0 镜，停到原声放完（0.5 秒）' },
 } as const satisfies Record<string, EventDef>;
 
 /** 接 能查到的事件：本串的，加上引来的那几份的（一路引上去） */
@@ -17,9 +17,9 @@ export const events = resolveEvents(eventDefs, eventTable);
 /** 正片结尾：片尾（54.65 咔哒闪白起，从图标跟前拉回「选择世界」界面，碎片拼成新合照），放到原声完 */
 export const mainCutOutro = arrangeSegs(
   {
-    名: '正片片尾',
-    时长: originalDurSec,
-    segments: [{ 键: '2-拼回', 起: { after: 'outroFlash', addSec: 0 }, 止: '放完', 依据: '咔哒那一帧（54.65）起：闪白里拉出「新的世界」那一项，到原声放完；最后构图和第 0 镜一样，能接回开头循环' }],
+    name: '正片片尾',
+    duration: originalDurSec,
+    segments: [{ key: '2-拼回', start: { after: 'outroFlash', addSec: 0 }, end: '放完', basis: '咔哒那一帧（54.65）起：闪白里拉出「新的世界」那一项，到原声放完；最后构图和第 0 镜一样，能接回开头循环' }],
   },
   eventTable,
 );

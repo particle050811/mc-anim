@@ -14,10 +14,10 @@ import shockwavePng from 'asset:贴图/法术/goety/particle/shockwave';
 const ringImg = png(shockwavePng);
 
 /** 刻 = 出生后的刻（带小数）；位 = 粒子出生点（地面贴花自己贴在这个高度） */
-export const ShockwaveRing: React.FC<{ 位: Vec3; 刻: number; 大小: number; 色: RgbColor; 速?: number; fadeOut?: boolean; 寿命?: number }> = ({ 位: pos, 刻: tick, 大小: size, 色: color, 速: speed = 0, fadeOut = true, 寿命: lifetime = 30 }) => {
+export const ShockwaveRing: React.FC<{ 位: Vec3; 刻: number; size: number; 色: RgbColor; 速?: number; fadeOut?: boolean; 寿命?: number }> = ({ 位: pos, 刻: tick, size: size, 色: color, 速: speed = 0, fadeOut = true, 寿命: lifetime = 30 }) => {
   const age = tick * (1 + speed);
   if (tick < 0 || age >= lifetime) return null;
-  return <GroundDecal 位={pos} 图={ringImg} radius={size * Math.min(2, Math.max(0, (age / lifetime) * 0.75))} lift={0} 混合="半透明" 色={color} opacity={fadeOut ? 1 - age / lifetime : 1} />;
+  return <GroundDecal 位={pos} image={ringImg} radius={size * Math.min(2, Math.max(0, (age / lifetime) * 0.75))} lift={0} blend="半透明" 色={color} opacity={fadeOut ? 1 - age / lifetime : 1} />;
 };
 
 // 单位圆筒：下沿白、上沿黑，加色混合下上沿就是 alpha 0
@@ -58,7 +58,7 @@ const wallMaterial = (c: RgbColor, opacity: number) => {
 };
 
 /** 刻 = 出生后的刻；位 = 圆筒底圈圆心 */
-export const SlamWall: React.FC<{ 位: Vec3; 刻: number; 宽: number; 色: RgbColor; 寿命: number }> = ({ 位: pos, 刻: tick, 宽: maxWidth, 色: color, 寿命: lifetime }) => {
+export const SlamWall: React.FC<{ 位: Vec3; 刻: number; width: number; 色: RgbColor; 寿命: number }> = ({ 位: pos, 刻: tick, width: maxWidth, 色: color, 寿命: lifetime }) => {
   if (tick < 0 || tick >= lifetime) return null;
   const t = tick / lifetime;
   const radius = maxWidth * (1 - (1 - t) ** 3);

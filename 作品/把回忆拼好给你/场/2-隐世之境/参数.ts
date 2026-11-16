@@ -43,7 +43,7 @@ export const bubbleText = '( •́ _ •̀)';
  *  缩放：一个界面像素 12 个成片像素（片里聊天栏是 6，翻一倍）。4 的倍数在 1920×1080 的封面上也是整像素（9），6 的倍数和片里的像素格对得上；
  *  字高 8 个界面像素，封面上 72 像素，比 03 说的「110 左右」小：16 倍时这一行有 648 页面像素长，会压到她身上。
  *  左、下：页面像素（1280×720 那套），黑条左边离 4:3 左边 16、下沿离底边 20% 那条线 8 */
-export const coverChatLayout = { 缩放: 12, left: 176, 下: 568 };
+export const coverChatLayout = { scale: 12, left: 176, 下: 568 };
 
 /** 门光（特效/门光.tsx 的 门光参数）。Agent 暂定：05 原则 2 不用真实光照，暖粉加暖金两档平涂。
  *  方位 −90：光从门外正西照进来、往正东走，和镜头的视线差不多同向（从镜头后面灌进来）；地块是门洞投下的一条亮带，
@@ -53,18 +53,18 @@ export const coverChatLayout = { 缩放: 12, left: 176, 下: 568 };
 export const doorLightParams = {
   azimuthDeg: -90,
   elevationDeg: 22,
-  ground: { outerColor: '#ffc2b0', innerColor: '#ffe39a', outer: 0.42, 内: 0.6, inset: 0.1875, pixelsPerCell: 16, 混合: '盖' as const },
+  ground: { outerColor: '#ffc2b0', innerColor: '#ffe39a', outer: 0.42, 内: 0.6, inset: 0.1875, pixelsPerCell: 16, blend: '盖' as const },
   // 光带：门光参数 这个类型要有，布景不画（这一场的镜头都站在门洞里或从侧面剖开看，光带从头顶掠过、只看得见落地那截楔形，不好看）
   lightBand: {
     色: '#ffd9a0',
-    混合: '加' as const,
+    blend: '加' as const,
     bands: [
-      { u: 0.2, 宽: 0.25, 强: 0.08, 起: 0, 止: 1 },
-      { u: 0.65, 宽: 0.4, 强: 0.06, 起: 0, 止: 1 },
+      { u: 0.2, width: 0.25, strength: 0.08, start: 0, end: 1 },
+      { u: 0.65, width: 0.4, strength: 0.06, start: 0, end: 1 },
     ],
   },
   // 浮尘一粒一个贴图像素大；离门 1/3 以内的不撒（贴着镜头的会大得像方块）
-  floatDust: { 数: 16, 色: '#ffd98a', 强: 0.3, 种子: 1504, 大小: 1 / 16, driftSpeed: 0.08, 起: 0.35 },
+  floatDust: { 数: 16, 色: '#ffd98a', strength: 0.3, seed: 1504, size: 1 / 16, driftSpeed: 0.08, start: 0.35 },
 };
 
 /** 窗外（东窗、西窗看出去）：归隐之地是固定群系 cherry_grove（maidspell 1.9.3 dimension/the_retreat.json），
@@ -74,7 +74,7 @@ export const hiddenLandPalette = { 天: '#78a7ff', fog: '#c0d8ff', grassColor: '
 /** 结构四周补的樱花林（窗外.tsx）。Agent 暂定：树按种子撒在结构外面一圈，内框 = 结构范围（x 0～21、y −26～0）往外让 5 格（树冠半径 4，不戳进墙里），
  *  外半径 30 格内。另有 定点 几棵摆在从西门看东窗的视线里（[x, y, 主干高]）：近的一棵主干矮，树冠下沿和垂下来的叶子落进窗里，远的露树干 */
 export const cherryGrove = {
-  种子: 1524,
+  seed: 1524,
   fixedPoints: [
     [25, -13, 4],
     [31, -17, 5],
@@ -95,7 +95,7 @@ export const cherryGrove = {
  *  远处的树、花簇只放在从西门往东、东窗看得见的扇形里（这几镜往别的方向都看不到窗外），离西门 树到、花簇到 格以内；
  *  树按 树格 格的格子撒，每格 有树 的机会（树冠 9 格宽，大约一半的地被树冠盖住，树冠之间露出草坡，同游戏里樱花林的疏密） */
 export const farHills = {
-  种子: 1525,
+  seed: 1525,
   viewDistance: 12,
   flatMargin: 2,
   slopeLength: 60,

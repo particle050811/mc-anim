@@ -33,7 +33,7 @@ export const toTexture = (image: Png, opts: { repeat?: boolean; linear?: boolean
   return t;
 };
 
-export type FaceMaterialOptions = { 混合?: Blend; 色?: RgbColor; opacity?: number; repeat?: boolean; depthWrite?: boolean; linear?: boolean };
+export type FaceMaterialOptions = { blend?: Blend; 色?: RgbColor; opacity?: number; repeat?: boolean; depthWrite?: boolean; linear?: boolean };
 
 /** 把混合方式落到 three 的材质参数上（面片的 ShaderMaterial 也用） */
 export const blendParams = (blend: Blend, depthWrite?: boolean) => ({
@@ -45,7 +45,7 @@ export const blendParams = (blend: Blend, depthWrite?: boolean) => ({
 const materialCache = new Map<string, THREE.MeshBasicMaterial>();
 /** 图给 null = 纯色（电弧这种没有贴图的）。同样参数拿到同一个材质，每帧调不会越建越多；透明度量到 1/256 */
 export const faceMaterial = (image: Png | null, opts: FaceMaterialOptions = {}): THREE.MeshBasicMaterial => {
-  const blend = opts.混合 ?? '半透明';
+  const blend = opts.blend ?? '半透明';
   const color = opts.色 ?? [1, 1, 1];
   const opacity = Math.round((opts.opacity ?? 1) * 256) / 256;
   const map = image ? toTexture(image, { repeat: opts.repeat, linear: opts.linear }) : null;

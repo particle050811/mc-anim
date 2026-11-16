@@ -1,0 +1,28 @@
+# 格式：交界　位置：<数据根>/terrain/<包>/<版本>/交界.*.json
+# 读写：engine/voxel/主世界地形.ts、区段包.ts　分类：地形包（出新版本）　现有 2 个文件（2 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+Δ中位	medianDelta
+依据	basis
+全部Δ中位	allMedianDelta
+原点	origin
+台阶90	stepP90
+台阶中位	stepMedian
+对数	logScale
+导入包	importPack
+带宽	bandWidth
+改格	changedCells
+最大修正	maxCorrection
+格	cell
+版本	version
+秒	sec
+粗级	coarseLevel
+粗高度指纹	coarseHeightFingerprint
+绝对值不超过2的	withinTwo
+统计	stats
+起伏90	reliefP90
+起伏中位	reliefMedian
+边格	edgeCells
+远景层	farLayers
+量列	measureColumns
+陆地	land

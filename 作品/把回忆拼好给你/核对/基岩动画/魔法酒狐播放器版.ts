@@ -8,18 +8,18 @@ import magicFoxModel from 'asset:模型/角色/魔法酒狐';
 import texture from 'asset:贴图/角色/魔法酒狐/百花';
 
 export const MagicalWineFoxPlayer = defineCreature({
-  名: '魔法酒狐（播放器版）',
-  模型: magicFoxModel,
+  name: '魔法酒狐（播放器版）',
+  model: magicFoxModel,
   贴图: texture,
-  缩放: 0.65 / 16, // TLM maid_model.json 的 render_entity_scale
-  动画: {
-    文件: magicalWineFoxAnimation,
+  scale: 0.65 / 16, // TLM maid_model.json 的 render_entity_scale
+  animation: {
+    file: magicalWineFoxAnimation,
     defaultLayers: [
-      ...['pre_parallel0', 'pre_parallel1', 'pre_parallel2', 'pre_parallel3', 'sit'].map((name) => ({ 名: name })),
-      { 名: 'parallel1', blendMode: '叠加' as const },
-      { 名: 'parallel5', blendMode: '叠加' as const },
+      ...['pre_parallel0', 'pre_parallel1', 'pre_parallel2', 'pre_parallel3', 'sit'].map((name) => ({ name: name })),
+      { name: 'parallel1', blendMode: '叠加' as const },
+      { name: 'parallel5', blendMode: '叠加' as const },
     ],
     口径: 'TLM',
-    环境: { query: { health: 20, max_health: 20 }, external: { 'ysm.has_helmet': 1, 'ysm.head_yaw': 0, 'ysm.head_pitch': 0 } },
+    env: { query: { health: 20, max_health: 20 }, external: { 'ysm.has_helmet': 1, 'ysm.head_yaw': 0, 'ysm.head_pitch': 0 } },
   },
 });

@@ -20,7 +20,7 @@ const logLerp = (a: number, b: number, k: number) => Math.exp(lerp(Math.log(a), 
 
 export const fadeOutSec = 5 / 12;
 // 全局秒 → 思索场景时间（6-3-3 开头几帧接着 6-3-2 往下算）
-export const sceneTime = (globalSec: number) => globalSec - segTable['6-3-2'].起 - uiOpen;
+export const sceneTime = (globalSec: number) => globalSec - segTable['6-3-2'].start - uiOpen;
 export const tMatch = sceneTime(0);
 // 思索层的不透明度：全局秒 0 起淡掉
 export const ponderLayerOpacity = (globalSec: number) => 1 - smoothstep01(globalSec / fadeOutSec);

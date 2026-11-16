@@ -10,7 +10,7 @@ import { selectWorldFont } from '../../界面/选择世界字.ts';
 import { ui, colorPalette } from './参数.ts';
 import { rowTexts } from './编排.ts';
 
-export type Framing = { 中心: { x: number; y: number }; unit: number };
+export type Framing = { center: { x: number; y: number }; unit: number };
 
 export type UiState = {
   framing: Framing;
@@ -34,7 +34,7 @@ export type UiState = {
 
 /** 底稿一个界面像素几个像素 */
 const draftScale = 2;
-const draftWidth = ui.宽 * draftScale, draftHeight = ui.高 * draftScale;
+const draftWidth = ui.width * draftScale, draftHeight = ui.height * draftScale;
 
 const newCanvas = (w: number, h: number) => {
   const c = document.createElement('canvas');
@@ -50,17 +50,17 @@ let dirtBase: HTMLCanvasElement | null = null;
 const drawDirtBase = (): HTMLCanvasElement => {
   if (dirtBase) return dirtBase;
   const dirtTile: Png = png(dirtBgPng);
-  const small = newCanvas(ui.宽, ui.高);
+  const small = newCanvas(ui.width, ui.height);
   const ctx = small.getContext('2d')!;
-  const img = ctx.createImageData(ui.宽, ui.高);
-  for (let y = 0; y < ui.高; y++)
-    for (let x = 0; x < ui.宽; x++) {
+  const img = ctx.createImageData(ui.width, ui.height);
+  for (let y = 0; y < ui.height; y++)
+    for (let x = 0; x < ui.width; x++) {
       const inList = y >= ui.listRange.上 && y < ui.listRange.下;
-      const u = inList ? x + ui.宽 : x;
+      const u = inList ? x + ui.width : x;
       const v = inList ? y - ui.listRange.上 + ui.listRange.下 : y;
       const o = ((Math.floor(((((v % 32) + 32) % 32) * dirtTile.h) / 32) * dirtTile.w + Math.floor(((((u % 32) + 32) % 32) * dirtTile.w) / 32)) * 4);
       const k = inList ? colorPalette.listMul : colorPalette.bandMul;
-      const p = (y * ui.宽 + x) * 4;
+      const p = (y * ui.width + x) * 4;
       for (let c = 0; c < 3; c++) img.data[p + c] = Math.round(dirtTile.px[o + c]! * k);
       img.data[p + 3] = 255;
     }
@@ -124,7 +124,7 @@ const drawBaseDraft = (s: UiState): HTMLCanvasElement => {
     fillBox(ctx, colorPalette.selectedOuter, b.left, b.上, b.right, b.下);
     fillBox(ctx, colorPalette.selectedInner, b.left + 1, b.上 + 1, b.right - 1, b.下 - 1);
   }
-  (s.rowTexts ?? rowTexts).forEach((lineText, k) => selectWorldFont.draw(ctx, lineText, { x: 0, y: 0 }, ui.textX, ui.textY[k]!, k === 0 ? colorPalette.名 : colorPalette.greyText, draftScale));
+  (s.rowTexts ?? rowTexts).forEach((lineText, k) => selectWorldFont.draw(ctx, lineText, { x: 0, y: 0 }, ui.textX, ui.textY[k]!, k === 0 ? colorPalette.name : colorPalette.greyText, draftScale));
   // 图标：64×64 的照片画进 32×32 界面像素（一个照片像素一个底稿像素），透掉的像素清成透明
   iconDraft ??= newCanvas(iconEdge, iconEdge);
   const ictx = iconDraft.getContext('2d')!;
@@ -143,9 +143,9 @@ const drawBaseDraft = (s: UiState): HTMLCanvasElement => {
   }
   drawGradient(ctx);
   const f = ui.searchFrame;
-  fillBox(ctx, s.selected ? colorPalette.frameEdge : colorPalette.frameEdgeFocus, f.x - 1, f.y - 1, f.x + f.宽 + 1, f.y + f.高 + 1);
-  fillBox(ctx, colorPalette.boxBackground, f.x, f.y, f.x + f.宽, f.y + f.高);
-  if (!s.selected && s.frameCursor) selectWorldFont.draw(ctx, '_', { x: 0, y: 0 }, f.x + 4, f.y + (f.高 - 8) / 2, colorPalette.frameText, draftScale, { shadow: true });
+  fillBox(ctx, s.selected ? colorPalette.frameEdge : colorPalette.frameEdgeFocus, f.x - 1, f.y - 1, f.x + f.width + 1, f.y + f.height + 1);
+  fillBox(ctx, colorPalette.boxBackground, f.x, f.y, f.x + f.width, f.y + f.height);
+  if (!s.selected && s.frameCursor) selectWorldFont.draw(ctx, '_', { x: 0, y: 0 }, f.x + 4, f.y + (f.height - 8) / 2, colorPalette.frameText, draftScale, { shadow: true });
   if (s.cursor) {
     const u = Math.round(s.cursor.x * draftScale), v = Math.round(s.cursor.y * draftScale);
     arrowRows.forEach((arrowRow, j) => {
@@ -164,7 +164,7 @@ const drawBaseDraft = (s: UiState): HTMLCanvasElement => {
 export const drawSelectWorld = (ctx: CanvasRenderingContext2D, width: number, height: number, s: UiState) => {
   const bottomCanvas = drawBaseDraft(s);
   ctx.clearRect(0, 0, width, height);
-  const { 中心: center, unit } = s.framing;
+  const { center: center, unit } = s.framing;
   // 看得见的底稿范围（底稿像素，取整往外扩一格），再投回画布
   const sx0 = Math.max(0, Math.floor((center.x - width / 2 / unit) * draftScale) - 1), sx1 = Math.min(draftWidth, Math.ceil((center.x + width / 2 / unit) * draftScale) + 1);
   const sy0 = Math.max(0, Math.floor((center.y - height / 2 / unit) * draftScale) - 1), sy1 = Math.min(draftHeight, Math.ceil((center.y + height / 2 / unit) * draftScale) + 1);
@@ -177,6 +177,6 @@ export const drawSelectWorld = (ctx: CanvasRenderingContext2D, width: number, he
 
 /** 界面像素 → 成片像素（画布左上角原点），片尾碎片层用 */
 export const project = (t: Framing, width: number, height: number) => ({
-  x: (u: number) => Math.round(width / 2 + (u - t.中心.x) * t.unit),
-  y: (v: number) => Math.round(height / 2 + (v - t.中心.y) * t.unit),
+  x: (u: number) => Math.round(width / 2 + (u - t.center.x) * t.unit),
+  y: (v: number) => Math.round(height / 2 + (v - t.center.y) * t.unit),
 });

@@ -28,7 +28,7 @@ export const UndyingTotem: React.FC = () => <ItemSprite layers={[{ tex: png(undy
 export const Bow: React.FC<{ 贴图?: BowTexture }> = ({ 贴图: textureKey = '弓' }) => <ItemSprite layers={[{ tex: png(bowImageTable[textureKey]) }]} />;
 
 /** 状态：这一刻在干什么（史蒂夫反应.ts）；光泽秒：附魔光泽、光环自转的时钟，不给 = 状态.秒；装备：穿什么（右手、左手由状态定，这里给了也不用） */
-export const ReactingSteve: React.FC<{ 状态: SteveState; glintSec?: number; equipment?: Omit<SteveEquip, 'rightHand' | 'leftHand' | '剑'> }> = ({ 状态: steveState, glintSec, equipment }) => {
+export const ReactingSteve: React.FC<{ state: SteveState; glintSec?: number; equipment?: Omit<SteveEquip, 'rightHand' | 'leftHand' | '剑'> }> = ({ state: steveState, glintSec, equipment }) => {
   const r = steveReaction(steveState);
   if (!r.在) return null;
   const rightHand =
@@ -53,7 +53,7 @@ export const ReactingSteve: React.FC<{ 状态: SteveState; glintSec?: number; eq
         <UndyingTotem />
       </HeldItem>
     ) : undefined;
-  const personNode = <EquippedSteve pose={r.pose} 秒={glintSec ?? steveState.秒} equipment={{ ...equipment, 剑: r.rightHand === '剑', rightHand, leftHand }} editParts={r.editParts} hurt={r.hurt} />;
+  const personNode = <EquippedSteve pose={r.pose} sec={glintSec ?? steveState.sec} equipment={{ ...equipment, 剑: r.rightHand === '剑', rightHand, leftHand }} editParts={r.editParts} hurt={r.hurt} />;
   if (r.surge) return <InRapids pose={r.pose} surge={r.surge}>{personNode}</InRapids>;
   if (r.toppleAngle === 0) return personNode;
   const [x, y, z] = r.pose.loc as [number, number, number];

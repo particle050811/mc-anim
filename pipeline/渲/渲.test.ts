@@ -4,7 +4,7 @@ import type { SegInfo } from '../清单/清单.ts';
 import { workName } from '../环境/作品.ts';
 import { findComposition, renderLabel } from './渲.ts';
 
-const makeSeg = (segKey: string, durSec = 1.05) => ({ 键: segKey, 段: { 秒: durSec, 宽: 1920, 高: 1080 } }) as unknown as SegInfo;
+const makeSeg = (segKey: string, durSec = 1.05) => ({ key: segKey, segment: { sec: durSec, width: 1920, height: 1080 } }) as unknown as SegInfo;
 // 段长对齐到 1/60 秒，出 60 帧：甲 1.05 秒 63 帧、乙 1.5 秒 90 帧，在哪个位置都一样；核对段各自从 0 起
 const firstSegment = makeSeg('6-甲');
 const secondSeg = makeSeg('6-乙', 1.5);

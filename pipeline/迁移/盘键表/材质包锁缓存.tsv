@@ -1,0 +1,35 @@
+# 格式：材质包锁缓存　位置：<数据根>/cache/材质包/<作品>/*.锁.json
+# 读写：pipeline/资产/材质包.ts　分类：缓存　现有 11 个文件（11 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+不合	mismatched
+例	examples
+共	total
+分辨率	resolution
+包	pack
+包里没有	notInPack
+包里没有但同组放大	missingUpscaledInGroup
+单张	singleTextures
+各包贡献	perPackContribution
+后缀	suffix
+大小	size
+封顶	resolutionCap
+库	lib
+报告	report
+换	replaced
+改	changed
+方块图集	blockAtlas
+方块图集格	blockAtlasCell
+缩放	scale
+群系色	biomeColor
+色图来自	colorMapSources
+覆盖	overrides
+规则	policy
+警告	warnings
+许可	license
+试验	trial
+@map	覆盖
+@map	报告.缩放
+@map	报告.许可
+@map	报告.各包贡献
+@map	报告.群系色.例

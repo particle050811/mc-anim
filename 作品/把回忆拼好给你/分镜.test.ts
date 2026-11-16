@@ -13,10 +13,10 @@ describe('分镜：从网格常数推帧号', () => {
     const w = SegmentWindow('1-一如既往');
     expect(w.起帧).toBe(2485);
     expect(w.止帧).toBe(3360);
-    expect(w.帧数).toBe(875);
-    expect(events.tame.帧).toBe(2563);
-    expect(events.smilePushIn.帧).toBe(3177);
-    expect(events.clickFreeze.帧).toBe(3279);
+    expect(w.frameCount).toBe(875);
+    expect(events.tame.frame).toBe(2563);
+    expect(events.smilePushIn.frame).toBe(3177);
+    expect(events.clickFreeze.frame).toBe(3279);
     const segEvents = segEventFrames('1-一如既往');
     expect([segEvents.tame, segEvents.smilePushIn, segEvents.clickFreeze]).toEqual([78, 692, 794]);
   });
@@ -25,12 +25,12 @@ describe('分镜：从网格常数推帧号', () => {
     const clock = segClock('1-一如既往');
     expect(frameCountOf(seg)).toBe(875);
     expect(sceneWindowFrames(seg)).toEqual({ 起帧: 2485, 止帧: 3360 });
-    expect(clock.origTrack).toEqual({ 秒: 0, 长秒: 875 / 60, 入点秒: 2485 / 60 });
+    expect(clock.origTrack).toEqual({ sec: 0, 长秒: 875 / 60, 入点秒: 2485 / 60 });
   });
 
   it('段.ts 的原声 cue：帧、帧数、入点取自分镜，增益逐帧，开头淡入到场参数的固定增益', () => {
-    const cue = toFrameCues(seg).find((c) => c.资产 === '配乐/把回忆拼好给你-无男声DJ');
-    expect(cue).toMatchObject({ 帧: 0, 帧数: 875, 入点秒: 2485 / 60, 名: '原声' });
+    const cue = toFrameCues(seg).find((c) => c.asset === '配乐/把回忆拼好给你-无男声DJ');
+    expect(cue).toMatchObject({ frame: 0, frameCount: 875, 入点秒: 2485 / 60, name: '原声' });
     const gain = cue!.增益 as readonly number[];
     expect(gain).toHaveLength(875);
     // 第 0 帧算已经走了 1/24 秒，淡入一共这么多帧（含到满那一帧）
@@ -42,14 +42,14 @@ describe('分镜：从网格常数推帧号', () => {
   });
 
   it('段.ts 的咔哒 cue：从分镜的咔哒定格往前提起音秒，主音离定格那一帧不到半帧；放满文件、不过段尾，增益取场参数', () => {
-    const cue = toFrameCues(seg).find((c) => c.资产 === '音效/车万女仆/item.camera_use');
+    const cue = toFrameCues(seg).find((c) => c.asset === '音效/车万女仆/item.camera_use');
     const freezeFrame = segEventFrames('1-一如既往').clickFreeze;
     // 起音 0.13 秒 = 7.8 帧取整 8 帧，文件 0.88 秒 = 52.8 帧放满 53 帧（24 fps 时 3 帧、22 帧）
-    expect(cue).toMatchObject({ 帧: freezeFrame - 8, 帧数: 53, 增益: clickGain, 名: '咔哒' });
+    expect(cue).toMatchObject({ frame: freezeFrame - 8, frameCount: 53, 增益: clickGain, name: '咔哒' });
     // 起放帧按起音秒四舍五入到帧（同 2-合照 的咔哒）：主音离定格那一帧不到半帧，60 fps 早 0.2 帧（24 fps 时晚 0.12 帧）
-    expect(Math.abs(cue!.帧 + clickSound.onsetSec * fps - freezeFrame)).toBeLessThanOrEqual(0.5);
-    expect(cue!.帧数 / fps).toBeGreaterThanOrEqual(clickSound.时长秒);
-    expect(cue!.帧 + cue!.帧数).toBeLessThanOrEqual(frameCountOf(seg));
+    expect(Math.abs(cue!.frame + clickSound.onsetSec * fps - freezeFrame)).toBeLessThanOrEqual(0.5);
+    expect(cue!.frameCount / fps).toBeGreaterThanOrEqual(clickSound.durationSec);
+    expect(cue!.frame + cue!.frameCount).toBeLessThanOrEqual(frameCountOf(seg));
   });
 
   it('段起落在第 12 句止和第 13 句前导音之间的换气里', () => {
@@ -67,21 +67,21 @@ describe('分镜：从网格常数推帧号', () => {
 
   it('事件表按时间排', () => {
     for (const eventTable of [events, mainCutEvents]) {
-      const frames = Object.values(eventTable).map((e) => e.帧);
+      const frames = Object.values(eventTable).map((e) => e.frame);
       expect(frames).toEqual([...frames].sort((a, b) => a - b));
     }
   });
 
   it('正片第 15 句：加入游戏 2908（合屏到位后半拍）、对视（封面帧）3010，对视时那行聊天约 34 刻，还满亮（原版 180 刻后才淡）', () => {
-    expect(mainCutEvents.rejoinGame.帧).toBe(2908);
-    expect(mainCutEvents.reunionGaze.帧).toBe(3010);
-    const tick = ((mainCutEvents.reunionGaze.帧 - mainCutEvents.rejoinGame.帧) / fps) * 20;
+    expect(mainCutEvents.rejoinGame.frame).toBe(2908);
+    expect(mainCutEvents.reunionGaze.frame).toBe(3010);
+    const tick = ((mainCutEvents.reunionGaze.frame - mainCutEvents.rejoinGame.frame) / fps) * 20;
     expect(Math.round(tick)).toBe(34);
   });
 
   it('正片事件按时间排：每串的文件里各自按时间排，事件名各串不重', () => {
     for (const eventTable of mainCutEventsBySeries) {
-      const frames = Object.values(eventTable).map((e) => e.帧);
+      const frames = Object.values(eventTable).map((e) => e.frame);
       expect(frames).toEqual([...frames].sort((a, b) => a - b));
     }
     expect(mainCutEventsBySeries.reduce((n, eventTable) => n + Object.keys(eventTable).length, 0)).toBe(Object.keys(mainCutEvents).length);
@@ -107,15 +107,15 @@ describe('分镜：从网格常数推帧号', () => {
 
   it('第 8 句的几拍和依据里写的秒数差不到 0.01 秒（晴定提早、苦力怕冒头挪后，见依据；后面几拍同三稿）', () => {
     const draftTimes = { clearSkySettles: 25.99, hangPhoto: 26.53, creeperAppears: 26.85, liYingSpotsCreeper: 27.38, hiss: 27.8, creeperFlees: 28.23 } as const;
-    for (const [eventName, sec] of Object.entries(draftTimes)) expect(Math.abs(mainCutEvents[eventName as keyof typeof draftTimes].秒 - sec)).toBeLessThan(0.01);
-    expect(mainCutEvents.hiss.帧).toBe(1668);
+    for (const [eventName, sec] of Object.entries(draftTimes)) expect(Math.abs(mainCutEvents[eventName as keyof typeof draftTimes].sec - sec)).toBeLessThan(0.01);
+    expect(mainCutEvents.hiss.frame).toBe(1668);
   });
 
   it('第 13 句五拍（风吹日历、生长二～四、日历到一）落在三稿的秒数上（差不到半帧）', () => {
     const beats = [mainCutEvents.windBlowsCalendar, mainCutEvents.growthStep2, mainCutEvents.growthStep3, mainCutEvents.growthStep4, mainCutEvents.calendarAtOne];
-    [42.72, 43.14, 43.57, 44.0, 44.42].forEach((sec, i) => expect(Math.abs(beats[i]!.秒 - sec)).toBeLessThan(0.5 / fps));
-    expect(beats.map((e) => e.帧)).toEqual([2563, 2589, 2614, 2640, 2665]);
-    expect(mainCutEvents.splitScreenStart.秒).toBe(lineAt(13).leadIn);
+    [42.72, 43.14, 43.57, 44.0, 44.42].forEach((sec, i) => expect(Math.abs(beats[i]!.sec - sec)).toBeLessThan(0.5 / fps));
+    expect(beats.map((e) => e.frame)).toEqual([2563, 2589, 2614, 2640, 2665]);
+    expect(mainCutEvents.splitScreenStart.sec).toBe(lineAt(13).leadIn);
   });
 
   it('网格的 15 句按序、起止不反', () => {
@@ -131,12 +131,12 @@ describe('排段', () => {
   const duration = 10;
   it('后一段不写起就接上一段，按帧数或时刻定止', () => {
     const r = arrangeSegs({
-      名: '甲',
-      时长: duration,
+      name: '甲',
+      duration: duration,
       segments: [
-        { 键: '1-一', 起: { 秒: 1 }, 止: { 帧数: 2 * fps }, 依据: '' },
-        { 键: '1-二', 止: { measure: 4 }, 依据: '' },
-        { 键: '1-三', 止: '放完', 依据: '' },
+        { key: '1-一', start: { sec: 1 }, end: { frameCount: 2 * fps }, basis: '' },
+        { key: '1-二', end: { measure: 4 }, basis: '' },
+        { key: '1-三', end: '放完', basis: '' },
       ],
     });
     expect(r.map((w) => [w.起帧, w.止帧])).toEqual([
@@ -148,18 +148,18 @@ describe('排段', () => {
 
   it('中间空了、重叠了、第一段没写起、超出时间轴（原声）都报错', () => {
     const segments = (secondStart: number) => [
-      { 键: '1-一', 起: { 秒: 1 }, 止: { 帧数: fps }, 依据: '' },
-      { 键: '1-二', 起: { 秒: secondStart }, 止: { 帧数: fps }, 依据: '' },
+      { key: '1-一', start: { sec: 1 }, end: { frameCount: fps }, basis: '' },
+      { key: '1-二', start: { sec: secondStart }, end: { frameCount: fps }, basis: '' },
     ];
-    expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: segments(2.5) })).toThrow(/中间空了/);
-    expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: segments(1.5) })).toThrow(/重叠了/);
-    expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: segments(2) })).not.toThrow();
-    expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: [{ 键: '1-一', 止: { 帧数: fps }, 依据: '' }] })).toThrow(/要写 起/);
-    expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: [{ 键: '1-一', 起: { 秒: 9 }, 止: { 帧数: 2 * fps }, 依据: '' }] })).toThrow(/超出时间轴/);
+    expect(() => arrangeSegs({ name: '甲', duration: duration, segments: segments(2.5) })).toThrow(/中间空了/);
+    expect(() => arrangeSegs({ name: '甲', duration: duration, segments: segments(1.5) })).toThrow(/重叠了/);
+    expect(() => arrangeSegs({ name: '甲', duration: duration, segments: segments(2) })).not.toThrow();
+    expect(() => arrangeSegs({ name: '甲', duration: duration, segments: [{ key: '1-一', end: { frameCount: fps }, basis: '' }] })).toThrow(/要写 起/);
+    expect(() => arrangeSegs({ name: '甲', duration: duration, segments: [{ key: '1-一', start: { sec: 9 }, end: { frameCount: 2 * fps }, basis: '' }] })).toThrow(/超出时间轴/);
   });
 
   it('接成环报错', () => {
-    const eventTable = { 甲: { 在: { after: '乙', addSec: 1 }, 依据: '' }, 乙: { 在: { after: '甲', addSec: 1 }, 依据: '' } };
-    expect(() => arrangeSegs({ 名: '环', 时长: duration, segments: [{ 键: '1-一', 起: { after: '甲', addSec: 0 }, 止: '放完', 依据: '' }] }, eventTable)).toThrow(/环/);
+    const eventTable = { 甲: { 在: { after: '乙', addSec: 1 }, basis: '' }, 乙: { 在: { after: '甲', addSec: 1 }, basis: '' } };
+    expect(() => arrangeSegs({ name: '环', duration: duration, segments: [{ key: '1-一', start: { after: '甲', addSec: 0 }, end: '放完', basis: '' }] }, eventTable)).toThrow(/环/);
   });
 });

@@ -17,7 +17,7 @@ const picture: React.FC = () => {
     <>
       {/* 光影照 默认.ts 的 光影段 */}
       <shadingScope.Provider value={{ shading: shadingBySeg['2-拨开阴霾'] }}>
-        <StormPicture 帧={startFrame + f} />
+        <StormPicture frame={startFrame + f} />
       </shadingScope.Provider>
     </>
   );

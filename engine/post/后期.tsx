@@ -4,7 +4,7 @@
 // 刀光、命中闪光的泛光另有一套（模型/特效/夜幕刀光/泛光.tsx）。
 //
 // 用法：ThreeCanvas 里挂 <PostFx />。画布上有 <ScreenAo />（优先级 1）时传 drawsScene={false}，由 AO 往这里的离屏图画；
-// <NightfallBloom />（优先级 2）在这之后接着画，也传 drawsScene={false}。命令行 --props='{"后期":false}' 整个关掉。
+// <NightfallBloom />（优先级 2）在这之后接着画，也传 drawsScene={false}。命令行 --props='{"postFx":false}' 整个关掉。
 // 不支持：画布上别的 useFrame 接管渲染、又不经过 gl.getRenderTarget() 的（目前没有）。
 import { useFrame } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
@@ -14,8 +14,8 @@ import { renderInput } from '../core/渲染设置.ts';
 // 挂了 <PostFx /> 的画布：屏幕 AO 的离屏图跟着换成半精度（lib/体素/屏幕AO.tsx），亮部不在那一步被量化成 8 位
 export const postFxRenderers = new WeakSet<THREE.WebGLRenderer>();
 
-const inputOverrides = renderInput() as { 后期?: boolean };
-export const postFxEnabled = inputOverrides.后期 !== false;
+const inputOverrides = renderInput() as { postFx?: boolean };
+export const postFxEnabled = inputOverrides.postFx !== false;
 
 const VS = /* glsl */ `
 varying vec2 vUv;

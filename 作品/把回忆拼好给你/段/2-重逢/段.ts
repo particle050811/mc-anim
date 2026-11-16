@@ -11,16 +11,16 @@ import { doorOpenSound } from '../../场/2-隐世之境/重逢声音.ts';
 const clock = segClock('2-重逢');
 const toCue = (cue: SongSound) => {
   const c = clipToSegment(clock.sceneWindow, cue);
-  if (!c) throw new Error(`${cue.名} 不在 2-重逢 的窗口里`);
+  if (!c) throw new Error(`${cue.name} 不在 2-重逢 的窗口里`);
   return c;
 };
 
 export default defineSeg({
-  场: '2-隐世之境',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-隐世之境',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: mainCutOriginalGain }, toCue(bellSound), toCue(windSound), toCue(doorOpenSound)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: mainCutOriginalGain }, toCue(bellSound), toCue(windSound), toCue(doorOpenSound)],
 });

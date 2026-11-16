@@ -27,7 +27,7 @@ export const skylightDigSec = legacyFrameSec(3);
 /** 掉落物：原版 Block.popResource 在方块中心 ±0.25 处生成（再往下半个物品高 0.125），初速 (±0.1, 0.2, ±0.1) 格/刻，重力 0.04、阻力 0.98，
  *  落地停住（Block.updateEntityAfterFallOn 把竖直速度清零），地上水平阻力再乘草、土的滑度 0.6；10 刻后才捡得起来，捡的时候 3 刻飞到你脚底往上 0.5 格（ItemPickupParticle，按平方缓入）。方块物品掉在地上 0.25 格见方、
  *  绕竖轴转 (刻/20 + 偏) 弧度、上下浮 sin(刻/10 + 偏) × 0.1 + 0.1（ItemEntityRenderer，block/block 的 ground 显示变换） */
-export const drop = { pickupDelayTick: 10, flightTick: 3, 大小: 0.25 };
+export const drop = { pickupDelayTick: 10, flightTick: 3, size: 0.25 };
 
 /** 破坏粒子：原版 TerrainParticle 颜色 0.6（草方块的粒子贴图是泥土，不染色） */
 export const particleColor = 0.6;
@@ -57,12 +57,12 @@ export const originalGain = 0.5;
 /** 音效：文件实测峰值（dBFS）和母版里要的峰值（dBFS）。都压在原声底下（第 8 句的纸声主会话核查后压到 −20），挖、放土听得出一下，僵尸更轻。
  *  原版挖、放的 pitch 是 0.8、捡东西 2.0，音效轨不能变调：挖、放照 1.0 放，捡东西不放（低八度不像）。僵尸低吼的数同旧版第一晚（峰值实测） */
 export const soundFx = {
-  挖一: { 资产: '音效/block.grass.break.2', 峰值: -1.5, 秒: 0.5, 到: -17 },
-  挖二: { 资产: '音效/block.gravel.break.1', 峰值: -1.5, 秒: 0.5, 到: -17 },
-  挖三: { 资产: '音效/block.gravel.break.2', 峰值: -0.6, 秒: 0.5, 到: -17 },
-  填土: { 资产: '音效/block.gravel.break.3', 峰值: -0.8, 秒: 0.5, 到: -18 },
-  僵尸: { 资产: '音效/把回忆拼好给你/entity.zombie.ambient.2', 峰值: -6.6, 秒: 1.375, 到: -20 },
-  挖开天窗: { 资产: '音效/block.gravel.break.4', 峰值: -1.9, 秒: 0.5, 到: -17 },
+  挖一: { asset: '音效/block.grass.break.2', peakDb: -1.5, sec: 0.5, dest: -17 },
+  挖二: { asset: '音效/block.gravel.break.1', peakDb: -1.5, sec: 0.5, dest: -17 },
+  挖三: { asset: '音效/block.gravel.break.2', peakDb: -0.6, sec: 0.5, dest: -17 },
+  填土: { asset: '音效/block.gravel.break.3', peakDb: -0.8, sec: 0.5, dest: -18 },
+  僵尸: { asset: '音效/把回忆拼好给你/entity.zombie.ambient.2', peakDb: -6.6, sec: 1.375, dest: -20 },
+  挖开天窗: { asset: '音效/block.gravel.break.4', peakDb: -1.9, sec: 0.5, dest: -17 },
 } as const;
 /** 僵尸低吼提前几秒起放：文件 0.375 秒处最响（24 fps 时第 9 帧，同旧版第一晚的量法），最响那一下落在它走到洞顶正上方那一帧 */
 export const roarLeadSec = 0.375;

@@ -23,7 +23,7 @@ const fakeContext = () => {
     bindBuffer: (_: number, b: object) => void (boundBuffer = b),
     bufferData: (_: number, content: number | ArrayBufferView) => void bytesCounts.set(boundBuffer!, typeof content === 'number' ? content : content.byteLength),
   };
-  return { ctx: ctx as unknown as WebGL2RenderingContext, 字节: bytesCounts, 数: counts };
+  return { ctx: ctx as unknown as WebGL2RenderingContext, bytes: bytesCounts, 数: counts };
 };
 
 const upload = (ctx: WebGL2RenderingContext, vertexArray: VertexArray, componentsPerVertex = 4) => {
@@ -45,7 +45,7 @@ describe('容器池', () => {
   });
 
   it('还回来的容器清成 0 字节，下一次复用，大小照新数组', () => {
-    const { ctx, 字节: bytesCounts, 数: counts } = fakeContext();
+    const { ctx, bytes: bytesCounts, 数: counts } = fakeContext();
     const a = upload(ctx, new Uint8Array(1000));
     expect(bytesCounts.get(a.buffer)).toBe(1000);
     returnBuffer(ctx, a.buffer);
@@ -86,7 +86,7 @@ describe('容器池', () => {
   });
 
   it('空壳装到过的字节合计有上限，超了从最大的删起', () => {
-    const { ctx, 字节: bytesCounts, 数: counts } = fakeContext();
+    const { ctx, bytes: bytesCounts, 数: counts } = fakeContext();
     const shareBytes = maxKeptBytes / 4;
     const small = upload(ctx, new Uint8Array(1000)).buffer;
     const bigBuffers = Array.from({ length: 4 }, () => upload(ctx, new Uint8Array(shareBytes)).buffer);

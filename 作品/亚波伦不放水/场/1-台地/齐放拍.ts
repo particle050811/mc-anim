@@ -17,12 +17,12 @@ import { steveTrappedPos, altar } from './布局.ts';
 import { slowExtraSec, act2EndWheelTick as openingEndWheelTick } from './开盘拍.ts';
 import timeline from './时间线.ts';
 
-const events = timeline.事件;
+const events = timeline.events;
 /** 编排的钟是「现身后几秒」的世界秒（编排-开盘.ts 的 现身后；那个模块引了模型，这里不能引）：第 2 幕慢放过，从第 2 幕末起比片上慢 慢放多出 秒 */
-const afterAppear = (sceneSec: number) => sceneSec - events.yaBoLunAppears.秒 - slowExtraSec;
+const afterAppear = (sceneSec: number) => sceneSec - events.yaBoLunAppears.sec - slowExtraSec;
 /** 本幕开头（编排的钟）= 第 2 幕末（编排-开盘.ts 的 幕末，编排-齐放.ts 载入时核对） */
-export const actStart = afterAppear(events.wheelOpenDone.秒);
-export const actDur = events.volleyDone.秒 - events.wheelOpenDone.秒;
+export const actStart = afterAppear(events.wheelOpenDone.sec);
+export const actDur = events.volleyDone.sec - events.wheelOpenDone.sec;
 export const secAt = (s: number) => actStart + s;
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 
@@ -47,7 +47,7 @@ export const castStart = 5 / 60;
 export const deathTime = actDur;
 /** 两镜的切点（幕内秒）：侧面看她放、他第一人称一直到死。第一人称切进来 0.4 秒索命劈中、晋升之环炸开（图腾的屏幕动画 2 秒，全在这一镜里）。Agent 取的 */
 export const cameraStart = { side: 0, firstPerson: 1.8 } as const;
-if (Math.abs(events.volleyCast.秒 - events.wheelOpenDone.秒 - castStart) > 1e-6) throw new Error(`场/1-台地/时间线.ts 的 齐放出手 要在 开盘完 后 出手起 = ${castStart} 秒`);
+if (Math.abs(events.volleyCast.sec - events.wheelOpenDone.sec - castStart) > 1e-6) throw new Error(`场/1-台地/时间线.ts 的 齐放出手 要在 开盘完 后 出手起 = ${castStart} 秒`);
 
 /** 一下冲走过的比例（0～1）：速度是梯形，前 起比 加到全速、后 刹比 刹到 0，中间全速。峰值速度 = 平均速度 ÷ (1 − 起比/2 − 刹比/2)。第 5 幕也用 */
 export const dashProgress = (u: number, startRatio: number, brakeRatio: number): number => {
@@ -128,13 +128,13 @@ export const coverFullSec = castStart + cageFlySec;
 // ── 她怎么飞：开幕悬在起位，连放不停手地一下下冲（快的那几下 20～30 格/秒，2～3 帧到全速、到位前急刹），两下之间慢慢漂，
 //    最后一下从他头顶斜着冲到他跟前上方，刹住、慢慢漂到七版 5-03 开头她在的地方（第 5 幕一开始就是那一镜）。
 //    角度、离他多远、多高（他脚底起）都绕着他量；冲法、时刻都是 Agent 取的 ──
-type KeyStep = { 秒: number; 角: number; radial: number; 高: number; reachMode: '漂' | '冲' | '直冲' };
+type KeyStep = { sec: number; angle: number; radial: number; height: number; reachMode: '漂' | '冲' | '直冲' };
 /** 七版 5-03 开头她的脚底（七版 击败拍.ts 的 亚波伦位 在第 5 幕 5.3 秒），第 5 幕照七版原样，所以本幕末停在这里。击败拍.ts 载入时核对 */
 export const act5StartPos: V3 = [907.1770742442654, 288.66251327801626, 54.51164537941398];
 const polar = (p: readonly number[]) => ({
-  角: (Math.atan2(p[1]! - steveFoot[1], p[0]! - steveFoot[0]) * 180) / Math.PI,
+  angle: (Math.atan2(p[1]! - steveFoot[1], p[0]! - steveFoot[0]) * 180) / Math.PI,
   radial: Math.hypot(p[0]! - steveFoot[0], p[1]! - steveFoot[1]),
-  高: p[2]! - steveFoot[2],
+  height: p[2]! - steveFoot[2],
 });
 const startPolar = polar(startPos);
 const endPolar = polar(act5StartPos);
@@ -142,19 +142,19 @@ const endPolar = polar(act5StartPos);
  *  第一下（侧面那一镜里）往后下方拉开：在侧面画面里是斜着往下走；第二下（第一人称里，晋升之环翻完之前）绕着他横着冲 55 度，他眼里她从画面一侧冲到另一侧；
  *  第三下（八版在「挨炸」那一镜，现在还在第一人称里）直着冲到他跟前上方。三下的时刻同八版 */
 export const yaBoLunKeyframes: readonly KeyStep[] = [
-  { 秒: 0, ...startPolar, reachMode: '漂' },
-  { 秒: 1.25, 角: startPolar.角 + 1.5, radial: startPolar.radial + 0.3, 高: 12.3, reachMode: '漂' },
-  { 秒: 1.55, 角: startPolar.角 + 6, radial: 13, 高: 7.5, reachMode: '冲' },
-  { 秒: 3.4, 角: startPolar.角 + 10, radial: 13.3, 高: 8, reachMode: '漂' },
-  { 秒: 3.95, 角: startPolar.角 + 64, radial: 10, 高: 8.6, reachMode: '冲' },
-  { 秒: 4.95, 角: startPolar.角 + 70, radial: 9.4, 高: 8.2, reachMode: '漂' },
-  { 秒: 5.4, 角: endPolar.角 + 4, radial: endPolar.radial + 0.25, 高: endPolar.高 + 0.15, reachMode: '直冲' },
-  { 秒: actDur, ...endPolar, reachMode: '漂' },
+  { sec: 0, ...startPolar, reachMode: '漂' },
+  { sec: 1.25, angle: startPolar.angle + 1.5, radial: startPolar.radial + 0.3, height: 12.3, reachMode: '漂' },
+  { sec: 1.55, angle: startPolar.angle + 6, radial: 13, height: 7.5, reachMode: '冲' },
+  { sec: 3.4, angle: startPolar.angle + 10, radial: 13.3, height: 8, reachMode: '漂' },
+  { sec: 3.95, angle: startPolar.angle + 64, radial: 10, height: 8.6, reachMode: '冲' },
+  { sec: 4.95, angle: startPolar.angle + 70, radial: 9.4, height: 8.2, reachMode: '漂' },
+  { sec: 5.4, angle: endPolar.angle + 4, radial: endPolar.radial + 0.25, height: endPolar.height + 0.15, reachMode: '直冲' },
+  { sec: actDur, ...endPolar, reachMode: '漂' },
 ];
-if (Math.abs(yaBoLunKeyframes[yaBoLunKeyframes.length - 1]!.秒 - actDur) > 1e-9) throw new Error('齐放：她关们 最后一关要在幕末');
-const keyPoint = (k: { 角: number; radial: number; 高: number }): V3 => {
-  const a = (k.角 * Math.PI) / 180;
-  return [steveFoot[0] + k.radial * Math.cos(a), steveFoot[1] + k.radial * Math.sin(a), steveFoot[2] + k.高];
+if (Math.abs(yaBoLunKeyframes[yaBoLunKeyframes.length - 1]!.sec - actDur) > 1e-9) throw new Error('齐放：她关们 最后一关要在幕末');
+const keyPoint = (k: { angle: number; radial: number; height: number }): V3 => {
+  const a = (k.angle * Math.PI) / 180;
+  return [steveFoot[0] + k.radial * Math.cos(a), steveFoot[1] + k.radial * Math.sin(a), steveFoot[2] + k.height];
 };
 /** 冲：头 0.04 秒加到全速、后 30% 急刹 */
 const dashStartSec = 0.04;
@@ -162,37 +162,37 @@ const dashBrakeRatio = 0.3;
 
 // ── 打击停顿（照 Linker 打戏知识库 animation.md 第 7 节：局部时间，攻防两方定在接触那一刻，别的照走）：只停索命劈中那一下（重，16 帧；七版用户看过）。
 //    她、他、索命的电弧定住；镜头、结界、别的法术、盘、图腾的屏幕动画照走 ──
-export type Pause = { 起: number; 秒: number };
-export const killingPause: Pause = { 起: killingSec, 秒: 16 / 60 };
+export type Pause = { start: number; sec: number };
+export const killingPause: Pause = { start: killingSec, sec: 16 / 60 };
 /** 世界钟（幕内秒）→ 这些停顿下的局部钟：停着的那几帧不走 */
-export const localClock = (pauses: readonly Pause[]) => (s: number) => pauses.reduce((x, p) => x - Math.min(Math.max(s - p.起, 0), p.秒), s);
+export const localClock = (pauses: readonly Pause[]) => (s: number) => pauses.reduce((x, p) => x - Math.min(Math.max(s - p.start, 0), p.sec), s);
 /** 局部钟 → 世界钟（落在停顿那一刻的给停顿开头） */
 export const backToWorld = (pauses: readonly Pause[]) => {
-  const sortedPauses = [...pauses].sort((a, b) => a.起 - b.起);
-  return (x: number) => sortedPauses.reduce((s, p) => (s > p.起 + 1e-9 ? s + p.秒 : s), x);
+  const sortedPauses = [...pauses].sort((a, b) => a.start - b.start);
+  return (x: number) => sortedPauses.reduce((s, p) => (s > p.start + 1e-9 ? s + p.sec : s), x);
 };
 export const yaBoLunClock = localClock([killingPause]);
 export const steveClock = localClock([killingPause]);
 export const steveBackToWorld = backToWorld([killingPause]);
-const localKeyframes = yaBoLunKeyframes.map((k) => ({ ...k, 秒: yaBoLunClock(k.秒) }));
+const localKeyframes = yaBoLunKeyframes.map((k) => ({ ...k, sec: yaBoLunClock(k.sec) }));
 
 /** 她在局部钟 τ（幕内秒）的脚底 */
 export const yaBoLunLocalPos = (τ: number): V3 => {
-  const s = Math.min(Math.max(τ, 0), localKeyframes[localKeyframes.length - 1]!.秒);
+  const s = Math.min(Math.max(τ, 0), localKeyframes[localKeyframes.length - 1]!.sec);
   let i = 1;
-  while (i < localKeyframes.length - 1 && s > localKeyframes[i]!.秒) i++;
+  while (i < localKeyframes.length - 1 && s > localKeyframes[i]!.sec) i++;
   const [a, b] = [localKeyframes[i - 1]!, localKeyframes[i]!];
-  const u = (s - a.秒) / (b.秒 - a.秒);
+  const u = (s - a.sec) / (b.sec - a.sec);
   if (b.reachMode === '直冲') {
     const [p, q] = [keyPoint(a), keyPoint(b)];
-    return addVec(p, [q[0] - p[0], q[1] - p[1], q[2] - p[2]], dashProgress(u, dashStartSec / (b.秒 - a.秒), dashBrakeRatio));
+    return addVec(p, [q[0] - p[0], q[1] - p[1], q[2] - p[2]], dashProgress(u, dashStartSec / (b.sec - a.sec), dashBrakeRatio));
   }
-  const k = b.reachMode === '冲' ? dashProgress(u, dashStartSec / (b.秒 - a.秒), dashBrakeRatio) : smoothstep01(u);
-  return keyPoint({ 角: a.角 + (b.角 - a.角) * k, radial: a.radial + (b.radial - a.radial) * k, 高: a.高 + (b.高 - a.高) * k });
+  const k = b.reachMode === '冲' ? dashProgress(u, dashStartSec / (b.sec - a.sec), dashBrakeRatio) : smoothstep01(u);
+  return keyPoint({ angle: a.angle + (b.angle - a.angle) * k, radial: a.radial + (b.radial - a.radial) * k, height: a.height + (b.height - a.height) * k });
 };
 export const yaBoLunPos = (t: number): V3 => yaBoLunLocalPos(yaBoLunClock(t - actStart));
 /** 她的每一下冲（幕内秒，世界钟）：起、止。测试量峰值、声音挂破风 */
-export const dashRanges: readonly { 起: number; 止: number }[] = yaBoLunKeyframes.flatMap((k, i) => (k.reachMode === '漂' ? [] : [{ 起: yaBoLunKeyframes[i - 1]!.秒, 止: k.秒 }]));
+export const dashRanges: readonly { start: number; end: number }[] = yaBoLunKeyframes.flatMap((k, i) => (k.reachMode === '漂' ? [] : [{ start: yaBoLunKeyframes[i - 1]!.sec, end: k.sec }]));
 if (Math.hypot(...yaBoLunPos(secAt(actDur)).map((x, i) => x - act5StartPos[i]!)) > 1e-6) throw new Error('齐放：她幕末没停在 第五幕起位');
 
 /** 从 p 到史蒂夫的水平单位向量 */
@@ -214,17 +214,17 @@ export const approxSceneCtx: SceneCtx = { wandTip: approxWandTip, steveFoot: () 
 type QueuedLaunch = Launch & { hitSec?: number };
 const launchHit = (cast: Launch): number | undefined => {
   const hitSec = spellDuration(getSpellMeta(cast.id), launchFrom(cast, approxSceneCtx), launchTarget(cast, approxSceneCtx), cast.options).hitSec;
-  return hitSec === undefined ? undefined : cast.秒 + hitSec;
+  return hitSec === undefined ? undefined : cast.sec + hitSec;
 };
 const queuedLaunches: readonly QueuedLaunch[] = chainCastTable.flatMap((item, i) => {
   const firstFireSec = item.id === 'killing' ? killingSec : launchTime(i);
   const n = item.id === 'killing' ? 1 : Math.ceil((deathTime - firstFireSec) / gap(item.id) - 1e-9);
   const options = { ...fullEnchant, ...item.options };
   return Array.from({ length: n }, (_, k): QueuedLaunch => {
-    const bottomArranged: Launch = { id: item.id, 秒: secAt(firstFireSec + k * gap(item.id)), 种子: 101 + i * 37 + k * 7, options };
+    const bottomArranged: Launch = { id: item.id, sec: secAt(firstFireSec + k * gap(item.id)), seed: 101 + i * 37 + k * 7, options };
     const hitSec = launchHit(bottomArranged);
     // 连放的小法术打到以后只留一小段余波；没有命中一说的（闪电、音爆这种当刻就到的）按出手算
-    const endSec = item.isBig || item.id === 'killing' ? {} : { 止: Math.max(bottomArranged.秒, hitSec ?? bottomArranged.秒) + tailSec };
+    const endSec = item.isBig || item.id === 'killing' ? {} : { end: Math.max(bottomArranged.sec, hitSec ?? bottomArranged.sec) + tailSec };
     return { ...bottomArranged, ...endSec, ...(hitSec !== undefined ? { hitSec } : {}) };
   });
 });
@@ -239,12 +239,12 @@ export const followStaffIds = ['prisma_beam'];
 /** 打得重的：大招里除了凋灵之首（它冷却 0、一直在连射，算轻的），加索命 */
 const heavyIds = [...bigCastIds.filter((id) => id !== 'wither_skull'), 'killing'];
 /** 打到他的每一发（幕内秒，世界钟），他死之前的 */
-export const hitEvents: readonly { 秒: number; id: string; 重: boolean }[] = queuedLaunches
+export const hitEvents: readonly { sec: number; id: string; 重: boolean }[] = queuedLaunches
   .filter((cast) => cast.hitSec !== undefined && cast.hitSec - actStart < deathTime - 1e-6)
-  .map((cast) => ({ 秒: cast.hitSec! - actStart, id: cast.id, 重: heavyIds.includes(cast.id) }))
-  .sort((a, b) => a.秒 - b.秒);
+  .map((cast) => ({ sec: cast.hitSec! - actStart, id: cast.id, 重: heavyIds.includes(cast.id) }))
+  .sort((a, b) => a.sec - b.sec);
 /** 11 个大招各自第一下打到他的时刻（幕内秒）：都要在他死之前（用户 11-11「大招要落到他身上」） */
-export const ultimateLandTimes = Object.fromEntries(bigCastIds.map((id) => [id, hitEvents.find((h) => h.id === id)?.秒])) as Record<string, number | undefined>;
+export const ultimateLandTimes = Object.fromEntries(bigCastIds.map((id) => [id, hitEvents.find((h) => h.id === id)?.sec])) as Record<string, number | undefined>;
 for (const [id, sec] of Object.entries(ultimateLandTimes)) if (sec === undefined) throw new Error(`齐放：大招 ${id} 在他死之前没打到他（齐放拍.ts 的 连放表）`);
 /** 致命那一下：11 个大招都打到他以后，卫射头一发照满结算。卫射照游戏是间接魔法伤害（PrismaBeamSpell 用 DamageSources.indirectMagic），死亡消息照它（编排-击败.ts） */
 const allBigLanded = Math.max(...Object.values(ultimateLandTimes).map((x) => x!));
@@ -255,33 +255,33 @@ if (!lethalLaunch?.hitSec || Math.abs(lethalLaunch.hitSec - secAt(deathTime)) > 
 export const totemSec = secAt(killingSec);
 if (killingSec < cameraStart.firstPerson + 0.2 || killingSec > cameraStart.firstPerson + 0.8) throw new Error(`齐放：索命 ${killingSec} 秒劈中，要在第一人称那一镜（${cameraStart.firstPerson} 秒切进来）开头 0.2～0.8 秒里`);
 /** 这一发游戏里在几时响什么（幕内秒，世界钟）：齐放声.ts 排声音用。法术元的 声音 照出手、命中算；画面切掉（止）以后、他死以后的不要 */
-export const spellSounds = (cast: Launch): { 资产: string; 秒: number; 音量: number; 音高: number }[] => {
-  const endSec = Math.min(cast.止 ?? Infinity, secAt(deathTime));
+export const spellSounds = (cast: Launch): { asset: string; sec: number; 音量: number; 音高: number }[] => {
+  const endSec = Math.min(cast.end ?? Infinity, secAt(deathTime));
   return spellSoundAt(getSpellMeta(cast.id), launchFrom(cast, approxSceneCtx), launchTarget(cast, approxSceneCtx), cast.options)
-    .map((x) => ({ ...x, 秒: cast.秒 + x.秒 }))
-    .filter((x) => x.秒 < endSec)
-    .map((x) => ({ ...x, 秒: x.秒 - actStart }));
+    .map((x) => ({ ...x, sec: cast.sec + x.sec }))
+    .filter((x) => x.sec < endSec)
+    .map((x) => ({ ...x, sec: x.sec - actStart }));
 };
 
 // ── 史蒂夫几时挨打、挥剑（时刻按 近似杖尖 算；他怎么动在 编排-齐放.ts 的 史蒂夫状态在） ──
 /** 挨打（他的局部钟）：第三人称里他身子的反应和受伤声，最多 0.5 秒一下（原版 LivingEntity.hurt 无敌帧前 10 刻里再挨只补更大的那部分血、不重放受伤动画）；
  *  大招打到的算重的（后仰大、腿软）。结界每刻烧他不算在这里（八版就是这样，声音没改）；第一人称的视角晃动照原版另算，见 受伤们 */
-export const takenHits: readonly { 秒: number; 重: boolean }[] = hitEvents.reduce<{ 秒: number; 重: boolean }[]>((hits, h) => {
-  const s = steveClock(h.秒);
+export const takenHits: readonly { sec: number; 重: boolean }[] = hitEvents.reduce<{ sec: number; 重: boolean }[]>((hits, h) => {
+  const s = steveClock(h.sec);
   const prev = hits[hits.length - 1];
-  if (prev && s - prev.秒 < 0.5) {
+  if (prev && s - prev.sec < 0.5) {
     if (h.重) prev.重 = true;
     return hits;
   }
-  return [...hits, { 秒: s, 重: h.重 }];
+  return [...hits, { sec: s, 重: h.重 }];
 }, []);
 /** 挥剑（他的局部钟）：赶在弹到之前 0.1 秒劈，两下至少隔 0.45 秒（断曜流光照剑的攻速 1.6，12.5 刻一满）；死前 0.15 秒起不挥 */
 export const swingTimes: readonly number[] = hitEvents.reduce<number[]>((swings, h) => {
-  const c = Math.round((steveClock(h.秒) - 0.1) * 20) / 20;
+  const c = Math.round((steveClock(h.sec) - 0.1) * 20) / 20;
   return c >= 0.3 && c < steveClock(deathTime) - 0.15 && (!swings.length || c - swings[swings.length - 1]! >= 0.45) ? [...swings, c] : swings;
 }, []);
 /** 声音用的世界钟（幕内秒）：挨打、挥剑 */
-export const takenHitsWorld = takenHits.map((h) => ({ ...h, 秒: steveBackToWorld(h.秒) }));
+export const takenHitsWorld = takenHits.map((h) => ({ ...h, sec: steveBackToWorld(h.sec) }));
 export const swingWorldTimes = swingTimes.map(steveBackToWorld);
 
 // ── 受伤视角晃动：只在第一人称那一镜（玩家的相机），照原版 1.20.1 GameRenderer.bobHurt。用户 11-11 看八版第一人称：
@@ -316,7 +316,7 @@ export const hurtEvents: readonly { 刻: number; dirDeg: number }[] = (() => {
   let lastWholeTick = -Infinity;
   let lastHeavy = false;
   for (const h of hitEvents) {
-    const tick = Math.floor(steveClock(h.秒) * 20);
+    const tick = Math.floor(steveClock(h.sec) * 20);
     if (tick >= coverTick) break;
     if (tick - lastWholeTick >= hurtIntervalTick) [lastWholeTick, lastHeavy] = [tick, h.重];
     else if (h.重 && !lastHeavy) lastHeavy = true;

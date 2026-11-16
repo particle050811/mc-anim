@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 4b4aa17d1294），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-会会你们（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 17967d2b52e2），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-会会你们（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-会会你们",
-  "角色": "李樱",
-  "念": "到时候召唤出监守者了，有你们好受的。",
-  "配音": "配音/6-李樱-会会你们",
-  "成品sha": "e507340eced4",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "到时候召唤出监守者了，有你们好受的。",
+  "voice": "配音/6-李樱-会会你们",
+  "finishedSha": "e507340eced4",
+  "mouthOpen": 0.03,
   "有声长": 2.953,
-  "时长": 3.133,
+  "duration": 3.133,
   "文件秒数": 3.133,
-  "字": [
+  "char": [
     ["到",0.16,0.32],
     ["时",0.32,0.48],
     ["候",0.48,0.56],

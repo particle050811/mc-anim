@@ -3,37 +3,37 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/7-刘心忠-怎么回事": {
-      "时长": 0.96,
-      "峰值": -1.5,
-      "响度": -19.2,
+      "duration": 0.96,
+      "peakDb": -1.5,
+      "loudness": -19.2,
       "sha": "a17c283108d1"
     },
     "音效/entity.evoker.prepare_summon": {
-      "时长": 3.488,
-      "峰值": -4.6,
-      "响度": -22.9,
+      "duration": 3.488,
+      "peakDb": -4.6,
+      "loudness": -22.9,
       "sha": "96e683a5590c"
     },
     "音效/entity.warden.angry.5": {
-      "时长": 4.106042,
-      "峰值": -6.7,
-      "响度": -21.7,
+      "duration": 4.106042,
+      "peakDb": -6.7,
+      "loudness": -21.7,
       "sha": "6d6a95c28b7c"
     },
     "音效/entity.warden.roar.3": {
-      "时长": 3.357375,
-      "峰值": -0.3,
-      "响度": -15.9,
+      "duration": 3.357375,
+      "peakDb": -0.3,
+      "loudness": -15.9,
       "sha": "413d47b1d639"
     }
   },
-  "台词": {
+  "lines": {
     "7-刘心忠-怎么回事": {
-      "配音": "配音/7-刘心忠-怎么回事",
-      "开口": 0.03,
-      "时长": 0.96
+      "voice": "配音/7-刘心忠-怎么回事",
+      "mouthOpen": 0.03,
+      "duration": 0.96
     }
   }
 };

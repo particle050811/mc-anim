@@ -31,21 +31,21 @@ const picture: React.FC = () => {
   const gaze = v.头 === '看玩家' ? magicalWineFoxLookAt(liYing, v.眼, v.stancePose) : v.头;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={v.宽} height={v.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={v.width} height={v.height} gl={{ antialias: true }}>
         <color attach="background" args={['#5a5e66']} />
         <FirstPersonRig 眼={v.眼} 看={v.看} fov={v.fov} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={(v.暗 ? 0.06 : 0.55) * Math.PI} />
           {!v.暗 && <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />}
           {v.ground && <Ground />}
-          <MagicalWineFox pose={liYing} stancePose={v.stancePose} 看={gaze} 秒={v.秒} hat={v.hat} glow={v.glow} />
+          <MagicalWineFox pose={liYing} stancePose={v.stancePose} 看={gaze} sec={v.sec} hat={v.hat} glow={v.glow} />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
+        <div>{v.name}</div>
         {gaze && <div style={{ fontSize: 16 }}>看 [{gaze.map((x) => x.toFixed(1)).join(', ')}]</div>}
         {v.gameShot && <div style={{ fontSize: 16 }}>对照游戏截图 {v.gameShot}</div>}
-        {v.秒 !== undefined && <div style={{ fontSize: 16 }}>第 {v.秒} 秒</div>}
+        {v.sec !== undefined && <div style={{ fontSize: 16 }}>第 {v.sec} 秒</div>}
       </div>
     </AbsoluteFill>
   );

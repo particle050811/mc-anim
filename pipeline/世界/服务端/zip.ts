@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 
-export type ZipEntry = { 名: string; 方法: number; compressedLen: number; uncompressedSize: number; localHeaderOffset: number };
+export type ZipEntry = { name: string; 方法: number; compressedLen: number; uncompressedSize: number; localHeaderOffset: number };
 
 export class ReadOnlyZip {
   private buf: Buffer;
@@ -26,7 +26,7 @@ export class ReadOnlyZip {
       if (b.readUInt32LE(p) !== 0x02014b50) throw new Error(`${file} 的中央目录坏了`);
       const nameLen = b.readUInt16LE(p + 28), extraLen = b.readUInt16LE(p + 30), commentLen = b.readUInt16LE(p + 32);
       const entryName = b.toString('utf8', p + 46, p + 46 + nameLen);
-      this.entryMap.set(entryName, { 名: entryName, 方法: b.readUInt16LE(p + 10), compressedLen: b.readUInt32LE(p + 20), uncompressedSize: b.readUInt32LE(p + 24), localHeaderOffset: b.readUInt32LE(p + 42) });
+      this.entryMap.set(entryName, { name: entryName, 方法: b.readUInt16LE(p + 10), compressedLen: b.readUInt32LE(p + 20), uncompressedSize: b.readUInt32LE(p + 24), localHeaderOffset: b.readUInt32LE(p + 42) });
       p += 46 + nameLen + extraLen + commentLen;
     }
   }

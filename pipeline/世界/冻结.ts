@@ -10,30 +10,30 @@ import { versionDir, readTerrainTable } from './版本.ts';
 export const freezeDir = () => path.join(codeRoot(), 'assets', '冻结粗高度');
 export const frozenPacks = () => (fs.existsSync(freezeDir()) ? fs.readdirSync(freezeDir()).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -'.json'.length)).sort() : []);
 
-export type FreezeResult = { 包: string; 版本: string; 指纹: string; 原: { 版本: string; 指纹: string } | null; same: boolean; written: boolean; 文件: string };
+export type FreezeResult = { pack: string; version: string; fingerprint: string; 原: { version: string; fingerprint: string } | null; same: boolean; written: boolean; file: string };
 
 export const freeze = async (packs: string[], o: { write: boolean }): Promise<FreezeResult[]> => {
   const voxelLib = await loadVoxelLib();
-  const terrainTable = readTerrainTable().包;
+  const terrainTable = readTerrainTable().pack;
   const out: FreezeResult[] = [];
   for (const pack of packs.length ? packs : frozenPacks()) {
-    const version = terrainTable[pack]?.版本;
+    const version = terrainTable[pack]?.version;
     if (!version) throw new Error(`assets/地形版本.json 没登记包 ${pack}`);
     const packJsonPath = path.join(versionDir(pack, version), '包.json');
     if (!fs.existsSync(packJsonPath)) throw new Error(`没有 ${packJsonPath}：anim assets pull 拉地形包，或 anim world bake 烘`);
     const info = JSON.parse(fs.readFileSync(packJsonPath, 'utf8'));
     const fingerprint = voxelLib.sectionPack.coarseHeightFingerprint(voxelLib.sectionPack.decodeCoarseHeight(info));
     const file = path.join(freezeDir(), `${pack}.json`);
-    const previous = fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf8')) as { 版本: string; 指纹: string; 原点: number[] }) : null;
-    const same = !!previous && previous.版本 === version && previous.指纹 === fingerprint && JSON.stringify(previous.原点) === JSON.stringify(info.原点);
+    const previous = fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf8')) as { version: string; fingerprint: string; origin: number[] }) : null;
+    const same = !!previous && previous.version === version && previous.fingerprint === fingerprint && JSON.stringify(previous.origin) === JSON.stringify(info.origin);
     let written = false;
     if (!same && o.write) {
-      const frozenDoc = { 说明: 'anim world freeze 从登记的那版区段包的 包.json 拷的原点和粗高度图，别手改', 包: pack, 版本: version, 指纹: fingerprint, 维度: info.维度, 原点: info.原点, 粗高度: info.粗高度 };
+      const frozenDoc = { note: 'anim world freeze 从登记的那版区段包的 包.json 拷的原点和粗高度图，别手改', pack: pack, version: version, fingerprint: fingerprint, dimension: info.dimension, origin: info.origin, coarseHeight: info.coarseHeight };
       fs.mkdirSync(freezeDir(), { recursive: true });
       fs.writeFileSync(file, JSON.stringify(frozenDoc) + '\n');
       written = true;
     }
-    out.push({ 包: pack, 版本: version, 指纹: fingerprint, 原: previous && { 版本: previous.版本, 指纹: previous.指纹 }, same, written, 文件: file });
+    out.push({ pack: pack, version: version, fingerprint: fingerprint, 原: previous && { version: previous.version, fingerprint: previous.fingerprint }, same, written, file: file });
   }
   return out;
 };

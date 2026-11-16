@@ -6,11 +6,11 @@ import { chainLookup, segmentFrames, resolveEvents, arrangeSegs, type EventDef }
 export const eventDefs = {
   // 第 2 句「祈愿小世界里不只有挫败」（段 2-第一晚）：只拍挖三填一（用户 10-24「死多次表现不好 只留挖三填一就行」），一拍一格；
   // 挖、填比三稿早一拍，封顶以后留 1.3 秒给夜里僵尸晃过、天慢慢亮，8.20 前留够半秒给阳光照进洞里
-  digFirst: { 在: { beat: 12 }, 依据: '第 2 句：脚下的草方块挖掉（第 2 句首字就开始挖，接着第 1 句尾低头站好）' },
-  digSecond: { 在: { beat: 13 }, 依据: '第 2 句：往下再挖一格泥土' },
-  digThird: { 在: { beat: 14 }, 依据: '第 2 句：第三格泥土，站在两格深的坑底' },
-  fillHole: { 在: { beat: 15 }, 依据: '三稿：头顶填上一格土，缩在两格高的小黑洞里，天正好黑透；之后夜里快进过去，僵尸从洞顶上走过（演绎）' },
-  digSkylight: { 在: { beat: 18 }, 依据: '三稿 8.20 前：外面已经亮了，头顶那格土挖开，阳光照进洞里，接第 3 句（提前一拍：段尾留 0.6 秒给阳光照进洞里）' },
+  digFirst: { 在: { beat: 12 }, basis: '第 2 句：脚下的草方块挖掉（第 2 句首字就开始挖，接着第 1 句尾低头站好）' },
+  digSecond: { 在: { beat: 13 }, basis: '第 2 句：往下再挖一格泥土' },
+  digThird: { 在: { beat: 14 }, basis: '第 2 句：第三格泥土，站在两格深的坑底' },
+  fillHole: { 在: { beat: 15 }, basis: '三稿：头顶填上一格土，缩在两格高的小黑洞里，天正好黑透；之后夜里快进过去，僵尸从洞顶上走过（演绎）' },
+  digSkylight: { 在: { beat: 18 }, basis: '三稿 8.20 前：外面已经亮了，头顶那格土挖开，阳光照进洞里，接第 3 句（提前一拍：段尾留 0.6 秒给阳光照进洞里）' },
 } as const satisfies Record<string, EventDef>;
 
 /** 接 能查到的事件：本串的，加上引来的那几份的（一路引上去） */
@@ -22,14 +22,14 @@ export const events = resolveEvents(eventDefs, eventTable);
  *  前后的段做出来以后并进同一串（窗口首尾相接） */
 export const mainCutSentences2 = arrangeSegs(
   {
-    名: '正片第2句',
-    时长: originalDurSec,
+    name: '正片第2句',
+    duration: originalDurSec,
     segments: [
       {
-        键: '2-第一晚',
-        起: { 句: 2, 点: '起' },
-        止: { 句: 3, 点: '起' },
-        依据: '起：第 2 句首字（4.95），和 2-初入 的止同一刻，同一个镜头接着拍；止：第 3 句首字（8.39），头顶挖开、阳光照进洞里以后接第 3 句',
+        key: '2-第一晚',
+        start: { 句: 2, points: '起' },
+        end: { 句: 3, points: '起' },
+        basis: '起：第 2 句首字（4.95），和 2-初入 的止同一刻，同一个镜头接着拍；止：第 3 句首字（8.39），头顶挖开、阳光照进洞里以后接第 3 句',
       },
     ],
   },

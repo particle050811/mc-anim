@@ -44,18 +44,18 @@ const events = mainCutEvents;
 /** 镜头那一边很远的一点：正交镜头朝东，花的正面朝西 */
 const cameraDir: V3 = [groupPhotoShot.看[0] - 100, groupPhotoShot.看[1], groupPhotoShot.看[2]];
 /** 她：面朝镜头站在你左边，从 靠肩起势（2-重逢 末尾那个笑、举着花）按 靠肩进度 靠到 靠肩（头、上身往你那边歪，花放下） */
-const LiYingLeaning: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
+const LiYingLeaning: React.FC<{ frame: number }> = ({ frame: frame }) => {
   const k = leanProgress(frame);
   const pose: FigurePose = { ...standPose(groupPhotoStand.liYingPos), yaw: groupPhotoAngleDeg };
   const gaze: [number, number] = [lerp(leanShoulderStart.看[0], leanShoulder.看[0], k), lerp(leanShoulderStart.看[1], leanShoulder.看[1], k)];
-  const p: MagicalWineFoxExProps = { pose, stancePose: '站', expression: laugh.expression, 看: gaze, blink: laugh.blink, 秒: frame / fps, rightHand: holdNothing };
+  const p: MagicalWineFoxExProps = { pose, stancePose: '站', expression: laugh.expression, 看: gaze, blink: laugh.blink, sec: frame / fps, rightHand: holdNothing };
   const boneTable = magicalWineFoxExBones(p);
   const overlay = { Head: addRoll(boneTable.Head, lerp(leanShoulderStart.tilt, leanShoulder.tilt, k)), UpBody: addRoll(boneTable.UpBody, lerp(leanShoulderStart.upperBodyTilt, leanShoulder.upperBodyTilt, k)) };
   return <LiYingHoldingFlower p={p} raiseAmount={lerp(1, leanShoulder.flowerRaise, k)} overlaySkeleton={overlay} 眼={cameraDir} />;
 };
 
 /** 你：面朝镜头站在她右边，她靠过来时头往她那边偏（你的头） */
-const ShoulderYou: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
+const ShoulderYou: React.FC<{ frame: number }> = ({ frame: frame }) => {
   // 不传 sec、两臂外摆清零（同 2-收集快乐：原版站着两臂的轻晃会让胳膊斜着）
   const k = leanProgress(frame);
   const pose = { ...stevePose(groupPhotoStand.你, groupPhotoAngleDeg, { headYaw: youHead.headYawOffset * k, headPitch: youHead.pitchDeg * k, scale: steveScale }), armRRoll: 0, armLRoll: 0 };
@@ -66,32 +66,32 @@ const ShoulderYou: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
   );
 };
 
-const LeanScene: React.FC<{ 帧: number; fade: boolean; outsideView: boolean }> = ({ 帧: frame, fade, outsideView }) => {
+const LeanScene: React.FC<{ frame: number; fade: boolean; outsideView: boolean }> = ({ frame: frame, fade, outsideView }) => {
   const personNode = (
     <>
-      <ShoulderYou 帧={frame} />
+      <ShoulderYou frame={frame} />
       <TexturePixelAlign 锚={groupPhotoStand.liYingPos}>
-        <LiYingLeaning 帧={frame} />
+        <LiYingLeaning frame={frame} />
       </TexturePixelAlign>
     </>
   );
   const backdrop = (
-    <HiddenLandReunionBackdrop 开={1} lighting={false} doorLightParams={eyeContactDoorLight} 秒={frame / fps} outsideView={outsideView}>
+    <HiddenLandReunionBackdrop 开={1} lighting={false} doorLightParams={eyeContactDoorLight} sec={frame / fps} outsideView={outsideView}>
       {fade ? <NoFade>{personNode}</NoFade> : personNode}
     </HiddenLandReunionBackdrop>
   );
-  return fade ? <BackgroundFade 参数={backgroundFadeParams}>{backdrop}</BackgroundFade> : backdrop;
+  return fade ? <BackgroundFade params={backgroundFadeParams}>{backdrop}</BackgroundFade> : backdrop;
 };
 
 /** 窗景（合照参数 的 窗景，小样）：从东窗外平视往东的一整张透视画，挪上下让地平线落在 地平线y，垫在正交画布底下，只从窗玻璃里透出来 */
 const WindowViewLayer: React.FC = () => (
   <ToonCanvas
-    宽={aspect.宽}
-    高={aspect.高}
-    cameraRig={{ 种: '透视', 眼: windowView.眼, 看: windowView.看, fov: windowView.fov }}
+    width={aspect.width}
+    height={aspect.height}
+    cameraRig={{ kind: '透视', 眼: windowView.眼, 看: windowView.看, fov: windowView.fov }}
     {...canvasTone(tone)}
     tint={doorLightTint}
-    style={{ position: 'absolute', left: 0, top: windowView.horizonY - aspect.高 / 2 }}
+    style={{ position: 'absolute', left: 0, top: windowView.horizonY - aspect.height / 2 }}
   >
     <HiddenLandReunionBackdrop 开={1} lighting={false} doorLight={false} />
   </ToonCanvas>
@@ -99,25 +99,25 @@ const WindowViewLayer: React.FC = () => (
 
 /** 她头顶气泡的锚点（页面坐标）：原版脚底 + 女仆气泡锚高 投到靠肩机位的画面上 */
 export const leanBubbleAnchor = () => {
-  const cam = makeRigCamera(shoulderRig, aspect.宽, aspect.高, canvasDpr(1));
-  const p = projectToPage(cam, zUpToThree([groupPhotoStand.liYingPos[0], groupPhotoStand.liYingPos[1], groupPhotoStand.liYingPos[2] + bubbleAnchorHeight()]), aspect.宽, aspect.高);
+  const cam = makeRigCamera(shoulderRig, aspect.width, aspect.height, canvasDpr(1));
+  const p = projectToPage(cam, zUpToThree([groupPhotoStand.liYingPos[0], groupPhotoStand.liYingPos[1], groupPhotoStand.liYingPos[2] + bubbleAnchorHeight()]), aspect.width, aspect.height);
   return { x: p.x, y: p.y };
 };
 
 /** 她头顶的气泡（正交）：「(✿◠‿◠)」倍数 = N（核对对比用），接过来的台词气泡照游戏大小（台词气泡接过来） */
-const LeanBubbleLayer: React.FC<{ 字: string; 缩放: number }> = ({ 字: text, 缩放: scale }) => (
-  <MaidBubble 锚={leanBubbleAnchor()} 缩放={scale} anchorAlign={scale} 文字={text} 字体={pixelFont} />
+const LeanBubbleLayer: React.FC<{ char: string; scale: number }> = ({ char: text, scale: scale }) => (
+  <MaidBubble 锚={leanBubbleAnchor()} scale={scale} anchorAlign={scale} 文字={text} 字体={pixelFont} />
 );
 
 export type LeanPictureProps = {
   /** 歌曲帧（她靠到哪、她的呼吸、颗粒的种子） */
-  帧: number;
+  frame: number;
   /** 叠在 3D 和气泡上面、整片后期里面的 2D（歌词） */
-  叠层?: React.ReactNode;
+  overlay?: React.ReactNode;
   /** 她头顶的「(✿◠‿◠)」，不给 = 合照参数 的 靠肩气泡 */
   showBubble?: boolean;
   /** 她头顶挂接过来的台词气泡（片里 第15句台词收 以前），不给 = 不挂 */
-  台词?: boolean;
+  lines?: boolean;
   /** 背景褪色（同 2-重逢 那一镜），核对比较用；默认不褪 */
   fade?: boolean;
   /** 换一个机位（核对里看大环境用），不给 = 靠肩机位 */
@@ -130,15 +130,15 @@ export type LeanPictureProps = {
 };
 
 /** 靠肩这一镜的一整帧（1280×720 页面），自己铺满 */
-export const LeanPicture: React.FC<LeanPictureProps> = ({ 帧: frame, 叠层: overlay, showBubble = leanBubble, 台词: showLine = false, fade = false, cameraRig = shoulderRig, windowView: addWindowView = false, withPost = true, shading = shadingBySeg['2-合照'] ?? null }) => {
+export const LeanPicture: React.FC<LeanPictureProps> = ({ frame: frame, overlay: overlay, showBubble = leanBubble, lines: showLine = false, fade = false, cameraRig = shoulderRig, windowView: addWindowView = false, withPost = true, shading = shadingBySeg['2-合照'] ?? null }) => {
   const t = palette[tone];
   const sceneTone = canvasTone(tone);
   return (
-    <FilmPost grade={withPost ? t.grade : null} 种子={frame}>
+    <FilmPost grade={withPost ? t.grade : null} seed={frame}>
       {addWindowView && <WindowViewLayer />}
       <ToonCanvas
-        宽={aspect.宽}
-        高={aspect.高}
+        width={aspect.width}
+        height={aspect.height}
         cameraRig={cameraRig}
         {...sceneTone}
         天={addWindowView ? undefined : sceneTone.天}
@@ -147,10 +147,10 @@ export const LeanPicture: React.FC<LeanPictureProps> = ({ 帧: frame, 叠层: ov
         shading={shading}
         shadingScene={groupPhotoShadingScene}
       >
-        <LeanScene 帧={frame} fade={fade} outsideView={!addWindowView} />
+        <LeanScene frame={frame} fade={fade} outsideView={!addWindowView} />
       </ToonCanvas>
-      {showBubble && <LeanBubbleLayer 字={laugh.bubbleText} 缩放={groupPhotoShot.N} />}
-      {showLine && <LeanBubbleLayer 字={lineBubble.字} 缩放={lineBubbleHandedOver.缩放} />}
+      {showBubble && <LeanBubbleLayer char={laugh.bubbleText} scale={groupPhotoShot.N} />}
+      {showLine && <LeanBubbleLayer char={lineBubble.char} scale={lineBubbleHandedOver.scale} />}
       {overlay}
     </FilmPost>
   );
@@ -161,7 +161,7 @@ export const LeanPicture: React.FC<LeanPictureProps> = ({ 帧: frame, 叠层: ov
 /** 截下来的新合照（干净帧）：咔哒那一帧（分镜 照片-合照）的靠肩，不带聊天、歌词，不闪白；气泡照片里的样子同片里。
  *  片尾原版「选择世界」界面里的新世界图标（64×64）取这一帧画面正中的正方形，两个人都在正方形里 */
 export const GroupPhotoPrint: React.FC<{ withPost?: boolean; showBubble?: boolean }> = ({ withPost = true, showBubble }) => (
-  <LeanPicture 帧={events.photoGroupShot.帧} withPost={withPost} showBubble={showBubble} />
+  <LeanPicture frame={events.photoGroupShot.frame} withPost={withPost} showBubble={showBubble} />
 );
 
 /** 拍立得缩小、转斜、字淡入都走完的那一帧（相对定格帧，按秒算完取整到帧） */
@@ -171,10 +171,10 @@ const polaroidSettleFrame = Math.ceil(Math.max(line11PolaroidStyle.whiteFlashSec
  *  片里没露（见 合照参数 的 第11句拍立得样式）；核对、以后要露这张照片的地方用。字：下白边那一行，不给不写。
  *  定格帧取「这一帧往前 停稳帧」，拍立得 每一帧都画成停稳的样子；坑：不能用 remotion 的 Freeze 把它冻在停稳帧上，
  *  里面的 ThreeCanvas 在 renderStill 单出这一帧时一直等不到放行（anim still 超时），renderMedia 整段渲却没事 */
-export const GroupPhotoPolaroid: React.FC<{ withPost?: boolean; 字?: string }> = ({ withPost = true, 字: text }) => {
+export const GroupPhotoPolaroid: React.FC<{ withPost?: boolean; char?: string }> = ({ withPost = true, char: text }) => {
   const f = useSnappedFrame();
   return (
-    <Polaroid freezeFrame={f - polaroidSettleFrame} 样式={line11PolaroidStyle} 字={text}>
+    <Polaroid freezeFrame={f - polaroidSettleFrame} 样式={line11PolaroidStyle} char={text}>
       {() => <GroupPhotoPrint withPost={withPost} />}
     </Polaroid>
   );
@@ -183,6 +183,6 @@ export const GroupPhotoPolaroid: React.FC<{ withPost?: boolean; 字?: string }> 
 // ---------- 整段 ----------
 
 /** 15 尾一整帧：靠肩，第15句台词收 以前挂着接过来的台词气泡（叠层 放在整片后期里面） */
-export const GroupPhotoPicture: React.FC<{ 帧: number; 叠层?: React.ReactNode }> = ({ 帧: frame, 叠层: overlay }) => (
-  <LeanPicture 帧={frame} 叠层={overlay} 台词={frame < events.speechBubbleOut.帧} />
+export const GroupPhotoPicture: React.FC<{ frame: number; overlay?: React.ReactNode }> = ({ frame: frame, overlay: overlay }) => (
+  <LeanPicture frame={frame} overlay={overlay} lines={frame < events.speechBubbleOut.frame} />
 );

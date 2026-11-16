@@ -9,16 +9,16 @@ import { rad, deg } from '@engine/core/数学.ts';
 // ====================== 一程 ======================
 // 端态：位置、航向（方位，度）、俯仰（度）、速度、加速度（沿速度方向）
 export type EndState = { p: V3; ψ: number; γ: number; v: number; a: number };
-export type LegParams = { name: string; cruiseSpeed: number; turnRate: number; finalStraight: number; 层: (track: (dist: number) => number[], trackLen: number) => number; landDecelA?: number; landDecelJ?: number; levelFlight?: boolean; maxSlopeDeg?: number };
+export type LegParams = { name: string; cruiseSpeed: number; turnRate: number; finalStraight: number; layers: (track: (dist: number) => number[], trackLen: number) => number; landDecelA?: number; landDecelJ?: number; levelFlight?: boolean; maxSlopeDeg?: number };
 // 一程的解（采样）：每 采样步 秒一个点
 export type LegSolution = {
-  名: string;
+  name: string;
   T: number;
   t: Float64Array; x: Float64Array; y: Float64Array; z: Float64Array; v: Float64Array; ψ: Float64Array; γ: Float64Array; ω: Float64Array;
-  弯: { 起: number; 角: number; 时长: number; 峰率: number }[];
-  竖: { 型: '两截' | '一截' | '平'; 层: number; 爬: number; 降: number; 平飞秒: number };
-  峰速: number;
-  够: boolean;
+  turns: { start: number; angle: number; duration: number; peakRate: number }[];
+  vertical: { variant: '两截' | '一截' | '平'; layers: number; climb: number; descent: number; levelFlightSec: number };
+  peakSpeed: number;
+  fits: boolean;
 };
 type VerticalPlan = { γ: (t: number) => number; kind: '两截' | '一截' | '平'; climb: number; descent: number; levelFlightSec: number; error?: string };
 const integStep = 1 / 960;
@@ -290,7 +290,7 @@ export const makeSolver = (limits: LimitSpec, skeletonRadii: number[]) => {
       if (!best) throw new Error(`一镜到底 ${params.name}：这一程解不出（${lastError || '牛顿法不收敛，或者解出来的两个弯叠在一起'}）。查输入表：程太短、弯太大、要爬太高`);
       return best;
     };
-    let cruiseZ = params.层(straightTrack, straightDist);
+    let cruiseZ = params.layers(straightTrack, straightDist);
     let best = pickBest(cruiseZ);
     // 第二遍：按解出来的轨迹重取巡航层，再选一次
     {
@@ -304,7 +304,7 @@ export const makeSolver = (limits: LimitSpec, skeletonRadii: number[]) => {
         while (j < cumDist.length - 1 && cumDist[j + 1] < dist) j++;
         return xy[j];
       };
-      const H2 = params.层(track, cumDist[cumDist.length - 1]);
+      const H2 = params.layers(track, cumDist[cumDist.length - 1]);
       if (Math.abs(H2 - cruiseZ) >= 0.5) {
         cruiseZ = H2;
         best = pickBest(cruiseZ);
@@ -313,17 +313,17 @@ export const makeSolver = (limits: LimitSpec, skeletonRadii: number[]) => {
     const finalLeg = integrateLeg(start, end, params, best.Δψ, best.θ1, best.T, new Map(), cruiseZ, true);
     const col = (k: number) => Float64Array.from(finalLeg.samples, (q) => q[k]);
     const turns = [
-      { 起: 0, 角: finalLeg.m1.angle, 时长: finalLeg.m1.duration, 峰率: finalLeg.m1.peakRate },
-      { 起: finalLeg.t2s, 角: finalLeg.m2.angle, 时长: finalLeg.m2.duration, 峰率: finalLeg.m2.peakRate },
-    ].filter((w) => Math.abs(w.角) >= 0.05);
+      { start: 0, angle: finalLeg.m1.angle, duration: finalLeg.m1.duration, peakRate: finalLeg.m1.peakRate },
+      { start: finalLeg.t2s, angle: finalLeg.m2.angle, duration: finalLeg.m2.duration, peakRate: finalLeg.m2.peakRate },
+    ].filter((w) => Math.abs(w.angle) >= 0.05);
     return {
-      名: params.name,
+      name: params.name,
       T: best.T,
       t: col(0), x: col(1), y: col(2), z: col(3), v: col(4), ψ: col(5), γ: col(6), ω: col(7),
-      弯: turns,
-      竖: { 型: finalLeg.vert.kind, 层: cruiseZ, 爬: finalLeg.vert.climb, 降: finalLeg.vert.descent, 平飞秒: finalLeg.vert.levelFlightSec },
-      峰速: finalLeg.vert.speedProfile.peak,
-      够: finalLeg.vert.speedProfile.fits,
+      turns: turns,
+      vertical: { variant: finalLeg.vert.kind, layers: cruiseZ, climb: finalLeg.vert.climb, descent: finalLeg.vert.descent, levelFlightSec: finalLeg.vert.levelFlightSec },
+      peakSpeed: finalLeg.vert.speedProfile.peak,
+      fits: finalLeg.vert.speedProfile.fits,
     };
   };
   return { solveLeg: solveLeg };

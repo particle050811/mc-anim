@@ -5,7 +5,7 @@ export type Point2D = [number, number];
 type Vec3 = [number, number, number];
 
 /** 一扇门扇：面心范围（按面心严格在盒里算这扇门的面）、转轴（网格本地 x, y）、开到底时绕 +Z 转的角（度） */
-export type Leaf = { 盒: Box; axis: Point2D; openAngle: number };
+export type Leaf = { boxes: Box; axis: Point2D; openAngle: number };
 /** 门洞：光照进来的那个竖直长方形，底边从 a 到 b（网格本地 x, y）、高从 底 到 顶。开着的门扇占掉的那一条不算 */
 export type DoorOpening = { a: Point2D; b: Point2D; bottom: number; topEdge: number };
 export type Door = { leaves: readonly Leaf[]; opening: DoorOpening; /** 门洞那一格正中（地板顶面） */ 中: Vec3 };
@@ -15,15 +15,15 @@ export type Door = { leaves: readonly Leaf[]; opening: DoorOpening; /** 门洞�
 export const mainHallDoors: { westDoor: Door; northDoor: Door } = {
   westDoor: {
     // 关着：x 6～6.1875、y −11～−10；开着：x 6～7、y −10.1875～−10（贴门洞北沿，往屋里甩）
-    leaves: [{ 盒: [5.99, -11.01, -0.01, 6.2, -9.99, 1.99], axis: [6.09375, -10.09375], openAngle: 90 }],
+    leaves: [{ boxes: [5.99, -11.01, -0.01, 6.2, -9.99, 1.99], axis: [6.09375, -10.09375], openAngle: 90 }],
     opening: { a: [7, -10.1875], b: [7, -11], bottom: 0, topEdge: 2 },
     中: [6.5, -10.5, 0],
   },
   northDoor: {
     // 关着：y −7～−6.8125；开着：左扇贴西沿 x 11～11.1875、右扇贴东沿 x 12.8125～13（往院子里甩）
     leaves: [
-      { 盒: [10.99, -7.01, -0.01, 12.01, -6.8, 1.99], axis: [11.09375, -6.90625], openAngle: 90 },
-      { 盒: [11.99, -7.01, -0.01, 13.01, -6.8, 1.99], axis: [12.90625, -6.90625], openAngle: -90 },
+      { boxes: [10.99, -7.01, -0.01, 12.01, -6.8, 1.99], axis: [11.09375, -6.90625], openAngle: 90 },
+      { boxes: [11.99, -7.01, -0.01, 13.01, -6.8, 1.99], axis: [12.90625, -6.90625], openAngle: -90 },
     ],
     opening: { a: [11.1875, -7], b: [12.8125, -7], bottom: 0, topEdge: 2 },
     中: [12, -6.5, 0],
@@ -33,7 +33,7 @@ export type DoorName = keyof typeof mainHallDoors;
 
 export const mainHall = {
   /** 主厅地上那块地毯（模板 x 10～14、z 9～14 的地毯，顶面高 1/16）：门光的亮块落到这里要抬到地毯顶面 */
-  carpet: { 框: [10, -15, 15, -9] as [number, number, number, number], 高: 1 / 16 },
+  carpet: { box: [10, -15, 15, -9] as [number, number, number, number], height: 1 / 16 },
   /** 主厅南头地板上的洞（模板 x 12～15、z 16，结构里就是空气，底下本来接另一块拼图结构）：网格下面是空的，从屋里看过去会透出天色 */
   floorHole: [12, -17, 16, -16] as [number, number, number, number],
   /** 东墙那扇窗（玻璃板在 x 17.5 那个面上）：y −14～−11、z 1～4 */
@@ -54,7 +54,7 @@ export const openDoorOpening = (door: Door, openAmount: number, lightDir: readon
   // 盒是按面心挑面用的，四边各多了一点：取到 1/16 格就是门扇本身
   const snap = (v: number) => Math.round(v * 16) / 16;
   let [lo, hi] = [0, 1];
-  for (const { 盒: box, axis, openAngle } of door.leaves) {
+  for (const { boxes: box, axis, openAngle } of door.leaves) {
     const t = (openAngle * openAmount * Math.PI) / 180;
     const [c, sn] = [Math.cos(t), Math.sin(t)];
     const edges = [

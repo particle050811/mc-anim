@@ -9,6 +9,6 @@ export const bigExplosion = (pos: Vec3, tick: number, seed: number): ParticleSpa
   const blastSpawns: ParticleSpawn[] = [];
   for (let t = 0; t < 8; t++)
     for (let k = 0; k < 6; k++)
-      blastSpawns.push({ 种: 'explosion', 刻: tick + t, p: [pos[0] + (r() - r()) * 4, pos[1] + (r() - r()) * 4, pos[2] + (r() - r()) * 4], v: [t / 8, 0, 0], 种子: seed * 100 + t * 6 + k });
+      blastSpawns.push({ kind: 'explosion', 刻: tick + t, p: [pos[0] + (r() - r()) * 4, pos[1] + (r() - r()) * 4, pos[2] + (r() - r()) * 4], v: [t / 8, 0, 0], seed: seed * 100 + t * 6 + k });
   return blastSpawns;
 };

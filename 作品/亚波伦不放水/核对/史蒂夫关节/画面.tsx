@@ -30,18 +30,18 @@ const CameraRig: React.FC<{ v: View }> = ({ v }) => {
 };
 
 const DrawPerson: React.FC<{ 人: Person }> = ({ 人: person }) => {
-  if ('状态' in person) return <ReactingSteve 状态={person.状态} equipment={person.equipment} />;
+  if ('state' in person) return <ReactingSteve state={person.state} equipment={person.equipment} />;
   const holdSword = person.equipment?.剑 !== false;
   const legPitch = squatLegAngle(person.knee);
   const pose = { ...stevePose(person.位, 180, { sec: 0, holdR: holdSword }), elbowR: person.elbow, elbowL: person.elbow, kneeR: person.knee, kneeL: person.knee, legR: legPitch + (person.stride ?? 0), legL: legPitch - (person.stride ?? 0), ground: 1 };
-  return <EquippedSteve pose={pose} 秒={0.5} equipment={person.equipment} hurt={person.hurt} />;
+  return <EquippedSteve pose={pose} sec={0.5} equipment={person.equipment} hurt={person.hurt} />;
 };
 
 const picture: React.FC = () => {
   const { v, τ } = viewAt(useCurrentSec());
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: false }}>
         <color attach="background" args={['#5a5e66']} />
         <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -57,8 +57,8 @@ const picture: React.FC = () => {
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

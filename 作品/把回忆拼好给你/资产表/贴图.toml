@@ -1,794 +1,794 @@
 # 作品资产表：贴图。只有本作品用的资产登记在这里，锁是作品根的 资产锁/（anim --work 把回忆拼好给你 assets add 写，不手改）。
 # 字段和取值见 assets/README.md。
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/橡木告示牌"
-"类别" = "贴图"
-"来源" = "提取:门口贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 entity/signs/oak.png，64×32，立着的橡木告示牌（门口机位第 9 句起插在门外）"
+"category" = "贴图"
+"source" = "提取:门口贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 entity/signs/oak.png，64×32，立着的橡木告示牌（门口机位第 9 句起插在门外）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/环境/太阳"
-"类别" = "贴图"
-"来源" = "提取:门口贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 environment/sun.png，门口机位天上的太阳"
+"category" = "贴图"
+"source" = "提取:门口贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 environment/sun.png，门口机位天上的太阳"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/环境/月相"
-"类别" = "贴图"
-"来源" = "提取:门口贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 environment/moon_phases.png，4×2 格八种月相，门口机位天上的月亮"
+"category" = "贴图"
+"source" = "提取:门口贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 environment/moon_phases.png，4×2 格八种月相，门口机位天上的月亮"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/月铃兰"
-"类别" = "贴图"
-"来源" = "提取:月铃兰@a8d3f9ab68b8"
-"许可" = "MIT"
-"可见性" = "提取"
-"说明" = "万法皆通 1.9.3 的 block/yue_linglan.png（16×16），物品模型是 item/generated，手里拿着就是这张挤出；第 13、15 句和封面她手里那一枝"
+"category" = "贴图"
+"source" = "提取:月铃兰@a8d3f9ab68b8"
+"license" = "MIT"
+"visibility" = "提取"
+"note" = "万法皆通 1.9.3 的 block/yue_linglan.png（16×16），物品模型是 item/generated，手里拿着就是这张挤出；第 13、15 句和封面她手里那一枝"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/樱花林/cherry_log"
-"类别" = "贴图"
-"来源" = "提取:樱花林贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:樱花林贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/樱花林/cherry_log_top"
-"类别" = "贴图"
-"来源" = "提取:樱花林贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:樱花林贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/樱花林/cherry_leaves"
-"类别" = "贴图"
-"来源" = "提取:樱花林贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:樱花林贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/樱花林/grass_block_top"
-"类别" = "贴图"
-"来源" = "提取:樱花林贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:樱花林贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/樱花林/pink_petals"
-"类别" = "贴图"
-"来源" = "提取:樱花林贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:樱花林贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/樱花林远山/grass_block_side"
-"类别" = "贴图"
-"来源" = "提取:樱花林远山贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/grass_block_side.png（16×16）：归隐之地窗外远山的坡面（草方块侧面）"
+"category" = "贴图"
+"source" = "提取:樱花林远山贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/grass_block_side.png（16×16）：归隐之地窗外远山的坡面（草方块侧面）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/樱花林远山/grass_block_side_overlay"
-"类别" = "贴图"
-"来源" = "提取:樱花林远山贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/grass_block_side_overlay.png（16×16，灰的草边）：按 cherry_grove 草色染了盖在 grass_block_side 上"
+"category" = "贴图"
+"source" = "提取:樱花林远山贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/grass_block_side_overlay.png（16×16，灰的草边）：按 cherry_grove 草色染了盖在 grass_block_side 上"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/银河字母"
-"类别" = "贴图"
-"来源" = "提取:银河字母@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 font/ascii_sga.png（128×128，字体 minecraft:alt 的位图，附魔台那串咒语用的银河字母）；正片歌词艺术字的符文（读法见 界面/符文排版.ts）"
+"category" = "贴图"
+"source" = "提取:银河字母@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 font/ascii_sga.png（128×128，字体 minecraft:alt 的位图，附魔台那串咒语用的银河字母）；正片歌词艺术字的符文（读法见 界面/符文排版.ts）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/附魔光泽"
-"类别" = "贴图"
-"来源" = "提取:银河字母@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
+"category" = "贴图"
+"source" = "提取:银河字母@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/0"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_0.png，16×16，挖方块的第 1 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_0.png，16×16，挖方块的第 1 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/1"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_1.png，16×16，挖方块的第 2 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_1.png，16×16，挖方块的第 2 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/2"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_2.png，16×16，挖方块的第 3 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_2.png，16×16，挖方块的第 3 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/3"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_3.png，16×16，挖方块的第 4 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_3.png，16×16，挖方块的第 4 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/4"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_4.png，16×16，挖方块的第 5 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_4.png，16×16，挖方块的第 5 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/5"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_5.png，16×16，挖方块的第 6 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_5.png，16×16，挖方块的第 6 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/6"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_6.png，16×16，挖方块的第 7 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_6.png，16×16，挖方块的第 7 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/7"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_7.png，16×16，挖方块的第 8 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_7.png，16×16，挖方块的第 8 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/8"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_8.png，16×16，挖方块的第 9 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_8.png，16×16，挖方块的第 9 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/方块裂纹/9"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/destroy_stage_9.png，16×16，挖方块的第 10 级裂纹（第 2 句挖三填一）"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/destroy_stage_9.png，16×16，挖方块的第 10 级裂纹（第 2 句挖三填一）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/方块/泥土"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/dirt.png，16×16：第 2 句挖开草方块、泥土崩出的破坏粒子和掉在洞里的泥土物品"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/dirt.png，16×16：第 2 句挖开草方块、泥土崩出的破坏粒子和掉在洞里的泥土物品"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/原版按钮"
-"类别" = "贴图"
-"来源" = "提取:第一晚贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 gui/widgets.png，256×256：第 2 句死亡画面的「重生」「标题屏幕」按钮（200×20，v 46 不能按、66 平常、86 指着）。现在没有画面用：用户 10-24 定第 2 句只留挖三填一，死亡画面删了"
+"category" = "贴图"
+"source" = "提取:第一晚贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 gui/widgets.png，256×256：第 2 句死亡画面的「重生」「标题屏幕」按钮（200×20，v 46 不能按、66 平常、86 指着）。现在没有画面用：用户 10-24 定第 2 句只留挖三填一，死亡画面删了"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/床/红"
-"类别" = "贴图"
-"来源" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 entity/bed/red.png（64×64），原版红床；第 12 句卧室里你那张床"
+"category" = "贴图"
+"source" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 entity/bed/red.png（64×64），原版红床；第 12 句卧室里你那张床"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/女仆床"
-"类别" = "贴图"
-"来源" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 的 textures/bedrock/block/maid_bed/pink.png（128×128），粉色女仆床；第 12 句卧室里她那张床"
+"category" = "贴图"
+"source" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 的 textures/bedrock/block/maid_bed/pink.png（128×128），粉色女仆床；第 12 句卧室里她那张床"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/环境/雨"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 environment/rain.png（64×256，四列雨丝），第 6 句雷雨夜的雨照 WeatherEffectRenderer 一格一片地画"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 environment/rain.png（64×256，四列雨丝），第 6 句雷雨夜的雨照 WeatherEffectRenderer 一格一片地画"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/信标光柱"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 entity/beacon_beam.png（16×16 竖条纹），第 7 句她脚下射上云层的光柱（三稿：光柱往上射，借信标光柱的画法）"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 entity/beacon_beam.png（16×16 竖条纹），第 7 句她脚下射上云层的光柱（三稿：光柱往上射，借信标光柱的画法）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/空槽/剑"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/empty_slot_sword.png，女仆界面主手槽的空槽图标"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/empty_slot_sword.png，女仆界面主手槽的空槽图标"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/空槽/头盔"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/empty_armor_slot_helmet.png，女仆界面护甲槽"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/empty_armor_slot_helmet.png，女仆界面护甲槽"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/空槽/胸甲"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/empty_armor_slot_chestplate.png，女仆界面护甲槽"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/empty_armor_slot_chestplate.png，女仆界面护甲槽"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/空槽/护腿"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/empty_armor_slot_leggings.png，女仆界面护甲槽"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/empty_armor_slot_leggings.png，女仆界面护甲槽"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/空槽/靴子"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/empty_armor_slot_boots.png，女仆界面护甲槽"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/empty_armor_slot_boots.png，女仆界面护甲槽"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/空槽/盾牌"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/empty_armor_slot_shield.png，女仆界面副手槽（法术书放进这里）"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/empty_armor_slot_shield.png，女仆界面副手槽（法术书放进这里）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/面包"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/bread.png，女仆界面下方玩家背包里的一格"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/bread.png，女仆界面下方玩家背包里的一格"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/橡木门"
-"类别" = "贴图"
-"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/oak_door.png，第 7 句女仆界面里你快捷栏的那扇门（第 6 句炸成掉落物、被你捡走）"
+"category" = "贴图"
+"source" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/oak_door.png，第 7 句女仆界面里你快捷栏的那扇门（第 6 句炸成掉落物、被你捡走）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/女仆界面/主"
-"类别" = "贴图"
-"来源" = "提取:女仆界面贴图@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_main.png（256×256），女仆界面底板；许可照取材清单「资产 CC BY-NC-SA 4.0」"
+"category" = "贴图"
+"source" = "提取:女仆界面贴图@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 textures/gui/maid_gui_main.png（256×256），女仆界面底板；许可照取材清单「资产 CC BY-NC-SA 4.0」"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/女仆界面/侧"
-"类别" = "贴图"
-"来源" = "提取:女仆界面贴图@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_side.png：血量、护甲、经验三条的图标和条"
+"category" = "贴图"
+"source" = "提取:女仆界面贴图@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 textures/gui/maid_gui_side.png：血量、护甲、经验三条的图标和条"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/女仆界面/按钮"
-"类别" = "贴图"
-"来源" = "提取:女仆界面贴图@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_button.png：家、拾取、骑乘开关和任务按钮"
+"category" = "贴图"
+"source" = "提取:女仆界面贴图@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 textures/gui/maid_gui_button.png：家、拾取、骑乘开关和任务按钮"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/女仆界面/背包"
-"类别" = "贴图"
-"来源" = "提取:女仆界面贴图@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_backpack.png：没装背包时的护甲、手持、六格和锁"
+"category" = "贴图"
+"source" = "提取:女仆界面贴图@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 textures/gui/maid_gui_backpack.png：没装背包时的护甲、手持、六格和锁"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/女仆界面/背饰槽"
-"类别" = "贴图"
-"来源" = "提取:女仆界面贴图@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 textures/slot/empty_back_show_slot.png：六格里最后一格（背饰展示）的空槽图标"
+"category" = "贴图"
+"source" = "提取:女仆界面贴图@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 textures/slot/empty_back_show_slot.png：六格里最后一格（背饰展示）的空槽图标"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/女仆界面/饰品按钮"
-"类别" = "贴图"
-"来源" = "提取:女仆界面贴图@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 textures/gui/bauble_button.png（256×256）：背包页右下那个饰品箱按钮（没装 Curios 时 54×63，取左上那块）"
+"category" = "贴图"
+"source" = "提取:女仆界面贴图@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 textures/gui/bauble_button.png（256×256）：背包页右下那个饰品箱按钮（没装 Curios 时 54×63，取左上那块）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/学徒法术书"
-"类别" = "贴图"
-"来源" = "提取:学徒法术书@54b5aaa52887"
-"许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "提取"
-"说明" = "铁魔法 3.16.3 的 item/gold_spell_book.png（16×16，物品模型 item/generated，中文名「学徒法术书」）；第 7 句你放进她副手槽的那本"
+"category" = "贴图"
+"source" = "提取:学徒法术书@54b5aaa52887"
+"license" = "LicenseRef-All-Rights-Reserved"
+"visibility" = "提取"
+"note" = "铁魔法 3.16.3 的 item/gold_spell_book.png（16×16，物品模型 item/generated，中文名「学徒法术书」）；第 7 句你放进她副手槽的那本"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/0"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_0.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_0.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/1"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_1.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_1.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/2"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_2.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_2.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/3"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_3.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_3.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/4"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_4.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_4.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/5"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_5.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_5.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/6"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_6.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_6.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/火花/7"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/spark_7.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/spark_7.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/闪光"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/particle/flash.png（32×32）；烟花炸开那一下的闪光粒子（FireworkParticles.OverlayParticle）。第 10、11 句门口之夜"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/particle/flash.png（32×32）；烟花炸开那一下的闪光粒子（FireworkParticles.OverlayParticle）。第 10、11 句门口之夜"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/烟花火箭"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/item/firework_rocket.png（16×16）；烟花火箭的物品图标：手持和飞行中的火箭（FireworkEntityRenderer 画的就是物品）。第 10、11 句门口之夜"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/item/firework_rocket.png（16×16）；烟花火箭的物品图标：手持和飞行中的火箭（FireworkEntityRenderer 画的就是物品）。第 10、11 句门口之夜"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/樱花树苗"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/block/cherry_sapling.png（16×16）；models/item/cherry_sapling.json 的 layer0，手持樱花树苗用。第 9 句门口之夜你种树"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/block/cherry_sapling.png（16×16）；models/item/cherry_sapling.json 的 layer0，手持樱花树苗用。第 9 句门口之夜你种树"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/橡木告示牌图标"
-"类别" = "贴图"
-"来源" = "提取:门口之夜贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/item/oak_sign.png（16×16）；橡木告示牌的物品图标（贴图/物品/橡木告示牌 是方块实体那张），手持用。第 9 句门口之夜你插牌子"
+"category" = "贴图"
+"source" = "提取:门口之夜贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/item/oak_sign.png（16×16）；橡木告示牌的物品图标（贴图/物品/橡木告示牌 是方块实体那张），手持用。第 9 句门口之夜你插牌子"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/寻风之铃"
-"类别" = "贴图"
-"来源" = "提取:寻风之铃@a8d3f9ab68b8"
-"许可" = "MIT"
-"可见性" = "提取"
-"说明" = "万法皆通 1.9.3 的 item/wind_seeking_bell.png（16×16），物品模型是 item/generated；第 14 句她挂到告示牌上、第 15 句你摇响的那只铃"
+"category" = "贴图"
+"source" = "提取:寻风之铃@a8d3f9ab68b8"
+"license" = "MIT"
+"visibility" = "提取"
+"note" = "万法皆通 1.9.3 的 item/wind_seeking_bell.png（16×16），物品模型是 item/generated；第 14 句她挂到告示牌上、第 15 句你摇响的那只铃"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_0"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 particle/cherry_0～11.png（各 3×3），原版 cherry_leaves 粒子的 12 张贴图（particles/cherry_leaves.json）；第 15 句樱花风的花瓣"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 particle/cherry_0～11.png（各 3×3），原版 cherry_leaves 粒子的 12 张贴图（particles/cherry_leaves.json）；第 15 句樱花风的花瓣"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_1"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_2"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_3"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_4"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_5"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_6"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_7"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_8"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_9"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_10"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/粒子/樱花/cherry_11"
-"类别" = "贴图"
-"来源" = "提取:第15句原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
+"category" = "贴图"
+"source" = "提取:第15句原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/环境/末地天空"
-"类别" = "贴图"
-"来源" = "提取:末地贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 environment/end_sky.png，128×128；第 5 句末地的天（LevelRenderer.renderEndSky）和末地传送门星空的底层"
+"category" = "贴图"
+"source" = "提取:末地贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 environment/end_sky.png，128×128；第 5 句末地的天（LevelRenderer.renderEndSky）和末地传送门星空的底层"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/末地传送门"
-"类别" = "贴图"
-"来源" = "提取:末地贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 entity/end_portal.png，256×256；第 5 句返回传送门的星空层（rendertype_end_portal 的 Sampler1）"
+"category" = "贴图"
+"source" = "提取:末地贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 entity/end_portal.png，256×256；第 5 句返回传送门的星空层（rendertype_end_portal 的 Sampler1）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/特效/经验球"
-"类别" = "贴图"
-"来源" = "提取:末地贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 entity/experience_orb.png，64×64，4×4 格一格 16 像素（ExperienceOrb.getIcon 0～10）；第 5 句龙死后落下的经验球"
+"category" = "贴图"
+"source" = "提取:末地贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 entity/experience_orb.png，64×64，4×4 格一格 16 像素（ExperienceOrb.getIcon 0～10）；第 5 句龙死后落下的经验球"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/启动器/旧合照-占位"
-"类别" = "贴图"
-"来源" = "手工:本作品 2-收集快乐 第 41 帧的成片静帧（预览 工作-样片-第8句-交付静帧，2560×1440），ffmpeg crop=960:960:1360:440、scale=256:256:flags=area、format=rgba"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "第 0 镜、片尾启动器里六月樱那一行的旧图标（去年夏天那张合照）的占位：她和你站在门口箱子边。真图是第 11 句定格的那张截图，第 11 句做出来以后换成那一帧（藏起界面、不带歌词），改 场/2-选择世界/图标源.ts 的 import。现在没有画面用：旧图标已经换成真帧 贴图/照片/第11句合照"
+"category" = "贴图"
+"source" = "手工:本作品 2-收集快乐 第 41 帧的成片静帧（预览 工作-样片-第8句-交付静帧，2560×1440），ffmpeg crop=960:960:1360:440、scale=256:256:flags=area、format=rgba"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "第 0 镜、片尾启动器里六月樱那一行的旧图标（去年夏天那张合照）的占位：她和你站在门口箱子边。真图是第 11 句定格的那张截图，第 11 句做出来以后换成那一帧（藏起界面、不带歌词），改 场/2-选择世界/图标源.ts 的 import。现在没有画面用：旧图标已经换成真帧 贴图/照片/第11句合照"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/启动器/新合照-占位"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-封面帧 第 0 帧的成片静帧（预览 工作-样片-第15句-美术定稿-封面帧，2560×1440），ffmpeg crop=940:940:1480:330、scale=256:256:flags=area、format=rgba"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "片尾拼回图标框的新合照的占位：她回头看你的脸。现在没有画面用：已经换成真帧 贴图/照片/第15句新合照"
+"category" = "贴图"
+"source" = "手工:本作品 核对-封面帧 第 0 帧的成片静帧（预览 工作-样片-第15句-美术定稿-封面帧，2560×1440），ffmpeg crop=940:940:1480:330、scale=256:256:flags=area、format=rgba"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "片尾拼回图标框的新合照的占位：她回头看你的脸。现在没有画面用：已经换成真帧 贴图/照片/第15句新合照"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/场景/女仆祭坛"
-"类别" = "贴图"
-"来源" = "提取:女仆祭坛@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 的 textures/bedrock/block/altar.png（512×512），模型/场景/女仆祭坛 的贴图"
+"category" = "贴图"
+"source" = "提取:女仆祭坛@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 的 textures/bedrock/block/altar.png（512×512），模型/场景/女仆祭坛 的贴图"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/蛋糕盒"
-"类别" = "贴图"
-"来源" = "提取:女仆祭坛@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 的 textures/bedrock/entity/cake_box/cake_box_1.png（256×256，红底金花；游戏里八张随机一张）"
+"category" = "贴图"
+"source" = "提取:女仆祭坛@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 的 textures/bedrock/entity/cake_box/cake_box_1.png（256×256，红底金花；游戏里八张随机一张）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/御币"
-"类别" = "贴图"
-"来源" = "提取:女仆祭坛@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"说明" = "车万女仆 1.5.3 的 textures/item/hakurei_gohei_in_hand.png（64×64），模型/物品/御币 的贴图图集"
+"category" = "贴图"
+"source" = "提取:女仆祭坛@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"note" = "车万女仆 1.5.3 的 textures/item/hakurei_gohei_in_hand.png（64×64），模型/物品/御币 的贴图图集"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/祭坛材料/青金石"
-"类别" = "贴图"
-"来源" = "提取:祭坛材料@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/lapis_lazuli.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+"category" = "贴图"
+"source" = "提取:祭坛材料@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/lapis_lazuli.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/祭坛材料/金锭"
-"类别" = "贴图"
-"来源" = "提取:祭坛材料@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/gold_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+"category" = "贴图"
+"source" = "提取:祭坛材料@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/gold_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/祭坛材料/红石"
-"类别" = "贴图"
-"来源" = "提取:祭坛材料@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/redstone.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+"category" = "贴图"
+"source" = "提取:祭坛材料@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/redstone.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/祭坛材料/铁锭"
-"类别" = "贴图"
-"来源" = "提取:祭坛材料@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/iron_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+"category" = "贴图"
+"source" = "提取:祭坛材料@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/iron_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/祭坛材料/煤炭"
-"类别" = "贴图"
-"来源" = "提取:祭坛材料@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 item/coal.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+"category" = "贴图"
+"source" = "提取:祭坛材料@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 item/coal.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/荧光物品展示框/背板"
-"类别" = "贴图"
-"来源" = "提取:照片墙原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/block/glow_item_frame.png，16×16，荧光物品展示框空框的背板（template_item_frame.json 的 #back）。照片墙"
+"category" = "贴图"
+"source" = "提取:照片墙原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/block/glow_item_frame.png，16×16，荧光物品展示框空框的背板（template_item_frame.json 的 #back）。照片墙"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/物品/荧光物品展示框/木框"
-"类别" = "贴图"
-"来源" = "提取:照片墙原版@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 textures/block/birch_planks.png，16×16，展示框的木框（template_item_frame.json 的 #wood）"
+"category" = "贴图"
+"source" = "提取:照片墙原版@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 textures/block/birch_planks.png，16×16，展示框的木框（template_item_frame.json 的 #wood）"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第11句合照"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-门口之夜照片 第 0 帧的成片静帧（第 11 句照片帧，不过整片后期；草稿 工作-分屏归隐-合照底片，2560×1440），ffmpeg crop=1440:1440:0:0、scale=256:256:flags=area、format=rgba"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "去年夏天那张合照（第 11 句「绽」你按 F2 截下的那张）：裁法同第 11 句下线时缩成的方形图标（门口之夜参数.ts 的 下线图标：x −8～1 那 9 格，整幅高）。照片墙里侧那一格挂的、第 14 句她取下带走的就是它（特效/合照.ts）；第 11 句改了画面要重出。现在没有画面用：第 11 句改了定格取景以后换成 贴图/照片/第11句合照-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-门口之夜照片 第 0 帧的成片静帧（第 11 句照片帧，不过整片后期；草稿 工作-分屏归隐-合照底片，2560×1440），ffmpeg crop=1440:1440:0:0、scale=256:256:flags=area、format=rgba"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "去年夏天那张合照（第 11 句「绽」你按 F2 截下的那张）：裁法同第 11 句下线时缩成的方形图标（门口之夜参数.ts 的 下线图标：x −8～1 那 9 格，整幅高）。照片墙里侧那一格挂的、第 14 句她取下带走的就是它（特效/合照.ts）；第 11 句改了画面要重出。现在没有画面用：第 11 句改了定格取景以后换成 贴图/照片/第11句合照-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第3句递蛋糕"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-祭坛照片 第 0 帧的成片静帧（第 3 句 照片-祭坛递蛋糕 那一帧，藏界面、不过整片后期，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.45）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 递蛋糕 重出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第一张（祭坛前你递蛋糕，她站在魔法阵里）：第 8 句起挂在门口后墙荧光框里的地图画（特效/照片画.ts 的 第8句照片们）；第 3 句改了画面要重出。现在没有画面用：第 3 句重做以后换成 贴图/照片/第3句递蛋糕-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-祭坛照片 第 0 帧的成片静帧（第 3 句 照片-祭坛递蛋糕 那一帧，藏界面、不过整片后期，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.45）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 递蛋糕 重出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第一张（祭坛前你递蛋糕，她站在魔法阵里）：第 8 句起挂在门口后墙荧光框里的地图画（特效/照片画.ts 的 第8句照片们）；第 3 句改了画面要重出。现在没有画面用：第 3 句重做以后换成 贴图/照片/第3句递蛋糕-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第4句日落划船"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-日落划船 第 0 帧的成片静帧（第 4 句 照片-日落划船 那一帧，不画浪，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.60）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 日落划船 重出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第二张（日落里两个人划船）：同 第3句递蛋糕；第 4 句改了画面要重出。现在没有画面用：第 4 句重做以后换成 贴图/照片/第4句日落划船-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-日落划船 第 0 帧的成片静帧（第 4 句 照片-日落划船 那一帧，不画浪，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.60）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 日落划船 重出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第二张（日落里两个人划船）：同 第3句递蛋糕；第 4 句改了画面要重出。现在没有画面用：第 4 句重做以后换成 贴图/照片/第4句日落划船-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第5句扑龙蛋"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-扑龙蛋照片 第 0 帧的成片静帧（第 5 句 照片-扑龙蛋 那一帧，不画歌词，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.58）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 扑龙蛋 重出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第三张（末地里她扑在龙蛋上，你在旁边看）：同 第3句递蛋糕；第 5 句改了画面要重出。现在没有画面用：第 5 句重做以后换成 贴图/照片/第5句扑龙蛋-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-扑龙蛋照片 第 0 帧的成片静帧（第 5 句 照片-扑龙蛋 那一帧，不画歌词，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.58）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 扑龙蛋 重出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第三张（末地里她扑在龙蛋上，你在旁边看）：同 第3句递蛋糕；第 5 句改了画面要重出。现在没有画面用：第 5 句重做以后换成 贴图/照片/第5句扑龙蛋-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第7句光柱破云"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-光柱破云 第 0 帧的成片静帧（第 7 句 照片-光柱破云 那一帧，不过整片后期，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.55）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 光柱破云 重出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第四张（光柱打穿雨云）：第 8 句她挂进荧光框的就是它；同 第3句递蛋糕；第 7 句改了画面要重出。现在没有画面用：第 7 句重做以后换成 贴图/照片/第7句光柱破云-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-光柱破云 第 0 帧的成片静帧（第 7 句 照片-光柱破云 那一帧，不过整片后期，2560×1440），ffmpeg crop=1440:1440:x:0（正方形中心在画面宽 0.55）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 光柱破云 重出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第四张（光柱打穿雨云）：第 8 句她挂进荧光框的就是它；同 第3句递蛋糕；第 7 句改了画面要重出。现在没有画面用：第 7 句重做以后换成 贴图/照片/第7句光柱破云-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第3句递蛋糕-二版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 0 帧（第 3 句 照片-祭坛递蛋糕 那一帧，场里本来不画界面、歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:432:0（正方形中心在画面宽 0.45）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 递蛋糕 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第一张（祭坛前你递蛋糕，她站在魔法阵里、头上冒爱心）：第 8 句起挂在门口后墙荧光框里的地图画（特效/照片画.ts 的 第8句照片们）。第 3 句重做（拆盒删了）以后重出，换下 贴图/照片/第3句递蛋糕；第 3 句再改画面就再登新 id。现在没有画面用：第 3 句手里的蛋糕换成立体蛋糕方块以后，换成 贴图/照片/第3句递蛋糕-三版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 0 帧（第 3 句 照片-祭坛递蛋糕 那一帧，场里本来不画界面、歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:432:0（正方形中心在画面宽 0.45）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 递蛋糕 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第一张（祭坛前你递蛋糕，她站在魔法阵里、头上冒爱心）：第 8 句起挂在门口后墙荧光框里的地图画（特效/照片画.ts 的 第8句照片们）。第 3 句重做（拆盒删了）以后重出，换下 贴图/照片/第3句递蛋糕；第 3 句再改画面就再登新 id。现在没有画面用：第 3 句手里的蛋糕换成立体蛋糕方块以后，换成 贴图/照片/第3句递蛋糕-三版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第3句递蛋糕-三版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 0 帧（第 3 句 照片-祭坛递蛋糕 那一帧，场里本来不画界面、歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:432:0（正方形中心在画面宽 0.45）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 递蛋糕 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第一张（祭坛前你递蛋糕，她站在魔法阵里、头上冒爱心）：用处同 第3句递蛋糕-二版。用户 11-02 要第 3 句手里的蛋糕换成立体的蛋糕方块，照片里跟着重出，换下 第3句递蛋糕-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 0 帧（第 3 句 照片-祭坛递蛋糕 那一帧，场里本来不画界面、歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:432:0（正方形中心在画面宽 0.45）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 递蛋糕 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第一张（祭坛前你递蛋糕，她站在魔法阵里、头上冒爱心）：用处同 第3句递蛋糕-二版。用户 11-02 要第 3 句手里的蛋糕换成立体的蛋糕方块，照片里跟着重出，换下 第3句递蛋糕-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第4句日落划船-二版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 1 帧（第 4 句 照片-日落划船 那一帧，不画浪、歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:816:0（正方形中心在画面宽 0.60）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 日落划船 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第二张（日落里两个人划船，左边半个落日）：同 第3句递蛋糕-二版。第 4 句海重做以后重出，换下 贴图/照片/第4句日落划船"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 1 帧（第 4 句 照片-日落划船 那一帧，不画浪、歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:816:0（正方形中心在画面宽 0.60）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 日落划船 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第二张（日落里两个人划船，左边半个落日）：同 第3句递蛋糕-二版。第 4 句海重做以后重出，换下 贴图/照片/第4句日落划船"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第5句扑龙蛋-二版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 2 帧（第 5 句 照片-扑龙蛋 那一帧，不画歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:764:0（正方形中心在画面宽 0.58）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 扑龙蛋 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第三张（末地里她扑在龙蛋上，你在旁边看）：同 第3句递蛋糕-二版。第 5 句改成一镜到底以后重出，换下 贴图/照片/第5句扑龙蛋"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 2 帧（第 5 句 照片-扑龙蛋 那一帧，不画歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:764:0（正方形中心在画面宽 0.58）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 扑龙蛋 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第三张（末地里她扑在龙蛋上，你在旁边看）：同 第3句递蛋糕-二版。第 5 句改成一镜到底以后重出，换下 贴图/照片/第5句扑龙蛋"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第7句光柱破云-二版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 3 帧（第 7 句 照片-光柱破云 那一帧，不画歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:688:0（正方形中心在画面宽 0.55）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 光柱破云 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "照片墙夏天第四张（光柱打穿原版立体云，云洞里透出蓝天，底下是你们的小木屋）：第 8 句她挂进荧光框的就是它；同 第3句递蛋糕-二版。第 7 句云重做以后重出，换下 贴图/照片/第7句光柱破云。现在没有画面用：第 7 句换成 Photon 雨云、光柱重做以后换成 贴图/照片/第7句光柱破云-三版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 3 帧（第 7 句 照片-光柱破云 那一帧，不画歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:688:0（正方形中心在画面宽 0.55）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 光柱破云 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "照片墙夏天第四张（光柱打穿原版立体云，云洞里透出蓝天，底下是你们的小木屋）：第 8 句她挂进荧光框的就是它；同 第3句递蛋糕-二版。第 7 句云重做以后重出，换下 贴图/照片/第7句光柱破云。现在没有画面用：第 7 句换成 Photon 雨云、光柱重做以后换成 贴图/照片/第7句光柱破云-三版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第7句光柱破云-三版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 3 帧（第 7 句 照片-光柱破云 那一帧，照段 2-拨开阴霾 开光影：Photon 天和雨云、重做的光柱，不画歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:688:0（正方形中心在画面宽 0.55）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 光柱破云 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0 AND LicenseRef-Photon-Shaders"
-"可见性" = "发布"
-"说明" = "照片墙夏天第四张（光柱打穿 Photon 雨云，洞里透出蓝天，底下是你们的小木屋）：第 8 句她挂进荧光框的就是它。第 7 句换 Photon 雨云、光柱重做以后重出（用户 11-03 看了 2-收集快乐「后面一个镜头的云怎么还是原版？」），换下 贴图/照片/第7句光柱破云-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 3 帧（第 7 句 照片-光柱破云 那一帧，照段 2-拨开阴霾 开光影：Photon 天和雨云、重做的光柱，不画歌词，不过整片后期，2560×1440），ffmpeg crop=1440:1440:688:0（正方形中心在画面宽 0.55）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 光柱破云 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0 AND LicenseRef-Photon-Shaders"
+"visibility" = "发布"
+"note" = "照片墙夏天第四张（光柱打穿 Photon 雨云，洞里透出蓝天，底下是你们的小木屋）：第 8 句她挂进荧光框的就是它。第 7 句换 Photon 雨云、光柱重做以后重出（用户 11-03 看了 2-收集快乐「后面一个镜头的云怎么还是原版？」），换下 贴图/照片/第7句光柱破云-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第11句合照-二版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 4 帧（第 11 句 照片帧，门口之夜画布，墙上挂着上面四张二版，不过整片后期，2560×1440），ffmpeg crop=1440:1440:560:0（正中）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 合照 出（要在四张二版换上以后）"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "去年夏天那张合照（第 11 句「绽」你按 F2 截下的那张）：裁正中，同第 11 句下线时缩成的存档图标（场/2-门口/门口之夜照片.tsx 的 下线图标图）。照片墙里侧那一格挂的、第 14 句她取下带走的（特效/合照.ts），第 0 镜「选择世界」里褪色蒙灰的存档图标（场/2-选择世界/图标源.ts 的 旧图标）都是它。第 11 句定格改了取景、墙上换了照片以后重出，换下 贴图/照片/第11句合照。现在没有画面用：第 8～12 句门口屋后去掉樱花林以后，换成 贴图/照片/第11句合照-三版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 4 帧（第 11 句 照片帧，门口之夜画布，墙上挂着上面四张二版，不过整片后期，2560×1440），ffmpeg crop=1440:1440:560:0（正中）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 合照 出（要在四张二版换上以后）"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "去年夏天那张合照（第 11 句「绽」你按 F2 截下的那张）：裁正中，同第 11 句下线时缩成的存档图标（场/2-门口/门口之夜照片.tsx 的 下线图标图）。照片墙里侧那一格挂的、第 14 句她取下带走的（特效/合照.ts），第 0 镜「选择世界」里褪色蒙灰的存档图标（场/2-选择世界/图标源.ts 的 旧图标）都是它。第 11 句定格改了取景、墙上换了照片以后重出，换下 贴图/照片/第11句合照。现在没有画面用：第 8～12 句门口屋后去掉樱花林以后，换成 贴图/照片/第11句合照-三版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第11句合照-三版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 4 帧（第 11 句 照片帧，门口之夜画布，墙上挂着夏天四张二版，屋后远景没有樱花林，不过整片后期，2560×1440），ffmpeg crop=1440:1440:560:0（正中）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 合照 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "去年夏天那张合照（第 11 句「绽」你按 F2 截下的那张）：裁法、用处同 第11句合照-二版（照片墙里侧那一格、第 14 句她取下带走、第 0 镜褪色的存档图标）。用户 10-25 定第 13 句樱花林从光秃秃一棵棵长出来，第 8～12 句门口屋后不再有樱花林，照片里的背景跟着重出，换下 第11句合照-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 4 帧（第 11 句 照片帧，门口之夜画布，墙上挂着夏天四张二版，屋后远景没有樱花林，不过整片后期，2560×1440），ffmpeg crop=1440:1440:560:0（正中）、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 合照 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "去年夏天那张合照（第 11 句「绽」你按 F2 截下的那张）：裁法、用处同 第11句合照-二版（照片墙里侧那一格、第 14 句她取下带走、第 0 镜褪色的存档图标）。用户 10-25 定第 13 句樱花林从光秃秃一棵棵长出来，第 8～12 句门口屋后不再有樱花林，照片里的背景跟着重出，换下 第11句合照-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第15句新合照"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 5 帧（15 尾 照片-合照 那一帧，咔哒那一刻的靠肩，不带歌词、不闪白、不过整片后期，2560×1440），ffmpeg crop=920:920:810:340、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 新合照 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "片尾拼回「新的世界」存档图标的新合照（场/2-选择世界/图标源.ts 的 新图标）：她靠在你肩上、手里拿着月铃兰。裁两个人的头到她手里的花那一块（演绎：原版存档图标裁整屏正中，那样手机上脸只有十来个像素认不出），换下 贴图/启动器/新合照-占位。现在没有画面用：2-合照 开了正面光（用户 11-03 定），换成 贴图/照片/第15句新合照-二版"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 5 帧（15 尾 照片-合照 那一帧，咔哒那一刻的靠肩，不带歌词、不闪白、不过整片后期，2560×1440），ffmpeg crop=920:920:810:340、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 新合照 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "片尾拼回「新的世界」存档图标的新合照（场/2-选择世界/图标源.ts 的 新图标）：她靠在你肩上、手里拿着月铃兰。裁两个人的头到她手里的花那一块（演绎：原版存档图标裁整屏正中，那样手机上脸只有十来个像素认不出），换下 贴图/启动器/新合照-占位。现在没有画面用：2-合照 开了正面光（用户 11-03 定），换成 贴图/照片/第15句新合照-二版"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/照片/第15句新合照-二版"
-"类别" = "贴图"
-"来源" = "手工:本作品 核对-照片底片 第 5 帧（15 尾 照片-合照 那一帧，咔哒那一刻的靠肩，开光影（默认.ts 的 光影段['2-合照']，正面光），不带歌词、不闪白、不过整片后期，2560×1440），ffmpeg crop=920:920:810:340、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 新合照 出"
-"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
-"可见性" = "发布"
-"说明" = "片尾拼回「新的世界」存档图标的新合照：裁法、用处同 第15句新合照。用户 11-03 定 2-合照 开光影（正面光照到两个人正面，预览 1103-0233），照片跟着正片重出，换下 第15句新合照"
+"category" = "贴图"
+"source" = "手工:本作品 核对-照片底片 第 5 帧（15 尾 照片-合照 那一帧，咔哒那一刻的靠肩，开光影（默认.ts 的 光影段['2-合照']，正面光），不带歌词、不闪白、不过整片后期，2560×1440），ffmpeg crop=920:920:810:340、scale=256:256:flags=area、format=rgba；python3 assets/tools/照片底片.py 新合照 出"
+"license" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"visibility" = "发布"
+"note" = "片尾拼回「新的世界」存档图标的新合照：裁法、用处同 第15句新合照。用户 11-03 定 2-合照 开光影（正面光照到两个人正面，预览 1103-0233），照片跟着正片重出，换下 第15句新合照"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/选项背景"
-"类别" = "贴图"
-"来源" = "提取:选择世界贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 gui/options_background.png，16×16：第 0 镜、片尾「选择世界」界面的泥土底"
+"category" = "贴图"
+"source" = "提取:选择世界贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 gui/options_background.png，16×16：第 0 镜、片尾「选择世界」界面的泥土底"
 
-[["资产"]]
+[["asset"]]
 id = "贴图/界面/世界选择"
-"类别" = "贴图"
-"来源" = "提取:选择世界贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 gui/world_selection.png，256×256：「选择世界」里鼠标指着存档时图标上的播放箭头（u 0、v 0 平常，v 32 指着图标）"
+"category" = "贴图"
+"source" = "提取:选择世界贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 gui/world_selection.png，256×256：「选择世界」里鼠标指着存档时图标上的播放箭头（u 0、v 0 平常，v 32 指着图标）"

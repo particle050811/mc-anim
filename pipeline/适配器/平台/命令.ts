@@ -22,21 +22,21 @@ const parseSec = (v: string | undefined, optionName: string) => {
 };
 
 const run: Command['跑'] = async (args, runRecord) => {
-  const p = parseArgs(args, { 值: ['--head', '--tail'] });
+  const p = parseArgs(args, { value: ['--head', '--tail'] });
   const [action, file] = p.位置;
   if (action === 'import') {
     if (p.位置.length !== 2) throw new UsageError('要给浏览器下载的 bili-数据-*.json 或 抖音-数据-*.json');
     const f = path.resolve(file!);
-    const isDouyin = (JSON.parse(fs.readFileSync(f, 'utf8')) as { 平台?: string }).平台 === '抖音';
-    const { 目标: targetPath, 包: rawPack } = isDouyin ? importDouyin(f) : importData(f);
-    runRecord.产物.push(targetPath);
-    const countText = '作品' in rawPack ? `${rawPack.作品.length} 个作品` : `${rawPack.稿件.length} 个稿件`;
-    console.log(`${targetPath}（${countText}，${rawPack.请求数} 次请求${rawPack.停于风控 ? `，取数中途遇风控停了：${rawPack.停于风控}` : ''}）`);
+    const isDouyin = (JSON.parse(fs.readFileSync(f, 'utf8')) as { platform?: string }).platform === '抖音';
+    const { target: targetPath, pack: rawPack } = isDouyin ? importDouyin(f) : importData(f);
+    runRecord.artifacts.push(targetPath);
+    const countText = 'work' in rawPack ? `${rawPack.work.length} 个作品` : `${rawPack.submissions.length} 个稿件`;
+    console.log(`${targetPath}（${countText}，${rawPack.requestCount} 次请求${rawPack.stoppedByRiskControl ? `，取数中途遇风控停了：${rawPack.stoppedByRiskControl}` : ''}）`);
     return;
   }
   if (action !== 'analyze' || p.位置.length !== 1) throw new UsageError('platform import <json> 或 platform analyze [--head <秒>] [--tail <秒>]');
-  const headSec = parseSec(p.值['--head'], '--head') ?? defaultOpeningWindow;
-  const tailSec = parseSec(p.值['--tail'], '--tail');
+  const headSec = parseSec(p.value['--head'], '--head') ?? defaultOpeningWindow;
+  const tailSec = parseSec(p.value['--tail'], '--tail');
   const deliveryList = readDeliveryList(deliveryRoot());
   const alignCurves = <T extends CurveDraft>(curves: T[]) =>
     curves.flatMap((item): MatchedRow<T>[] => {
@@ -44,14 +44,14 @@ const run: Command['跑'] = async (args, runRecord) => {
       if (!matchedDelivery) return [];
       const segRanges = segmentRanges(matchedDelivery.m);
       const edgeWindow = { headSec, tailSec: tailSec ?? defaultEndingWindow(segRanges) };
-      return [{ curve: item, deliveryName: path.basename(matchedDelivery.目录), deliveryDoneAt: matchedDelivery.m.完成, 窗: edgeWindow, 段: statsBySegment(segRanges, item.留存, item.danmakuSec, edgeWindow) }];
+      return [{ curve: item, deliveryName: path.basename(matchedDelivery.目录), deliveryDoneAt: matchedDelivery.m.completed, 窗: edgeWindow, segment: statsBySegment(segRanges, item.retention, item.danmakuSec, edgeWindow) }];
     });
 
   const b = latestData();
-  const submissions = parsePackage(b.包);
+  const submissions = parsePackage(b.pack);
   const biliAligned = alignCurves<Submission>(submissions);
   const d = latestDouyin();
-  const douyinWorks = d ? parseDouyin(d.包) : [];
+  const douyinWorks = d ? parseDouyin(d.pack) : [];
   const douyinAligned = alignCurves<DouyinWork>(douyinWorks);
 
   const dir = newPreviewDir('平台数据分析');
@@ -73,14 +73,14 @@ const run: Command['跑'] = async (args, runRecord) => {
     fs.writeFileSync(path.join(dir, pageName), comparisonPage(x, y, platformNames), 'utf8');
     return comparisonSection(x, y, platformNames, pageName);
   });
-  const douyinText = d ? douyinSection(douyinWorks, douyinAligned, { 取于: d.包.取于, 请求数: d.包.请求数, 文件: d.f, 说明: d.包.说明 }, douyinChart) : '## 抖音\n\n数据根里还没有抖音数据：在浏览器里跑 pipeline/适配器/抖音/取数.js，再 anim platform import <json>。';
+  const douyinText = d ? douyinSection(douyinWorks, douyinAligned, { fetchedAt: d.pack.fetchedAt, requestCount: d.pack.requestCount, file: d.f, note: d.pack.note }, douyinChart) : '## 抖音\n\n数据根里还没有抖音数据：在浏览器里跑 pipeline/适配器/抖音/取数.js，再 anim platform import <json>。';
   const note = `# 平台数据分析
 
 两个平台分发机制不同，分开解读：抖音刷到即播，先看前 5 秒；B 站点进来才播，先看封面标题点击率。各段的判断都用本平台自己的「开头窗、结尾窗之外在场观众每 10 秒流失」，最后一节才对照。
 
 ${douyinText}
 
-${bilibiliSection(submissions, biliAligned, { 取于: b.包.取于, 请求数: b.包.请求数, 文件: b.f }, biliChart)}
+${bilibiliSection(submissions, biliAligned, { fetchedAt: b.pack.fetchedAt, requestCount: b.pack.requestCount, file: b.f }, biliChart)}
 
 ## 两平台都掉人 / 都留得住的段
 
@@ -106,14 +106,14 @@ ${bilibiliAdvice(submissions, biliAligned).map((s, i) => `${i + 1}. ${s}`).join(
 - 段边界取交付 manifest 的全片起帧和帧率；作品发布早于交付完成时，上传的是更早的剪辑，段位置可能有偏差。
 `;
   fs.writeFileSync(path.join(dir, '00-说明.md'), note, 'utf8');
-  runRecord.产物.push(dir);
-  const colText = (matches: MatchedRow[]) => matches.map((x) => `${x.curve.标题} ↔ ${x.deliveryName}`).join('；') || '无';
+  runRecord.artifacts.push(dir);
+  const colText = (matches: MatchedRow[]) => matches.map((x) => `${x.curve.title} ↔ ${x.deliveryName}`).join('；') || '无';
   console.log(`${dir}\nB 站 ${submissions.length} 个稿件，对上 ${colText(biliAligned)}\n抖音 ${douyinWorks.length} 个作品，对上 ${colText(douyinAligned)}`);
 };
 
 const platform: Command = {
-  用法: 'platform import <json> | platform analyze [--head <秒>] [--tail <秒>]',
-  说明: 'import：把浏览器里 pipeline/适配器/bili/取数.js 或 抖音/取数.js 下载的包挪进数据根 平台/<bilibili|抖音>/<UTC>/；analyze：读各平台最新一份，对到本作品的交付，出 预览/<UTC>-平台数据分析/（抖音前 5 秒、B 站封标、各平台窗后按段的在场流失、两平台对照、分平台建议）',
+  usage: 'platform import <json> | platform analyze [--head <秒>] [--tail <秒>]',
+  note: 'import：把浏览器里 pipeline/适配器/bili/取数.js 或 抖音/取数.js 下载的包挪进数据根 平台/<bilibili|抖音>/<UTC>/；analyze：读各平台最新一份，对到本作品的交付，出 预览/<UTC>-平台数据分析/（抖音前 5 秒、B 站封标、各平台窗后按段的在场流失、两平台对照、分平台建议）',
   跑: run,
 };
 

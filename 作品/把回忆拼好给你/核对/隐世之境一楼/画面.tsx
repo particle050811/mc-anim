@@ -20,7 +20,7 @@ import { useViewIndex } from '@engine/段/时间.tsx';
 
 const liftTopBox = [[-1, -27, 5.97, 22, 1, 10]];
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
-const frameColor = (l: LampPos) => (l.种 === 'lantern' ? '#ffd23f' : l.lit ? '#ff7a1a' : '#9a9a9a');
+const frameColor = (l: LampPos) => (l.kind === 'lantern' ? '#ffd23f' : l.lit ? '#ff7a1a' : '#9a9a9a');
 
 /** 一格方块的线框（位 = 方块底面中心） */
 const BlockFrame: React.FC<{ 位: V3; 色: string }> = ({ 位: pos, 色: color }) => (
@@ -32,7 +32,7 @@ const BlockFrame: React.FC<{ 位: V3; 色: string }> = ({ 位: pos, 色: color }
 
 // 她面朝南（yaw 180），脚底在地毯顶面
 const maidPose = { ...standPose(firstFloor.maid), yaw: 180 };
-const StandFigure: React.FC<{ 种: '灰盒' | '酒狐'; 眼: V3 }> = ({ 种: figureKind, 眼: eye }) =>
+const StandFigure: React.FC<{ kind: '灰盒' | '酒狐'; 眼: V3 }> = ({ kind: figureKind, 眼: eye }) =>
   figureKind === '灰盒' ? (
     <mesh position={[firstFloor.maid[0], firstFloor.maid[1], firstFloor.maid[2] + 0.425]} castShadow receiveShadow>
       <boxGeometry args={[0.5, 0.5, 0.85]} />
@@ -55,8 +55,8 @@ const FlatLight: React.FC = () => {
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
-  const size = { width: v.宽, height: v.高 };
-  const lanternCount = hallLamps.filter((l) => l.种 === 'lantern').length;
+  const size = { width: v.width, height: v.height };
+  const lanternCount = hallLamps.filter((l) => l.kind === 'lantern').length;
   const candleCount = hallLamps.length - lanternCount;
   return (
     <AbsoluteFill style={{ background: '#1b1d22' }}>
@@ -69,7 +69,7 @@ const picture: React.FC = () => {
             <group rotation={[-Math.PI / 2, 0, 0]}>
               {v.filmLamp ? <FirstFloorLighting /> : <FlatLight />}
               <HiddenWorldFloor hide={v.liftTop ? liftTopBox : undefined} />
-              {v.figure && <StandFigure 种={v.figure} 眼={v.cameraRig.眼} />}
+              {v.figure && <StandFigure kind={v.figure} 眼={v.cameraRig.眼} />}
               {v.showLamps && hallLamps.map((l, i) => <BlockFrame key={i} 位={l.位} 色={frameColor(l)} />)}
               {v.showLamps && <BlockFrame 位={firstFloor.maid} 色="#ff4fd8" />}
             </group>
@@ -77,7 +77,7 @@ const picture: React.FC = () => {
         )}
         {v.screenshot ? <Img src={shot} style={{ position: 'absolute', left: 0, top: 0, ...size, opacity: v.screenshot }} /> : null}
         <div style={{ position: 'absolute', left: 16, top: 12, fontFamily: uiFontFamily, fontSize: 22, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
-          核对-隐世之境一楼 · {v.名}
+          核对-隐世之境一楼 · {v.name}
           {v.showLamps ? `（灯笼 ${lanternCount} 黄、蜡烛 ${candleCount} 橙/灰没点、女仆 粉）` : ''}
         </div>
       </div>

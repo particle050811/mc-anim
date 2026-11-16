@@ -2,6 +2,6 @@
 import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';
 import soundTable from './声音表.生成.ts';
 
-const timeline = defineSceneTimeline({ 场: '核对', 事件: { 开始: { 在: { 秒: 0 } }, 结束: { 在: { 秒: 2 } } } });
+const timeline = defineSceneTimeline({ scene: '核对', events: { 开始: { 在: { sec: 0 } }, 结束: { 在: { sec: 2 } } } });
 
-export default windowSeg(timeline, { 起: '开始', 止: '结束', soundTable });
+export default windowSeg(timeline, { start: '开始', end: '结束', soundTable });

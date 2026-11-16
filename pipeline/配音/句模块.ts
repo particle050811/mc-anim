@@ -12,14 +12,14 @@ const moduleHead = 'const sentence: LineSentence = ';
 const moduleTail = ';\nexport default sentence;\n';
 
 // 键的顺序固定；字、嘴一项一行，好看 diff
-const keyOrder: readonly (keyof LineSentence)[] = ['id', '角色', '念', '配音', '成品sha', '开口', '有声长', '时长', '文件秒数', '手修', '字', '嘴'];
+const keyOrder: readonly (keyof LineSentence)[] = ['id', 'character', 'spoken', 'voice', 'finishedSha', 'mouthOpen', '有声长', 'duration', '文件秒数', '手修', 'char', '嘴'];
 
 export const writeSentenceText = (sentence: LineSentence): string => {
   const lines: string[] = [];
   for (const k of keyOrder) {
     const v = sentence[k];
     if (v === undefined) continue;
-    if (k === '字' || k === '嘴') {
+    if (k === 'char' || k === '嘴') {
       const items = (v as readonly unknown[]).map((x) => `    ${JSON.stringify(x)},`);
       lines.push(`  ${JSON.stringify(k)}: [`, ...items, '  ],');
     } else lines.push(`  ${JSON.stringify(k)}: ${JSON.stringify(v)},`);

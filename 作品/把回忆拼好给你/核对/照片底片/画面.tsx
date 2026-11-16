@@ -19,7 +19,7 @@ import { useViewIndex } from '@engine/段/时间.tsx';
 const mainCutEvents = { ...mainCutLine3Events, ...mainCutLine5Events };
 
 const negativeRenders: Record<PhotoName, () => React.ReactNode> = {
-  递蛋糕: () => <AltarPicture g={mainCutEvents.photoAltarCake.帧} />,
+  递蛋糕: () => <AltarPicture g={mainCutEvents.photoAltarCake.frame} />,
   日落划船: () => <SunsetRowingPhoto withPost={false} />,
   扑龙蛋: () => <EndShot f={endEvents.photoEggPounce} clean withPost={false} />,
   // 照段 2-拨开阴霾 开光影：天和云是那一段的 Photon 雨云（用户 11-03「后面一个镜头的云怎么还是原版？」，照片墙上这张跟着换）
@@ -28,10 +28,10 @@ const negativeRenders: Record<PhotoName, () => React.ReactNode> = {
       <BeamBreakCloudPicture withPost={false} />
     </shadingScope.Provider>
   ),
-  合照: () => <DoorNightCanvas 帧={photoFrame} />,
+  合照: () => <DoorNightCanvas frame={photoFrame} />,
   新合照: () => <GroupPhotoPrint withPost={false} />,
 };
 
-const picture: React.FC = () => <AbsoluteFill style={{ background: '#000000' }}>{negativeRenders[filmViews[useViewIndex()]!.名]()}</AbsoluteFill>;
+const picture: React.FC = () => <AbsoluteFill style={{ background: '#000000' }}>{negativeRenders[filmViews[useViewIndex()]!.name]()}</AbsoluteFill>;
 
 export default picture;

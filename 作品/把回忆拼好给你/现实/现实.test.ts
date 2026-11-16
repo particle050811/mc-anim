@@ -3,16 +3,16 @@ import { fps } from '../分镜.ts';
 import { blowParams, calendarSize, calendarPageCount, fullPages, leaveSec, paperThickness, pageLayout, flyPose, flyingPages, flownPageCount } from './日历.ts';
 import { findCell, weekdays, periods, timetableCells } from './课表数据.ts';
 
-const blowWindow = { 起: 10, 止: 12 };
+const blowWindow = { start: 10, end: 12 };
 
 describe('风吹日历', () => {
   it('起风前停在 100，止 那一刻起停在 1；中间一路往下、不回头', () => {
     expect(calendarPageCount(9.9, blowWindow)).toBe(fullPages);
-    expect(calendarPageCount(blowWindow.止, blowWindow)).toBe(1);
+    expect(calendarPageCount(blowWindow.end, blowWindow)).toBe(1);
     expect(calendarPageCount(13, blowWindow)).toBe(1);
     let prevCount = fullPages;
     for (let i = 0; i < 480; i++) {
-      const dayNum = calendarPageCount(blowWindow.起 + i / 240, blowWindow);
+      const dayNum = calendarPageCount(blowWindow.start + i / 240, blowWindow);
       expect(dayNum).toBeLessThanOrEqual(prevCount);
       expect(dayNum).toBeGreaterThanOrEqual(2);
       prevCount = dayNum;
@@ -21,14 +21,14 @@ describe('风吹日历', () => {
 
   it('越掉越快：每页离开的间隔一页比一页短，最后一页（2）正好在 止 飞走', () => {
     for (let k = 2; k < fullPages - 1; k++) expect(leaveSec(k + 1, blowWindow) - leaveSec(k, blowWindow)).toBeLessThan(leaveSec(k, blowWindow) - leaveSec(k - 1, blowWindow) + 1e-12);
-    expect(leaveSec(1, blowWindow)).toBe(blowWindow.起);
-    expect(leaveSec(fullPages - 1, blowWindow)).toBeCloseTo(blowWindow.止);
+    expect(leaveSec(1, blowWindow)).toBe(blowWindow.start);
+    expect(leaveSec(fullPages - 1, blowWindow)).toBeCloseTo(blowWindow.end);
     // 飞走几页 是 离开秒 的反函数：离开那一刻算飞走
     for (let k = 1; k < fullPages; k++) expect(flownPageCount(leaveSec(k, blowWindow) + 1e-9, blowWindow)).toBeGreaterThanOrEqual(k);
   });
 
   it('空中的纸：印的数比本子上的大、龄在 0～1，每秒新飞的不超过 每秒最多 太多（不糊成一团白）', () => {
-    for (let t = blowWindow.起; t < blowWindow.止 + 0.5; t += 1 / fps) {
+    for (let t = blowWindow.start; t < blowWindow.end + 0.5; t += 1 / fps) {
       const topCalendars = calendarPageCount(t, blowWindow);
       const flyPages = flyingPages(t, blowWindow);
       for (const x of flyPages) {
@@ -45,8 +45,8 @@ describe('风吹日历', () => {
       const s = flyPose(age, 0.5);
       expect(s.dx).toBeGreaterThanOrEqual(0);
       expect(s.dz).toBeGreaterThanOrEqual(0);
-      expect(s.高).toBeGreaterThanOrEqual(1);
-      expect(s.高).toBeLessThanOrEqual(calendarSize.pageHeight);
+      expect(s.height).toBeGreaterThanOrEqual(1);
+      expect(s.height).toBeLessThanOrEqual(calendarSize.pageHeight);
     }
     expect(paperThickness(fullPages)).toBe(calendarSize.paperMaxThickness);
     expect(paperThickness(1)).toBe(calendarSize.paperMinThickness);
@@ -56,8 +56,8 @@ describe('风吹日历', () => {
     for (let page = 1; page <= fullPages; page++) {
       const v = pageLayout(page);
       expect(v.数.x).toBeGreaterThanOrEqual(0);
-      expect(v.天.x + v.天.宽).toBeLessThanOrEqual(calendarSize.宽);
-      expect(v.数.y + v.数.高).toBeLessThanOrEqual(calendarSize.pageHeight);
+      expect(v.天.x + v.天.width).toBeLessThanOrEqual(calendarSize.width);
+      expect(v.数.y + v.数.height).toBeLessThanOrEqual(calendarSize.pageHeight);
     }
   });
 });
@@ -70,10 +70,10 @@ describe('课表数据', () => {
   });
 
   it('用户定的几处：晚自修只写自修、周六最后是周测、周日上午数学培优、周日早上留空', () => {
-    expect(findCell('周一', '晚自修二').字).toBe('自修');
-    expect(findCell('周六', '第9节').字).toBe('周测');
-    expect(findCell('周日', '第4节').字).toBe('数学培优班');
-    expect(findCell('周日', '第1节').字).toBe('');
-    expect(findCell('周一', '第1节').字).toBe('语');
+    expect(findCell('周一', '晚自修二').char).toBe('自修');
+    expect(findCell('周六', '第9节').char).toBe('周测');
+    expect(findCell('周日', '第4节').char).toBe('数学培优班');
+    expect(findCell('周日', '第1节').char).toBe('');
+    expect(findCell('周一', '第1节').char).toBe('语');
   });
 });

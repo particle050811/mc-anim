@@ -44,7 +44,7 @@ const PartNode: React.FC<{ p: EntityPart; texSize: number[]; mat: THREE.Material
   </group>
 );
 
-const BedCell: React.FC<{ 层: EntityModelData; 位: V3; facing: BedFacing; mat: THREE.Material }> = ({ 层: modelLayer, 位: pos, facing, mat }) => {
+const BedCell: React.FC<{ layers: EntityModelData; 位: V3; facing: BedFacing; mat: THREE.Material }> = ({ layers: modelLayer, 位: pos, facing, mat }) => {
   const m = useMemo(() => cellMatrix(pos, facing), [pos[0], pos[1], pos[2], facing]);
   return (
     <group matrix={m} matrixAutoUpdate={false}>
@@ -60,8 +60,8 @@ export const Bed: React.FC<{ 位: V3; facing?: BedFacing }> = ({ 位: pos, facin
   const footPos: V3 = [pos[0] - dx, pos[1] - dy, pos[2]];
   return (
     <group>
-      <BedCell 层={models.床头} 位={pos} facing={facing} mat={mat} />
-      <BedCell 层={models.床尾} 位={footPos} facing={facing} mat={mat} />
+      <BedCell layers={models.床头} 位={pos} facing={facing} mat={mat} />
+      <BedCell layers={models.床尾} 位={footPos} facing={facing} mat={mat} />
     </group>
   );
 };

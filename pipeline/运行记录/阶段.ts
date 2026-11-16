@@ -10,7 +10,7 @@ export type StageName =
   | '准备' | '算指纹' | '清旧' | '打包' | '备素材' | 'webpack' | '开浏览器' | '读组合' | '等求解缓存' | '等闸' | '出帧' | '编码' | '查帧数' | '段签' | '删旧'
   | '段签：算字节' | '段签：扫切片' | '段签：存声音' | '段签：写入'
   | '取母版' | '取段签' | '取叠层' | '排字幕' | '做字幕层' | '拼声音' | '拉响度' | '压成片' | '写表' | '核对声音' | '分享版' | '写清单' | '渲段' | '声音' | '接画面';
-export type StageRecord = { 标签: string; 阶段: StageName; 开始: string; 秒: number };
+export type StageRecord = { label: string; stage: StageName; startedAt: string; sec: number };
 
 const headerLine = '开始（UTC）\t标签\t阶段\t秒\t主机\tpid\n';
 export const stageTablePath = () => path.join(path.dirname(timingLogPath()), '阶段耗时.tsv');
@@ -20,11 +20,11 @@ const oneLine = (s: string) => s.replace(/[\t\r\n]+/g, ' ');
 
 /** 记一个阶段：收进 收（运行记录的 阶段 字段），追加一行到阶段表；写表失败只提示，不影响渲染 */
 export const recordPhase = (records: StageRecord[] | undefined, label: string, stage: StageName, startMs: number, elapsedSec: number, stageFile = stageTablePath()): StageRecord => {
-  const r: StageRecord = { 标签: label, 阶段: stage, 开始: utc(startMs), 秒: Number(elapsedSec.toFixed(2)) };
+  const r: StageRecord = { label: label, stage: stage, startedAt: utc(startMs), sec: Number(elapsedSec.toFixed(2)) };
   records?.push(r);
   try {
     fs.mkdirSync(path.dirname(stageFile), { recursive: true });
-    const line = `${r.开始}\t${oneLine(label)}\t${stage}\t${r.秒.toFixed(2)}\t${oneLine(config('主机'))}\t${process.pid}\n`;
+    const line = `${r.startedAt}\t${oneLine(label)}\t${stage}\t${r.sec.toFixed(2)}\t${oneLine(config('主机'))}\t${process.pid}\n`;
     if (!fs.existsSync(stageFile)) fs.writeFileSync(stageFile, headerLine + line, 'utf8');
     else fs.appendFileSync(stageFile, line, 'utf8');
   } catch (e) {
@@ -68,4 +68,4 @@ export const frameEncodeTiming = () => {
 };
 
 /** 一行给人看的小结：打包 12.3 秒、开浏览器 0.8 秒… */
-export const stageSummary = (rs: readonly StageRecord[]) => rs.map((r) => `${r.阶段} ${r.秒.toFixed(1)} 秒`).join('、');
+export const stageSummary = (rs: readonly StageRecord[]) => rs.map((r) => `${r.stage} ${r.sec.toFixed(1)} 秒`).join('、');

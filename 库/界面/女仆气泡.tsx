@@ -90,12 +90,12 @@ const nineSlice = (x: number, y: number, width: number, height: number): Tile[] 
 export type BubbleGeom = {
   lines: (string | readonly TextRun[])[];
   /** 底的左上角和尺寸（气泡像素，相对锚点） */
-  bottomBox: { x: number; y: number; 宽: number; 高: number };
+  bottomBox: { x: number; y: number; width: number; height: number };
   tail: Tile;
   /** 第一行字的左上角（可能带 .5） */
-  字: { x: number; y: number };
+  char: { x: number; y: number };
   /** 画出来的外框（整数，相对锚点）：x0..x1、y0..y1 */
-  框: { x0: number; y0: number; x1: number; y1: number };
+  box: { x0: number; y0: number; x1: number; y1: number };
 };
 
 /** 气泡的几何（气泡像素，相对锚点）。文字是字段数组时当成一行、不折行；上移：叠在下面那些气泡之上的高度（ChatBubbleRenderer 的 y） */
@@ -105,12 +105,12 @@ export const maidBubbleGeom = (text: string | readonly TextRun[], font: PixelFon
   const width = textWidth + 2 * margin;
   const height = lines.length * textLineHeight + 2 * margin;
   const y = -height - lift;
-  const bottomBoxes = { 中: { x: -Math.trunc(width / 2), y, 宽: width, 高: height }, 左: { x: -1 - width, y, 宽: width, 高: height }, 右: { x: 1, y, 宽: width, 高: height } }[bubblePos];
+  const bottomBoxes = { 中: { x: -Math.trunc(width / 2), y, width: width, height: height }, 左: { x: -1 - width, y, width: width, height: height }, 右: { x: 1, y, width: width, height: height } }[bubblePos];
   const tailX = { 中: -8, 左: -1 - 8, 右: 1 - 8 }[bubblePos];
   const tail: Tile = { x: tailX, y: -8 - lift, w: 16, h: 16, u: tailU[bubblePos], v: 24 };
   const textAnchors = { 中: { x: -width / 2 + margin, y: y + margin }, 左: { x: -1 - width + margin, y: y + margin }, 右: { x: margin + 1, y: y + margin } }[bubblePos];
   const bounds = { x0: Math.min(bottomBoxes.x, tail.x), y0: bottomBoxes.y, x1: Math.max(bottomBoxes.x + width, tail.x + 16), y1: tail.y + 16 };
-  return { lines, bottomBox: bottomBoxes, tail, 字: textAnchors, 框: bounds };
+  return { lines, bottomBox: bottomBoxes, tail, char: textAnchors, box: bounds };
 };
 
 /** 弹出进度 → 这一帧用的整数缩放：0 不画，1 用满，中间从 1 一级级往上跳 */
@@ -132,7 +132,7 @@ export type MaidBubbleProps = {
   /** 锚点：页面坐标（1280×720 那套），女仆名牌点投影到画面上的位置（投影.ts 的 投影到页面 + 女仆气泡锚高）；四舍五入到成片像素（见 锚对齐） */
   锚: { x: number; y: number };
   /** 一个气泡像素占几个成片像素（2560×1440），正整数 */
-  缩放: number;
+  scale: number;
   /** 字：一句（按宽折行），或几段不同颜色的字（一行） */
   文字: string | readonly TextRun[];
   /** 像素字字形表（库/界面/像素字表.ts 的 做像素字），作品自己传 */
@@ -149,27 +149,27 @@ export type MaidBubbleProps = {
 };
 
 /** 放在铺满画面、position 不是 static 的容器里（如 AbsoluteFill），自己按锚点绝对定位 */
-export const MaidBubble: React.FC<MaidBubbleProps> = ({ 锚: anchor, 缩放: scale, 文字: text, 字体: font, popProgress = 1, bottomStyle = 'type2', 位置: bubblePos = '中', lift = 0, textColor = '#000000', anchorAlign = 1 }) => {
+export const MaidBubble: React.FC<MaidBubbleProps> = ({ 锚: anchor, scale: scale, 文字: text, 字体: font, popProgress = 1, bottomStyle = 'type2', 位置: bubblePos = '中', lift = 0, textColor = '#000000', anchorAlign = 1 }) => {
   if (!Number.isInteger(scale) || scale < 1) throw new Error(`女仆气泡的缩放要是正整数（成片像素），给的是 ${scale}`);
   const ref = useRef<HTMLCanvasElement>(null);
   const k = popScale(popProgress, scale);
   const g = maidBubbleGeom(text, font, bubblePos, lift);
   const ax = Math.round((anchor.x * filmScale) / anchorAlign) * anchorAlign;
   const ay = Math.round((anchor.y * filmScale) / anchorAlign) * anchorAlign;
-  const width = (g.框.x1 - g.框.x0) * k;
-  const height = (g.框.y1 - g.框.y0) * k;
+  const width = (g.box.x1 - g.box.x0) * k;
+  const height = (g.box.y1 - g.box.y0) * k;
   // 锚点在画布里的位置（画布像素）
-  const ox = -g.框.x0 * k;
-  const oy = -g.框.y0 * k;
+  const ox = -g.box.x0 * k;
+  const oy = -g.box.y0 * k;
   useLayoutEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const tex = png(baseTexByBubble[bottomStyle]);
-    for (const patch of nineSlice(g.bottomBox.x, g.bottomBox.y, g.bottomBox.宽, g.bottomBox.高)) drawTile(ctx, tex, patch, ox, oy, k);
+    for (const patch of nineSlice(g.bottomBox.x, g.bottomBox.y, g.bottomBox.width, g.bottomBox.height)) drawTile(ctx, tex, patch, ox, oy, k);
     drawTile(ctx, tex, g.tail, ox, oy, k);
-    g.lines.forEach((line, i) => font.draw(ctx, line, { x: ox, y: oy }, g.字.x, g.字.y + i * textLineHeight, textColor, k));
+    g.lines.forEach((line, i) => font.draw(ctx, line, { x: ox, y: oy }, g.char.x, g.char.y + i * textLineHeight, textColor, k));
   });
   if (k === 0) return null;
   return (

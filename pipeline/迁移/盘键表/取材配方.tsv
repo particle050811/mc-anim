@@ -1,0 +1,31 @@
+# 格式：取材配方　位置：sourcing/extract.toml、extract.录制.toml
+# 读写：pipeline/取材/清单.ts、提取.ts、登记.ts　分类：Git　现有 2 个文件（2 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+不重导	noReExtract
+产物	artifacts
+作品	work
+公开版	publicVersion
+公开版提取	publicExtract
+前置	prerequisites
+动画	animation
+取材	sourcing
+可见性	visibility
+名称	displayName
+待迁移	pendingMigration
+来源	source
+模型	model
+步骤	steps
+程序	program
+组	group
+要开游戏	needsGame
+许可	license
+许可部分	licenseParts
+说明	note
+输入	input
+输出	output
+需要	requires
+@map	取材[].产物
+@map	取材[].输入
+@map	程序
+@map	组

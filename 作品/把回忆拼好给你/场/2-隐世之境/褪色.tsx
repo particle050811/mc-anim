@@ -56,7 +56,7 @@ const derive = (m: THREE.Material, p: FadeParams): THREE.Material => {
 const fadeMaterial = (m: THREE.Material, p: FadeParams) => (m.userData.褪色 !== undefined || m.userData.平涂 || !canDerive(m as MarkedMaterial) ? m : derive(m, p));
 
 /** 套住的子树（除了 userData.不褪色 的组）按 p 褪色。放在三渲二画布（平涂）里面 */
-export const BackgroundFade: React.FC<{ 参数: FadeParams; children: React.ReactNode }> = ({ 参数: p, children }) => {
+export const BackgroundFade: React.FC<{ params: FadeParams; children: React.ReactNode }> = ({ params: p, children }) => {
   const ref = useRef<THREE.Group>(null);
   useFrame(() => {
     const walk = (o: THREE.Object3D) => {

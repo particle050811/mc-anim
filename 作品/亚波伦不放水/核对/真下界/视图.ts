@@ -4,9 +4,9 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { realNetherVenue, realNetherScene, realNetherAltVenue, realNetherPick } from '../../地点/真下界位置.ts';
 
-export const aspect = { 宽: 1920, 高: 1080 } as const;
+export const aspect = { width: 1920, height: 1080 } as const;
 
-export type View = { 名: string; 光: '原版' | '提亮'; /** 眼、看的点（场景坐标：x 东、y 北、z 上） */ 眼: V3; 看: V3 };
+export type View = { name: string; 光: '原版' | '提亮'; /** 眼、看的点（场景坐标：x 东、y 北、z 上） */ 眼: V3; 看: V3 };
 
 const airPoint = realNetherScene(realNetherPick.x, realNetherPick.y, realNetherPick.z);
 const eyeHeightM = 1.62;
@@ -24,15 +24,15 @@ const fourDirs = [
 ] as const;
 
 const brightenedGroup: readonly Omit<View, '光'>[] = [
-  ...fourDirs.map(([dirName, dir]) => ({ 名: `空中点 平视${dirName}`, 眼: airPoint, 看: pointAhead(airPoint, dir) })),
-  { 名: '空中点 仰视 45 度（朝北）', 眼: airPoint, 看: pointAhead(airPoint, elevationDir(45)) },
-  { 名: '空中点 俯视 70 度（朝北）', 眼: airPoint, 看: pointAhead(airPoint, elevationDir(-70)) },
-  ...fourDirs.map(([dirName, dir]) => ({ 名: `场地中心 人眼平视${dirName}`, 眼: groundEye, 看: pointAhead(groundEye, dir) })),
-  { 名: '场地中心 人眼朝空中点（西边的熔岩海）', 眼: groundEye, 看: airPoint },
-  { 名: '场地南边 14 格 仰看中心头顶 30 格', 眼: [groundEye[0], groundEye[1] - 14, groundEye[2]], 看: [groundCenter[0], groundCenter[1], groundCenter[2] + 30] },
-  { 名: '空中点 回看场地', 眼: airPoint, 看: groundCenter },
-  ...fourDirs.map(([dirName, dir]) => ({ 名: `备选场地（山头） 人眼平视${dirName}`, 眼: backupEye, 看: pointAhead(backupEye, dir) })),
+  ...fourDirs.map(([dirName, dir]) => ({ name: `空中点 平视${dirName}`, 眼: airPoint, 看: pointAhead(airPoint, dir) })),
+  { name: '空中点 仰视 45 度（朝北）', 眼: airPoint, 看: pointAhead(airPoint, elevationDir(45)) },
+  { name: '空中点 俯视 70 度（朝北）', 眼: airPoint, 看: pointAhead(airPoint, elevationDir(-70)) },
+  ...fourDirs.map(([dirName, dir]) => ({ name: `场地中心 人眼平视${dirName}`, 眼: groundEye, 看: pointAhead(groundEye, dir) })),
+  { name: '场地中心 人眼朝空中点（西边的熔岩海）', 眼: groundEye, 看: airPoint },
+  { name: '场地南边 14 格 仰看中心头顶 30 格', 眼: [groundEye[0], groundEye[1] - 14, groundEye[2]], 看: [groundCenter[0], groundCenter[1], groundCenter[2] + 30] },
+  { name: '空中点 回看场地', 眼: airPoint, 看: groundCenter },
+  ...fourDirs.map(([dirName, dir]) => ({ name: `备选场地（山头） 人眼平视${dirName}`, 眼: backupEye, 看: pointAhead(backupEye, dir) })),
 ];
 const vanillaGroup: readonly Omit<View, '光'>[] = [brightenedGroup[3]!, brightenedGroup[10]!];
 
-export const views: readonly View[] = [...brightenedGroup.map((v) => ({ ...v, 名: `提亮 ${v.名}`, 光: '提亮' as const })), ...vanillaGroup.map((v) => ({ ...v, 名: `原版 ${v.名}`, 光: '原版' as const }))];
+export const views: readonly View[] = [...brightenedGroup.map((v) => ({ ...v, name: `提亮 ${v.name}`, 光: '提亮' as const })), ...vanillaGroup.map((v) => ({ ...v, name: `原版 ${v.name}`, 光: '原版' as const }))];

@@ -26,7 +26,7 @@ export const RingedSteve: React.FC<React.ComponentProps<typeof Steve> & { ring?:
       <Steve {...rest} />
       {ring && (
         <group matrix={matrix} matrixAutoUpdate={false}>
-          <HeadRing variant={ring} 秒={ringSec} wearer="史蒂夫" />
+          <HeadRing variant={ring} sec={ringSec} wearer="史蒂夫" />
         </group>
       )}
     </>

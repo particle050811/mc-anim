@@ -30,7 +30,7 @@
 # anim extract --backfill-mesh [--write]：锁里有、没有配方产出的场景网格（网格/<名>/头），按网格头的 dim、from、to、origin、markers 反填配方，标不重导，追加在本文件末尾。
 #   脚本读 ANIM_GAME（游戏环境）、ANIM_JAVA_HOME（javap）、ANIM_MC_ASSETS（原版资源）这几个环境变量，anim extract 按配置传。
 
-["程序"]
+["program"]
 "导出模型" = ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出模型.py"]
 "导出实体模型" = ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出实体模型.py"]
 "网格碎块" = ["uv", "run", "-q", "--with", "numpy==2.4.6", "python", "{脚本}/网格碎块.py"]
@@ -38,708 +38,708 @@
 "粒子翻译" = ["uv", "run", "-q", "{脚本}/翻译粒子.py"]
 
 # 一组一起跑；另有 --all
-["组"]
+["group"]
 "碎块" = ["6-1-5碎块", "6-1-7碎块", "6-1-8碎块", "6-1-8b碎块", "6-3-6震地方块", "6-4-3碎块"]
 
-[["取材"]]
-"名称" = "娜迦贴图"
-"需要" = ["twilightforest"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "娜迦贴图"
+"requires" = ["twilightforest"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"steps" = [
   ["导出模型", "{jar:twilightforest}", "src/模型/角色/娜迦实机.贴图", "head=assets/twilightforest/textures/model/nagahead.png", "charging=assets/twilightforest/textures/model/nagahead_charging.png", "dazed=assets/twilightforest/textures/model/nagahead_dazed.png", "segment=assets/twilightforest/textures/model/nagasegment.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/角色/娜迦实机/*" = "src/模型/角色/娜迦实机.贴图/*.png"
 
-[["取材"]]
-"名称" = "粒子贴图"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "粒子贴图"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/粒子.贴图", "assets/minecraft/textures/particle/explosion_*.png", "assets/minecraft/textures/particle/generic_*.png", "assets/minecraft/textures/particle/critical_hit.png", "assets/minecraft/textures/particle/drip_hang.png", "assets/minecraft/textures/particle/glitter_*.png", "assets/minecraft/textures/particle/splash_*.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/粒子/*" = "src/模型/特效/粒子.贴图/*.png"
 
 # 驯服、繁殖时冒的爱心。单独一条，id 也不放在 贴图/特效/粒子/ 下：放进去会落进上一条的通配，改了它的产物集。
-[["取材"]]
-"名称" = "爱心粒子"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "爱心粒子"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/爱心粒子.png", "heart=assets/minecraft/textures/particle/heart.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/爱心粒子" = "src/模型/特效/爱心粒子.png"
 
-[["取材"]]
-"名称" = "夜幕刀光"
-"需要" = ["nightfall"]
-"公开版" = "提取"
-"来源" = "Epic Fight Nightfall 3.4.0"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "夜幕刀光"
+"requires" = ["nightfall"]
+"publicVersion" = "提取"
+"source" = "Epic Fight Nightfall 3.4.0"
+"license" = "All Rights Reserved"
+"steps" = [
   ["导出模型", "{jar:nightfall}", "src/模型/特效/夜幕刀光.贴图", "power3=assets/efn/textures/trail/power3.png", "assets/efn/textures/particle/yamato_cut*_a.png", "assets/efn/textures/particle/efn_parry_flash_main_render*.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/夜幕刀光/*" = "src/模型/特效/夜幕刀光.贴图/*.png"
 
-[["取材"]]
-"名称" = "6-3-6震地方块"
-"需要" = []
-"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
-"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release（公开版.toml 外部取得「场景网格几何」）
-"步骤" = [
+[["sourcing"]]
+"displayName" = "6-3-6震地方块"
+"requires" = []
+"pendingMigration" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"publicVersion" = "不提取"  # 场景网格几何的碎块，公开版走 Release（公开版.toml 外部取得「场景网格几何」）
+"steps" = [
   ["网格碎块", "--不推里层", "src/模型/场景/古城4x-中.网格", "src/镜头/6-3-6/震地方块.json", "0,-11.5,-2.9,21,10.5,0.9"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "碎块/镜头/6-3-6/震地方块" = "src/镜头/6-3-6/震地方块.json"
 
-[["取材"]]
-"名称" = "灾变圆环"
-"需要" = ["cataclysm"]
-"公开版" = "提取"
-"来源" = "L_Ender's Cataclysm 3.31"
-"许可" = "未声明（mods.toml 是占位符，按保留全部权利处理）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "灾变圆环"
+"requires" = ["cataclysm"]
+"publicVersion" = "提取"
+"source" = "L_Ender's Cataclysm 3.31"
+"license" = "未声明（mods.toml 是占位符，按保留全部权利处理）"
+"steps" = [
   ["导出模型", "{jar:cataclysm}", "src/模型/特效/灾变圆环.贴图", "assets/cataclysm/textures/particle/ring_*.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/灾变圆环/*" = "src/模型/特效/灾变圆环.贴图/*.png"
 
-[["取材"]]
-"名称" = "6-4-3碎块"
-"需要" = []
-"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
-"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
-"步骤" = [
+[["sourcing"]]
+"displayName" = "6-4-3碎块"
+"requires" = []
+"pendingMigration" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"publicVersion" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"steps" = [
   ["网格碎块", "--不推里层", "src/模型/场景/古城4x-西3.网格", "src/镜头/6-4-3/碎块.json", "-364.8,46.2,19.2,-364.2,46.8,19.8", "-364.8,46.2,20.2,-364.2,46.8,20.8", "-364.8,46.2,21.2,-364.2,46.8,21.8", "-364.8,46.2,22.2,-364.2,46.8,22.8", "-364.8,46.2,23.2,-364.2,46.8,23.8", "-364.8,46.2,24.2,-364.2,46.8,24.8", "-363.8,46.2,35.2,-363.2,46.8,35.8", "-365.8,46.2,20.2,-365.2,46.8,20.8"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "碎块/镜头/6-4-3/碎块" = "src/镜头/6-4-3/碎块.json"
 
-[["取材"]]
-"名称" = "九胡模型"
-"需要" = ["ysm"]
-"公开版" = "提取"
-"来源" = "Yes Steve Model 2.6.5 内置模型 wine_fox"
-"许可" = "jar 标 All rights reserved；内置酒狐模型 CC BY-NC-SA 4.0"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "九胡模型"
+"requires" = ["ysm"]
+"publicVersion" = "提取"
+"source" = "Yes Steve Model 2.6.5 内置模型 wine_fox"
+"license" = "jar 标 All rights reserved；内置酒狐模型 CC BY-NC-SA 4.0"
+"steps" = [
   ["导出模型", "{jar:ysm}", "src/模型/角色/九胡.模型.json", "assets/yes_steve_model/builtin/wine_fox/01_taisho_maid/models/main.json", "assets/yes_steve_model/builtin/wine_fox/01_taisho_maid/textures/skin.png", "--去掉", "FOX,Backgrounds,molang,molang2,molang3"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/九胡" = "src/模型/角色/九胡.模型.json"
 "贴图/角色/九胡" = "src/模型/角色/九胡.模型.png"
 
 # 隐世之境（万法皆通 maidspell）结构里那只女仆画的是 TLM 这份 geckolib 模型、_3 贴图（百花），不是 YSM 的 05_magical。
 # 只去掉永远不显示的：FOX 是血量低于 20% 才出的小狐狸形态，gui 是选模型界面用的（游戏里一直缩成 0），molang* 是空骨骼。
 # 法阵、手持法杖、帽子副本这些平时藏着的骨骼留在模型里由组件藏，以后拍别的镜头不用重新导出（store 只增不改，重导要 --replace）。
-[["取材"]]
-"名称" = "魔法酒狐模型"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3 内置 geckolib 模型 winefox_magical（星海ELIYA 做模型和材质、伊蕾娜教代行教皇做帽子），贴图 winefox_magical_3（百花）"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "魔法酒狐模型"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3 内置 geckolib 模型 winefox_magical（星海ELIYA 做模型和材质、伊蕾娜教代行教皇做帽子），贴图 winefox_magical_3（百花）"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/角色/魔法酒狐.模型.json", "assets/touhou_little_maid/tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/models/entity/winefox_magical.json", "assets/touhou_little_maid/tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/textures/entity/winefox_magical_3.png", "--去掉", "FOX,gui,molang,molang2,molang3"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/魔法酒狐" = "src/模型/角色/魔法酒狐.模型.json"
 "贴图/角色/魔法酒狐/百花" = "src/模型/角色/魔法酒狐.模型.png"
 
 # 魔法酒狐动画：同一个 jar 里的 geckolib 动画文件，原样拷出来（字节不动），engine/anim/基岩动画.ts 直接读。
 # 现在只有 把回忆拼好给你 的核对（核对/基岩动画/）和对照测试用；库/角色/ 里魔法酒狐的手抄动作照旧。
-[["取材"]]
-"名称" = "魔法酒狐动画"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3 内置 geckolib 动画 winefox_magical.main.animation.json（星海ELIYA 做动作）"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "魔法酒狐动画"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3 内置 geckolib 动画 winefox_magical.main.animation.json（星海ELIYA 做动作）"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["python", "{脚本}/拷jar文件.py", "{jar:touhoulittlemaid}", "assets/touhou_little_maid/tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/animation/winefox_magical.main.animation.json", "src/动画/角色/魔法酒狐.animation.json"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "动画/角色/魔法酒狐" = "src/动画/角色/魔法酒狐.animation.json"
 
 # 月铃兰：万法皆通的花（第 13、15 句她手里那一枝）。物品模型 item/yue_linglan.json 是 item/generated、layer0 用方块贴图 block/yue_linglan，
 # 手里画法照 item/generated 挤出（engine/model/物品贴图.tsx）。只有 把回忆拼好给你 用，产物登记在作品资产表，所以写了「作品」：anim --work 把回忆拼好给你 extract 月铃兰
-[["取材"]]
-"名称" = "月铃兰"
-"作品" = "把回忆拼好给你"
-"需要" = ["maidspell"]
-"公开版" = "提取"
-"来源" = "车万女仆附属 万法皆通 Touhou Little Maid: Spell 1.9.3（yimeng261）"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "月铃兰"
+"work" = "把回忆拼好给你"
+"requires" = ["maidspell"]
+"publicVersion" = "提取"
+"source" = "车万女仆附属 万法皆通 Touhou Little Maid: Spell 1.9.3（yimeng261）"
+"license" = "MIT"
+"steps" = [
   ["python", "-m", "zipfile", "-e", "{jar:maidspell}", "外层"],
   ["导出模型", "外层/META-INF/maidspell/maidspell-mod.jar", "src/模型/物品/月铃兰.png", "月铃兰=assets/touhou_little_maid_spell/textures/block/yue_linglan.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/月铃兰" = "src/模型/物品/月铃兰.png"
 
 # 寻风之铃：万法皆通的铃（第 14 句她挂到告示牌上，第 15 句你摇响它进归隐之地）。物品模型 item/wind_seeking_bell.json 是 item/generated、layer0 用 item/wind_seeking_bell；
 # 声音事件 touhou_little_maid_spell:wind_seeking_bell（sounds.json：players 类、音量 1、音高 1，字幕「寻风之铃响起」）。只有 把回忆拼好给你 用：anim --work 把回忆拼好给你 extract 寻风之铃
-[["取材"]]
-"名称" = "寻风之铃"
-"作品" = "把回忆拼好给你"
-"需要" = ["maidspell"]
-"公开版" = "提取"
-"来源" = "车万女仆附属 万法皆通 Touhou Little Maid: Spell 1.9.3（yimeng261）"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "寻风之铃"
+"work" = "把回忆拼好给你"
+"requires" = ["maidspell"]
+"publicVersion" = "提取"
+"source" = "车万女仆附属 万法皆通 Touhou Little Maid: Spell 1.9.3（yimeng261）"
+"license" = "MIT"
+"steps" = [
   ["python", "-m", "zipfile", "-e", "{jar:maidspell}", "外层"],
   ["导出模型", "外层/META-INF/maidspell/maidspell-mod.jar", "src/模型/物品/寻风之铃.png", "寻风之铃=assets/touhou_little_maid_spell/textures/item/wind_seeking_bell.png"],
   ["python", "{脚本}/导出音效.py", "src/音效/万法皆通", "--jar", "外层/META-INF/maidspell/maidspell-mod.jar", "touhou_little_maid_spell:wind_seeking_bell"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/寻风之铃" = "src/模型/物品/寻风之铃.png"
 "音效/万法皆通/wind_seeking_bell" = "src/音效/万法皆通/touhou_little_maid_spell.wind_seeking_bell.ogg"
 
 # 第 15 句的原版声音和粒子：隐世之境西门（深色橡木门）推开的声音 block.wooden_door.open（1.20.1 深色橡木门的 BlockSetType 用的就是它）；
 # 樱花风的花瓣照原版 cherry_leaves 粒子的 12 张贴图（particles/cherry_leaves.json，每张 3×3）。只有 把回忆拼好给你 用：anim --work 把回忆拼好给你 extract 第15句原版
-[["取材"]]
-"名称" = "第15句原版"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "第15句原版"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效", "block.wooden_door.open"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/粒子/樱花", "cherry_0=assets/minecraft/textures/particle/cherry_0.png", "cherry_1=assets/minecraft/textures/particle/cherry_1.png", "cherry_2=assets/minecraft/textures/particle/cherry_2.png", "cherry_3=assets/minecraft/textures/particle/cherry_3.png", "cherry_4=assets/minecraft/textures/particle/cherry_4.png", "cherry_5=assets/minecraft/textures/particle/cherry_5.png", "cherry_6=assets/minecraft/textures/particle/cherry_6.png", "cherry_7=assets/minecraft/textures/particle/cherry_7.png", "cherry_8=assets/minecraft/textures/particle/cherry_8.png", "cherry_9=assets/minecraft/textures/particle/cherry_9.png", "cherry_10=assets/minecraft/textures/particle/cherry_10.png", "cherry_11=assets/minecraft/textures/particle/cherry_11.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/block.wooden_door.open.1" = "src/音效/block.wooden_door.open.1.ogg"
 "音效/block.wooden_door.open.2" = "src/音效/block.wooden_door.open.2.ogg"
 "贴图/粒子/樱花/*" = "src/模型/粒子/樱花/*.png"
 
-[["取材"]]
-"名称" = "李樱模型"
-"需要" = []
-"待迁移" = "要旧项目的 工具/李樱体素导出.py 和它读的体素源，还没搬"
-"公开版" = "不提取"  # 自制数据，随仓库发
-"步骤" = [
+[["sourcing"]]
+"displayName" = "李樱模型"
+"requires" = []
+"pendingMigration" = "要旧项目的 工具/李樱体素导出.py 和它读的体素源，还没搬"
+"publicVersion" = "不提取"  # 自制数据，随仓库发
+"steps" = [
   ["python", "工具/李樱体素导出.py"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "体素/李樱" = "src/模型/角色/李樱.体素.json"
 
-[["取材"]]
-"名称" = "战利品箱"
-"需要" = ["lootr"]
-"公开版" = "提取"
-"来源" = "Lootr 0.7.35"
-"许可" = "mods.toml 只给链接（仓库 LICENSE），未离线核"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "战利品箱"
+"requires" = ["lootr"]
+"publicVersion" = "提取"
+"source" = "Lootr 0.7.35"
+"license" = "mods.toml 只给链接（仓库 LICENSE），未离线核"
+"steps" = [
   ["导出模型", "{jar:lootr}", "src/模型/物品/战利品箱.png", "chest=assets/lootr/textures/old_chest.png"],
   ["导出模型", "{jar:lootr}", "src/模型/物品/战利品箱-已开.png", "chest=assets/lootr/textures/old_chest_opened.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/战利品箱" = "src/模型/物品/战利品箱.png"
 "贴图/物品/战利品箱-已开" = "src/模型/物品/战利品箱-已开.png"
 
-[["取材"]]
-"名称" = "暮色箱子"
-"需要" = ["twilightforest"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "暮色箱子"
+"requires" = ["twilightforest"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"steps" = [
   ["导出模型", "{jar:twilightforest}", "src/模型/物品/暮色箱子.贴图", "暮色橡木=assets/twilightforest/textures/model/chest/twilight/twilight.png", "林冠木=assets/twilightforest/textures/model/chest/canopy/canopy.png", "红树木=assets/twilightforest/textures/model/chest/mangrove/mangrove.png", "暗木=assets/twilightforest/textures/model/chest/darkwood/darkwood.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/暮色箱子/*" = "src/模型/物品/暮色箱子.贴图/*.png"
 
-[["取材"]]
-"名称" = "钻石"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "钻石"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/钻石.png", "diamond=assets/minecraft/textures/item/diamond.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/钻石" = "src/模型/物品/钻石.png"
 
 # 物品栏和手持用的平面图，不是放在地上的蛋糕方块。单独一条，不并进「杂项物品」：那样会改它的产物集。
-[["取材"]]
-"名称" = "蛋糕"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "蛋糕"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/蛋糕.png", "cake=assets/minecraft/textures/item/cake.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/蛋糕" = "src/模型/物品/蛋糕.png"
 
 # 放在地上的蛋糕方块（block/cake.json，整块没吃过的那个；cake_inner 只有吃过几口的 cake_slice1～6 用，不导）。
 # 几何取模型 json 的面片（同时写出的图集不登记）；贴图另外一张张照搬，材质包覆盖层才认得出、换得了（pipeline/取材/材质包.ts 的 照搬贴图）。
-[["取材"]]
-"名称" = "蛋糕方块"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "蛋糕方块"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/蛋糕方块.模型.json", "蛋糕=minecraft:block/cake"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/蛋糕方块.贴图", "cake_top=assets/minecraft/textures/block/cake_top.png", "cake_side=assets/minecraft/textures/block/cake_side.png", "cake_bottom=assets/minecraft/textures/block/cake_bottom.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/蛋糕方块" = "src/模型/物品/蛋糕方块.模型.json"
 "贴图/物品/蛋糕方块/*" = "src/模型/物品/蛋糕方块.贴图/*.png"
 
 # 把回忆拼好给你 门口那个机位：告示牌（方块实体，方块表里查不到，形状照 SignRenderer 手搭）、天上的太阳和月相。产物登记在作品资产表，所以写了「作品」。
-[["取材"]]
-"名称" = "门口贴图"
-"需要" = ["client-1.20.1"]
-"作品" = "把回忆拼好给你"
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "门口贴图"
+"requires" = ["client-1.20.1"]
+"work" = "把回忆拼好给你"
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/门口", "橡木告示牌=assets/minecraft/textures/entity/signs/oak.png", "太阳=assets/minecraft/textures/environment/sun.png", "月相=assets/minecraft/textures/environment/moon_phases.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/橡木告示牌" = "src/模型/门口/橡木告示牌.png"
 "贴图/环境/太阳" = "src/模型/门口/太阳.png"
 "贴图/环境/月相" = "src/模型/门口/月相.png"
 
-[["取材"]]
-"名称" = "结构指南针"
-"需要" = ["explorerscompass"]
-"公开版" = "提取"
-"来源" = "Explorer's Compass 1.4.0"
-"许可" = "CC BY-NC-SA 4.0"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "结构指南针"
+"requires" = ["explorerscompass"]
+"publicVersion" = "提取"
+"source" = "Explorer's Compass 1.4.0"
+"license" = "CC BY-NC-SA 4.0"
+"steps" = [
   ["导出模型", "{jar:explorerscompass}", "src/模型/物品/结构指南针.png", "compass=assets/explorerscompass/textures/item/explorerscompass_16.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/结构指南针" = "src/模型/物品/结构指南针.png"
 
-[["取材"]]
-"名称" = "鼓风机"
-"需要" = ["create", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "机械动力 Create 6.0.8"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "鼓风机"
+"requires" = ["create", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "机械动力 Create 6.0.8"
+"license" = "MIT"
+"steps" = [
   ["导出模型", "{jar:create,client-1.20.1}", "src/模型/物品/鼓风机.模型.json", "外壳=create:encased_fan[facing=north]", "叶片=create:block/encased_fan/propeller", "传动轴=create:block/shaft_half", "物品=create:block/encased_fan/item"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/鼓风机" = "src/模型/物品/鼓风机.模型.json"
 "贴图/物品/鼓风机" = "src/模型/物品/鼓风机.模型.png"
 
-[["取材"]]
-"名称" = "扫帚"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "扫帚"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/扫帚.模型.json", "assets/touhou_little_maid/models/bedrock/entity/broom.json", "assets/touhou_little_maid/textures/bedrock/entity/broom.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/扫帚" = "src/模型/物品/扫帚.模型.json"
 "贴图/物品/扫帚" = "src/模型/物品/扫帚.模型.png"
 
-[["取材"]]
-"名称" = "天空"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "天空"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/天空.贴图", "sun=assets/minecraft/textures/environment/sun.png", "clouds=assets/minecraft/textures/environment/clouds.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/场景/天空/*" = "src/模型/场景/天空.贴图/*.png"
 
 # <环境> 主世界画法的月亮（engine/light/星月.tsx）：moon_phases.png 4×2 格，一格一个月相（LevelRenderer.renderSky 按 DimensionType.moonPhase 取格）。
 # 单开一条不并进「天空」：那条的产物是 贴图/场景/天空/* 通配，加一件会让它的产物表变。
-[["取材"]]
-"名称" = "月相"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "月相"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/月相.贴图", "moon_phases=assets/minecraft/textures/environment/moon_phases.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/场景/月相" = "src/模型/场景/月相.贴图/moon_phases.png"
 
-[["取材"]]
-"名称" = "巫妖"
-"需要" = ["twilightforest", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "巫妖"
+"requires" = ["twilightforest", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/巫妖.模型.json", "巫妖=twilightforest.client.model.entity.LichModel", "--贴图", "巫妖=assets/twilightforest/textures/model/twilightlich64.png"],
   ["导出模型", "{jar:twilightforest}", "src/模型/角色/巫妖护盾.贴图", "frame=assets/twilightforest/textures/item/lich_shield_frame.png", "fill=assets/twilightforest/textures/item/lich_shield_fill.png"],
   ["导出模型", "{jar:twilightforest}", "src/模型/物品/巫妖权杖.png", "scepter=assets/twilightforest/textures/item/twilight_scepter.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/巫妖" = "src/模型/角色/巫妖.模型.json"
 "贴图/物品/巫妖权杖" = "src/模型/物品/巫妖权杖.png"
 "贴图/角色/巫妖" = "src/模型/角色/巫妖.模型.png"
 "贴图/角色/巫妖护盾/*" = "src/模型/角色/巫妖护盾.贴图/*.png"
 
-[["取材"]]
-"名称" = "九头蛇"
-"需要" = ["twilightforest", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "九头蛇"
+"requires" = ["twilightforest", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/九头蛇.模型.json", "身体=twilightforest.client.model.entity.HydraModel", "头=twilightforest.client.model.entity.HydraHeadModel", "颈=twilightforest.client.model.entity.HydraNeckModel", "--贴图", "九头蛇=assets/twilightforest/textures/model/hydra4.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/九头蛇" = "src/模型/角色/九头蛇.模型.json"
 "贴图/角色/九头蛇" = "src/模型/角色/九头蛇.模型.png"
 
-[["取材"]]
-"名称" = "冰雪女王"
-"需要" = ["twilightforest", "client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1；暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）；Mojang EULA"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "冰雪女王"
+"requires" = ["twilightforest", "client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1；暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）；Mojang EULA"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/冰雪女王.模型.json", "冰雪女王=twilightforest.client.model.entity.SnowQueenModel", "--贴图", "冰雪女王=assets/twilightforest/textures/model/snowqueen.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/角色/冰雪女王冰盾.png", "ice=assets/minecraft/textures/block/packed_ice.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/冰雪女王" = "src/模型/角色/冰雪女王.模型.json"
 "贴图/角色/冰雪女王" = "src/模型/角色/冰雪女王.模型.png"
 "贴图/角色/冰雪女王冰盾" = "src/模型/角色/冰雪女王冰盾.png"
 
-[["取材"]]
-"名称" = "长矛"
-"需要" = ["client-1.21.11"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.21.11"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "长矛"
+"requires" = ["client-1.21.11"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.21.11"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.21.11}", "src/模型/物品/下界合金长矛.png", "spear=assets/minecraft/textures/item/netherite_spear_in_hand.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/下界合金长矛" = "src/模型/物品/下界合金长矛.png"
 
-[["取材"]]
-"名称" = "药水"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "药水"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/喷溅药水.贴图", "bottle=assets/minecraft/textures/item/splash_potion.png", "overlay=assets/minecraft/textures/item/potion_overlay.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/药水粒子.贴图", "assets/minecraft/textures/particle/spell_*.png", "assets/minecraft/textures/particle/effect_*.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/喷溅药水/*" = "src/模型/物品/喷溅药水.贴图/*.png"
 "贴图/特效/药水粒子/*" = "src/模型/特效/药水粒子.贴图/*.png"
 
-[["取材"]]
-"名称" = "6-1-5碎块"
-"需要" = []
-"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
-"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
-"步骤" = [
-  ["网格碎块", "src/模型/场景/巫妖怪塔.网格", "src/镜头/6-1-5/碎块.json", { "输出" = ["ts", "工具/一镜到底/巫妖墙洞.ts"] }],
-  ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-5/碎块.json", { "输出" = ["ts", "工具/一镜到底/巫妖墙洞.ts", "--分组"] }],
+[["sourcing"]]
+"displayName" = "6-1-5碎块"
+"requires" = []
+"pendingMigration" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"publicVersion" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"steps" = [
+  ["网格碎块", "src/模型/场景/巫妖怪塔.网格", "src/镜头/6-1-5/碎块.json", { "output" = ["ts", "工具/一镜到底/巫妖墙洞.ts"] }],
+  ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-5/碎块.json", { "output" = ["ts", "工具/一镜到底/巫妖墙洞.ts", "--分组"] }],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "碎块/镜头/6-1-5/碎块" = "src/镜头/6-1-5/碎块.json"
 
-[["取材"]]
-"名称" = "动力压路机"
-"需要" = ["create"]
-"公开版" = "提取"
-"来源" = "机械动力 Create 6.0.8"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "动力压路机"
+"requires" = ["create"]
+"publicVersion" = "提取"
+"source" = "机械动力 Create 6.0.8"
+"license" = "MIT"
+"steps" = [
   ["导出模型", "{jar:create}", "src/模型/物品/动力压路机.模型.json", "assets/create/models/block/mechanical_roller/item.obj", "roller_casing=assets/create/textures/block/roller_casing.png", "roller_metal=assets/create/textures/block/roller_metal.png", "roller_wheel=assets/create/textures/block/roller_wheel.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/动力压路机" = "src/模型/物品/动力压路机.模型.json"
 "贴图/物品/动力压路机" = "src/模型/物品/动力压路机.模型.png"
 
-[["取材"]]
-"名称" = "粉碎轮"
-"需要" = ["create", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "机械动力 Create 6.0.8 + 原版 Minecraft 1.20.1"
-"许可" = "MIT + Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "粉碎轮"
+"requires" = ["create", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "机械动力 Create 6.0.8 + 原版 Minecraft 1.20.1"
+"license" = "MIT + Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:create,client-1.20.1}", "src/模型/物品/粉碎轮.模型.json", "assets/create/models/block/crushing_wheel/crushing_wheel.obj", "crushing_wheel_insert=assets/create/textures/block/crushing_wheel_insert.png", "crushing_wheel_plates=assets/create/textures/block/crushing_wheel_plates.png", "m_axis=assets/create/textures/block/axis.png", "m_axis_top=assets/create/textures/block/axis_top.png", "m_spruce_log_top=assets/minecraft/textures/block/spruce_log_top.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/粉碎轮" = "src/模型/物品/粉碎轮.模型.json"
 "贴图/物品/粉碎轮" = "src/模型/物品/粉碎轮.模型.png"
 
-[["取材"]]
-"名称" = "魂符"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "魂符"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/魂符.贴图", "空=assets/touhou_little_maid/textures/item/smart_slab_empty.png", "有女仆=assets/touhou_little_maid/textures/item/smart_slab_has_maid.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/魂符/*" = "src/模型/物品/魂符.贴图/*.png"
 
-[["取材"]]
-"名称" = "望远镜"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "望远镜"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/望远镜.模型.json", "望远镜=minecraft:item/spyglass_in_hand"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/望远镜" = "src/模型/物品/望远镜.模型.json"
 "贴图/物品/望远镜" = "src/模型/物品/望远镜.模型.png"
 
-[["取材"]]
-"名称" = "边城贴图"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "边城贴图"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft"
+"license" = "Mojang EULA"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/边城贴图.py"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/场景/边城/方块贴图" = "src/模型/场景/边城/方块贴图.png"
 "数据/场景/边城/方块贴图" = "src/模型/场景/边城/方块贴图.json"
 "贴图/角色/卫兵/*" = "src/模型/角色/卫兵.贴图/*.png"
 
-[["取材"]]
-"名称" = "边城水面"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "边城水面"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/边城/水面.png", "water_still=assets/minecraft/textures/block/water_still.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/场景/边城/水面" = "src/模型/场景/边城/水面.png"
 
-[["取材"]]
-"名称" = "追兵皮肤"
-"需要" = ["client-1.20.1"]
-"公开版" = "不提取"  # 黄叛的随仓库发；刘心忠照抄原版村民头的部分走 公开版.toml 派生「同位拆分」和「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "追兵皮肤"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "不提取"  # 黄叛的随仓库发；刘心忠照抄原版村民头的部分走 公开版.toml 派生「同位拆分」和「网格图集」
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/追兵皮肤.py"],
 ]
-["取材"."输入"]
+["sourcing"."input"]
 "设定图/黄叛/三视图" = "设定/角色/黄叛/黄叛三视图.png"
 "设定图/刘心忠/三视图" = "设定/角色/刘心忠/刘心忠三视图.png"
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/角色/追兵/*" = "src/模型/角色/追兵.贴图/*.png"
 
-[["取材"]]
-"名称" = "匠师之杖"
-"需要" = ["irons_spellbooks"]
-"公开版" = "提取"
-"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "匠师之杖"
+"requires" = ["irons_spellbooks"]
+"publicVersion" = "提取"
+"source" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"license" = "All Rights Reserved"
+"steps" = [
   ["导出模型", "{jar:irons_spellbooks}", "src/模型/物品/匠师之杖.模型.json", "杖=irons_spellbooks:item/artificer_cane"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/匠师之杖" = "src/模型/物品/匠师之杖.模型.json"
 "贴图/物品/匠师之杖" = "src/模型/物品/匠师之杖.模型.png"
 
-[["取材"]]
-"名称" = "铁链"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "铁链"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/铁链.png", "chain=assets/minecraft/textures/item/chain.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/铁链" = "src/模型/物品/铁链.png"
 
-[["取材"]]
-"名称" = "边城蓝图"
-"需要" = ["structurize", "domum_ornamentum", "minecolonies", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "MineColonies 风格包（Carlansor、Aravan）"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "边城蓝图"
+"requires" = ["structurize", "domum_ornamentum", "minecolonies", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "MineColonies 风格包（Carlansor、Aravan）"
+"license" = "All Rights Reserved"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/殖民地蓝图.py"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/场景/边城/蓝图" = "src/模型/场景/边城/蓝图.json"
 "贴图/场景/边城/蓝图贴图" = "src/模型/场景/边城/蓝图贴图.png"
 
-[["取材"]]
-"名称" = "6-3方块贴图"
-"需要" = ["create", "iceandfire", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "冰与火之歌 Ice and Fire 2.1.13；原版 Minecraft 1.20.1；机械动力 Create 6.0.8"
-"许可" = "LGPL（mods.toml；美术是否同许可待核）；MIT；Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "6-3方块贴图"
+"requires" = ["create", "iceandfire", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "冰与火之歌 Ice and Fire 2.1.13；原版 Minecraft 1.20.1；机械动力 Create 6.0.8"
+"license" = "LGPL（mods.toml；美术是否同许可待核）；MIT；Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/镜头/6-3-下坠/方块.贴图", "平滑石头=assets/minecraft/textures/block/smooth_stone.png", "平滑石台阶侧=assets/minecraft/textures/block/smooth_stone_slab_side.png", "泥土=assets/minecraft/textures/block/dirt.png", "石头=assets/minecraft/textures/block/stone.png", "深板岩=assets/minecraft/textures/block/deepslate.png", "凝灰岩=assets/minecraft/textures/block/tuff.png", "深板岩顶=assets/minecraft/textures/block/deepslate_top.png", "花岗岩=assets/minecraft/textures/block/granite.png", "安山岩=assets/minecraft/textures/block/andesite.png", "闪长岩=assets/minecraft/textures/block/diorite.png", "砂砾=assets/minecraft/textures/block/gravel.png", "幽匿块=assets/minecraft/textures/block/sculk.png", "方解石=assets/minecraft/textures/block/calcite.png", "煤矿石=assets/minecraft/textures/block/coal_ore.png", "铜矿石=assets/minecraft/textures/block/copper_ore.png", "金矿石=assets/minecraft/textures/block/gold_ore.png", "红石矿石=assets/minecraft/textures/block/redstone_ore.png", "深层铜矿石=assets/minecraft/textures/block/deepslate_copper_ore.png", "深层金矿石=assets/minecraft/textures/block/deepslate_gold_ore.png"],
   ["导出模型", "{jar:create}", "src/镜头/6-3-下坠/方块.贴图", "皓蓝石=assets/create/textures/block/palettes/stone_types/natural/asurine_0.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/镜头/6-3-下坠/方块.贴图", "赤陶=assets/minecraft/textures/block/terracotta.png", "橙色赤陶=assets/minecraft/textures/block/orange_terracotta.png", "黄色赤陶=assets/minecraft/textures/block/yellow_terracotta.png", "红色赤陶=assets/minecraft/textures/block/red_terracotta.png"],
   ["导出模型", "{jar:create}", "src/镜头/6-3-下坠/方块.贴图", "锌矿石=assets/create/textures/block/zinc_ore.png"],
   ["导出模型", "{jar:iceandfire}", "src/镜头/6-3-下坠/方块.贴图", "银矿石=assets/iceandfire/textures/block/silver_ore.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/镜头/6-3-下坠/方块/*" = "src/镜头/6-3-下坠/方块.贴图/*.png"
 
-[["取材"]]
-"名称" = "6-3竖井"
-"需要" = []
-"要开游戏" = true
-"待迁移" = "要旧项目的 挖竖井.py（开着游戏挖、导网格），还没搬"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」，坑面、填块表随仓库发
-"步骤" = [
+[["sourcing"]]
+"displayName" = "6-3竖井"
+"requires" = []
+"needsGame" = true
+"pendingMigration" = "要旧项目的 挖竖井.py（开着游戏挖、导网格），还没搬"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」，坑面、填块表随仓库发
+"steps" = [
   ["python", "{脚本}/挖竖井.py", "导出", "世界=4x"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/镜头/6-3-下坠/*" = "src/镜头/6-3-下坠/*.json"
 "网格/竖井4x/头" = "src/镜头/6-3-下坠/竖井4x.网格.json"
 "网格/竖井4x/顶点" = "src/镜头/6-3-下坠/竖井4x.网格.bin"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
 
-[["取材"]]
-"名称" = "6-3-2思索"
-"需要" = ["create", "client-1.20.1"]
-"待迁移" = "导出思索素材.py 读旧项目各镜头的 文案.json、*.字.json 收字，新仓库的镜头文案还没定位置"
-"公开版" = "提取"
-"来源" = "Ponder（Create）；原版 Minecraft；原版 Minecraft + GNU Unifont"
-"许可" = "MIT（随 Create）；Mojang EULA；位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "6-3-2思索"
+"requires" = ["create", "client-1.20.1"]
+"pendingMigration" = "导出思索素材.py 读旧项目各镜头的 文案.json、*.字.json 收字，新仓库的镜头文案还没定位置"
+"publicVersion" = "提取"
+"source" = "Ponder（Create）；原版 Minecraft；原版 Minecraft + GNU Unifont"
+"license" = "MIT（随 Create）；Mojang EULA；位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出思索素材.py"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/像素字" = "src/模型/界面/像素字.json"
 "贴图/界面/思索控件" = "src/模型/界面/贴图/思索控件.png"
 "贴图/镜头/6-3-2/方块/*" = "src/镜头/6-3-2/方块.贴图/*.png"
 "音效/镜头/6-3-2/点击" = "src/镜头/6-3-2/点击.wav"
 
-[["取材"]]
-"名称" = "音效"
-"需要" = ["资源索引-1.20.1", "create", "twilightforest", "nightfall", "epicfight", "cataclysm", "irons_spellbooks"]
-"公开版" = "提取"
-"公开版提取" = "内置:游戏音效"
-"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）；机械动力、暮色森林、夜幕、史诗战斗、灾变、铁魔法 jar 里的声音"
-"许可" = "Mojang EULA；模组声音按各模组许可"
-"说明" = "按资产锁反推：音效/<事件>[.<序号>] 的事件名由 导出音效.py --按产物 从 id 反推（第一段是模组命名空间的到那个 jar 的 sounds.json 找，别的是原版），序号照 sounds.json 的先后；锁里 音效/ 下一层加了新 id，这条自己就会去导。要一个锁里还没有的新音效：anim extract 音效 --new 音效/<事件>[.<序号>] --register（来源按件记资源索引或那个模组 jar）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "音效"
+"requires" = ["资源索引-1.20.1", "create", "twilightforest", "nightfall", "epicfight", "cataclysm", "irons_spellbooks"]
+"publicVersion" = "提取"
+"publicExtract" = "内置:游戏音效"
+"source" = "Minecraft 1.20.1 原版声音（资源索引 5）；机械动力、暮色森林、夜幕、史诗战斗、灾变、铁魔法 jar 里的声音"
+"license" = "Mojang EULA；模组声音按各模组许可"
+"note" = "按资产锁反推：音效/<事件>[.<序号>] 的事件名由 导出音效.py --按产物 从 id 反推（第一段是模组命名空间的到那个 jar 的 sounds.json 找，别的是原版），序号照 sounds.json 的先后；锁里 音效/ 下一层加了新 id，这条自己就会去导。要一个锁里还没有的新音效：anim extract 音效 --new 音效/<事件>[.<序号>] --register（来源按件记资源索引或那个模组 jar）"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效", "--jar", "{jar:create}", "--jar", "{jar:twilightforest}", "--jar", "{jar:nightfall}", "--jar", "{jar:epicfight}", "--jar", "{jar:cataclysm}", "--jar", "{jar:irons_spellbooks}", "--按产物", "{产物清单}", "--来源", "{产物来源}"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/*" = "src/音效/*.ogg"
 
 # 女仆相机拍照的咔哒（ItemCamera 里 playSound(CAMERA_USE, 1, 1)）。id 比上一条多一层 车万女仆/，不落进它的 音效/* 通配。
-[["取材"]]
-"名称" = "女仆相机"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "女仆相机"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效/车万女仆", "--jar", "{jar:touhoulittlemaid}", "touhou_little_maid:item.camera_use"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/车万女仆/item.camera_use" = "src/音效/车万女仆/touhou_little_maid.item.camera_use.ogg"
 
 # 女仆头顶气泡的底（库/界面/女仆气泡.tsx）：ChatBubbleRenderer 按 256×256 的 UV 从整张里切九宫格和尾巴，所以整张原样存。
-[["取材"]]
-"名称" = "女仆气泡"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "女仆气泡"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/界面/女仆气泡.贴图", "type1=assets/touhou_little_maid/textures/entity/chat_bubble/type1.png", "type2=assets/touhou_little_maid/textures/entity/chat_bubble/type2.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/界面/女仆气泡/type1" = "src/模型/界面/女仆气泡.贴图/type1.png"
 "贴图/界面/女仆气泡/type2" = "src/模型/界面/女仆气泡.贴图/type2.png"
 
 # 把回忆拼好给你 的游戏像素字（库/界面/像素字表.ts 吃它）：只收作品 界面/像素字文案.txt 里的字。产物登记在作品资产表，所以写了「作品」。
 # 加字：文案加一行 → anim --work 把回忆拼好给你 extract 把回忆拼好给你像素字（报「不一样」，新表在暂存目录 run/extract/把回忆拼好给你像素字/像素字.json）
 #   → anim --work 把回忆拼好给你 assets add 字体/把回忆拼好给你/像素字 <那个文件> --replace → 再跑一次 extract，应当全一样。
-[["取材"]]
-"名称" = "把回忆拼好给你像素字"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
-"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "把回忆拼好给你像素字"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"license" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "像素字.json", "{作品根}/界面/像素字文案.txt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/把回忆拼好给你/像素字" = "像素字.json"
 
 # 把回忆拼好给你 第 8 句她冲苦力怕哈气：原版猫的哈气声（三稿：酒狐哈气模组的音效闭源，不拿）。放照片的纸声用共用的 音效/item.book.page_turn.*，不另取。
 # 只有本作品用，登记在作品资产表；id 多一层 把回忆拼好给你/，不落进「音效」那条的 音效/* 通配。
-[["取材"]]
-"名称" = "把回忆拼好给你音效"
-"作品" = "把回忆拼好给你"
-"公开版" = "提取"
-"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "把回忆拼好给你音效"
+"work" = "把回忆拼好给你"
+"publicVersion" = "提取"
+"source" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"license" = "Mojang EULA"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.cat.hiss"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/把回忆拼好给你/entity.cat.hiss.1" = "src/音效/把回忆拼好给你/entity.cat.hiss.1.ogg"
 "音效/把回忆拼好给你/entity.cat.hiss.2" = "src/音效/把回忆拼好给你/entity.cat.hiss.2.ogg"
 "音效/把回忆拼好给你/entity.cat.hiss.3" = "src/音效/把回忆拼好给你/entity.cat.hiss.3.ogg"
 
 # 把回忆拼好给你 正片的歌词艺术字（作品 界面/符文歌词.tsx）用的汉字点阵：只收 界面/歌词文案.txt（正片 15 句歌词）里的字，格式同上一条。
 # 单开一张表、不并进 像素字文案.txt：歌词的字和气泡、聊天栏的字各管各的，改了一边不让另一边的资产换版本。加字的步骤同上一条。
-[["取材"]]
-"名称" = "把回忆拼好给你歌词字"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
-"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "把回忆拼好给你歌词字"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"license" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "歌词字.json", "{作品根}/界面/歌词文案.txt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/把回忆拼好给你/歌词字" = "歌词字.json"
 
 # 歌词艺术字的银河字母和附魔光泽（作品 界面/符文歌词.tsx）。ascii_sga.png 是原版字体 minecraft:alt（font/alt.json：附魔台界面那串咒语用它）的位图，
 # 16×16 格、一格 8×8，a～z 在第 6、7 行（码位 0x61～0x7A，大写同形）；附魔台飞字粒子 textures/particle/sga_a～z.png 和这里逐像素一样（10-24 核过），不另取。
 # enchanted_glint_item.png 是附魔物品表面那层流动的紫光。只有本作品用，产物登记在作品资产表：anim --work 把回忆拼好给你 extract 银河字母
-[["取材"]]
-"名称" = "银河字母"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "银河字母"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/歌词", "银河字母=assets/minecraft/textures/font/ascii_sga.png", "附魔光泽=assets/minecraft/textures/misc/enchanted_glint_item.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/界面/银河字母" = "src/模型/歌词/银河字母.png"
 "贴图/特效/附魔光泽" = "src/模型/歌词/附魔光泽.png"
 
@@ -747,19 +747,19 @@
 # 各一块 16×16×6 的床身加两条 3×3×3 的腿，贴图 entity/bed/red.png（64×64，史蒂夫默认睡的红床）。
 # 女仆床是车万女仆的方块实体，基岩模型 models/bedrock/block/maid_bed/pink.json（TileEntityMaidBed 默认 PINK）。只有本作品用，产物登记在作品资产表：
 #   anim --work 把回忆拼好给你 extract 卧室床
-[["取材"]]
-"名称" = "卧室床"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1", "client-1.20.1-srg", "touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1；车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "Mojang EULA；MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "卧室床"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1", "client-1.20.1-srg", "touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1；车万女仆 Touhou Little Maid 1.5.3"
+"license" = "Mojang EULA；MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/物品/床.模型.json", "床头=net.minecraft.client.renderer.blockentity.BedRenderer:m_173550_", "床尾=net.minecraft.client.renderer.blockentity.BedRenderer:m_173551_", "--贴图", "红=assets/minecraft/textures/entity/bed/red.png"],
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/女仆床.模型.json", "assets/touhou_little_maid/models/bedrock/block/maid_bed/pink.json", "assets/touhou_little_maid/textures/bedrock/block/maid_bed/pink.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/床" = "src/模型/物品/床.模型.json"
 "贴图/物品/床/红" = "src/模型/物品/床.模型.png"
 "模型/物品/女仆床" = "src/模型/物品/女仆床.模型.json"
@@ -770,20 +770,20 @@
 # 博丽的御币（手里拿着是 item/hakurei_gohei_in_hand 这个 Java 模型，forge:separate_transforms 只有物品栏和展示框用平面图），
 # 和祭坛合成、拆蛋糕盒的声音（sounds.json：block.altar_craft 两个随机一个，entity.box）。只有本作品用，登记在作品资产表：
 # anim --work 把回忆拼好给你 extract 女仆祭坛
-[["取材"]]
-"名称" = "女仆祭坛"
-"作品" = "把回忆拼好给你"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "女仆祭坛"
+"work" = "把回忆拼好给你"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/女仆祭坛.模型.json", "assets/touhou_little_maid/models/bedrock/block/altar.json", "assets/touhou_little_maid/textures/bedrock/block/altar.png"],
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/蛋糕盒.模型.json", "assets/touhou_little_maid/models/bedrock/entity/cake_box.json", "assets/touhou_little_maid/textures/bedrock/entity/cake_box/cake_box_1.png"],
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/御币.模型.json", "御币=touhou_little_maid:item/hakurei_gohei_in_hand"],
   ["python", "-m", "zipfile", "-e", "{jar:touhoulittlemaid}", "外层"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/场景/女仆祭坛" = "src/模型/祭坛/女仆祭坛.模型.json"
 "贴图/场景/女仆祭坛" = "src/模型/祭坛/女仆祭坛.模型.png"
 "模型/物品/蛋糕盒" = "src/模型/祭坛/蛋糕盒.模型.json"
@@ -796,53 +796,53 @@
 
 # 第 3 句祭坛柱顶摆的材料：车万女仆 spawn_box 配方（data/touhou_little_maid/recipes/altar/spawn_box.json）的六样，钻石用共用的 贴图/物品/钻石，这里取另外五样。
 # 只有本作品用，登记在作品资产表：anim --work 把回忆拼好给你 extract 祭坛材料
-[["取材"]]
-"名称" = "祭坛材料"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "祭坛材料"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/祭坛材料", "青金石=assets/minecraft/textures/item/lapis_lazuli.png", "金锭=assets/minecraft/textures/item/gold_ingot.png", "红石=assets/minecraft/textures/item/redstone.png", "铁锭=assets/minecraft/textures/item/iron_ingot.png", "煤炭=assets/minecraft/textures/item/coal.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/祭坛材料/*" = "src/模型/祭坛材料/*.png"
 
-[["取材"]]
-"名称" = "基地工坊"
-"需要" = ["create", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 + 机械动力"
-"许可" = "Mojang EULA + MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "基地工坊"
+"requires" = ["create", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 + 机械动力"
+"license" = "Mojang EULA + MIT"
+"steps" = [
   ["导出模型", "{jar:create,client-1.20.1}", "src/模型/场景/基地工坊.模型.json", "云杉木板=minecraft:block/spruce_planks", "云杉原木=minecraft:spruce_log[axis=y]", "云杉横梁=minecraft:spruce_log[axis=x]", "磨制安山岩=minecraft:block/polished_andesite", "玻璃=minecraft:block/glass", "安山机壳=create:block/andesite_casing", "传动杆=create:shaft[axis=x]", "齿轮=create:cogwheel[axis=x]", "大齿轮=create:large_cogwheel[axis=x]", "木桶=minecraft:barrel[facing=up,open=false]", "工作台=minecraft:block/crafting_table", "灯笼=minecraft:lantern[hanging=true,waterlogged=false]", "栅栏柱=minecraft:block/spruce_fence_post", "书架=minecraft:block/bookshelf", "云杉台阶=minecraft:block/spruce_slab_top", "草方块=minecraft:grass_block[snowy=false]", "沙子=minecraft:block/sand", "铜瓦楼梯=create:copper_shingle_stairs[facing=east,half=bottom,shape=straight]", "铜瓦台阶=create:copper_shingle_slab[type=bottom]", "去皮云杉横梁=minecraft:stripped_spruce_log[axis=x]", "去皮云杉立柱=minecraft:stripped_spruce_log[axis=y]", "砖块=minecraft:block/bricks", "磨制安山岩台阶=minecraft:polished_andesite_slab[type=bottom]", "云杉门下=minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false]", "云杉门上=minecraft:spruce_door[facing=south,half=upper,hinge=left,open=false]", "云杉门下右=minecraft:spruce_door[facing=south,half=lower,hinge=right,open=false]", "云杉门上右=minecraft:spruce_door[facing=south,half=upper,hinge=right,open=false]", "风车轴承=create:windmill_bearing[facing=north]", "白帆=create:white_sail[facing=north]", "帆框=create:sail_frame[facing=north]", "黄铜机壳=create:block/brass_casing", "石砖台阶=minecraft:stone_brick_slab[type=bottom]", "圆石=minecraft:block/cobblestone", "--染色", "*grass_block_top=#91bd59,*grass_block_side_overlay=#91bd59"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/场景/基地工坊" = "src/模型/场景/基地工坊.模型.json"
 "贴图/场景/基地工坊" = "src/模型/场景/基地工坊.模型.png"
 
-[["取材"]]
-"名称" = "战利品贴图"
-"需要" = ["twilightforest"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "战利品贴图"
+"requires" = ["twilightforest"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"steps" = [
   ["导出模型", "{jar:twilightforest}", "src/模型/物品/炽热的血.png", "blood=assets/twilightforest/textures/item/fiery_blood.png"],
   ["导出模型", "{jar:twilightforest}", "src/模型/物品/雪怪首领毛皮.png", "fur=assets/twilightforest/textures/item/alpha_yeti_fur.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/炽热的血" = "src/模型/物品/炽热的血.png"
 "贴图/物品/雪怪首领毛皮" = "src/模型/物品/雪怪首领毛皮.png"
 
-[["取材"]]
-"名称" = "基地界面"
-"需要" = ["forge", "twilightforest", "tconstruct", "quark", "jei", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "Forge 47.4.10；JEI 15.62；Quark 4.0-462；匠魂 Tinkers Construct 3.12.1；原版 Minecraft 1.20.1；原版 Minecraft 1.20.1 + 匠魂 Tinkers Construct 3.12.1；暮色森林 Twilight Forest 4.3.2508"
-"许可" = "CC BY-NC-SA 3.0（mods.toml 指向仓库 LICENSE.md，未离线核）；LGPL-2.1；LGPL-2.1（mods.toml；美术是否同许可待核）；MIT；MIT + Mojang EULA；Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "基地界面"
+"requires" = ["forge", "twilightforest", "tconstruct", "quark", "jei", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "Forge 47.4.10；JEI 15.62；Quark 4.0-462；匠魂 Tinkers Construct 3.12.1；原版 Minecraft 1.20.1；原版 Minecraft 1.20.1 + 匠魂 Tinkers Construct 3.12.1；暮色森林 Twilight Forest 4.3.2508"
+"license" = "CC BY-NC-SA 3.0（mods.toml 指向仓库 LICENSE.md，未离线核）；LGPL-2.1；LGPL-2.1（mods.toml；美术是否同许可待核）；MIT；MIT + Mojang EULA；Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/界面/贴图", "附魔书=assets/minecraft/textures/item/enchanted_book.png", "附魔光效=assets/minecraft/textures/misc/enchanted_glint_item.png", "桶=assets/minecraft/textures/item/bucket.png"],
   ["导出模型", "{jar:forge}", "src/模型/界面/贴图", "桶液体遮罩=assets/forge/textures/item/mask/bucket_fluid_drip.png"],
   ["导出模型", "{jar:twilightforest}", "src/模型/界面/贴图", "雪怪首领毛皮=assets/twilightforest/textures/item/alpha_yeti_fur.png"],
@@ -851,7 +851,7 @@
   ["导出模型", "{jar:jei}", "src/模型/界面/贴图", "JEI上一页=assets/jei/textures/jei/atlas/gui/icons/arrow_previous.png", "JEI下一页=assets/jei/textures/jei/atlas/gui/icons/arrow_next.png", "JEI书签=assets/jei/textures/jei/atlas/gui/icons/recipe_bookmark.png"],
   ["导出模型", "{jar:tconstruct,client-1.20.1}", "src/模型/界面/方块图标.模型.json", "铁砧=minecraft:block/anvil", "开裂的铁砧=minecraft:block/chipped_anvil", "损坏的铁砧=minecraft:block/damaged_anvil", "部件制造台=tconstruct:block/table/part_builder", "焦黑熔化炉=tconstruct:block/smeltery/controller/melter_inactive", "焦黑加热器=tconstruct:block/smeltery/controller/heater_inactive", "冶炼炉控制器=tconstruct:block/smeltery/controller/smeltery_inactive", "焦褐合金炉=tconstruct:block/foundry/controller/alloyer_inactive", "熔铸炉控制器=tconstruct:block/foundry/controller/foundry_inactive"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/界面/方块图标" = "src/模型/界面/方块图标.模型.json"
 "贴图/界面/JEI上一页" = "src/模型/界面/贴图/JEI上一页.png"
 "贴图/界面/JEI下一页" = "src/模型/界面/贴图/JEI下一页.png"
@@ -871,30 +871,30 @@
 "贴图/界面/附魔光效" = "src/模型/界面/贴图/附魔光效.png"
 "贴图/界面/雪怪首领毛皮" = "src/模型/界面/贴图/雪怪首领毛皮.png"
 
-[["取材"]]
-"名称" = "掉落物"
-"需要" = ["twilightforest", "touhoulittlemaid", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1；暮色森林 Twilight Forest 4.3.2508；车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）；MIT / CC BY-NC-SA 4.0（资产，非商用）；Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "掉落物"
+"requires" = ["twilightforest", "touhoulittlemaid", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1；暮色森林 Twilight Forest 4.3.2508；车万女仆 Touhou Little Maid 1.5.3"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）；MIT / CC BY-NC-SA 4.0（资产，非商用）；Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:twilightforest}", "src/模型/物品/掉落物.贴图", "九头蛇肉排=assets/twilightforest/textures/item/hydra_chop.png", "砷铅铁矿石=assets/twilightforest/textures/item/carminite.png", "炽热之泪=assets/twilightforest/textures/item/fiery_tears.png", "冰霜炸弹=assets/twilightforest/textures/item/ice_bomb.png", "三发弓=assets/twilightforest/textures/item/triple_bow.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/掉落物.贴图", "末影珍珠=assets/minecraft/textures/item/ender_pearl.png", "骨头=assets/minecraft/textures/item/bone.png", "金胸甲=assets/minecraft/textures/item/golden_chestplate.png", "金剑=assets/minecraft/textures/item/golden_sword.png", "雪球=assets/minecraft/textures/item/snowball.png", "浮冰=assets/minecraft/textures/block/packed_ice.png", "巨人镐=assets/minecraft/textures/item/stone_pickaxe.png", "巨人剑=assets/minecraft/textures/item/stone_sword.png"],
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/掉落物.贴图", "扫帚=assets/touhou_little_maid/textures/item/broom.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/掉落物/*" = "src/模型/物品/掉落物.贴图/*.png"
 
-[["取材"]]
-"名称" = "动力钻头"
-"需要" = ["create", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "机械动力 Create 6.0.8"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "动力钻头"
+"requires" = ["create", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "机械动力 Create 6.0.8"
+"license" = "MIT"
+"steps" = [
   ["导出模型", "{jar:create,client-1.20.1}", "src/模型/物品/动力钻头.模型.json", "钻头=create:block/mechanical_drill/head"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/动力钻头" = "src/模型/物品/动力钻头.模型.json"
 "贴图/物品/动力钻头" = "src/模型/物品/动力钻头.模型.png"
 
@@ -903,47 +903,47 @@
 # 全局表现在不加东西：图集多出一行，atlasUv 的分母跟着变，旧方块的 UV 浮点值不一样，4K 静帧有几百个像素不同（11-10 实测），
 # 所以各作品要的模组方块先走下面按作品的附加表；要不要往全局表里加等用户定（docs/待办.md「方块表兼容任意模组」）。
 # 全局表、图集随 Release 公开发：「需要」里只放资源许可允许再分发的 jar。怎么加见 docs/世界.md「给方块表加模组方块」
-[["取材"]]
-"名称" = "关键帧方块"
-"需要" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta"]
-"公开版" = "不提取"  # 方块表.json 随仓库发（公开版.toml 第三方「体素方块表」），方块表.png 走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "关键帧方块"
+"requires" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta"]
+"publicVersion" = "不提取"  # 方块表.json 随仓库发（公开版.toml 第三方「体素方块表」），方块表.png 走「网格图集」
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "python", "{脚本}/关键帧方块.py",
     "--jar", "{jar:client-1.20.1,twilightforest,iceandfire,tconstruct,mantle,create,quark,zeta}",
     "--基", "基/方块表.json", "基/方块表.png",
     "--来源", "{产物来源}"],
 ]
-["取材"."输入"]
+["sourcing"."input"]
 "数据/场景/关键帧/方块表" = "基/方块表.json"
 "贴图/场景/关键帧/方块表" = "基/方块表.png"
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.json"
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 
 # 从头重建（jar 里每个 blockstates 都导、扫存档）：贴图号、方块号全部重排，出的方块表不登记成产物、不换现用的表；群系色表由它出。
 # 存档相对游戏环境目录（ANIM_GAME），新生成的世界加在这里
-[["取材"]]
-"名称" = "关键帧方块-全量"
-"需要" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta"]
-"公开版" = "不提取"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "关键帧方块-全量"
+"requires" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta"]
+"publicVersion" = "不提取"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "python", "{脚本}/关键帧方块.py",
     "--jar", "{jar:client-1.20.1,twilightforest,iceandfire,tconstruct,mantle,create,quark,zeta}",
     "--存档", "取材服务端/world", "--存档", "实例/取材客户端/.minecraft/saves/片场", "--存档", "实例/取材客户端-远景/.minecraft/saves/片场", "--存档", "取材服务端/暮色放大-1752"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/场景/关键帧/群系色" = "src/模型/场景/关键帧/群系色.json"
 
 # 作品 亚波伦不放水 的附加方块表：全局表 + 粉色教堂地上结构用到、全局表查不到的方块（Goety、Alex 的洞穴、BOMD、天体核心、灾变、妖怪归家、Prefab 和原版樱花系）。
 # 登记在作品资产表。灾变、妖怪归家、Prefab 的资源保留所有权益，原先按私有登记；用户 11-13 定全部公开，可见性改发布、随 Release 发（字节仍在 私有/ 库）。作品的 换用.toml 让本作品把全局表的两个 id
 # 换成这两件（pipeline/资产/资产锁.ts 套换用），别的作品还用全局表。输入是全局表：全局表换了要重跑，再 anim assets add … --replace
-[["取材"]]
-"名称" = "方块附加-亚波伦不放水"
-"作品" = "亚波伦不放水"
-"需要" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta", "goety", "alexscaves", "bosses_of_mass_destruction", "celestial_core", "cataclysm", "youkaishomecoming", "prefab"]
-"公开版" = "不提取"
-"可见性" = "发布"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "方块附加-亚波伦不放水"
+"work" = "亚波伦不放水"
+"requires" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta", "goety", "alexscaves", "bosses_of_mass_destruction", "celestial_core", "cataclysm", "youkaishomecoming", "prefab"]
+"publicVersion" = "不提取"
+"visibility" = "发布"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "python", "{脚本}/关键帧方块.py",
     "--jar", "{jar:client-1.20.1,twilightforest,iceandfire,tconstruct,mantle,create,quark,zeta,goety,alexscaves,bosses_of_mass_destruction,celestial_core,cataclysm,youkaishomecoming,prefab}",
     "--基", "基/方块表.json", "基/方块表.png",
@@ -951,97 +951,97 @@
     "--出", "附加",
     "--来源", "{产物来源}"],
 ]
-["取材"."输入"]
+["sourcing"."input"]
 "数据/场景/关键帧/方块表" = "基/方块表.json"
 "贴图/场景/关键帧/方块表" = "基/方块表.png"
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/方块附加/方块表" = "附加/方块表.json"
 "贴图/方块附加/方块表" = "附加/方块表.png"
 
 # 粉色教堂地上结构 → 体素方块列表（坐标、状态串），核对-体素教堂 用 方块拼搭 照附加方块表一格一格拼。输入是结构模板（配方「粉色教堂结构」在分支 亚波伦-教堂）
-[["取材"]]
-"名称" = "粉色教堂体素方块"
-"作品" = "亚波伦不放水"
-"需要" = []
-"公开版" = "不提取"
-"可见性" = "发布"
-"来源" = "整合包《诡厄：使徒》1.3.1（落烟雨辰；教堂是群友做的）"
-"许可" = "保留所有权益（BBSMC）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "粉色教堂体素方块"
+"work" = "亚波伦不放水"
+"requires" = []
+"publicVersion" = "不提取"
+"visibility" = "发布"
+"source" = "整合包《诡厄：使徒》1.3.1（落烟雨辰；教堂是群友做的）"
+"license" = "保留所有权益（BBSMC）"
+"steps" = [
   ["python3", "{脚本}/结构方块.py", "结构/地上.nbt", "出/体素方块.json"],
 ]
-["取材"."输入"]
+["sourcing"."input"]
 "数据/场景/粉色教堂/结构-地上" = "结构/地上.nbt"
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/场景/粉色教堂/体素方块" = "出/体素方块.json"
 
-[["取材"]]
-"名称" = "6-1-8碎块"
-"需要" = []
-"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
-"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
-"步骤" = [
+[["sourcing"]]
+"displayName" = "6-1-8碎块"
+"requires" = []
+"pendingMigration" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"publicVersion" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"steps" = [
   ["网格碎块", "src/模型/场景/极光宫殿.网格", "src/镜头/6-1-8/碎块.json", "-30.6,-3.9,172.6,-26.4,-1.6,176.9", "-30.6,10.6,172.6,-26.4,12.9,176.9"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "碎块/镜头/6-1-8/碎块" = "src/镜头/6-1-8/碎块.json"
 
-[["取材"]]
-"名称" = "暮初恶魂"
-"需要" = ["twilightforest", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "暮初恶魂"
+"requires" = ["twilightforest", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/暮初恶魂.模型.json", "暮初恶魂=twilightforest.client.model.entity.UrGhastModel", "--贴图", "闭眼=assets/twilightforest/textures/model/towerboss.png", "睁眼=assets/twilightforest/textures/model/towerboss_openeyes.png", "喷火=assets/twilightforest/textures/model/towerboss_fire.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/暮初恶魂" = "src/模型/角色/暮初恶魂.模型.json"
 "贴图/角色/暮初恶魂/喷火" = "src/模型/角色/暮初恶魂.模型.喷火.png"
 "贴图/角色/暮初恶魂/睁眼" = "src/模型/角色/暮初恶魂.模型.睁眼.png"
 "贴图/角色/暮初恶魂/闭眼" = "src/模型/角色/暮初恶魂.模型.闭眼.png"
 
-[["取材"]]
-"名称" = "雪怪首领"
-"需要" = ["twilightforest", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "雪怪首领"
+"requires" = ["twilightforest", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/雪怪首领.模型.json", "雪怪首领=twilightforest.client.model.entity.AlphaYetiModel", "--贴图", "雪怪首领=assets/twilightforest/textures/model/yetialpha.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/雪怪首领" = "src/模型/角色/雪怪首领.模型.json"
 "贴图/角色/雪怪首领" = "src/模型/角色/雪怪首领.模型.png"
 
-[["取材"]]
-"名称" = "乌鸦"
-"需要" = ["twilightforest", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "暮色森林 Twilight Forest 4.3.2508"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "乌鸦"
+"requires" = ["twilightforest", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "暮色森林 Twilight Forest 4.3.2508"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/乌鸦.模型.json", "乌鸦=twilightforest.client.model.entity.RavenModel", "--贴图", "乌鸦=assets/twilightforest/textures/model/raven.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/乌鸦" = "src/模型/角色/乌鸦.模型.json"
 "贴图/角色/乌鸦" = "src/模型/角色/乌鸦.模型.png"
 
-[["取材"]]
-"名称" = "巨人"
-"需要" = ["client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "巨人"
+"requires" = ["client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg}", "src/模型/角色/巨人.模型.json", "宽=net.minecraft.client.model.PlayerModel:m_170825_(0,false)@64x64", "细=net.minecraft.client.model.PlayerModel:m_170825_(0,true)@64x64", "内甲=net.minecraft.client.model.HumanoidModel:m_170681_(0.5,0)@64x32", "外甲=net.minecraft.client.model.HumanoidModel:m_170681_(1.0,0)@64x32", "--贴图"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/角色/巨人.贴图", "史蒂夫=assets/minecraft/textures/entity/player/wide/steve.png", "铁甲1=assets/minecraft/textures/models/armor/iron_layer_1.png", "铁甲2=assets/minecraft/textures/models/armor/iron_layer_2.png", "石剑=assets/minecraft/textures/item/stone_sword.png", "石镐=assets/minecraft/textures/item/stone_pickaxe.png"],
   ["复制", "{prism数据}/assets/skins/83/83c47d9fcadfc8a56d81e110ce0b652f24a189b5", "src/模型/角色/巨人.贴图/取材账号.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/巨人" = "src/模型/角色/巨人.模型.json"
 "贴图/角色/巨人/史蒂夫" = "src/模型/角色/巨人.贴图/史蒂夫.png"
 "贴图/角色/巨人/石剑" = "src/模型/角色/巨人.贴图/石剑.png"
@@ -1049,53 +1049,53 @@
 "贴图/角色/巨人/铁甲1" = "src/模型/角色/巨人.贴图/铁甲1.png"
 "贴图/角色/巨人/铁甲2" = "src/模型/角色/巨人.贴图/铁甲2.png"
 
-[["取材"]]
-"名称" = "云中小屋"
-"需要" = []
-"要开游戏" = true
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "云中小屋"
+"requires" = []
+"needsGame" = true
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=304,230,-264", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=254,158,-314", "to=354,198,-214", "out=src/模型/场景/云中小屋.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/云中小屋/图集" = "src/模型/场景/云中小屋.网格.png"
 "网格/云中小屋/头" = "src/模型/场景/云中小屋.网格.json"
 "网格/云中小屋/顶点" = "src/模型/场景/云中小屋.网格.bin"
 
-[["取材"]]
-"名称" = "6-1-7碎块"
-"需要" = []
-"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
-"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
-"步骤" = [
-  ["网格碎块", "src/模型/场景/雪怪洞窟.网格", "src/镜头/6-1-7/雪怪碎块.json", { "输出" = ["ts", "工具/一镜到底/雪怪管子.ts"] }],
+[["sourcing"]]
+"displayName" = "6-1-7碎块"
+"requires" = []
+"pendingMigration" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"publicVersion" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"steps" = [
+  ["网格碎块", "src/模型/场景/雪怪洞窟.网格", "src/镜头/6-1-7/雪怪碎块.json", { "output" = ["ts", "工具/一镜到底/雪怪管子.ts"] }],
   ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-7/雪怪碎块.json", "16", "56"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "碎块/镜头/6-1-7/雪怪碎块" = "src/镜头/6-1-7/雪怪碎块.json"
 
-[["取材"]]
-"名称" = "6-1-8b碎块"
-"需要" = []
-"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
-"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
-"步骤" = [
-  ["网格碎块", "src/模型/场景/云中小屋.网格", "src/镜头/6-1-8b/碎块.json", { "输出" = ["ts", "工具/一镜到底/巨人洞.ts"] }],
-  ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-8b/碎块.json", { "输出" = ["ts", "工具/一镜到底/巨人洞.ts", "分组"] }],
+[["sourcing"]]
+"displayName" = "6-1-8b碎块"
+"requires" = []
+"pendingMigration" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"publicVersion" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"steps" = [
+  ["网格碎块", "src/模型/场景/云中小屋.网格", "src/镜头/6-1-8b/碎块.json", { "output" = ["ts", "工具/一镜到底/巨人洞.ts"] }],
+  ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-8b/碎块.json", { "output" = ["ts", "工具/一镜到底/巨人洞.ts", "分组"] }],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "碎块/镜头/6-1-8b/碎块" = "src/镜头/6-1-8b/碎块.json"
 
-[["取材"]]
-"名称" = "古城"
-"需要" = []
-"要开游戏" = true
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "古城"
+"requires" = []
+"needsGame" = true
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "batch", "cam pos=-710,10,238 pitch=90 yaw=180 dim=minecraft:overworld", "mesh from=-760,-56,186 to=-660,4,290 origin=-720,-50,240 out=src/模型/场景/古城.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-796,10,233 pitch=90 yaw=180", "mesh from=-832,-56,124 to=-761,4,342 origin=-720,-50,240 out=src/模型/场景/古城西.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-630,10,233 pitch=90 yaw=180", "mesh from=-659,-56,124 to=-600,4,342 origin=-720,-50,240 out=src/模型/场景/古城东.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-710,10,155 pitch=90 yaw=180", "mesh from=-760,-56,124 to=-660,4,185 origin=-720,-50,240 out=src/模型/场景/古城北.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-710,10,316 pitch=90 yaw=180", "mesh from=-760,-56,291 to=-660,4,342 origin=-720,-50,240 out=src/模型/场景/古城南.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/古城/图集" = "src/模型/场景/古城.网格.png"
 "网格/古城/头" = "src/模型/场景/古城.网格.json"
 "网格/古城/顶点" = "src/模型/场景/古城.网格.bin"
@@ -1124,12 +1124,12 @@
 #      cmd execute in minecraft:overworld run setblock 20 200 25 air 清掉模板里唯一的拼图方块
 #   5. 女仆是模板自己生成的。她那顶铁魔法头盔读不进来，补一顶原版的魔女帽才显出来（geckolib 女仆不画护甲）：cmd execute in minecraft:overworld run
 #      item replace entity @e[type=touhou_little_maid:maid,limit=1] armor.head with minecraft:netherite_helmet；冻结时装备不同步给客户端，要 unfreeze 一两秒再 freeze
-[["取材"]]
-"名称" = "隐世之境一楼网格"
-"需要" = []
-"要开游戏" = true
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」，截图私有
-"步骤" = [
+[["sourcing"]]
+"displayName" = "隐世之境一楼网格"
+"requires" = []
+"needsGame" = true
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」，截图私有
+"steps" = [
   ["mcai", "cam", "pos=10.5,230,45", "look=10.5,205,13", "fov=70", "dim=minecraft:overworld"],
   ["mcai", "cmd", "time", "set", "2000"],
   ["mcai", "freeze"],
@@ -1138,7 +1138,7 @@
   ["mcai", "mesh", "from=0,200,0", "to=20,208,25", "origin=0,201,0", "out=src/模型/场景/隐世之境一楼.网格", "mark=minecraft:lantern,minecraft:candle,minecraft:soul_campfire,minecraft:light,minecraft:glow_lichen"],
   ["mcai", "unfreeze"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "截图/隐世之境/一楼机位" = "截图/隐世之境/01-一楼机位.png"
 "截图/隐世之境/女仆参考" = "截图/隐世之境/03-女仆参考.png"
 "截图/隐世之境/整体俯视" = "截图/隐世之境/02-整体俯视.png"
@@ -1148,58 +1148,58 @@
 
 # 隐世之境一楼网格换成归隐之地的草色：归隐之地是固定群系 cherry_grove（maidspell 1.9.3 data/touhou_little_maid_spell/dimension/the_retreat.json），
 # 原版 1.20.1 OverworldBiomes.cherryGrove 的草和树叶都是 #B6DB61。片场存档那块地方染的三种颜色（草方块顶、花簇的茎、藤蔓）从网格顶点色里量出来。只给《把回忆拼好给你》用，登记在作品侧。
-[["取材"]]
-"名称" = "隐世之境一楼网格-归隐之地"
-"作品" = "把回忆拼好给你"
-"需要" = []
-"公开版" = "不提取"  # 同 隐世之境一楼网格：网格走 Release
-"步骤" = [
+[["sourcing"]]
+"displayName" = "隐世之境一楼网格-归隐之地"
+"work" = "把回忆拼好给你"
+"requires" = []
+"publicVersion" = "不提取"  # 同 隐世之境一楼网格：网格走 Release
+"steps" = [
   ["python", "{脚本}/网格换群系色.py", "src/模型/场景/隐世之境一楼.网格.bin", "src/模型/场景/隐世之境一楼-归隐之地.网格.bin", "#b6db61", "#6bd550", "#79c05a", "#4fc12a"],
 ]
-["取材"."输入"]
+["sourcing"."input"]
 "网格/隐世之境一楼/顶点" = "src/模型/场景/隐世之境一楼.网格.bin"
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/隐世之境一楼/顶点-归隐之地" = "src/模型/场景/隐世之境一楼-归隐之地.网格.bin"
 
 # 归隐之地的樱花林（隐世之境窗外）：原版樱花树的木头、树叶，地上的草方块顶（灰的，按 cherry_grove 染 #B6DB61）和粉红色花簇。只给《把回忆拼好给你》用，登记在作品侧。
-[["取材"]]
-"名称" = "樱花林贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "樱花林贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/樱花林.贴图", "cherry_log=assets/minecraft/textures/block/cherry_log.png", "cherry_log_top=assets/minecraft/textures/block/cherry_log_top.png", "cherry_leaves=assets/minecraft/textures/block/cherry_leaves.png", "grass_block_top=assets/minecraft/textures/block/grass_block_top.png", "pink_petals=assets/minecraft/textures/block/pink_petals.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/场景/樱花林/*" = "src/模型/场景/樱花林.贴图/*.png"
 
 # 归隐之地窗外的远山（隐世之境窗外.tsx）：草方块侧面（泥土 + 草边，草边那层是灰的，按 cherry_grove 染 #B6DB61 盖上去）。坡下面露出来的泥土用 第一晚贴图 的 贴图/方块/泥土。只给《把回忆拼好给你》用，登记在作品侧。
-[["取材"]]
-"名称" = "樱花林远山贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "樱花林远山贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/樱花林远山.贴图", "grass_block_side=assets/minecraft/textures/block/grass_block_side.png", "grass_block_side_overlay=assets/minecraft/textures/block/grass_block_side_overlay.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/场景/樱花林远山/grass_block_side" = "src/模型/场景/樱花林远山.贴图/grass_block_side.png"
 "贴图/场景/樱花林远山/grass_block_side_overlay" = "src/模型/场景/樱花林远山.贴图/grass_block_side_overlay.png"
 
-[["取材"]]
-"名称" = "监守者"
-"需要" = ["client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "监守者"
+"requires" = ["client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/监守者.模型.json", "监守者=net.minecraft.client.model.WardenModel:m_233537_", "--动画", "钻出=net.minecraft.client.animation.definitions.WardenAnimation.f_232343_", "挖地=net.minecraft.client.animation.definitions.WardenAnimation.f_232344_", "吼叫=net.minecraft.client.animation.definitions.WardenAnimation.f_232345_", "嗅=net.minecraft.client.animation.definitions.WardenAnimation.f_232346_", "攻击=net.minecraft.client.animation.definitions.WardenAnimation.f_232347_", "音爆=net.minecraft.client.animation.definitions.WardenAnimation.f_232348_", "--贴图", "本体=assets/minecraft/textures/entity/warden/warden.png", "生物发光=assets/minecraft/textures/entity/warden/warden_bioluminescent_layer.png", "心脏=assets/minecraft/textures/entity/warden/warden_heart.png", "脉动斑纹1=assets/minecraft/textures/entity/warden/warden_pulsating_spots_1.png", "脉动斑纹2=assets/minecraft/textures/entity/warden/warden_pulsating_spots_2.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/监守者" = "src/模型/角色/监守者.模型.json"
 "贴图/角色/监守者/心脏" = "src/模型/角色/监守者.模型.心脏.png"
 "贴图/角色/监守者/本体" = "src/模型/角色/监守者.模型.本体.png"
@@ -1207,145 +1207,145 @@
 "贴图/角色/监守者/脉动斑纹1" = "src/模型/角色/监守者.模型.脉动斑纹1.png"
 "贴图/角色/监守者/脉动斑纹2" = "src/模型/角色/监守者.模型.脉动斑纹2.png"
 
-[["取材"]]
-"名称" = "羊毛"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "羊毛"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/羊毛.贴图", "assets/minecraft/textures/block/*_wool.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/羊毛/*" = "src/模型/物品/羊毛.贴图/*.png"
 
-[["取材"]]
-"名称" = "弓"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "弓"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/弓.贴图", "弓=assets/minecraft/textures/item/bow.png", "弓拉0=assets/minecraft/textures/item/bow_pulling_0.png", "弓拉1=assets/minecraft/textures/item/bow_pulling_1.png", "弓拉2=assets/minecraft/textures/item/bow_pulling_2.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/弓/*" = "src/模型/物品/弓.贴图/*.png"
 
-[["取材"]]
-"名称" = "箭"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "箭"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/箭.png", "arrow=assets/minecraft/textures/entity/projectiles/arrow.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/箭" = "src/模型/物品/箭.png"
 
-[["取材"]]
-"名称" = "箱子"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "箱子"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/箱子.png", "chest=assets/minecraft/textures/entity/chest/normal.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/箱子" = "src/模型/物品/箱子.png"
 
-[["取材"]]
-"名称" = "幽匿感测体"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "幽匿感测体"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/幽匿感测体.模型.json", "不活跃=minecraft:sculk_sensor[sculk_sensor_phase=inactive]", "活跃=minecraft:sculk_sensor[sculk_sensor_phase=active]"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/幽匿感测体.贴图", "assets/minecraft/textures/block/sculk_sensor_tendril_*.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/特效/幽匿感测体" = "src/模型/特效/幽匿感测体.模型.json"
 "贴图/特效/幽匿感测体" = "src/模型/特效/幽匿感测体.模型.png"
 "贴图/特效/幽匿感测体/*" = "src/模型/特效/幽匿感测体.贴图/*.png"
 
-[["取材"]]
-"名称" = "幽匿尖啸体"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "幽匿尖啸体"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/幽匿尖啸体.模型.json", "尖啸体=minecraft:sculk_shrieker[can_summon=true]"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/特效/幽匿尖啸体" = "src/模型/特效/幽匿尖啸体.模型.json"
 "贴图/特效/幽匿尖啸体" = "src/模型/特效/幽匿尖啸体.模型.png"
 
-[["取材"]]
-"名称" = "伤害数字"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "伤害数字"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/界面/伤害数字.字体.png", "ascii=assets/minecraft/textures/font/ascii.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/伤害数字" = "src/模型/界面/伤害数字.字体.png"
 
-[["取材"]]
-"名称" = "古城粒子"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "古城粒子"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/振动粒子.png", "vibration=assets/minecraft/textures/particle/vibration.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/尖啸声波.png", "shriek=assets/minecraft/textures/particle/shriek.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/方块碎屑.png", "sculk=assets/minecraft/textures/block/sculk.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/尖啸声波" = "src/模型/特效/尖啸声波.png"
 "贴图/特效/振动粒子" = "src/模型/特效/振动粒子.png"
 "贴图/特效/方块碎屑" = "src/模型/特效/方块碎屑.png"
 
-[["取材"]]
-"名称" = "书贴图"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "书贴图"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/书.贴图", "书界面=assets/minecraft/textures/gui/book.png", "书与笔=assets/minecraft/textures/item/writable_book.png", "成书=assets/minecraft/textures/item/written_book.png", "羽毛=assets/minecraft/textures/item/feather.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/书/*" = "src/模型/物品/书.贴图/*.png"
 
-[["取材"]]
-"名称" = "乔雷夫皮肤"
-"需要" = ["client-1.20.1"]
-"前置" = ["边城贴图"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft（steve 改色）"
-"许可" = "Mojang EULA（衍生）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "乔雷夫皮肤"
+"requires" = ["client-1.20.1"]
+"prerequisites" = ["边城贴图"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft（steve 改色）"
+"license" = "Mojang EULA（衍生）"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/乔雷夫皮肤.py"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/角色/乔雷夫" = "src/模型/角色/乔雷夫.png"
 
-[["取材"]]
-"名称" = "界面图标"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "界面图标"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/界面/贴图", "原版图标=assets/minecraft/textures/gui/icons.png", "唱片残片=assets/minecraft/textures/item/disc_fragment_5.png", "回响碎片=assets/minecraft/textures/item/echo_shard.png", "灵魂火把=assets/minecraft/textures/block/soul_torch.png", "煤炭=assets/minecraft/textures/item/coal.png", "紫水晶碎片=assets/minecraft/textures/item/amethyst_shard.png", "骨头=assets/minecraft/textures/item/bone.png", "蜡烛=assets/minecraft/textures/item/candle.png", "附魔之瓶=assets/minecraft/textures/item/experience_bottle.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/界面/原版图标" = "src/模型/界面/贴图/原版图标.png"
 "贴图/界面/唱片残片" = "src/模型/界面/贴图/唱片残片.png"
 "贴图/界面/回响碎片" = "src/模型/界面/贴图/回响碎片.png"
@@ -1356,151 +1356,151 @@
 "贴图/界面/附魔之瓶" = "src/模型/界面/贴图/附魔之瓶.png"
 "贴图/界面/骨头" = "src/模型/界面/贴图/骨头.png"
 
-[["取材"]]
-"名称" = "望远镜视野"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "望远镜视野"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/镜头/6-3-下坠/望远镜视野.png", "scope=assets/minecraft/textures/misc/spyglass_scope.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/镜头/6-3-下坠/望远镜视野" = "src/镜头/6-3-下坠/望远镜视野.png"
 
-[["取材"]]
-"名称" = "城堡砖"
-"需要" = ["twilightforest"]
-"公开版" = "提取"
-"来源" = "暮色森林"
-"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "城堡砖"
+"requires" = ["twilightforest"]
+"publicVersion" = "提取"
+"source" = "暮色森林"
+"license" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"steps" = [
   ["导出模型", "{jar:twilightforest}", "src/镜头/6-1-9b/城堡砖.png", "brick=assets/twilightforest/textures/block/castle_brick.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/镜头/6-1-9b/城堡砖" = "src/镜头/6-1-9b/城堡砖.png"
 
-[["取材"]]
-"名称" = "恼鬼"
-"需要" = ["client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "恼鬼"
+"requires" = ["client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/恼鬼.模型.json", "恼鬼=net.minecraft.client.model.VexModel:m_171046_", "--贴图", "恼鬼=assets/minecraft/textures/entity/illager/vex.png", "蓄力=assets/minecraft/textures/entity/illager/vex_charging.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/恼鬼" = "src/模型/角色/恼鬼.模型.json"
 "贴图/角色/恼鬼/恼鬼" = "src/模型/角色/恼鬼.模型.恼鬼.png"
 "贴图/角色/恼鬼/蓄力" = "src/模型/角色/恼鬼.模型.蓄力.png"
 
 # 原版苦力怕（把回忆拼好给你 正片要用，库/生物/苦力怕.tsx）。CreeperModel.createBodyLayer（m_170525_，膨胀 0）自带 64×32 贴图尺寸
-[["取材"]]
-"名称" = "苦力怕"
-"需要" = ["client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "苦力怕"
+"requires" = ["client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/苦力怕.模型.json", "苦力怕=net.minecraft.client.model.CreeperModel:m_170525_(0)", "--贴图", "苦力怕=assets/minecraft/textures/entity/creeper/creeper.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/苦力怕" = "src/模型/角色/苦力怕.模型.json"
 "贴图/角色/苦力怕" = "src/模型/角色/苦力怕.模型.png"
 
-[["取材"]]
-"名称" = "幽灵马"
-"需要" = ["irons_spellbooks", "client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1；铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
-"许可" = "All Rights Reserved；Mojang EULA"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "幽灵马"
+"requires" = ["irons_spellbooks", "client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1；铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"license" = "All Rights Reserved；Mojang EULA"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1,irons_spellbooks}", "src/模型/角色/幽灵马.模型.json", "幽灵马=net.minecraft.client.model.HorseModel:m_170669_(0)@64x64", "--贴图", "幽灵马=assets/irons_spellbooks/textures/entity/horse/spectral_steed.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/幽灵马" = "src/模型/角色/幽灵马.模型.json"
 "贴图/角色/幽灵马" = "src/模型/角色/幽灵马.模型.png"
 
-[["取材"]]
-"名称" = "护盾术"
-"需要" = ["irons_spellbooks", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
-"许可" = "All Rights Reserved"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "护盾术"
+"requires" = ["irons_spellbooks", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"license" = "All Rights Reserved"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:irons_spellbooks}", "src/模型/特效/护盾术.模型.json", "护盾=io.redspace.ironsspellbooks.entity.spells.shield.ShieldModel:createBodyLayer", "边框=io.redspace.ironsspellbooks.entity.spells.shield.ShieldTrimModel:createBodyLayer", "--贴图", "护盾=assets/irons_spellbooks/textures/entity/shield/shield_overlay.png", "边框=assets/irons_spellbooks/textures/entity/shield/shield_trim.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/特效/护盾术" = "src/模型/特效/护盾术.模型.json"
 "贴图/特效/护盾术/护盾" = "src/模型/特效/护盾术.模型.护盾.png"
 "贴图/特效/护盾术/边框" = "src/模型/特效/护盾术.模型.边框.png"
 
-[["取材"]]
-"名称" = "苦力怕头"
-"需要" = ["irons_spellbooks", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
-"许可" = "All Rights Reserved"
-"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "苦力怕头"
+"requires" = ["irons_spellbooks", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"license" = "All Rights Reserved"
+"licenseParts" = { "model" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:irons_spellbooks}", "src/模型/特效/苦力怕头.模型.json", "苦力怕头=io.redspace.ironsspellbooks.entity.spells.skull_projectile.SkullProjectileRenderer:createBodyLayer", "--贴图", "苦力怕头=assets/irons_spellbooks/textures/entity/creeper_head.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/特效/苦力怕头" = "src/模型/特效/苦力怕头.模型.json"
 "贴图/特效/苦力怕头" = "src/模型/特效/苦力怕头.模型.png"
 
-[["取材"]]
-"名称" = "杂项粒子"
-"需要" = ["irons_spellbooks", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1；铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
-"许可" = "All Rights Reserved；Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "杂项粒子"
+"requires" = ["irons_spellbooks", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1；铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"license" = "All Rights Reserved；Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/杂项粒子.贴图", "assets/minecraft/textures/particle/flame.png", "assets/minecraft/textures/particle/sga_*.png", "assets/minecraft/textures/particle/sonic_boom_*.png", "assets/minecraft/textures/particle/glow.png"],
   ["导出模型", "{jar:irons_spellbooks}", "src/模型/特效/杂项粒子.贴图", "assets/irons_spellbooks/textures/particle/blastwave_*.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/杂项粒子/*" = "src/模型/特效/杂项粒子.贴图/*.png"
 
-[["取材"]]
-"名称" = "杂项物品"
-"需要" = ["quark", "waystones", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "Quark 4.0-462；Waystones 14.1.21；原版 Minecraft 1.20.1"
-"许可" = "All rights reserved；CC BY-NC-SA 3.0（mods.toml 指向仓库 LICENSE.md，未离线核）；Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "杂项物品"
+"requires" = ["quark", "waystones", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "Quark 4.0-462；Waystones 14.1.21；原版 Minecraft 1.20.1"
+"license" = "All rights reserved；CC BY-NC-SA 3.0（mods.toml 指向仓库 LICENSE.md，未离线核）；Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/杂项物品.贴图", "钻石护腿=assets/minecraft/textures/item/diamond_leggings.png"],
   ["导出模型", "{jar:quark}", "src/模型/物品/杂项物品.贴图", "火把箭=assets/quark/textures/item/torch_arrow.png", "古卷=assets/quark/textures/item/ancient_tome.png"],
   ["导出模型", "{jar:waystones}", "src/模型/物品/杂项物品.贴图", "传送石=assets/waystones/textures/item/warp_stone.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/杂项物品.贴图", "铁剑=assets/minecraft/textures/item/iron_sword.png", "附魔光效=assets/minecraft/textures/misc/enchanted_glint_item.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/杂项物品/*" = "src/模型/物品/杂项物品.贴图/*.png"
 
-[["取材"]]
-"名称" = "火把"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "火把"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/火把.模型.json", "火把=minecraft:block/torch", "墙上火把=minecraft:wall_torch[facing=north]"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/火把" = "src/模型/物品/火把.模型.json"
 "贴图/物品/火把" = "src/模型/物品/火把.模型.png"
 
-[["取材"]]
-"名称" = "网格图集"
-"需要" = []
-"公开版" = "提取"
-"公开版提取" = "内置:网格图集"
-"来源" = "mcai mesh 从游戏方块图集抠出的场景贴图、体素方块表 方块表.png（原版和各模组的贴图）；刘心忠皮肤里照抄的原版村民头"
-"许可" = "Mojang EULA + 各模组许可（见 参考模型库/工具/取材/模组清单.json）"
-"说明" = "仓库里只有同名的 *.图集配方.json（每格取自哪个 jar 的哪张贴图；刘心忠.png 另有自己画的部分 刘心忠.自制.png），取材/重建图集.py 从下载的 jar 拼回原图，按像素 sha256 核对。私有仓库里由 mcai mesh（古城、云中小屋……）、关键帧方块、追兵皮肤 顺带导出，这条没有自己的步骤"
-["取材"."产物"]
+[["sourcing"]]
+"displayName" = "网格图集"
+"requires" = []
+"publicVersion" = "提取"
+"publicExtract" = "内置:网格图集"
+"source" = "mcai mesh 从游戏方块图集抠出的场景贴图、体素方块表 方块表.png（原版和各模组的贴图）；刘心忠皮肤里照抄的原版村民头"
+"license" = "Mojang EULA + 各模组许可（见 参考模型库/工具/取材/模组清单.json）"
+"note" = "仓库里只有同名的 *.图集配方.json（每格取自哪个 jar 的哪张贴图；刘心忠.png 另有自己画的部分 刘心忠.自制.png），取材/重建图集.py 从下载的 jar 拼回原图，按像素 sha256 核对。私有仓库里由 mcai mesh（古城、云中小屋……）、关键帧方块、追兵皮肤 顺带导出，这条没有自己的步骤"
+["sourcing"."artifacts"]
 "网格/九头蛇巢穴/图集" = "src/模型/场景/九头蛇巢穴.网格.png"
 "网格/云中小屋/图集" = "src/模型/场景/云中小屋.网格.png"
 "网格/传送门海岛/图集" = "src/模型/场景/传送门海岛.网格.png"
@@ -1576,17 +1576,17 @@
 
 # 把回忆拼好给你 第 9～11 句门口之夜：你种樱花树苗、插告示牌、放烟花。火花 spark_0～7 照 particles/firework.json 倒着排（年轻的火花用 spark_7，越老越小）；
 # 闪光 flash 是烟花炸开那一下的白光；手持图标照 models/item/*.json 的 layer0（樱花树苗手持用方块贴图）。只有本作品用，产物登记在作品资产表。
-[["取材"]]
-"名称" = "门口之夜贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "门口之夜贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/门口之夜", "火花0=assets/minecraft/textures/particle/spark_0.png", "火花1=assets/minecraft/textures/particle/spark_1.png", "火花2=assets/minecraft/textures/particle/spark_2.png", "火花3=assets/minecraft/textures/particle/spark_3.png", "火花4=assets/minecraft/textures/particle/spark_4.png", "火花5=assets/minecraft/textures/particle/spark_5.png", "火花6=assets/minecraft/textures/particle/spark_6.png", "火花7=assets/minecraft/textures/particle/spark_7.png", "闪光=assets/minecraft/textures/particle/flash.png", "烟花火箭=assets/minecraft/textures/item/firework_rocket.png", "樱花树苗=assets/minecraft/textures/block/cherry_sapling.png", "橡木告示牌图标=assets/minecraft/textures/item/oak_sign.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/粒子/火花/0" = "src/模型/门口之夜/火花0.png"
 "贴图/粒子/火花/1" = "src/模型/门口之夜/火花1.png"
 "贴图/粒子/火花/2" = "src/模型/门口之夜/火花2.png"
@@ -1602,16 +1602,16 @@
 
 # 把回忆拼好给你 第 9～11 句门口之夜的声音：种树苗（樱花树苗的放置声，原版 SoundType.CHERRY_SAPLING）、烟花发射、炸开、闪烁。
 # 插告示牌用共用的 音效/block.wood.place.*，不另取。镜头离烟花不到 16 格，照原版 FireworkParticles.Starter 用近处那套（不带 _far）。
-[["取材"]]
-"名称" = "门口之夜音效"
-"作品" = "把回忆拼好给你"
-"公开版" = "提取"
-"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "门口之夜音效"
+"work" = "把回忆拼好给你"
+"publicVersion" = "提取"
+"source" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"license" = "Mojang EULA"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "block.cherry_sapling.place", "entity.firework_rocket.launch", "entity.firework_rocket.blast", "entity.firework_rocket.large_blast", "entity.firework_rocket.twinkle"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/把回忆拼好给你/block.cherry_sapling.place.1" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.1.ogg"
 "音效/把回忆拼好给你/block.cherry_sapling.place.2" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.2.ogg"
 "音效/把回忆拼好给你/block.cherry_sapling.place.3" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.3.ogg"
@@ -1625,17 +1625,17 @@
 
 # 把回忆拼好给你 第 5 句末地（场/2-末地）：末地的天（renderEndSky 铺六面）、末地传送门的星空层（rendertype_end_portal 的 Sampler0 是 end_sky、Sampler1 是 end_portal）、经验球（4×4 格 16 像素一格）。
 # 末地石、基岩、龙蛋、火把、黑曜石方块表里都有，不另取。只有本作品用，产物登记在作品资产表：anim --work 把回忆拼好给你 extract 末地贴图
-[["取材"]]
-"名称" = "末地贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "末地贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/末地", "末地天空=assets/minecraft/textures/environment/end_sky.png", "末地传送门=assets/minecraft/textures/entity/end_portal.png", "经验球=assets/minecraft/textures/entity/experience_orb.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/环境/末地天空" = "src/模型/末地/末地天空.png"
 "贴图/特效/末地传送门" = "src/模型/末地/末地传送门.png"
 "贴图/特效/经验球" = "src/模型/末地/经验球.png"
@@ -1643,46 +1643,46 @@
 # 把回忆拼好给你 第 0 镜、片尾的启动器（作品 场/2-启动器）用的像素字：只收作品 界面/启动器字文案.txt 里的字，格式、取法同「把回忆拼好给你像素字」。
 # 现在没有画面用（第 0 镜、片尾换成原版「选择世界」界面，场/2-选择世界）；配方留着，资产锁里那份字节能复现。
 # 单开一张表：并进 像素字文案.txt 会让 字体/把回忆拼好给你/像素字 换版本，已有画面跟着重渲。
-[["取材"]]
-"名称" = "把回忆拼好给你启动器字"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
-"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "把回忆拼好给你启动器字"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"license" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "启动器字.json", "{作品根}/界面/启动器字文案.txt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/把回忆拼好给你/启动器字" = "启动器字.json"
 
 # 原版 1.20 樱花木船（库/物品/船.tsx；把回忆拼好给你 第 4 句日落划船）。BoatModel.createBodyModel（m_246613_）调同类静态的 createChildren（m_246203_），
 # 自带 128×64 贴图尺寸；部件 bottom、back、front、right、left、left_paddle、right_paddle、water_patch，划桨的转角在 船.tsx 照 BoatModel.animatePaddle 算
-[["取材"]]
-"名称" = "樱花木船"
-"需要" = ["client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "樱花木船"
+"requires" = ["client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/物品/船.模型.json", "船=net.minecraft.client.model.BoatModel:m_246613_()", "--贴图", "樱花木=assets/minecraft/textures/entity/boat/cherry.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/船" = "src/模型/物品/船.模型.json"
 "贴图/物品/船/樱花木" = "src/模型/物品/船.模型.png"
 
 # 把回忆拼好给你 第 4 句日落划船：原版船桨划水声（Boat.tick 里桨转过 π/4 时 playSound(paddle_water)，音量 1、音高 0.8～1.2）。
 # 只有本作品用，登记在作品资产表；id 多一层 把回忆拼好给你/，不落进「音效」那条的 音效/* 通配。
-[["取材"]]
-"名称" = "日落划船音效"
-"作品" = "把回忆拼好给你"
-"公开版" = "提取"
-"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "日落划船音效"
+"work" = "把回忆拼好给你"
+"publicVersion" = "提取"
+"source" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"license" = "Mojang EULA"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.boat.paddle_water"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/把回忆拼好给你/entity.boat.paddle_water.1" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.1.ogg"
 "音效/把回忆拼好给你/entity.boat.paddle_water.2" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.2.ogg"
 "音效/把回忆拼好给你/entity.boat.paddle_water.3" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.3.ogg"
@@ -1695,17 +1695,17 @@
 # 把回忆拼好给你 第 6、7 句（场/2-雷雨）：雷雨夜的雨（WeatherEffectRenderer 用的 rain.png）、光柱（信标光柱贴图）、女仆界面里的空槽图标和玩家背包里几样东西。
 # 只有本作品用，产物登记在作品资产表：anim --work 把回忆拼好给你 extract 雷雨破云原版贴图
 # 背包里的樱花树苗和第 9 句共用「门口之夜贴图」那条取的 贴图/物品/樱花树苗（同一张 block/cherry_sapling.png），这里不另取。
-[["取材"]]
-"名称" = "雷雨破云原版贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "雷雨破云原版贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/雷雨破云", "雨=assets/minecraft/textures/environment/rain.png", "信标光柱=assets/minecraft/textures/entity/beacon_beam.png", "空剑槽=assets/minecraft/textures/item/empty_slot_sword.png", "空头盔槽=assets/minecraft/textures/item/empty_armor_slot_helmet.png", "空胸甲槽=assets/minecraft/textures/item/empty_armor_slot_chestplate.png", "空护腿槽=assets/minecraft/textures/item/empty_armor_slot_leggings.png", "空靴子槽=assets/minecraft/textures/item/empty_armor_slot_boots.png", "空盾牌槽=assets/minecraft/textures/item/empty_armor_slot_shield.png", "面包=assets/minecraft/textures/item/bread.png", "橡木门=assets/minecraft/textures/item/oak_door.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/环境/雨" = "src/模型/雷雨破云/雨.png"
 "贴图/特效/信标光柱" = "src/模型/雷雨破云/信标光柱.png"
 "贴图/界面/空槽/剑" = "src/模型/雷雨破云/空剑槽.png"
@@ -1718,17 +1718,17 @@
 "贴图/物品/橡木门" = "src/模型/雷雨破云/橡木门.png"
 
 # 第 6 句末到第 7 句浮出来的女仆界面（车万女仆 1.5.3 的 MaidMainContainerGui 背包页，按 EmptyBackpackContainerScreen 的 blit 坐标拼）。
-[["取材"]]
-"名称" = "女仆界面贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["touhoulittlemaid"]
-"公开版" = "提取"
-"来源" = "车万女仆 Touhou Little Maid 1.5.3"
-"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "女仆界面贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["touhoulittlemaid"]
+"publicVersion" = "提取"
+"source" = "车万女仆 Touhou Little Maid 1.5.3"
+"license" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"steps" = [
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/女仆界面", "主=assets/touhou_little_maid/textures/gui/maid_gui_main.png", "侧=assets/touhou_little_maid/textures/gui/maid_gui_side.png", "按钮=assets/touhou_little_maid/textures/gui/maid_gui_button.png", "背包=assets/touhou_little_maid/textures/gui/maid_gui_backpack.png", "背饰槽=assets/touhou_little_maid/textures/slot/empty_back_show_slot.png", "饰品按钮=assets/touhou_little_maid/textures/gui/bauble_button.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/界面/女仆界面/主" = "src/模型/女仆界面/主.png"
 "贴图/界面/女仆界面/侧" = "src/模型/女仆界面/侧.png"
 "贴图/界面/女仆界面/按钮" = "src/模型/女仆界面/按钮.png"
@@ -1737,30 +1737,30 @@
 "贴图/界面/女仆界面/饰品按钮" = "src/模型/女仆界面/饰品按钮.png"
 
 # 第 7 句你放进女仆副手槽的那本书：铁魔法的学徒法术书（gold_spell_book，物品模型 item/generated，图标就是这张）。
-[["取材"]]
-"名称" = "学徒法术书"
-"作品" = "把回忆拼好给你"
-"需要" = ["irons_spellbooks"]
-"公开版" = "提取"
-"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "学徒法术书"
+"work" = "把回忆拼好给你"
+"requires" = ["irons_spellbooks"]
+"publicVersion" = "提取"
+"source" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"license" = "All Rights Reserved"
+"steps" = [
   ["导出模型", "{jar:irons_spellbooks}", "src/模型/物品/学徒法术书.png", "书=assets/irons_spellbooks/textures/item/gold_spell_book.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/学徒法术书" = "src/模型/物品/学徒法术书.png"
 
 # 第 6 句的雨声、第 7 句光柱起来那一下（原版信标激活）。铁魔法的烈阳射线、装书声是闭源的，不拿。
-[["取材"]]
-"名称" = "雷雨破云音效"
-"作品" = "把回忆拼好给你"
-"公开版" = "提取"
-"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "雷雨破云音效"
+"work" = "把回忆拼好给你"
+"publicVersion" = "提取"
+"source" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"license" = "Mojang EULA"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "weather.rain", "block.beacon.activate"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/把回忆拼好给你/weather.rain.1" = "src/音效/把回忆拼好给你/weather.rain.1.ogg"
 "音效/把回忆拼好给你/weather.rain.2" = "src/音效/把回忆拼好给你/weather.rain.2.ogg"
 "音效/把回忆拼好给你/weather.rain.3" = "src/音效/把回忆拼好给你/weather.rain.3.ogg"
@@ -1769,47 +1769,47 @@
 
 # 女仆界面上的字（模组版本号、当前任务「空闲」、血量护甲经验的数）：只收 界面/女仆界面字文案.txt 里的字，格式同「把回忆拼好给你像素字」。
 # 单开一张表：不并进 像素字文案.txt，免得那份资产换版本、别的段跟着变指纹。
-[["取材"]]
-"名称" = "把回忆拼好给你女仆界面字"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
-"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "把回忆拼好给你女仆界面字"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"license" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "女仆界面字.json", "{作品根}/界面/女仆界面字文案.txt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/把回忆拼好给你/女仆界面字" = "女仆界面字.json"
 
 # 原版僵尸（库/生物/僵尸.tsx；把回忆拼好给你 第 2 句第一晚地面上晃过去的那只）。ZombieRenderer 吃 ModelLayers.ZOMBIE，
 # LayerDefinitions 里它是 HumanoidModel.createMesh（m_170681_，CubeDeformation.NONE、y 偏移 0）配 64×64（javap 10-24 核过）；贴图 entity/zombie/zombie.png
-[["取材"]]
-"名称" = "僵尸"
-"需要" = ["client-1.20.1", "client-1.20.1-srg"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "僵尸"
+"requires" = ["client-1.20.1", "client-1.20.1-srg"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/僵尸.模型.json", "僵尸=net.minecraft.client.model.HumanoidModel:m_170681_(0,0)@64x64", "--贴图", "僵尸=assets/minecraft/textures/entity/zombie/zombie.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/僵尸" = "src/模型/角色/僵尸.模型.json"
 "贴图/角色/僵尸" = "src/模型/角色/僵尸.模型.png"
 
 # 把回忆拼好给你 第 2 句「挖三填一」：挖方块的十级裂纹（destroy_stage_0～9，原版 crumbling 叠在方块上）、泥土（破坏粒子和掉落物的贴图；草方块的粒子贴图也是泥土）、
 # 死亡画面「重生」「标题屏幕」两个按钮（gui/widgets.png，按钮底 200×20 在 v 46/66/86：不能按、平常、指着）。只有本作品用，登记在作品资产表：anim --work 把回忆拼好给你 extract 第一晚贴图
-[["取材"]]
-"名称" = "第一晚贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "第一晚贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/第一晚", "裂纹0=assets/minecraft/textures/block/destroy_stage_0.png", "裂纹1=assets/minecraft/textures/block/destroy_stage_1.png", "裂纹2=assets/minecraft/textures/block/destroy_stage_2.png", "裂纹3=assets/minecraft/textures/block/destroy_stage_3.png", "裂纹4=assets/minecraft/textures/block/destroy_stage_4.png", "裂纹5=assets/minecraft/textures/block/destroy_stage_5.png", "裂纹6=assets/minecraft/textures/block/destroy_stage_6.png", "裂纹7=assets/minecraft/textures/block/destroy_stage_7.png", "裂纹8=assets/minecraft/textures/block/destroy_stage_8.png", "裂纹9=assets/minecraft/textures/block/destroy_stage_9.png", "泥土=assets/minecraft/textures/block/dirt.png", "按钮=assets/minecraft/textures/gui/widgets.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/方块裂纹/0" = "src/模型/第一晚/裂纹0.png"
 "贴图/特效/方块裂纹/1" = "src/模型/第一晚/裂纹1.png"
 "贴图/特效/方块裂纹/2" = "src/模型/第一晚/裂纹2.png"
@@ -1826,32 +1826,32 @@
 # 把回忆拼好给你 第 2 句的游戏像素字（聊天栏三条死亡消息、死亡画面）：只收 场/2-第一晚/像素字文案.txt 里的字，格式同「把回忆拼好给你像素字」那一条。
 # 现在没有画面用（用户 10-24 定第 2 句只留挖三填一，死亡消息、死亡画面删了）；配方留着，资产锁里那份字节能复现。
 # 单开一张表、不并进 界面/像素字文案.txt：那张表别的段在用，加字会让它换版本、别的段指纹跟着变。加字的步骤同那一条。
-[["取材"]]
-"名称" = "第一晚像素字"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
-"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "第一晚像素字"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"license" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "第一晚像素字.json", "{作品根}/场/2-第一晚/像素字文案.txt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/把回忆拼好给你/第一晚像素字" = "第一晚像素字.json"
 
 # 把回忆拼好给你 第 2 句地面上晃过去的僵尸的低吼。挖、填土、捡东西、点按钮、摔死的声音用共用的（block.grass.break、block.gravel.break、
 # entity.item.pickup、ui.button.click、entity.player.big_fall、entity.player.hurt），不另取：原版 block.gravel.place 和 block.gravel.break、
 # entity.player.death 和 entity.player.hurt 在 sounds.json 里是同一组文件。id 多一层 把回忆拼好给你/，不落进「音效」那条的 音效/* 通配。
-[["取材"]]
-"名称" = "第一晚音效"
-"作品" = "把回忆拼好给你"
-"公开版" = "提取"
-"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "第一晚音效"
+"work" = "把回忆拼好给你"
+"publicVersion" = "提取"
+"source" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"license" = "Mojang EULA"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.zombie.ambient"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/把回忆拼好给你/entity.zombie.ambient.1" = "src/音效/把回忆拼好给你/entity.zombie.ambient.1.ogg"
 "音效/把回忆拼好给你/entity.zombie.ambient.2" = "src/音效/把回忆拼好给你/entity.zombie.ambient.2.ogg"
 "音效/把回忆拼好给你/entity.zombie.ambient.3" = "src/音效/把回忆拼好给你/entity.zombie.ambient.3.ogg"
@@ -1860,18 +1860,18 @@
 # 荧光框的模型是 models/block/template_item_frame.json（空框）、template_item_frame_map.json（放了地图），贴图 #back = block/glow_item_frame、#wood = block/birch_planks；
 # 形状照模型写在 地点/照片墙.tsx 里，这里只取两张贴图。声音：荧光框放入、取出（sounds.json 里四个都指 entity/itemframe/*），考场收卷铃用原版钟 block.bell.use
 # （bell_use01、02 各登记一个；sounds.json 里同一个文件按音高 0.93/0.95/0.97 列了三遍）。只有 把回忆拼好给你 用：anim --work 把回忆拼好给你 extract 照片墙原版
-[["取材"]]
-"名称" = "照片墙原版"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "照片墙原版"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/荧光物品展示框", "背板=assets/minecraft/textures/block/glow_item_frame.png", "木框=assets/minecraft/textures/block/birch_planks.png"],
   ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.glow_item_frame.add_item", "entity.glow_item_frame.remove_item", "block.bell.use"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/荧光物品展示框/*" = "src/模型/物品/荧光物品展示框/*.png"
 "音效/把回忆拼好给你/entity.glow_item_frame.add_item.1" = "src/音效/把回忆拼好给你/entity.glow_item_frame.add_item.1.ogg"
 "音效/把回忆拼好给你/entity.glow_item_frame.add_item.2" = "src/音效/把回忆拼好给你/entity.glow_item_frame.add_item.2.ogg"
@@ -1887,115 +1887,115 @@
 # 把回忆拼好给你 第 0 镜、片尾的原版「选择世界」界面（作品 场/2-选择世界）：泥土底（gui/options_background.png，16×16，界面上一个贴图像素 2 个界面像素，
 # 上下两条乘 0.25、列表区乘 0.125，AbstractSelectionList.render）和存档那一行图标上的播放箭头（gui/world_selection.png，256×256：u 0 v 0 平常、v 32 指着图标）。
 # 只有本作品用，登记在作品资产表：anim --work 把回忆拼好给你 extract 选择世界贴图
-[["取材"]]
-"名称" = "选择世界贴图"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "选择世界贴图"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/选择世界", "泥土底=assets/minecraft/textures/gui/options_background.png", "播放箭头=assets/minecraft/textures/gui/world_selection.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/界面/选项背景" = "src/模型/选择世界/泥土底.png"
 "贴图/界面/世界选择" = "src/模型/选择世界/播放箭头.png"
 
 # 把回忆拼好给你 第 0 镜、片尾原版「选择世界」界面上的字（存档名、上次游玩时间、游戏模式和版本、搜索框的光标）：只收作品 界面/选择世界字文案.txt 里的字，
 # 格式、取法同「把回忆拼好给你像素字」。单开一张表：不让别的字体资产换版本
-[["取材"]]
-"名称" = "把回忆拼好给你选择世界字"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
-"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "把回忆拼好给你选择世界字"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"license" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "选择世界字.json", "{作品根}/界面/选择世界字文案.txt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/把回忆拼好给你/选择世界字" = "选择世界字.json"
 
 # 把回忆拼好给你 告示牌上的字（第 9 句写上去、第 13～15 句一直在，地点/告示牌字.tsx）：只收 地点/告示牌字文案.txt 里的字，格式同「把回忆拼好给你像素字」那一条。
 # 单开一张表、不并进 界面/像素字文案.txt（道理同「第一晚像素字」：那张表别的段在用，加字会让它换版本）。牌上的字用户还没定，换字只动这张表。加字的步骤同那一条。
-[["取材"]]
-"名称" = "告示牌像素字"
-"作品" = "把回忆拼好给你"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
-"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "告示牌像素字"
+"work" = "把回忆拼好给你"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"license" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "告示牌字.json", "{作品根}/地点/告示牌字文案.txt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "字体/把回忆拼好给你/告示牌字" = "告示牌字.json"
 
 # 原版生物的 setupAnim 自动翻成姿态程序（docs/决策/0007-字节码翻译动作.md）：混淆客户端 + 官方映射，engine/anim/姿态程序.ts 求值。
 # 只给新内容用；库/生物 里已有的手抄版不动（对照见 库/生物/姿态程序对照.test.ts）
-[["取材"]]
-"名称" = "苦力怕动作"
-"需要" = ["client-1.20.1", "client-1.20.1-mappings"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "苦力怕动作"
+"requires" = ["client-1.20.1", "client-1.20.1-mappings"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["动作翻译", "src/动作/角色/苦力怕.动作.json", "net.minecraft.client.model.CreeperModel", "--jar", "{jar:client-1.20.1}", "--映射", "proguard:{jar:client-1.20.1-mappings}"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "动作/角色/苦力怕" = "src/动作/角色/苦力怕.动作.json"
 
-[["取材"]]
-"名称" = "僵尸动作"
-"需要" = ["client-1.20.1", "client-1.20.1-mappings"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "僵尸动作"
+"requires" = ["client-1.20.1", "client-1.20.1-mappings"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["动作翻译", "src/动作/角色/僵尸.动作.json", "net.minecraft.client.model.ZombieModel", "--jar", "{jar:client-1.20.1}", "--映射", "proguard:{jar:client-1.20.1-mappings}"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "动作/角色/僵尸" = "src/动作/角色/僵尸.动作.json"
 
 # 地标网格（anim extract --backfill-mesh 按网格头反填，不重导：只记范围，不跑）
 
-[["取材"]]
-"名称" = "九头蛇巢穴网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "九头蛇巢穴网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=-727.5,80,1288.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=-778,-8,1238", "to=-678,50,1338", "origin=-727.5,-8,1288.5", "mark=twilightforest:hydra_boss_spawner", "out=src/模型/场景/九头蛇巢穴.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/九头蛇巢穴/图集" = "src/模型/场景/九头蛇巢穴.网格.png"
 "网格/九头蛇巢穴/头" = "src/模型/场景/九头蛇巢穴.网格.json"
 "网格/九头蛇巢穴/顶点" = "src/模型/场景/九头蛇巢穴.网格.bin"
 
-[["取材"]]
-"名称" = "传送门海岛网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "传送门海岛网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=1373.5,130,192.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=1293,40,112", "to=1453,100,272", "origin=1373.5,63,192.5", "out=src/模型/场景/传送门海岛.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/传送门海岛/图集" = "src/模型/场景/传送门海岛.网格.png"
 "网格/传送门海岛/头" = "src/模型/场景/传送门海岛.网格.json"
 "网格/传送门海岛/顶点" = "src/模型/场景/传送门海岛.网格.bin"
 
-[["取材"]]
-"名称" = "古城4x网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "古城4x网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=-592,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=-656,-60,176", "to=-529,4,303", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东1.网格"],
   ["mcai", "cam", "pos=-592,34,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
@@ -2087,7 +2087,7 @@
   ["mcai", "cam", "pos=-1200,-10,235.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=-1232,-60,170", "to=-1169,-40,300", "origin=-720,-50,240", "mark=minecraft:sculk_sensor", "out=src/模型/场景/古城4x-西4.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/古城4x/东1/图集" = "src/模型/场景/古城4x-东1.网格.png"
 "网格/古城4x/东1/头" = "src/模型/场景/古城4x-东1.网格.json"
 "网格/古城4x/东1/顶点" = "src/模型/场景/古城4x-东1.网格.bin"
@@ -2224,73 +2224,73 @@
 "网格/古城4x/西4/头" = "src/模型/场景/古城4x-西4.网格.json"
 "网格/古城4x/西4/顶点" = "src/模型/场景/古城4x-西4.网格.bin"
 
-[["取材"]]
-"名称" = "古城洞口网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "古城洞口网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=-788.5,33,217", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=-832,-30,207", "to=-746,3,226", "origin=-720,-50,240", "out=src/模型/场景/古城洞口.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/古城洞口/图集" = "src/模型/场景/古城洞口.网格.png"
 "网格/古城洞口/头" = "src/模型/场景/古城洞口.网格.json"
 "网格/古城洞口/顶点" = "src/模型/场景/古城洞口.网格.bin"
 
-[["取材"]]
-"名称" = "古城西洞网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "古城西洞网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=-916,100,215.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=-1000,-40,150", "to=-833,70,280", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker", "out=src/模型/场景/古城西洞.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/古城西洞/图集" = "src/模型/场景/古城西洞.网格.png"
 "网格/古城西洞/头" = "src/模型/场景/古城西洞.网格.json"
 "网格/古城西洞/顶点" = "src/模型/场景/古城西洞.网格.bin"
 
-[["取材"]]
-"名称" = "城主府书房网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "城主府书房网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=25.5,217,4.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=20,180,0", "to=30,187,8", "origin=20,181,0", "out=src/模型/场景/城主府书房.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/城主府书房/图集" = "src/模型/场景/城主府书房.网格.png"
 "网格/城主府书房/头" = "src/模型/场景/城主府书房.网格.json"
 "网格/城主府书房/顶点" = "src/模型/场景/城主府书房.网格.bin"
 
-[["取材"]]
-"名称" = "城门卫兵室网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "城门卫兵室网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=44.5,216,3", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=40,180,0", "to=48,186,5", "origin=40,181,0", "out=src/模型/场景/城门卫兵室.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/城门卫兵室/图集" = "src/模型/场景/城门卫兵室.网格.png"
 "网格/城门卫兵室/头" = "src/模型/场景/城门卫兵室.网格.json"
 "网格/城门卫兵室/顶点" = "src/模型/场景/城门卫兵室.网格.bin"
 
-[["取材"]]
-"名称" = "基地窗户网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "基地窗户网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=0.5,271,0", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=-7,230,-9", "to=7,241,8", "origin=0,230,0", "out=src/模型/场景/基地窗户-云杉窗户.网格"],
   ["mcai", "cam", "pos=0.5,271,0", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
@@ -2300,7 +2300,7 @@
   ["mcai", "cam", "pos=0.5,271,0", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=-7,230,-9", "to=7,241,8", "origin=0,230,0", "out=src/模型/场景/基地窗户-镶框玻璃.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/基地窗户/云杉窗户/图集" = "src/模型/场景/基地窗户-云杉窗户.网格.png"
 "网格/基地窗户/云杉窗户/头" = "src/模型/场景/基地窗户-云杉窗户.网格.json"
 "网格/基地窗户/云杉窗户/顶点" = "src/模型/场景/基地窗户-云杉窗户.网格.bin"
@@ -2314,107 +2314,107 @@
 "网格/基地窗户/镶框玻璃/头" = "src/模型/场景/基地窗户-镶框玻璃.网格.json"
 "网格/基地窗户/镶框玻璃/顶点" = "src/模型/场景/基地窗户-镶框玻璃.网格.bin"
 
-[["取材"]]
-"名称" = "娜迦庭院网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "娜迦庭院网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=180,100,497", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=0,-6,393", "to=359,70,600", "origin=264.5,5,488.5", "mark=minecraft:fire,twilightforest:naga_boss_spawner,twilightforest:twilight_portal", "out=src/模型/场景/娜迦庭院.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/娜迦庭院/图集" = "src/模型/场景/娜迦庭院.网格.png"
 "网格/娜迦庭院/头" = "src/模型/场景/娜迦庭院.网格.json"
 "网格/娜迦庭院/顶点" = "src/模型/场景/娜迦庭院.网格.bin"
 
-[["取材"]]
-"名称" = "巫妖怪塔网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "巫妖怪塔网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=0,125,235.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=-43,0,209", "to=42,95,261", "origin=0,0,235.5", "mark=twilightforest:lich_boss_spawner", "out=src/模型/场景/巫妖怪塔.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/巫妖怪塔/图集" = "src/模型/场景/巫妖怪塔.网格.png"
 "网格/巫妖怪塔/头" = "src/模型/场景/巫妖怪塔.网格.json"
 "网格/巫妖怪塔/顶点" = "src/模型/场景/巫妖怪塔.网格.bin"
 
-[["取材"]]
-"名称" = "幽冥高塔网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "幽冥高塔网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=536.5,215,244.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=481,0,177", "to=591,185,311", "origin=536.5,0,244.5", "mark=twilightforest:ur_ghast_boss_spawner", "out=src/模型/场景/幽冥高塔.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/幽冥高塔/图集" = "src/模型/场景/幽冥高塔.网格.png"
 "网格/幽冥高塔/头" = "src/模型/场景/幽冥高塔.网格.json"
 "网格/幽冥高塔/顶点" = "src/模型/场景/幽冥高塔.网格.bin"
 
-[["取材"]]
-"名称" = "暮色传送门网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "暮色传送门网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=1373,94,200", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
   ["mcai", "mesh", "from=1372,64,199", "to=1373,64,200", "origin=1373.5,63,192.5", "out=src/模型/场景/暮色传送门.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/暮色传送门/图集" = "src/模型/场景/暮色传送门.网格.png"
 "网格/暮色传送门/头" = "src/模型/场景/暮色传送门.网格.json"
 "网格/暮色传送门/顶点" = "src/模型/场景/暮色传送门.网格.bin"
 
-[["取材"]]
-"名称" = "极光宫殿网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "极光宫殿网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=-482,226,478.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=-534,0,436", "to=-431,196,520", "origin=-482,0,478.5", "mark=twilightforest:snow_queen_boss_spawner", "out=src/模型/场景/极光宫殿.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/极光宫殿/图集" = "src/模型/场景/极光宫殿.网格.png"
 "网格/极光宫殿/头" = "src/模型/场景/极光宫殿.网格.json"
 "网格/极光宫殿/顶点" = "src/模型/场景/极光宫殿.网格.bin"
 
-[["取材"]]
-"名称" = "终焉高原城堡网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "终焉高原城堡网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=-87,235,-482", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=-600,-14,-640", "to=425,205,-325", "origin=-87,-14,-482", "out=src/模型/场景/终焉高原城堡.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/终焉高原城堡/图集" = "src/模型/场景/终焉高原城堡.网格.png"
 "网格/终焉高原城堡/头" = "src/模型/场景/终焉高原城堡.网格.json"
 "网格/终焉高原城堡/顶点" = "src/模型/场景/终焉高原城堡.网格.bin"
 
-[["取材"]]
-"名称" = "雪怪洞窟网格"
-"需要" = []
-"要开游戏" = true
-"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
-"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
-"步骤" = [
+[["sourcing"]]
+"displayName" = "雪怪洞窟网格"
+"requires" = []
+"needsGame" = true
+"noReExtract" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」
+"steps" = [
   ["mcai", "cam", "pos=-199.5,80,552.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
   ["mcai", "mesh", "from=-250,-8,502", "to=-150,50,602", "origin=-199.5,-8,552.5", "mark=twilightforest:alpha_yeti_boss_spawner", "out=src/模型/场景/雪怪洞窟.网格"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/雪怪洞窟/图集" = "src/模型/场景/雪怪洞窟.网格.png"
 "网格/雪怪洞窟/头" = "src/模型/场景/雪怪洞窟.网格.json"
 "网格/雪怪洞窟/顶点" = "src/模型/场景/雪怪洞窟.网格.bin"
@@ -2422,31 +2422,31 @@
 # ===== 作品 亚波伦不放水（用户 11-09 定：诡厄巫法 + 启示录、娘化亚波伦用 4911 的 YSM 版）。产物都登记在作品资产表：anim --work 亚波伦不放水 extract <名称> =====
 
 # 聚晶轮盘的背景：FocusRadialMenuScreen 画在屏幕正中的 256×256 齿轮纹（50% 透明是代码里设的，贴图本身不带）。
-[["取材"]]
-"名称" = "聚晶轮盘"
-"作品" = "亚波伦不放水"
-"需要" = ["goety"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "聚晶轮盘"
+"work" = "亚波伦不放水"
+"requires" = ["goety"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   ["导出模型", "{jar:goety}", "src/模型/界面/聚晶轮盘.png", "聚晶轮盘=assets/goety/textures/gui/focus_wheel.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/界面/聚晶轮盘" = "src/模型/界面/聚晶轮盘.png"
 
 # 本体 124 个聚晶加空聚晶（empty_focus）的背包图标，轮盘每格画的就是它。名单照 ModItems 的注册顺序，文件名 = 注册名；
 # 图标照 models/item/<注册名>.json 的 layer0 取（贴图名和注册名对不上的不少：fireball_focus → minor_fireball_spell.png）。
 # 两个 jar 一起给是照装了启示录的样子解析模型：启示录盖了 7 个聚晶的模型（加 owner_halo_* 覆盖），默认的 layer0 没变，字节都取自 Goety。
 # call、troop、recall 三个有激活态图标（predicate active = 1），没取：轮盘上画的是物品默认态。
-[["取材"]]
-"名称" = "诡厄巫法聚晶图标"
-"作品" = "亚波伦不放水"
-"需要" = ["goety", "goety_revelation"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "诡厄巫法聚晶图标"
+"work" = "亚波伦不放水"
+"requires" = ["goety", "goety_revelation"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/goety", "--jar", "{jar:goety}", "--jar", "{jar:goety_revelation}", "--命名空间", "goety", "--来源", "{产物来源}",
     "empty_focus", "vexing_focus", "biting_focus", "feast_focus", "teeth_focus", "shredding_focus", "illusion_focus", "ignite_focus",
     "soul_bolt_focus", "magic_bolt_focus", "sword_focus", "soul_light_focus", "glow_light_focus", "illuminate_focus", "crafting_focus", "iron_hide_focus",
@@ -2466,104 +2466,104 @@
     "stellar_focus", "void_flash_focus", "watching_focus", "blasting_focus", "snaring_focus",
   ],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/聚晶/goety/*" = "src/模型/物品/聚晶/goety/*.png"
 
 # 启示录的 9 个聚晶：有实现的 4 个（revelation、heretic、wither_quietus、ice）和 5 个空壳（EmptySpell：dementor、dragon_nirvana、dragon_skyrocket、shadow_clone、nether_meteor）。
-[["取材"]]
-"名称" = "启示录聚晶图标"
-"作品" = "亚波伦不放水"
-"需要" = ["goety_revelation"]
-"公开版" = "提取"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "启示录聚晶图标"
+"work" = "亚波伦不放水"
+"requires" = ["goety_revelation"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"license" = "All Rights Reserved"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/goety_revelation", "--jar", "{jar:goety_revelation}", "--命名空间", "goety_revelation", "--来源", "{产物来源}",
     "revelation_focus", "heretic_focus", "wither_quietus_focus", "dementor_focus", "dragon_nirvana_focus", "dragon_skyrocket_focus", "ice_focus", "shadow_clone_focus",
     "nether_meteor_focus",
   ],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/聚晶/goety_revelation/*" = "src/模型/物品/聚晶/goety_revelation/*.png"
 
 # 启示录给戴光环的人换的聚晶图标：本体 7 个聚晶的物品模型被启示录盖掉，持有者有光环（owner_halo_state = 1，ItemPropertiesInit.FOCUS_OWNER_STATE_ASCENSION）
 # 或 owner_halo_odamane = 1（只有 wither_skull_focus）时换成启示录画的这一张。轮盘用不用这一版没定，先入库备着。文件名 = 本体聚晶的注册名。
-[["取材"]]
-"名称" = "光环版聚晶图标"
-"作品" = "亚波伦不放水"
-"需要" = ["goety", "goety_revelation"]
-"公开版" = "提取"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（盖在 Goety 2.5.60.6 的物品模型上）"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "光环版聚晶图标"
+"work" = "亚波伦不放水"
+"requires" = ["goety", "goety_revelation"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6（盖在 Goety 2.5.60.6 的物品模型上）"
+"license" = "All Rights Reserved"
+"steps" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/光环版", "--jar", "{jar:goety}", "--jar", "{jar:goety_revelation}", "--命名空间", "goety", "--谓词", "owner_halo_state", "--来源", "{产物来源}",
     "fireball_focus", "barricade_focus", "cyclone_focus", "hail_focus", "skull_focus", "updraft_focus"],
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/光环版", "--jar", "{jar:goety}", "--jar", "{jar:goety_revelation}", "--命名空间", "goety", "--谓词", "owner_halo_odamane", "--来源", "{产物来源}",
     "wither_skull_focus"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/聚晶/光环版/*" = "src/模型/物品/聚晶/光环版/*.png"
 
 # 下界魔杖（goety:nether_staff，zh_cn「下界魔杖」；用户 11-09 定亚波伦手持）：models/item/nether_staff.json 是 Blockbench 做的元素模型（17 个元素，32×32 贴图），
 # 没有 Forge 的 separate_transforms、没有 parent；display.thirdperson_righthand 只有平移 [0, -7, 1]。启示录没盖这个模型。
-[["取材"]]
-"名称" = "下界魔杖"
-"作品" = "亚波伦不放水"
-"需要" = ["goety"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "下界魔杖"
+"work" = "亚波伦不放水"
+"requires" = ["goety"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   ["导出模型", "{jar:goety}", "src/模型/物品/下界魔杖.模型.json", "杖=goety:item/nether_staff"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/物品/下界魔杖" = "src/模型/物品/下界魔杖.模型.json"
 "贴图/物品/下界魔杖" = "src/模型/物品/下界魔杖.模型.png"
 
 # 下界岩的方块贴图：封面草稿（核对-封面草稿）的地面先铺一张平的，没做地形。
-[["取材"]]
-"名称" = "亚波伦下界岩"
-"作品" = "亚波伦不放水"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦下界岩"
+"work" = "亚波伦不放水"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/方块/下界岩.png", "netherrack=assets/minecraft/textures/block/netherrack.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/方块/下界岩" = "src/模型/方块/下界岩.png"
 
 # 熔岩、岩浆块的方块贴图：封面草稿二稿的地面上嵌几处熔岩池、池边一圈岩浆块（都是动画贴图的整条，画面里只取第一帧）。
-[["取材"]]
-"名称" = "亚波伦熔岩"
-"作品" = "亚波伦不放水"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦熔岩"
+"work" = "亚波伦不放水"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/模型/方块/熔岩.png", "lava_still=assets/minecraft/textures/block/lava_still.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/方块/岩浆块.png", "magma=assets/minecraft/textures/block/magma.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/方块/熔岩" = "src/模型/方块/熔岩.png"
 "贴图/方块/岩浆块" = "src/模型/方块/岩浆块.png"
 
 # 亚波伦的 boss 血条（ApollyonBossbar，都是 256×256 的图集，按代码里的 UV 切）：boss_bar 是现在的完整版（一二阶段边框、弓形装饰），
 # boss_bar_simple 是配置 simpleApollyonBossbar 开着时的简版，old_boss_bar、old_boss_bar_nether 是旧式（renderClassicApollyonBar，主世界、下界各一张）。
 # 名牌没有自己的贴图：名字和称号是游戏字体配 dissolve_text 着色器画的（DissolveApollyonFont），溶解用的噪声是 noise.png；血条里流动的「宇宙」填充是 cosmic 着色器。着色器没取。
-[["取材"]]
-"名称" = "亚波伦血条"
-"作品" = "亚波伦不放水"
-"需要" = ["goety_revelation"]
-"公开版" = "提取"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦血条"
+"work" = "亚波伦不放水"
+"requires" = ["goety_revelation"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"license" = "All Rights Reserved"
+"steps" = [
   ["导出模型", "{jar:goety_revelation}", "src/模型/界面/亚波伦血条.贴图", "boss_bar=assets/goety_revelation/textures/ui/boss_bar/apollyon/boss_bar.png", "boss_bar_simple=assets/goety_revelation/textures/ui/boss_bar/apollyon/boss_bar_simple.png", "old_boss_bar=assets/goety_revelation/textures/ui/boss_bar/apollyon/old/boss_bar.png", "old_boss_bar_nether=assets/goety_revelation/textures/ui/boss_bar/apollyon/old/boss_bar_nether.png", "noise=assets/goety_revelation/textures/ui/noise.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/界面/亚波伦血条/boss_bar" = "src/模型/界面/亚波伦血条.贴图/boss_bar.png"
 "贴图/界面/亚波伦血条/boss_bar_simple" = "src/模型/界面/亚波伦血条.贴图/boss_bar_simple.png"
 "贴图/界面/亚波伦血条/old_boss_bar" = "src/模型/界面/亚波伦血条.贴图/old_boss_bar.png"
@@ -2573,52 +2573,52 @@
 # 晋升之环（goety_revelation:ascension_halo，zh_cn「晋升之环」；用户 11-10 定史蒂夫戴它、娘化亚波伦头后的光环也换成它）戴在头后的那张贴图：
 # PlayerHaloLayer 把它贴在一张 16×16 的零厚度片上（PlayerHaloModel），画法见 作品/亚波伦不放水/特效/晋升之环形.ts 文件头。
 # 同目录的 halo_second.png（getMeteoring() > 0 时换用）、broken_halo.png（破碎之环）、halo3.png（没有类引用）和物品图标 item/curio/halo.png 没取，本片用不到。
-[["取材"]]
-"名称" = "晋升之环"
-"作品" = "亚波伦不放水"
-"需要" = ["goety_revelation"]
-"公开版" = "提取"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "晋升之环"
+"work" = "亚波伦不放水"
+"requires" = ["goety_revelation"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"license" = "All Rights Reserved"
+"steps" = [
   ["导出模型", "{jar:goety_revelation}", "src/模型/特效/晋升之环.贴图", "halo=assets/goety_revelation/textures/entity/player/halo.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/特效/晋升之环/halo" = "src/模型/特效/晋升之环.贴图/halo.png"
 
 # 下界亚波伦进二阶段后客户端下的猩红雨（ClientEventsHandler 画，ClientLevelExpandedContext.isNetherScarletRaining 要 isSecondPhase；配置 enableScarletRain 默认开）：贴图在里层 RevelationFix jar 里，先解出里层再读。
 # 同时还有后处理着色器（the_end、aberration 等），没取。
-[["取材"]]
-"名称" = "猩红雨"
-"作品" = "亚波伦不放水"
-"需要" = ["goety_revelation"]
-"公开版" = "提取"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6 内嵌的 RevelationFix 4.9"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "猩红雨"
+"work" = "亚波伦不放水"
+"requires" = ["goety_revelation"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6 内嵌的 RevelationFix 4.9"
+"license" = "All Rights Reserved"
+"steps" = [
   ["python", "-m", "zipfile", "-e", "{jar:goety_revelation}", "外层"],
   ["导出模型", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "src/模型/环境/猩红雨.png", "猩红雨=assets/revelationfix/textures/environment/rain.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/环境/猩红雨" = "src/模型/环境/猩红雨.png"
 
 # 娘化亚波伦：4911 的 YSM 玩家模型包（明文基岩几何，358 根骨骼、568 个方盒、逐面 UV，贴图 512×512）。骨骼一根不去：
 # ysmGlow* 是发光层、bone62 浮块和 ysmGlowbone24 大光环只在 default 上有像素，显示哪些由生物声明定（store 只增不改，重导要 --replace）。
 # 5 张贴图是 ysm.json files.player.texture 的 5 套皮肤：default 是下界二阶段那套，另外 4 张是使徒和亚波伦别的阶段；包的默认皮肤写的是 4default。
 # ysm.json 一并存下：height_scale 0.7、皮肤表、动画文件表、许可（GPL v3）都在里面。
-[["取材"]]
-"名称" = "娘化亚波伦模型"
-"作品" = "亚波伦不放水"
-"需要" = ["ysm-使徒娘化"]
-"公开版" = "提取"
-"来源" = "使徒娘化版 YSM 玩家模型包（作者 4911，B 站 BV1GSoUBYEK7 简介的蓝奏云链接）"
-"许可" = "GPL v3（ysm.json）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "娘化亚波伦模型"
+"work" = "亚波伦不放水"
+"requires" = ["ysm-使徒娘化"]
+"publicVersion" = "提取"
+"source" = "使徒娘化版 YSM 玩家模型包（作者 4911，B 站 BV1GSoUBYEK7 简介的蓝奏云链接）"
+"license" = "GPL v3（ysm.json）"
+"steps" = [
   ["导出模型", "{jar:ysm-使徒娘化}", "src/模型/角色/娘化亚波伦.模型.json", "models/main.json", "textures/default.png"],
   ["导出模型", "{jar:ysm-使徒娘化}", "src/模型/角色/娘化亚波伦.贴图", "2default=textures/2default.png", "3default=textures/3default.png", "4default=textures/4default.png", "5default=textures/5default.png"],
   ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "ysm.json", "src/模型/角色/娘化亚波伦.ysm.json"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/角色/娘化亚波伦" = "src/模型/角色/娘化亚波伦.模型.json"
 "贴图/角色/娘化亚波伦/default" = "src/模型/角色/娘化亚波伦.模型.png"
 "贴图/角色/娘化亚波伦/2default" = "src/模型/角色/娘化亚波伦.贴图/2default.png"
@@ -2630,14 +2630,14 @@
 # 娘化亚波伦的动画：ysm.json files.player.animation 列的 10 个文件原样拷出（id 最后一段 = 那张表的键），外加 animation_controllers 的那一个。
 # main 是 50 段主动作（走跑跳飞、眨眼的并行层），extra 是 8 段表情动作；tac、slashblade、tlm、parcool、swem、carryon 是联动模组的动作。
 # 控制器文件里 8 个控制器都只有一个空的 default 状态。投射物、载具的模型和动画（arrow、boat 等）没取。
-[["取材"]]
-"名称" = "娘化亚波伦动画"
-"作品" = "亚波伦不放水"
-"需要" = ["ysm-使徒娘化"]
-"公开版" = "提取"
-"来源" = "使徒娘化版 YSM 玩家模型包（作者 4911，B 站 BV1GSoUBYEK7 简介的蓝奏云链接）"
-"许可" = "GPL v3（ysm.json）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "娘化亚波伦动画"
+"work" = "亚波伦不放水"
+"requires" = ["ysm-使徒娘化"]
+"publicVersion" = "提取"
+"source" = "使徒娘化版 YSM 玩家模型包（作者 4911，B 站 BV1GSoUBYEK7 简介的蓝奏云链接）"
+"license" = "GPL v3（ysm.json）"
+"steps" = [
   ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/main.animation.json", "src/动画/角色/娘化亚波伦/main.animation.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/arm.animation.json", "src/动画/角色/娘化亚波伦/arm.animation.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/extra.animation.json", "src/动画/角色/娘化亚波伦/extra.animation.json"],
@@ -2650,7 +2650,7 @@
   ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/fp.arm.animation.json", "src/动画/角色/娘化亚波伦/fp_arm.animation.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "controller/main.animation_controllers.json", "src/动画/角色/娘化亚波伦/控制器.animation_controllers.json"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "动画/角色/娘化亚波伦/main" = "src/动画/角色/娘化亚波伦/main.animation.json"
 "动画/角色/娘化亚波伦/arm" = "src/动画/角色/娘化亚波伦/arm.animation.json"
 "动画/角色/娘化亚波伦/extra" = "src/动画/角色/娘化亚波伦/extra.animation.json"
@@ -2666,19 +2666,19 @@
 # 粉色婚礼教堂的结构文件：整合包《诡厄：使徒》1.3.1 里层 graemod-1.0.0.jar 的 data/graemod/structures/0721.nbt（87×83×97，sha256 01888225…）。
 # y 0～5 是地下室、19 个实体全在地下室，用户 11-09 定不入镜：裁成 y ≥ 6、整体下移 6 格、实体清空（87×77×97）。原文件不入库。
 # 整合包「保留所有权益」，结构原先按私有登记；用户 11-13 定全部公开，可见性改发布、随 Release 发（字节仍在数据根 私有/）。
-[["取材"]]
-"名称" = "粉色教堂结构"
-"作品" = "亚波伦不放水"
-"需要" = ["诡厄使徒整合包"]
-"公开版" = "不提取"  # 字节随 Release 发；有整合包的人也可以照这条自己裁
-"可见性" = "发布"
-"许可部分" = ["结构"]
-"来源" = "整合包《诡厄：使徒》1.3.1（落烟雨辰；教堂是群友做的）"
-"许可" = "保留所有权益（BBSMC）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "粉色教堂结构"
+"work" = "亚波伦不放水"
+"requires" = ["诡厄使徒整合包"]
+"publicVersion" = "不提取"  # 字节随 Release 发；有整合包的人也可以照这条自己裁
+"visibility" = "发布"
+"licenseParts" = ["结构"]
+"source" = "整合包《诡厄：使徒》1.3.1（落烟雨辰；教堂是群友做的）"
+"license" = "保留所有权益（BBSMC）"
+"steps" = [
   ["python", "{脚本}/裁结构.py", "{jar:诡厄使徒整合包}", "client-overrides/mods/graemod-1.0.0.jar", "data/graemod/structures/0721.nbt", "6", "src/结构/粉色教堂-地上.nbt"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/场景/粉色教堂/结构-地上" = "src/结构/粉色教堂-地上.nbt"
 
 # 粉色婚礼教堂的网格：上面裁好的结构用数据包带进实例「取材客户端-诡厄」的存档「教堂片场」，主世界高空手放（世界 = 裁后模板 + (0,200,0)），mcai mesh 导出。
@@ -2696,20 +2696,20 @@
 #   5. cmd time set 6000；cmd gamerule commandModificationBlockLimit 2000000；cmd execute in minecraft:overworld run fillbiome -16 190 -16 111 290 111 minecraft:plains
 #      （草方块顶、花簇的茎按群系染色，统一成平原 #91BD59；整合包里教堂所在维度的群系没查到，Agent 暂定，要换用 网格换群系色.py）；freeze；
 #      cmd execute in minecraft:overworld run place template mcanim:church 0 200 0
-[["取材"]]
-"名称" = "粉色教堂网格"
-"作品" = "亚波伦不放水"
-"需要" = ["诡厄使徒整合包", "client-1.20.1", "goety", "cataclysm", "lootr", "youkaishomecoming", "alexscaves", "prefab", "bosses_of_mass_destruction", "celestial_core", "sophisticatedbackpacks", "quark", "twilightforest"]
-"要开游戏" = true
-"公开版" = "不提取"  # 字节随 Release 发
-"可见性" = "发布"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "粉色教堂网格"
+"work" = "亚波伦不放水"
+"requires" = ["诡厄使徒整合包", "client-1.20.1", "goety", "cataclysm", "lootr", "youkaishomecoming", "alexscaves", "prefab", "bosses_of_mass_destruction", "celestial_core", "sophisticatedbackpacks", "quark", "twilightforest"]
+"needsGame" = true
+"publicVersion" = "不提取"  # 字节随 Release 发
+"visibility" = "发布"
+"steps" = [
   ["mcai", "cam", "pos=43.5,300,48.5", "pitch=90", "yaw=180", "fov=70", "dim=minecraft:overworld"],
   ["mcai", "cmd", "time", "set", "6000"],
   ["mcai", "freeze"],
   ["mcai", "mesh", "from=0,200,0", "to=86,276,96", "origin=0,194,0", "out=src/模型/场景/粉色教堂.网格", "mark=minecraft:glowstone,minecraft:ochre_froglight,minecraft:lantern,minecraft:end_rod,minecraft:pink_candle,minecraft:soul_fire,alexscaves:radon_lamp_pink,goety:purpur_lamp"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "网格/粉色教堂/图集" = "src/模型/场景/粉色教堂.网格.png"
 "网格/粉色教堂/头" = "src/模型/场景/粉色教堂.网格.json"
 "网格/粉色教堂/顶点" = "src/模型/场景/粉色教堂.网格.bin"
@@ -2718,14 +2718,14 @@
 
 # 本体的实体贴图、粒子贴图：71 个法术的法术类、它们生成的实体（含落地后再生成的次生实体）、渲染器里写到的贴图，逐个读反编译源码收的。
 # id = 贴图/法术/goety/<jar 里 assets/goety/textures/ 之下的路径去掉 .png>；一个目录一步、一行产物。hellfire、magic_fire、biomine、tidal_surge 这些数字结尾的是逐帧动画（帧序在渲染器里算）。
-[["取材"]]
-"名称" = "亚波伦法术贴图"
-"作品" = "亚波伦不放水"
-"需要" = ["goety"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦法术贴图"
+"work" = "亚波伦不放水"
+"requires" = ["goety"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/corrupted", "assets/goety/textures/entity/corrupted/beacon_beam_core.png", "assets/goety/textures/entity/corrupted/beacon_beam_glow.png", "assets/goety/textures/entity/corrupted/beacon_beam_main.png"],
   ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/monolith", "assets/goety/textures/entity/monolith/glacial_wall.png", "assets/goety/textures/entity/monolith/glacial_wall_crack_1.png", "assets/goety/textures/entity/monolith/glacial_wall_crack_2.png", "assets/goety/textures/entity/monolith/totemic_bomb.png", "assets/goety/textures/entity/monolith/totemic_bomb_glow.png", "assets/goety/textures/entity/monolith/totemic_bomb_glow2.png", "assets/goety/textures/entity/monolith/totemic_bomb_glow3.png", "assets/goety/textures/entity/monolith/totemic_wall.png", "assets/goety/textures/entity/monolith/volcano.png", "assets/goety/textures/entity/monolith/volcano_active.png"],
   ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/monolith/poison_quill_vine", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_anemone.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_anemone_glow.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine_glow.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine_glow_original.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine_original.png"],
@@ -2748,7 +2748,7 @@
   ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/water_jet", "assets/goety/textures/entity/water_jet/jet_inner.png", "assets/goety/textures/entity/water_jet/jet_outer.png"],
   ["导出模型", "{jar:goety}", "src/贴图/法术/goety/particle", "assets/goety/textures/particle/additive_effect1.png", "assets/goety/textures/particle/additive_effect2.png", "assets/goety/textures/particle/additive_effect3.png", "assets/goety/textures/particle/additive_effect4.png", "assets/goety/textures/particle/additive_effect5.png", "assets/goety/textures/particle/additive_effect6.png", "assets/goety/textures/particle/additive_effect7.png", "assets/goety/textures/particle/aoe_indicator.png", "assets/goety/textures/particle/aura.png", "assets/goety/textures/particle/big_electric_1.png", "assets/goety/textures/particle/big_electric_2.png", "assets/goety/textures/particle/big_electric_3.png", "assets/goety/textures/particle/big_fire_1.png", "assets/goety/textures/particle/big_fire_2.png", "assets/goety/textures/particle/big_fire_3.png", "assets/goety/textures/particle/big_fire_4.png", "assets/goety/textures/particle/big_fire_5.png", "assets/goety/textures/particle/big_fire_6.png", "assets/goety/textures/particle/big_fire_7.png", "assets/goety/textures/particle/big_fire_8.png", "assets/goety/textures/particle/big_fire_drop_1.png", "assets/goety/textures/particle/big_fire_drop_2.png", "assets/goety/textures/particle/big_fire_drop_3.png", "assets/goety/textures/particle/big_fire_drop_4.png", "assets/goety/textures/particle/big_fire_drop_5.png", "assets/goety/textures/particle/big_fire_drop_6.png", "assets/goety/textures/particle/big_fire_drop_7.png", "assets/goety/textures/particle/big_fire_drop_8.png", "assets/goety/textures/particle/big_fire_ground_1.png", "assets/goety/textures/particle/big_fire_ground_2.png", "assets/goety/textures/particle/big_fire_ground_3.png", "assets/goety/textures/particle/big_fire_ground_4.png", "assets/goety/textures/particle/big_fire_ground_5.png", "assets/goety/textures/particle/big_fire_ground_6.png", "assets/goety/textures/particle/big_fire_ground_7.png", "assets/goety/textures/particle/big_fire_ground_8.png", "assets/goety/textures/particle/big_soul_fire_1.png", "assets/goety/textures/particle/big_soul_fire_2.png", "assets/goety/textures/particle/big_soul_fire_3.png", "assets/goety/textures/particle/big_soul_fire_4.png", "assets/goety/textures/particle/big_soul_fire_5.png", "assets/goety/textures/particle/big_soul_fire_6.png", "assets/goety/textures/particle/big_soul_fire_7.png", "assets/goety/textures/particle/big_soul_fire_8.png", "assets/goety/textures/particle/bullet_effect1.png", "assets/goety/textures/particle/bullet_effect2.png", "assets/goety/textures/particle/bullet_effect3.png", "assets/goety/textures/particle/bullet_effect4.png", "assets/goety/textures/particle/bullet_effect5.png", "assets/goety/textures/particle/bullet_effect6.png", "assets/goety/textures/particle/bullet_effect7.png", "assets/goety/textures/particle/circle_explode1.png", "assets/goety/textures/particle/circle_explode2.png", "assets/goety/textures/particle/circle_explode3.png", "assets/goety/textures/particle/circle_explode4.png", "assets/goety/textures/particle/circle_explode5.png", "assets/goety/textures/particle/circle_explode6.png", "assets/goety/textures/particle/circle_explode7.png", "assets/goety/textures/particle/circle_explode8.png", "assets/goety/textures/particle/crack_1.png", "assets/goety/textures/particle/crack_2.png", "assets/goety/textures/particle/crack_3.png", "assets/goety/textures/particle/crack_4.png", "assets/goety/textures/particle/crack_5.png", "assets/goety/textures/particle/crack_6.png", "assets/goety/textures/particle/cult_spell_0.png", "assets/goety/textures/particle/cult_spell_1.png", "assets/goety/textures/particle/cult_spell_2.png", "assets/goety/textures/particle/cult_spell_3.png", "assets/goety/textures/particle/cult_spell_4.png", "assets/goety/textures/particle/cult_spell_5.png", "assets/goety/textures/particle/cult_spell_6.png", "assets/goety/textures/particle/cult_spell_7.png", "assets/goety/textures/particle/electric_1.png", "assets/goety/textures/particle/electric_10.png", "assets/goety/textures/particle/electric_11.png", "assets/goety/textures/particle/electric_12.png", "assets/goety/textures/particle/electric_13.png", "assets/goety/textures/particle/electric_14.png", "assets/goety/textures/particle/electric_15.png", "assets/goety/textures/particle/electric_16.png", "assets/goety/textures/particle/electric_2.png", "assets/goety/textures/particle/electric_3.png", "assets/goety/textures/particle/electric_4.png", "assets/goety/textures/particle/electric_5.png", "assets/goety/textures/particle/electric_6.png", "assets/goety/textures/particle/electric_7.png", "assets/goety/textures/particle/electric_8.png", "assets/goety/textures/particle/electric_9.png", "assets/goety/textures/particle/fly1.png", "assets/goety/textures/particle/fly2.png", "assets/goety/textures/particle/fly3.png", "assets/goety/textures/particle/fog_cloud.png", "assets/goety/textures/particle/frost_1.png", "assets/goety/textures/particle/frost_2.png", "assets/goety/textures/particle/frost_3.png", "assets/goety/textures/particle/frost_4.png", "assets/goety/textures/particle/frost_5.png", "assets/goety/textures/particle/frost_6.png", "assets/goety/textures/particle/gather_trail.png", "assets/goety/textures/particle/god_ray1.png", "assets/goety/textures/particle/god_ray2.png", "assets/goety/textures/particle/god_ray3.png", "assets/goety/textures/particle/god_ray4.png", "assets/goety/textures/particle/heal.png", "assets/goety/textures/particle/magic_bolt.png", "assets/goety/textures/particle/mine_pulse.png", "assets/goety/textures/particle/mine_pulse2.png", "assets/goety/textures/particle/mine_pulse3.png", "assets/goety/textures/particle/mine_pulse4.png", "assets/goety/textures/particle/necro_bolt_base.png", "assets/goety/textures/particle/necro_bolt_base_colorless.png", "assets/goety/textures/particle/necro_bolt_mid.png", "assets/goety/textures/particle/necro_bolt_top.png", "assets/goety/textures/particle/necro_bolt_top_colorless.png", "assets/goety/textures/particle/necro_effect1.png", "assets/goety/textures/particle/necro_effect2.png", "assets/goety/textures/particle/necro_effect3.png", "assets/goety/textures/particle/necro_effect4.png", "assets/goety/textures/particle/necro_effect5.png", "assets/goety/textures/particle/necro_effect6.png", "assets/goety/textures/particle/necro_effect7.png", "assets/goety/textures/particle/necro_fire_1.png", "assets/goety/textures/particle/necro_fire_2.png", "assets/goety/textures/particle/necro_fire_3.png", "assets/goety/textures/particle/necro_fire_4.png", "assets/goety/textures/particle/necro_fire_5.png", "assets/goety/textures/particle/necro_fire_6.png", "assets/goety/textures/particle/necro_fire_7.png", "assets/goety/textures/particle/necro_fire_8.png", "assets/goety/textures/particle/shockwave.png", "assets/goety/textures/particle/sparkle_0.png", "assets/goety/textures/particle/sparkle_1.png", "assets/goety/textures/particle/sparkle_2.png", "assets/goety/textures/particle/sparkle_3.png", "assets/goety/textures/particle/spell_cloud_0.png", "assets/goety/textures/particle/spell_cloud_1.png", "assets/goety/textures/particle/spell_cloud_10.png", "assets/goety/textures/particle/spell_cloud_11.png", "assets/goety/textures/particle/spell_cloud_2.png", "assets/goety/textures/particle/spell_cloud_3.png", "assets/goety/textures/particle/spell_cloud_4.png", "assets/goety/textures/particle/spell_cloud_5.png", "assets/goety/textures/particle/spell_cloud_6.png", "assets/goety/textures/particle/spell_cloud_7.png", "assets/goety/textures/particle/spell_cloud_8.png", "assets/goety/textures/particle/spell_cloud_9.png", "assets/goety/textures/particle/spiral.png", "assets/goety/textures/particle/summon_0.png", "assets/goety/textures/particle/summon_1.png", "assets/goety/textures/particle/summon_2.png", "assets/goety/textures/particle/summon_3.png", "assets/goety/textures/particle/totem_effect1.png", "assets/goety/textures/particle/totem_effect2.png", "assets/goety/textures/particle/totem_effect3.png", "assets/goety/textures/particle/totem_effect4.png", "assets/goety/textures/particle/totem_effect5.png", "assets/goety/textures/particle/totem_effect6.png", "assets/goety/textures/particle/totem_effect7.png", "assets/goety/textures/particle/trail.png", "assets/goety/textures/particle/water_trail.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/法术/goety/entity/corrupted/*" = "src/贴图/法术/goety/entity/corrupted/*.png"
 "贴图/法术/goety/entity/monolith/*" = "src/贴图/法术/goety/entity/monolith/*.png"
 "贴图/法术/goety/entity/monolith/poison_quill_vine/*" = "src/贴图/法术/goety/entity/monolith/poison_quill_vine/*.png"
@@ -2771,14 +2771,14 @@
 
 # 本体的粒子定义（assets/goety/particles/<id>.json，写的是这个粒子用哪几张贴图、帧序）。怎么动、多大、什么颜色在各自的 Provider 类里（素材清单.md 列了类名），没取。
 # sphere_explode、smash 两个粒子没有定义文件，是 Provider 里程序画的。
-[["取材"]]
-"名称" = "亚波伦法术粒子定义"
-"作品" = "亚波伦不放水"
-"需要" = ["goety"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦法术粒子定义"
+"work" = "亚波伦不放水"
+"requires" = ["goety"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/absorb_trail.json", "src/数据/法术/goety/particles/absorb_trail.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/additive_effect.json", "src/数据/法术/goety/particles/additive_effect.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/aoe_indicator.json", "src/数据/法术/goety/particles/aoe_indicator.json"],
@@ -2829,20 +2829,20 @@
   ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/wind.json", "src/数据/法术/goety/particles/wind.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/wind_blow.json", "src/数据/法术/goety/particles/wind_blow.json"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/法术/goety/particles/*" = "src/数据/法术/goety/particles/*.json"
 
 # 本体写死在 Java 里的实体模型（各 XxxModel.createBodyLayer）和三个关键帧动画类。别的模型的动作在各自 Model.setupAnim 里按 ageInTicks 算，要照源码抄。
 # 贴图不跟模型绑（一个模型常配几张贴图），在「亚波伦法术贴图」里。
-[["取材"]]
-"名称" = "亚波伦法术模型"
-"作品" = "亚波伦不放水"
-"需要" = ["goety"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"许可部分" = { "模型" = ["模型", "代码"], "动画" = ["模型", "代码"] }  # 几何和关键帧是 导出实体模型 从模组 Java 代码里读的
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦法术模型"
+"work" = "亚波伦不放水"
+"requires" = ["goety"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"licenseParts" = { "model" = ["模型", "代码"], "animation" = ["模型", "代码"] }  # 几何和关键帧是 导出实体模型 从模组 Java 代码里读的
+"steps" = [
   ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/BioMineModel.json", "BioMineModel=com.Polarice3.Goety.client.render.model.BioMineModel:createBodyLayer", "--贴图"],
   ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/BlastFungusModel.json", "BlastFungusModel=com.Polarice3.Goety.client.render.model.BlastFungusModel:createBodyLayer", "--贴图"],
   ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/CycloneModel.json", "CycloneModel=com.Polarice3.Goety.client.render.model.CycloneModel:createBodyLayer", "--贴图"],
@@ -2872,35 +2872,35 @@
   ["导出实体模型", "{jar:goety}", "src/动画/法术/goety/QuickGrowingVineAnimations.json", "--贴图", "--动画", "QuickGrowingVineAnimations=com.Polarice3.Goety.client.render.animation.QuickGrowingVineAnimations"],
   ["导出实体模型", "{jar:goety}", "src/动画/法术/goety/PoisonQuillAnimations.json", "--贴图", "--动画", "PoisonQuillAnimations=com.Polarice3.Goety.client.render.animation.PoisonQuillAnimations"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/法术/goety/*" = "src/模型/法术/goety/*.json"
 "动画/法术/goety/*" = "src/动画/法术/goety/*.json"
 
 # 本体的声音事件（法术的施法声、出手声、命中声，实体自己的声音；使徒那几个是亚波伦用的）。文件名 goety.<事件>[.<序号>].ogg，序号照 sounds.json 的先后。
 # 事件引用原版声音文件的（名字不带命名空间），字节取自资源索引。
-[["取材"]]
-"名称" = "亚波伦法术音效"
-"作品" = "亚波伦不放水"
-"需要" = ["goety", "资源索引-1.20.1"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦法术音效"
+"work" = "亚波伦不放水"
+"requires" = ["goety", "资源索引-1.20.1"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   ["python", "{脚本}/导出音效.py", "src/音效/诡厄巫法", "--jar", "{jar:goety}", "--来源", "{产物来源}", "goety:abyss_prepare_spell", "goety:apostle_ambient", "goety:apostle_cast_spell", "goety:apostle_death", "goety:apostle_hurt", "goety:apostle_pre_teleport", "goety:apostle_predeath", "goety:apostle_prepare_spell", "goety:apostle_prepare_summon", "goety:apostle_shade", "goety:apostle_shoot", "goety:apostle_teleport", "goety:apostle_theme", "goety:apostle_theme_disc", "goety:apostle_theme_post", "goety:biomine_spawn", "goety:biomine_trigger", "goety:blast_fungus_throw", "goety:bolt_impact", "goety:bomb_fuse", "goety:bomb_load", "goety:bomb_pulse", "goety:bomb_sparkle", "goety:bomb_spawn", "goety:cast_spell", "goety:cast_spell_two", "goety:cast_steam", "goety:corrupt_beam_start", "goety:dirt_debris", "goety:fire_breath", "goety:fire_breath_start", "goety:fire_projectile_fly", "goety:fire_tornado_ambient", "goety:flight", "goety:frost_breath", "goety:frost_prepare_spell", "goety:fungus_explosion", "goety:heavy_woosh", "goety:hell_blast_impact", "goety:hell_blast_shoot", "goety:hell_bolt_impact", "goety:hell_bolt_shoot", "goety:ice_chunk_drop", "goety:ice_chunk_hit", "goety:ice_chunk_idle", "goety:ice_chunk_summon", "goety:ice_spike_cast", "goety:ice_spike_hit", "goety:impale", "goety:insect_swarm", "goety:insect_swarm_bite", "goety:lich_teleport_out", "goety:master_fang_snap", "goety:master_fang_spawn", "goety:master_fang_summon", "goety:master_fang_telegraph", "goety:necromancer_summon", "goety:poison_bolt_impact", "goety:poison_quill_aqua_impact", "goety:poison_quill_impact", "goety:poison_quill_vine_ambient", "goety:poison_quill_vine_burst", "goety:poison_quill_vine_close", "goety:poison_quill_vine_death", "goety:poison_quill_vine_hurt", "goety:poison_quill_vine_open", "goety:poison_quill_vine_shoot", "goety:prepare_spell", "goety:prepare_summon", "goety:projectile_spell", "goety:quick_growing_vine_burrow", "goety:quick_growing_vine_burst", "goety:quick_growing_vine_death", "goety:quick_growing_vine_hurt", "goety:redstone_explode", "goety:redstone_fire_projectile", "goety:redstone_golem_electric_sparks", "goety:roar_spell", "goety:rumble", "goety:shock_cast", "goety:soul_bolt_cast", "goety:soul_eat", "goety:soul_explode", "goety:steam_impact", "goety:swing", "goety:teleport_orb_throw", "goety:thunder_strike_fast", "goety:thunderbolt", "goety:tooth_spawn", "goety:trident_storm_explode", "goety:trident_storm_pre", "goety:updraft_blast", "goety:vex_vapor", "goety:vine_trap_burst", "goety:vine_trap_hold", "goety:void_prepare_spell", "goety:void_rift", "goety:void_rift_open", "goety:wall_disappear", "goety:wall_erupt", "goety:wall_hit", "goety:wall_spawn", "goety:water_jet", "goety:weaken_cast", "goety:weaken_curse", "goety:whip_hit", "goety:whip_swing", "goety:whirlwind", "goety:wild_prepare_spell", "goety:wind", "goety:wind_blast", "goety:wind_horn", "goety:wraith_fire", "goety:zap"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/诡厄巫法/*" = "src/音效/诡厄巫法/*.ogg"
 
 # 原版贴图里库里还没有的：法术用到的原版粒子贴图、原版实体贴图（唤魔者尖牙、凋灵之首、守卫者激光、断曜流光冲刺借的激流旋风 trident_riptide），分镜要的原版物品和界面（不死图腾、金苹果、盾、经验球、死亡界面按钮）。
 # 库里已有同一份字节的（generic_*、sga_*、sonic_boom_*、splash_* 等，铁剑是 贴图/物品/杂项物品/铁剑）没列在这里，素材清单.md 里直接写库里的 id。
-[["取材"]]
-"名称" = "亚波伦原版贴图"
-"作品" = "亚波伦不放水"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦原版贴图"
+"work" = "亚波伦不放水"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/block", "assets/minecraft/textures/block/packed_ice.png", "assets/minecraft/textures/block/snow.png", "assets/minecraft/textures/block/tuff.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity", "assets/minecraft/textures/entity/experience_orb.png", "assets/minecraft/textures/entity/guardian_beam.png", "assets/minecraft/textures/entity/shield_base.png", "assets/minecraft/textures/entity/shield_base_nopattern.png", "assets/minecraft/textures/entity/trident.png", "assets/minecraft/textures/entity/trident_riptide.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity/illager", "assets/minecraft/textures/entity/illager/evoker_fangs.png"],
@@ -2909,7 +2909,7 @@
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/item", "assets/minecraft/textures/item/diamond_sword.png", "assets/minecraft/textures/item/fire_charge.png", "assets/minecraft/textures/item/golden_apple.png", "assets/minecraft/textures/item/totem_of_undying.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/particle", "assets/minecraft/textures/particle/bubble.png", "assets/minecraft/textures/particle/drip_fall.png", "assets/minecraft/textures/particle/glint.png", "assets/minecraft/textures/particle/lava.png", "assets/minecraft/textures/particle/sculk_soul_0.png", "assets/minecraft/textures/particle/sculk_soul_1.png", "assets/minecraft/textures/particle/sculk_soul_10.png", "assets/minecraft/textures/particle/sculk_soul_2.png", "assets/minecraft/textures/particle/sculk_soul_3.png", "assets/minecraft/textures/particle/sculk_soul_4.png", "assets/minecraft/textures/particle/sculk_soul_5.png", "assets/minecraft/textures/particle/sculk_soul_6.png", "assets/minecraft/textures/particle/sculk_soul_7.png", "assets/minecraft/textures/particle/sculk_soul_8.png", "assets/minecraft/textures/particle/sculk_soul_9.png", "assets/minecraft/textures/particle/soul_0.png", "assets/minecraft/textures/particle/soul_1.png", "assets/minecraft/textures/particle/soul_10.png", "assets/minecraft/textures/particle/soul_2.png", "assets/minecraft/textures/particle/soul_3.png", "assets/minecraft/textures/particle/soul_4.png", "assets/minecraft/textures/particle/soul_5.png", "assets/minecraft/textures/particle/soul_6.png", "assets/minecraft/textures/particle/soul_7.png", "assets/minecraft/textures/particle/soul_8.png", "assets/minecraft/textures/particle/soul_9.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/法术/minecraft/block/*" = "src/贴图/法术/minecraft/block/*.png"
 "贴图/法术/minecraft/entity/*" = "src/贴图/法术/minecraft/entity/*.png"
 "贴图/法术/minecraft/entity/illager/*" = "src/贴图/法术/minecraft/entity/illager/*.png"
@@ -2919,14 +2919,14 @@
 "贴图/法术/minecraft/particle/*" = "src/贴图/法术/minecraft/particle/*.png"
 
 # 法术用到的原版粒子的定义（assets/minecraft/particles/<id>.json：用哪几张贴图、帧序）。
-[["取材"]]
-"名称" = "亚波伦原版粒子定义"
-"作品" = "亚波伦不放水"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦原版粒子定义"
+"work" = "亚波伦不放水"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/bubble.json", "src/数据/法术/minecraft/particles/bubble.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/bubble_column_up.json", "src/数据/法术/minecraft/particles/bubble_column_up.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/cloud.json", "src/数据/法术/minecraft/particles/cloud.json"],
@@ -2954,43 +2954,43 @@
   ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/totem_of_undying.json", "src/数据/法术/minecraft/particles/totem_of_undying.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/witch.json", "src/数据/法术/minecraft/particles/witch.json"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/法术/minecraft/particles/*" = "src/数据/法术/minecraft/particles/*.json"
 
 # 法术粒子的行为（py/anim_py/动作翻译/粒子.py 符号执行 Provider.createParticle、tick、getQuadSize）：寿命、重力、摩擦、大小、碰撞、选帧、颜色。
 # 先登记丁粒子.ts 手抄过的三种（逐项对照见 py/tests/test_粒子翻译.py），画面没换成用它。Provider 是 ClientSideInit 里注册的：
 # frost_nova 注册的是原版 FlameParticle.Provider（只是贴图换成霜），big_fire 是 FireParticle.ReversibleProvider，spell_cloud 是 FireParticle.ColorProvider。
-[["取材"]]
-"名称" = "亚波伦粒子行为"
-"作品" = "亚波伦不放水"
-"需要" = ["goety", "client-1.20.1-srg", "client-1.20.1-mappings", "mcp-1.20.1-srg表"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6、原版 Minecraft 1.20.1 的字节码"
-"许可" = "MIT（Goety）、Mojang EULA（原版父类）"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦粒子行为"
+"work" = "亚波伦不放水"
+"requires" = ["goety", "client-1.20.1-srg", "client-1.20.1-mappings", "mcp-1.20.1-srg表"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6、原版 Minecraft 1.20.1 的字节码"
+"license" = "MIT（Goety）、Mojang EULA（原版父类）"
+"steps" = [
   ["粒子翻译", "src/数据/法术/goety/粒子行为/frost_nova.粒子.json", "net.minecraft.client.particle.FlameParticle$Provider", "--jar", "{jar:client-1.20.1-srg}", "--映射", "srg:{jar:mcp-1.20.1-srg表},{jar:client-1.20.1-mappings}", "--来源", "{产物来源}"],
   ["粒子翻译", "src/数据/法术/goety/粒子行为/big_fire.粒子.json", "com.Polarice3.Goety.client.particles.FireParticle$ReversibleProvider", "--jar", "{jar:goety,client-1.20.1-srg}", "--映射", "srg:{jar:mcp-1.20.1-srg表},{jar:client-1.20.1-mappings}", "--来源", "{产物来源}"],
   ["粒子翻译", "src/数据/法术/goety/粒子行为/spell_cloud.粒子.json", "com.Polarice3.Goety.client.particles.FireParticle$ColorProvider", "--jar", "{jar:goety,client-1.20.1-srg}", "--映射", "srg:{jar:mcp-1.20.1-srg表},{jar:client-1.20.1-mappings}", "--来源", "{产物来源}"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/法术/goety/粒子行为/frost_nova" = "src/数据/法术/goety/粒子行为/frost_nova.粒子.json"
 "数据/法术/goety/粒子行为/big_fire" = "src/数据/法术/goety/粒子行为/big_fire.粒子.json"
 "数据/法术/goety/粒子行为/spell_cloud" = "src/数据/法术/goety/粒子行为/spell_cloud.粒子.json"
 
 # 黑暗祭坛（goety:dark_altar，分镜 1-01 史蒂夫放破碎之环的那座）：方块模型两个状态，没点着和点着（lit）。
-[["取材"]]
-"名称" = "亚波伦黑暗祭坛"
-"作品" = "亚波伦不放水"
-"需要" = ["goety", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦黑暗祭坛"
+"work" = "亚波伦不放水"
+"requires" = ["goety", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   # lit=true 的模型是 forge:composite：同一个 template_altar 画两遍，底层贴 dark_altar、上面再叠一层 dark_altar_activated（眼睛）。导出模型不认 composite，所以只导未激活的形状，激活那层贴图单独取
   ["导出模型", "{jar:goety,client-1.20.1}", "src/模型/方块/黑暗祭坛.模型.json", "祭坛=goety:dark_altar[lit=false]"],
   ["导出模型", "{jar:goety}", "src/贴图/方块/黑暗祭坛.激活.png", "激活=assets/goety/textures/block/dark_altar_activated.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "模型/方块/黑暗祭坛" = "src/模型/方块/黑暗祭坛.模型.json"
 "贴图/方块/黑暗祭坛" = "src/模型/方块/黑暗祭坛.模型.png"
 "贴图/方块/黑暗祭坛.激活" = "src/贴图/方块/黑暗祭坛.激活.png"
@@ -2999,21 +2999,21 @@
 # 笼里灵魂图腾充满的图标（full_totem）、炼狱魔典的物品模型（默认 active = 0 走 infernal_tome_close，是个立体的合上的书，不是平面图标）、
 # 仪式结束生成的过渡实体（SummonApostleRenderer）的地面法阵和两道环、聚风带（WindGatherParticle）的贴图、祭坛的四个声音。
 # 祭坛、基座、诅咒笼的方块形状不在这里：本作品的方块表（数据/方块附加/方块表）里已经有；祭坛另见「亚波伦黑暗祭坛」。
-[["取材"]]
-"名称" = "亚波伦安息仪式"
-"作品" = "亚波伦不放水"
-"需要" = ["goety", "client-1.20.1"]
-"公开版" = "提取"
-"来源" = "诡厄巫法 Goety 2.5.60.6"
-"许可" = "MIT"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦安息仪式"
+"work" = "亚波伦不放水"
+"requires" = ["goety", "client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "诡厄巫法 Goety 2.5.60.6"
+"license" = "MIT"
+"steps" = [
   ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/item", "assets/goety/textures/item/heart_of_the_night.png", "assets/goety/textures/item/forbidden_scroll.png", "assets/goety/textures/item/unholy_blood.png", "assets/goety/textures/item/shadow_essence.png", "assets/goety/textures/item/soul_ruby.png", "assets/goety/textures/item/malefic_helm.png", "assets/goety/textures/item/crone_hat.png", "assets/goety/textures/item/warlock_sash.png", "assets/goety/textures/item/full_totem.png"],
   ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/entity/cultist", "assets/goety/textures/entity/cultist/summon_apostle.png", "assets/goety/textures/entity/cultist/summon_apostle_ring.png"],
   ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/particle", "assets/goety/textures/particle/gathering_trail.png"],
   ["导出模型", "{jar:goety,client-1.20.1}", "src/模型/仪式/炼狱魔典.模型.json", "书=goety:item/infernal_tome_close"],
   ["python", "{脚本}/导出音效.py", "src/音效/仪式", "--jar", "{jar:goety}", "--来源", "{产物来源}", "goety:altar_start", "goety:altar_loop", "goety:altar_finish", "goety:spell_fail"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/仪式/goety/item/*" = "src/贴图/仪式/goety/item/*.png"
 "贴图/仪式/goety/entity/cultist/*" = "src/贴图/仪式/goety/entity/cultist/*.png"
 "贴图/仪式/goety/particle/*" = "src/贴图/仪式/goety/particle/*.png"
@@ -3023,51 +3023,51 @@
 
 # 安息仪式用到的原版贴图里库里、本作品里还没有的：祭品龙息和下界之星的图标（附魔金苹果用 贴图/法术/minecraft/item/golden_apple 加附魔光效）、
 # 灵魂火的两张 32 帧竖条（方块表图集里只有第一帧，火要动得自己按帧取）、灵魂火焰粒子、大烟雾粒子 12 帧（火冒的烟、仪式结束和过渡实体冒的烟）。
-[["取材"]]
-"名称" = "亚波伦安息仪式原版"
-"作品" = "亚波伦不放水"
-"需要" = ["client-1.20.1"]
-"公开版" = "提取"
-"来源" = "原版 Minecraft 1.20.1"
-"许可" = "Mojang EULA"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦安息仪式原版"
+"work" = "亚波伦不放水"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/仪式/minecraft/item", "assets/minecraft/textures/item/dragon_breath.png", "assets/minecraft/textures/item/nether_star.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/仪式/minecraft/block", "assets/minecraft/textures/block/soul_fire_0.png", "assets/minecraft/textures/block/soul_fire_1.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/仪式/minecraft/particle", "assets/minecraft/textures/particle/soul_fire_flame.png", "assets/minecraft/textures/particle/big_smoke_0.png", "assets/minecraft/textures/particle/big_smoke_1.png", "assets/minecraft/textures/particle/big_smoke_2.png", "assets/minecraft/textures/particle/big_smoke_3.png", "assets/minecraft/textures/particle/big_smoke_4.png", "assets/minecraft/textures/particle/big_smoke_5.png", "assets/minecraft/textures/particle/big_smoke_6.png", "assets/minecraft/textures/particle/big_smoke_7.png", "assets/minecraft/textures/particle/big_smoke_8.png", "assets/minecraft/textures/particle/big_smoke_9.png", "assets/minecraft/textures/particle/big_smoke_10.png", "assets/minecraft/textures/particle/big_smoke_11.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/仪式/minecraft/item/*" = "src/贴图/仪式/minecraft/item/*.png"
 "贴图/仪式/minecraft/block/*" = "src/贴图/仪式/minecraft/block/*.png"
 "贴图/仪式/minecraft/particle/*" = "src/贴图/仪式/minecraft/particle/*.png"
 
 # 安息仪式的第二个配方 goety_revelation:summon_apollyon2 的激活物：末日勋章（doom_medal，打赢亚波伦掉的，图标 item/doom_icon）。启示录的，私有。
-[["取材"]]
-"名称" = "亚波伦安息仪式启示录"
-"作品" = "亚波伦不放水"
-"需要" = ["goety_revelation"]
-"公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
-"可见性" = "发布"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦安息仪式启示录"
+"work" = "亚波伦不放水"
+"requires" = ["goety_revelation"]
+"publicVersion" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
+"visibility" = "发布"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"license" = "All Rights Reserved"
+"steps" = [
   ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/末日勋章.png", "末日勋章=assets/goety_revelation/textures/item/doom_icon.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/物品/末日勋章" = "src/贴图/物品/末日勋章.png"
 
 # 启示录里亚波伦和三个启示录法术要的：凋灵寂灭的光束声和着色器、绝对零度法阵用的白贴图和冰花粒子定义、血条和名字用的着色器（cosmic、dissolve_text、bossbar_hit）、
 # 召唤用的破碎之环图标、战斗曲。下界默认曲 apollyon_new_nether_theme 是 Tak_mfk《決戦の刻》（215.7 秒，配置 enableNewBossMusic 默认开）；
 # apollyon_theme_nether_phase2 是旧的下界曲（300.7 秒），apollyon_theme_post 是打完的尾奏（18.4 秒）。曲子是第三方的，jar 里没有单独的授权说明，随 jar 记 All Rights Reserved。
 # 启示录 All Rights Reserved，这一条按私有登记（字节只在数据根 私有/）。里层 RevelationFix jar 先解出来再读（同「猩红雨」）。
-[["取材"]]
-"名称" = "亚波伦启示录素材"
-"作品" = "亚波伦不放水"
-"需要" = ["goety_revelation"]
-"公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
-"可见性" = "发布"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦启示录素材"
+"work" = "亚波伦不放水"
+"requires" = ["goety_revelation"]
+"publicVersion" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
+"visibility" = "发布"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
+"license" = "All Rights Reserved"
+"steps" = [
   ["python", "-m", "zipfile", "-e", "{jar:goety_revelation}", "外层"],
   ["python", "{脚本}/导出音效.py", "src/音效/启示录", "--jar", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "revelationfix:quietus_beam"],
   ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/sounds/apollyon_new_nether_theme.ogg", "src/配乐/亚波伦/決戦の刻.ogg"],
@@ -3085,7 +3085,7 @@
   ["python", "{脚本}/拷jar文件.py", "{jar:goety_revelation}", "assets/goety_revelation/shaders/core/cosmic.fsh", "src/数据/着色器/启示录/cosmic.fsh"],
   ["python", "{脚本}/拷jar文件.py", "{jar:goety_revelation}", "assets/goety_revelation/shaders/core/cosmic.vsh", "src/数据/着色器/启示录/cosmic.vsh"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "音效/启示录/revelationfix.quietus_beam" = "src/音效/启示录/revelationfix.quietus_beam.ogg"
 "配乐/亚波伦/決戦の刻" = "src/配乐/亚波伦/決戦の刻.ogg"
 "配乐/亚波伦/下界旧曲" = "src/配乐/亚波伦/下界旧曲.ogg"
@@ -3108,15 +3108,15 @@
 # 断曜流光（valettein，剑）：models/item/valettein.json 是 forge:separate_transforms，手里和地上用 valettein_normal（58 个元素的薄片，64×64 贴图），物品栏用 valettein_gui（平面图标）。
 # 晋升之环（ascension_halo，饰品）：戴上由 PlayerHaloLayer 在头后画一片 16×16 的 textures/entity/player/halo.png；物品图标是 textures/item/curio/halo.png。
 # 变形外观（NBT revelationfix:transformed，transform/ 下那套）没取。
-[["取材"]]
-"名称" = "亚波伦史蒂夫装备"
-"作品" = "亚波伦不放水"
-"需要" = ["goety_revelation"]
-"公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
-"可见性" = "发布"
-"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
-"许可" = "All Rights Reserved"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "亚波伦史蒂夫装备"
+"work" = "亚波伦不放水"
+"requires" = ["goety_revelation"]
+"publicVersion" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
+"visibility" = "发布"
+"source" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
+"license" = "All Rights Reserved"
+"steps" = [
   ["python", "-m", "zipfile", "-e", "{jar:goety_revelation}", "外层"],
   ["python", "{脚本}/导出启示录盔甲.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "src/数据/角色/史蒂夫装备/神灵金盔甲网格.json"],
   ["导出模型", "{jar:goety_revelation}", "src/贴图/角色/史蒂夫装备/神灵金盔甲.png", "甲=assets/goety_revelation/textures/models/armor/apocalyptium_custom.png"],
@@ -3137,7 +3137,7 @@
   ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/断曜流光.旧版.图标.png", "图标=assets/goety_revelation/textures/item/combat/transform/valettein_gui.png"],
   ["导出模型", "{jar:goety_revelation}", "src/模型/物品/断曜流光.旧版.模型.json", "剑=goety_revelation:item/transform/valettein_normal"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/角色/史蒂夫装备/神灵金盔甲网格" = "src/数据/角色/史蒂夫装备/神灵金盔甲网格.json"
 "贴图/角色/史蒂夫装备/神灵金盔甲" = "src/贴图/角色/史蒂夫装备/神灵金盔甲.png"
 "贴图/角色/史蒂夫装备/晋升之环" = "src/贴图/角色/史蒂夫装备/晋升之环.png"

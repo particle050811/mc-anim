@@ -14,7 +14,7 @@ export const WoolSearchView: React.FC<{ t: number; cutSec: number }> = ({ t, cut
   const wool = jumpBuild.woolStateAt(t);
   const pose = jumpBuild.poseAt(t);
   return (
-    <AncientCity4xCanvas 段="6-4-1" cam={choreo.camera(cutSec)} width={width} height={height} wool={wool.wool} growingWool={wool.growingWool} chestOpening={choreo.openChest(t)}>
+    <AncientCity4xCanvas segment="6-4-1" cam={choreo.camera(cutSec)} width={width} height={height} wool={wool.wool} growingWool={wool.growingWool} chestOpening={choreo.openChest(t)}>
       {jumpBuild.hasHammer(t) ? (
         // 6-3-6 末帧：右手还握着重锤（刀鞘照常挂在腰上）
         <LiYingWithBlade

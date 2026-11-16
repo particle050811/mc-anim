@@ -101,7 +101,7 @@ const WineFox: React.FC<{ fs: number }> = ({ fs }) => {
       看={herGaze(fs)}
       expression={fs < eventFrames.smilePushIn ? '无' : '微笑'}
       blink={magicalWineFoxBlinkAt(sec, blinkStartSec)}
-      秒={sec}
+      sec={sec}
     />
   );
 };
@@ -151,13 +151,13 @@ const Photo: React.FC<{ f: number }> = ({ f }) => {
 };
 
 // 下面两个是 核卡点 打开时才画的标注
-const bigCaptionEvents: readonly { 名: EventName; 字: string }[] = [
-  { 名: 'rightClick', 字: '右键' },
-  { 名: 'tame', 字: '聊天栏' },
-  { 名: 'smilePushIn', 字: '微笑推镜' },
-  { 名: 'clickFreeze', 字: '咔哒定格' },
+const bigCaptionEvents: readonly { name: EventName; char: string }[] = [
+  { name: 'rightClick', char: '右键' },
+  { name: 'tame', char: '聊天栏' },
+  { name: 'smilePushIn', char: '微笑推镜' },
+  { name: 'clickFreeze', char: '咔哒定格' },
 ];
-const bigCaptionNames = new Set<EventName>(bigCaptionEvents.map((x) => x.名));
+const bigCaptionNames = new Set<EventName>(bigCaptionEvents.map((x) => x.name));
 /** 事件名从事件那一帧起留多久（1 秒）；大字之后再用几秒淡掉（24 fps 时 6 帧） */
 const captionHoldFrames = fps;
 const bigFadeOutSec = legacyFrameSec(6);
@@ -211,11 +211,11 @@ const CheckpointAnnotation: React.FC = () => {
 const EventBigCaption: React.FC = () => {
   const f = useSnappedFrame();
   const onScreen = bigCaptionEvents
-    .map((x) => ({ ...x, 帧: eventFrames[x.名], t: f - eventFrames[x.名] }))
+    .map((x) => ({ ...x, frame: eventFrames[x.name], t: f - eventFrames[x.name] }))
     .filter((x) => x.t >= 0 && (x.t - captionHoldFrames) / fps < bigFadeOutSec);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none', justifyContent: 'center', alignItems: 'center', gap: 14, fontFamily: uiFontFamily }}>
-      {onScreen.map(({ 名: eventName, 字: bigText, 帧: frame, t }) => {
+      {onScreen.map(({ name: eventName, char: bigText, frame: frame, t }) => {
         const justArrived = t / fps < legacyFrameSec(2);
         return (
           <div
@@ -246,7 +246,7 @@ const picture: React.FC = () => (
   <>
     <Polaroid
       freezeFrame={eventFrames.clickFreeze}
-      字="新存档的第一张"
+      char="新存档的第一张"
       样式={polaroidStyle}
       overlay={
         <>

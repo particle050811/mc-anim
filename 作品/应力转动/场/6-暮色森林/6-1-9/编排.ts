@@ -6,7 +6,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { twilightLandmark } from '../../../地点/暮色新世界.tsx';
 
-export const castleOrigin = twilightLandmark('终焉高原城堡').原点;
+export const castleOrigin = twilightLandmark('终焉高原城堡').origin;
 export const ROOF_Z = 176; // 平台站立面（顶层方块 z 175～176）
 // 降落（用户 10-09）：快到时长矛直接收起来、扫帚变成掉落物吸进李樱身体里，两人顺着冲劲斜着往前下方冲到屋顶上（不是骑到上方再落下；不做着地缓冲）。
 // 航线终点是「脱手点」而不是贴屋顶：贴着飞会穿过平台南沿那排城垛（本地 y 3～5，x 每 5 格一个 3×3 的垛，342～344 正挡在降落线上，垛顶 z 179），人穿进墙里（用户 10-09 指出）。脱手点刚越过城垛、杆离屋顶 4 米，扫帚头朝下 `endPitch`、速度减到 `endSpeed`，越过城垛时人和扫帚的包络最低处离垛顶一米多。

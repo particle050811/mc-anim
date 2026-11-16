@@ -29,13 +29,13 @@ export class RegionSource {
   private memoryLimit = 40;
 
   readonly regionDir: string;
-  readonly 种子: string;
+  readonly seed: string;
   private cacheDir: string | null;
   private transform: RegionTransform | null;
 
   constructor(regionDir: string, seed: string, cacheDir: string | null, transform: RegionTransform | null = null) {
     this.regionDir = regionDir;
-    this.种子 = seed;
+    this.seed = seed;
     this.cacheDir = cacheDir;
     this.transform = transform;
   }
@@ -51,20 +51,20 @@ export class RegionSource {
       .map(([a, b]) => [a, b]);
   }
 
-  文件(rx: number, rz: number) {
+  file(rx: number, rz: number) {
     return path.join(this.regionDir, regionFileName(rx, rz));
   }
 
   private get keySuffix() {
-    return `\0${this.种子}\0${READ_METHOD}`;
+    return `\0${this.seed}\0${READ_METHOD}`;
   }
 
   /** 区域文件的戳；文件不在返回 null */
   private stamp(rx: number, rz: number) {
-    const f = this.文件(rx, rz);
+    const f = this.file(rx, rz);
     if (!fs.existsSync(f)) return null;
     const st = fs.statSync(f);
-    return { f, stamp: `${f}\0${st.size}\0${st.mtimeMs}\0${this.种子}` };
+    return { f, stamp: `${f}\0${st.size}\0${st.mtimeMs}\0${this.seed}` };
   }
 
   private cacheFile(rx: number, rz: number) {
@@ -88,7 +88,7 @@ export class RegionSource {
         let current: { f: string; stamp: string } | undefined;
         const dispatch = () => {
           current = pending[nextIndex++];
-          if (current) w.postMessage({ 文件: current.f, 后缀: this.keySuffix });
+          if (current) w.postMessage({ file: current.f, suffix: this.keySuffix });
           else void w.terminate().then(() => resolve());
         };
         w.on('message', (h: string) => {
@@ -109,7 +109,7 @@ export class RegionSource {
 
   /** 读一个区域（不套编辑）：先看缓存，没有就解存档并写缓存 */
   原样(rx: number, rz: number): UnpackedColumnSegmentRegion | null {
-    const f = this.文件(rx, rz);
+    const f = this.file(rx, rz);
     if (!fs.existsSync(f)) return null;
     const c = this.cacheFile(rx, rz);
     if (c && fs.existsSync(`${c}.列段`)) {
@@ -120,13 +120,13 @@ export class RegionSource {
       markUsed(`${c}.空`);
       return null;
     }
-    const r = readRegion(f, rx, rz, this.种子);
+    const r = readRegion(f, rx, rz, this.seed);
     if (c) writeCache(c, r ? encodeColumnSegments(r.columnSeg) : null);
     return r ? decodeColumnSegments(encodeColumnSegments(r.columnSeg)) : null;
   }
 
   /** 套过编辑的区域；内存里留最近用的 */
-  区域(rx: number, rz: number): UnpackedColumnSegmentRegion | null {
+  region(rx: number, rz: number): UnpackedColumnSegmentRegion | null {
     const k = `${rx},${rz}`;
     let r = this.cache.get(k);
     if (r !== undefined) {
@@ -144,12 +144,12 @@ export class RegionSource {
   /** 只解几个区块（查询小范围用，不写缓存、不进内存）；整区域已在缓存就用缓存 */
   partialRegion(rx: number, rz: number, chunkSet: ReadonlySet<number>): UnpackedColumnSegmentRegion | null {
     const k = `${rx},${rz}`;
-    if (this.cache.has(k)) return this.区域(rx, rz);
+    if (this.cache.has(k)) return this.region(rx, rz);
     const c = this.cacheFile(rx, rz);
-    if (c && (fs.existsSync(`${c}.列段`) || fs.existsSync(`${c}.空`))) return this.区域(rx, rz);
-    const f = this.文件(rx, rz);
+    if (c && (fs.existsSync(`${c}.列段`) || fs.existsSync(`${c}.空`))) return this.region(rx, rz);
+    const f = this.file(rx, rz);
     if (!fs.existsSync(f)) return null;
-    const r = readRegion(f, rx, rz, this.种子, chunkSet);
+    const r = readRegion(f, rx, rz, this.seed, chunkSet);
     if (!r) return null;
     const d = decodeColumnSegments(encodeColumnSegments(r.columnSeg));
     return this.transform ? this.transform(d) : d;
@@ -173,16 +173,16 @@ export class RegionSource {
       let nextIndex = 0;
       const runThread = () =>
         new Promise<void>((resolve, reject) => {
-          const w = new Worker(new URL('./读区域工人.ts', import.meta.url), { workerData: { 种子: this.种子 } });
+          const w = new Worker(new URL('./读区域工人.ts', import.meta.url), { workerData: { seed: this.seed } });
           const dispatch = () => {
             const j = pending[nextIndex++];
-            if (j) w.postMessage({ 文件: this.文件(j.rx, j.rz), rx: j.rx, rz: j.rz, cachePath: j.cachePath });
+            if (j) w.postMessage({ file: this.file(j.rx, j.rz), rx: j.rx, rz: j.rz, cachePath: j.cachePath });
             else void w.terminate().then(() => resolve());
           };
-          w.on('message', (m: { rx: number; rz: number; 区块数: number; 字节: number }) => {
-            if (m.区块数) {
+          w.on('message', (m: { rx: number; rz: number; chunkCount: number; bytes: number }) => {
+            if (m.chunkCount) {
               hasData.push([m.rx, m.rz]);
-              log?.(`  r.${m.rx}.${m.rz}：${m.区块数} 个区块，${(m.字节 / 1e6).toFixed(1)} MB`);
+              log?.(`  r.${m.rx}.${m.rz}：${m.chunkCount} 个区块，${(m.bytes / 1e6).toFixed(1)} MB`);
             }
             dispatch();
           });

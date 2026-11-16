@@ -24,10 +24,10 @@ const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]!
 const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [lerp(a[0]!, b[0]!, k), lerp(a[1]!, b[1]!, k), lerp(a[2]!, b[2]!, k)];
 const fromAltar = (x: number, y: number, z: number): V3 => addVec(altar, [x, y, z]);
 /** 段内秒 → 编排的钟（现身后几秒） */
-const clock = (segSec: number) => choreoClock(timeline.事件.开始.秒 + segSec);
+const clock = (segSec: number) => choreoClock(timeline.events.开始.sec + segSec);
 const segSecAt = (choreoSec: number) => choreoSec - clock(0);
 /** 场时间线的事件 → 段内秒（段从 开始 起） */
-const eventSec = { placeRing: timeline.事件.placeRing.秒 - timeline.事件.开始.秒 };
+const eventSec = { placeRing: timeline.events.placeRing.sec - timeline.events.开始.sec };
 const chestAt = (t: number) => addVec(stevePos(t), [0, 0, 1.2]);
 /**
  * 黑暗效果有多暗（0～0.45）。照原版 LightTexture.calculateDarknessScale（1.20.1，javap 读的）：0.45 × max(0, cos(刻 × π × 0.025))，
@@ -54,23 +54,23 @@ const altarTop = fromAltar(0, 0, 2.4);
 // 用户 11-11 看七版：「1-2s 走过去的镜头是多余的」——删了他走上来那一镜（1-01），开头就是越过祭坛看他放环；
 // 「5-8 召唤出亚伯伦 为什么要给史蒂夫特写？」——召唤那几秒（原 1-03 他正面跟拍）换成拍祭坛上的仪式和她出现，他不在画面里。其余照七版
 const shotTable: Shot[] = (() => {
-  const cuts = { 三: eventSec.placeRing + 3.3, 四: segSecAt(0.35), 五: segSecAt(0.95), 止: segSecAt(choreoClock(timeline.事件.summonDone.秒)) };
+  const cuts = { 三: eventSec.placeRing + 3.3, 四: segSecAt(0.35), 五: segSecAt(0.95), end: segSecAt(choreoClock(timeline.events.summonDone.sec)) };
   return [
     // 1-01 祭坛东北边、越过祭坛往南看他（七版的 1-02，往前接到开头）：他右键把环放上祭坛，祭品消失、光柱起来都在前景，他在后面正对着镜头往后退，光柱起来一缩、拔剑；镜头慢慢往前压
-    { 名: '1-01', 起: 0, cameraRig: followShot(cuts.三, (s, k) => {
+    { name: '1-01', start: 0, cameraRig: followShot(cuts.三, (s, k) => {
       const t = clock(s);
       const pos = fromAltar(lerp(2.2, 1.9, k), lerp(4.8, 4.4, k), lerp(3.6, 3.3, k));
       return { pos, tgt: lookBetween(pos, altarTop, chestAt(t), 0.3), lens: 30 };
     }) },
     // 1-02 祭坛正东、两团灵魂火中间，略高过祭坛往里推：黑暗、低语、大烟里仪式收尾，火焰炸开、她在祭坛上出现（他在镜头右后方，不进画面）
-    { 名: '1-02', 起: cuts.三, cameraRig: followShot(cuts.四 - cuts.三, (_s, k): Cam => {
+    { name: '1-02', start: cuts.三, cameraRig: followShot(cuts.四 - cuts.三, (_s, k): Cam => {
       const u = smoothstep01(k);
       return { pos: fromAltar(lerp(6.2, 4.4, u), lerp(-1.2, -0.8, u), lerp(2.9, 3.2, u)), tgt: fromAltar(0, 0, lerp(3.0, 3.5, u)), lens: lerp(28, 32, u) };
     }) },
     // 1-03 她的脸：低着头闭着眼，睁眼、开始抬头；镜头从她面前往脸上推（11-11 提速：0.95 秒就切走，抬头、转身、甩杖都在 1-04 里）
-    { 名: '1-03', 起: cuts.四, cameraRig: followShot(cuts.五 - cuts.四, (_s, k): Cam => ({ pos: fromAltar(lerp(2.5, 1.85, smoothstep01(k)), lerp(-0.65, -0.45, k), lerp(3.85, 4.0, k)), tgt: fromAltar(0, 0, lerp(3.85, 4.0, smoothstep01(k))), lens: lerp(30, 38, smoothstep01(k)) })) },
+    { name: '1-03', start: cuts.四, cameraRig: followShot(cuts.五 - cuts.四, (_s, k): Cam => ({ pos: fromAltar(lerp(2.5, 1.85, smoothstep01(k)), lerp(-0.65, -0.45, k), lerp(3.85, 4.0, k)), tgt: fromAltar(0, 0, lerp(3.85, 4.0, smoothstep01(k))), lens: lerp(30, 38, smoothstep01(k)) })) },
     // 1-04 越过她右肩看他：她抬头、转过身来对着他、杖一甩；他在远处压低身子，第 2 幕接她飞出来
-    { 名: '1-04', 起: cuts.五, cameraRig: followShot(cuts.止 - cuts.五, (s, k): Cam => {
+    { name: '1-04', start: cuts.五, cameraRig: followShot(cuts.end - cuts.五, (s, k): Cam => {
       const t = clock(cuts.五 + s);
       return { pos: fromAltar(lerp(-1.7, -2.0, k), lerp(2.7, 2.3, k), lerp(5.0, 4.8, k)), tgt: lerpVec(yaBoLunHead(t), chestAt(t), lerp(0.55, 0.65, k)), lens: lerp(26, 28, k) };
     }) },
@@ -78,10 +78,10 @@ const shotTable: Shot[] = (() => {
 })();
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 事件: events, 段: thisSegment } = useSeg(seg);
+  const { sec: sec, events: events, segment: thisSegment } = useSeg(seg);
   const ritualSec = sec - events.placeRing;
   const t = clock(sec);
-  const { cameraRig } = pickShot(shotTable, sec, thisSegment.秒);
+  const { cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
   const hint = ritualSec >= plan.提示 && t < 0;
   const hpBarOpacity = clamp01((t - 2.2) / 0.6);
   return (
@@ -93,17 +93,17 @@ export default definePicture(seg, soundUrl, () => {
           {/* 黑暗效果（游戏里提示那一刻给 32 格内的玩家上「黑暗」）：一起一伏地压暗，到现身 */}
           <div style={{ position: 'absolute', inset: 0, background: '#000', opacity: darkness(ritualSec) * (1 - clamp01(t / 0.3)) }} />
           {hint && (
-            <div style={{ position: 'absolute', left: 0, right: 0, bottom: aspect.高 * 0.2, textAlign: 'center', color: '#FF5555', fontFamily: 'Minecraft, monospace', fontSize: 26, textShadow: '2px 2px 0 #3F1515' }}>{game.hintText}</div>
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: aspect.height * 0.2, textAlign: 'center', color: '#FF5555', fontFamily: 'Minecraft, monospace', fontSize: 26, textShadow: '2px 2px 0 #3F1515' }}>{game.hintText}</div>
           )}
-          {hpBarOpacity > 0 && <YaBoLunHealthBar 宽={aspect.宽} s={2} healthRatio={1} opacity={hpBarOpacity} />}
+          {hpBarOpacity > 0 && <YaBoLunHealthBar width={aspect.width} s={2} healthRatio={1} opacity={hpBarOpacity} />}
         </>
       }
     >
       <group position={altar}>
-        <RestRitualPerformance 秒={ritualSec} plan={plan} />
+        <RestRitualPerformance sec={ritualSec} plan={plan} />
       </group>
       {t >= 0 && <GirlYaBoLun {...perform.在(t).props} holdWand />}
-      <ReactingSteve 状态={{ ...steveWalk.在(t), 看: steveLook(t), 秒: sec, rightHand: steveRightHand(t), leftHand: '空', swingSec: steveSwingSec(t), move: steveMove(t), chargeMove: steveChargeMove(t), charge: steveCharge(t) }} />
+      <ReactingSteve state={{ ...steveWalk.在(t), 看: steveLook(t), sec: sec, rightHand: steveRightHand(t), leftHand: '空', swingSec: steveSwingSec(t), move: steveMove(t), chargeMove: steveChargeMove(t), charge: steveCharge(t) }} />
     </TerraceCanvas>
   );
 });

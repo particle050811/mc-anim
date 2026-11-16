@@ -31,7 +31,7 @@ const white: readonly [number, number, number] = [1, 1, 1];
 const bigThunderColor = hexColor(0x6464dc);
 const smallThunderColor = hexColor(0xb1abf1);
 
-const TridentStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const TridentStorm: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   return (
     <>
@@ -49,8 +49,8 @@ const TridentStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标:
                 <group position={[0, 1.6, 0]}>
                   <group rotation={[0, 0, Math.PI]}>
                     <ModelPart
-                      模型={tridentStormModel}
-                      图={png(tridentStormPng)}
+                      model={tridentStormModel}
+                      image={png(tridentStormPng)}
                       画法="半透明"
                       partPoses={active ? { ...keyframePose(tridentStormModel, [[fallAnim, (tick - landTick) / 20]]), circle: { hide: true } } : { circle: { scale: [1.25, 1, 1.25] }, trident: { hide: true } }}
                     />
@@ -58,10 +58,10 @@ const TridentStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标:
                 </group>
               </MinecraftSpace>
             )}
-            <RingBurst 位={pos} spawnTick={blastTick} 秒={sec} 大小={3} 颜色={white} accel={1} />
-            <ElectricArc 起={[pos[0], pos[1], pos[2] + 250]} end={pos} settings={arcPresets.lightningBolt} 刻={tick - blastTick} lifeTicks={5} 色={bigThunderColor} 种子={seed * 31 + i} />
+            <RingBurst 位={pos} spawnTick={blastTick} sec={sec} size={3} 颜色={white} accel={1} />
+            <ElectricArc start={[pos[0], pos[1], pos[2] + 250]} end={pos} settings={arcPresets.lightningBolt} 刻={tick - blastTick} lifeTicks={5} 色={bigThunderColor} seed={seed * 31 + i} />
             {smallEnds.map((end, k) => (
-              <ElectricArc key={k} 起={pos} end={end} settings={arcPresets.shock} 刻={tick - blastTick} lifeTicks={2} 色={smallThunderColor} 种子={seed * 3001 + i * 20 + k} />
+              <ElectricArc key={k} start={pos} end={end} settings={arcPresets.shock} 刻={tick - blastTick} lifeTicks={2} 色={smallThunderColor} seed={seed * 3001 + i * 20 + k} />
             ))}
           </React.Fragment>
         );

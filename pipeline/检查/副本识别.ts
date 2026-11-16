@@ -60,7 +60,7 @@ const collectBindings = (bindingName: ts.BindingName, names: Set<string>) => {
 
 export type FunctionInfo = {
   节点: FnNode;
-  名?: string;
+  name?: string;
   行: number;
   paramCount: number;
   /** 能不能拿来求值（没有 JSX、this……）；不能的写原因 */
@@ -104,7 +104,7 @@ export const analyzeFunction = (sf: ts.SourceFile, f: FnNode): FunctionInfo => {
     if (bindings.has(n.text) || n.text in availableGlobals) continue;
     freeNames.add(n.text);
   }
-  return { 节点: f, 名: functionName(f), 行: lineNo(sf, f), paramCount: f.parameters.length, unevaluable, hasLoop, freeNames };
+  return { 节点: f, name: functionName(f), 行: lineNo(sf, f), paramCount: f.parameters.length, unevaluable, hasLoop, freeNames };
 };
 
 const compileToJs = (sourceText: string): string => {
@@ -137,7 +137,7 @@ export class FileFunctions {
       if (isFnNode(n)) {
         const fnInfo = analyzeFunction(this.sf, n);
         this.functions.push(fnInfo);
-        if (fnInfo.名) this.#byNameIndex.set(fnInfo.名, this.#byNameIndex.has(fnInfo.名) ? null : fnInfo);
+        if (fnInfo.name) this.#byNameIndex.set(fnInfo.name, this.#byNameIndex.has(fnInfo.name) ? null : fnInfo);
       } else if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && !isFnNode(n.initializer)) {
         const constName = n.name.text;
         const constValue = numericConst(n.initializer);

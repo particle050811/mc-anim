@@ -75,15 +75,15 @@ export const Lure: React.FC<LureParams> = ({ rawSheathe = false, closeup: closeu
   const wool = choreo.woolAt(t);
   return (
     <>
-      <AncientCity4xCanvas 段="6-4-5" cam={closeupBearing === undefined ? choreo.camera(t) : closeupCam(ly, closeupBearing)} width={width} height={height} hide={K3.HIDE} chestOpening={K3.openChest(g)} wool={wool.wool} growingWool={wool.growingWool}>
+      <AncientCity4xCanvas segment="6-4-5" cam={closeupBearing === undefined ? choreo.camera(t) : closeupCam(ly, closeupBearing)} width={width} height={height} hide={K3.HIDE} chestOpening={K3.openChest(g)} wool={wool.wool} growingWool={wool.growingWool}>
         <SheathingLiYing ly={ly} mouth={mouthAt(lipCues([choreo.lines.challenge]), '李樱', t, 1)} />
-        {(arrow.阶段 === '来' || arrow.阶段 === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
+        {(arrow.stage === '来' || arrow.stage === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
         <BlockDebris data={DEBRIS} atlas={debrisAtlas} bursts={K3.debrisBursts(g)} fixWinding />
         {K3.sensorStates(g).map((q, i) => (
-          <SculkSensor key={i} p={q.p} 秒={q.sec} secSinceActive={q.secSinceActive} seed={i + 1} />
+          <SculkSensor key={i} p={q.p} sec={q.sec} secSinceActive={q.secSinceActive} seed={i + 1} />
         ))}
         {K3.vibrations.map((v, i) => (
-          <VibrationSignal key={i} from={v.from} to={v.to} sec={K3.storySecAt(g) - v.t} 帧={i * 3} />
+          <VibrationSignal key={i} from={v.from} to={v.to} sec={K3.storySecAt(g) - v.t} frame={i * 3} />
         ))}
         {K3.shriek && <ShriekRings p={K3.shriek.p} sec={K3.storySecAt(g) - K3.shriek.t} />}
       </AncientCity4xCanvas>

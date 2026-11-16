@@ -11,13 +11,13 @@ import { Quad } from '../零件/面片.tsx';
 import meta, { electrocuteHitTick, electrocutePath } from './electrocute.元.ts';
 import electroOrbPng from 'asset:贴图/法术/goety/entity/projectiles/electro_orb';
 
-const electrocute: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => {
+const electrocute: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target }) => {
   const tick = sec * 20;
   if (tick >= electrocuteHitTick(from, target)) return null;
   const p = trajectoryPos(electrocutePath(from, target), tick);
   const pulse = 1 + Math.sin(tick / 5) * 0.2 + 0.2;
   const u = (Math.floor(tick) % 16) / 16;
-  return <Quad 图={png(electroOrbPng)} 位={[p[0], p[1], p[2] + 0.25 * pulse]} 半宽={0.5 * pulse} uv={[u, 0, u + 1 / 16, 1]} 混合="半透明" />;
+  return <Quad image={png(electroOrbPng)} 位={[p[0], p[1], p[2] + 0.25 * pulse]} halfWidth={0.5 * pulse} uv={[u, 0, u + 1 / 16, 1]} blend="半透明" />;
 };
 
 export default defineSpellPerformance(meta, electrocute);

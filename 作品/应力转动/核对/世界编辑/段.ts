@@ -2,4 +2,4 @@
 // 地形包没登记（只是演示），画面按版本直接取（地形.ts），所以这里 地形 写空。一个画面（0.05 秒，60 帧的 3 帧），从东南方斜上看过去。
 import { defineSeg } from '@engine/段/段定义.ts';
 
-export default defineSeg({ 场: '核对', 秒: 0.05, 宽: 1280, 高: 720, 地形: [] });
+export default defineSeg({ scene: '核对', sec: 0.05, width: 1280, height: 720, terrain: [] });

@@ -12,12 +12,12 @@ export const waitUntil = async (p: ParsedArgs, e: SchedulerEnv, o: {
     isAlive?: (pid: number) => boolean;
     提示?: (s: string) => void;
 } = {}) => {
-    const conditions = [p.值['--pid'], p.值['--file'], p.toggles.has('--gate-empty'), p.值['--memory']].filter(Boolean);
+    const conditions = [p.value['--pid'], p.value['--file'], p.toggles.has('--gate-empty'), p.value['--memory']].filter(Boolean);
     if (conditions.length !== 1)
         throw new UsageError('等 要且只要 --pid、--file、--gate-empty、--memory 之一');
-    if(p.值['--pid']&&(!Number.isSafeInteger(Number(p.值['--pid']))||Number(p.值['--pid'])<=0))throw new UsageError('--pid 要正整数');
-    if(p.值['--memory']&&(!Number.isFinite(Number(p.值['--memory']))||Number(p.值['--memory'])<0||Number(p.值['--memory'])>100))throw new UsageError('--memory 要 0–100 的百分比');
-    const maxSec = Number(p.值['--max-sec'] ?? 540);
+    if(p.value['--pid']&&(!Number.isSafeInteger(Number(p.value['--pid']))||Number(p.value['--pid'])<=0))throw new UsageError('--pid 要正整数');
+    if(p.value['--memory']&&(!Number.isFinite(Number(p.value['--memory']))||Number(p.value['--memory'])<0||Number(p.value['--memory'])>100))throw new UsageError('--memory 要 0–100 的百分比');
+    const maxSec = Number(p.value['--max-sec'] ?? 540);
     if (!Number.isFinite(maxSec) || maxSec <= 0)
         throw new UsageError('--max-sec 要正秒数');
     const startMs = e.nowMs();
@@ -32,13 +32,13 @@ export const waitUntil = async (p: ParsedArgs, e: SchedulerEnv, o: {
             }
             return timeoutExitCode;
         }
-        if (p.值['--pid'] && !(o.isAlive ?? processAlive)(Number(p.值['--pid'])))
+        if (p.value['--pid'] && !(o.isAlive ?? processAlive)(Number(p.value['--pid'])))
             return 0;
-        if (p.值['--file'] && fs.existsSync(p.值['--file']))
+        if (p.value['--file'] && fs.existsSync(p.value['--file']))
             return 0;
-        if (p.值['--memory']) {
-            const n = (o.freeMemory ?? (() => readMemory()?.空闲百分比 ?? null))();
-            if (n !== null && n >= Number(p.值['--memory']))
+        if (p.value['--memory']) {
+            const n = (o.freeMemory ?? (() => readMemory()?.freePercent ?? null))();
+            if (n !== null && n >= Number(p.value['--memory']))
                 return 0;
         }
         if (p.toggles.has('--gate-empty')) {

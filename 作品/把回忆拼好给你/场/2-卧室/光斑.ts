@@ -10,11 +10,11 @@ const texelSize = 1 / 16;
 export type Box = { x: readonly [number, number]; y: readonly [number, number]; z: readonly [number, number] };
 /** 受光面：竖 = 朝南的竖面（y 固定，铺 x、z）；平 = 朝上的水平面（z 固定，铺 x、y）。挖 = 面上不受光的洞（后墙上的窗） */
 export type LitSurface =
-  | { 名: string; 种: '竖'; y: number; x: readonly [number, number]; z: readonly [number, number]; holes?: readonly { x: readonly [number, number]; z: readonly [number, number] }[] }
-  | { 名: string; 种: '平'; z: number; x: readonly [number, number]; y: readonly [number, number] };
+  | { name: string; kind: '竖'; y: number; x: readonly [number, number]; z: readonly [number, number]; holes?: readonly { x: readonly [number, number]; z: readonly [number, number] }[] }
+  | { name: string; kind: '平'; z: number; x: readonly [number, number]; y: readonly [number, number] };
 /** 光进来的开口：竖在 面 = 位 那个平面上（'y'：南墙，铺 x；'x'：西墙，铺 y），横向 a0～a1、高 z0～z1；
  *  框 = 中间窗框几格宽（0 = 没有窗框，一整片玻璃） */
-export type Opening = { 面: 'x' | 'y'; 位: number; a0: number; a1: number; z0: number; z1: number; 框: number };
+export type Opening = { 面: 'x' | 'y'; 位: number; a0: number; a1: number; z0: number; z1: number; box: number };
 /** 一条亮的矩形，在受光面自己的两个轴上（竖面：a = x、b = z；平面：a = x、b = y） */
 export type LightStrip = { a0: number; a1: number; b0: number; b1: number };
 
@@ -25,18 +25,18 @@ const yourBedX = bedroom.yourBed.位[0], maidBedX = bedroom.maidBed.位[0];
 
 /** 南墙上的窗、卧室门（门洞在西墙内面 x = 0.5，y 0～1） */
 export const bedroomOpenings: Readonly<Record<'南窗' | '门', Opening>> = {
-  南窗: { 面: 'y', 位: 0, a0: bedroom.southWindow.x0, a1: bedroom.southWindow.x1, z0: bedroom.southWindow.z0, z1: bedroom.southWindow.z1, 框: bedroom.southWindow.框 },
-  门: { 面: 'x', 位: bedroom.门.doorOpening.x1, a0: 0, a1: 1, z0: bedroom.门.doorOpening.z0, z1: bedroom.门.doorOpening.z1, 框: 0 },
+  南窗: { 面: 'y', 位: 0, a0: bedroom.southWindow.x0, a1: bedroom.southWindow.x1, z0: bedroom.southWindow.z0, z1: bedroom.southWindow.z1, box: bedroom.southWindow.box },
+  门: { 面: 'x', 位: bedroom.门.doorOpening.x1, a0: 0, a1: 1, z0: bedroom.门.doorOpening.z0, z1: bedroom.门.doorOpening.z1, box: 0 },
 };
 
 /** 卧室里受光的面。床的被面、床脚那面按模型量的（物品/床.tsx、物品/女仆床.tsx）：红床床垫 3/16～9/16 高、两格长；女仆床被子顶 7.53/16、床头板那截不铺 */
 export const bedroomLitSurfaces: readonly LitSurface[] = [
-  { 名: '后墙', 种: '竖', y: backWall, x: indoorX, z: [0, 3], holes: [{ x: [backWindowX - 0.5, backWindowX + 0.5], z: [backWindowZ, backWindowZ + 1] }] },
-  { 名: '地板', 种: '平', z: 0, x: indoorX, y: [0, backWall] },
-  { 名: '你床面', 种: '平', z: bedSurfaceHeight, x: [yourBedX - 0.5, yourBedX + 0.5], y: [1, 3] },
-  { 名: '你床脚', 种: '竖', y: 1, x: [yourBedX - 0.5, yourBedX + 0.5], z: [3 / 16, bedSurfaceHeight] },
-  { 名: '女仆床面', 种: '平', z: maidBedSurfaceHeight, x: [maidBedX - 0.5, maidBedX + 0.5], y: [1, 2.4] },
-  { 名: '女仆床脚', 种: '竖', y: 1, x: [maidBedX - 0.5, maidBedX + 0.5], z: [0, maidBedSurfaceHeight] },
+  { name: '后墙', kind: '竖', y: backWall, x: indoorX, z: [0, 3], holes: [{ x: [backWindowX - 0.5, backWindowX + 0.5], z: [backWindowZ, backWindowZ + 1] }] },
+  { name: '地板', kind: '平', z: 0, x: indoorX, y: [0, backWall] },
+  { name: '你床面', kind: '平', z: bedSurfaceHeight, x: [yourBedX - 0.5, yourBedX + 0.5], y: [1, 3] },
+  { name: '你床脚', kind: '竖', y: 1, x: [yourBedX - 0.5, yourBedX + 0.5], z: [3 / 16, bedSurfaceHeight] },
+  { name: '女仆床面', kind: '平', z: maidBedSurfaceHeight, x: [maidBedX - 0.5, maidBedX + 0.5], y: [1, 2.4] },
+  { name: '女仆床脚', kind: '竖', y: 1, x: [maidBedX - 0.5, maidBedX + 0.5], z: [0, maidBedSurfaceHeight] },
 ];
 
 /** 挡光的：两张床（床身、女仆床的床头板） */
@@ -75,7 +75,7 @@ const isLit = (p: readonly [number, number, number], lightDir: readonly number[]
   if (t <= 0) return false;
   const a = p[lateralAxis] - t * lightDir[lateralAxis]!, z = p[2] - t * lightDir[2]!;
   const center = (w.a0 + w.a1) / 2;
-  const lit = z > w.z0 && z < w.z1 && a > w.a0 && a < w.a1 && !(w.框 > 0 && Math.abs(a - center) < w.框 / 2);
+  const lit = z > w.z0 && z < w.z1 && a > w.a0 && a < w.a1 && !(w.box > 0 && Math.abs(a - center) < w.box / 2);
   if (!lit) return false;
   const reverseDir = lightDir.map((v) => -v);
   return !occluders.some((b) => passThrough(p, reverseDir, b, t));
@@ -84,7 +84,7 @@ const isLit = (p: readonly [number, number, number], lightDir: readonly number[]
 /** 一个受光面上被这一束光照亮的格，同一行相邻的并成一条 */
 export const lightSpot = (face: LitSurface, lightDir: readonly number[], w: Opening = bedroomOpenings.南窗, occluders: readonly Box[] = bedroomBlockers): LightStrip[] => {
   const [a0, a1] = face.x;
-  const [b0, b1] = face.种 === '竖' ? face.z : face.y;
+  const [b0, b1] = face.kind === '竖' ? face.z : face.y;
   const na = Math.round((a1 - a0) / texelSize), nb = Math.round((b1 - b0) / texelSize);
   const out: LightStrip[] = [];
   for (let j = 0; j < nb; j++) {
@@ -94,8 +94,8 @@ export const lightSpot = (face: LitSurface, lightDir: readonly number[], w: Open
       let isBright = false;
       if (i < na) {
         const a = a0 + (i + 0.5) * texelSize;
-        const p: [number, number, number] = face.种 === '竖' ? [a, face.y, b] : [a, b, face.z];
-        const isCarved = face.种 === '竖' && (face.holes ?? []).some((h) => a > h.x[0] && a < h.x[1] && b > h.z[0] && b < h.z[1]);
+        const p: [number, number, number] = face.kind === '竖' ? [a, face.y, b] : [a, b, face.z];
+        const isCarved = face.kind === '竖' && (face.holes ?? []).some((h) => a > h.x[0] && a < h.x[1] && b > h.z[0] && b < h.z[1]);
         isBright = !isCarved && isLit(p, lightDir, w, occluders);
       }
       if (isBright && startIndex === null) startIndex = i;

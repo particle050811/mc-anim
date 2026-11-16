@@ -13,10 +13,10 @@ const groundJson = groundRouteJson as unknown as { x0: number; y0: number; 格: 
 const coarse = frozenCoarse(overworldFrozen as FrozenCoarseHeightFile);
 const groundGrid = (() => {
   const bytes = Uint8Array.from(atob(groundJson.高), (c) => c.charCodeAt(0));
-  return { ...groundJson, 高: new Int16Array(bytes.buffer, 0, groundJson.nx * groundJson.ny) };
+  return { ...groundJson, height: new Int16Array(bytes.buffer, 0, groundJson.nx * groundJson.ny) };
 })();
 export const routeGround = (x: number, y: number) => {
-  const { x0, y0, 格: cellM, nx, ny, 高: heights } = groundGrid;
+  const { x0, y0, 格: cellM, nx, ny, height: heights } = groundGrid;
   const i = Math.floor((x - x0) / cellM);
   const j = Math.floor((y - y0) / cellM);
   if (i < 0 || j < 0 || i >= nx || j >= ny) return -1; // 海面（y 63 的顶，场景 z −1）
@@ -29,13 +29,13 @@ const cellTop = (x: number, y: number) => {
 // 近处最高的顶：所在那格和四周 8 格（同 暮色地物顶）
 export const featureTop = (x: number, y: number) => {
   let top = -Infinity;
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) top = Math.max(top, cellTop(x + dx * coarse.格, y + dy * coarse.格));
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) top = Math.max(top, cellTop(x + dx * coarse.cell, y + dy * coarse.cell));
   return top;
 };
 // 地物顶面：方圆 半径 米里各格的中位（同 树冠面）
 export const featureSurface = (x: number, y: number, radius = 250) => {
   const samples: number[] = [];
-  for (let dy = -radius; dy <= radius; dy += coarse.格) for (let dx = -radius; dx <= radius; dx += coarse.格) if (dx * dx + dy * dy <= radius * radius) samples.push(cellTop(x + dx, y + dy));
+  for (let dy = -radius; dy <= radius; dy += coarse.cell) for (let dx = -radius; dx <= radius; dx += coarse.cell) if (dx * dx + dy * dy <= radius * radius) samples.push(cellTop(x + dx, y + dy));
   samples.sort((a, b) => a - b);
   return samples[Math.floor(samples.length / 2)];
 };

@@ -16,10 +16,10 @@ import cultSpell6Png from 'asset:贴图/法术/goety/particle/cult_spell_6';
 import cultSpell7Png from 'asset:贴图/法术/goety/particle/cult_spell_7';
 import { mulberry32 } from '@engine/core/数学.ts';
 
-const particleType: ParticleClass = { 帧: [cultSpell0Png, cultSpell1Png, cultSpell2Png, cultSpell3Png, cultSpell4Png, cultSpell5Png, cultSpell6Png, cultSpell7Png].map(png), 选帧: '按年龄', 混合: '半透明', opacity: (age) => Math.max(0, 0.9 - 0.015 * age) };
+const particleType: ParticleClass = { frame: [cultSpell0Png, cultSpell1Png, cultSpell2Png, cultSpell3Png, cultSpell4Png, cultSpell5Png, cultSpell6Png, cultSpell7Png].map(png), 选帧: '按年龄', blend: '半透明', opacity: (age) => Math.max(0, 0.9 - 0.015 * age) };
 
 /** 一批尘云的出生表：位们 每处一颗 */
 export const dustCloudSpawns = (positions: readonly Vec3[], tick: number, size: number, color: RgbColor, seed: number): ParticleBirth[] =>
-  positions.map((pos, i) => ({ 刻: tick, 位: pos, 寿命: Math.floor(8 / (mulberry32(seed * 71 + i)() * 0.8 + 0.2)), radius: size, 色: color, 种子: i }));
+  positions.map((pos, i) => ({ 刻: tick, 位: pos, 寿命: Math.floor(8 / (mulberry32(seed * 71 + i)() * 0.8 + 0.2)), radius: size, 色: color, seed: i }));
 
-export const DustCloud: React.FC<{ spawns: readonly ParticleBirth[]; 秒: number }> = ({ spawns, 秒: sec }) => <TexturedParticles 类={particleType} spawns={spawns} 秒={sec} />;
+export const DustCloud: React.FC<{ spawns: readonly ParticleBirth[]; sec: number }> = ({ spawns, sec: sec }) => <TexturedParticles type={particleType} spawns={spawns} sec={sec} />;

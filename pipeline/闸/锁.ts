@@ -36,17 +36,17 @@ export const processStartTime = (pid: number): number | null => {
 
 /** 判错会抢走活进程的锁，所以余量宁大：时钟回拨、共享盘 mtime 走服务器钟都不该误判；pid 一轮要几小时，漏不掉真复用。 */
 const reuseMarginMs = 300_000;
-const procStartCache = new Map<number, { 时: number; 起: number | null }>();
+const procStartCache = new Map<number, { timestamp: number; start: number | null }>();
 /** 活着的 pid 比 时刻（锁或票最后写入）晚得多才启动，就不是当时那个进程。排队每轮都判，时刻还新就不开 ps，查过的半分钟内不再查。 */
 export const pidReplaced = (pid: number, timeMs: number) => {
   const now = Date.now();
   if (now - timeMs <= reuseMarginMs) return false;
   let c = procStartCache.get(pid);
-  if (!c || now - c.时 > 30_000) {
-    c = { 时: now, 起: processStartTime(pid) };
+  if (!c || now - c.timestamp > 30_000) {
+    c = { timestamp: now, start: processStartTime(pid) };
     procStartCache.set(pid, c);
   }
-  return c.起 !== null && c.起 > timeMs + reuseMarginMs;
+  return c.start !== null && c.start > timeMs + reuseMarginMs;
 };
 
 const code = (err: unknown) => (err as NodeJS.ErrnoException).code ?? '';

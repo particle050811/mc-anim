@@ -12,10 +12,10 @@ import { fps } from '../../分镜/时间.ts';
 
 const picture: React.FC = () => {
   const f = useViewIndex(fps);
-  const imgEl = <DoorNightCanvas 帧={photoFrame} />;
+  const imgEl = <DoorNightCanvas frame={photoFrame} />;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      {f === 0 ? imgEl : f === 1 ? <FilmPost grade={palette.夜.grade} 种子={photoFrame}>{imgEl}</FilmPost> : <DoorwayNightIcon side={1280} />}
+      {f === 0 ? imgEl : f === 1 ? <FilmPost grade={palette.夜.grade} seed={photoFrame}>{imgEl}</FilmPost> : <DoorwayNightIcon side={1280} />}
     </AbsoluteFill>
   );
 };

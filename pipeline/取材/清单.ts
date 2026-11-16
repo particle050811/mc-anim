@@ -9,27 +9,27 @@ import type { AssetLock } from '../资产/资产锁.ts';
 import type { Visibility } from '../资产/资产表.ts';
 import { readJarLicense, licensePartValues, type JarLicense, type LicensePart } from './许可.ts';
 
-export type OutputParam = { 输出: string[] };
+export type OutputParam = { output: string[] };
 export type Step = (string | OutputParam)[];
 export type SourcingEntry = {
-  名称: string;
-  需要: string[];
-  前置: string[];
-  要开游戏: boolean;
-  待迁移?: string;
+  displayName: string;
+  requires: string[];
+  prerequisites: string[];
+  needsGame: boolean;
+  pendingMigration?: string;
   /** 步骤只是记录（网格头反填的范围，网格配方.ts）：锁里那一版重导对不上，anim extract 不跑，--print-only 照样列 */
-  不重导?: string;
-  公开版?: string;
+  noReExtract?: string;
+  publicVersion?: string;
   /** 产物登记在这部作品的资产表：只在选了它时跑、查 */
-  作品?: string;
-  步骤: Step[];
-  输入: Record<string, string>;
-  产物: Record<string, string>;
-  说明?: string;
+  work?: string;
+  steps: Step[];
+  input: Record<string, string>;
+  artifacts: Record<string, string>;
+  note?: string;
   /** --register 写进资产表的可见性；不写时 公开版="提取" 的取「提取」，别的要写 */
-  可见性?: Visibility;
+  visibility?: Visibility;
   /** 产物的许可取 jar 的哪几部分：数组 = 全部产物，表 = 按 id 第一段（类别）分别写；没写的按类别默认（许可.ts 默认部分） */
-  许可部分?: LicensePart[] | Record<string, LicensePart[]>;
+  licenseParts?: LicensePart[] | Record<string, LicensePart[]>;
 };
 /**
  * 根：「到」相对哪个目录，游戏 = anim 配置 ANIM_GAME，mc资源 = ANIM_MC_ASSETS（资源索引在那），
@@ -38,7 +38,7 @@ export type SourcingEntry = {
  */
 export const jarRootValues = ['游戏', 'mc资源', '数据'] as const;
 export type JarRoot = (typeof jarRootValues)[number];
-export type JarRecord = { id: string; 到: string; sha256?: string; sha1?: string; 下载?: string; 根?: JarRoot; 也认?: string[]; 许可?: JarLicense; 旧sha256前缀?: string[] };
+export type JarRecord = { id: string; dest: string; sha256?: string; sha1?: string; download?: string; root?: JarRoot; alsoAccept?: string[]; license?: JarLicense; oldSha256Prefixes?: string[] };
 
 /** 「<根>:<相对路径>」→ [根, 相对路径]；没写根的按游戏 */
 export const splitPosition = (x: string): [JarRoot, string] => {
@@ -47,7 +47,7 @@ export const splitPosition = (x: string): [JarRoot, string] => {
   if (!(jarRootValues as readonly string[]).includes(m[1]!)) throw new Error(`jars.toml 的位置「${x}」：根只认 ${jarRootValues.join('、')}`);
   return [m[1] as JarRoot, m[2]!];
 };
-export type SourcingManifest = { 程序: Record<string, string[]>; 组: Record<string, string[]>; entryMap: Map<string, SourcingEntry>; jars: Map<string, JarRecord> };
+export type SourcingManifest = { program: Record<string, string[]>; group: Record<string, string[]>; entryMap: Map<string, SourcingEntry>; jars: Map<string, JarRecord> };
 
 export const sourcingDir = () => path.join(codeRoot(), 'sourcing');
 export const scriptDir = () => path.join(sourcingDir(), 'extract');
@@ -55,54 +55,54 @@ export const scriptDir = () => path.join(sourcingDir(), 'extract');
 export const parseManifest = (manifestText: string, jarText: string, extraFiles: Record<string, string> = {}): SourcingManifest => {
   const d = parse(manifestText) as Record<string, unknown>;
   const entryMap = new Map<string, SourcingEntry>();
-  const groups = { ...((d['组'] as Record<string, string[]>) ?? {}) };
-  const allEntries = [...((d['取材'] ?? []) as Record<string, unknown>[])];
+  const groups = { ...((d['group'] as Record<string, string[]>) ?? {}) };
+  const allEntries = [...((d['sourcing'] ?? []) as Record<string, unknown>[])];
   for (const [fileName, text] of Object.entries(extraFiles)) {
     const x = parse(text) as Record<string, unknown>;
-    const extraKeys = Object.keys(x).filter((k) => k !== '取材' && k !== '组');
+    const extraKeys = Object.keys(x).filter((k) => k !== 'sourcing' && k !== 'group');
     if (extraKeys.length) throw new Error(`${fileName} 只认 [[取材]] 和 [组]，多了 ${extraKeys.join('、')}`);
-    allEntries.push(...((x['取材'] ?? []) as Record<string, unknown>[]));
-    for (const [k, v] of Object.entries((x['组'] as Record<string, string[]>) ?? {})) {
+    allEntries.push(...((x['sourcing'] ?? []) as Record<string, unknown>[]));
+    for (const [k, v] of Object.entries((x['group'] as Record<string, string[]>) ?? {})) {
       if (groups[k]) throw new Error(`${fileName} 的组「${k}」别处已经有了`);
       groups[k] = v;
     }
   }
   for (const raw of allEntries) {
     const e: SourcingEntry = {
-      名称: String(raw['名称']),
-      需要: (raw['需要'] as string[] | undefined) ?? [],
-      前置: (raw['前置'] as string[] | undefined) ?? [],
-      要开游戏: raw['要开游戏'] === true,
-      待迁移: raw['待迁移'] as string | undefined,
-      不重导: raw['不重导'] as string | undefined,
-      公开版: raw['公开版'] as string | undefined,
-      作品: raw['作品'] as string | undefined,
-      步骤: (raw['步骤'] as Step[] | undefined) ?? [],
-      输入: (raw['输入'] as Record<string, string> | undefined) ?? {},
-      产物: (raw['产物'] as Record<string, string> | undefined) ?? {},
-      说明: raw['说明'] as string | undefined,
-      可见性: raw['可见性'] as Visibility | undefined,
-      许可部分: raw['许可部分'] as SourcingEntry['许可部分'],
+      displayName: String(raw['displayName']),
+      requires: (raw['requires'] as string[] | undefined) ?? [],
+      prerequisites: (raw['prerequisites'] as string[] | undefined) ?? [],
+      needsGame: raw['needsGame'] === true,
+      pendingMigration: raw['pendingMigration'] as string | undefined,
+      noReExtract: raw['noReExtract'] as string | undefined,
+      publicVersion: raw['publicVersion'] as string | undefined,
+      work: raw['work'] as string | undefined,
+      steps: (raw['steps'] as Step[] | undefined) ?? [],
+      input: (raw['input'] as Record<string, string> | undefined) ?? {},
+      artifacts: (raw['artifacts'] as Record<string, string> | undefined) ?? {},
+      note: raw['note'] as string | undefined,
+      visibility: raw['visibility'] as Visibility | undefined,
+      licenseParts: raw['licenseParts'] as SourcingEntry['licenseParts'],
     };
-    const parts = Array.isArray(e.许可部分) ? e.许可部分 : Object.values(e.许可部分 ?? {}).flat();
+    const parts = Array.isArray(e.licenseParts) ? e.licenseParts : Object.values(e.licenseParts ?? {}).flat();
     const badParts = parts.filter((p) => !(licensePartValues as readonly string[]).includes(p));
-    if (badParts.length) throw new Error(`取材清单「${e.名称}」的 许可部分 只认 ${licensePartValues.join('、')}：${badParts.join('、')}`);
-    if (entryMap.has(e.名称)) throw new Error(`取材清单里「${e.名称}」写了两条`);
-    entryMap.set(e.名称, e);
+    if (badParts.length) throw new Error(`取材清单「${e.displayName}」的 许可部分 只认 ${licensePartValues.join('、')}：${badParts.join('、')}`);
+    if (entryMap.has(e.displayName)) throw new Error(`取材清单里「${e.displayName}」写了两条`);
+    entryMap.set(e.displayName, e);
   }
-  type RawJar = Omit<JarRecord, '许可'> & { 许可?: unknown };
+  type RawJar = Omit<JarRecord, 'license'> & { license?: unknown };
   // 映射：官方 client.txt 这类非 jar 文件，登记、查 sha 和 jar 一样
-  const j = parse(jarText) as { Mojang?: { 资源索引?: RawJar[] | RawJar; 客户端?: RawJar[]; 映射?: RawJar[]; 要自己生成?: RawJar[] }; 模组?: RawJar[] };
+  const j = parse(jarText) as { Mojang?: { assetIndex?: RawJar[] | RawJar; client?: RawJar[]; mappings?: RawJar[]; selfGenerated?: RawJar[] }; mods?: RawJar[] };
   const jars = new Map<string, JarRecord>();
   // 资源索引旧写法是单张表、没有 id，只给人看，不进 jar 表
-  const assetIndexes = Array.isArray(j.Mojang?.资源索引) ? j.Mojang.资源索引 : [];
-  for (const x of [...assetIndexes, ...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.映射 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) {
+  const assetIndexes = Array.isArray(j.Mojang?.assetIndex) ? j.Mojang.assetIndex : [];
+  for (const x of [...assetIndexes, ...(j.Mojang?.client ?? []), ...(j.Mojang?.mappings ?? []), ...(j.Mojang?.selfGenerated ?? []), ...(j.mods ?? [])]) {
     if (jars.has(x.id)) throw new Error(`jars.toml 里 id「${x.id}」写了两条`);
-    if (x.根 !== undefined && !(jarRootValues as readonly string[]).includes(x.根)) throw new Error(`jars.toml 的 ${x.id}：根只认 ${jarRootValues.join('、')}，写的是「${x.根}」`);
-    for (const y of x.也认 ?? []) splitPosition(y);
-    jars.set(x.id, { ...x, 许可: x.许可 === undefined ? undefined : readJarLicense(x.许可) });
+    if (x.root !== undefined && !(jarRootValues as readonly string[]).includes(x.root)) throw new Error(`jars.toml 的 ${x.id}：根只认 ${jarRootValues.join('、')}，写的是「${x.root}」`);
+    for (const y of x.alsoAccept ?? []) splitPosition(y);
+    jars.set(x.id, { ...x, license: x.license === undefined ? undefined : readJarLicense(x.license) });
   }
-  return { 程序: (d['程序'] as Record<string, string[]>) ?? {}, 组: groups, entryMap, jars };
+  return { program: (d['program'] as Record<string, string[]>) ?? {}, group: groups, entryMap, jars };
 };
 
 export const readManifest = () => {
@@ -118,17 +118,17 @@ export const readManifest = () => {
 };
 
 /** 能直接跑的：有步骤、不用开游戏、不待迁移、不是不重导（--all 就是这些） */
-export const canRunDirectly = (e: SourcingEntry) => e.步骤.length > 0 && !e.要开游戏 && !e.待迁移 && !e.不重导;
+export const canRunDirectly = (e: SourcingEntry) => e.steps.length > 0 && !e.needsGame && !e.pendingMigration && !e.noReExtract;
 
 /** 条目属于所选作品（没写「作品」的各作品都算） */
-export const belongsToWork = (e: SourcingEntry, work: string) => e.作品 === undefined || e.作品 === work;
+export const belongsToWork = (e: SourcingEntry, work: string) => e.work === undefined || e.work === work;
 
 /** 名称或组名 → 条目（去重、保持先后）；--all 见 可直接跑，给了 作品 时不选写了别的作品的 */
 export const selectEntries = (q: SourcingManifest, names: readonly string[], all: boolean, work?: string): SourcingEntry[] => {
   const out: string[] = [];
-  if (all) out.push(...[...q.entryMap.values()].filter((e) => canRunDirectly(e) && (work === undefined || belongsToWork(e, work))).map((e) => e.名称));
+  if (all) out.push(...[...q.entryMap.values()].filter((e) => canRunDirectly(e) && (work === undefined || belongsToWork(e, work))).map((e) => e.displayName));
   for (const n of names) {
-    const got = q.entryMap.has(n) ? [n] : q.组[n];
+    const got = q.entryMap.has(n) ? [n] : q.group[n];
     if (!got) throw new Error(`取材清单里没有「${n}」（条目或组）；anim extract --list 看有哪些`);
     for (const k of got) if (!out.includes(k)) out.push(k);
   }
@@ -166,12 +166,12 @@ export const expandSteps = (q: SourcingManifest, step: Step, v: ExpandEnv): Step
   const [program, ...restArgs] = step;
   if (typeof program !== 'string') throw new Error('步骤的第一个参数要是程序名');
   let argv: Step;
-  if (q.程序[program]) argv = [...q.程序[program]!, ...restArgs];
+  if (q.program[program]) argv = [...q.program[program]!, ...restArgs];
   else if (program === 'python') argv = [v.python, ...restArgs];
   else if (program === 'mcai') argv = [...v.mcai, ...restArgs];
   else if (program === 'ts') throw new Error('步骤用了 ts（旧项目 工具/一镜到底/ 的工具），还没搬过来');
   else argv = step;
-  return argv.map((a) => (typeof a === 'string' ? fillTemplate(a, v) : { 输出: expandSteps(q, a.输出, v) as string[] }));
+  return argv.map((a) => (typeof a === 'string' ? fillTemplate(a, v) : { output: expandSteps(q, a.output, v) as string[] }));
 };
 
 /** 产物表 → [id, 相对暂存目录的文件]；<id 目录>/* 按资产锁里这个目录下一层的 id 展开 */

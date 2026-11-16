@@ -80,7 +80,7 @@ export const magicalWineFoxProps = (g: number): MagicalWineFoxExProps | null => 
   if (!choreo) return null;
   const gaze: [number, number] = [liYingLooksAtYou[0] + (liYingFinal.看[0] - liYingLooksAtYou[0]) * choreo.转, liYingLooksAtYou[1] + (liYingFinal.看[1] - liYingLooksAtYou[1]) * choreo.转];
   // 不眨眼：最后一帧要两只眼睛睁着接第 4 句的眼睛特写；背后的法杖不画（同第 8 句门口）
-  return { pose: liYingPose, stancePose: '站', expression: choreo.expression, 看: gaze, blink: 0, 秒: toSec(g), backStaff: false };
+  return { pose: liYingPose, stancePose: '站', expression: choreo.expression, 看: gaze, blink: 0, sec: toSec(g), backStaff: false };
 };
 
 export const LiYing: React.FC<{ g: number }> = ({ g }) => {

@@ -1,6 +1,6 @@
 """Java 版材质包兼容层的出图（anim assets packs 调用，pipeline/取材/材质包.ts 排请求、入库、写覆盖层锁）。
 请求 JSON（argv[1]）：包们（zip，按 MC 资源包界面从上到下 = 优先级从高到低）、原版jar、出目录、倍上限（2 的幂，材质包.ts 放大上限）、
-图集（[{id, 原图, 贴图名, 格}]）、单张（[{id, 原图, 包内, 组, 倍上限?}]）、群系（{id, 原表}）。结果 JSON 打在 stdout 最后一行。
+图集（[{id, 原图, 贴图名, cell}]）、singleTextures（[{id, 原图, 包内, group, 倍上限?}]）、biome（{id, 原表}）；包们的每项是 {zip, name}。结果 JSON 打在 stdout 最后一行。
 - 每个贴图按包的顺序找，第一个有的包说了算（同 MC），.png.mcmeta 取同一个包的；都没有就留原版。
 - 动画贴图（.png.mcmeta 的 animation）：帧大小照 MC（写了 width/height 用它，没写取图宽高里小的那个），frames 的顺序、time 照写的、没写按 frametime。
   原版这件是一格（方块图集、方贴图）的取第一帧；原版是 N 帧竖条（水面）的，把包的一整圈动画按时长均匀取 N 帧排回竖条，帧数、帧长不同也能换（静态的就 N 帧都一样）。
@@ -300,24 +300,24 @@ def health_check(p: Pack) -> dict:
     meta = p.json('pack.mcmeta')
     pf = meta.get('pack', {}).get('pack_format') if isinstance(meta, dict) else None
     sf = meta.get('pack', {}).get('supported_formats') if isinstance(meta, dict) else None
-    return {'名': p.名, 'pack_format': pf, 'supported_formats': sf, '统计': dict(stats), '例': examples}
+    return {'name': p.名, 'pack_format': pf, 'supported_formats': sf, 'stats': dict(stats), 'examples': examples}
 
 
 def main() -> None:
     with open(sys.argv[1], encoding='utf-8') as f:
         q = json.load(f)
-    pack_stack = PackStack([Pack(x['zip'], x['名']) for x in q['包们']])
+    pack_stack = PackStack([Pack(x['zip'], x['name']) for x in q['包们']])
     jar = zipfile.ZipFile(q['原版jar'])
     out_dir = q['出目录']
     max_scale = int(q.get('倍上限', 1))
-    report: dict = {'产物': [], '图集缺': 0, '图集不合': [], '单张缺': [], '单张原版放大': [], '单张不合': [], '图集格': {}, '缩放': Counter(), '各包贡献': Counter(), '体检': [health_check(p) for p in pack_stack.packs]}
+    report: dict = {'artifacts': [], '图集缺': 0, '图集不合': [], '单张缺': [], '单张原版放大': [], '单张不合': [], '图集格': {}, 'scale': Counter(), 'perPackContribution': Counter(), '体检': [health_check(p) for p in pack_stack.packs]}
 
     def record_scale(s: float, f: int, note: str):
-        report['缩放'][f'包 {s:g} 倍 → 出 {f} 倍（{note}）'] += 1
+        report['scale'][f'包 {s:g} 倍 → 出 {f} 倍（{note}）'] += 1
 
     for t in q.get('图集', []):
         original = Image.open(t['原图']).convert('RGBA')
-        cell_size = t['格']
+        cell_size = t['cell']
         found_list = [find_image(pack_stack, texture_path(texture_name)) for texture_name in t['贴图名']]
         F = max([effective_scale(pack_scale(x, cell_size), max_scale) for x in found_list if x] or [1])
         # 方块表.png 是竖条：格边长宽，第 i 张在 y = 格·i（engine/voxel/真实方块图集.ts 按竖条宽取格边长，读的时候才排成 16 列）
@@ -329,15 +329,15 @@ def main() -> None:
                 continue
             cell, note = get_texture(x, (cell_size, cell_size), F)
             if cell is None:
-                report['图集不合'].append({'名': texture_name, '包': x[0].名, '原因': note})
+                report['图集不合'].append({'name': texture_name, 'pack': x[0].名, 'cause': note})
                 continue
             original.paste(cell, (0, i * cell_size * F))
             replaced += 1
             record_scale(pack_scale(x, cell_size), F, note)
-            report['各包贡献'][x[0].名] += 1
+            report['perPackContribution'][x[0].名] += 1
         report['图集格'][t['id']] = cell_size * F
-        report['产物'].append({'id': t['id'], '文件': save_image(original, out_dir, t['id']), '换': replaced, '共': len(t['贴图名'])})
-    single_images = q.get('单张', [])
+        report['artifacts'].append({'id': t['id'], 'file': save_image(original, out_dir, t['id']), 'replaced': replaced, 'total': len(t['贴图名'])})
+    single_images = q.get('singleTextures', [])
     source_images = {s['id']: Image.open(s['原图']).convert('RGBA') for s in single_images}
     found_list = {s['id']: find_image(pack_stack, s['包内']) for s in single_images}
     caps = {s['id']: min(max_scale, int(s.get('倍上限', max_scale))) for s in single_images}
@@ -345,33 +345,33 @@ def main() -> None:
     for s in single_images:
         x = found_list[s['id']]
         if x:
-            group_scale[s['组']] = max(group_scale.get(s['组'], 1), effective_scale(pack_scale(x, source_images[s['id']].width), caps[s['id']]))
+            group_scale[s['group']] = max(group_scale.get(s['group'], 1), effective_scale(pack_scale(x, source_images[s['id']].width), caps[s['id']]))
     for s in single_images:
         original = source_images[s['id']]
         x = found_list[s['id']]
-        f = min(group_scale.get(s['组'], 1), caps[s['id']])
+        f = min(group_scale.get(s['group'], 1), caps[s['id']])
         if x is None:
             report['单张缺'].append(s['id'])
             if f > 1:
                 # 同组别的贴图放大了，包里没有的原版贴图也跟着放大，一组一样大（消费处常把一组拼成一张图集）
                 report['单张原版放大'].append(s['id'])
-                report['产物'].append({'id': s['id'], '文件': save_image(nearest_upscale(original, f), out_dir, s['id']), '换': 0, '共': 1})
+                report['artifacts'].append({'id': s['id'], 'file': save_image(nearest_upscale(original, f), out_dir, s['id']), 'replaced': 0, 'total': 1})
             continue
         im, note = get_texture(x, original.size, f)
         if im is None:
-            report['单张不合'].append({'id': s['id'], '包': x[0].名, '原因': note})
+            report['单张不合'].append({'id': s['id'], 'pack': x[0].名, 'cause': note})
             continue
         record_scale(pack_scale(x, original.width), f, note)
-        report['各包贡献'][x[0].名] += 1
-        report['产物'].append({'id': s['id'], '文件': save_image(im, out_dir, s['id']), '换': 1, '共': 1})
-    g = q.get('群系')
+        report['perPackContribution'][x[0].名] += 1
+        report['artifacts'].append({'id': s['id'], 'file': save_image(im, out_dir, s['id']), 'replaced': 1, 'total': 1})
+    g = q.get('biome')
     if g:
         r = remap_biome_color(pack_stack, jar, g['原表'], out_dir, g['id'])
         if r:
-            report['产物'].append({'id': g['id'], '文件': r['文件'], '换': r['改'], '共': r['改']})
-            report['群系色'] = {k: r[k] for k in ('改', '色图来自', '例')}
-    report['缩放'] = dict(report['缩放'])
-    report['各包贡献'] = dict(report['各包贡献'])
+            report['artifacts'].append({'id': g['id'], 'file': r['文件'], 'replaced': r['改'], 'total': r['改']})
+            report['biomeColor'] = {'changed': r['改'], 'colorMapSources': r['色图来自'], 'examples': r['例']}
+    report['scale'] = dict(report['scale'])
+    report['perPackContribution'] = dict(report['perPackContribution'])
     print(json.dumps(report, ensure_ascii=False))
 
 

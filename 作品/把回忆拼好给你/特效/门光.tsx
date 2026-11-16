@@ -14,7 +14,7 @@ import { type V3 } from '@engine/model/parts.tsx';
 import { rad, mulberry32 } from '@engine/core/数学.ts';
 
 export type DoorOpening = { a: [number, number]; b: [number, number]; bottom: number; topEdge: number };
-export type Ledge = { 框: [number, number, number, number]; 高: number };
+export type Ledge = { box: [number, number, number, number]; height: number };
 export type Blend = '加' | '盖';
 
 export type DoorLightParams = {
@@ -31,20 +31,20 @@ export type DoorLightParams = {
     /** 内档比外档往里缩多少（格，门洞四边各缩这么多再投下去） */
     inset: number;
     pixelsPerCell: number;
-    混合: Blend;
+    blend: Blend;
   };
   lightBand: {
     色: string;
-    混合: Blend;
+    blend: Blend;
     /** u：沿门洞底边从 a（0）到 b（1）的位置；宽：格；强：同地块；起、止：沿光带从门洞上沿（0）到落地（1）画哪一截 */
-    bands: readonly { u: number; 宽: number; 强: number; 起: number; 止: number }[];
+    bands: readonly { u: number; width: number; strength: number; start: number; end: number }[];
   };
   /** 起：沿光从门洞（0）到落地（1）从哪儿起撒，贴着门洞（镜头）的太大 */
-  floatDust: { 数: number; 色: string; 强: number; 种子: number; 大小: number; driftSpeed: number; 起: number };
+  floatDust: { 数: number; 色: string; strength: number; seed: number; size: number; driftSpeed: number; start: number };
 };
 
 /** 站在门口挡光的人（史蒂夫那样的方块人）：脚底在地上哪一点、多高；影子按原版玩家模型的剪影（正面看：两腿、身子、两臂、头） */
-export type PersonShadow = { feet: [number, number]; 高: number };
+export type PersonShadow = { feet: [number, number]; height: number };
 /** 光走的方向（单位向量，从门外往屋里、往下） */
 export const lightDir = (azimuthDeg: number, elevationDeg: number): V3 => {
   const [a, e] = [rad(azimuthDeg), rad(elevationDeg)];
@@ -96,7 +96,7 @@ const inPersonShadow = (q: [number, number], figure: PersonShadow, d: V3, h: num
   const alongFacing = dx * fx + dy * fy;
   if (alongFacing < 0) return false;
   const height = h + (alongFacing * -d[2]) / horizLen;
-  const pixelSize = silhouetteHeight / figure.高;
+  const pixelSize = silhouetteHeight / figure.height;
   const [u, v] = [(dx * rx + dy * ry) * pixelSize, height * pixelSize];
   return silhouettes.some(([a, b, c, e]) => u >= a && u < c && v >= b && v < e);
 };
@@ -131,12 +131,12 @@ const makeMaterial = (blend: Blend, color: string, strength: number, map?: THREE
     fog: false,
   }));
 
-type GroundLayer = { 高: number; 宽: number; 长: number; 原点: [number, number]; 贴图: THREE.DataTexture };
+type GroundLayer = { height: number; width: number; length: number; origin: [number, number]; 贴图: THREE.DataTexture };
 
 // 把地块按 每格像素 画进贴图：两档的颜色直接写进贴图（材质色取白），地面、每块台面各一张
 const paintGround = (p: DoorLightParams, opening: DoorOpening, ledges: readonly Ledge[], figure: PersonShadow | undefined): GroundLayer[] => {
   const d = lightDir(p.azimuthDeg, p.elevationDeg);
-  const heights = [0, ...ledges.map((t) => t.高)];
+  const heights = [0, ...ledges.map((t) => t.height)];
   const outerPolys = heights.map((h) => projectDoorHole(opening, d, h, 0));
   // 门缝比两倍内缩还窄（推门那一下）就只有外档
   const hasInner = Math.hypot(opening.b[0] - opening.a[0], opening.b[1] - opening.a[1]) > 2 * p.ground.inset && opening.topEdge - opening.bottom > 2 * p.ground.inset;
@@ -147,7 +147,7 @@ const paintGround = (p: DoorLightParams, opening: DoorOpening, ledges: readonly 
   const width = Math.ceil((Math.max(...flatOuter.map((q) => q[0])) - origin[0]) * n);
   const lengthPx = Math.ceil((Math.max(...flatOuter.map((q) => q[1])) - origin[1]) * n);
   const [outerColor, innerColor] = [toColor(p.ground.outerColor), toColor(p.ground.innerColor)];
-  const additive = p.ground.混合 === '加';
+  const additive = p.ground.blend === '加';
   const writePixel = (px: Uint8Array, i: number, c: THREE.Color, strength: number) => {
     // 加：颜色乘强度、alpha 满；盖：颜色原样、alpha = 强度。贴图是 sRGB 的
     const s = c.clone().convertLinearToSRGB();
@@ -160,7 +160,7 @@ const paintGround = (p: DoorLightParams, opening: DoorOpening, ledges: readonly 
     for (let j = 0; j < lengthPx; j++)
       for (let i = 0; i < width; i++) {
         const q: [number, number] = [origin[0] + (i + 0.5) / n, origin[1] + (j + 0.5) / n];
-        const ledgeIndex = ledges.findIndex(({ 框: [x0, y0, x1, y1] }) => q[0] > x0 && q[0] < x1 && q[1] > y0 && q[1] < y1);
+        const ledgeIndex = ledges.findIndex(({ box: [x0, y0, x1, y1] }) => q[0] > x0 && q[0] < x1 && q[1] > y0 && q[1] < y1);
         if (ledgeIndex + 1 !== li) continue;
         if (!inConvexPoly(q, outerPolys[li]!)) continue;
         if (figure && inPersonShadow(q, figure, d, h)) continue;
@@ -172,14 +172,14 @@ const paintGround = (p: DoorLightParams, opening: DoorOpening, ledges: readonly 
     t.magFilter = THREE.NearestFilter;
     t.minFilter = THREE.NearestFilter;
     t.needsUpdate = true;
-    return { 高: h, 宽: width / n, 长: lengthPx / n, 原点: origin, 贴图: t };
+    return { height: h, width: width / n, length: lengthPx / n, origin: origin, 贴图: t };
   });
 };
 
 /** 地上的门形亮块。台面们：地上抬高的平面（地毯），亮块落在框里的部分画在台面顶上 */
-export const DoorLightGround: React.FC<{ 参数: DoorLightParams; opening: DoorOpening; ledges?: readonly Ledge[]; personShadow?: PersonShadow; brightness?: number }> = ({ 参数: params, opening, ledges = [], personShadow: figure, brightness = 1 }) => {
+export const DoorLightGround: React.FC<{ params: DoorLightParams; opening: DoorOpening; ledges?: readonly Ledge[]; personShadow?: PersonShadow; brightness?: number }> = ({ params: params, opening, ledges = [], personShadow: figure, brightness = 1 }) => {
   const layers = useMemo(() => paintGround(params, opening, ledges, figure), [params, opening, ledges, figure]);
-  const layerMaterials = useMemo(() => layers.map((l) => makeMaterial(params.ground.混合, '#ffffff', 1, l.贴图)), [layers, params.ground.混合]);
+  const layerMaterials = useMemo(() => layers.map((l) => makeMaterial(params.ground.blend, '#ffffff', 1, l.贴图)), [layers, params.ground.blend]);
   useEffect(
     () => () => {
       for (const l of layers) l.贴图.dispose();
@@ -187,12 +187,12 @@ export const DoorLightGround: React.FC<{ 参数: DoorLightParams; opening: DoorO
     },
     [layers, layerMaterials],
   );
-  for (const m of layerMaterials) adjustBright(m, params.ground.混合, '#ffffff', 1, brightness);
+  for (const m of layerMaterials) adjustBright(m, params.ground.blend, '#ffffff', 1, brightness);
   return (
     <>
       {layers.map((l, i) => (
-        <mesh key={i} position={[l.原点[0] + l.宽 / 2, l.原点[1] + l.长 / 2, l.高 + 0.002]} material={layerMaterials[i]} renderOrder={5}>
-          <planeGeometry args={[l.宽, l.长]} />
+        <mesh key={i} position={[l.origin[0] + l.width / 2, l.origin[1] + l.length / 2, l.height + 0.002]} material={layerMaterials[i]} renderOrder={5}>
+          <planeGeometry args={[l.width, l.length]} />
         </mesh>
       ))}
     </>
@@ -201,12 +201,12 @@ export const DoorLightGround: React.FC<{ 参数: DoorLightParams; opening: DoorO
 
 /** 空气里的光带：每条是一张顺着光、正对镜头那边转的长条，从门洞上沿（沿门宽 u 处）斜插到地上。
  *  朝：从场景指向镜头的方向（正交镜头用，比如镜头朝北看就是 [0, −1, 0]）；不给就朝 眼 转 */
-export const DoorLightBand: React.FC<{ 参数: DoorLightParams; opening: DoorOpening; 眼: V3; dir?: V3; brightness?: number }> = ({ 参数: params, opening, 眼: eye, dir, brightness = 1 }) => {
+export const DoorLightBand: React.FC<{ params: DoorLightParams; opening: DoorOpening; 眼: V3; dir?: V3; brightness?: number }> = ({ params: params, opening, 眼: eye, dir, brightness = 1 }) => {
   const d = lightDir(params.azimuthDeg, params.elevationDeg);
   const bands = useMemo(() => {
     const dv = new THREE.Vector3(...d);
     const holeWidth = Math.hypot(opening.b[0] - opening.a[0], opening.b[1] - opening.a[1]);
-    return params.lightBand.bands.map(({ u, 宽: stripWidth, 强: bandStrength, 起: start, 止: end }) => {
+    return params.lightBand.bands.map(({ u, width: stripWidth, strength: bandStrength, start: start, end: end }) => {
       // 门缝窄的时候光带不比门缝宽
       const bandWidth = Math.min(stripWidth, holeWidth);
       const topPoint = new THREE.Vector3(...holePoint(opening, u, opening.topEdge));
@@ -223,7 +223,7 @@ export const DoorLightBand: React.FC<{ 参数: DoorLightParams; opening: DoorOpe
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       g.setIndex([0, 1, 2, 0, 2, 3]);
-      return { g, m: makeMaterial(params.lightBand.混合, params.lightBand.色, bandStrength), 强: bandStrength };
+      return { g, m: makeMaterial(params.lightBand.blend, params.lightBand.色, bandStrength), strength: bandStrength };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params, opening, eye[0], eye[1], eye[2], dir?.[0], dir?.[1], dir?.[2]]);
@@ -236,7 +236,7 @@ export const DoorLightBand: React.FC<{ 参数: DoorLightParams; opening: DoorOpe
     },
     [bands],
   );
-  for (const { m, 强: bandStrength } of bands) adjustBright(m, params.lightBand.混合, params.lightBand.色, bandStrength, brightness);
+  for (const { m, strength: bandStrength } of bands) adjustBright(m, params.lightBand.blend, params.lightBand.色, bandStrength, brightness);
   return (
     <>
       {bands.map(({ g, m }, i) => (
@@ -248,8 +248,8 @@ export const DoorLightBand: React.FC<{ 参数: DoorLightParams; opening: DoorOpe
 
 /** 光带里的浮尘：门洞上撒一些点（种子定死），每粒顺着光往屋里走一段；按 秒 在门洞截面里慢慢往下飘、落到底再回到顶上。
  *  大小是格（一个贴图像素 = 1/16），点精灵是正对镜头的方块 */
-export const DoorLightDust: React.FC<{ 参数: DoorLightParams; opening: DoorOpening; 秒: number; brightness?: number }> = ({ 参数: params, opening, 秒: sec, brightness = 1 }) => {
-  const { 数: count, 色: color, 强: dustStrength, 种子: seed, 大小: size, driftSpeed, 起: scatterStart } = params.floatDust;
+export const DoorLightDust: React.FC<{ params: DoorLightParams; opening: DoorOpening; sec: number; brightness?: number }> = ({ params: params, opening, sec: sec, brightness = 1 }) => {
+  const { 数: count, 色: color, strength: dustStrength, seed: seed, size: size, driftSpeed, start: scatterStart } = params.floatDust;
   const d = lightDir(params.azimuthDeg, params.elevationDeg);
   const pageHeight = useThree((s) => s.size.height);
   const particles = useMemo(() => {
@@ -305,20 +305,20 @@ export const DoorLightDust: React.FC<{ 参数: DoorLightParams; opening: DoorOpe
 
 /** 三样一起：地块、光带、浮尘。亮：0～1 一起乘（推门时跟着门开大）。光带：镜头站在门洞里时光带从头顶掠过、只看得见落地那截楔形，关掉。
  *  朝：见 门光光带（正交镜头给） */
-export const DoorLight: React.FC<{ 参数: DoorLightParams; opening: DoorOpening; 眼: V3; dir?: V3; 秒?: number; ledges?: readonly Ledge[]; personShadow?: PersonShadow; brightness?: number; lightBand?: boolean }> = ({
-  参数: params,
+export const DoorLight: React.FC<{ params: DoorLightParams; opening: DoorOpening; 眼: V3; dir?: V3; sec?: number; ledges?: readonly Ledge[]; personShadow?: PersonShadow; brightness?: number; lightBand?: boolean }> = ({
+  params: params,
   opening,
   眼: eye,
   dir,
-  秒: sec = 0,
+  sec: sec = 0,
   ledges,
   personShadow: figure,
   brightness = 1,
   lightBand = true,
 }) => (
   <>
-    <DoorLightGround 参数={params} opening={opening} ledges={ledges} personShadow={figure} brightness={brightness} />
-    {lightBand && <DoorLightBand 参数={params} opening={opening} 眼={eye} dir={dir} brightness={brightness} />}
-    {params.floatDust.数 > 0 && <DoorLightDust 参数={params} opening={opening} 秒={sec} brightness={brightness} />}
+    <DoorLightGround params={params} opening={opening} ledges={ledges} personShadow={figure} brightness={brightness} />
+    {lightBand && <DoorLightBand params={params} opening={opening} 眼={eye} dir={dir} brightness={brightness} />}
+    {params.floatDust.数 > 0 && <DoorLightDust params={params} opening={opening} sec={sec} brightness={brightness} />}
   </>
 );

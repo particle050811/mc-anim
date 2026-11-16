@@ -9,7 +9,7 @@ import { argbColor, iconTopLeft, radialWheelConst, cellRange, WheelState } from 
 /** 画到哪：心 = 圆心在画布上的像素坐标，倍 = 一个 GUI 像素是几个画布像素（屏幕上 = GUI 缩放 × devicePixelRatio） */
 export type CanvasPos = { ctx: CanvasRenderingContext2D; centerX: number; centerY: number; scale: number };
 
-export type BandSegment = { 起: number; 止: number; 色: string };
+export type BandSegment = { start: number; end: number; 色: string };
 
 const TAU = Math.PI * 2;
 
@@ -19,28 +19,28 @@ export const drawRingBands = ({ ctx, centerX, centerY, scale }: CanvasPos, inner
   const bands: BandSegment[] = [];
   for (const ringSeg of segments) {
     const lastBand = bands[bands.length - 1];
-    if (lastBand && lastBand.色 === ringSeg.色 && Math.abs(lastBand.止 - ringSeg.起) < 1e-6) lastBand.止 = ringSeg.止;
+    if (lastBand && lastBand.色 === ringSeg.色 && Math.abs(lastBand.end - ringSeg.start) < 1e-6) lastBand.end = ringSeg.end;
     else bands.push({ ...ringSeg });
   }
   if (bands.length > 1) {
     const firstBand = bands[0]!;
     const lastArc = bands[bands.length - 1]!;
-    if (firstBand.色 === lastArc.色 && Math.abs(lastArc.止 - TAU - firstBand.起) < 1e-6) {
-      lastArc.止 += firstBand.止 - firstBand.起;
+    if (firstBand.色 === lastArc.色 && Math.abs(lastArc.end - TAU - firstBand.start) < 1e-6) {
+      lastArc.end += firstBand.end - firstBand.start;
       bands.shift();
     }
   }
   for (const ringSeg of bands) {
     ctx.fillStyle = ringSeg.色;
     ctx.beginPath();
-    if (ringSeg.止 - ringSeg.起 >= TAU - 1e-6) {
+    if (ringSeg.end - ringSeg.start >= TAU - 1e-6) {
       ctx.arc(centerX, centerY, outerRadius * scale, 0, TAU);
       ctx.moveTo(centerX + innerRadius * scale, centerY);
       ctx.arc(centerX, centerY, innerRadius * scale, 0, TAU);
       ctx.fill('evenodd');
     } else {
-      ctx.arc(centerX, centerY, outerRadius * scale, ringSeg.起, ringSeg.止);
-      ctx.arc(centerX, centerY, innerRadius * scale, ringSeg.止, ringSeg.起, true);
+      ctx.arc(centerX, centerY, outerRadius * scale, ringSeg.start, ringSeg.end);
+      ctx.arc(centerX, centerY, innerRadius * scale, ringSeg.end, ringSeg.start, true);
       ctx.closePath();
       ctx.fill();
     }
@@ -104,7 +104,7 @@ export const drawTextCell = ({ ctx, centerX, centerY, scale }: CanvasPos, text: 
 export type WheelCell = { icon: Png } | { 文字: string };
 
 export type VanillaWheelParams = {
-  格: readonly WheelCell[];
+  cell: readonly WheelCell[];
   /** 打开后第几刻（可带小数）；2.5 刻以内是打开动画，只有背景和扇形带 */
   刻: number;
   /** 悬停的那一格（鼠标所在），不给就没有 */
@@ -118,7 +118,7 @@ export type VanillaWheelParams = {
 /** 照 GenericRadialMenu.draw() 的顺序画一圈：背景 → 扇形带 → 各格图标或文字 → 圆心物品。
  *  打开动画里 draw() 给扇形带套了 translate(0, animTop)，但 drawSlices 直接往 Tesselator 写屏幕坐标、不经 GuiGraphics 的矩阵，所以扇形带始终在圆心，这里照这个实际效果画。
  *  没画的：悬停格的物品提示框（drawTooltips）、物品的数量和冷却遮罩（renderItemDecorations） */
-export const drawVanillaWheel = (canvasPos: CanvasPos, { 格: wheelCells, 刻: tick, selectedIdx, centerIcon, backdrop }: VanillaWheelParams) => {
+export const drawVanillaWheel = (canvasPos: CanvasPos, { cell: wheelCells, 刻: tick, selectedIdx, centerIcon, backdrop }: VanillaWheelParams) => {
   const wheelState = WheelState(tick);
   if (!wheelState || wheelCells.length === 0) return;
   if (backdrop) drawBackdrop(canvasPos, backdrop, wheelState.patternScale);

@@ -61,7 +61,7 @@ describe('渲染器入口', () => {
         if (!/\.[cm]?[jt]s$/.test(e.name)) continue;
         const relPath = path.relative(root, file).split(path.sep).join('/');
         for (const q of checkRendererEntry(relPath, fs.readFileSync(file, 'utf8'))) {
-          violations.push(`${relPath}:${q.行} ${q.文本}`);
+          violations.push(`${relPath}:${q.行} ${q.text}`);
         }
       }
     };

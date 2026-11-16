@@ -10,19 +10,19 @@ type Vec3 = [number, number, number];
 
 /** 柱顶的六样材料：原版 TLM 召唤女仆的祭坛配方（altar/spawn_box）钻石、金锭、红石、铁锭、青金石、煤炭各一。
  *  谁放哪根柱子是玩家自己摆的，这里按颜色排开：近处两根放最认得出的钻石、金锭，红的蓝的分两边 */
-export const pillarTopMaterials: readonly { 名: string; pillarPos: readonly [number, number]; phaseFrac: number }[] = [
-  { 名: '钻石', pillarPos: [1.5, -3.5], phaseFrac: 0.13 },
-  { 名: '金锭', pillarPos: [-1.5, -3.5], phaseFrac: 0.71 },
-  { 名: '红石', pillarPos: [3.5, -1.5], phaseFrac: 0.42 },
-  { 名: '青金石', pillarPos: [-3.5, -1.5], phaseFrac: 0.95 },
-  { 名: '铁锭', pillarPos: [3.5, 1.5], phaseFrac: 0.27 },
-  { 名: '煤炭', pillarPos: [-3.5, 1.5], phaseFrac: 0.58 },
+export const pillarTopMaterials: readonly { name: string; pillarPos: readonly [number, number]; phaseFrac: number }[] = [
+  { name: '钻石', pillarPos: [1.5, -3.5], phaseFrac: 0.13 },
+  { name: '金锭', pillarPos: [-1.5, -3.5], phaseFrac: 0.71 },
+  { name: '红石', pillarPos: [3.5, -1.5], phaseFrac: 0.42 },
+  { name: '青金石', pillarPos: [-3.5, -1.5], phaseFrac: 0.95 },
+  { name: '铁锭', pillarPos: [3.5, 1.5], phaseFrac: 0.27 },
+  { name: '煤炭', pillarPos: [-3.5, 1.5], phaseFrac: 0.58 },
 ];
 /** 柱顶那格方块的底面高（格）：柱子 3 格高，放东西的是第三格 */
 export const pillarTopHeight = 2;
 /** TileEntityAltarRenderer：物品在柱顶格上方 1.25 格、上下浮 0.1 格（3.6 秒一个来回）、绕竖轴每 3.6 秒转一圈，再按物品的 GROUND 显示变换画。
  *  原版的钟是 System.currentTimeMillis() + 方块坐标，各柱各一个相位（上面的 相位，0～1 一圈） */
-export const floatItem = { 高: 1.25, floatAmp: 0.1, periodSec: 3.6 } as const;
+export const floatItem = { height: 1.25, floatAmp: 0.1, periodSec: 3.6 } as const;
 
 /** 点祭坛以后材料先整个变白 亮秒（24 fps 时 2 帧），再化成光点往圈心上方的 汇点 飞，正好在「她现身」那一帧汇齐（飞多久按两个事件现算）。
  *  演绎（三稿「材料化成光」）：原版合成时材料当刻没了，每根柱子和圈心各冒 5 个 CLOUD、5 个 SMOKE（BlockAltar.spawnParticleInCentre），没有光。
@@ -53,7 +53,7 @@ export const waveTicks = 6;
  *  种子按投影在 1～20000 里筛（祭坛召唤.test.ts 核这几条）：照片那一帧 7 颗都在画里，递蛋糕到照片后两帧都在歌词（顶上 14%）下面，
  *  不从她眼睛那一条前面压过去，至少 4 颗在肩膀以上（出生高 ≥ 1.2 格）；满足的里头挑推眼睛时画里最大的那颗最小的（390 宽的手机上半边 37 像素）。
  *  镜头改了路线就要重筛 */
-export const hearts = { 宽: 0.6, 高: 1.5, 种子: 3044 } as const;
+export const hearts = { width: 0.6, height: 1.5, seed: 3044 } as const;
 
 /** 远景的一条关键帧轨：[离段首几秒（'切' = 切近景前 1/24 秒，24 fps 时就是切前一帧）, 值] */
 export type FarTrack = readonly (readonly [number | '切', number])[];
@@ -94,10 +94,10 @@ export const shot = {
  *  强 = 每一层的不透明度，普通半透明叠（光.tsx：加法叠在草地上会发黄绿） */
 export const lightParams = {
   色: '#fff2c4',
-  altarLight: { radiusList: [3.2, 2.4, 1.6] as const, 强: [0.18, 0.18, 0.22] as const, fadeSec: legacyFrameSec(9) },
-  lightPillar: { 宽: [0.9, 1.3, 1.8] as const, 高: 7, 强: [0.34, 0.2, 0.12] as const, startBeforeSec: legacyFrameSec(3), holdSec: 0.5, fadeSec: legacyFrameSec(10) },
+  altarLight: { radiusList: [3.2, 2.4, 1.6] as const, strength: [0.18, 0.18, 0.22] as const, fadeSec: legacyFrameSec(9) },
+  lightPillar: { width: [0.9, 1.3, 1.8] as const, height: 7, strength: [0.34, 0.2, 0.12] as const, startBeforeSec: legacyFrameSec(3), holdSec: 0.5, fadeSec: legacyFrameSec(10) },
   /** 光柱里往上飘的光点（原版末地烛粒子的 glitter 贴图）：个数、半边长（格）、种子 */
-  lightDot: { 数: 18, halfSize: 0.07, 种子: 17 },
+  lightDot: { 数: 18, halfSize: 0.07, seed: 17 },
 } as const;
 
 /** 原声在母版里的固定增益（同 场/1-隐世之境一楼/参数.ts、场/2-门口/第8句参数.ts 的 原声增益，−6 dB 留余量）；段在一串歌里中间，不淡入 */
@@ -105,8 +105,8 @@ export const originalGain = 0.5;
 /** 音效（同第 8 句纸声的做法：峰值都配到 峰值 dBFS，压在歌底下，只听得到一下）。峰值是实测（按 48 kHz 每 2000 个样本（1/24 秒）一格量峰值，格从文件头数起）。
  *  祭坛合成（touhou_little_maid block.altar_craft 第 2 个文件，1.72 秒）：一开头就响（第 0 格 −5.5），第 8 格最响 −1.5 dBFS，文件头对着点祭坛那一帧 */
 export const soundFx = {
-  祭坛: { 资产: '音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2', 峰值: -1.5, 秒: 1.719 },
-  峰值: -20,
+  祭坛: { asset: '音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2', peakDb: -1.5, sec: 1.719 },
+  peakDb: -20,
 } as const;
 
 // ---------- 地：和第 1 句同一片地（用户 10-24「而且怎么超平坦背景 合理吗？」） ----------
@@ -119,13 +119,13 @@ export const soundFx = {
  *  圈让、镜头道：平台上不长花草的地方（祭坛圈里；镜头前面几格的草会大得糊住画面下沿）。
  *  范围：只铺镜头前方一扇（同第 1 句的做法），半径 200 > 雾止 192，地平线上是雾里的地，不露地形的边；植物半径以外的平原不长草（再远一株草不到几个像素） */
 export const altarPos = {
-  世界: [18, 128] as const,
+  world: [18, 128] as const,
   ground: 2,
-  平台: { west: -7, east: 7, south: -17, north: 6, fadeDist: 7 },
+  platform: { west: -7, east: 7, south: -17, north: 6, fadeDist: 7 },
   treeClearance: 3,
   ringClear: 4.6,
   shotBounds: { west: -2.5, east: 3.5, south: -18, north: -3.6 },
-  范围: { south: -22, north: 230, west: -220, east: 220, fanCenter: [0.5, -22] as const, fanWidth: 16, fanSpread: 1.05, rangeCenter: [0.5, -8] as const, radius: 200, plantRadius: 70 },
+  bounds: { south: -22, north: 230, west: -220, east: 220, fanCenter: [0.5, -22] as const, fanWidth: 16, fanSpread: 1.05, rangeCenter: [0.5, -8] as const, radius: 200, plantRadius: 70 },
 } as const;
 
 // ---------- 天色、雾：同第 1 句（原版 1.20.1 平原白天、渲染距离 12 区块），照抄 场/2-新世界/参数.ts ----------
@@ -140,6 +140,6 @@ export const renderDistance = 192;
 const skyPull = 1 - (0.25 + (0.75 * renderDistance) / 16 / 32) ** 0.25;
 export const fogColor = '#' + baseFogColor.map((c, i) => Math.round(c + (skyRgb[i]! - c) * skyPull).toString(16).padStart(2, '0')).join('');
 /** 地形的雾（FOG_TERRAIN，柱形）：起 = 距离 − clamp(距离 / 10, 4, 64)，止 = 距离 */
-export const terrainFog = { 起: renderDistance - Math.min(64, Math.max(4, renderDistance / 10)), 止: renderDistance };
+export const terrainFog = { start: renderDistance - Math.min(64, Math.max(4, renderDistance / 10)), end: renderDistance };
 /** 天的雾（FOG_SKY，球形，起 0、止 = 渲染距离）：天幕在眼睛上方 16 格 */
 export const skyDomeHeight = 16;

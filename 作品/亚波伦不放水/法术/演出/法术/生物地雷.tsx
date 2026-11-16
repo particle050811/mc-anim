@@ -56,7 +56,7 @@ const mineRow = (target: Vec3, seed: number): Mine[] =>
     return { 位: [target[0] + x, target[1] + y, target[2]] as const, blastTick };
   });
 
-const bioMine: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const bioMine: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const bolts = mineRow(target, seed);
   const acidSpawns: ParticleBirth[] = [];
@@ -65,7 +65,7 @@ const bioMine: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
     for (let t = mine.blastTick; t < Math.min(mine.blastTick + acidPoolTicks, tick); t++)
       for (let k = 0; k < 2; k++) {
         const [angle, randDistance] = [r() * Math.PI * 2, Math.sqrt(r()) * 2];
-        acidSpawns.push({ 刻: t, 位: [mine.位[0] + Math.cos(angle) * randDistance, mine.位[1] + Math.sin(angle) * randDistance, mine.位[2] + 0.2], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)), radius: 0.3, 色: acidColor, 种子: i * 1000 + t * 2 + k });
+        acidSpawns.push({ 刻: t, 位: [mine.位[0] + Math.cos(angle) * randDistance, mine.位[1] + Math.sin(angle) * randDistance, mine.位[2] + 0.2], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)), radius: 0.3, 色: acidColor, seed: i * 1000 + t * 2 + k });
       }
   });
   return (
@@ -75,16 +75,16 @@ const bioMine: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
           <MinecraftSpace key={i} 位={mine.位}>
             <group scale={[-1, -1, 1]}>
               <group position={[0, -1.5, 0]}>
-                <ModelPart 模型={bioMineModel} 图={animFrames[Math.floor(tick) % 19]!} />
-                <ModelPart 模型={bioMineModel} 图={png(glowPng)} 画法="发光" />
+                <ModelPart model={bioMineModel} image={animFrames[Math.floor(tick) % 19]!} />
+                <ModelPart model={bioMineModel} image={png(glowPng)} 画法="发光" />
               </group>
             </group>
           </MinecraftSpace>
         ) : (
-          <RingBurst key={i} 位={mine.位} spawnTick={mine.blastTick} 秒={sec} 大小={3} 颜色={white} accel={1} />
+          <RingBurst key={i} 位={mine.位} spawnTick={mine.blastTick} sec={sec} size={3} 颜色={white} accel={1} />
         ),
       )}
-      <DustCloud spawns={acidSpawns} 秒={sec} />
+      <DustCloud spawns={acidSpawns} sec={sec} />
     </>
   );
 };

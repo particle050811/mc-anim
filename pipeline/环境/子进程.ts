@@ -5,11 +5,11 @@ import type { SpawnOptions } from 'node:child_process';
 import { isMac, isWindows } from './配置.ts';
 
 export class SubprocessError extends Error {
-  退出码: number | null;
+  exitCode: number | null;
   constructor(cmd: readonly string[], code: number | null, stderr: string) {
     const tail = stderr.trim().split('\n').slice(-15).join('\n');
     super(`命令失败（退出码 ${code}）：${cmd.join(' ')}${tail ? '\n' + tail : ''}`);
-    this.退出码 = code;
+    this.exitCode = code;
   }
 }
 
@@ -25,8 +25,8 @@ export const runCapture = (cmd: readonly string[], opts: SpawnOptions = {}): str
 };
 
 /** 跑完，返回 stdout 原始字节（ffmpeg 出 PCM、raw 帧用）；退出码非 0 抛 子进程失败。给了 输入 就从 stdin 喂进去（PNG 交给 ffmpeg 转 yuv） */
-export const runCaptureBytes = (cmd: readonly string[], opts: SpawnOptions & { 输入?: Buffer } = {}): Buffer => {
-  const { 输入: stdin, ...rest } = opts;
+export const runCaptureBytes = (cmd: readonly string[], opts: SpawnOptions & { input?: Buffer } = {}): Buffer => {
+  const { input: stdin, ...rest } = opts;
   const r = spawn.sync(cmd[0]!, cmd.slice(1), { ...rest, ...(stdin ? { input: stdin } : {}), stdio: [stdin ? 'pipe' : 'ignore', 'pipe', 'pipe'], maxBuffer: 2 ** 32 });
   if (r.error) throw r.error;
   if (r.status !== 0) throw new SubprocessError(cmd, r.status, String(r.stderr ?? ''));
@@ -36,7 +36,7 @@ export const runCaptureBytes = (cmd: readonly string[], opts: SpawnOptions & { �
 /** 跑完，返回 { 退出码, stdout, stderr }，不抛 */
 export const tryRun = (cmd: readonly string[], opts: SpawnOptions = {}) => {
   const r = spawn.sync(cmd[0]!, cmd.slice(1), { ...opts, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
-  return { 退出码: r.error ? null : r.status, stdout: String(r.stdout ?? ''), stderr: r.error ? String(r.error.message) : String(r.stderr ?? '') };
+  return { exitCode: r.error ? null : r.status, stdout: String(r.stdout ?? ''), stderr: r.error ? String(r.error.message) : String(r.stderr ?? '') };
 };
 
 /** 异步跑；输出继承到终端（ffmpeg 进度、报错直接给人看），stderr 另收一份放进报错 */

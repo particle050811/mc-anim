@@ -36,7 +36,7 @@ const particles: ParticleSpawn[] = (() => {
   play.torchArrows.forEach((arrow, i) => {
     const pathAt = (k: number): V3 => {
       const progress = Math.min(1, Math.max(0, (k / 20 - arrow.放) / (arrow.中 - arrow.放)));
-      return [arrow.起[0] + (arrow.landing[0] - arrow.起[0]) * progress, arrow.起[1] + (arrow.landing[1] - arrow.起[1]) * progress, arrow.起[2] + (arrow.landing[2] - arrow.起[2]) * progress];
+      return [arrow.start[0] + (arrow.landing[0] - arrow.start[0]) * progress, arrow.start[1] + (arrow.landing[1] - arrow.start[1]) * progress, arrow.start[2] + (arrow.landing[2] - arrow.start[2]) * progress];
     };
     out.push(...torchArrowFlames(pathAt, arrow.放 * 20, arrow.中 * 20, 7120 + i));
     if (arrow.torchPos) out.push(...torchParticles(torchFlamePos(arrow.torchPos), 0.25, arrow.中 * 20, 60 * 20, 7130 + i));
@@ -53,7 +53,7 @@ const darknessEndT = timeline.segmentStartT('7-1-2');
 
 // 场时刻 t 的人、怪、马、护盾、箭、火把、风扇虚影、粒子（不含场景和黑暗）。7-2-1 李樱远望时也画这一份（用户 10-19 定：看到的必须是第 1 场同一刻）
 // 说话的人头随字轻点（库/角色/口型.ts 的 withTalkNod）；句子的 帧 写场时刻（秒），每秒给 1
-const sceneLineCues = Object.entries(timeline.dialogue).map(([id, line]) => ({ id, 帧: line.t }));
+const sceneLineCues = Object.entries(timeline.dialogue).map(([id, line]) => ({ id, frame: line.t }));
 export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
   const warden = play.wardenState(t);
   const huangPan = play.huangPanState(t);
@@ -62,7 +62,7 @@ export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
   return (
     <>
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
-        <Warden 秒={warden.秒} walkCycle={warden.walkCycle} 攻击={warden.攻击} hurt={warden.hurt} headYaw={warden.headYaw} headPitch={warden.headPitch} 吼叫={warden.吼叫} />
+        <Warden sec={warden.sec} walkCycle={warden.walkCycle} 攻击={warden.攻击} hurt={warden.hurt} headYaw={warden.headYaw} headPitch={warden.headPitch} 吼叫={warden.吼叫} />
       </group>
       {Array.from({ length: play.vexCount }, (_, i) => {
         const vex = play.vexState(i, t);
@@ -77,10 +77,10 @@ export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
       <HuangPan pose={withTalkNod(huangPan.pose, sceneLineCues, '黄叛', t, 1)} bow={huangPan.bow} />
       {horse && (
         <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-          <SpectralSteed 秒={t} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider={t >= timeline.mountT} />
+          <SpectralSteed sec={t} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider={t >= timeline.mountT} />
         </group>
       )}
-      {shield && <MagicShield at={shield.at} dir={shield.dir} sec={shield.秒} fade={shield.opacity} />}
+      {shield && <MagicShield at={shield.at} dir={shield.dir} sec={shield.sec} fade={shield.opacity} />}
       {play.torches(t).map((c, i) => (
         <TorchBlock key={i} cell={c.cell} 光={2} />
       ))}
@@ -89,13 +89,13 @@ export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
       ))}
       {play.flyingArrows(t).map((a, i) => (a.torchArrow ? <TorchArrow key={i} p={a.p} dir={a.dir} /> : <Arrow key={i} p={a.p} dir={a.dir} />))}
       <BowFans t={t} fans={play.fansAt(t)} />
-      <VanillaParticles spawns={particles} 秒={t} />
+      <VanillaParticles spawns={particles} sec={t} />
     </>
   );
 };
 
 export const ScenePicture: React.FC<{ t: number; cam: Cam; width: number; height: number }> = ({ t, cam, width, height }) => (
-  <AncientCity4xCanvas 段="7-1" cam={cam} width={width} height={height} wool={K648.woolNames}>
+  <AncientCity4xCanvas segment="7-1" cam={cam} width={width} height={height} wool={K648.woolNames}>
     {t < darknessEndT && <DarknessEffect sec={play.darknessSec(t)} durationSec={play.darknessDuration} minFogDist={shotDarknessFog} fogColor={FOG_4X.color} normalFogNear={FOG_4X.near} normalFogFar={FOG_4X.far} fogBackground />}
     <SceneActors t={t} />
   </AncientCity4xCanvas>

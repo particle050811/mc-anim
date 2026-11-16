@@ -11,7 +11,7 @@ import {
 } from './基岩动画.ts';
 
 /** 一个控制器在某时刻给的骨骼表。基环境 是实体那边的环境（查询、外部名字），取样动画时垫在控制器自己的环境下面 */
-export type ControllerPlayer = { readonly 名: string; poseAt: (sec: number, baseEnv?: MolangEnv) => SkeletonTable };
+export type ControllerPlayer = { readonly name: string; poseAt: (sec: number, baseEnv?: MolangEnv) => SkeletonTable };
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 
@@ -54,21 +54,21 @@ export const lerpPose = (a: SkeletonTable, b: SkeletonTable, u: number, shortest
 };
 
 // ======== 基岩版 animation_controllers ========
-export type StateAnimation = { 名: string; weight?: AxisValue };
+export type StateAnimation = { name: string; weight?: AxisValue };
 /** blend_transition：秒数（旧状态权重 1 → 0 线性），或曲线 { 秒: 旧状态权重 } */
-export type TransitionSpec = number | readonly { 时: number; weight: number }[];
+export type TransitionSpec = number | readonly { timestamp: number; weight: number }[];
 export type ControllerState = {
-  名: string;
+  name: string;
   animations: readonly StateAnimation[];
   /** 按顺序求，第一个成立的生效（一步最多转一次） */
-  transitions: readonly { 到: string; condition: AxisValue }[];
+  transitions: readonly { dest: string; condition: AxisValue }[];
   /** 离开这个状态时淡出多久（基岩版的 blend_transition 写在被离开的状态上） */
   transition: TransitionSpec;
   shortestPath: boolean;
   onEntry: readonly MolangExpr[];
   退出: readonly MolangExpr[];
 };
-export type AnimationController = { 名: string; initialState: string; states: Readonly<Record<string, ControllerState>> };
+export type AnimationController = { name: string; initialState: string; states: Readonly<Record<string, ControllerState>> };
 
 const toExprs = (x: unknown): MolangExpr[] => (x === undefined ? [] : (Array.isArray(x) ? x : [x]).map((s) => compile(String(s))));
 
@@ -77,8 +77,8 @@ const parseTransition = (x: unknown, posLabel: string): TransitionSpec => {
   if (typeof x === 'number') return Math.max(0, x);
   if (isObject(x)) {
     return Object.entries(x)
-      .map(([k, v]) => ({ 时: Number.parseFloat(k), weight: Number(v) }))
-      .sort((a, b) => a.时 - b.时);
+      .map(([k, v]) => ({ timestamp: Number.parseFloat(k), weight: Number(v) }))
+      .sort((a, b) => a.timestamp - b.timestamp);
   }
   throw new Error(`控制器：${posLabel} 的 blend_transition 写法不认识：${JSON.stringify(x)}`);
 };
@@ -94,13 +94,13 @@ export const parseControllerFile = (controllerFile: unknown, convention: Convent
     for (const [stateName, st] of Object.entries(c.states)) {
       const s = isObject(st) ? st : {};
       const animations = (Array.isArray(s.animations) ? s.animations : []).flatMap((a): StateAnimation[] =>
-        typeof a === 'string' ? [{ 名: a }] : isObject(a) ? Object.entries(a).map(([k, w]) => ({ 名: k, weight: bake(w as number | string, precision) })) : [],
+        typeof a === 'string' ? [{ name: a }] : isObject(a) ? Object.entries(a).map(([k, w]) => ({ name: k, weight: bake(w as number | string, precision) })) : [],
       );
       const transitions = (Array.isArray(s.transitions) ? s.transitions : []).flatMap((t) =>
-        isObject(t) ? Object.entries(t).map(([toState, condition]) => ({ 到: toState, condition: bake(condition as number | string, precision) })) : [],
+        isObject(t) ? Object.entries(t).map(([toState, condition]) => ({ dest: toState, condition: bake(condition as number | string, precision) })) : [],
       );
       states[stateName] = {
-        名: stateName,
+        name: stateName,
         animations,
         transitions,
         transition: parseTransition(s.blend_transition, `${controllerName}/${stateName}`),
@@ -112,9 +112,9 @@ export const parseControllerFile = (controllerFile: unknown, convention: Convent
     const initialState = typeof c.initial_state === 'string' ? c.initial_state : 'default';
     if (!states[initialState]) throw new Error(`控制器：${controllerName} 没有初始状态 ${initialState}`);
     for (const st of Object.values(states)) {
-      for (const t of st.transitions) if (!states[t.到]) throw new Error(`控制器：${controllerName}/${st.名} 转到不存在的状态 ${t.到}`);
+      for (const t of st.transitions) if (!states[t.dest]) throw new Error(`控制器：${controllerName}/${st.name} 转到不存在的状态 ${t.dest}`);
     }
-    controllers[controllerName] = { 名: controllerName, initialState, states };
+    controllers[controllerName] = { name: controllerName, initialState, states };
   }
   return controllers;
 };
@@ -123,13 +123,13 @@ export const parseControllerFile = (controllerFile: unknown, convention: Convent
 export const transitionWeight = (transition: TransitionSpec, d: number): number => {
   if (typeof transition === 'number') return transition > 0 ? Math.min(1, Math.max(0, 1 - d / transition)) : 0;
   if (!transition.length) return 0;
-  const i = transition.findIndex((k) => k.时 > d);
+  const i = transition.findIndex((k) => k.timestamp > d);
   if (i === 0) return transition[0]!.weight;
   if (i < 0) return transition[transition.length - 1]!.weight;
   const [a, b] = [transition[i - 1]!, transition[i]!];
-  return lerp(a.weight, b.weight, (d - a.时) / (b.时 - a.时));
+  return lerp(a.weight, b.weight, (d - a.timestamp) / (b.timestamp - a.timestamp));
 };
-const transitionDuration = (transition: TransitionSpec): number => (typeof transition === 'number' ? transition : (transition[transition.length - 1]?.时 ?? 0));
+const transitionDuration = (transition: TransitionSpec): number => (typeof transition === 'number' ? transition : (transition[transition.length - 1]?.timestamp ?? 0));
 
 export type BedrockControllerOptions = {
   /** 状态里写的动画名到哪找：动画名 → 动画（解析动画文件 的结果，可以几份合在一起） */
@@ -137,7 +137,7 @@ export type BedrockControllerOptions = {
   /** 客户端实体定义里的 animations 短名表（短名 → 全名）；状态里的名字先查这张表 */
   nameTable?: Readonly<Record<string, string>>;
   /** 转移条件求值用的环境，可以随时间变（q.is_moving 之类）；变量表由控制器自己持有，初值取 0 秒时环境的变量表（拷一份） */
-  环境?: MolangEnv | ((sec: number) => MolangEnv);
+  env?: MolangEnv | ((sec: number) => MolangEnv);
   /** 推进步长（秒），默认 1/20：转移最多晚一步生效 */
   stepSec?: number;
   口径?: Convention;
@@ -145,9 +145,9 @@ export type BedrockControllerOptions = {
 
 /** 某一步的状态：当前状态和进入时刻，正在淡出的上一个状态，这一步的变量表（只在转移时换新的一份） */
 export type ControllerStep = {
-  readonly 状态: string;
+  readonly state: string;
   readonly enteredAt: number;
-  readonly prevState?: { readonly 状态: string; readonly enteredAt: number; readonly leftAt: number };
+  readonly prevState?: { readonly state: string; readonly enteredAt: number; readonly leftAt: number };
   readonly 变量: Readonly<Record<string, number | string>>;
 };
 
@@ -163,51 +163,51 @@ const MAX_STEPS = 2_000_000;
 export const bedrockController = (controller: AnimationController, options: BedrockControllerOptions): ControllerPlayer & { stepAt: (sec: number) => ControllerStep } => {
   const convention = options.口径 ?? defaultProfile;
   const stepSec = options.stepSec ?? 1 / 20;
-  if (!(stepSec > 0)) throw new Error(`控制器 ${controller.名}：步长要 > 0`);
-  const envAt = (sec: number): MolangEnv => (typeof options.环境 === 'function' ? options.环境(sec) : (options.环境 ?? {}));
+  if (!(stepSec > 0)) throw new Error(`控制器 ${controller.name}：步长要 > 0`);
+  const envAt = (sec: number): MolangEnv => (typeof options.env === 'function' ? options.env(sec) : (options.env ?? {}));
   const getAnim = (animName: string): BedrockAnimation => {
     const a = options.animations[options.nameTable?.[animName] ?? animName];
-    if (!a) throw new Error(`控制器 ${controller.名}：找不到动画 ${animName}${options.nameTable?.[animName] ? `（${options.nameTable[animName]}）` : ''}`);
+    if (!a) throw new Error(`控制器 ${controller.name}：找不到动画 ${animName}${options.nameTable?.[animName] ? `（${options.nameTable[animName]}）` : ''}`);
     return a;
   };
   // 解析期就把名字核一遍，拼写错不等到渲染
-  for (const st of Object.values(controller.states)) for (const a of st.animations) getAnim(a.名);
+  for (const st of Object.values(controller.states)) for (const a of st.animations) getAnim(a.name);
 
   const finished = (stateName: string, elapsedSec: number, env: MolangEnv): boolean[] =>
-    controller.states[stateName]!.animations.map(({ 名: name }) => {
+    controller.states[stateName]!.animations.map(({ name: name }) => {
       const a = getAnim(name);
       const animLengthSec = animLength(a, convention);
       const delaySec = a.startDelaySec === undefined ? 0 : getValue(a.startDelaySec, env);
       return Number.isFinite(animLengthSec) && elapsedSec >= delaySec + animLengthSec;
     });
-  const stepEnv = (sec: number, ctrlStep: { 状态: string; enteredAt: number }, variables: Record<string, number | string>): MolangEnv => {
+  const stepEnv = (sec: number, ctrlStep: { state: string; enteredAt: number }, variables: Record<string, number | string>): MolangEnv => {
     const e = applyProfile(envAt(sec), convention);
-    const finishedFlags = finished(ctrlStep.状态, sec - ctrlStep.enteredAt, e);
+    const finishedFlags = finished(ctrlStep.state, sec - ctrlStep.enteredAt, e);
     return { ...e, 变量: variables, query: { ...e.query, all_animations_finished: finishedFlags.every(Boolean) ? 1 : 0, any_animation_finished: finishedFlags.some(Boolean) ? 1 : 0 } };
   };
 
   const history: ControllerStep[] = [];
   const pushTo = (k: number) => {
-    if (k >= MAX_STEPS) throw new Error(`控制器 ${controller.名}：要推 ${k} 步，超过上限（步长太小或时间太长）`);
+    if (k >= MAX_STEPS) throw new Error(`控制器 ${controller.name}：要推 ${k} 步，超过上限（步长太小或时间太长）`);
     while (history.length <= k) {
       const i = history.length;
       const sec = i * stepSec;
       let ctrlStep: ControllerStep;
       if (i === 0) {
         const variables = { ...(envAt(0).变量 ?? {}) };
-        ctrlStep = { 状态: controller.initialState, enteredAt: 0, 变量: variables };
+        ctrlStep = { state: controller.initialState, enteredAt: 0, 变量: variables };
         for (const s of controller.states[controller.initialState]!.onEntry) evaluate(s, stepEnv(0, ctrlStep, variables));
       } else ctrlStep = history[i - 1]!;
-      const current = controller.states[ctrlStep.状态]!;
+      const current = controller.states[ctrlStep.state]!;
       const env = stepEnv(sec, ctrlStep, ctrlStep.变量 as Record<string, number | string>);
       const transition = current.transitions.find((t) => getValue(t.condition, env) !== 0);
       if (transition) {
         const variables = { ...ctrlStep.变量 };
         for (const s of current.退出) evaluate(s, { ...env, 变量: variables });
-        const nextState = { 状态: transition.到, enteredAt: sec };
-        for (const s of controller.states[transition.到]!.onEntry) evaluate(s, stepEnv(sec, nextState, variables));
+        const nextState = { state: transition.dest, enteredAt: sec };
+        for (const s of controller.states[transition.dest]!.onEntry) evaluate(s, stepEnv(sec, nextState, variables));
         const fading = transitionDuration(current.transition) > 0;
-        ctrlStep = { ...nextState, 变量: variables, prevState: fading ? { 状态: ctrlStep.状态, enteredAt: ctrlStep.enteredAt, leftAt: sec } : undefined };
+        ctrlStep = { ...nextState, 变量: variables, prevState: fading ? { state: ctrlStep.state, enteredAt: ctrlStep.enteredAt, leftAt: sec } : undefined };
       }
       history.push(ctrlStep);
     }
@@ -222,11 +222,11 @@ export const bedrockController = (controller: AnimationController, options: Bedr
 
   const statePose = (stateName: string, elapsedSec: number, env: MolangEnv): SkeletonTable =>
     blendLayers(
-      controller.states[stateName]!.animations.map(({ 名: name, weight }) => {
+      controller.states[stateName]!.animations.map(({ name: name, weight }) => {
         const a = getAnim(name);
-        const progress = animProgress(a, elapsedSec, { 环境: env, 口径: convention });
+        const progress = animProgress(a, elapsedSec, { env: env, 口径: convention });
         const w = weight === undefined ? 1 : getValue(weight, env);
-        return { skeleton: progress.stopped || progress.等待 ? {} : sampleSkeleton(a, progress.时, { 环境: env, 口径: convention }), blendMode: '叠加' as const, weight: w };
+        return { skeleton: progress.stopped || progress.waiting ? {} : sampleSkeleton(a, progress.timestamp, { env: env, 口径: convention }), blendMode: '叠加' as const, weight: w };
       }),
       '通用',
     );
@@ -235,16 +235,16 @@ export const bedrockController = (controller: AnimationController, options: Bedr
     const ctrlStep = stepAt(sec);
     // 动画里的赋值写进一份拷贝，不改历史
     const env = applyProfile({ ...merge(baseEnv, envAt(sec)), 变量: { ...ctrlStep.变量 } }, convention);
-    const nextPose = statePose(ctrlStep.状态, sec - ctrlStep.enteredAt, env);
+    const nextPose = statePose(ctrlStep.state, sec - ctrlStep.enteredAt, env);
     const prevStep = ctrlStep.prevState;
     if (!prevStep) return nextPose;
-    const oldState = controller.states[prevStep.状态]!;
+    const oldState = controller.states[prevStep.state]!;
     const oldWeight = transitionWeight(oldState.transition, sec - prevStep.leftAt);
     if (oldWeight <= 0) return nextPose;
-    return lerpPose(statePose(prevStep.状态, sec - prevStep.enteredAt, env), nextPose, 1 - oldWeight, oldState.shortestPath);
+    return lerpPose(statePose(prevStep.state, sec - prevStep.enteredAt, env), nextPose, 1 - oldWeight, oldState.shortestPath);
   };
 
-  return Object.assign({ 名: controller.名, poseAt }, { stepAt });
+  return Object.assign({ name: controller.name, poseAt }, { stepAt });
 };
 
 // ======== GeckoLib 的控制器（代码驱动 + transitionLength） ========
@@ -252,33 +252,33 @@ export const bedrockController = (controller: AnimationController, options: Bedr
  * RawAnimation 里的一段：播一段动画（循环：once / loop / hold，或播几遍；不写按动画文件自己的 loop），或等几刻（thenWait）。
  * 几遍 n 同 GeckoLib 4 的 thenPlayXTimes：排成 n 段，前 n−1 段 once、最后一段按动画文件自己的 loop，段间照样过渡；n ≤ 0 不播
  */
-export type PlayItem = { 名: string; 循环?: LoopMode | number } | { waitTicks: number };
-export type GeckoLibSchedule = readonly { 秒: number; clip: string | readonly PlayItem[] | null }[];
+export type PlayItem = { name: string; 循环?: LoopMode | number } | { waitTicks: number };
+export type GeckoLibSchedule = readonly { sec: number; clip: string | readonly PlayItem[] | null }[];
 export type GeckoLibControllerSettings = {
-  名: string;
+  name: string;
   /** AnimationController 的 transitionTickTime（刻，1 刻 = 1/20 秒） */
   transitionTicks: number;
   /** handler 在这些时刻返回新的 RawAnimation（秒升序）。null = PlayState.STOP。和当前一样的不重播（GeckoLib 比 RawAnimation 相等） */
   schedule: GeckoLibSchedule;
   /** animationSpeed，默认 1；过渡和播放都按它快慢 */
-  速度?: number;
+  speed?: number;
   animations: Readonly<Record<string, BedrockAnimation>>;
   口径?: Convention;
-  环境?: MolangEnv | ((sec: number) => MolangEnv);
+  env?: MolangEnv | ((sec: number) => MolangEnv);
 };
 
 type ControllerStage =
-  | { 种: '过渡'; 起: number; 止: number; 长: number; 名: string }
-  | { 种: '播放'; 起: number; 止: number; 名: string; 循环: LoopMode }
-  | { 种: '空'; 起: number; 止: number };
+  | { kind: '过渡'; start: number; end: number; length: number; name: string }
+  | { kind: '播放'; start: number; end: number; name: string; 循环: LoopMode }
+  | { kind: '空'; start: number; end: number };
 
-const toPlayList = (clip: string | readonly PlayItem[]): readonly PlayItem[] => (typeof clip === 'string' ? [{ 名: clip }] : clip);
+const toPlayList = (clip: string | readonly PlayItem[]): readonly PlayItem[] => (typeof clip === 'string' ? [{ name: clip }] : clip);
 /** 几遍 展开成一段段（RawAnimation.thenPlayXTimes 原文：前 n−1 段 PLAY_ONCE，最后一段 DEFAULT） */
-const expandItems = (items: readonly PlayItem[]): ({ 名: string; 循环?: LoopMode } | { waitTicks: number })[] =>
+const expandItems = (items: readonly PlayItem[]): ({ name: string; 循环?: LoopMode } | { waitTicks: number })[] =>
   items.flatMap((item) => {
-    if ('waitTicks' in item || typeof item.循环 !== 'number') return [item as { 名: string; 循环?: LoopMode } | { waitTicks: number }];
+    if ('waitTicks' in item || typeof item.循环 !== 'number') return [item as { name: string; 循环?: LoopMode } | { waitTicks: number }];
     const n = Math.trunc(item.循环);
-    return Array.from({ length: Math.max(0, n) }, (_, k) => (k < n - 1 ? { 名: item.名, 循环: 'once' as const } : { 名: item.名 }));
+    return Array.from({ length: Math.max(0, n) }, (_, k) => (k < n - 1 ? { name: item.name, 循环: 'once' as const } : { name: item.name }));
   });
 
 /**
@@ -293,28 +293,28 @@ const expandItems = (items: readonly PlayItem[]): ({ 名: string; 循环?: LoopM
  */
 export const geckoLibController = (settings: GeckoLibControllerSettings): ControllerPlayer & { phases: readonly ControllerStage[] } => {
   const convention = settings.口径 ?? defaultProfile;
-  const speed = settings.速度 ?? 1;
-  if (!(speed > 0)) throw new Error(`控制器 ${settings.名}：速度要 > 0`);
+  const speed = settings.speed ?? 1;
+  if (!(speed > 0)) throw new Error(`控制器 ${settings.name}：速度要 > 0`);
   const transitionSec = settings.transitionTicks / 20 / speed;
   const getAnim = (animName: string): BedrockAnimation => {
     const a = settings.animations[animName];
-    if (!a) throw new Error(`控制器 ${settings.名}：找不到动画 ${animName}`);
+    if (!a) throw new Error(`控制器 ${settings.name}：找不到动画 ${animName}`);
     return a;
   };
-  const envAt = (sec: number): MolangEnv => (typeof settings.环境 === 'function' ? settings.环境(sec) : (settings.环境 ?? {}));
+  const envAt = (sec: number): MolangEnv => (typeof settings.env === 'function' ? settings.env(sec) : (settings.env ?? {}));
 
   // 按时刻表排出各阶段（[起, 止)）
   const phases: ControllerStage[] = [];
   // 和前一条一样的 RawAnimation 不算换（GeckoLib 不重播），先去掉
   const stateKey = (clip: string | readonly PlayItem[] | null) => JSON.stringify(clip === null ? null : toPlayList(clip));
   const schedule = [...settings.schedule]
-    .sort((a, b) => a.秒 - b.秒)
+    .sort((a, b) => a.sec - b.sec)
     .filter((x, i, items) => i === 0 || stateKey(x.clip) !== stateKey(items[i - 1]!.clip));
   for (let i = 0; i < schedule.length; i++) {
-    const { 秒: T, clip } = schedule[i]!;
-    const slotEndSec = schedule[i + 1]?.秒 ?? Infinity;
+    const { sec: T, clip } = schedule[i]!;
+    const slotEndSec = schedule[i + 1]?.sec ?? Infinity;
     if (clip === null) {
-      phases.push({ 种: '空', 起: T, 止: slotEndSec });
+      phases.push({ kind: '空', start: T, end: slotEndSec });
       continue;
     }
     let t = T;
@@ -322,14 +322,14 @@ export const geckoLibController = (settings: GeckoLibControllerSettings): Contro
       if (t >= slotEndSec) break;
       if ('waitTicks' in item) {
         const endSec = Math.min(slotEndSec, t + transitionSec + item.waitTicks / 20 / speed);
-        phases.push({ 种: '空', 起: t, 止: endSec });
+        phases.push({ kind: '空', start: t, end: endSec });
         t = endSec;
         continue;
       }
-      const a = getAnim(item.名);
+      const a = getAnim(item.name);
       if (transitionSec > 0) {
         const endSec = Math.min(slotEndSec, t + transitionSec);
-        phases.push({ 种: '过渡', 起: t, 止: endSec, 长: transitionSec, 名: item.名 });
+        phases.push({ kind: '过渡', start: t, end: endSec, length: transitionSec, name: item.name });
         t = endSec;
         if (t >= slotEndSec) break;
       }
@@ -337,19 +337,19 @@ export const geckoLibController = (settings: GeckoLibControllerSettings): Contro
       const animLengthSec = animLength(a, convention) / speed;
       const duration = loopMode === 'loop' || loopMode === 'hold' ? Infinity : animLengthSec;
       const endSec = Math.min(slotEndSec, t + duration);
-      phases.push({ 种: '播放', 起: t, 止: endSec, 名: item.名, 循环: loopMode });
+      phases.push({ kind: '播放', start: t, end: endSec, name: item.name, 循环: loopMode });
       t = endSec;
     }
-    if (t < slotEndSec) phases.push({ 种: '空', 起: t, 止: slotEndSec });
+    if (t < slotEndSec) phases.push({ kind: '空', start: t, end: slotEndSec });
   }
 
   const phaseAt = (sec: number): number => {
     let lo = 0;
     let hi = phases.length - 1;
-    if (hi < 0 || sec < phases[0]!.起) return -1;
+    if (hi < 0 || sec < phases[0]!.start) return -1;
     while (lo < hi) {
       const mid = (lo + hi + 1) >> 1;
-      if (phases[mid]!.起 <= sec) lo = mid;
+      if (phases[mid]!.start <= sec) lo = mid;
       else hi = mid - 1;
     }
     return lo;
@@ -359,18 +359,18 @@ export const geckoLibController = (settings: GeckoLibControllerSettings): Contro
     const t = elapsedSec * speed;
     const animLengthSec = animLength(a, convention);
     if (loopMode === 'hold') return Math.min(t, animLengthSec);
-    return animTime({ ...a, 循环: loopMode }, t, convention).时;
+    return animTime({ ...a, 循环: loopMode }, t, convention).timestamp;
   };
 
   // 阶段 i 在 秒 时的姿势；过渡要用前一阶段在过渡开始那一刻的姿势（递归，深度 = 连着被打断的过渡数）
   const phasePose = (i: number, sec: number, baseEnv: MolangEnv | undefined): SkeletonTable => {
     const p = phases[i];
-    if (!p || p.种 === '空') return {};
+    if (!p || p.kind === '空') return {};
     const e = merge(baseEnv, envAt(sec));
     const env = applyProfile({ ...e, 变量: { ...(e.变量 ?? {}) } }, convention);
-    if (p.种 === '播放') return sampleSkeleton(getAnim(p.名), playTime(getAnim(p.名), p.循环, Math.min(sec, p.止) - p.起), { 环境: env, 口径: convention });
-    const targetAllBones = sampleSkeleton(getAnim(p.名), 0, { 环境: { ...env, query: { ...env.query, anim_time: 0 } }, 口径: convention });
-    const prevPhasePose = phasePose(i - 1, p.起, baseEnv);
+    if (p.kind === '播放') return sampleSkeleton(getAnim(p.name), playTime(getAnim(p.name), p.循环, Math.min(sec, p.end) - p.start), { env: env, 口径: convention });
+    const targetAllBones = sampleSkeleton(getAnim(p.name), 0, { env: { ...env, query: { ...env.query, anim_time: 0 } }, 口径: convention });
+    const prevPhasePose = phasePose(i - 1, p.start, baseEnv);
     // 只插新动画有关键帧的骨骼、通道；起点缺的按原位
     const targetPose: SkeletonTable = {};
     const startPose: SkeletonTable = {};
@@ -383,14 +383,14 @@ export const geckoLibController = (settings: GeckoLibControllerSettings): Contro
         scale: pose.scale !== undefined ? (s.scale ?? 1) : undefined,
       };
     }
-    const u = Math.min(1, Math.max(0, (sec - p.起) / p.长));
+    const u = Math.min(1, Math.max(0, (sec - p.start) / p.length));
     const blended = lerpPose(startPose, targetPose, u);
     for (const pose of Object.values(blended)) for (const k of ['rot', 'pos', 'scale'] as const) if (pose[k] === undefined) delete pose[k];
     return blended;
   };
 
   return Object.assign(
-    { 名: settings.名, poseAt: (sec: number, baseEnv?: MolangEnv) => phasePose(phaseAt(sec), sec, baseEnv) },
+    { name: settings.name, poseAt: (sec: number, baseEnv?: MolangEnv) => phasePose(phaseAt(sec), sec, baseEnv) },
     { phases: phases as readonly ControllerStage[] },
   );
 };

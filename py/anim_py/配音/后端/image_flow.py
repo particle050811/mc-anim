@@ -41,9 +41,9 @@ class ImageFlow(Backend):
 
     def _build_command(self, q: SynthRequest) -> list[str]:
         p = self.参数(q)
-        command = ['node', str(self._shell_path()), 'speak', '--text', q.念, '--model', str(p['模型']), '--voice_ref', q.参考音频, '--poll', str(p['等待秒'])]
-        if q.语气参考:
-            command += ['--emotion_ref', q.语气参考]
+        command = ['node', str(self._shell_path()), 'speak', '--text', q.spoken, '--model', str(p['模型']), '--voice_ref', q.参考音频, '--poll', str(p['等待秒'])]
+        if q.toneRef:
+            command += ['--emotion_ref', q.toneRef]
             if q.语气强度 is not None:
                 command += ['--param', f'emo_alpha={q.语气强度}']
         for k, v in p.items():
@@ -52,11 +52,11 @@ class ImageFlow(Backend):
         return command
 
     def describe(self, request: SynthRequest) -> dict:
-        return {'后端': self.名, '命令': self._build_command(request)[1:], '输出': request.输出}
+        return {'backend': self.名, 'command': self._build_command(request)[1:], 'output': request.output}
 
     def _speak_sentence(self, q: SynthRequest) -> str:
         # 花钱之前建好：这句第一次出候选时目录还不存在
-        Path(q.输出).parent.mkdir(parents=True, exist_ok=True)
+        Path(q.output).parent.mkdir(parents=True, exist_ok=True)
         # 资产按 sha 存、没有后缀，image-flow 按后缀认音频；配音参考都是 wav。它提交时就把录音读走了，临时目录用完就删
         with tempfile.TemporaryDirectory(prefix='anim-配音-') as scratch_dir:
             def with_suffix(file_name: str, name: str) -> str:
@@ -64,12 +64,12 @@ class ImageFlow(Backend):
                     return file_name
                 return shutil.copyfile(file_name, os.path.join(scratch_dir, f'{name}.wav'))
 
-            response = self._run(replace(q, 参考音频=with_suffix(q.参考音频, '音色'), 语气参考=with_suffix(q.语气参考, '语气')))
+            response = self._run(replace(q, 参考音频=with_suffix(q.参考音频, '音色'), toneRef=with_suffix(q.toneRef, '语气')))
         if response.get('gen_status') != 'success':
             raise RuntimeError(f'image-flow {response.get("gen_status")}（任务 {response.get("submit_id", "没建成")}）：{response.get("fail_reason", "")}')
         output_path = response['outputs'][0]['path']
         # IndexTTS2 出 flac，后面的步骤都按 wav
-        subprocess.run([os.environ.get('ANIM_FFMPEG') or 'ffmpeg', '-v', 'error', '-y', '-i', output_path, q.输出], check=True)
+        subprocess.run([os.environ.get('ANIM_FFMPEG') or 'ffmpeg', '-v', 'error', '-y', '-i', output_path, q.output], check=True)
         return f'image-flow 任务 {response["submit_id"]}'
 
     def _run(self, q: SynthRequest) -> dict:
@@ -83,7 +83,7 @@ class ImageFlow(Backend):
         out = []
         for q in requests:
             try:
-                out.append(SynthResult(q.id, q.种子, q.输出, True, self._speak_sentence(q)))
+                out.append(SynthResult(q.id, q.seed, q.output, True, self._speak_sentence(q)))
             except Exception as e:  # noqa: BLE001
-                out.append(SynthResult(q.id, q.种子, q.输出, False, f'{type(e).__name__}: {e}'))
+                out.append(SynthResult(q.id, q.seed, q.output, False, f'{type(e).__name__}: {e}'))
         return out

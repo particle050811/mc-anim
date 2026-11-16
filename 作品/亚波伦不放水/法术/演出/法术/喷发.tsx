@@ -41,7 +41,7 @@ const shotRow = (target: Vec3, seed: number): Projectile[] =>
     return { launchTick, trajectory, landTick };
   });
 
-const Eruption: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const Eruption: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const age = volcanoAge(tick);
   const steady = tick >= volcanoRiseTicks && tick < volcanoLifeTicks;
@@ -49,13 +49,13 @@ const Eruption: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
   const smokeSpawns: ParticleSpawn[] = [];
   const flames: ParticleSpawn[] = [];
   const blastParticles: ParticleSpawn[] = [];
-  for (let t = volcanoRiseTicks; t < Math.min(volcanoLifeTicks, tick); t++) if (!eruptTicks.includes(t)) smokeSpawns.push({ 种: 'smoke', 刻: t, p: [target[0], target[1], target[2]], 种子: seed * 9000 + t });
+  for (let t = volcanoRiseTicks; t < Math.min(volcanoLifeTicks, tick); t++) if (!eruptTicks.includes(t)) smokeSpawns.push({ kind: 'smoke', 刻: t, p: [target[0], target[1], target[2]], seed: seed * 9000 + t });
   projectiles.forEach((projectile, i) => {
     const r = mulberry32(seed * 131 + i);
     for (let n = 1; n <= projectile.landTick && projectile.launchTick + n <= tick; n++) {
       const nextPos = projectile.trajectory(n + 1);
-      smokeSpawns.push({ 种: 'smoke', 刻: projectile.launchTick + n, p: [nextPos[0] + r() / 2, nextPos[1] - r() / 2, nextPos[2] + 0.5], 种子: seed * 70000 + i * 200 + n });
-      flames.push({ 种: 'flame', 刻: projectile.launchTick + n, p: [nextPos[0] + r() / 2, nextPos[1] - r() / 2, nextPos[2] + 0.5], 种子: seed * 90000 + i * 200 + n });
+      smokeSpawns.push({ kind: 'smoke', 刻: projectile.launchTick + n, p: [nextPos[0] + r() / 2, nextPos[1] - r() / 2, nextPos[2] + 0.5], seed: seed * 70000 + i * 200 + n });
+      flames.push({ kind: 'flame', 刻: projectile.launchTick + n, p: [nextPos[0] + r() / 2, nextPos[1] - r() / 2, nextPos[2] + 0.5], seed: seed * 90000 + i * 200 + n });
     }
     const landing = projectile.trajectory(projectile.landTick);
     blastParticles.push(...bigExplosion([landing[0], landing[1], Math.max(landing[2], target[2])], projectile.launchTick + projectile.landTick, seed * 17 + i));
@@ -65,8 +65,8 @@ const Eruption: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
       {age > 0 && (
         <MinecraftSpace 位={target}>
           <group scale={[-1, -1, 1]}>
-            <ModelPart 模型={volcanoModel} 图={png(volcanoPng)} partPoses={{ volcano: { offset: [0, 60 - age, 0] } }} />
-            {steady && <ModelPart 模型={volcanoModel} 图={png(volcanoActivePng)} 画法="发光" partPoses={{ volcano: { offset: [0, 0, 0] } }} />}
+            <ModelPart model={volcanoModel} image={png(volcanoPng)} partPoses={{ volcano: { offset: [0, 60 - age, 0] } }} />
+            {steady && <ModelPart model={volcanoModel} image={png(volcanoActivePng)} 画法="发光" partPoses={{ volcano: { offset: [0, 0, 0] } }} />}
           </group>
         </MinecraftSpace>
       )}
@@ -83,16 +83,16 @@ const Eruption: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
             <group position={[0, 0.25, 0]}>
               <group rotation={[0, yRot, 0]}>
                 <group rotation={[xRot, 0, 0]}>
-                  <ModelPart 模型={blastFungusModel} 图={png(pyroclastPng)} />
+                  <ModelPart model={blastFungusModel} image={png(pyroclastPng)} />
                 </group>
               </group>
             </group>
           </MinecraftSpace>
         );
       })}
-      <VanillaParticles spawns={smokeSpawns} 秒={sec} size={2.5} />
-      <VanillaParticles spawns={flames} 秒={sec} />
-      <VanillaParticles spawns={blastParticles} 秒={sec} />
+      <VanillaParticles spawns={smokeSpawns} sec={sec} size={2.5} />
+      <VanillaParticles spawns={flames} sec={sec} />
+      <VanillaParticles spawns={blastParticles} sec={sec} />
     </>
   );
 };

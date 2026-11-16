@@ -16,7 +16,7 @@ import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
 import { BattleUi, deathMessageLine } from '../../界面/战斗界面.tsx';
 import { guiScale, openingSec, closingSec, aspect, target, demoPos, demoCast, demoTimeline, views, type View } from './视图.ts';
 
-const perform = definePerformance({ timeline: demoTimeline, 位: demoPos, 目标: target, swingTimes: demoCast });
+const perform = definePerformance({ timeline: demoTimeline, 位: demoPos, target: target, swingTimes: demoCast });
 
 type CameraPose = { 眼: V3; 看: V3; fov: number };
 /** 机位：她朝东（目标在东），右手在南边；侧 = 从南边看两人同框，侧近 = 只看她，正 = 从目标那头看她，手 = 右手特写 */
@@ -31,7 +31,7 @@ const getCameraRig = (v: View): CameraPose => {
   return { 眼: [1.5, -8, z + 1.9], 看: [0.3, 0, z + 1.4], fov: 30 };
 };
 
-const CameraRig: React.FC<{ 机: CameraPose }> = ({ 机: rig }) => {
+const CameraRig: React.FC<{ machine: CameraPose }> = ({ machine: rig }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
@@ -63,9 +63,9 @@ const picture: React.FC = () => {
   const s = guiScale;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
         <color attach="background" args={['#5a5e66']} />
-        <CameraRig 机={getCameraRig(v)} />
+        <CameraRig machine={getCameraRig(v)} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
@@ -88,8 +88,8 @@ const picture: React.FC = () => {
       </ThreeCanvas>
       {v.hudMode && (
         <BattleUi
-          宽={aspect.宽}
-          高={aspect.高}
+          width={aspect.width}
+          height={aspect.height}
           s={s}
           healthBar={{ healthRatio: v.hudMode === '半血' ? 0.5 : 1, variant: v.hudMode === '简版血条' ? '简版' : '完整' }}
           spellCount={v.hudMode === '全开' ? { n: 23 } : undefined}
@@ -108,9 +108,9 @@ const picture: React.FC = () => {
       )}
       <div style={{ position: 'absolute', left: 16, bottom: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 20, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
         <div>
-          {v.名}（演出第 {v.performSec} 秒，{currentState.transition.从 === currentState.transition.到 ? currentState.transition.到 : `${currentState.transition.从} → ${currentState.transition.到} ${Math.round(currentState.transition.比 * 100)}%`}）
+          {v.name}（演出第 {v.performSec} 秒，{currentState.transition.从 === currentState.transition.dest ? currentState.transition.dest : `${currentState.transition.从} → ${currentState.transition.dest} ${Math.round(currentState.transition.比 * 100)}%`}）
         </div>
-        {v.说明 && <div style={{ fontSize: 15 }}>{v.说明}</div>}
+        {v.note && <div style={{ fontSize: 15 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

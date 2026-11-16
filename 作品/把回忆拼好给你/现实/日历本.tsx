@@ -15,12 +15,12 @@ const textColor = realColors.pageText;
 
 // 一页的正面：纸、上面一行小字、大数字和「天」
 const paintPage = (dayNum: number): PixelArt => {
-  const p = newPixelArt(S.宽, S.pageHeight);
-  p.noise(0, 0, S.宽, S.pageHeight, realColors.paperColors, 101, [5, 3, 2]);
+  const p = newPixelArt(S.width, S.pageHeight);
+  p.noise(0, 0, S.width, S.pageHeight, realColors.paperColors, 101, [5, 3, 2]);
   const layout = pageLayout(dayNum);
   const smallText = '距高考还有';
   const smallWidth = pixelFont.textWidth(smallText) - 1;
-  pixelFont.draw(p.ctx, smallText, { x: Math.round((S.宽 - smallWidth) / 2) * canvasScale, y: layout.smallTextY * canvasScale }, 0, 0, textColor, canvasScale);
+  pixelFont.draw(p.ctx, smallText, { x: Math.round((S.width - smallWidth) / 2) * canvasScale, y: layout.smallTextY * canvasScale }, 0, 0, textColor, canvasScale);
   pixelFont.draw(p.ctx, String(dayNum), { x: layout.数.x * canvasScale, y: layout.数.y * canvasScale }, 0, 0, realColors.countdown, canvasScale * layout.bigTextScale);
   pixelFont.draw(p.ctx, '天', { x: layout.天.x * canvasScale, y: layout.天.y * canvasScale }, 0, 0, textColor, canvasScale);
   return p;
@@ -28,10 +28,10 @@ const paintPage = (dayNum: number): PixelArt => {
 
 // 纸背：比正面亮一点、没有字，外沿一圈暗边（翻过来时和正面分得开）
 const paintPaperBack = (): PixelArt => {
-  const p = newPixelArt(S.宽, S.pageHeight);
-  p.noise(0, 0, S.宽, S.pageHeight, [realColors.paperBack, realColors.paperColors[2]], 104, [3, 1]);
-  p.fillRect(0, 0, S.宽, 1, realColors.paperLayer[0]);
-  p.fillRect(0, S.pageHeight - 1, S.宽, 1, realColors.paperLayer[0]);
+  const p = newPixelArt(S.width, S.pageHeight);
+  p.noise(0, 0, S.width, S.pageHeight, [realColors.paperBack, realColors.paperColors[2]], 104, [3, 1]);
+  p.fillRect(0, 0, S.width, 1, realColors.paperLayer[0]);
+  p.fillRect(0, S.pageHeight - 1, S.width, 1, realColors.paperLayer[0]);
   return p;
 };
 
@@ -51,8 +51,8 @@ const getOrPaint = (cacheKey: string, draw: () => PixelArt) => {
 };
 const pageImage = (dayNum: number) => getOrPaint(`页${dayNum}`, () => paintPage(dayNum));
 const paperBackImage = () => getOrPaint('纸背', paintPaperBack);
-const bindingFront = () => getOrPaint('装订前', () => paintBinding(S.宽, S.bindingHeight, 102, true));
-const bindingTop = () => getOrPaint('装订顶', () => paintBinding(S.宽, S.bindingDepth, 103, false));
+const bindingFront = () => getOrPaint('装订前', () => paintBinding(S.width, S.bindingHeight, 102, true));
+const bindingTop = () => getOrPaint('装订顶', () => paintBinding(S.width, S.bindingDepth, 103, false));
 
 export type CalendarBookParams = {
   /** 装订正面的左下前角（贴图像素） */
@@ -72,14 +72,14 @@ export const CalendarBook: React.FC<CalendarBookParams> = ({ x, y, z, pagesOnTop
   const paperY = y + S.bindingDepth - thickness;
   return (
     <group>
-      <PixelBox x={x} y={y} z={z + S.pageHeight} 宽={S.宽} depth={S.bindingDepth} 高={S.bindingHeight} 前={bindingFront()} topTexture={bindingTop()} />
-      <FrontFace x={x} y={paperY} z={z} 宽={S.宽} 高={S.pageHeight} 图={pageImage(pagesOnTop)} />
+      <PixelBox x={x} y={y} z={z + S.pageHeight} width={S.width} depth={S.bindingDepth} height={S.bindingHeight} 前={bindingFront()} topTexture={bindingTop()} />
+      <FrontFace x={x} y={paperY} z={z} width={S.width} height={S.pageHeight} image={pageImage(pagesOnTop)} />
       {flyPages.map((sheet, i) => {
-        const pose = flyPose(sheet.age, sheet.种);
+        const pose = flyPose(sheet.age, sheet.kind);
         // 绕这张纸的横中线翻：中线跟着飞，压扁后的上下沿落在整贴图像素上。越晚飞的越靠前（往前挪 前 个贴图像素），z 补上 斜 × 前，画面上不动
-        const bottomZ = z + Math.round(S.pageHeight / 2 + pose.dz - pose.高 / 2);
+        const bottomZ = z + Math.round(S.pageHeight / 2 + pose.dz - pose.height / 2);
         const layerOffset = 1 + 0.01 * (i + 1);
-        return <FrontFace key={sheet.数} x={x + pose.dx} y={paperY - layerOffset} z={bottomZ + oblique * layerOffset} 宽={S.宽} 高={pose.高} 图={pose.isBack ? paperBackImage() : pageImage(sheet.数)} />;
+        return <FrontFace key={sheet.数} x={x + pose.dx} y={paperY - layerOffset} z={bottomZ + oblique * layerOffset} width={S.width} height={pose.height} image={pose.isBack ? paperBackImage() : pageImage(sheet.数)} />;
       })}
     </group>
   );

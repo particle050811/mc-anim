@@ -24,9 +24,9 @@ const OPEN_S = 0.06; // 张嘴的过渡时长
 const CLOSE_S = 0.09; // 合嘴的过渡时长
 const LEAD_S = 0.03; // 嘴比声音略早到位，看着才对得上
 
-type Cue = { id: string; 帧: number };
+type Cue = { id: string; frame: number };
 /** 口型表：句 id → 嘴型关键帧 [文件里的秒, 嘴型]；台词表只用 角色、开口 */
-export type LipData = { 口型: Readonly<Record<string, { 嘴: [number, string][] }>>; 台词: Readonly<Record<string, { 角色: string; 开口: number }>> };
+export type LipData = { lip: Readonly<Record<string, { 嘴: [number, string][] }>>; lines: Readonly<Record<string, { 角色: string; 开口: number }>> };
 
 const mix = (a: Mouth, b: Mouth, k: number): Mouth => ({ open: a.open + (b.open - a.open) * k, width: a.width + (b.width - a.width) * k });
 // 某一时刻（音频文件里的秒数）的嘴：从上一个嘴型过渡到当前这个；上一次过渡没走完就从当时的样子接着走
@@ -44,8 +44,8 @@ const sample = (keys: [number, string][], t: number): Mouth => {
   return mix(from, to, progress(t));
 };
 
-export const mouthAt = ({ 口型: cuesById, 台词: lines }: LipData, cues: readonly Cue[], role: string, frame: number, fps: number): Mouth | undefined => {
-  for (const { id, 帧: lineFrame } of cues) {
+export const mouthAt = ({ lip: cuesById, lines: lines }: LipData, cues: readonly Cue[], role: string, frame: number, fps: number): Mouth | undefined => {
+  for (const { id, frame: lineFrame } of cues) {
     const entry = cuesById[id];
     if (!entry || lines[id].角色 !== role) continue;
     const t = (frame - lineFrame) / fps + lines[id].开口 + LEAD_S;
@@ -83,7 +83,7 @@ export const withTalkNod = <P extends { headPitch: number; headYaw: number }>(li
 
 /** 绑好一部作品的口型表、台词表（资产 数据/配音/口型、数据/配音/台词表 的内容），返回用法同上、不带表参数的 mouthAt、withTalkNod */
 export const buildLipData = (lipTable: unknown, lineTable: unknown) => {
-  const lipData = { 口型: lipTable, 台词: lineTable } as LipData;
+  const lipData = { lip: lipTable, lines: lineTable } as LipData;
   return {
     mouthAt: (cues: readonly Cue[], role: string, frame: number, fps: number) => mouthAt(lipData, cues, role, frame, fps),
     withTalkNod: <P extends { headPitch: number; headYaw: number }>(pose: P, cues: readonly Cue[], role: string, frame: number, fps: number) => withTalkNod(lipData, pose, cues, role, frame, fps),

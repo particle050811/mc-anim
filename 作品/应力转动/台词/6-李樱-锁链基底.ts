@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 eef215b58b6d），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-锁链基底（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 9739d8ed1434），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-锁链基底（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-锁链基底",
-  "角色": "李樱",
-  "念": "雪怪首领毛皮的保护词条非常优秀，可以用来做锁链基底。",
-  "配音": "配音/6-李樱-锁链基底",
-  "成品sha": "5bacda64648a",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "雪怪首领毛皮的保护词条非常优秀，可以用来做锁链基底。",
+  "voice": "配音/6-李樱-锁链基底",
+  "finishedSha": "5bacda64648a",
+  "mouthOpen": 0.03,
   "有声长": 4.06,
-  "时长": 4.24,
+  "duration": 4.24,
   "文件秒数": 4.24,
-  "字": [
+  "char": [
     ["雪",0.08,0.32],
     ["怪",0.32,0.4],
     ["首",0.4,0.56],

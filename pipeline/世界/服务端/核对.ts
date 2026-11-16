@@ -31,16 +31,16 @@ export const worldDatapacks = (saveDir: string) => {
     .readdirSync(d)
     .sort()
     .filter((n) => (n.endsWith('.zip') && fs.statSync(path.join(d, n)).isFile()) || fs.existsSync(path.join(d, n, 'pack.mcmeta')))
-    .map((n) => ({ 名: n, 路径: path.join(d, n) }));
+    .map((n) => ({ name: n, path: path.join(d, n) }));
 };
 
 export type ModRequirement = {
-  名: string;
+  name: string;
   /** 数据包里有没有用到 */
   applies: (entryMap: Map<string, () => Buffer>) => boolean;
   /** mods/ 里哪个 jar 要有哪个类 */
   jar: RegExp;
-  类: string;
+  type: string;
   /** 用到它的包要排在它覆盖的包之上（后加载的盖前面的） */
   overridesOthers: boolean;
   missing: string;
@@ -50,29 +50,29 @@ export type ModRequirement = {
 
 export const MOD_REQUIREMENTS: ModRequirement[] = [
   {
-    名: '生成时修整',
+    name: '生成时修整',
     applies: (e) => [...e].some(([k, r]) => /^data\/[^/]+\/worldgen\/density_function\/.+\.json$/.test(k) && /"mcai:(edit|region)"/.test(r().toString('utf8'))),
     jar: /^mcai-.*\.jar$/,
-    类: 'mcai/terrain/TerrainTypes.class',
+    type: 'mcai/terrain/TerrainTypes.class',
     overridesOthers: true,
     missing: '取材 mod 没有修整（mcai:region、mcai:edit）：专用服务端读不进修整包会起不来。anim mcai build 装上含修整的 jar（别的分支 build 的可能不含）',
   },
   {
     // 暮色放大 4 倍：mod 认包里的标记文件才放大地标网格，只有数据包的话首领建筑会重复十几座（sourcing/mod/MANUAL.md「暮色森林放大 4 倍」）
-    名: '暮色放大 4 倍',
+    name: '暮色放大 4 倍',
     applies: (e) => e.has('data/mcai/twilight_x4.json'),
     jar: /^mcai-.*\.jar$/,
-    类: 'mcai/TwilightGrid.class',
+    type: 'mcai/TwilightGrid.class',
     overridesOthers: false,
     missing: '取材 mod 没有暮色地标网格（TwilightGrid）：只有数据包的话暮色首领建筑会重复十几座。anim mcai build 装上',
     startupLogs: [{ 行: '暮色地标网格：64 区块' }],
   },
   {
     // 古城放大 4 倍（第 6 章第 4 场、第 7 章）：mod 的 BigJigsaw 放开原版拼图 8 区块上限，没有的话服务端读不进放大的古城
-    名: '古城放大 4 倍',
+    name: '古城放大 4 倍',
     applies: (e) => e.has('data/minecraft/worldgen/structure/ancient_city.json') && [...e.keys()].some((k) => k.startsWith('data/mcai/')),
     jar: /^mcai-.*\.jar$/,
-    类: 'mcai/BigJigsaw.class',
+    type: 'mcai/BigJigsaw.class',
     overridesOthers: false,
     missing: '取材 mod 没有 BigJigsaw：读不进放大的远古城市。anim mcai build 装上',
     startupLogs: [
@@ -90,23 +90,23 @@ export const checkBeforeStart = (serverDir: string, saveDir: string) => {
   const mods = path.join(serverDir, 'mods');
   const jars = fs.existsSync(mods) ? fs.readdirSync(mods).filter((n) => n.endsWith('.jar')) : [];
   for (const p of worldDatapacks(saveDir)) {
-    const e = packEntries(p.路径);
+    const e = packEntries(p.path);
     for (const r of MOD_REQUIREMENTS) {
       if (!r.applies(e)) continue;
-      if (r.overridesOthers) overrides.push(p.名);
-      const hasClass = jars.filter((n) => r.jar.test(n)).some((n) => new ReadOnlyZip(path.join(mods, n)).entryMap.has(r.类));
-      if (!hasClass) issues.push(`数据包 ${p.名} 用到${r.名}，可 ${mods} 里没有含 ${r.类} 的 jar：${r.missing}`);
+      if (r.overridesOthers) overrides.push(p.name);
+      const hasClass = jars.filter((n) => r.jar.test(n)).some((n) => new ReadOnlyZip(path.join(mods, n)).entryMap.has(r.type));
+      if (!hasClass) issues.push(`数据包 ${p.name} 用到${r.name}，可 ${mods} 里没有含 ${r.type} 的 jar：${r.missing}`);
     }
   }
   return { issues, overrides };
 };
 
 /** 开服后启动日志里该有哪几句：世界里的数据包用到的模组功能，模组认出来时会打 */
-export const requiredStartupLogs = (saveDir: string): { 包: string; 行: string }[] => {
-  const o: { 包: string; 行: string }[] = [];
+export const requiredStartupLogs = (saveDir: string): { pack: string; 行: string }[] => {
+  const o: { pack: string; 行: string }[] = [];
   for (const p of worldDatapacks(saveDir)) {
-    const e = packEntries(p.路径);
-    for (const r of MOD_REQUIREMENTS) if (r.applies(e)) for (const l of r.startupLogs ?? []) if (!l.condition || l.condition(e)) o.push({ 包: p.名, 行: l.行 });
+    const e = packEntries(p.path);
+    for (const r of MOD_REQUIREMENTS) if (r.applies(e)) for (const l of r.startupLogs ?? []) if (!l.condition || l.condition(e)) o.push({ pack: p.name, 行: l.行 });
   }
   return o;
 };
@@ -126,10 +126,10 @@ export const checkOrder = (saveDir: string, overrides: readonly string[], enable
     }
     const mine = new Set(packEntries(path.join(saveDir, 'datapacks', dataPackName)).keys());
     for (const p of packs) {
-      if (p.名 === dataPackName) continue;
-      const other = `file/${p.名}`;
+      if (p.name === dataPackName) continue;
+      const other = `file/${p.name}`;
       if (!enabled.includes(other) || enabled.indexOf(other) < enabled.indexOf(fileKey)) continue;
-      if ([...packEntries(p.路径).keys()].some((k) => mine.has(k))) issues.push(`数据包 ${fileKey} 排在 ${other} 下面，覆盖的文件会被它盖回去`);
+      if ([...packEntries(p.path).keys()].some((k) => mine.has(k))) issues.push(`数据包 ${fileKey} 排在 ${other} 下面，覆盖的文件会被它盖回去`);
     }
   }
   return issues;

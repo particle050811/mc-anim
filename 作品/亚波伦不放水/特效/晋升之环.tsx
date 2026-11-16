@@ -24,7 +24,7 @@ let patchMaterialCache: THREE.MeshBasicMaterial | undefined;
 const patchGeometry = new THREE.PlaneGeometry(vanillaRing.sideLength, vanillaRing.sideLength);
 
 /** 原版那张片（环坐标，环心在原点），按秒自转 */
-export const AscensionHaloPatch: React.FC<{ 秒: number }> = ({ 秒: sec }) => {
+export const AscensionHaloPatch: React.FC<{ sec: number }> = ({ sec: sec }) => {
   const material = (patchMaterialCache ??= patchMaterial());
   return (
     <group rotation={[0, 0, vanillaSpinAngle(sec) * radPerDeg]}>
@@ -47,7 +47,7 @@ const getHalo = (variant: CandidateName) => {
 const setBloomLayer = (bloom: boolean) => (m: THREE.Mesh | null) => m?.layers[bloom ? 'enable' : 'disable'](KATANA_BLOOM_LAYER);
 
 /** 一个候选（环坐标，环心在原点），各层按秒转；晕 默认画 */
-export const AscensionHaloCandidate: React.FC<{ variant: CandidateName; 秒: number; withHalo?: boolean }> = ({ variant, 秒: sec, withHalo: showHalo = true }) => {
+export const AscensionHaloCandidate: React.FC<{ variant: CandidateName; sec: number; withHalo?: boolean }> = ({ variant, sec: sec, withHalo: showHalo = true }) => {
   useKatanaBloom();
   const ringBody = RingBody(variant);
   const materials = fineMaterials();
@@ -56,7 +56,7 @@ export const AscensionHaloCandidate: React.FC<{ variant: CandidateName; 秒: num
     <>
       {ringBody.layers.map((ringLayer, i) => (
         <group key={i} matrix={ringLayer.poseAt(sec, new THREE.Matrix4())} matrixAutoUpdate={false}>
-          {ringLayer.parts.map(({ 类: matKind, geo }) => (
+          {ringLayer.parts.map(({ type: matKind, geo }) => (
             <mesh key={matKind} ref={setBloomLayer(bloomClasses.has(matKind))} geometry={geo} material={materials[matKind]} renderOrder={matKind === '芒' ? 2 : 0} />
           ))}
         </group>
@@ -68,14 +68,14 @@ export const AscensionHaloCandidate: React.FC<{ variant: CandidateName; 秒: num
 };
 
 /** 原版贴片或一个候选（环坐标，环心在原点） */
-export const AscensionHalo: React.FC<{ variant: RingVariant; 秒: number; withHalo?: boolean }> = ({ variant, 秒: sec, withHalo }) => (variant === '原版' ? <AscensionHaloPatch 秒={sec} /> : <AscensionHaloCandidate variant={variant} 秒={sec} withHalo={withHalo} />);
+export const AscensionHalo: React.FC<{ variant: RingVariant; sec: number; withHalo?: boolean }> = ({ variant, sec: sec, withHalo }) => (variant === '原版' ? <AscensionHaloPatch sec={sec} /> : <AscensionHaloCandidate variant={variant} sec={sec} withHalo={withHalo} />);
 
 /** 戴在头后（头坐标：原点 = 头的转轴，+Y 朝上，+Z 朝脸的前方，单位是那个人的模型像素）：位置、前倾、大小照 晋升之环形.ts 的 戴法 */
-export const HeadRing: React.FC<{ variant: RingVariant; 秒: number; wearer: '史蒂夫' | '亚波伦' }> = ({ variant, 秒: sec, wearer }) => {
+export const HeadRing: React.FC<{ variant: RingVariant; sec: number; wearer: '史蒂夫' | '亚波伦' }> = ({ variant, sec: sec, wearer }) => {
   const placement = wearSpec[wearer][variant];
   return (
     <group position={[placement.位[0], placement.位[1], placement.位[2]]} rotation={[placement.tiltDeg * radPerDeg, 0, 0]} scale={placement.scale}>
-      <AscensionHalo variant={variant} 秒={sec} />
+      <AscensionHalo variant={variant} sec={sec} />
     </group>
   );
 };
@@ -83,6 +83,6 @@ export const HeadRing: React.FC<{ variant: RingVariant; 秒: number; wearer: '�
 /** 挂到娘化亚波伦的 aaabody 骨骼上（不跟头转，原因见 戴法 的注释）：先挪到站姿时 Head 的转轴，骨骼坐标正面朝 −Z，绕 Y 转半圈换成头坐标 */
 export const yaBoLunHeadRing = (variant: RingVariant, sec: number): React.ReactNode => (
   <group position={[yaBoLunHeadAxis[0], yaBoLunHeadAxis[1], yaBoLunHeadAxis[2]]} rotation={[0, Math.PI, 0]}>
-    <HeadRing variant={variant} 秒={sec} wearer="亚波伦" />
+    <HeadRing variant={variant} sec={sec} wearer="亚波伦" />
   </group>
 );

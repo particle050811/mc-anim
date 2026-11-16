@@ -13,8 +13,8 @@ const baseColor = '#1b2027';
 
 export type RealCanvasProps = {
   /** 画布的页面尺寸（成片 scale 2），要偶数 */
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** 取景：中心 = 画面中心对着剖面 y = 0 上的 [x, z]（格），每格 = 16N 成片像素 */
   framing: SideFraming;
   tone?: ToneName | Tone;
@@ -31,10 +31,10 @@ export type RealCanvasProps = {
   children: React.ReactNode;
 };
 
-export const RealCanvas: React.FC<RealCanvasProps> = ({ 宽: width, 高: height, framing, tone: tone = '现实', outline = defaultOutline.开, outlineWidth = defaultOutline.宽, topDepth = orthoTop, 天: sky = baseColor, shading, children }) => {
+export const RealCanvas: React.FC<RealCanvasProps> = ({ width: width, height: height, framing, tone: tone = '现实', outline = defaultOutline.开, outlineWidth = defaultOutline.width, topDepth = orthoTop, 天: sky = baseColor, shading, children }) => {
   const t = typeof tone === 'string' ? palette[tone] : tone;
   return (
-    <ToonCanvas 宽={width} 高={height} cameraRig={sideRig(framing, topDepth)} 天={sky} tint={t.tint} outline={outline ? { 宽: outlineWidth, 色: t.outlineColor } : false} shading={shading}>
+    <ToonCanvas width={width} height={height} cameraRig={sideRig(framing, topDepth)} 天={sky} tint={t.tint} outline={outline ? { width: outlineWidth, 色: t.outlineColor } : false} shading={shading}>
       {children}
     </ToonCanvas>
   );

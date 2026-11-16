@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 dce31b3f01a9），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-刘心忠-怕了我们（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 b3f0853e9d7f），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-刘心忠-怕了我们（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-刘心忠-怕了我们",
-  "角色": "刘心忠",
-  "念": "那家伙果然是怕了我们，居然逃了！",
-  "配音": "配音/6-刘心忠-怕了我们",
-  "成品sha": "6683edb67616",
-  "开口": 0.03,
+  "character": "刘心忠",
+  "spoken": "那家伙果然是怕了我们，居然逃了！",
+  "voice": "配音/6-刘心忠-怕了我们",
+  "finishedSha": "6683edb67616",
+  "mouthOpen": 0.03,
   "有声长": 2.747,
-  "时长": 2.927,
+  "duration": 2.927,
   "文件秒数": 2.927,
-  "字": [
+  "char": [
     ["那",0.32,0.56],
     ["家",0.56,0.72],
     ["伙",0.72,0.8],

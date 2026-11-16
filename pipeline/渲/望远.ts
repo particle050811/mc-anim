@@ -22,7 +22,7 @@ export const applyTelescope =
   };
 
 /** x、y、宽、高：矩形在原帧上的像素（左上角起）；倍 = 全宽 ÷ 宽；名：文件名后缀；值：给页面的 JSON */
-export type TelescopeConfig = { x: number; y: number; 宽: number; 高: number; zoom: number; fineLevel: boolean; 真值: boolean; 名: string; 值: string };
+export type TelescopeConfig = { x: number; y: number; width: number; height: number; zoom: number; fineLevel: boolean; 真值: boolean; name: string; value: string };
 /** 细一级：远处强制用更细的一级；真值：着色器里按像素大小做的远处简化照望远后的像素算（engine/段/望远.ts）。开了哪个，出来的都不再是原帧那块的放大 */
 export type TelescopeToggle = { fineLevel?: boolean; 真值?: boolean };
 
@@ -70,8 +70,8 @@ export const parseTelescope = (v: string, [fullWidth, fullHeight]: readonly [num
       }
       const fmtNum = (n: number) => String(Math.round(n * 100) / 100);
       return {
-        x, y, 宽: width, 高: height, zoom: fullWidth / width, fineLevel, 真值: exactValue,
-        名: `x${fmtNum(x)}-y${fmtNum(y)}-宽${fmtNum(width)}${fineLevel ? '-细一级' : ''}${exactValue ? '-真值' : ''}`,
-        值: JSON.stringify({ left: x / fullWidth, 上: y / fullHeight, widthRatio: width / fullWidth, fineLevel, 真值: exactValue }),
+        x, y, width: width, height: height, zoom: fullWidth / width, fineLevel, 真值: exactValue,
+        name: `x${fmtNum(x)}-y${fmtNum(y)}-宽${fmtNum(width)}${fineLevel ? '-细一级' : ''}${exactValue ? '-真值' : ''}`,
+        value: JSON.stringify({ left: x / fullWidth, 上: y / fullHeight, widthRatio: width / fullWidth, fineLevel, 真值: exactValue }),
       };
     });

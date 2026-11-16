@@ -50,15 +50,15 @@ describe('跑命令行', () => {
   const run = async (argv: string[], commandTable: Record<string, Command>, env: NodeJS.ProcessEnv = {}) => {
     const log: string[] = [];
     const error: string[] = [];
-    const records: (RunRecord & { 退出码?: number })[] = [];
+    const records: (RunRecord & { exitCode?: number })[] = [];
     const code = await runCommandLine(argv, {
       commandTable,
       env,
-      输出: { log: (s) => log.push(s), error: (s) => error.push(s) },
+      output: { log: (s) => log.push(s), error: (s) => error.push(s) },
       newRecord: (commandName, args) => {
-        const r = new RunRecord(commandName, args) as RunRecord & { 退出码?: number };
-        r.结束 = (c) => {
-          r.退出码 = c;
+        const r = new RunRecord(commandName, args) as RunRecord & { exitCode?: number };
+        r.endedAt = (c) => {
+          r.exitCode = c;
         };
         records.push(r);
         return r;
@@ -68,14 +68,14 @@ describe('跑命令行', () => {
   };
   const collectedArgs: string[][] = [];
   const commandTable: Record<string, Command> = {
-    好: { 用法: '好 [x]', 说明: '返回 0', 跑: async (a) => void collectedArgs.push(a) },
-    三: { 用法: '三', 说明: '返回 3', 跑: async () => 3 },
-    用法: { 用法: '用法 <x>', 说明: '用法错', 跑: async () => { throw new UsageError('要给 x'); } },
-    业务: { 用法: '业务', 说明: '业务错', 跑: async () => { throw new Error('母版不在'); } },
-    坏: { 用法: '坏', 说明: '程序错', 跑: async () => { throw new TypeError('读不了 undefined 的属性'); } },
-    只读: { 用法: '只读', 说明: '不写记录', noRecord: true, 跑: async () => {} },
-    详: { 用法: '详 <子>', 说明: '有详细帮助', help: () => '  anim 详 甲\n  anim 详 乙', 跑: async () => {} },
-    转: { 用法: '转 <参数…>', 说明: '原样转给别的程序', passThrough: true, 跑: async (a) => void collectedArgs.push(a) },
+    好: { usage: '好 [x]', note: '返回 0', 跑: async (a) => void collectedArgs.push(a) },
+    三: { usage: '三', note: '返回 3', 跑: async () => 3 },
+    用法: { usage: '用法 <x>', note: '用法错', 跑: async () => { throw new UsageError('要给 x'); } },
+    业务: { usage: '业务', note: '业务错', 跑: async () => { throw new Error('母版不在'); } },
+    坏: { usage: '坏', note: '程序错', 跑: async () => { throw new TypeError('读不了 undefined 的属性'); } },
+    只读: { usage: '只读', note: '不写记录', noRecord: true, 跑: async () => {} },
+    详: { usage: '详 <子>', note: '有详细帮助', help: () => '  anim 详 甲\n  anim 详 乙', 跑: async () => {} },
+    转: { usage: '转 <参数…>', note: '原样转给别的程序', passThrough: true, 跑: async (a) => void collectedArgs.push(a) },
   };
 
   it('没给命令打帮助退出 1，help 退出 0，不认识的命令退出 1', async () => {
@@ -102,9 +102,9 @@ describe('跑命令行', () => {
     const r = await run(['好', '--debug', 'a'], commandTable);
     expect(r.code).toBe(0);
     expect(collectedArgs.at(-1)).toEqual(['a']);
-    expect(r.records[0]).toMatchObject({ 命令: '好', 参数: ['a'], 退出码: 0 });
+    expect(r.records[0]).toMatchObject({ command: '好', params: ['a'], exitCode: 0 });
     expect((await run(['三'], commandTable)).code).toBe(3);
-    expect((await run(['只读'], commandTable)).records[0]!.退出码).toBeUndefined();
+    expect((await run(['只读'], commandTable)).records[0]!.exitCode).toBeUndefined();
   });
 
   it('--work 选不出来退出 2，不跑命令', async () => {
@@ -117,8 +117,8 @@ describe('跑命令行', () => {
     expect(await run(['用法'], commandTable)).toMatchObject({ code: 2, error: '要给 x\n用法：anim 用法 <x>' });
     const businessResult = await run(['业务'], commandTable);
     expect(businessResult).toMatchObject({ code: 1, error: '✗ 母版不在' });
-    expect(businessResult.records[0]!.事件[0]).toMatchObject({ 级别: '错误', 文本: '母版不在', 调用栈: expect.stringContaining('路由.test.ts') });
-    expect(businessResult.records[0]!.退出码).toBe(1);
+    expect(businessResult.records[0]!.events[0]).toMatchObject({ level: '错误', text: '母版不在', stack: expect.stringContaining('路由.test.ts') });
+    expect(businessResult.records[0]!.exitCode).toBe(1);
     const crashRun = await run(['坏'], commandTable);
     expect(crashRun.code).toBe(1);
     expect(crashRun.error).toMatch(/^TypeError: 读不了 undefined 的属性\n\s+at /);

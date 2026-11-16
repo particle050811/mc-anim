@@ -20,14 +20,14 @@ import { useViewIndex } from '@engine/段/时间.tsx';
 
 const yellow = '#FFFF55';
 // 成片画幅的封面：48.61 出的「Steve加入了游戏」到 49.96 过了 27 刻，还是满亮；聊天栏缩放照原版 2560×1440 的界面尺寸 6
-const filmChat = { lines: [{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }], 刻: 27, 缩放: 6 };
+const filmChat = { lines: [{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }], 刻: 27, scale: 6 };
 
 // 平面图的标注：浮在门楣（z 2～3）上面、不做深度测试、最后画，门光、屋顶都盖不住
 const annotationHeight = 3.4;
 const AnnotationMaterial: React.FC<{ 色: string }> = ({ 色: color }) => <meshBasicMaterial color={color} toneMapped={false} depthTest={false} depthWrite={false} transparent />;
 
 /** 地图上一条有宽度的线：从 a 到 b（只取 x、y） */
-const LineBetween: React.FC<{ a: V3; b: V3; 色: string; 宽?: number }> = ({ a, b, 色: color, 宽: width = 0.1 }) => {
+const LineBetween: React.FC<{ a: V3; b: V3; 色: string; width?: number }> = ({ a, b, 色: color, width: width = 0.1 }) => {
   const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
   return (
     <mesh position={[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, annotationHeight]} rotation={[0, 0, Math.atan2(dy, dx)]} renderOrder={20}>
@@ -50,23 +50,23 @@ const Annotation: React.FC<{ bodyFacing: number }> = ({ bodyFacing }) => {
   const markColor = '#ff40c0';
   const [ex, ey] = doorwayEye;
   const dirAngle = Math.atan2(cameraRig.看[1] - ey, cameraRig.看[0] - ex);
-  const halfFovX = Math.atan(Math.tan(((cameraRig.fov / 2) * Math.PI) / 180) * (aspect.宽 / aspect.高));
+  const halfFovX = Math.atan(Math.tan(((cameraRig.fov / 2) * Math.PI) / 180) * (aspect.width / aspect.height));
   const edgePoint = (s: number): V3 => [ex + 4 * Math.cos(dirAngle + s * halfFovX), ey + 4 * Math.sin(dirAngle + s * halfFovX), 0];
   const y = (bodyFacing * Math.PI) / 180;
   return (
     <>
       <SquarePiece 位={doorwayEye} 色={cyan} />
-      <LineBetween a={doorwayEye} b={cameraRig.看} 色={cyan} 宽={0.12} />
-      <LineBetween a={doorwayEye} b={edgePoint(1)} 色={cyan} 宽={0.05} />
-      <LineBetween a={doorwayEye} b={edgePoint(-1)} 色={cyan} 宽={0.05} />
+      <LineBetween a={doorwayEye} b={cameraRig.看} 色={cyan} width={0.12} />
+      <LineBetween a={doorwayEye} b={edgePoint(1)} 色={cyan} width={0.05} />
+      <LineBetween a={doorwayEye} b={edgePoint(-1)} 色={cyan} width={0.05} />
       <SquarePiece 位={liYing.feet} 色={markColor} />
-      <LineBetween a={liYing.feet} b={[liYing.feet[0] - Math.sin(y), liYing.feet[1] + Math.cos(y), 0]} 色={markColor} 宽={0.12} />
+      <LineBetween a={liYing.feet} b={[liYing.feet[0] - Math.sin(y), liYing.feet[1] + Math.cos(y), 0]} 色={markColor} width={0.12} />
     </>
   );
 };
 
 const SafeAreaLayer: React.FC = () => {
-  const { 宽: W, 高: H } = aspect;
+  const { width: W, height: H } = aspect;
   const { fourThreeRect, bottomEdge, bottomRight } = coverSafeArea(W, H);
   const dimColor = 'rgba(0, 0, 0, 0.45)';
   const forbidden = 'rgba(255, 40, 40, 0.28)';
@@ -88,7 +88,7 @@ const World: React.FC<{ v: View }> = ({ v }) => {
   const pose = { ...standPose(liYing.feet), yaw: v.bodyFacing ?? liYing.bodyFacing };
   const gaze = liYingLookAt(doorwayEye, pose);
   return (
-    <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+    <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
       <color attach="background" args={[skyColor]} />
       <FirstPersonRig 眼={rig.眼} 看={rig.看} fov={rig.fov} near={'nearClip' in rig ? rig.nearClip : undefined} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -111,11 +111,11 @@ const picture: React.FC = () => {
     <AbsoluteFill style={{ background: '#1b1d22' }}>
       <World v={v} />
       {v.showBubble && <ReunionBubble cameraRig={rig} />}
-      {v.chatMode === '片' && <PixelChatBar lines={filmChat.lines} 刻={filmChat.刻} 缩放={filmChat.缩放} 字体={pixelFont} 宽={aspect.宽} 高={aspect.高} />}
+      {v.chatMode === '片' && <PixelChatBar lines={filmChat.lines} 刻={filmChat.刻} scale={filmChat.scale} 字体={pixelFont} width={aspect.width} height={aspect.height} />}
       {v.chatMode === '封面' && <CoverChatLine />}
       {v.safeArea && <SafeAreaLayer />}
       <div style={{ position: 'absolute', right: 12, bottom: 8, textAlign: 'right', fontFamily: uiFontFamily, fontSize: 15, lineHeight: 1.35, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
-        <div>核对-隐世之境重逢 · {v.名}</div>
+        <div>核对-隐世之境重逢 · {v.name}</div>
         {v.hasLiYing && (
           <div style={{ fontSize: 12 }}>
             身子朝向 {pose.yaw}°，头比身子多转 {yaw.toFixed(1)}°（正对你要 {faceAngle.toFixed(1)}°）、抬头 {pitch.toFixed(1)}°

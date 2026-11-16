@@ -14,9 +14,9 @@ const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 type Vec3 = [number, number, number];
 
 /** 歌上的秒（她的呼吸、尾巴、法杖浮动都按它取样） */
-export const eyeContactSec = mainCutEvents.reunionGaze.秒;
+export const eyeContactSec = mainCutEvents.reunionGaze.sec;
 /** 48.61 进聊天栏的「Steve加入了游戏」到这一帧多少刻（按两边取整后的帧算，约 27 刻，还满亮） */
-export const chatAgeTick = ((mainCutEvents.reunionGaze.帧 - mainCutEvents.rejoinGame.帧) / fps) * 20;
+export const chatAgeTick = ((mainCutEvents.reunionGaze.frame - mainCutEvents.rejoinGame.frame) / fps) * 20;
 
 /** 你站在哪（脚底）：参数.ts 门口机位的 y（−10.5），往屋里（东）挪 0.1 格，还在西门门洞那一格里。
  *  玩家碰撞箱 0.6 宽，北沿到 −10.2，碰不到开着的西门门扇（y −10.1875 以北，地点/隐世之境主厅门数据.ts），原版站得到这里 */
@@ -38,10 +38,10 @@ export type EyeContactVersion = '片' | 'B站封面' | '竖版';
  *  气泡在她头上、画面上沿底下，下巴（1.1）在 y 573，刚好在 B 站封面底边 20% 那条线（576）上面；头偏右，左下空给封面那行黄字，
  *  下巴的 x 874 没进 B 站右下角时长角标那块（x > 883）。
  *  竖版：头落在 (300, 428)（540×720 计），正中略偏右，气泡在上（锚点同样 y 166），黄字在左下、举花那只手的袖口底下（下巴 562 底下） */
-export const eyeContactFraming: Record<EyeContactVersion, { 宽: number; 高: number; 看: Vec3 }> = {
-  片: { 宽: 1280, 高: 720, 看: [8.407, -11.149, 1.446] },
-  B站封面: { 宽: 960, 高: 540, 看: [8.407, -11.149, 1.446] },
-  竖版: { 宽: 540, 高: 720, 看: [8.24, -11.447, 1.442] },
+export const eyeContactFraming: Record<EyeContactVersion, { width: number; height: number; 看: Vec3 }> = {
+  片: { width: 1280, height: 720, 看: [8.407, -11.149, 1.446] },
+  B站封面: { width: 960, height: 540, 看: [8.407, -11.149, 1.446] },
+  竖版: { width: 540, height: 720, 看: [8.24, -11.447, 1.442] },
 };
 
 /** 封面（B站封面、竖版）她头顶气泡里的那句。用户 10-25 看 预览/1025-0124-封面和标题简介/01 说「C 位应该是您的手艺 一如既往那一句话」，替掉哭脸「( •́ _ •̀)」。
@@ -63,14 +63,14 @@ export const coverLine = '您的手艺，一如既往呢';
  *  片 照原样（中、锚点就在她头顶正上方） */
 export const eyeContactBubble: {
   anchorHeight: number;
-  缩放: Record<EyeContactVersion, number>;
-  字: Record<EyeContactVersion, string>;
+  scale: Record<EyeContactVersion, number>;
+  char: Record<EyeContactVersion, string>;
   位置: Record<EyeContactVersion, '中' | '左'>;
   centered: Record<EyeContactVersion, boolean>;
 } = {
   anchorHeight: 1.76,
-  缩放: { 片: 16, B站封面: 12, 竖版: 10 },
-  字: { 片: bubbleText, B站封面: coverLine, 竖版: coverLine },
+  scale: { 片: 16, B站封面: 12, 竖版: 10 },
+  char: { 片: bubbleText, B站封面: coverLine, 竖版: coverLine },
   位置: { 片: '中', B站封面: '左', 竖版: '中' },
   centered: { 片: false, B站封面: true, 竖版: true },
 };
@@ -103,9 +103,9 @@ export const movieChatWidth = line15ChatWidth;
  *  10 倍（810 宽、90 高）要到 x 1110，压住花，所以取 8 倍（字高 64；03-封面说 110 才认得出，C 位的气泡字 96，这行退到次要）。
  *  竖版：同样 8 倍（黑条 648 宽），左边、下边各留 40（x 40～688，y 1328～1400，1080×1440 计），在举花那只手的袖口底下、她身子前面。
  *  取偶数倍（汉字是 unifont，一个点半个界面像素，奇数倍会一宽一窄） */
-export const coverBigText: Record<Exclude<EyeContactVersion, '片'>, { 缩放: number; left: number; 下: number }> = {
-  B站封面: { 缩放: 8, left: 150, 下: 414 },
-  竖版: { 缩放: 8, left: 20, 下: 700 },
+export const coverBigText: Record<Exclude<EyeContactVersion, '片'>, { scale: number; left: number; 下: number }> = {
+  B站封面: { scale: 8, left: 150, 下: 414 },
+  竖版: { scale: 8, left: 20, 下: 700 },
 };
 
 /** 门外的暖光从镜头后面灌进来（03-封面：暖粉加暖金）：镜头看得见的面都被门光照着，平涂的整体色调从 归隐之地 的 #fff6f2 往暖金里乘一点。

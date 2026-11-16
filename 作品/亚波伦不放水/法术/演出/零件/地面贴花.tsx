@@ -9,16 +9,16 @@ export const GroundDecal: React.FC<
   FaceMaterialOptions & {
     /** 中心（落在地面上的点） */
     位: Vec3;
-    图: Png | null;
+    image: Png | null;
     /** 半边长（格） */
     radius: number;
     /** 绕竖直轴转的弧度 */
     angleRad?: number;
     lift?: number;
   }
-> = ({ 位: pos, 图: image, radius, angleRad = 0, lift = 0.02, ...materialOpts }) => (
+> = ({ 位: pos, image: image, radius, angleRad = 0, lift = 0.02, ...materialOpts }) => (
   // planeGeometry 在 XY 平面、法线 +Z，场景 Z 朝上，正好平躺；贴图第一行朝北（+Y）
-  <mesh position={[pos[0], pos[1], pos[2] + lift]} rotation={[0, 0, angleRad]} scale={[radius * 2, -radius * 2, 1]} material={faceMaterial(image, { 混合: '半透明', ...materialOpts })}>
+  <mesh position={[pos[0], pos[1], pos[2] + lift]} rotation={[0, 0, angleRad]} scale={[radius * 2, -radius * 2, 1]} material={faceMaterial(image, { blend: '半透明', ...materialOpts })}>
     <planeGeometry args={[1, 1]} />
   </mesh>
 );

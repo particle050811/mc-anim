@@ -3,36 +3,36 @@
 import { rankUnits, type SegmentStat } from '../bili/时间轴.ts';
 import { esc, percent, fmtSecClock, type MatchedRow } from './图与排名.ts';
 
-export type ComparisonRow = { 段: SegmentStat; unitNames: [string, string]; 值: [number, number]; 比: [number, number] };
+export type ComparisonRow = { segment: SegmentStat; unitNames: [string, string]; value: [number, number]; 比: [number, number] };
 
 /** 每段在两个平台上所在排名单元的每 10 秒流失和相对本平台平均的倍数；不参与排名的段不出行 */
 export const comparisonRows = (a: MatchedRow, b: MatchedRow): ComparisonRow[] => {
   const rowRenderer = (x: MatchedRow) => {
-    const { units, mean } = rankUnits(x.段, x.curve.留存);
-    const m = new Map<string, { 名: string; 值: number; 比: number }>();
-    for (const u of units) for (const k of u.segKeys) m.set(k, { 名: u.segKeys.length > 1 ? u.编号 : '', 值: u.relDropPer10s, 比: u.relDropPer10s / mean });
+    const { units, mean } = rankUnits(x.segment, x.curve.retention);
+    const m = new Map<string, { name: string; value: number; 比: number }>();
+    for (const u of units) for (const k of u.segKeys) m.set(k, { name: u.segKeys.length > 1 ? u.serial : '', value: u.relDropPer10s, 比: u.relDropPer10s / mean });
     return m;
   };
   const ta = rowRenderer(a);
   const tb = rowRenderer(b);
-  return a.段.flatMap((s) => {
-    const x = ta.get(s.键);
-    const y = tb.get(s.键);
-    return x && y ? [{ 段: s, unitNames: [x.名, y.名] as [string, string], 值: [x.值, y.值] as [number, number], 比: [x.比, y.比] as [number, number] }] : [];
+  return a.segment.flatMap((s) => {
+    const x = ta.get(s.key);
+    const y = tb.get(s.key);
+    return x && y ? [{ segment: s, unitNames: [x.name, y.name] as [string, string], value: [x.value, y.value] as [number, number], 比: [x.比, y.比] as [number, number] }] : [];
   });
 };
 export const pickBothDropped = (rows: ComparisonRow[], n = 5) => rows.filter((r) => r.比[0] > 1 && r.比[1] > 1).sort((p, q) => Math.min(...q.比) - Math.min(...p.比)).slice(0, n);
 export const pickBothRetained = (rows: ComparisonRow[], n = 5) => rows.filter((r) => r.比[0] < 1 && r.比[1] < 1).sort((p, q) => Math.max(...p.比) - Math.max(...q.比)).slice(0, n);
 export const inconsistent = (rows: ComparisonRow[], n = 5) => rows.filter((r) => (r.比[0] - 1) * (r.比[1] - 1) < 0).sort((p, q) => Math.abs(q.比[0] - q.比[1]) - Math.abs(p.比[0] - p.比[1])).slice(0, n);
 
-const rowText = (r: ComparisonRow, platformNames: [string, string]) => `${r.段.编号} ${r.段.名}（${platformNames[0]} ${percent(r.值[0])}、平均的 ${r.比[0].toFixed(1)} 倍${r.unitNames[0] ? `，按 ${r.unitNames[0]} 合组` : ''}；${platformNames[1]} ${percent(r.值[1])}、${r.比[1].toFixed(1)} 倍）`;
+const rowText = (r: ComparisonRow, platformNames: [string, string]) => `${r.segment.serial} ${r.segment.name}（${platformNames[0]} ${percent(r.value[0])}、平均的 ${r.比[0].toFixed(1)} 倍${r.unitNames[0] ? `，按 ${r.unitNames[0]} 合组` : ''}；${platformNames[1]} ${percent(r.value[1])}、${r.比[1].toFixed(1)} 倍）`;
 
 export const comparisonSection = (a: MatchedRow, b: MatchedRow, platformNames: [string, string], pageName: string) => {
   const rows = comparisonRows(a, b);
   const droppedRows = pickBothDropped(rows);
   const retainedRows = pickBothRetained(rows);
   const mismatched = inconsistent(rows);
-  return `### 交付 ${a.deliveryName}：${platformNames[0]}「${a.curve.标题}」↔ ${platformNames[1]}「${b.curve.标题}」
+  return `### 交付 ${a.deliveryName}：${platformNames[0]}「${a.curve.title}」↔ ${platformNames[1]}「${b.curve.title}」
 
 图：\`${pageName}\`（两条留存线画在一起只看形状；两平台分发不同，绝对值不比）
 
@@ -44,7 +44,7 @@ export const comparisonSection = (a: MatchedRow, b: MatchedRow, platformNames: [
 };
 
 export const comparisonPage = (a: MatchedRow, b: MatchedRow, platformNames: [string, string]) => {
-  const duration = Math.max(a.curve.时长, b.curve.时长);
+  const duration = Math.max(a.curve.duration, b.curve.duration);
   const W = 1400;
   const marginLeft = 56;
   const marginRight = 16;
@@ -52,23 +52,23 @@ export const comparisonPage = (a: MatchedRow, b: MatchedRow, platformNames: [str
   const topMargin = 150;
   const height = 300;
   const Y = (v: number) => topMargin + (1 - v) * height;
-  const pathData = (x: MatchedRow) => x.curve.留存.map((p, i) => `${i ? 'L' : 'M'}${X(Math.min(p.秒, duration)).toFixed(1)},${Y(p.留存).toFixed(1)}`).join('');
+  const pathData = (x: MatchedRow) => x.curve.retention.map((p, i) => `${i ? 'L' : 'M'}${X(Math.min(p.sec, duration)).toFixed(1)},${Y(p.retention).toFixed(1)}`).join('');
   const rows = comparisonRows(a, b);
-  const droppedKeys = new Set(pickBothDropped(rows, 99).map((r) => r.段.键));
-  const retainedKeys = new Set(pickBothRetained(rows, 99).map((r) => r.段.键));
-  const bandSvg = a.段
+  const droppedKeys = new Set(pickBothDropped(rows, 99).map((r) => r.segment.key));
+  const retainedKeys = new Set(pickBothRetained(rows, 99).map((r) => r.segment.key));
+  const bandSvg = a.segment
     .map((s) => {
-      const cls = droppedKeys.has(s.键) ? 'band hot' : retainedKeys.has(s.键) ? 'band keep' : 'band';
-      const r = rows.find((x) => x.段.键 === s.键);
-      const tooltip = `${s.编号} ${s.名}（${fmtSecClock(s.起)}–${fmtSecClock(s.止)}）\n${r ? `${platformNames[0]} ${percent(r.值[0])}（平均的 ${r.比[0].toFixed(1)} 倍）\n${platformNames[1]} ${percent(r.值[1])}（${r.比[1].toFixed(1)} 倍）` : '在开头窗或结尾窗内，不比'}`;
-      return `<g><rect class="${cls}" x="${X(s.起)}" y="${topMargin}" width="${Math.max(X(s.止) - X(s.起), 0.5)}" height="${height}"><title>${esc(tooltip)}</title></rect><line class="seg" x1="${X(s.起)}" x2="${X(s.起)}" y1="${topMargin - 4}" y2="${topMargin + height}"/>${X(s.止) - X(s.起) >= 11 ? `<text class="seglabel${droppedKeys.has(s.键) || retainedKeys.has(s.键) ? ' strong' : ''}" transform="translate(${(X(s.起) + X(s.止)) / 2 + 4},${topMargin - 8}) rotate(-90)">${esc(s.名)}</text>` : ''}</g>`;
+      const cls = droppedKeys.has(s.key) ? 'band hot' : retainedKeys.has(s.key) ? 'band keep' : 'band';
+      const r = rows.find((x) => x.segment.key === s.key);
+      const tooltip = `${s.serial} ${s.name}（${fmtSecClock(s.start)}–${fmtSecClock(s.end)}）\n${r ? `${platformNames[0]} ${percent(r.value[0])}（平均的 ${r.比[0].toFixed(1)} 倍）\n${platformNames[1]} ${percent(r.value[1])}（${r.比[1].toFixed(1)} 倍）` : '在开头窗或结尾窗内，不比'}`;
+      return `<g><rect class="${cls}" x="${X(s.start)}" y="${topMargin}" width="${Math.max(X(s.end) - X(s.start), 0.5)}" height="${height}"><title>${esc(tooltip)}</title></rect><line class="seg" x1="${X(s.start)}" x2="${X(s.start)}" y1="${topMargin - 4}" y2="${topMargin + height}"/>${X(s.end) - X(s.start) >= 11 ? `<text class="seglabel${droppedKeys.has(s.key) || retainedKeys.has(s.key) ? ' strong' : ''}" transform="translate(${(X(s.start) + X(s.end)) / 2 + 4},${topMargin - 8}) rotate(-90)">${esc(s.name)}</text>` : ''}</g>`;
     })
     .join('\n');
   const gridLines = [0, 0.25, 0.5, 0.75, 1].map((v) => `<line class="grid" x1="${marginLeft}" x2="${W - marginRight}" y1="${Y(v)}" y2="${Y(v)}"/><text class="tick" x="${marginLeft - 6}" y="${Y(v) + 4}" text-anchor="end">${v * 100}%</text>`).join('');
   let tickSvg = '';
   for (let t = 0; t <= duration; t += 30) tickSvg += `<text class="tick" x="${X(t)}" y="${topMargin + height + 20}" text-anchor="middle">${fmtSecClock(t)}</text>`;
   const tableHtml = rows
-    .map((r) => `<tr${droppedKeys.has(r.段.键) ? ' class="hot"' : retainedKeys.has(r.段.键) ? ' class="keep"' : ''}><td>${r.段.编号}</td><td>${esc(r.段.名)}</td><td>${fmtSecClock(r.段.起)}</td><td>${percent(r.值[0])}</td><td>${r.比[0].toFixed(2)}</td><td>${percent(r.值[1])}</td><td>${r.比[1].toFixed(2)}</td></tr>`)
+    .map((r) => `<tr${droppedKeys.has(r.segment.key) ? ' class="hot"' : retainedKeys.has(r.segment.key) ? ' class="keep"' : ''}><td>${r.segment.serial}</td><td>${esc(r.segment.name)}</td><td>${fmtSecClock(r.segment.start)}</td><td>${percent(r.value[0])}</td><td>${r.比[0].toFixed(2)}</td><td>${percent(r.value[1])}</td><td>${r.比[1].toFixed(2)}</td></tr>`)
     .join('');
   return `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>两平台留存对照</title>

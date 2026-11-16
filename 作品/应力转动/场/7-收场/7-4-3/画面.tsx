@@ -26,7 +26,7 @@ import * as pit from './坑口.ts';
 import { rad } from '@engine/core/数学.ts';
 
 // 7-4 的灯照主世界的配比（用户 10-15 定，lib/飞行镜头.tsx 的 FlightSky：直射 8.4、天光 1.0、环境光 0.17），屋里自己补的光按同样的比例压（天光 ×0.77、环境光 ×0.34）
-export const RoomLights: React.FC<{ lights: { p: number[]; 强: number }[] }> = ({
+export const RoomLights: React.FC<{ lights: { p: number[]; strength: number }[] }> = ({
   lights,
 }) => (
   <>
@@ -35,7 +35,7 @@ export const RoomLights: React.FC<{ lights: { p: number[]; 强: number }[] }> = 
         key={i}
         position={l.p as [number, number, number]}
         color="#ffb565"
-        intensity={l.强}
+        intensity={l.strength}
         distance={9}
         decay={1.6}
       />
@@ -103,8 +103,8 @@ const RoomPicture: React.FC<{ sec: number }> = ({ sec }) => {
           <ambientLight intensity={0.15} />
           <RoomLights
             lights={[
-              { p: choreo.roomToWorld(guardRoom.lantern), 强: 2.2 },
-              { p: choreo.roomToWorld(guardRoom.candle), 强: 0.9 },
+              { p: choreo.roomToWorld(guardRoom.lantern), strength: 2.2 },
+              { p: choreo.roomToWorld(guardRoom.candle), strength: 0.9 },
             ]}
           />
           {/* 窗外：边城、挖了坑的地面（坑在南边一百米，窗朝东看不到） */}

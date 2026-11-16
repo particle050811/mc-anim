@@ -50,7 +50,7 @@ const picture: React.FC = () => {
         />
       )}
       <div style={{ position: 'absolute', left: 24, top: 18, fontSize: 24, lineHeight: 1.5, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
-        <div>核对-第一人称 · {v.名}</div>
+        <div>核对-第一人称 · {v.name}</div>
         <div style={{ fontSize: 18 }}>
           {v.scenario} 第 {v.刻} 刻 · 手里 {handState.item ?? '空手'} · 挥手 {handState.swing.toFixed(3)} · 放下 {handState.equip.toFixed(3)}
           {fov !== HAND_FOV ? ` · 视角 ${fov}°（虚线框是 70° 的画面）` : ''}

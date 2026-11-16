@@ -48,21 +48,21 @@ const canonicalPath = (p: string) => (process.platform === 'win32' ? path.normal
 
 export type MissingBytesEntry = {
   /** 能换的段入口（相对代码根的正斜杠路径）→ 闭包里缺的 id */
-  换: Map<string, string[]>;
+  replaced: Map<string, string[]>;
   /** 换不了的入口（段.ts、作品 index.ts、设置.ts）→ 闭包里缺的 id */
   cannotReplace: Map<string, string[]>;
 };
 
 /** 按依赖图挑出闭包碰到缺字节资产的入口：注册.tsx 的 webpackContext 收的 段/、核对/ 下每段的 段.ts、画面.tsx、叠层*.tsx，加外壳 */
 export const pickMissingBytesEntry = (depGraph: DepGraph, workDir: string, missing: ReadonlySet<string>): MissingBytesEntry => {
-  const r: MissingBytesEntry = { 换: new Map(), cannotReplace: new Map() };
+  const r: MissingBytesEntry = { replaced: new Map(), cannotReplace: new Map() };
   const segFilePattern = /^(段|核对)\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/;
   const entries = [...depGraph.edges.keys()].filter((p) => p.startsWith(`${workDir}/`) && segFilePattern.test(p.slice(workDir.length + 1)));
   for (const f of [...entries, `${workDir}/index.ts`, 'engine/段/设置.ts'].sort()) {
     if (!depGraph.edges.has(f)) continue;
-    const ids = [...new Set([...closure(depGraph, [f])].flatMap((x) => depGraph.资产.get(x) ?? []))].filter((id) => missing.has(id)).sort();
+    const ids = [...new Set([...closure(depGraph, [f])].flatMap((x) => depGraph.asset.get(x) ?? []))].filter((id) => missing.has(id)).sort();
     if (!ids.length) continue;
-    (/\/(画面\.tsx|叠层[^/]*\.tsx)$/.test(f) ? r.换 : r.cannotReplace).set(f, ids);
+    (/\/(画面\.tsx|叠层[^/]*\.tsx)$/.test(f) ? r.replaced : r.cannotReplace).set(f, ids);
   }
   return r;
 };
@@ -73,13 +73,13 @@ type Compiler = { hooks: { normalModuleFactory: { tap: (name: string, fn: (nmf: 
 /** 排在 webpack.ts 的 资产解析插件 前面：缺字节的段入口、asset: 改成占位模块的路径，那边见不是 asset: 就不管 */
 export class MissingBytePlaceholderPlugin {
   readonly assetLock: AssetLock;
-  readonly 根: string;
-  readonly entryMap: Map<string, { 名: string; ids: string[] }>;
+  readonly root: string;
+  readonly entryMap: Map<string, { name: string; ids: string[] }>;
   readonly replaced: Set<string> = new Set();
   /** 入口：绝对路径 → 相对路径和缺的 id */
-  constructor(assetLock: AssetLock, dataRoot: string, entryMap: Map<string, { 名: string; ids: string[] }> = new Map()) {
+  constructor(assetLock: AssetLock, dataRoot: string, entryMap: Map<string, { name: string; ids: string[] }> = new Map()) {
     this.assetLock = assetLock;
-    this.根 = dataRoot;
+    this.root = dataRoot;
     this.entryMap = new Map([...entryMap].map(([k, v]) => [canonicalPath(k), v]));
   }
   apply(compiler: Compiler) {
@@ -88,18 +88,18 @@ export class MissingBytePlaceholderPlugin {
         if (data.request.startsWith('asset:')) {
           const id = data.request.slice('asset:'.length);
           const entry = this.assetLock[id];
-          if (!entry || fs.existsSync(bytesPath(entry, this.根))) return;
+          if (!entry || fs.existsSync(bytesPath(entry, this.root))) return;
           if (!this.replaced.has(id)) console.error(`!! 资产「${id}」的字节不在数据根，打进包的是占位（用到它的画面渲的时候报错）`);
           this.replaced.add(id);
-          data.request = writePlaceholder(entry.sha256, placeholderSource(id, bytesPath(entry, this.根)), this.根);
+          data.request = writePlaceholder(entry.sha256, placeholderSource(id, bytesPath(entry, this.root)), this.root);
           return;
         }
         if (!this.entryMap.size || !data.context || !/^\.\.?[/\\]/.test(data.request)) return;
         const e = this.entryMap.get(canonicalPath(path.resolve(data.context, data.request)));
         if (!e) return;
-        if (!this.replaced.has(e.名)) console.error(`!! ${e.名} 要的字节 ${describeMissing(e.ids)} 不在数据根，这段打进包的是占位（渲它会报错）`);
-        this.replaced.add(e.名);
-        data.request = writePlaceholder(`入口-${e.名.replace(/[/\\:]/g, '_')}`, entryPlaceholderSource(e.名, e.ids), this.根);
+        if (!this.replaced.has(e.name)) console.error(`!! ${e.name} 要的字节 ${describeMissing(e.ids)} 不在数据根，这段打进包的是占位（渲它会报错）`);
+        this.replaced.add(e.name);
+        data.request = writePlaceholder(`入口-${e.name.replace(/[/\\:]/g, '_')}`, entryPlaceholderSource(e.name, e.ids), this.root);
       });
     });
   }
@@ -109,7 +109,7 @@ export class MissingBytePlaceholderPlugin {
 export const computeMissingBytesEntry = async (assetLock: AssetLock, dataRoot: string): Promise<MissingBytesEntry | undefined> => {
   const missing = new Set(missingBytes(Object.keys(assetLock), assetLock, dataRoot));
   if (!missing.size) return undefined;
-  const c = new CheckContext(codeRoot(), { 作品: workName() });
+  const c = new CheckContext(codeRoot(), { work: workName() });
   try {
     return pickMissingBytesEntry(await c.depGraph(), c.workDir, missing);
   } finally {
@@ -126,6 +126,6 @@ export const fillMissingBytePlaceholders =
     const root = dataRoot();
     const entryReport = await computeMissingBytesEntry(assetLock, root);
     for (const [f, ids] of entryReport?.cannotReplace ?? []) console.error(`!! ${f} 的闭包要的字节 ${describeMissing(ids)} 不在数据根，换不了整段；在模块顶层取的话整个包都读不出 Composition`);
-    const placeholderMap = new Map([...(entryReport?.换 ?? [])].map(([f, ids]) => [path.join(codeRoot(), ...f.split('/')), { 名: f, ids }]));
+    const placeholderMap = new Map([...(entryReport?.replaced ?? [])].map(([f, ids]) => [path.join(codeRoot(), ...f.split('/')), { name: f, ids }]));
     return { ...c, plugins: [new MissingBytePlaceholderPlugin(assetLock, root, placeholderMap), ...(c.plugins ?? [])] };
   };

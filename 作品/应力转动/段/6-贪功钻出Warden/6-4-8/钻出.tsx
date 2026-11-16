@@ -16,7 +16,7 @@ export const EmergeView: React.FC<{ t: number }> = ({ t: segSec }) => {
   const pursuerPoses = choreo.pursuers(segSec);
   const t = choreo.emergeSec(segSec);
   return (
-    <AncientCity4xCanvas 段="6-4-8" cam={choreo.camera(segSec)} width={width} height={height} wool={choreo.woolNames}>
+    <AncientCity4xCanvas segment="6-4-8" cam={choreo.camera(segSec)} width={width} height={height} wool={choreo.woolNames}>
       <group position={choreo.WARDEN_AT} rotation={[0, 0, rad(choreo.WARDEN_YAW)]}>
         <Warden {...wardenProps} />
       </group>

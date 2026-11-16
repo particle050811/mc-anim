@@ -25,7 +25,7 @@ const picture: React.FC = () => {
   // 段内第几帧（输出帧）；以前按 1/24 秒一格数，用户 11-16 定不留 1/24 秒的格
   const { width, durationInFrames, fps } = useVideoConfig();
   const frame = snapToFrame(useCurrentSec() * fps);
-  const { 级别: level } = useSettings();
+  const { level: level } = useSettings();
   const cells = [];
   for (let y = 0; y < img.h; y++) {
     for (let x = 0; x < img.w; x++) {

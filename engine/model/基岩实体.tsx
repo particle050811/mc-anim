@@ -42,13 +42,13 @@ export const splitByGlow = (bedrockModel: BedrockModel, isGlow: (boneName: strin
  * 这层自己的时钟（秒，不给用组件的 秒）、混合模式和权重（见 混合层）
  */
 export type AnimationLayerSetting =
-  | { 名: string; 秒?: number; blendMode?: BlendMode; weight?: number }
-  | { controller: ControllerPlayer; 秒?: number; blendMode?: BlendMode; weight?: number };
+  | { name: string; sec?: number; blendMode?: BlendMode; weight?: number }
+  | { controller: ControllerPlayer; sec?: number; blendMode?: BlendMode; weight?: number };
 export type AnimationSetting = {
-  文件: Readonly<Record<string, BedrockAnimation>>;
+  file: Readonly<Record<string, BedrockAnimation>>;
   layers: readonly AnimationLayerSetting[];
   /** Molang 环境（查询、变量表、模组命名空间）；q.anim_time 由播放器填 */
-  环境?: MolangEnv;
+  env?: MolangEnv;
   口径?: Convention;
 };
 
@@ -59,27 +59,27 @@ export type AnimationSetting = {
  */
 export const animationPose = (animSpec: AnimationSetting, sec: number): SkeletonTable => {
   const convention = animSpec.口径 ?? defaultProfile;
-  const baseEnv = animSpec.环境 ?? {};
+  const baseEnv = animSpec.env ?? {};
   const env = { ...baseEnv, query: { life_time: sec, ...baseEnv.query }, 变量: baseEnv.变量 ?? {} };
   return blendLayers(
     animSpec.layers.map((animLayer) => {
-      if ('controller' in animLayer) return { skeleton: animLayer.controller.poseAt(animLayer.秒 ?? sec, env), blendMode: animLayer.blendMode, weight: animLayer.weight };
-      const a = animSpec.文件[animLayer.名];
-      if (!a) throw new Error(`基岩实体：动画文件里没有 ${animLayer.名}`);
+      if ('controller' in animLayer) return { skeleton: animLayer.controller.poseAt(animLayer.sec ?? sec, env), blendMode: animLayer.blendMode, weight: animLayer.weight };
+      const a = animSpec.file[animLayer.name];
+      if (!a) throw new Error(`基岩实体：动画文件里没有 ${animLayer.name}`);
       const weight = convention === '通用' && a.blendWeight !== undefined ? (animLayer.weight ?? 1) * animWeight(a, env) : animLayer.weight;
-      return { skeleton: sampleAnim(a, animLayer.秒 ?? sec, { 环境: env, 口径: convention }).skeleton, blendMode: animLayer.blendMode, weight };
+      return { skeleton: sampleAnim(a, animLayer.sec ?? sec, { env: env, 口径: convention }).skeleton, blendMode: animLayer.blendMode, weight };
     }),
     convention,
   );
 };
 
 export type BedrockEntityProps = {
-  模型: BedrockModel;
+  model: BedrockModel;
   /** 一像素是多少格，默认 1/16 */
-  缩放?: number;
-  动画?: AnimationSetting;
+  scale?: number;
+  animation?: AnimationSetting;
   /** 动画的时钟（秒） */
-  秒?: number;
+  sec?: number;
   /** 叠在动画上面的骨骼姿势，按通道覆盖（镜头里手摆的看向、表情） */
   bonePose?: Record<string, BonePose>;
   hurt?: number;
@@ -116,7 +116,7 @@ const SwapMaterial: React.FC<{ 贴图: THREE.Texture; 取: () => THREE.Material;
 };
 
 export const BedrockEntity: React.FC<BedrockEntityProps> = ({
-  模型: model, 缩放: scale = 1 / 16, 动画: animSpec, 秒: sec = 0, bonePose, hurt = 0, lighting = '场景', opacity = 1, glow = true, isGlowSkeleton = defaultIsGlowSkeleton, attach,
+  model: model, scale: scale = 1 / 16, animation: animSpec, sec: sec = 0, bonePose, hurt = 0, lighting = '场景', opacity = 1, glow = true, isGlowSkeleton = defaultIsGlowSkeleton, attach,
 }) => {
   const { bodyPart, glowModel: glowPart } = useMemo(() => splitByGlow(model, isGlowSkeleton), [model, isGlowSkeleton]);
   const animSkeleton = animSpec ? animationPose(animSpec, sec) : {};

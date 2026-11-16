@@ -17,8 +17,8 @@ import { flightWarp } from '../布局/强者.ts';
 import { rad, smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
 
 // 台词落点（这句开口落在本段第几秒）。库/角色/口型.ts 的句子还叫「帧」，这里写秒，mouthAt、withTalkNod 每秒给 1
-export type LineAt = { id: string; 秒: number };
-export const lipCues = (lines: readonly LineAt[]) => lines.map((l) => ({ id: l.id, 帧: l.秒 }));
+export type LineAt = { id: string; sec: number };
+export const lipCues = (lines: readonly LineAt[]) => lines.map((l) => ({ id: l.id, frame: l.sec }));
 // 手调的 n/24 秒时刻和 60 帧的输出帧都在 1/120 秒的格上：加减出来离格不到百万分之一格的落回格上，
 // 输出帧正好落在事件那一刻时不因浮点零头跑到另一边（离格远的不动，别的帧率照常）
 export const snapSec = (t: number) => {

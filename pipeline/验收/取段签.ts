@@ -6,7 +6,7 @@ import type { RunRecord } from '../运行记录/记录.ts';
 import { sameVersion, type Signature } from './认可.ts';
 import { deriveSegStamp, matchesSlice, readSegStamp, segStampComplete, type SegStamp, type SelfCheck } from './段签.ts';
 
-export const driftHint = (segKey: string, check: SelfCheck) => `重渲漂移：${segKey} 同一指纹重渲出来和上次派生的段签不一样（${check.说明}），对这段跑 anim verify ${segKey}`;
+export const driftHint = (segKey: string, check: SelfCheck) => `重渲漂移：${segKey} 同一指纹重渲出来和上次派生的段签不一样（${check.note}），对这段跑 anim verify ${segKey}`;
 
 /**
  * verify 碰上指纹和认可版一样的段：只读 签.json、stat 切片（不解码、不过闸），看同一指纹是不是重渲过。
@@ -16,21 +16,21 @@ export const sameFingerprintRerender = (segStamp: SegStamp | null, approvedSig: 
   if (!segStampComplete(segStamp)) return null;
   if (fs.existsSync(pictureMp4)) {
     const st = fs.statSync(pictureMp4);
-    if (st.size !== segStamp.母版.大小 || st.mtimeMs !== segStamp.母版.改于) return '切片和段签记的不是同一份';
+    if (st.size !== segStamp.master.size || st.mtimeMs !== segStamp.master.modifiedAt) return '切片和段签记的不是同一份';
   }
-  return sameVersion(segStamp.签名, approvedSig) ? null : '段签的签名和认可记录不一样';
+  return sameVersion(segStamp.signature, approvedSig) ? null : '段签的签名和认可记录不一样';
 };
 
 type SegSlice = Parameters<typeof deriveSegStamp>[0];
 
 /** 这一段切片的段签（见文件头） */
 export const fetchSegStamp = async (r: SegSlice, opts: { waitGate: () => Promise<void>; runRecord?: RunRecord }): Promise<SegStamp | null> => {
-  const segStamp = readSegStamp(r.段.键, r.画面指纹.指纹);
-  if (!fs.existsSync(r.画面) || !fs.existsSync(r.声音)) return segStampComplete(segStamp) ? segStamp : null;
-  if (segStampComplete(segStamp) && (await matchesSlice(segStamp, r.画面, r.声音))) return segStamp;
+  const segStamp = readSegStamp(r.segment.key, r.pictureFingerprint.fingerprint);
+  if (!fs.existsSync(r.画面) || !fs.existsSync(r.sound)) return segStampComplete(segStamp) ? segStamp : null;
+  if (segStampComplete(segStamp) && (await matchesSlice(segStamp, r.画面, r.sound))) return segStamp;
   await opts.waitGate();
-  console.log(`== 补段签 ${r.段.键}（${r.画面指纹.指纹.slice(0, 16)}）`);
-  const x = await deriveSegStamp(r, { 派生: '补' });
-  if (x.自查?.结论 === '漂移') opts.runRecord?.log('警告', driftHint(r.段.键, x.自查));
+  console.log(`== 补段签 ${r.segment.key}（${r.pictureFingerprint.fingerprint.slice(0, 16)}）`);
+  const x = await deriveSegStamp(r, { derive: '补' });
+  if (x.自查?.verdict === '漂移') opts.runRecord?.log('警告', driftHint(r.segment.key, x.自查));
   return x.segStamp;
 };

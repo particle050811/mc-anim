@@ -13,11 +13,11 @@ import type { V3, EnvDescription, Cloud, Fog, LightCoeffs } from './环境.ts';
 export type DrawProps = { e: EnvDescription; lighting: LightCoeffs; cameraPos: readonly number[]; eyeHeight: number; domeCenter?: readonly number[] };
 
 /** 一种画法：名 = 环境描述的 画法，也是模块的文件名（engine/light/画法/<名>.tsx；anim check 照这个查描述里的画法有没有） */
-export type DrawModule = { readonly 名: string; readonly component: React.FC<DrawProps> };
-export const defineDraw = (name: string, component: React.FC<DrawProps>): DrawModule => ({ 名: name, component });
+export type DrawModule = { readonly name: string; readonly component: React.FC<DrawProps> };
+export const defineDraw = (name: string, component: React.FC<DrawProps>): DrawModule => ({ name: name, component });
 
 // 这几个钩子只在描述要时才挂（条件渲染组件，不打乱钩子顺序；卸下时各自复位共用 uniform）
-export const HeightFogLayer: React.FC<{ 参数: NonNullable<EnvDescription['heightFog']> }> = ({ 参数: params }) => {
+export const HeightFogLayer: React.FC<{ params: NonNullable<EnvDescription['heightFog']> }> = ({ params: params }) => {
   useHeightFog({ start: params.start, halfLife: params.halfLife, density: params.density });
   return null;
 };
@@ -41,7 +41,7 @@ export const fogElement = (f: Fog, defaultColor: string) =>
 export const fogFarEnd = (f: Fog) => (f.种类 === '线性' ? f.far : f.种类 === '指数平方' ? f.visibility * 1.5 : 3000);
 
 /** 级联软投影的主光（同 暮色光照.tsx 的 TwilightSunLight、飞行镜头.tsx 的 OverworldSunLight）。归一：主世界那边先把光向归一再设（照原样，差一个末位也会让影子差一点） */
-export const ShadowMainLight: React.FC<{ lightDir: V3; normalize: boolean; 色: string; 强: number; shadowFar: number; splitDist: number }> = ({ lightDir, normalize, 色: color, 强: strength, shadowFar, splitDist }) => {
+export const ShadowMainLight: React.FC<{ lightDir: V3; normalize: boolean; 色: string; strength: number; shadowFar: number; splitDist: number }> = ({ lightDir, normalize, 色: color, strength: strength, shadowFar, splitDist }) => {
   const light = useMemo(() => {
     const sunLight = new SunLight(color, strength);
     const sh = new CascadedShadow();
@@ -66,7 +66,7 @@ export const ShadowMainLight: React.FC<{ lightDir: V3; normalize: boolean; 色: 
 };
 
 /** 不投影的平行主光：放在镜头往光源方向 1000 米、照着镜头（同 FlightSky 不投影时） */
-export const ParallelMainLight: React.FC<{ lightDir: V3; 色: string; 强: number; cameraPos: readonly number[] }> = ({ lightDir, 色: color, 强: strength, cameraPos }) => {
+export const ParallelMainLight: React.FC<{ lightDir: V3; 色: string; strength: number; cameraPos: readonly number[] }> = ({ lightDir, 色: color, strength: strength, cameraPos }) => {
   const light = useMemo(() => new THREE.DirectionalLight(color, strength), []);
   useEffect(() => () => light.dispose(), [light]);
   light.color.set(color);
@@ -84,5 +84,5 @@ export const ParallelMainLight: React.FC<{ lightDir: V3; 色: string; 强: numbe
 };
 
 export const vanillaCloud = (c: Extract<Cloud, { 种类: '原版' }>, defaultColor: string) => (
-  <Clouds height={c.高} radius={c.radius} color={c.色 ?? defaultColor} offset={c.offset ? [c.offset[0], c.offset[1]] : undefined} />
+  <Clouds height={c.height} radius={c.radius} color={c.色 ?? defaultColor} offset={c.offset ? [c.offset[0], c.offset[1]] : undefined} />
 );

@@ -46,7 +46,7 @@ describe('预览清理', () => {
 
     const refs = new Set(['1023-1635-课表/01-课表-原样.png']);
     const plan = planPreviewCleanup({ previewRoot: previewDir, archiveRoot: archiveDir, now, days: 3, 引用: refs });
-    expect(plan.map((x) => x.名).sort()).toEqual(['1022-0805-数据', '1023-1635-课表', '1024-0101-只有图', '1025-0249-成片']);
+    expect(plan.map((x) => x.name).sort()).toEqual(['1022-0805-数据', '1023-1635-课表', '1024-0101-只有图', '1025-0249-成片']);
     const r = executeCleanup(plan, []);
 
     expect(r).toMatchObject({ archivedFolders: 2, deletedFiles: 3, deletedBytes: 1060 });
@@ -68,7 +68,7 @@ describe('预览清理', () => {
       fs.utimesSync(path.join(root, dirName, 'a.png'), oldTime / 1000, oldTime / 1000);
       fs.utimesSync(path.join(root, dirName), oldTime / 1000, oldTime / 1000);
     }
-    expect(planDraftCleanup(root, Date.now(), 14).map((d) => d.名)).toEqual(['1001-0000-工作-旧']);
+    expect(planDraftCleanup(root, Date.now(), 14).map((d) => d.name)).toEqual(['1001-0000-工作-旧']);
     fs.rmSync(root, { recursive: true });
   });
 });

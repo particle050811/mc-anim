@@ -55,7 +55,7 @@ export const Fang: React.FC<{ 位: Vec3; facingAngle: number; warmup: number; �
         <group scale={[-f1, -f1, f1]}>
           <group position={[0, -0.626, 0]}>
             <group scale={[0.5, 0.5, 0.5]}>
-              <ModelPart 模型={fangModel} 图={image} partPoses={partPoses} />
+              <ModelPart model={fangModel} image={image} partPoses={partPoses} />
             </group>
           </group>
         </group>
@@ -64,7 +64,7 @@ export const Fang: React.FC<{ 位: Vec3; facingAngle: number; warmup: number; �
   );
 };
 
-const critClass: ParticleClass = { 帧: [png(criticalHitPng)], 选帧: '随机', 重力: 0.5, 摩擦: 0.7, 混合: '镂空', 大小: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
+const critClass: ParticleClass = { frame: [png(criticalHitPng)], 选帧: '随机', 重力: 0.5, 摩擦: 0.7, blend: '镂空', size: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
 
 /** 一颗牙咬合时冒的 12 颗暴击星的出生表。刻 = 这颗牙出生后的刻（定颜色用） */
 export const fangCritSpawns = (pos: Vec3, warmup: number, tick: number, seed: number): ParticleBirth[] => {
@@ -84,10 +84,10 @@ export const fangCritSpawns = (pos: Vec3, warmup: number, tick: number, seed: nu
       速: [v[0]!, -v[2]!, v[1]!] as const,
       寿命: Math.max(1, Math.floor(6 / (r() * 0.8 + 0.6))),
       radius: 0.1 * (r() * 0.5 + 0.5) * 0.75,
-      种子: i,
+      seed: i,
       色: [grayShade, grayShade * 0.96 ** age, grayShade * 0.9 ** age] as const,
     };
   });
 };
 
-export const CritStar: React.FC<{ spawns: readonly ParticleBirth[]; 秒: number }> = ({ spawns, 秒: sec }) => <TexturedParticles 类={critClass} spawns={spawns} 秒={sec} />;
+export const CritStar: React.FC<{ spawns: readonly ParticleBirth[]; sec: number }> = ({ spawns, sec: sec }) => <TexturedParticles type={critClass} spawns={spawns} sec={sec} />;

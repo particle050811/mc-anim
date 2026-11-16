@@ -170,9 +170,9 @@ const DustParticles: React.FC<{ p: V3; secSinceActive: number; chance: number; s
 // p：方块底面中心；秒：全局时间（触须动画帧）；激活：用 active 模型（触须快抖）；
 // 激活秒：从激活起算的秒数。给了它就按游戏时序自动定相位（2 秒内 active 模型，前 1.5 秒冒粉尘），不用再给 激活；
 // 粉尘概率：每刻这个方块被 animateTick 抽中的概率（离玩家越近越大，默认 0.15）；seed：粉尘随机种子
-export const SculkSensor: React.FC<{ p: V3; 秒: number; active?: boolean; secSinceActive?: number; dustChance?: number; seed?: number }> = ({
+export const SculkSensor: React.FC<{ p: V3; sec: number; active?: boolean; secSinceActive?: number; dustChance?: number; seed?: number }> = ({
   p: blockPos,
-  秒: sec,
+  sec: sec,
   active: active = false,
   secSinceActive: secSinceActive,
   dustChance = 0.15,

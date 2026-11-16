@@ -238,7 +238,7 @@ const glintMatrix = (sec: number, out: THREE.Matrix3) => {
   // translation(−f, f1) · rotZ · scale
   return out.set(cosScaled, -sinScaled, -scrollU, sinScaled, cosScaled, f1, 0, 0, 1);
 };
-export type EntityGlint = { tex: Png; 秒: number };
+export type EntityGlint = { tex: Png; sec: number };
 // 每个 EntityModel 自己一份材质（uniform 里的滚动矩阵各管各的），着色器程序共用
 const glintMaterial = (tex: Png, glint: Png, opts: MatOpts) => {
   const base = material(tex, opts) as THREE.MeshStandardMaterial;
@@ -323,7 +323,7 @@ export const EntityModel: React.FC<{
     () => (glintTex ? glintMaterial(tex, glintTex, { emissive, opacity, alphaTest, color, hurt }) : null),
     [tex, glintTex, emissive, opacity, alphaTest, color, hurt],
   );
-  if (glint && glintSpec) glintMatrix(glintSpec.秒, glint.uMat.value);
+  if (glint && glintSpec) glintMatrix(glintSpec.sec, glint.uMat.value);
   const mat = glint
     ? glint.m
     : mcLight === undefined

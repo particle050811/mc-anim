@@ -25,7 +25,7 @@ const stateTag = (s: string): NbtLabel => {
 };
 
 /** 一个区块：方块(x, y, z) 给区块内坐标和世界 y，返回状态串；群系一律 群系。y 范围 [y底, y底 + 16·段数) */
-export const makeChunk = (cx: number, cz: number, blockAt: (x: number, y: number, z: number) => string, o: { yBottom?: number; 段数?: number; 群系?: string; 状态?: string } = {}): Buffer => {
+export const makeChunk = (cx: number, cz: number, blockAt: (x: number, y: number, z: number) => string, o: { yBottom?: number; 段数?: number; biome?: string; state?: string } = {}): Buffer => {
   const yBottom = o.yBottom ?? -64, segCount = o.段数 ?? 24;
   const sections: NbtLabel[] = [];
   for (let s = 0; s < segCount; s++) {
@@ -41,14 +41,14 @@ export const makeChunk = (cx: number, cz: number, blockAt: (x: number, y: number
         }
     const bs: Record<string, NbtLabel> = { palette: { t: 'list', elementType: 'compound', v: pal.map(stateTag) } };
     if (pal.length > 1) bs.data = { t: 'longArray', v: packCompact(idx, Math.max(4, Math.ceil(Math.log2(pal.length)))) };
-    sections.push({ t: 'compound', v: { Y: { t: 'byte', v: yBottom / 16 + s }, block_states: { t: 'compound', v: bs }, biomes: { t: 'compound', v: { palette: { t: 'list', elementType: 'string', v: [stringTag(o.群系 ?? 'minecraft:plains')] } } } } });
+    sections.push({ t: 'compound', v: { Y: { t: 'byte', v: yBottom / 16 + s }, block_states: { t: 'compound', v: bs }, biomes: { t: 'compound', v: { palette: { t: 'list', elementType: 'string', v: [stringTag(o.biome ?? 'minecraft:plains')] } } } } });
   }
   return writeNbt({
     DataVersion: { t: 'int', v: 3465 },
     xPos: { t: 'int', v: cx },
     zPos: { t: 'int', v: cz },
     yPos: { t: 'int', v: yBottom / 16 },
-    Status: stringTag(o.状态 ?? 'minecraft:full'),
+    Status: stringTag(o.state ?? 'minecraft:full'),
     sections: { t: 'list', elementType: 'compound', v: sections },
   });
 };

@@ -19,7 +19,7 @@ export const scatter = (a: number, b: number, c = 0) => {
   return (h >>> 0) / 4294967296;
 };
 
-export type DotMatrix = { 宽: number; 高: number; 点: readonly (readonly [number, number])[] };
+export type DotMatrix = { width: number; height: number; points: readonly (readonly [number, number])[] };
 
 export type GlyphSource = {
   /** 一个拉丁字母的银河字母：7 行高（ascii_sga 每格第 8 行是空的） */
@@ -55,7 +55,7 @@ export const makeGlyphSource = (sga: Png, glyphTable: GlyphTable, tableName: str
               pixels.push([x, y]);
               width = Math.max(width, x + 1);
             }
-        r = { 宽: width, 高: 7, 点: pixels };
+        r = { width: width, height: 7, points: pixels };
         glyphMap.set(c, r);
       }
       return r;
@@ -68,7 +68,7 @@ export const makeGlyphSource = (sga: Png, glyphTable: GlyphTable, tableName: str
         g.rows.forEach((bits, y) => {
           for (let x = 0; x < g.w; x++) if ((bits >> (g.w - 1 - x)) & 1) pixels.push([x, y]);
         });
-        r = { 宽: g.w, 高: g.rows.length, 点: pixels };
+        r = { width: g.w, height: g.rows.length, points: pixels };
         hanziBitmaps.set(char, r);
       }
       return r;
@@ -93,7 +93,7 @@ export type TypesetStyle = {
 
 /** 一个字的字格：字格左上角的点坐标（从画面左上角数） */
 /** 界 = 这个字的符文、笔画只画在这一截点里 [左, 右)（分屏句：不越过分屏线），不写 = 整个画面 */
-export type PlacedChar = { 字: string; x: number; y: number; 界?: readonly [number, number] };
+export type PlacedChar = { char: string; x: number; y: number; 界?: readonly [number, number] };
 
 /** 一句里每行怎么对齐：中 = 每行各自居中；左、右 = 每行的左边、右边对齐；错落 = 第一行往左、最后一行往右各让 错距 的一半（两行时上左下右） */
 export type TextAlign = '中' | '左' | '右' | '错落';
@@ -157,7 +157,7 @@ export const layoutLine = (glyphSource: GlyphSource, text: string, typesetStyle:
     let x = Math.round(leftStart(k));
     const clipRange = perSeg?.[k]!.界;
     return textSeg.map((char, i) => {
-      const r: PlacedChar = { 字: char, x, y: firstY + lineNo(k) * typesetStyle.lineGap, ...(clipRange ? { 界: [clipRange[0] * drawWidth, clipRange[1] * drawWidth] as const } : {}) };
+      const r: PlacedChar = { char: char, x, y: firstY + lineNo(k) * typesetStyle.lineGap, ...(clipRange ? { 界: [clipRange[0] * drawWidth, clipRange[1] * drawWidth] as const } : {}) };
       x += advances[k]![i]!;
       return r;
     });
@@ -204,18 +204,18 @@ export type RuneLyricLine = {
 
 /** 关键词效果（三稿「字」一栏，用户 10-24 定的五处）：从、到 = 这个词在句里的第几个字（含两头，从 0 数）；裂 = 刹那裂开那一帧（段内帧）；半拍 = 时差残影晚几帧 */
 export type WordEffect =
-  | { effect: '光明' | '烟花' | '放下'; 从: number; 到: number }
-  | { effect: '刹那'; 从: number; 到: number; shatterFrame: number }
-  | { effect: '时差'; 从: number; 到: number; halfBeat: number };
+  | { effect: '光明' | '烟花' | '放下'; 从: number; dest: number }
+  | { effect: '刹那'; 从: number; dest: number; shatterFrame: number }
+  | { effect: '时差'; 从: number; dest: number; halfBeat: number };
 /** 从 起 那一帧开始、n秒 走完的渐变（同 歌词.tsx：起那一帧已经走了一帧） */
 const fadeRamp = (f: number, startFrame: number, rampSec: number) => clamp01(((f - startFrame) / fps + oneFrameSec) / Math.max(oneFrameSec, rampSec));
 
 /** 每个字拼字的起止帧：完 = 起唱 − 落定提前秒（最后一块落定），起 = 完 − 拼字秒（第一块落定），但不早于这个字进场后 首飞秒 */
-export const decodeTimeSpans = (lyricLine: Pick<RuneLyricLine, 'charTimes' | '入'>, timeStyle: Pick<TimeStyle, 'assembleSec' | 'firstFlySec' | 'settleLeadSec' | 'staggerSec'>): { 起: number; end: number }[] =>
+export const decodeTimeSpans = (lyricLine: Pick<RuneLyricLine, 'charTimes' | '入'>, timeStyle: Pick<TimeStyle, 'assembleSec' | 'firstFlySec' | 'settleLeadSec' | 'staggerSec'>): { start: number; end: number }[] =>
   lyricLine.charTimes.map((t, j) => {
     const end = t - timeStyle.settleLeadSec * fps;
     const enterFrame = lyricLine.入 + j * timeStyle.staggerSec * fps;
-    return { 起: Math.min(end, Math.max(end - timeStyle.assembleSec * fps, enterFrame + timeStyle.firstFlySec * fps)), end };
+    return { start: Math.min(end, Math.max(end - timeStyle.assembleSec * fps, enterFrame + timeStyle.firstFlySec * fps)), end };
   });
 
 /** 一个字在某一帧的样子：显 = 抖动显现度（0～1），解后 = 拼齐以后过了几帧（没拼齐是负的），出 = 退场进度（0～1，符文只看它），入 = 这个字进场那一帧 */

@@ -41,7 +41,7 @@ import {
 } from './场/2-雷雨/编排.ts';
 import { toFrameCues, frameCountOf, sceneWindowFrames } from './声音/回帧.ts';
 
-const eventFrame = (eventName: MainCutEventName) => mainCutEvents[eventName].帧;
+const eventFrame = (eventName: MainCutEventName) => mainCutEvents[eventName].frame;
 const thunderWindow = SegmentWindow('2-雷雨');
 const clearHazeWindow = SegmentWindow('2-拨开阴霾');
 const lastFrame = shotEndFrame - 1;
@@ -82,10 +82,10 @@ describe('串：第 6、7 句', () => {
   it('5→6 接缝：闪电落在切点上（2-雷雨 第 0 帧就在闪），雨声在 2-抢龙蛋 段尾先淡进来、段尾那一帧已经满了', () => {
     expect(eventFrame('distantThunder')).toBe(thunderWindow.起帧);
     expect(isFlashing(thunderWindow.起帧)).toBe(true);
-    const rainCues = toFrameCues(grabEggSegment).filter((c) => c.资产.includes('weather.rain'));
+    const rainCues = toFrameCues(grabEggSegment).filter((c) => c.asset.includes('weather.rain'));
     expect(rainCues.length).toBeGreaterThan(0);
     const firstDrop = rainCues[0]!;
-    expect(firstDrop.帧).toBeGreaterThan(SegmentWindow('2-抢龙蛋').止帧 - SegmentWindow('2-抢龙蛋').起帧 - fps);
+    expect(firstDrop.frame).toBeGreaterThan(SegmentWindow('2-抢龙蛋').止帧 - SegmentWindow('2-抢龙蛋').起帧 - fps);
     const gain = firstDrop.增益 as readonly number[];
     expect(Array.isArray(gain)).toBe(true);
     expect(gain[0]!).toBeLessThan(gain.at(-1)!);
@@ -136,7 +136,7 @@ describe('炸掉一角的屋子（种子 91）', () => {
   it('箱子炸没了，掉出箱子本身；门也炸没了（方块拼搭 画不了箱子、门不掉图标，画面不另画这两样）', () => {
     expect(destroyed.has(posKey(...chestCell))).toBe(true);
     expect(drops.map((d) => d.item)).toContain('minecraft:chest');
-    expect(remainingBlocks.filter((b) => /^minecraft:(chest|oak_door)/.test(b.状态))).toEqual([]);
+    expect(remainingBlocks.filter((b) => /^minecraft:(chest|oak_door)/.test(b.state))).toEqual([]);
     expect(drops.map((d) => d.item)).not.toContain('minecraft:oak_door');
   });
 
@@ -202,11 +202,11 @@ describe('四周的地（用户 10-24「怎么超平坦背景」）', () => {
 
   it('有树：樱花林十几棵、橡树几棵，都长在地形里', () => {
     const t = trees();
-    expect(t.filter((x) => x.种 === '樱').length).toBeGreaterThanOrEqual(10);
-    expect(t.filter((x) => x.种 === '橡').length).toBeGreaterThanOrEqual(3);
+    expect(t.filter((x) => x.kind === '樱').length).toBeGreaterThanOrEqual(10);
+    expect(t.filter((x) => x.kind === '橡').length).toBeGreaterThanOrEqual(3);
     const m = SurroundBlocks();
-    expect(m.cherryGrove.some((b) => b.状态.startsWith('minecraft:cherry_leaves'))).toBe(true);
-    expect(m.plains.some((b) => b.状态.startsWith('minecraft:oak_leaves'))).toBe(true);
+    expect(m.cherryGrove.some((b) => b.state.startsWith('minecraft:cherry_leaves'))).toBe(true);
+    expect(m.plains.some((b) => b.state.startsWith('minecraft:oak_leaves'))).toBe(true);
   });
 
   it('东北（第 7 句仰机位的右半边）地平线不是一条直线：屋子右后方 80～130 格有一道比平地高 6 格以上的山梁，梁上长着橡树', () => {
@@ -218,7 +218,7 @@ describe('四周的地（用户 10-24「怎么超平坦背景」）', () => {
         maxGroundHeight = Math.max(maxGroundHeight, groundHeight(Math.round(eye[0] + d * Math.sin(r)), Math.floor(eye[1] + d * Math.cos(r))));
       }
     expect(maxGroundHeight).toBeGreaterThanOrEqual(6);
-    const beamTrees = trees().filter((t) => t.种 === '橡' && Math.atan2(t.i - eye[0], t.j - eye[1]) > (25 * Math.PI) / 180 && Math.hypot(t.i - eye[0], t.j - eye[1]) > 70);
+    const beamTrees = trees().filter((t) => t.kind === '橡' && Math.atan2(t.i - eye[0], t.j - eye[1]) > (25 * Math.PI) / 180 && Math.hypot(t.i - eye[0], t.j - eye[1]) > 70);
     expect(beamTrees.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -372,14 +372,14 @@ describe('天气、雨、声音', () => {
   });
 
   it('两段都有雨声；闷雷整个落在 2-雷雨，信标声在 2-拨开阴霾', () => {
-    const assetsOf = (seg: typeof thunderSegment) => (seg.声音 ?? []).map((c) => (c as { 资产?: string }).资产);
+    const assetsOf = (seg: typeof thunderSegment) => (seg.sound ?? []).map((c) => (c as { asset?: string }).asset);
     expect(assetsOf(thunderSegment).filter((a) => a?.includes('weather.rain')).length).toBeGreaterThan(0);
     expect(assetsOf(clearHazeSegment).filter((a) => a?.includes('weather.rain')).length).toBeGreaterThan(0);
-    expect(assetsOf(thunderSegment).filter((a) => a === params.thunderSound.资产).length).toBe(2);
-    expect(assetsOf(clearHazeSegment)).toContain(params.beaconSoundParams.资产);
+    expect(assetsOf(thunderSegment).filter((a) => a === params.thunderSound.asset).length).toBe(2);
+    expect(assetsOf(clearHazeSegment)).toContain(params.beaconSoundParams.asset);
     // 雷声文件前 0.25 秒几乎没声（参.雷声.提前秒），起点可以早于段首被切掉；滚雷那一下（闪）和结尾都在 2-雷雨 里
     expect(eventFrame('distantThunder')).toBeGreaterThanOrEqual(thunderWindow.起帧);
-    expect(thunder.起帧 + (thunder.帧数 ?? Infinity)).toBeLessThanOrEqual(thunderWindow.止帧);
-    expect(nearThunder.起帧 + (nearThunder.帧数 ?? Infinity)).toBeLessThanOrEqual(thunderWindow.止帧);
+    expect(thunder.起帧 + (thunder.frameCount ?? Infinity)).toBeLessThanOrEqual(thunderWindow.止帧);
+    expect(nearThunder.起帧 + (nearThunder.frameCount ?? Infinity)).toBeLessThanOrEqual(thunderWindow.止帧);
   });
 });

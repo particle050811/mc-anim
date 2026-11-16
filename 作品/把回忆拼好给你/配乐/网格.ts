@@ -8,8 +8,8 @@
 export const beatGrid = {
   /** 第 0 拍（第一个强拍） */
   firstBeat: 0.107,
-  拍长: 0.42611,
-  每小节拍数: 4,
+  beatSec: 0.42611,
+  beatsPerBar: 4,
   BPM: 140.81,
 } as const;
 

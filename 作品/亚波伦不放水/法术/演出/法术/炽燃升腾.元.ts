@@ -11,9 +11,9 @@ export default defineSpellMeta({
   长秒: (blazeWarmupTick + blazeEruptTick + 30) / 20, // 最后一颗火柱粒子寿命最长 29 刻
   hitSec: blazeWarmupTick / 20, // 预热完才开始伤人
   // 施法音 rumble；FirePillar 预热完 fire_breath_start 音量 0.05，之后每 20 刻 fire_tornado_ambient（每根都响，这里按一根算）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.rumble.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.fire_breath_start', 秒: blazeWarmupTick / 20, 音量: 0.05 },
-    ...[0, 20, 40].map((tick) => ({ 资产: '音效/诡厄巫法/goety.fire_tornado_ambient', 秒: (blazeWarmupTick + tick) / 20 })),
+  sound: [
+    { asset: '音效/诡厄巫法/goety.rumble.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.fire_breath_start', sec: blazeWarmupTick / 20, 音量: 0.05 },
+    ...[0, 20, 40].map((tick) => ({ asset: '音效/诡厄巫法/goety.fire_tornado_ambient', sec: (blazeWarmupTick + tick) / 20 })),
   ],
 });

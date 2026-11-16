@@ -19,7 +19,7 @@ const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
   cam.fov = 70;
-  cam.aspect = aspect.宽 / aspect.高;
+  cam.aspect = aspect.width / aspect.height;
   cam.near = 0.05;
   cam.far = 4096;
   cam.position.copy(sceneToThree(v.眼));
@@ -35,7 +35,7 @@ const picture: React.FC = () => {
   const lightSetup = lightTables[v.光];
   return (
     <AbsoluteFill style={{ background: lightSetup.fog.色 }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
         <CameraRig v={v} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -43,7 +43,7 @@ const picture: React.FC = () => {
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
+        <div>{v.name}</div>
         <div style={{ fontSize: 16 }}>{`眼 场景 ${v.眼.map((n) => n.toFixed(1)).join(', ')}；雾 ${lightSetup.fog.near}～${lightSetup.fog.far} 格`}</div>
       </div>
     </AbsoluteFill>

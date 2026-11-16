@@ -16,10 +16,10 @@ const colorPalette = { gold: '#e8b04a', paleGold: '#f2c870', darkGold: '#8a5424'
 // 光芒、光框用的颜色（不受光，直接是画面上的颜色）
 const spikeColors = { red: '#ff4050', orange: '#ff9030', magenta: '#f03090', yellowGreen: '#d0f060' } as const;
 
-export type RingPiece = { 类: MaterialClass; geo: THREE.BufferGeometry };
+export type RingPiece = { type: MaterialClass; geo: THREE.BufferGeometry };
 /** 一层：几个网格加这一刻的摆法（写进 出 并返回） */
 export type RingLayer = { parts: RingPiece[]; poseAt: (sec: number, out: THREE.Matrix4) => THREE.Matrix4 };
-export type HaloBand = { radius: number; 宽: number; 色: string; 强: number };
+export type HaloBand = { radius: number; width: number; 色: string; strength: number };
 export type RingBody = { layers: RingLayer[]; haloBands: HaloBand[]; /** 晕片的半边长 */ haloHalfSize: number };
 
 const toLinear = (hex: string, brightness = 1): [number, number, number] => {
@@ -50,7 +50,7 @@ class GeoBin {
     return this;
   }
   出(): RingPiece[] {
-    return [...this.buckets].map(([matKind, gs]) => ({ 类: matKind, geo: mergeGeometries(gs)! }));
+    return [...this.buckets].map(([matKind, gs]) => ({ type: matKind, geo: mergeGeometries(gs)! }));
   }
 }
 
@@ -201,9 +201,9 @@ const roundedSquare = (halfSize: number, cornerRadius: number, cornerSegs = 6): 
   return points;
 };
 /** 倒了圆角的板（中心在原点，z 从 −厚/2 到 +厚/2），洞 可挖一个同心的圆角方洞 */
-const squarePlate = (halfSize: number, cornerRadius: number, thickness: number, bevel: number, hole?: { halfSize: number; 角: number }) => {
+const squarePlate = (halfSize: number, cornerRadius: number, thickness: number, bevel: number, hole?: { halfSize: number; angle: number }) => {
   const squareShape = new THREE.Shape(roundedSquare(halfSize, cornerRadius));
-  if (hole) squareShape.holes.push(new THREE.Path(roundedSquare(hole.halfSize, hole.角).reverse()));
+  if (hole) squareShape.holes.push(new THREE.Path(roundedSquare(hole.halfSize, hole.angle).reverse()));
   const g = new THREE.ExtrudeGeometry(squareShape, { depth: thickness - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelOffset: -bevel, bevelSegments: 3, curveSegments: 6 });
   g.translate(0, 0, -thickness / 2 + bevel);
   return g;
@@ -215,9 +215,9 @@ const concentricBase = (bin: GeoBin, m: THREE.Matrix4, halfSize: number, thickne
   for (const face of twoFaces(new THREE.Matrix4())) {
     const faceMatrix = m.clone().multiply(face);
     // 外框（细）、内框（粗一点，托住宝石）
-    bin.加('金', squarePlate(halfSize * 0.9, halfSize * 0.16, 0.12, 0.04, { halfSize: halfSize * 0.78, 角: halfSize * 0.1 }), colorPalette.paleGold, faceMatrix.clone().multiply(translate(0, 0, thickness / 2 + 0.04)));
+    bin.加('金', squarePlate(halfSize * 0.9, halfSize * 0.16, 0.12, 0.04, { halfSize: halfSize * 0.78, angle: halfSize * 0.1 }), colorPalette.paleGold, faceMatrix.clone().multiply(translate(0, 0, thickness / 2 + 0.04)));
     bin.加('暗金', new THREE.PlaneGeometry(halfSize * 1.56, halfSize * 1.56), colorPalette.darkGold, faceMatrix.clone().multiply(translate(0, 0, thickness / 2 + 0.005)));
-    bin.加('金', squarePlate(halfSize * 0.6, halfSize * 0.1, 0.2, 0.05, { halfSize: halfSize * 0.44, 角: halfSize * 0.05 }), colorPalette.gold, faceMatrix.clone().multiply(translate(0, 0, thickness / 2 + 0.08)));
+    bin.加('金', squarePlate(halfSize * 0.6, halfSize * 0.1, 0.2, 0.05, { halfSize: halfSize * 0.44, angle: halfSize * 0.05 }), colorPalette.gold, faceMatrix.clone().multiply(translate(0, 0, thickness / 2 + 0.08)));
     bin.加('宝石', squareGem(halfSize * 0.45, 0.24, 0.12), gemColor, faceMatrix.clone().multiply(translate(0, 0, thickness / 2 + 0.1)));
     // 四角各一颗小珠（铆钉）
     for (const [sx, sy] of [[1, 1], [-1, 1], [-1, -1], [1, -1]] as const) bin.加('金', sphere(halfSize * 0.07, 10), colorPalette.paleGold, faceMatrix.clone().multiply(translate(sx * halfSize * 0.69, sy * halfSize * 0.69, thickness / 2 + 0.03)));
@@ -333,7 +333,7 @@ const buildCandidateA = (): RingBody => {
       { parts: innerGroup.出(), poseAt: rotateAroundCenter(speeds.innerSpeed, 22.5) },
       { parts: crossBox.出(), poseAt: rotateAroundCenter(speeds.crossSpeed) },
     ],
-    haloBands: [{ radius: 9.2, 宽: 2.6, 色: '#ff9a40', 强: 0.07 }],
+    haloBands: [{ radius: 9.2, width: 2.6, 色: '#ff9a40', strength: 0.07 }],
     haloHalfSize: 14,
   };
 };
@@ -392,7 +392,7 @@ const makeVariantSecond = (): RingBody => {
   for (let i = 0; i < 96; i++) ringBox.加('光', sphere(0.035, 8), colorPalette.lightGold, onRing(mainRadius + (i % 2 ? 0.32 : -0.32), ((i + 0.5) / 96) * ringTau));
   // 32 道光芒，一周期 8 道：长、细、短、细、中、细、短、细；正上下左右是长的，对角是中的
   const platinum = toLinear(colorPalette.光, 1.1);
-  const sizeTable: readonly [长: number, 宽: number, tipColor: string][] = [
+  const sizeTable: readonly [length: number, width: number, tipColor: string][] = [
     [5.4, 0.3, spikeColors.red],
     [0.9, 0.1, spikeColors.orange],
     [2.1, 0.17, spikeColors.orange],
@@ -426,9 +426,9 @@ const makeVariantSecond = (): RingBody => {
       { parts: crossBox.出(), poseAt: rotateAroundCenter(speeds.crossSpeed) },
     ],
     haloBands: [
-      { radius: mainRadius, 宽: 0.3, 色: '#ffd890', 强: 0.3 },
-      { radius: mainRadius + 0.3, 宽: 2.2, 色: '#ff8a40', 强: 0.13 },
-      { radius: mainRadius + 2.0, 宽: 3.4, 色: '#d03070', 强: 0.05 },
+      { radius: mainRadius, width: 0.3, 色: '#ffd890', strength: 0.3 },
+      { radius: mainRadius + 0.3, width: 2.2, 色: '#ff8a40', strength: 0.13 },
+      { radius: mainRadius + 2.0, width: 3.4, 色: '#d03070', strength: 0.05 },
     ],
     haloHalfSize: 20,
   };
@@ -481,8 +481,8 @@ const makeVariantThird = (): RingBody => {
   return {
     layers,
     haloBands: [
-      { radius: radius, 宽: 0.3, 色: '#ffd890', 强: 0.25 },
-      { radius: radius, 宽: 2.0, 色: '#ff9040', 强: 0.06 },
+      { radius: radius, width: 0.3, 色: '#ffd890', strength: 0.25 },
+      { radius: radius, width: 2.0, 色: '#ff9040', strength: 0.06 },
     ],
     haloHalfSize: 14,
   };

@@ -17,9 +17,9 @@ const peakDb = -18;
 const slideSteps = (startSec: number, track: DashTrail): number[] => {
   const stepTimes: number[] = [];
   let [walked, nextStep] = [0, 1];
-  for (let k = 1; k < track.点.length; k++) {
+  for (let k = 1; k < track.points.length; k++) {
     if (!track.onGround[k]) continue;
-    const [a, b] = [track.点[k - 1]!, track.点[k]!];
+    const [a, b] = [track.points[k - 1]!, track.points[k]!];
     walked += Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) * 0.6;
     if (walked > nextStep) {
       stepTimes.push(startSec + k / 20);
@@ -30,27 +30,27 @@ const slideSteps = (startSec: number, track: DashTrail): number[] => {
 };
 
 export default windowSeg(timeline, {
-  起: 'summonDone',
-  止: 'wheelOpenDone',
-  地形: [realNetherPack],
+  start: 'summonDone',
+  end: 'wheelOpenDone',
+  terrain: [realNetherPack],
   soundTable,
-  声音: ({ 放: play }) => {
+  sound: ({ 放: play }) => {
     const sounds: ReturnType<typeof play>[] = [];
     /** 世界秒放一个声音 */
     const playAt = (asset: string, beatTime: number, options: Parameters<typeof play>[2]) => sounds.push(play(asset, toClipSec(beatTime), options));
     // 断曜流光冲刺：挥那一下放 TRIDENT_RIPTIDE_1，音高 1.3（游戏里就这一个声音，物品不放别的）
-    for (const [i, sec] of [beats.dashFirstSec, beats.dashSecondSec].entries()) playAt(valetteinDash.sound, sec, { 峰值: mainPeakDb, 速率: valetteinDash.音高, 名: `冲刺${i + 1}` });
+    for (const [i, sec] of [beats.dashFirstSec, beats.dashSecondSec].entries()) playAt(valetteinDash.sound, sec, { peakDb: mainPeakDb, 速率: valetteinDash.音高, name: `冲刺${i + 1}` });
     for (const [i, [startSec, track]] of ([[beats.dashFirstSec, firstDash], [beats.dashSecondSec, secondDash]] as const).entries())
-      for (const [j, sec] of slideSteps(startSec, track).entries()) playAt(`音效/block.stone.step.${((i * 3 + j) % 6) + 1}`, sec, { 峰值: peakDb, 名: `滑步${i + 1}-${j + 1}` });
+      for (const [j, sec] of slideSteps(startSec, track).entries()) playAt(`音效/block.stone.step.${((i * 3 + j) % 6) + 1}`, sec, { peakDb: peakDb, name: `滑步${i + 1}-${j + 1}` });
     // 她：从祭坛一蹬飞出来、瞬移出来那一冲带一阵风；往上一拉那阵风落在慢放里，压低放（Agent 取的）
-    playAt('音效/诡厄巫法/goety.wind.1', beats.takeoff, { 峰值: peakDb, 名: '飞出来' });
-    playAt('音效/诡厄巫法/goety.wind.3', beats.移, { 峰值: peakDb, 名: '瞬移出来' });
-    playAt('音效/诡厄巫法/goety.wind.2', beats.dashSecondSec, { 峰值: peakDb, 速率: 0.7, 名: '拉升' });
+    playAt('音效/诡厄巫法/goety.wind.1', beats.takeoff, { peakDb: peakDb, name: '飞出来' });
+    playAt('音效/诡厄巫法/goety.wind.3', beats.移, { peakDb: peakDb, name: '瞬移出来' });
+    playAt('音效/诡厄巫法/goety.wind.2', beats.dashSecondSec, { peakDb: peakDb, 速率: 0.7, name: '拉升' });
     // 瞬移：开始冒烟时前兆，挪过去那一下传送声
-    playAt('音效/诡厄巫法/goety.apostle_pre_teleport', beats.smokeStart, { 峰值: peakDb, 名: '瞬移前兆' });
-    playAt('音效/诡厄巫法/goety.apostle_teleport.1', beats.移, { 峰值: mainPeakDb, 名: '瞬移' });
+    playAt('音效/诡厄巫法/goety.apostle_pre_teleport', beats.smokeStart, { peakDb: peakDb, name: '瞬移前兆' });
+    playAt('音效/诡厄巫法/goety.apostle_teleport.1', beats.移, { peakDb: mainPeakDb, name: '瞬移' });
     // 张盘（11-11 起又回到第 2 幕：她拉升里张开，用户「飞行的时候伸出法杖 圆环缓缓张开」）
-    playAt('音效/诡厄巫法/goety.apostle_prepare_spell.1', beats.openWheelSec, { 峰值: mainPeakDb, 名: '张盘' });
+    playAt('音效/诡厄巫法/goety.apostle_prepare_spell.1', beats.openWheelSec, { peakDb: mainPeakDb, name: '张盘' });
     return sounds;
   },
 });

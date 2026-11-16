@@ -3,61 +3,61 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/6-黄叛-又出现了": {
-      "时长": 3.219,
-      "峰值": -2.3,
-      "响度": -18,
+      "duration": 3.219,
+      "peakDb": -2.3,
+      "loudness": -18,
       "sha": "3e49dd7324dd"
     },
     "音效/block.stone.step.1": {
-      "时长": 0.609388,
-      "峰值": -8.9,
-      "响度": -33.4,
+      "duration": 0.609388,
+      "peakDb": -8.9,
+      "loudness": -33.4,
       "sha": "e94a295a8764"
     },
     "音效/block.stone.step.2": {
-      "时长": 0.484376,
-      "峰值": -7,
-      "响度": -33.9,
+      "duration": 0.484376,
+      "peakDb": -7,
+      "loudness": -33.9,
       "sha": "2cfbf8787436"
     },
     "音效/block.stone.step.3": {
-      "时长": 0.421882,
-      "峰值": -12,
-      "响度": -36.4,
+      "duration": 0.421882,
+      "peakDb": -12,
+      "loudness": -36.4,
       "sha": "c5d71e8d3251"
     },
     "音效/block.stone.step.4": {
-      "时长": 0.546893,
-      "峰值": -5.9,
-      "响度": -31.8,
+      "duration": 0.546893,
+      "peakDb": -5.9,
+      "loudness": -31.8,
       "sha": "95820d0b75e8"
     },
     "音效/block.stone.step.5": {
-      "时长": 0.562517,
-      "峰值": -9.1,
-      "响度": -31.3,
+      "duration": 0.562517,
+      "peakDb": -9.1,
+      "loudness": -31.3,
       "sha": "67b1e50426b2"
     },
     "音效/block.stone.step.6": {
-      "时长": 0.609388,
-      "峰值": -5.5,
-      "响度": -29.7,
+      "duration": 0.609388,
+      "peakDb": -5.5,
+      "loudness": -29.7,
       "sha": "2b65e1bdb942"
     },
     "音效/entity.player.splash.high_speed": {
-      "时长": 3.026667,
-      "峰值": 0.1,
-      "响度": -16.9,
+      "duration": 3.026667,
+      "peakDb": 0.1,
+      "loudness": -16.9,
       "sha": "23465cd6325f"
     }
   },
-  "台词": {
+  "lines": {
     "6-黄叛-又出现了": {
-      "配音": "配音/6-黄叛-又出现了",
-      "开口": 0.03,
-      "时长": 3.219
+      "voice": "配音/6-黄叛-又出现了",
+      "mouthOpen": 0.03,
+      "duration": 3.219
     }
   }
 };

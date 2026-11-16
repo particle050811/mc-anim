@@ -5,7 +5,7 @@ import { hash2 } from '@engine/core/噪声.ts';
 
 /** 日历的尺寸（贴图像素，日历本.tsx 按它搭）。宽 48：「距高考还有」一行 44 宽、「100天」大字 2 倍也 44 宽；页高 32；装订 6 高、8 深；纸叠 2～6 深（剩 1 页到满 100 页）。
  *  比原来的 64 宽、3 倍大字小一圈：课表要整张露在右屏里（用户 10-24「课程表怎么不展示完全」），桌上只剩日历一样东西。Agent 暂定 */
-export const calendarSize = { 宽: 48, pageHeight: 32, bindingHeight: 6, bindingDepth: 8, paperMinThickness: 2, paperMaxThickness: 6 } as const;
+export const calendarSize = { width: 48, pageHeight: 32, bindingHeight: 6, bindingDepth: 8, paperMinThickness: 2, paperMaxThickness: 6 } as const;
 
 /** 第一页的天数 */
 export const fullPages = 100;
@@ -14,16 +14,16 @@ export const fullPages = 100;
  *  加速 2.5：第 1 页单独飞 0.27 秒，第 2、3 页隔 0.09 秒，到最后每秒走 145 页。每秒最多画 36 张（24 fps 时每帧 1.5 张）：最后 0.4 秒空中也只十来张，不糊成一团白。Agent 暂定 */
 export const blowParams = { accelExp: 2.5, flySec: 0.42, maxPerSec: 36 } as const;
 
-export type BlowWindow = { 起: number; 止: number };
+export type BlowWindow = { start: number; end: number };
 
 /** 第 k 页（k = 1 是 100 那页，k = 满页 − 1 是 2 那页）离开本子的秒数 */
-export const leaveSec = (k: number, blowWindow: BlowWindow) => blowWindow.起 + (blowWindow.止 - blowWindow.起) * ((k - 1) / (fullPages - 2)) ** (1 / blowParams.accelExp);
+export const leaveSec = (k: number, blowWindow: BlowWindow) => blowWindow.start + (blowWindow.end - blowWindow.start) * ((k - 1) / (fullPages - 2)) ** (1 / blowParams.accelExp);
 
 /** 到 秒 为止飞走了几页（离开那一刻算飞走） */
 export const flownPageCount = (sec: number, blowWindow: BlowWindow): number => {
-  if (sec < blowWindow.起) return 0;
-  if (sec >= blowWindow.止) return fullPages - 1;
-  const u = (sec - blowWindow.起) / (blowWindow.止 - blowWindow.起);
+  if (sec < blowWindow.start) return 0;
+  if (sec >= blowWindow.end) return fullPages - 1;
+  const u = (sec - blowWindow.start) / (blowWindow.end - blowWindow.start);
   // 反解 离开秒：u ≥ ((k − 1) / 98)^(1/加速) ⇔ k ≤ 1 + 98 u^加速
   return Math.min(fullPages - 1, Math.floor(1 + (fullPages - 2) * u ** blowParams.accelExp + 1e-9));
 };
@@ -37,7 +37,7 @@ const pagesPerSec = (k: number) => {
   return u <= 0 ? 0 : (fullPages - 2) * blowParams.accelExp * u ** (blowParams.accelExp - 1);
 };
 
-export type FlyingPage = { 数: number; age: number; 种: number };
+export type FlyingPage = { 数: number; age: number; kind: number };
 
 /** 秒 这一刻还在空中的纸（先飞的在前）：龄 = 离开了几秒的比例（0～1），种 = 这张自己的散列（翻法、偏一点） */
 export const flyingPages = (sec: number, blowWindow: BlowWindow): FlyingPage[] => {
@@ -49,7 +49,7 @@ export const flyingPages = (sec: number, blowWindow: BlowWindow): FlyingPage[] =
     const seed = hash2(k, 7, 4021);
     const density = pagesPerSec(k);
     if (density > blowParams.maxPerSec && seed * density >= blowParams.maxPerSec) continue;
-    out.push({ 数: fullPages + 1 - k, age: Math.max(0, age), 种: seed });
+    out.push({ 数: fullPages + 1 - k, age: Math.max(0, age), kind: seed });
   }
   return out;
 };
@@ -62,7 +62,7 @@ export const flyPose = (age: number, seed: number) => {
   return {
     dx: Math.round(age * 8 + age * age * (70 + 20 * seed)),
     dz: Math.round(age * 24 + age * age * 120),
-    高: Math.max(1, Math.round(calendarSize.pageHeight * Math.abs(c))),
+    height: Math.max(1, Math.round(calendarSize.pageHeight * Math.abs(c))),
     isBack: c < 0,
   };
 };
@@ -76,10 +76,10 @@ export const paperThickness = (pagesOnTop: number) => {
 /** 一页上字怎么排（贴图像素，原点是页面左上角，页面 = 日历尺寸 宽 × 页高）：小字「距高考还有」一行（游戏像素字，汉字 8 高、步进 9），
  *  下面大数字放大 2 倍（原版位图数字 5×7、步进 6），「天」跟在数字右边、底对齐。数字和「天」作为一组水平居中 */
 export const pageLayout = (dayNum: number) => {
-  const width = calendarSize.宽;
+  const width = calendarSize.width;
   const scale = 2;
   const numberWidth = (String(dayNum).length * 6 - 1) * scale;
   const x = Math.floor((width - (numberWidth + 2 + 8)) / 2);
   const y = 14;
-  return { smallTextY: 3, bigTextScale: scale, 数: { x, y, 宽: numberWidth, 高: 7 * scale }, 天: { x: x + numberWidth + 2, y: y + 7 * scale - 8, 宽: 8, 高: 8 } };
+  return { smallTextY: 3, bigTextScale: scale, 数: { x, y, width: numberWidth, height: 7 * scale }, 天: { x: x + numberWidth + 2, y: y + 7 * scale - 8, width: 8, height: 8 } };
 };

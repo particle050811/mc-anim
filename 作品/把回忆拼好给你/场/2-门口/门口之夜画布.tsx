@@ -91,9 +91,9 @@ const attractPoint = (j: DoorNightShot, p: V3): V3 => {
   const k = 16 * j.N;
   const oblique = j.topDepth / j.N;
   const roundToEven = (v: number) => 2 * Math.round(v / 2);
-  const x = j.中心[0] + roundToEven((p[0] - j.中心[0]) * k) / k;
-  const snappedZ = roundToEven((p[2] + oblique * p[1] - j.中心[1]) * k) / k;
-  return [x, p[1], snappedZ - oblique * p[1] + j.中心[1]];
+  const x = j.center[0] + roundToEven((p[0] - j.center[0]) * k) / k;
+  const snappedZ = roundToEven((p[2] + oblique * p[1] - j.center[1]) * k) / k;
+  return [x, p[1], snappedZ - oblique * p[1] + j.center[1]];
 };
 /** 方片一个贴图像素几个成片像素（偶数）→ 半边长（格）：贴图 边 个像素宽 */
 const squareHalf = (j: DoorNightShot, origHalf: number, side: number) => {
@@ -102,7 +102,7 @@ const squareHalf = (j: DoorNightShot, origHalf: number, side: number) => {
 };
 
 // ---------- 烟花：火花、火箭 ----------
-const FireworkSquare: React.FC<{ 秒: number; shot: DoorNightShot; rocketColor: V3 }> = ({ 秒: sec, shot, rocketColor }) => {
+const FireworkSquare: React.FC<{ sec: number; shot: DoorNightShot; rocketColor: V3 }> = ({ sec: sec, shot, rocketColor }) => {
   const atlas = particleTexture(sparkAtlas, 8 * sparkEdge, sparkEdge, sparkAtlas);
   const rocketTexture = particleTexture(rocketImg.px, rocketImg.w, rocketImg.h, rocketImg);
   const sparks: Particle[] = [];
@@ -127,7 +127,7 @@ const toFinalWidth = (width: number) => width * filmScale;
 
 /** 星星：一张 W×H 的循环图（确定性随机），跟着天挪（偏 = 天取景 的中心比开场那一镜挪了多少成片像素），躲开月亮那一块（开场那一镜里月亮的位置；月亮跟着天走，
  *  到第 12 句只往西挪不到 80 像素） */
-const StarLayer: React.FC<{ 宽: number; 高: number; offset: { x: number; y: number }; 月: { x: number; y: number } }> = ({ 宽: width, 高: height, offset, 月: moonPos }) => {
+const StarLayer: React.FC<{ width: number; height: number; offset: { x: number; y: number }; month: { x: number; y: number } }> = ({ width: width, height: height, offset, month: moonPos }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = toFinalWidth(width), H = toFinalWidth(height);
   const starImg = useMemo(() => {
@@ -135,7 +135,7 @@ const StarLayer: React.FC<{ 宽: number; 高: number; offset: { x: number; y: nu
     c.width = W;
     c.height = H;
     const ctx = c.getContext('2d')!;
-    let s = stars.种子 >>> 0;
+    let s = stars.seed >>> 0;
     const r = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
     let placed = 0;
     for (let attempt = 0; placed < stars.starCount && attempt < stars.starCount * 20; attempt++) {
@@ -164,8 +164,8 @@ const StarLayer: React.FC<{ 宽: number; 高: number; offset: { x: number; y: nu
 
 /** 闪光透明度只留两档硬边：原版透明度（光片 alpha × 0.6～0.725）过 门[i] 就画 值[i]，低于 0.3 的外圈整片不画。
  *  原来按 0.18 一档切，三圈加一个亮心，手机上一眼是一团圆形光晕（核查 10-24）。值 Agent 暂定 */
-const flashTier = { 门: [0.5, 0.3], 值: [0.34, 0.17] } as const;
-const SparkleLayer: React.FC<{ 宽: number; 高: number; 秒: number; shot: DoorNightShot }> = ({ 宽: width, 高: height, 秒: sec, shot }) => {
+const flashTier = { 门: [0.5, 0.3], value: [0.34, 0.17] } as const;
+const SparkleLayer: React.FC<{ width: number; height: number; sec: number; shot: DoorNightShot }> = ({ width: width, height: height, sec: sec, shot }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = toFinalWidth(width), H = toFinalWidth(height);
   useLayoutEffect(() => {
@@ -184,13 +184,13 @@ const SparkleLayer: React.FC<{ 宽: number; 高: number; 秒: number; shot: Door
       const cellSize = (Math.max(1, Math.round(halfWidth)) * shot.N) / pixelScale;
       const screenCenter = attractPoint(shot, g.心);
       const k = 16 * shot.N;
-      const cx = W / 2 + (screenCenter[0] - shot.中心[0]) * k;
-      const cy = H / 2 - (screenCenter[2] + (shot.topDepth / shot.N) * screenCenter[1] - shot.中心[1]) * k;
+      const cx = W / 2 + (screenCenter[0] - shot.center[0]) * k;
+      const cy = H / 2 - (screenCenter[2] + (shot.topDepth / shot.N) * screenCenter[1] - shot.center[1]) * k;
       const [r, gg, b] = g.色.map((v) => Math.round(v * 255));
       for (let y = 0; y < flashImg.h; y++)
         for (let x = 0; x < flashImg.w; x++) {
           const a = (flashImg.px[(y * flashImg.w + x) * 4 + 3]! / 255) * alpha;
-          const tier = a >= flashTier.门[0] ? flashTier.值[0] : a >= flashTier.门[1] ? flashTier.值[1] : 0;
+          const tier = a >= flashTier.门[0] ? flashTier.value[0] : a >= flashTier.门[1] ? flashTier.value[1] : 0;
           if (tier <= 0) continue;
           ctx.fillStyle = `rgba(${r}, ${gg}, ${b}, ${tier.toFixed(3)})`;
           ctx.fillRect(Math.round(cx + (x - flashImg.w / 2) * cellSize), Math.round(cy + (y - flashImg.h / 2) * cellSize), cellSize, cellSize);
@@ -202,8 +202,8 @@ const SparkleLayer: React.FC<{ 宽: number; 高: number; 秒: number; shot: Door
 
 // ---------- 捕获 ----------
 /** 交出去的一层：画布和它在画面上的位置（占整个画面宽高的比例，左上角起） */
-export type CaptureLayer = { 图: HTMLCanvasElement; left: number; 上: number; 宽: number; 高: number };
-const LayerCapturer: React.FC<{ 层: React.RefObject<HTMLDivElement | null>; onCapture: (layers: readonly CaptureLayer[]) => void }> = ({ 层: layerRef, onCapture }) => {
+export type CaptureLayer = { image: HTMLCanvasElement; left: number; 上: number; width: number; height: number };
+const LayerCapturer: React.FC<{ layers: React.RefObject<HTMLDivElement | null>; onCapture: (layers: readonly CaptureLayer[]) => void }> = ({ layers: layerRef, onCapture }) => {
   // 优先级 2：在 描边渲染（优先级 1，接管画布的渲染，描边关着也是它画）之后，这一帧的三维已经在画布上。
   // 位置用 getBoundingClientRect 量、除以外框：渲染时整页有缩放，比例不受影响
   useFrame(({ gl }) => {
@@ -213,7 +213,7 @@ const LayerCapturer: React.FC<{ 层: React.RefObject<HTMLDivElement | null>; onC
     const baseCanvases = [...snapshot.querySelectorAll('canvas')].filter((c) => c !== gl.domElement);
     onCapture([...baseCanvases, gl.domElement].map((canvasImg) => {
       const r = canvasImg.getBoundingClientRect();
-      return { 图: canvasImg, left: (r.left - R.left) / R.width, 上: (r.top - R.top) / R.height, 宽: r.width / R.width, 高: r.height / R.height };
+      return { image: canvasImg, left: (r.left - R.left) / R.width, 上: (r.top - R.top) / R.height, width: r.width / R.width, height: r.height / R.height };
     }));
   }, 2);
   return null;
@@ -222,11 +222,11 @@ const LayerCapturer: React.FC<{ 层: React.RefObject<HTMLDivElement | null>; onC
 // ---------- 画布 ----------
 export type DoorNightCanvasProps = {
   /** 歌曲帧 */
-  帧: number;
+  frame: number;
   /** 同一段时间线上的上一帧（歌曲帧；段首那一帧不给），给屋后远景算画布高（见 地点/屋后远景.tsx 的 前取景）。原来是 1/24 秒以前（24 fps 时的上一帧），用户 11-03「统统改成 60 帧」 */
   prevFrame?: number;
-  宽?: number;
-  高?: number;
+  width?: number;
+  height?: number;
   /** 每帧画完把各层（天、星星、远景、闪光、三维）连同位置交出来 */
   capture?: (layers: readonly CaptureLayer[]) => void;
   style?: React.CSSProperties;
@@ -234,7 +234,7 @@ export type DoorNightCanvasProps = {
   shading?: ShadingOptions | null;
 };
 
-export const DoorNightCanvas: React.FC<DoorNightCanvasProps> = ({ 帧: frame, prevFrame, 宽: width = 1280, 高: height = 720, capture, style, shading }) => {
+export const DoorNightCanvas: React.FC<DoorNightCanvasProps> = ({ frame: frame, prevFrame, width: width = 1280, height: height = 720, capture, style, shading }) => {
   const sec = frame / fps;
   const shot = shotAt(frame);
   const framing = shotFraming(shot);
@@ -249,7 +249,7 @@ export const DoorNightCanvas: React.FC<DoorNightCanvasProps> = ({ 帧: frame, pr
   const liYing = LiYingState(frame);
   const placement = setupState(frame);
   const sky = skyFraming(shot);
-  const openingSky = skyFraming(shotAt(mainCutEvents.nightfall.帧));
+  const openingSky = skyFraming(shotAt(mainCutEvents.nightfall.frame));
   const moonPos = sideProjection(openingSky, width, height)(nightSkyArc.心[0], nightSkyArc.心[1] + nightSkyArc.radius);
   const saplingBlocks = useMemo(() => cherryTreeBlocks(false, [entrance.saplingPos[0], 1, 0]), []);
   const photoWall = useMemo(() => photoWallCells(line8Photos), []);
@@ -259,31 +259,31 @@ export const DoorNightCanvas: React.FC<DoorNightCanvasProps> = ({ 帧: frame, pr
     <shadingScope.Provider value={{ shading, shadingScene: nightShadingScene }}>
       <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden', ...style }}>
         <div ref={layerRef} style={{ position: 'absolute', inset: 0 }}>
-          <SideSectionSky framing={sky} 宽={width} 高={height} 色={skyColors} 刻={nightTick(sec)} arc={nightSkyArc} />
+          <SideSectionSky framing={sky} width={width} height={height} 色={skyColors} 刻={nightTick(sec)} arc={nightSkyArc} />
           <StarLayer
-            宽={width}
-            高={height}
-            offset={{ x: (sky.中心[0] - openingSky.中心[0]) * sky.pxPerCell, y: (sky.中心[1] - openingSky.中心[1]) * sky.pxPerCell }}
-            月={{ x: moonPos.x * filmScale, y: moonPos.y * filmScale }}
+            width={width}
+            height={height}
+            offset={{ x: (sky.center[0] - openingSky.center[0]) * sky.pxPerCell, y: (sky.center[1] - openingSky.center[1]) * sky.pxPerCell }}
+            month={{ x: moonPos.x * filmScale, y: moonPos.y * filmScale }}
           />
           {/* 远景的色调同房子、地面那一组（烟花亮的时候一起亮一点）；明暗幅度同 侧剖面天空 的默认。
               远景按这一帧的取景跟着正交那一层走（推到牌子上时林子跟着放大，近处的地才接得上屋前的草地；给 天取景 试过，特写里林子底下露出天）。
               雾按这一帧的取景找背后那一行天色，天却按 天取景 画，两边差一截：雾淡完的远处（172 格外）在这三句里不是在画外就是被近处的林子、房子挡着，看不出 */}
-          <BehindHouseVista framing={framing} frontFraming={shotFraming(shotAt(prevFrame ?? frame))} 宽={width} 高={height} topDepth={shot.topDepth} tint={far} skyColors={skyColors} 刻={nightTick(sec)} lightDarkAmp={1} />
+          <BehindHouseVista framing={framing} frontFraming={shotFraming(shotAt(prevFrame ?? frame))} width={width} height={height} topDepth={shot.topDepth} tint={far} skyColors={skyColors} 刻={nightTick(sec)} lightDarkAmp={1} />
           {/* 闪光在远景前面：原版 FLASH 是炸点上的粒子，比屋后的地近 */}
-          <SparkleLayer 宽={width} 高={height} 秒={sec} shot={shot} />
+          <SparkleLayer width={width} height={height} sec={sec} shot={shot} />
           <ToonCanvas
-            宽={width}
-            高={height}
+            width={width}
+            height={height}
             cameraRig={sideRig(framing, shot.topDepth)}
             tint={far}
-            outline={defaultOutline.开 ? { 宽: (shot.N * defaultOutline.宽) / pixelCount, 色: night.outlineColor } : false}
+            outline={defaultOutline.开 ? { width: (shot.N * defaultOutline.width) / pixelCount, 色: night.outlineColor } : false}
             style={{ position: 'absolute', left: 0, top: 0 }}
           >
             {/* 照片墙一格 64 个地图像素：镜头停下来的 N（16、84、12）都是 4 的倍数，一个地图像素是整数个成片像素 */}
-            <EntranceCabin doorOpen 群系={biome} photoWall={photoWall} photoWallEdge={64} />
+            <EntranceCabin doorOpen biome={biome} photoWall={photoWall} photoWallEdge={64} />
             <FlatShade tint={near}>
-              {placement.saplingPlaced && <BlockAssembly blocks={saplingBlocks} 原点={gridOrigin} 群系={biome} frontPlants />}
+              {placement.saplingPlaced && <BlockAssembly blocks={saplingBlocks} origin={gridOrigin} biome={biome} frontPlants />}
               <Signboard 位={entrance.signboardPos}>
                 <SignPixelText lines={placement.signLines} {...signTextStyle} />
               </Signboard>
@@ -303,14 +303,14 @@ export const DoorNightCanvas: React.FC<DoorNightCanvasProps> = ({ 帧: frame, pr
                     expression={liYing.expression}
                     skeleton={{ Head: { rot: [-liYing.头[0], -liYing.头[1], liYing.头[2]] } }}
                     blink={liYing.blink}
-                    秒={sec}
+                    sec={sec}
                     backStaff={false}
                   />
                 </TexturePixelAlign>
               </Outline>
             </FlatShade>
-            <FireworkSquare 秒={sec} shot={shot} rocketColor={hexToRgb(far)} />
-            {capture && <LayerCapturer 层={layerRef} onCapture={capture} />}
+            <FireworkSquare sec={sec} shot={shot} rocketColor={hexToRgb(far)} />
+            {capture && <LayerCapturer layers={layerRef} onCapture={capture} />}
           </ToonCanvas>
         </div>
       </div>

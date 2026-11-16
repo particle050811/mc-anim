@@ -54,10 +54,10 @@ export const warpStoneUseParticles = (feetAt: (tick: number) => V3, lookDir: V3,
   const pitchRad = pitch * DEG;
   [hx, hy] = [hx * Math.cos(pitchRad) + hy * Math.sin(pitchRad), hy * Math.cos(pitchRad) - hx * Math.sin(pitchRad)];
   let id = 0;
-  const add = (kind: ParticleSpawn['种'], tick: number, gp: V3, gv: V3) => {
+  const add = (kind: ParticleSpawn['kind'], tick: number, gp: V3, gv: V3) => {
     const feetPos = feetAt(tick);
     const offset = g2s(gp);
-    out.push({ 种: kind, 刻: tick, p: [feetPos[0] + offset[0], feetPos[1] + offset[1], feetPos[2] + offset[2]], v: g2s(gv), 种子: seed * 1009 + id++ });
+    out.push({ kind: kind, 刻: tick, p: [feetPos[0] + offset[0], feetPos[1] + offset[1], feetPos[2] + offset[2]], v: g2s(gv), seed: seed * 1009 + id++ });
   };
   for (let used = 1; used <= durationTicks; used++) {
     const remaining = durationTicks - used + 1; // onUseTick 的 count（剩余刻）
@@ -82,6 +82,6 @@ export const teleportParticles = (feet: V3, tick: number, seed: number): Particl
   return Array.from({ length: WARP.warpParticleCount }, (_, i) => {
     const gp: V3 = [blockCorner[0] + (rand() - 0.5) * 3, blockCorner[1] + rand() * 3, blockCorner[2] + (rand() - 0.5) * 3];
     const gv: V3 = [(rand() - 0.5) * 2, -rand(), (rand() - 0.5) * 2];
-    return { 种: 'portal' as const, 刻: tick, p: g2s(gp), v: g2s(gv), 种子: seed * 7001 + i };
+    return { kind: 'portal' as const, 刻: tick, p: g2s(gp), v: g2s(gv), seed: seed * 7001 + i };
   });
 };

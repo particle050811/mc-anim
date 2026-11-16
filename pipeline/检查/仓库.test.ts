@@ -5,8 +5,8 @@ import { listWorks } from '../环境/作品.ts';
 import { runChecks } from './检查.ts';
 
 it.each([...listWorks(codeRoot(), {}).keys()])('作品 %s 零违规', async (work) => {
-  const reports = await runChecks(codeRoot(), { 快: true, 作品: work });
-  const violations = [...reports].flatMap(([ruleName, report]) => report.violations.map((q) => `${ruleName} ${q.文件 ?? ''}${q.行 ? `:${q.行}` : ''} ${q.文本}`));
+  const reports = await runChecks(codeRoot(), { 快: true, work: work });
+  const violations = [...reports].flatMap(([ruleName, report]) => report.violations.map((q) => `${ruleName} ${q.file ?? ''}${q.行 ? `:${q.行}` : ''} ${q.text}`));
   expect(violations).toEqual([]);
   // 一部作品一次 --fast 检查：单跑十几秒，和整套测试一起跑、机器忙时会过默认的 30 秒
 }, 120_000);

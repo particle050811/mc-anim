@@ -27,10 +27,10 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'steaming',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // SteamSpell：每发 CAST_STEAM；命中 STEAM_IMPACT
-  声音: [
-    ...Array.from({ length: steamCount }, (_, k) => ({ 资产: `音效/诡厄巫法/goety.cast_steam.${(k % 4) + 1}`, 秒: (k * steamGapTicks) / 20 })),
-    { 资产: '音效/诡厄巫法/goety.steam_impact.1', 秒: 0, fromHit: true },
+  sound: [
+    ...Array.from({ length: steamCount }, (_, k) => ({ asset: `音效/诡厄巫法/goety.cast_steam.${(k % 4) + 1}`, sec: (k * steamGapTicks) / 20 })),
+    { asset: '音效/诡厄巫法/goety.steam_impact.1', sec: 0, fromHit: true },
   ],
 });

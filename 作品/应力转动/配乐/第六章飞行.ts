@@ -7,12 +7,12 @@ import { type MusicPos, type Song } from '@engine/audio/曲目.ts';
 export type HalfName = '前一半' | '后一半';
 
 export type MusicHalf = {
-  名: HalfName;
-  起: MusicPos; // 卡点画面从这里开始（也是音乐的起点）
-  止: MusicPos; // 卡点画面到这里结束；音乐在淡出结束时就没了，之后是按台词定长的部分
+  name: HalfName;
+  start: MusicPos; // 卡点画面从这里开始（也是音乐的起点）
+  end: MusicPos; // 卡点画面到这里结束；音乐在淡出结束时就没了，之后是按台词定长的部分
   fadeIn?: readonly [MusicPos, MusicPos];
   fadeOut?: readonly [MusicPos, MusicPos];
-  说明: string;
+  note: string;
 };
 
 export type Cues = { pos: MusicPos; text: string; major?: boolean }; // 重：画面上要对准的主卡点
@@ -34,19 +34,19 @@ export const ch6FlightMusic: MusicTable = {
   cutPoint: [29, 1],
   halves: {
     前一半: {
-      名: '前一半',
-      起: 0,
-      止: [33, 1],
+      name: '前一半',
+      start: 0,
+      end: [33, 1],
       fadeOut: [
         [29, 1],
         [31, 1],
       ],
-      说明: '6-1-3 起飞 → 6-1-9 停在城堡前；切点进 breakdown，两小节渐弱',
+      note: '6-1-3 起飞 → 6-1-9 停在城堡前；切点进 breakdown，两小节渐弱',
     },
     后一半: {
-      名: '后一半',
-      起: [29, 1],
-      止: [49, 1],
+      name: '后一半',
+      start: [29, 1],
+      end: [49, 1],
       fadeIn: [
         [29, 1],
         [29, 2],
@@ -55,7 +55,7 @@ export const ch6FlightMusic: MusicTable = {
         [46, 1],
         [49, 1],
       ],
-      说明: '6-2-4 出发 → 6-3-1 悬停在边城上空；从切点淡入一拍，尾段三小节渐弱',
+      note: '6-2-4 出发 → 6-3-1 悬停在边城上空；从切点淡入一拍，尾段三小节渐弱',
     },
   },
   segments: [

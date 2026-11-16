@@ -18,12 +18,12 @@ const entrance = {
   signboardPos: [-3, 1.5, 0],
   saplingPos: [-5, 1.5, 0],
   signFaceCenter: [0, -1 / 24 - 1 / 512, 20 / 24],
-  signBoard: { 宽: 1, 高: 0.5 },
+  signBoard: { width: 1, height: 0.5 },
 } as const;
 const standRowY = entrance.standRowY;
-const eventSec = (k: MainCutEventName) => mainCutEvents[k].秒;
+const eventSec = (k: MainCutEventName) => mainCutEvents[k].sec;
 /** 事件落在的那一帧的秒（画面上的事按帧发生：歌上 29.509 秒的事件落在第 1771 帧，第 1771 帧 = 29.517 秒就要看得到） */
-const eventFrameSec = (k: MainCutEventName) => mainCutEvents[k].帧 / fps;
+const eventFrameSec = (k: MainCutEventName) => mainCutEvents[k].frame / fps;
 // ---------- 站位 ----------
 /** 你：三句一直站在牌子和门中间、开着的门板前面（x −1.5，比 门口小木屋.tsx 的 站位.牌门之间 往门挪半格），面朝西：种树苗（离你 3.5 格）、
  *  写字、放烟花都不用走。挪半格是为了推到牌子上那一镜（一屏 1.9 格宽）你的肩膀不露在画面右边 */
@@ -45,7 +45,7 @@ export const nightTick = (s: number) => 18000 + (s - eventSec('nightfall')) * 20
  *  定格那一刻整个在存档图标裁的正方形左边（Agent 暂定；第 8 句已经不画太阳，原来照它的太阳位置取的数留着没动） */
 export const moonInPicture = [-3.25, 2.25] as const;
 /** 月亮走的弧：午夜（弧顶）正好在 满月在画面；半径只管它往西挪多快。天横着不跟镜头挪（见 天视差），月亮一直在画面左上 */
-export const nightSkyArc = { 心: [line8Shot.framing.中心[0] + moonInPicture[0], line8Shot.framing.中心[1] + moonInPicture[1] - 6] as const, radius: 6 };
+export const nightSkyArc = { 心: [line8Shot.framing.center[0] + moonInPicture[0], line8Shot.framing.center[1] + moonInPicture[1] - 6] as const, radius: 6 };
 /** 开光影时交给光影的事实（三渲二画布的 光影场）：月光从镜头背后偏左、仰角 50° 照过来（场景坐标，Z 朝上，镜头朝北 +y），和天上的月亮同一边。
  *  原来用夜的默认方位，光从右边来，牌子右边站着的你把一块方方的硬影子投在牌子右上角（用户 11-03「这边告示牌右上角为什么会有一块区域颜色不一样？」）。
  *  仰角、离镜头的角度和默认一样，只换到左边 */
@@ -56,7 +56,7 @@ export const nightShadingScene = { sun: [-0.4132, -0.4924, 0.766] } as const;
  *  （核查 10-24：烟花背后要天干净，靠取景和雾让，不压平地）。两头在开场那一高度用 软大 圆过去（宽 软宽 格），速度不突变（Agent 暂定） */
 const skyParallax = { horizontal: 0, vertLower: 0.15, vertUpper: 0.5, softWidth: 0.5 } as const;
 /** 星星（原版夜里天上的小白方块）：铺在一张 2560×1440 的循环图上跟着天挪，躲开月亮那一块；个数、大小、亮度 */
-export const stars = { starCount: 150, starSize: [4, 6] as const, brightRange: [0.35, 0.7] as const, 种子: 9 };
+export const stars = { starCount: 150, starSize: [4, 6] as const, brightRange: [0.35, 0.7] as const, seed: 9 };
 
 // ---------- 时刻（从分镜推） ----------
 /** 树苗落地那一帧（原版右键放方块：挥手的同一刻方块就在了）。匹配剪进来以后你一直拿着树苗、低头看着那一格 */
@@ -77,7 +77,7 @@ export const signTextStyle = { 色: '#f9fffe', glow: true, outline: false } as c
 // ---------- 烟花 ----------
 const makeFirework = (name: string, launchEvent: MainCutEventName, blastEvent: MainCutEventName, x: number, ballSize: Firework['ballSize'], fireworkColors: FireworkDye[], seed: number, extras?: { trail?: boolean; twinkle?: boolean }): Firework => {
   const flightTick = Math.round((eventSec(blastEvent) - eventSec(launchEvent)) * 20);
-  return { 名: name, launchSec: eventSec(launchEvent), flightTick, 位: [x, standRowY], ballSize, fireworkColors, 种子: seed, ...extras };
+  return { name: name, launchSec: eventSec(launchEvent), flightTick, 位: [x, standRowY], ballSize, fireworkColors, seed: seed, ...extras };
 };
 /** 三发：第 10 句两发小型球状（粉；黄橙带闪烁），落在「即」「花」上，镜头跟着火箭上去、炸在画面中间（第二发偏西半格，两朵不叠在同一个点上）；
  *  第 11 句最后一发是最大的大型球状（粉白带拖尾），镜头落回门口以后放在你跟前、炸在「绽」上。
@@ -114,9 +114,9 @@ export const brightTier = (s: number): { 档: 0 | 1 | 2; 发: Firework | null } 
 // 跟着火箭往上、烟花炸在画面中间 → 在天上轻轻挪到第二发 → 落回门口，最后一发炸开定格。俯角一直是 顶面 2（画风.ts 的 正交顶面）：
 // 推拉时顶面的像素高不变，往里的东西跟着变，像视差。
 /** 推拉 = N 在变（带小数）；动着 = 和上一帧比挪了或推拉了，中心不吸 */
-export type DoorNightShot = { N: number; topDepth: number; 中心: readonly [number, number]; dolly?: true; moving?: true };
+export type DoorNightShot = { N: number; topDepth: number; center: readonly [number, number]; dolly?: true; moving?: true };
 /** 镜头一路上的状态：N 用小数，最后取偶数；中心是剖面（y = 0）上的 [x, z] */
-type ContinuousShot = { N: number; 中心: readonly [number, number] };
+type ContinuousShot = { N: number; center: readonly [number, number] };
 
 /** 牌上两行字的中心（地点/告示牌.tsx：牌底面 + 字面中心；两行在四行的中间，字面中心就是两行的中心） */
 export const signFace = { x: entrance.signboardPos[0], y: entrance.signboardPos[1] + entrance.signFaceCenter[1], z: entrance.signFaceCenter[2] } as const;
@@ -124,7 +124,7 @@ export const signFace = { x: entrance.signboardPos[0], y: entrance.signboardPos[
 const upSection = (N: number, p: { x: number; y: number; z: number }) => [p.x, p.z + (orthoTop / N) * p.y] as const;
 
 /** 开场：和第 8 句（2-收集快乐）同一个镜头（N 16、地面线、中心），匹配剪只把白天换成夜里 */
-export const openingSceneShot: ContinuousShot = { N: line8ShotCount, 中心: line8Shot.framing.中心 };
+export const openingSceneShot: ContinuousShot = { N: line8ShotCount, center: line8Shot.framing.center };
 /** 让：种树苗前镜头在 N 16 往左平移多少格。开场那一镜树苗那格（x −5.5～−4.5）有一半在画框外（核查 10-24 嫌树苗在画框边上），
  *  让 1.5 格以后树苗离画框左边 1 格（Agent 暂定） */
 const yieldCells = 1.5;
@@ -184,10 +184,10 @@ const continuousShot = (s: number): ContinuousShot => {
   const seg = shotSegment;
   const [firstFirework, thirdFirework] = [fireworks[0]!, fireworks[1]!];
   if (s <= seg.yieldStart) return openingSceneShot;
-  const shiftedShot: ContinuousShot = { N: openingSceneShot.N, 中心: [openingSceneShot.中心[0] - yieldCells, openingSceneShot.中心[1]] };
+  const shiftedShot: ContinuousShot = { N: openingSceneShot.N, center: [openingSceneShot.center[0] - yieldCells, openingSceneShot.center[1]] };
   if (s < seg.pushStart) {
     const e = smootherstep01((s - seg.yieldStart) / (seg.pushStart - seg.yieldStart));
-    return { N: openingSceneShot.N, 中心: [lerp(openingSceneShot.中心[0], shiftedShot.中心[0], e), openingSceneShot.中心[1]] };
+    return { N: openingSceneShot.N, center: [lerp(openingSceneShot.center[0], shiftedShot.center[0], e), openingSceneShot.center[1]] };
   }
   if (s < seg.pushEndSec) {
     // 推：N 按对数插；牌字面在画面上离中心的偏移（成片像素）先缩到 0（推到 牌先居中 时牌子已经在画面中心），再只往里推，
@@ -197,11 +197,11 @@ const continuousShot = (s: number): ContinuousShot => {
     const centerProgress = smootherstep01(Math.min(1, v / signCenterFirst));
     const N = logLerp(shiftedShot.N, signNearCount, u);
     const [x0, z0] = upSection(shiftedShot.N, signFace);
-    const offset = [(x0 - shiftedShot.中心[0]) * shiftedShot.N * (1 - centerProgress), (z0 - shiftedShot.中心[1]) * shiftedShot.N * (1 - centerProgress)];
+    const offset = [(x0 - shiftedShot.center[0]) * shiftedShot.N * (1 - centerProgress), (z0 - shiftedShot.center[1]) * shiftedShot.N * (1 - centerProgress)];
     const [x, z] = upSection(N, signFace);
-    return { N, 中心: [x - offset[0]! / N, z - offset[1]! / N] };
+    return { N, center: [x - offset[0]! / N, z - offset[1]! / N] };
   }
-  if (s < seg.followStart) return { N: signNearCount, 中心: upSection(signNearCount, signFace) };
+  if (s < seg.followStart) return { N: signNearCount, center: upSection(signNearCount, signFace) };
   if (s < seg.followUntilSec) {
     // 跟：先拉开，中心从牌子往火箭挪，炸开那一刻正好在炸点上。
     // 竖着：拉开时跟拉开同一个进度从牌子抬到 地线中心z（拉到 N 12 时地面停在画面底边上面 0.75 格，不露出一大片地底下的剖面），
@@ -214,17 +214,17 @@ const continuousShot = (s: number): ContinuousShot => {
     const lowAt = (sec: number, n: number) => softMax(rocketPoint(firstFirework, sec, n)[1], groundLineCenterZ(n));
     const pullEnd = seg.followStart + pullOpenFrac * (seg.followUntilSec - seg.followStart);
     const z = t < pullOpenFrac ? lerp(sign[1], lowAt(s, N), dolly) : lerp(lowAt(pullEnd, farCount), rocketPoint(firstFirework, seg.followUntilSec, farCount)[1], smootherstep01((t - pullOpenFrac) / (1 - pullOpenFrac)));
-    return { N, 中心: [x, z] };
+    return { N, center: [x, z] };
   }
   const firstBurst = rocketPoint(firstFirework, seg.followUntilSec, farCount);
   const thirdBurst = rocketPoint(thirdFirework, burstSec(thirdFirework), farCount);
   if (s < seg.dropStart) {
     // 在天上：从第一发的炸点慢慢挪到第二发的炸点
     const e = smootherstep01((s - seg.followUntilSec) / (seg.dropStart - seg.followUntilSec));
-    return { N: farCount, 中心: [lerp(firstBurst[0], thirdBurst[0], e), lerp(firstBurst[1], thirdBurst[1], e)] };
+    return { N: farCount, center: [lerp(firstBurst[0], thirdBurst[0], e), lerp(firstBurst[1], thirdBurst[1], e)] };
   }
   const e = smootherstep01((s - seg.dropStart) / (seg.fallEnd - seg.dropStart));
-  return { N: farCount, 中心: [lerp(thirdBurst[0], freezeCenter[0], e), lerp(thirdBurst[1], freezeCenter[1], e)] };
+  return { N: farCount, center: [lerp(thirdBurst[0], freezeCenter[0], e), lerp(thirdBurst[1], freezeCenter[1], e)] };
 };
 
 /** 歌上这一刻（秒）是不是在推近牌子、从牌子拉开的那一截：N 在变 */
@@ -238,23 +238,23 @@ export const pushPullMid = (s: number) =>
 export const shotAt = (songFrame: number): DoorNightShot => {
   const s = songFrame / fps;
   const c = continuousShot(s);
-  if (pushPullMid(s)) return { N: c.N, topDepth: orthoTop, 中心: c.中心, dolly: true, moving: true };
+  if (pushPullMid(s)) return { N: c.N, topDepth: orthoTop, center: c.center, dolly: true, moving: true };
   const N = toEvenAtLeastTwo(c.N);
-  const prev = continuousShot((songFrame - 1) / fps).中心;
-  if (prev[0] !== c.中心[0] || prev[1] !== c.中心[1]) return { N, topDepth: orthoTop, 中心: c.中心, moving: true };
-  return { N, topDepth: orthoTop, 中心: snap(N, c.中心[0], c.中心[1]) };
+  const prev = continuousShot((songFrame - 1) / fps).center;
+  if (prev[0] !== c.center[0] || prev[1] !== c.center[1]) return { N, topDepth: orthoTop, center: c.center, moving: true };
+  return { N, topDepth: orthoTop, center: snap(N, c.center[0], c.center[1]) };
 };
 /** 镜头给 三渲二画布 / 侧投影 / 屋后远景 用的取景 */
-export const shotFraming = (j: DoorNightShot) => ({ 中心: j.中心, pxPerCell: cellPx(j.N), ...(j.dolly ? { dolly: true } : {}) });
+export const shotFraming = (j: DoorNightShot) => ({ center: j.center, pxPerCell: cellPx(j.N), ...(j.dolly ? { dolly: true } : {}) });
 /** 天（渐变、月亮、星星）的取景：一直按开场的 N 16 画（推近牌子时天不跟着放大，像推轨不像变焦），
  *  中心从开场那一镜按 天视差 跟镜头挪，镜头停住时吸到 N 16 的偶数像素（动着不吸，同 镜头） */
 export const skyFraming = (j: DoorNightShot) => {
-  const [x0, z0] = openingSceneShot.中心;
-  const heightDiff = j.中心[1] - z0;
+  const [x0, z0] = openingSceneShot.center;
+  const heightDiff = j.center[1] - z0;
   const { vertLower, vertUpper, softWidth } = skyParallax;
   const z = z0 + vertLower * heightDiff + (vertUpper - vertLower) * (softMax(heightDiff, 0, softWidth) - softWidth / 2);
-  const x = lerp(x0, j.中心[0], skyParallax.horizontal);
-  return { 中心: j.moving ? ([x, z] as const) : snap(openingSceneShot.N, x, z), pxPerCell: cellPx(openingSceneShot.N) };
+  const x = lerp(x0, j.center[0], skyParallax.horizontal);
+  return { center: j.moving ? ([x, z] as const) : snap(openingSceneShot.N, x, z), pxPerCell: cellPx(openingSceneShot.N) };
 };
 
 /** 牌面（整块木板）在页面上的矩形（宽×高 的页面像素）：整片后期的颗粒让开这块（用户 10-24「整片后期的颗粒别压在字上」） */
@@ -262,20 +262,20 @@ export const signFaceRects = (songFrame: number, width = 1280, height = 720): Pa
   const j = shotAt(songFrame);
   const perPage = (16 * j.N) / (2560 / width);
   const [x, z] = upSection(j.N, signFace);
-  const left = width / 2 + (x - entrance.signBoard.宽 / 2 - j.中心[0]) * perPage;
-  const top = height / 2 - (z + entrance.signBoard.高 / 2 - j.中心[1]) * perPage;
-  return [{ left: Math.floor(left), 上: Math.floor(top), 宽: Math.ceil(entrance.signBoard.宽 * perPage) + 1, 高: Math.ceil(entrance.signBoard.高 * perPage) + 1 }];
+  const left = width / 2 + (x - entrance.signBoard.width / 2 - j.center[0]) * perPage;
+  const top = height / 2 - (z + entrance.signBoard.height / 2 - j.center[1]) * perPage;
+  return [{ left: Math.floor(left), 上: Math.floor(top), width: Math.ceil(entrance.signBoard.width * perPage) + 1, height: Math.ceil(entrance.signBoard.height * perPage) + 1 }];
 };
 
 // ---------- 照片（第 11 句「绽」定格） ----------
 /** 定格成拍立得的版式（成片像素比例）。相纸照 核对-拍立得 / 验证片 的拍立得（相纸 #fbfaf6、上左右边 1/32、下边 1/8 照片宽），
  *  画面缩到 0.62、斜 −3°，卡片中心在画面 0.558 高；闪白 5/24 秒（照 验证片，24 fps 时 5 帧），缩进来 0.5 秒（24 fps 时 12 帧） */
-export const photoLayout = { photoPaper: '#fbfaf6', borderWidth: 2 / 64, bottomEdge: 8 / 64, 缩放: 0.62, tiltDeg: -3, centerHeight: 0.558, whiteFlashSec: legacyFrameSec(5), shrinkInSec: 0.5, baseDim: 0.55 } as const;
+export const photoLayout = { photoPaper: '#fbfaf6', borderWidth: 2 / 64, bottomEdge: 8 / 64, scale: 0.62, tiltDeg: -3, centerHeight: 0.558, whiteFlashSec: legacyFrameSec(5), shrinkInSec: 0.5, baseDim: 0.55 } as const;
 /** 碎裂：照片后面的世界碎成 40 像素（成片）的方块往下掉，下面的先掉、越往上越晚（最多晚 最晚秒，带一点乱序），
  *  重力 17280 像素/秒²（24 fps 时 30 像素/帧²）：最上一排 0.42 秒（24 fps 时 10 帧）掉出画面，同一拍缩起的图标缩好（下线图标.缩秒）时底差不多黑了 */
-export const shatter = { 块: 40, latestSec: legacyFrameSec(4), 重力: 30 * 24 * 24 } as const;
+export const shatter = { tile: 40, latestSec: legacyFrameSec(4), 重力: 30 * 24 * 24 } as const;
 /** 咔哒、闪白、大炸声的那一帧（歌曲帧）：36.33「绽」 */
-export const freezeFrame = mainCutEvents.screenshotFreeze.帧;
+export const freezeFrame = mainCutEvents.screenshotFreeze.frame;
 /** 照片里定住的世界比定格帧晚多久：最大那发刚炸那一刻火花全挤在炸点上，拍下来只是个亮点；晚 5/24 秒（24 fps 时 5 帧，约 4 刻）开到半径 1.8 格，
  *  原版 FLASH（4 刻）也刚好没了。定格帧那一下整屏闪白（照片版式 的闪白第一帧不透明度 1），这一截看不出来（演绎） */
 export const photoLateSec = legacyFrameSec(5);
@@ -293,16 +293,16 @@ export const logoutIcon = { pointCount: 64, side: 512, centerHeight: 0.47, shrin
 export const photoCard = (frame: number, W: number, H: number) => {
   const layout = photoLayout;
   const enterProgress = 1 - (1 - clamp01((frame - freezeFrame) / fps / layout.shrinkInSec)) ** 3;
-  const logOffFrame = mainCutEvents.logOff.帧;
+  const logOffFrame = mainCutEvents.logOff.frame;
   const dropT = frame >= logOffFrame ? smootherstep01(((frame - logOffFrame) / fps + oneFrameSec) / logoutIcon.shrinkSec) : 0;
-  const s = lerp(1, layout.缩放, enterProgress);
+  const s = lerp(1, layout.scale, enterProgress);
   const u = W / 2560;
   const iconSize = logoutIcon.side * u;
-  const w = frame >= logOffFrame ? lerp(W * layout.缩放, iconSize, dropT) : W * s;
-  const h = frame >= logOffFrame ? lerp(H * layout.缩放, iconSize, dropT) : H * s;
+  const w = frame >= logOffFrame ? lerp(W * layout.scale, iconSize, dropT) : W * s;
+  const h = frame >= logOffFrame ? lerp(H * layout.scale, iconSize, dropT) : H * s;
   const borderWidth = layout.borderWidth * W * s * (1 - dropT);
   const bottomEdge = layout.bottomEdge * W * s * (1 - dropT);
-  const cardCenterY = layout.centerHeight * H - (layout.bottomEdge - layout.borderWidth) * W * layout.缩放 * 0.5;
+  const cardCenterY = layout.centerHeight * H - (layout.bottomEdge - layout.borderWidth) * W * layout.scale * 0.5;
   // 图标中心对到偶数个成片像素，64 个点的边都落在整像素上
   const markCenterY = 2 * Math.round((logoutIcon.centerHeight * 1440) / 2) * u;
   const cx = W / 2;
@@ -310,7 +310,7 @@ export const photoCard = (frame: number, W: number, H: number) => {
   const angle = (lerp(layout.tiltDeg * enterProgress, 0, dropT) * Math.PI) / 180;
   const srcRect = [lerp(0, (W - H) / 2, dropT), 0, lerp(W, H, dropT), H] as const;
   const dotCount = dropT > 0 ? Math.round(logLerp(H, logoutIcon.pointCount, dropT)) : 0;
-  return { 入: enterProgress, 下: dropT, s, w, h, borderWidth, bottomEdge, cx, cy, 角: angle, 源: srcRect, 点: dotCount };
+  return { 入: enterProgress, 下: dropT, s, w, h, borderWidth, bottomEdge, cx, cy, angle: angle, 源: srcRect, points: dotCount };
 };
 
 /** 聊天栏缩放（黄字）：一个界面像素 = 10 个成片像素。第 15 句「Steve加入了游戏」用的 6 在手机 390 宽上字只有 7 像素高、读不出来，

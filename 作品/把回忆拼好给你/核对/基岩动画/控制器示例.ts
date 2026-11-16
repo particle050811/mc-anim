@@ -10,11 +10,11 @@ export const switchStandSec = 1;
 const animations = MagicalWineFoxPlayer.animationFiles!;
 
 export const geckoLibSitToStand = geckoLibController({
-  名: 'main',
+  name: 'main',
   transitionTicks: 10,
   schedule: [
-    { 秒: 0, clip: 'sit' },
-    { 秒: switchStandSec, clip: 'idle' },
+    { sec: 0, clip: 'sit' },
+    { sec: switchStandSec, clip: 'idle' },
   ],
   animations,
   口径: 'TLM',
@@ -34,10 +34,10 @@ const controllerFile = {
 };
 export const bedrockSitToStand = bedrockController(parseControllerFile(controllerFile, 'TLM')['controller.animation.核对.坐到站']!, {
   animations,
-  环境: (sec) => ({ query: { life_time: sec } }),
+  env: (sec) => ({ query: { life_time: sec } }),
   口径: 'TLM',
 });
 
 /** 默认层们里的主层（sit）换成控制器 */
 export const controllerLayers = (controller: ControllerPlayer): AnimationLayerSetting[] =>
-  MagicalWineFoxPlayer.definition.动画!.defaultLayers.map((animLayer) => ('名' in animLayer && animLayer.名 === 'sit' ? { controller: controller } : animLayer));
+  MagicalWineFoxPlayer.definition.animation!.defaultLayers.map((animLayer) => ('name' in animLayer && animLayer.name === 'sit' ? { controller: controller } : animLayer));

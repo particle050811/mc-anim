@@ -5,29 +5,29 @@
 # 录出来是一次随机的结果（粒子自己的随机数没有种子入口，服务端的种子固定），重录字节会变：锁对不上时删锁重登记，见 0016。
 # 所以公开版不让使用者重录（录不出锁里那一版），录好的这份随公开版发（可见性 公开；Goety 是 MIT）。
 
-["组"]
+["group"]
 "录制" = ["录制-frost_nova", "录制-weakening"]
 
-[["取材"]]
-"名称" = "录制-frost_nova"
-"说明" = "霜冻新星：施法者脚下一圈冰晶往外炸（goety:frost_nova 贴图粒子 + 地面冲击波）"
-"需要" = ["goety"]
-"要开游戏" = true
-"作品" = "亚波伦不放水"
-"公开版" = "不提取"
-"可见性" = "公开"
-"步骤" = [["python", "{脚本}/录法术.py", "frost_nova", "src/录制/法术/goety/frost_nova.json", "--刻", "60", "--作品根", "{作品根}"]]
-["取材"."产物"]
+[["sourcing"]]
+"displayName" = "录制-frost_nova"
+"note" = "霜冻新星：施法者脚下一圈冰晶往外炸（goety:frost_nova 贴图粒子 + 地面冲击波）"
+"requires" = ["goety"]
+"needsGame" = true
+"work" = "亚波伦不放水"
+"publicVersion" = "不提取"
+"visibility" = "公开"
+"steps" = [["python", "{脚本}/录法术.py", "frost_nova", "src/录制/法术/goety/frost_nova.json", "--刻", "60", "--作品根", "{作品根}"]]
+["sourcing"."artifacts"]
 "录制/法术/goety/frost_nova" = "src/录制/法术/goety/frost_nova.json"
 
-[["取材"]]
-"名称" = "录制-weakening"
-"说明" = "弱化：施法者周围紫色方块粒子 + 地面冲击波"
-"需要" = ["goety"]
-"要开游戏" = true
-"作品" = "亚波伦不放水"
-"公开版" = "不提取"
-"可见性" = "公开"
-"步骤" = [["python", "{脚本}/录法术.py", "weakening", "src/录制/法术/goety/weakening.json", "--刻", "60", "--作品根", "{作品根}"]]
-["取材"."产物"]
+[["sourcing"]]
+"displayName" = "录制-weakening"
+"note" = "弱化：施法者周围紫色方块粒子 + 地面冲击波"
+"requires" = ["goety"]
+"needsGame" = true
+"work" = "亚波伦不放水"
+"publicVersion" = "不提取"
+"visibility" = "公开"
+"steps" = [["python", "{脚本}/录法术.py", "weakening", "src/录制/法术/goety/weakening.json", "--刻", "60", "--作品根", "{作品根}"]]
+["sourcing"."artifacts"]
 "录制/法术/goety/weakening" = "src/录制/法术/goety/weakening.json"

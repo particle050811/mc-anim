@@ -18,10 +18,10 @@ const soundTicks = [0, 4, 8, 12];
 export default defineSpellMeta({
   id: 'quaking',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
-  声音: soundTicks.flatMap((tick) => [
-    { 资产: '音效/诡厄巫法/goety.wall_erupt.1', 秒: tick / 20 },
-    { 资产: '音效/诡厄巫法/goety.dirt_debris.1', 秒: tick / 20 },
-    { 资产: '音效/entity.generic.explode.1', 秒: tick / 20 },
+  duration: duration,
+  sound: soundTicks.flatMap((tick) => [
+    { asset: '音效/诡厄巫法/goety.wall_erupt.1', sec: tick / 20 },
+    { asset: '音效/诡厄巫法/goety.dirt_debris.1', sec: tick / 20 },
+    { asset: '音效/entity.generic.explode.1', sec: tick / 20 },
   ]),
 });

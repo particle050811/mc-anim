@@ -21,7 +21,7 @@ import trailPng from 'asset:贴图/法术/goety/entity/projectiles/trail';
 
 const voidShockBombModel = getModel(voidShockBombModelData, 'VoidShockBombModel');
 
-const VoidFlash: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const VoidFlash: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = voidFlashBombPath(from, target, options?.highSpeed);
   const swell = Math.max(0, tick - arriveTick);
@@ -37,14 +37,14 @@ const VoidFlash: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
         <MinecraftSpace 位={trajectoryPos(trajectory, t)}>
           <group position={[0, swell > 0 ? swellSize / 4 : 0, 0]}>
             <group scale={[-swellSize, -swellSize, swellSize]}>
-              <ModelPart 模型={voidShockBombModel} 图={png(voidBombInnerPng)} 画法="加色" opacity={fade} partPoses={partPoses} />
-              <ModelPart 模型={voidShockBombModel} 图={png(voidBombOuterPng)} 画法="加色" opacity={0.4 * fade} partPoses={partPoses} />
+              <ModelPart model={voidShockBombModel} image={png(voidBombInnerPng)} 画法="加色" opacity={fade} partPoses={partPoses} />
+              <ModelPart model={voidShockBombModel} image={png(voidBombOuterPng)} 画法="加色" opacity={0.4 * fade} partPoses={partPoses} />
             </group>
           </group>
         </MinecraftSpace>
       )}
-      {tick > 2 && tick < arriveTick && <Trail points={trailPoints(trajectory, tick, { startTick: 2, offset: [0, 0, 0.25] })} 宽={0.5} 长={6} 图={png(trailPng)} 色={[0.8, 0, 0.8]} 混合="半透明" />}
-      <VoidShockGroup shocks={voidFlashShocks(from, target, seed, options?.highSpeed)} 目标={target} 秒={sec} 种子={seed} />
+      {tick > 2 && tick < arriveTick && <Trail points={trailPoints(trajectory, tick, { startTick: 2, offset: [0, 0, 0.25] })} width={0.5} length={6} image={png(trailPng)} 色={[0.8, 0, 0.8]} blend="半透明" />}
+      <VoidShockGroup shocks={voidFlashShocks(from, target, seed, options?.highSpeed)} target={target} sec={sec} seed={seed} />
     </>
   );
 };

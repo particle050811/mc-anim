@@ -63,17 +63,17 @@ export type CutoutEntry = LandmarkCutout & { remainTop?: number };
 // `挖加` = 核心外要挖的新世界的格（游戏坐标：树干在核心里、被挖掉的新树伸出去的树冠，和留下的旧树冠占的格）；`挖免` = 核心里不挖的格（游戏坐标，上面那些新树伸进来的树冠）
 type EdgeFixData = { 藏免: number[][]; 藏加: number[][]; 挖加: number[][]; 挖免: number[][] };
 type LandmarkDef = {
-  说明: MeshInfo;
+  note: MeshInfo;
   newOrigin: V3;
   转: 0 | 90 | 180 | -90;
   ground: number;
-  网格?: false;
+  grid?: false;
   cutouts?: CutoutEntry[];
   cutFloorY?: number;
   extraDig?: CutoutEntry[];
   core?: Rect[];
   edgeFix?: EdgeFixData;
-  范围?: Rect[];
+  bounds?: Rect[];
   flattens?: FlattenArea[];
 };
 // 补挖一棵巨树：暮色空心橡树（树洞里有箱子、刷怪笼）比四周林冠高出几十米，挡航线的是高出来的那截，所以只挖这棵树，不一个框从地面挖到树顶（会连矮树、草、地表一起没了）。
@@ -115,7 +115,7 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   // - 南边（6-1-3 起飞朝东南 135°，用户 10-05 要扫帚摆好方向）：旧边是笔直红褐土线，另一条边压在新世界一条河的近岸切出土墙；新旧边落在南墙外 3 米（x −50.5 以东），被东、南墙挡着，x −50.5 那条边在起飞方向右后方，不进画。
   // 代价：6-1-2 林道上往东看时右边墙外那棵浅色大树换成红干树（最多 4.9% 像素），6-1-1 进不了画。
   // 归边（10-07）：核心边切到的树整棵归一边（工具/地标巡检/归边.ts 娜迦庭院）；片场存档开助跑道时起跳区清过树冠，跨在框边上的 9 棵树被切成两半（用户 10-07 要整棵切），框外剩下的也藏掉（工具/地标巡检/娜迦起跳区整棵.ts），并进 `藏加`
-  娜迦庭院: { 说明: nagaMesh, newOrigin: [-11191.5, 7, -887.5], 转: 0, ground: 7, core: [[-264.5, -112.5, -50.5, 50.5], [-50.5, -50.5, 50.5, 50.5]],
+  娜迦庭院: { note: nagaMesh, newOrigin: [-11191.5, 7, -887.5], 转: 0, ground: 7, core: [[-264.5, -112.5, -50.5, 50.5], [-50.5, -50.5, 50.5, 50.5]],
     edgeFix: { ...nagaEdgeFix, 藏加: [...nagaEdgeFix.藏加, ...nagaTakeoffHide.藏] } },
   // 原点在旧塔中心，新塔中心 (−9017, 1031)。逆时针转 90°：巫妖房间西、南、东三面都贴着别的塔楼，只有本地北墙外是空的，只能从本地北进；
   // 转后本地北 = 世界西，由西往东穿（对应用户 10-05 红笔从巫妖怪塔往东偏南拉到九头蛇巢穴），不转要进塔前右转 57°、出塔后左转 73°。
@@ -128,11 +128,11 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   // - 塔南边那棵（游戏 x −9019～−8980、z 1075～1117，树顶 y 77）：不转时挡路才挖，转后不挡，照旧挖着让镜头绕塔不用躲它。
   // 三棵都只挖树本身（见 `giantTreeCutouts`）。第一棵外包盒里西南角另有一棵 34 米高的树，那一角冠框从它顶上 y 35 才挖
   巫妖怪塔: {
-    说明: lichMesh,
+    note: lichMesh,
     newOrigin: [-9016.5, 0, 1031],
     转: 90,
     ground: 6,
-    范围: [[-56, -39.5, 56, 39.5]],
+    bounds: [[-56, -39.5, 56, 39.5]],
     extraDig: [
       { from: [-9073, 7, 991], to: [-8962, 400, 1069], 留: lichOuterKeep },
       ...giantTreeCutouts([[[-9019, 22, 1075], [-8980, 79, 1117]]], [[-9007, 5, 1089], [-8992, 21, 1104]]),
@@ -156,11 +156,11 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   // - 贴地飞出去那一截的三丛灌木（树干在游戏 (−6333, 2143)、(−6329, 2139)、(−6317, 2146)、(−6309, 2152)）：人和扫帚穿过，最深 1 米多（工具/一镜到底/九头蛇灌木.ts 量的），整丛挖掉，树干只留地面那截。
   // 网格不画（用户 10-06「就按照新世界的来」）：新世界同位置生成的是同一座巢穴（同模板，地面平均差 1 米），迁移网格的旧地面、树和新世界接不上，直接用新世界的就没接缝。新原点和地标范围照旧（6-1-6 用的本地坐标不变）。
   九头蛇巢穴: {
-    说明: hydraMesh,
+    note: hydraMesh,
     newOrigin: [-6327.5, -6, 2184.5],
     转: 0,
     ground: 5,
-    网格: false,
+    grid: false,
     // 钻穿土丘（用户 10-07）：扫帚扎穿洞口的九头蛇、飞过空心的洞，从洞的东侧壁钻出土丘东坡（穿刺线 a 31.5～52.5 管子碰地），见 6-1-6/编排.ts。
     // 盒子由 工具/一镜到底/隧道.ts 九头蛇 按穿刺线打印、写死在这里（这里不能 import 编排：编排 import 了这个文件）；树留着（隧道留）。
     extraDig: [
@@ -184,19 +184,19 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   },
   // 不转：塔顶是露天平台，恶魂身子中心那个高度（本地 z 186.5，网格只导到 186）往哪个方向都是空的（体素扫过），
   // 所以只平移、穿刺方向照航线：从九头蛇巢穴往南偏西直飞过来、顺着来向横穿塔顶（约 205°），穿出来左转往东去雪怪洞窟（6-1-7/编排.ts）
-  幽冥高塔: { 说明: darkTowerMesh, newOrigin: [-7159.5, 0, 5064.5], 转: 0, ground: 6 },
+  幽冥高塔: { note: darkTowerMesh, newOrigin: [-7159.5, 0, 5064.5], 转: 0, ground: 6 },
   // 不转：洞里是十字形大厅、四条臂一样宽，往东和往北扫过的方块差不多（体素扫过），所以只平移、在洞里重瞄成往东（来向约 84°，6-1-7/编排.ts 的 `YETI_HEADING`），穿出来一路往东去极光宫殿。
   // 核心：新旧一模一样的那块（雪怪核心，本地 ±31.5），旧网格只画这一块，外面全用新世界的（用户 10-06「就按照新世界的来」）：±32 以外旧网格是低洼冻湖，新世界是 y 5～6 的积雪森林，挖框边上东、南两边会露 5～7 米土墙。
   // 边上切到的树整棵归一边（归边，工具/地标巡检/归边.ts 生成 雪怪洞窟.归边.json）。
   // 范围：照原来的 ±42.5（航线、6-1-7b 的镜头一帧不变；出洞口那一带的镜头按地标范围不压，见 `twilightCameraGround`）
   雪怪洞窟: {
-    说明: yetiMesh,
+    note: yetiMesh,
     newOrigin: [-3959.5, -8, 5192.5],
     转: 0,
     ground: 5,
     core: [yetiCore],
     edgeFix: yetiEdgeFix,
-    范围: [[-42.5, -42.5, 42.5, 42.5]],
+    bounds: [[-42.5, -42.5, 42.5, 42.5]],
     // 进洞前、出洞后的两条隧道（穿刺线进洞 −18°、出洞 +12°，拉平要一百多米，核心外这两截在雪地底下，见 6-1-7/编排.ts）：
     // 穿刺线 a −61～−36、34～92.5 管子碰地。盒子由 工具/一镜到底/隧道.ts 雪怪首领 打印、写死在这里；树留着（隧道留）
     extraDig: [
@@ -270,17 +270,17 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   // 挖底：新冰川从 y 31 往上挖（新宫殿 y 31 以下没有结构方块）；区段只存到 y 27 往上，挖到网格底 y 1 坑底没有面、从缝里看得到天。抬不改（+1）：改 0 的话核心西边新冰川反而高出 2～4 米，航线、6-1-8 也得重排。
   // 范围：照原来的网格范围，航线、镜头一帧不变
   极光宫殿: {
-    说明: auroraMesh,
+    note: auroraMesh,
     newOrigin: [-2930.5, 1, 5133],
     转: -90,
     ground: 34,
     core: [[-38, -28.5, 38, 28.5]],
     cutFloorY: 31,
-    范围: [[-52, -42.5, 52, 42.5]],
+    bounds: [[-52, -42.5, 52, 42.5]],
   },
   // 挖：台地面以上，旧网格的整个导出范围，只挖新世界的城堡，台地的岩石和荆棘留着（台地留）；城堡占地整平到台地面（`castleFlatten`）。地标范围照旧是整个挖框
   终焉高原城堡: {
-    说明: castleMesh,
+    note: castleMesh,
     newOrigin: castleNewOrigin,
     转: 0,
     ground: plateauTopY,
@@ -291,7 +291,7 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   // 旧网格摆在它西边 155 米、降落点正南偏东 37 米：对上新小屋的话，小屋和降落点东西差 192 米，穿出小屋到落地只有 0.9 公里，拐不过来。
   // 巨人改瞄 345°（见 归档/参考模型库/工具/一镜到底/直航设计.ts 的 处表）后穿出来往西偏，摆在降落点正南要右 23°、左 8° 一个 S 弯；往东再挪 37 米，穿出小屋 110 米右转 15° 正好对上（降落航线是降落点正南那条线，6-1-9 不变）。云岛浮在空中、底下是高地，挪一点看不出来
   云中小屋: {
-    说明: cloudCottageMesh,
+    note: cloudCottageMesh,
     newOrigin: [cloudCottageMesh.origin[0] - 3387, cloudCottageMesh.origin[1], cloudCottageMesh.origin[2] + 3472],
     转: 0,
     ground: 40,

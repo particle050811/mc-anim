@@ -20,7 +20,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const cycloneModel = getModel(cycloneModelData, 'CycloneModel');
 
-const Cyclone: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const Cyclone: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const trajectory = cyclonePath(from, target, options?.highSpeed);
   const arriveTick = cycloneArriveTick(from, target, options?.highSpeed);
@@ -37,11 +37,11 @@ const Cyclone: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
       {tick < scatterTick && (
         <MinecraftSpace 位={trajectoryPos(trajectory, Math.min(tick, arriveTick))}>
           <group position={[0, 1.5, 0]} rotation={[0, 0, degToRad(180)]}>
-            <ModelPart 模型={cycloneModel} 图={png(cyclonePng)} 画法="半透明" opacity={0.45} partPoses={{ base: spinPose(1), bottom: spinPose(-0.5), mid: spinPose(-0.2), top: spinPose(0.3), wind: spinPose(0.25) }} />
+            <ModelPart model={cycloneModel} image={png(cyclonePng)} 画法="半透明" opacity={0.45} partPoses={{ base: spinPose(1), bottom: spinPose(-0.5), mid: spinPose(-0.2), top: spinPose(0.3), wind: spinPose(0.25) }} />
           </group>
         </MinecraftSpace>
       )}
-      <TexturedParticles 类={cloudClass} spawns={clouds} 秒={sec} />
+      <TexturedParticles type={cloudClass} spawns={clouds} sec={sec} />
     </>
   );
 };

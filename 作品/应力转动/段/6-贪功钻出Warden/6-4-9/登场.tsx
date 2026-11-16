@@ -15,7 +15,7 @@ export const RevealView: React.FC<{ t: number }> = ({ t }) => {
   const { width, height } = useVideoConfig();
   const pursuerPoses = choreo.pursuersAt(t);
   return (
-    <AncientCity4xCanvas 段="6-4-9" cam={choreo.camera(t)} width={width} height={height} wool={K648.woolNames}>
+    <AncientCity4xCanvas segment="6-4-9" cam={choreo.camera(t)} width={width} height={height} wool={K648.woolNames}>
       <group position={choreo.WARDEN_AT} rotation={[0, 0, rad(choreo.WARDEN_YAW)]}>
         <Warden {...choreo.wardenAt(t)} />
       </group>

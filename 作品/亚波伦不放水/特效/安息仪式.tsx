@@ -69,18 +69,18 @@ const shadowEssenceFrames = (() => {
   return () => (frames ??= [0, 1, 2, 3].map((i) => cropFrame(png(shadowEssencePng), i)));
 })();
 
-const flatIcons: Record<Exclude<OfferingName, '炼狱魔典' | '暗影精华'>, { 图: string; enchantGlow?: boolean }> = {
-  暗夜之心: { 图: heartOfNightPng },
-  龙息: { 图: dragonBreathPng },
-  禁忌卷轴: { 图: forbiddenScrollPng },
+const flatIcons: Record<Exclude<OfferingName, '炼狱魔典' | '暗影精华'>, { image: string; enchantGlow?: boolean }> = {
+  暗夜之心: { image: heartOfNightPng },
+  龙息: { image: dragonBreathPng },
+  禁忌卷轴: { image: forbiddenScrollPng },
   // 附魔金苹果、下界之星游戏里带附魔光效（EnchantedGoldenAppleItem、SimpleFoiledItem 的 isFoil）
-  附魔金苹果: { 图: goldenApplePng, enchantGlow: true },
-  下界之星: { 图: netherStarPng, enchantGlow: true },
-  不洁之血: { 图: unholyBloodPng },
-  灵魂红宝石: { 图: soulRubyPng },
-  邪恶头盔: { 图: maleficHelmPng },
-  老巫婆帽: { 图: croneHatPng },
-  术士腰带: { 图: warlockSashPng },
+  附魔金苹果: { image: goldenApplePng, enchantGlow: true },
+  下界之星: { image: netherStarPng, enchantGlow: true },
+  不洁之血: { image: unholyBloodPng },
+  灵魂红宝石: { image: soulRubyPng },
+  邪恶头盔: { image: maleficHelmPng },
+  老巫婆帽: { image: croneHatPng },
+  术士腰带: { image: warlockSashPng },
 };
 const layerCache = new Map<string, ItemLayer[]>();
 const itemLayers = (imagePath: string): ItemLayer[] => {
@@ -91,10 +91,10 @@ const itemLayers = (imagePath: string): ItemLayer[] => {
 const shadowLayerCache: ItemLayer[][] = [];
 
 /** 碎屑用的贴图：图标（暗影精华取第一帧，魔典取模型贴图） */
-const offeringImage = (name: OfferingName): Png => (name === '炼狱魔典' ? png(grimoirePng) : name === '暗影精华' ? shadowEssenceFrames()[0]! : png(flatIcons[name].图));
+const offeringImage = (name: OfferingName): Png => (name === '炼狱魔典' ? png(grimoirePng) : name === '暗影精华' ? shadowEssenceFrames()[0]! : png(flatIcons[name].image));
 
 /** 平面物品摆成掉落物的样子（item/generated 的 ground：缩到 0.5；往上 2/16 已经算在位置里），物品空间 Y 朝上 → 场景 Z 朝上 */
-const GroundItem: React.FC<{ spinDeg: number; 缩放?: number; children: React.ReactNode }> = ({ spinDeg, 缩放: scale = 1, children }) => (
+const GroundItem: React.FC<{ spinDeg: number; scale?: number; children: React.ReactNode }> = ({ spinDeg, scale: scale = 1, children }) => (
   <group rotation={[0, 0, rad(spinDeg)]} scale={0.5 * scale}>
     <group rotation={[Math.PI / 2, 0, 0]}>{children}</group>
   </group>
@@ -104,7 +104,7 @@ const GroundItem: React.FC<{ spinDeg: number; 缩放?: number; children: React.R
  * 一件祭品，中心在原点、照基座上的大小（游戏里的掉落物显示，半格大）。秒：转动和附魔光效、暗影精华换帧的钟。
  * 炼狱魔典是立体的合着的书（默认 active = 0 走 infernal_tome_close），别的是平面图标。
  */
-export const Offering: React.FC<{ 名: OfferingName; 秒: number; 缩放?: number }> = ({ 名: name, 秒: sec, 缩放: scale = 1 }) => {
+export const Offering: React.FC<{ name: OfferingName; sec: number; scale?: number }> = ({ name: name, sec: sec, scale: scale = 1 }) => {
   const spinDeg = itemSpinPerTick * sec * 20;
   if (name === '炼狱魔典') {
     // BlockModel 已经是 Z 朝上；模型的 ground 变换和 item/generated 一样（往上 2、缩 0.5）
@@ -118,26 +118,26 @@ export const Offering: React.FC<{ 名: OfferingName; 秒: number; 缩放?: numbe
     const frame = ((Math.floor((sec * 20) / 2) % 4) + 4) % 4; // 秒可以是负的（仪式开始前）
     const l = (shadowLayerCache[frame] ??= [{ tex: shadowEssenceFrames()[frame]! }]);
     return (
-      <GroundItem spinDeg={spinDeg} 缩放={scale}>
+      <GroundItem spinDeg={spinDeg} scale={scale}>
         <ItemSprite layers={l} />
       </GroundItem>
     );
   }
   const itemDef = flatIcons[name];
   return (
-    <GroundItem spinDeg={spinDeg} 缩放={scale}>
-      {itemDef.enchantGlow ? <GlintItem layers={itemLayers(itemDef.图)} sec={sec} /> : <ItemSprite layers={itemLayers(itemDef.图)} />}
+    <GroundItem spinDeg={spinDeg} scale={scale}>
+      {itemDef.enchantGlow ? <GlintItem layers={itemLayers(itemDef.image)} sec={sec} /> : <ItemSprite layers={itemLayers(itemDef.image)} />}
     </GroundItem>
   );
 };
 
 /** 祭坛上的破碎之环、笼里的灵魂图腾：同样的掉落物显示 */
-export const BrokenRing: React.FC<{ 秒: number }> = ({ 秒: sec }) => (
+export const BrokenRing: React.FC<{ sec: number }> = ({ sec: sec }) => (
   <GroundItem spinDeg={itemSpinPerTick * sec * 20}>
     <ItemSprite layers={itemLayers(brokenRingPng)} />
   </GroundItem>
 );
-const SoulTotem: React.FC<{ 秒: number }> = ({ 秒: sec }) => (
+const SoulTotem: React.FC<{ sec: number }> = ({ sec: sec }) => (
   <GroundItem spinDeg={itemSpinPerTick * sec * 20}>
     <ItemSprite layers={itemLayers(fullTotemPng)} />
   </GroundItem>
@@ -151,7 +151,7 @@ const fireGeometry = (() => {
   return () => {
     if (g) return g;
     // 一片：四个角的方块像素坐标（游戏轴 x、y 上、z 南）+ uv（v = 0 是贴图顶）
-    type Quad = { 角: [number, number, number][]; flipped: boolean; 图: 0 | 1 };
+    type Quad = { angle: [number, number, number][]; flipped: boolean; image: 0 | 1 };
     const pieces: Quad[] = [];
     const scale = 1 / Math.cos(rad(22.5));
     const rotatePoint = (p: [number, number, number], axis: 'x' | 'z', angleDeg: number): [number, number, number] => {
@@ -163,23 +163,23 @@ const fireGeometry = (() => {
     };
     const verticalSheet = (axis: 'z' | 'x', value: number): [number, number, number][] =>
       axis === 'z' ? [[0, 22.4, value], [16, 22.4, value], [16, 0, value], [0, 0, value]] : [[value, 22.4, 0], [value, 22.4, 16], [value, 0, 16], [value, 0, 0]];
-    pieces.push({ 角: verticalSheet('z', 8.8).map((p) => rotatePoint(p, 'x', -22.5)), flipped: false, 图: 0 });
-    pieces.push({ 角: verticalSheet('z', 7.2).map((p) => rotatePoint(p, 'x', 22.5)), flipped: false, 图: 0 });
-    pieces.push({ 角: verticalSheet('x', 8.8).map((p) => rotatePoint(p, 'z', -22.5)), flipped: false, 图: 0 });
-    pieces.push({ 角: verticalSheet('x', 7.2).map((p) => rotatePoint(p, 'z', 22.5)), flipped: false, 图: 0 });
+    pieces.push({ angle: verticalSheet('z', 8.8).map((p) => rotatePoint(p, 'x', -22.5)), flipped: false, image: 0 });
+    pieces.push({ angle: verticalSheet('z', 7.2).map((p) => rotatePoint(p, 'x', 22.5)), flipped: false, image: 0 });
+    pieces.push({ angle: verticalSheet('x', 8.8).map((p) => rotatePoint(p, 'z', -22.5)), flipped: false, image: 0 });
+    pieces.push({ angle: verticalSheet('x', 7.2).map((p) => rotatePoint(p, 'z', 22.5)), flipped: false, image: 0 });
     // 四边：游戏里每边从 side0、side1、side_alt0、side_alt1 里随机挑，这里固定轮着用
-    pieces.push({ 角: verticalSheet('z', 0.01), flipped: false, 图: 0 });
-    pieces.push({ 角: verticalSheet('z', 15.99), flipped: true, 图: 1 });
-    pieces.push({ 角: verticalSheet('x', 0.01), flipped: true, 图: 0 });
-    pieces.push({ 角: verticalSheet('x', 15.99), flipped: false, 图: 1 });
+    pieces.push({ angle: verticalSheet('z', 0.01), flipped: false, image: 0 });
+    pieces.push({ angle: verticalSheet('z', 15.99), flipped: true, image: 1 });
+    pieces.push({ angle: verticalSheet('x', 0.01), flipped: true, image: 0 });
+    pieces.push({ angle: verticalSheet('x', 15.99), flipped: false, image: 1 });
     const buildGeometry = (imageIndex: 0 | 1) => {
       const pos: number[] = [];
       const uv: number[] = [];
       const idx: number[] = [];
-      for (const quad of pieces.filter((f) => f.图 === imageIndex)) {
+      for (const quad of pieces.filter((f) => f.image === imageIndex)) {
         const startVertex = pos.length / 3;
         // 游戏 (x, y, z) → 场景 (x, −z, y)，格的中心在原点、底在 z = 0
-        for (const [x, y, z] of quad.角) pos.push(x / 16 - 0.5, -(z / 16 - 0.5), y / 16);
+        for (const [x, y, z] of quad.angle) pos.push(x / 16 - 0.5, -(z / 16 - 0.5), y / 16);
         const [u0, u1] = quad.flipped ? [1, 0] : [0, 1];
         uv.push(u0, 0, u1, 0, u1, 1, u0, 1);
         idx.push(startVertex, startVertex + 1, startVertex + 2, startVertex, startVertex + 2, startVertex + 3);
@@ -201,22 +201,22 @@ const verticalStripTexture = (uri: string) => {
   t.minFilter = THREE.NearestFilter;
   t.repeat.set(1, image.w / image.h);
   t.needsUpdate = true;
-  return { t, 帧数: image.h / image.w };
+  return { t, frameCount: image.h / image.w };
 };
 
 /** 一团灵魂火，占一格：格的水平中心在原点，底在 z = 0。不受光（火自己发光） */
-export const SoulFire: React.FC<{ 秒: number }> = ({ 秒: sec }) => {
+export const SoulFire: React.FC<{ sec: number }> = ({ sec: sec }) => {
   const soulFireMaterials = useMemo(() => {
     const makeTexture = (uri: string) => {
-      const { t, 帧数: frameCount } = verticalStripTexture(uri);
-      return { t, 帧数: frameCount, m: new THREE.MeshBasicMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide }) };
+      const { t, frameCount: frameCount } = verticalStripTexture(uri);
+      return { t, frameCount: frameCount, m: new THREE.MeshBasicMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide }) };
     };
     return [makeTexture(soulFire0Png), makeTexture(soulFire1Png)] as const;
   }, []);
   const tick = Math.floor(sec * 20);
   // soul_fire_0 的 mcmeta 帧序是 16…31、0…15；soul_fire_1 是顺序
-  soulFireMaterials[0].t.offset.y = ((tick + 16) % soulFireMaterials[0].帧数) / soulFireMaterials[0].帧数;
-  soulFireMaterials[1].t.offset.y = (tick % soulFireMaterials[1].帧数) / soulFireMaterials[1].帧数;
+  soulFireMaterials[0].t.offset.y = ((tick + 16) % soulFireMaterials[0].frameCount) / soulFireMaterials[0].frameCount;
+  soulFireMaterials[1].t.offset.y = (tick % soulFireMaterials[1].frameCount) / soulFireMaterials[1].frameCount;
   const [g0, g1] = fireGeometry();
   return (
     <group>
@@ -242,19 +242,19 @@ const AltarEye: React.FC = () => <BlockModel data={altarModelData as unknown as 
  * 仪式结构：黑曜石底 7×7、哭泣黑曜石 3×3 台、中心诅咒笼（里面转着灵魂图腾）上摞点亮的黑暗祭坛、四个斜角灵魂土上的灵魂火、外圈 12 个基座。
  * 不含祭品和破碎之环。黑曜石底 = false 时不画底下那层（场地自己有地面时用，基座和灵魂土照旧立在 z = 0）。
  */
-export const RestRitualStructure: React.FC<{ 秒: number; obsidianBase?: boolean; withSoulFire?: boolean }> = ({ 秒: sec, obsidianBase = true, withSoulFire = true }) => {
+export const RestRitualStructure: React.FC<{ sec: number; obsidianBase?: boolean; withSoulFire?: boolean }> = ({ sec: sec, obsidianBase = true, withSoulFire = true }) => {
   const blocks = useMemo(() => structureBlocks({ obsidianBase }), [obsidianBase]);
   return (
     <group>
-      <BlockAssembly blocks={blocks} 原点={originPos} />
+      <BlockAssembly blocks={blocks} origin={originPos} />
       {withSoulFire &&
         soulFireCells.map(([i, j, k]) => (
           <group key={`${i},${j}`} position={[i, j, k]}>
-            <SoulFire 秒={sec} />
+            <SoulFire sec={sec} />
           </group>
         ))}
       <group position={totemPos}>
-        <SoulTotem 秒={sec} />
+        <SoulTotem sec={sec} />
       </group>
       <group position={[altarCell[0], altarCell[1], altarCell[2] + 0.5]}>
         <AltarEye />
@@ -267,11 +267,11 @@ const originPos: V3 = [-0.5, -0.5, 0];
 // ---------- 祭品喷向祭坛的碎屑 ----------
 // Ritual.update：仪式进行时每刻、每个还有祭品的基座，在基座上方 1.5 格放一颗 ITEM 粒子（BreakingItemParticle），速度 (0.1 × 到祭坛的格数, 0.3, …)。
 // BreakingItemParticle：重力 1、摩擦 0.98、半边长 0.1 × (随机 × 0.5 + 0.5)（父类的再除 2）、寿命 4 ÷ (随机 × 0.9 + 0.1) 刻、贴图取图标上随机一块 4×4 像素。
-type Debris = { sacrificeIndex: number; 刻: number; 种子: number };
+type Debris = { sacrificeIndex: number; 刻: number; seed: number };
 const debrisState = (c: Debris, currentTick: number): Particle | null => {
   const τ = currentTick - c.刻;
   if (τ < 0) return null;
-  const rand = mulberry32(c.种子 * 2654435761 + 31);
+  const rand = mulberry32(c.seed * 2654435761 + 31);
   const lifetime = Math.floor(4 / (rand() * 0.9 + 0.1));
   const ageTicks = Math.floor(τ);
   if (ageTicks >= lifetime) return null;
@@ -306,19 +306,19 @@ const debrisState = (c: Debris, currentTick: number): Particle | null => {
 };
 
 /** 起、止：喷碎屑的时间段（秒）。每件祭品一批（各用自己的图标当贴图） */
-const OfferingDebris: React.FC<{ 秒: number; 起: number; 止: number; 种子: number }> = ({ 秒: sec, 起: startSec, 止: endSec, 种子: seed }) => {
+const OfferingDebris: React.FC<{ sec: number; start: number; end: number; seed: number }> = ({ sec: sec, start: startSec, end: endSec, seed: seed }) => {
   const currentTick = sec * 20;
   const debrisTable = useMemo(() => {
     const perItemDebrisTable: Debris[][] = offerings.map(() => []);
-    for (let tick = Math.ceil(startSec * 20); tick < endSec * 20; tick++) for (let sacrificeIndex = 0; sacrificeIndex < offerings.length; sacrificeIndex++) perItemDebrisTable[sacrificeIndex]!.push({ sacrificeIndex, 刻: tick, 种子: seed * 7919 + tick * 13 + sacrificeIndex });
+    for (let tick = Math.ceil(startSec * 20); tick < endSec * 20; tick++) for (let sacrificeIndex = 0; sacrificeIndex < offerings.length; sacrificeIndex++) perItemDebrisTable[sacrificeIndex]!.push({ sacrificeIndex, 刻: tick, seed: seed * 7919 + tick * 13 + sacrificeIndex });
     return perItemDebrisTable;
   }, [startSec, endSec, seed]);
   return (
     <>
       {offerings.map((offering, sacrificeIndex) => {
-        const image = offeringImage(offering.名);
+        const image = offeringImage(offering.name);
         // 魔典的贴图是 256×32 的模型图集，只取左上 32×32 那块里的碎片
-        const uScale = offering.名 === '炼狱魔典' ? image.h / image.w : 1;
+        const uScale = offering.name === '炼狱魔典' ? image.h / image.w : 1;
         const particles = debrisTable[sacrificeIndex]!.map((c) => debrisState(c, currentTick)).filter((s): s is Particle => !!s);
         for (const s of particles) s.uv = [s.uv[0] * uScale, s.uv[1], s.uv[2] * uScale, s.uv[3]];
         return <ParticleQuads key={sacrificeIndex} tex={particleTexture(image.px, image.w, image.h, image)} items={particles} />;
@@ -386,7 +386,7 @@ const flatTexture = (uri: string) => {
   return t;
 };
 /** 过渡实体的法阵和两道环，原点 = 实体的位置。年龄刻：真实时间的刻；半边、环高由 召唤状态在 给 */
-export const SummonCircle: React.FC<{ ageTick: number; 半边: number; ringHeight: readonly [number, number] }> = ({ ageTick, 半边: halfSide, ringHeight }) => {
+export const SummonCircle: React.FC<{ ageTick: number; halfSide: number; ringHeight: readonly [number, number] }> = ({ ageTick, halfSide: halfSide, ringHeight }) => {
   const [circleMaterial, ringMaterial] = useMemo(() => [summonCirclePng, apostleRingPng].map((u) => new THREE.MeshBasicMaterial({ map: flatTexture(u), alphaTest: 0.1, side: THREE.DoubleSide })), []);
   if (halfSide <= 0) return null;
   const g = squareGeometry();
@@ -403,7 +403,7 @@ export const SummonCircle: React.FC<{ ageTick: number; 半边: number; ringHeigh
 // SummonApostle.tick：每 lerpInt(进度, 8, 2) 刻放一条，采样数 lerpInt(进度, 8, 15)、带宽 lerp(进度, 0.3, 0.9)、活 90 刻，三分之一暗红（0xAA0000）、其余黑；
 // 出生在实体四周 ±(2～5) 格、实体顶的高度。WindGatherParticle：每刻偏航 += ±(0.15～0.25) 弧度，半径 −= 初始半径 ÷ 20 × (0.8～1.2)，最小 0.75～0.95；
 // 高度 = (sin(年龄 × 0.2) + 1) × 0.5 × 实体高；最后（采样数 − 1）刻停住让尾巴收拢。带子沿最近「采样数」刻的位置拉，贴图 gathering_trail.png 的 u 从头到尾。
-type GatherWind = { spawnTick: number; 采样: number; 宽: number; isRed: boolean; dx: number; dz: number; yawSpeed: number; radiusDecayRatio: number; minRadius: number };
+type GatherWind = { spawnTick: number; 采样: number; width: number; isRed: boolean; dx: number; dz: number; yawSpeed: number; radiusDecayRatio: number; minRadius: number };
 const gatherLifetime = 90;
 const gatherWindPos = (c: GatherWind, ageTicks: number): V3 => {
   // 岁：已经走了几刻（整数）。游戏里先走一步再记轨迹，头一次记的时候把整条历史都填成走完第一步的位置，
@@ -425,7 +425,7 @@ const layoutGatherWind = (progressTickAt: (realTick: number) => number, endTick:
     windTable.push({
       spawnTick: tick,
       采样: 8 + Math.floor(progress * 7),
-      宽: lerp(0.3, 0.9, progress),
+      width: lerp(0.3, 0.9, progress),
       dx: (rand() * 3 + 2) * (rand() < 0.5 ? 1 : -1),
       dz: (rand() * 3 + 2) * (rand() < 0.5 ? 1 : -1),
       isRed: Math.floor(rand() * 3) === 0,
@@ -468,7 +468,7 @@ const GatherWindBands: React.FC<{ 表: GatherWind[]; realTick: number }> = ({ �
         const nextPoint = pointAt(k + 1);
         const [u1, u2] = [k / c.采样, (k + 1) / c.采样];
         const startVertex = pos.length / 3;
-        const [hx, hz] = [(tiltX * c.宽) / 2, (tiltZ * c.宽) / 2];
+        const [hx, hz] = [(tiltX * c.width) / 2, (tiltZ * c.width) / 2];
         pos.push(cursor[0] - hx, cursor[1], cursor[2] - hz, nextPoint[0] - hx, nextPoint[1], nextPoint[2] - hz, nextPoint[0] + hx, nextPoint[1], nextPoint[2] + hz, cursor[0] + hx, cursor[1], cursor[2] + hz);
         uv.push(u1, 1, u2, 1, u2, 0, u1, 0);
         for (let q = 0; q < 4; q++) col.push(r, g, b);
@@ -490,11 +490,11 @@ const GatherWindBands: React.FC<{ 表: GatherWind[]; realTick: number }> = ({ �
 // ---------- 大烟 ----------
 // LARGE_SMOKE = LargeSmokeParticle：SmokeParticle 放大 2.5 倍（半边长 0.1 × (随机 × 0.5 + 0.5) × 2 × 0.75 × 2.5，寿命 8 ÷ (随机 × 0.8 + 0.2) × 2.5 刻），
 // 灰度 随机 × 0.3，重力 −0.1（往上飘）、摩擦 0.96，贴图 generic_7 → generic_0。库里的 smoke 是小号的，这里照同一套算法写大号。
-type SmokePuff = { 刻: number; p: V3; 种子: number };
+type SmokePuff = { 刻: number; p: V3; seed: number };
 const smokeState = (c: SmokePuff, currentTick: number): Particle | null => {
   const τ = currentTick - c.刻;
   if (τ < 0) return null;
-  const rand = mulberry32(c.种子 * 2654435761 + 53);
+  const rand = mulberry32(c.seed * 2654435761 + 53);
   let x = (rand() * 2 - 1) * 0.4;
   let y = (rand() * 2 - 1) * 0.4;
   let z = (rand() * 2 - 1) * 0.4;
@@ -535,7 +535,7 @@ const soulFireSmokeTable = (startTick: number, endTick: number, seed: number): S
     for (let tick = startTick; tick <= endTick; tick++) {
       const rand = mulberry32(seed * 1000003 + (tick + 1000) * 31 + fi * 7 + 5);
       if (rand() >= chance) continue; // 率 < 1：一刻最多被抽中一次
-      for (let n = 0; n < 3; n++) smokeTable.push({ 刻: tick, p: [flameCell[0] + rand() - 0.5, flameCell[1] + rand() - 0.5, flameCell[2] + 0.5 + rand() * 0.5], 种子: seed * 4001 + tick * 17 + fi * 3 + n });
+      for (let n = 0; n < 3; n++) smokeTable.push({ 刻: tick, p: [flameCell[0] + rand() - 0.5, flameCell[1] + rand() - 0.5, flameCell[2] + 0.5 + rand() * 0.5], seed: seed * 4001 + tick * 17 + fi * 3 + n });
     }
   }
   return smokeTable;
@@ -548,9 +548,9 @@ const BigSmokes: React.FC<{ 表: SmokePuff[]; currentTick: number }> = ({ 表: s
 // ---------- 整段演出 ----------
 export type RestRitualPerformanceProps = {
   /** 从放下破碎之环算起的秒（负的 = 还没开始：结构和祭品都在，祭坛上没有环） */
-  秒: number;
+  sec: number;
   plan: SummonPlan;
-  种子?: number;
+  seed?: number;
   obsidianBase?: boolean;
   /** 亚波伦：现身那一刻起画在 现身位置（安息仪式时序.ts），不给不画 */
   children?: React.ReactNode;
@@ -560,66 +560,66 @@ export type RestRitualPerformanceProps = {
  * 整段召唤：结构 + 祭品 + 仪式过程 + 过渡 + 现身。场景坐标，祭坛那一列在 (0, 0)。
  * 声音不在这里放（召唤声音(方案) 给段.ts 排）；黑暗效果、动作栏提示「世界凝视着你....」是屏幕层的东西，也不在这里（时刻 = 方案.提示）。
  */
-export const RestRitualPerformance: React.FC<RestRitualPerformanceProps> = ({ 秒: sec, plan, 种子: seed = 1, obsidianBase, children }) => {
+export const RestRitualPerformance: React.FC<RestRitualPerformanceProps> = ({ sec: sec, plan, seed: seed = 1, obsidianBase, children }) => {
   const s = summonStateAt(sec, plan);
-  const finishTick = plan.完成 * 20;
+  const finishTick = plan.completed * 20;
   const appearTick = plan.appear * 20;
   const transitionTotalTicks = appearTick - finishTick;
   const { gatherWindTable, smokeTable, flameSpawns } = useMemo(() => {
     const rand = mulberry32(seed * 69621 + 3);
     const progressTickAt = (realTick: number) => {
-      const progressSec = plan.完成 + realTick / 20;
+      const progressSec = plan.completed + realTick / 20;
       // 和 过渡进度刻 同一个映射（这里不引函数是为了让表只跟方案的四个时刻走）
-      if (progressSec <= plan.提示) return ((progressSec - plan.完成) / (plan.提示 - plan.完成)) * game.hintTicks;
+      if (progressSec <= plan.提示) return ((progressSec - plan.completed) / (plan.提示 - plan.completed)) * game.hintTicks;
       if (progressSec <= plan.whisperSec) return game.hintTicks + ((progressSec - plan.提示) / (plan.whisperSec - plan.提示)) * (game.whisperTicks - game.hintTicks);
       return Math.min(game.transitionTicks, game.whisperTicks + ((progressSec - plan.whisperSec) / (plan.appear - plan.whisperSec)) * (game.transitionTicks - game.whisperTicks));
     };
     const gatherWindTable = layoutGatherWind(progressTickAt, Math.floor(transitionTotalTicks), seed);
     // 完成那一刻祭坛中心一颗（SummonRitual.finish）；低语之后每刻一颗，落在实体碰撞箱里（水平 ±1、高 0～0.5）
-    const smokeTable: SmokePuff[] = [{ 刻: finishTick, p: altarCenter, 种子: seed * 31 }];
+    const smokeTable: SmokePuff[] = [{ 刻: finishTick, p: altarCenter, seed: seed * 31 }];
     for (let tick = Math.ceil(plan.whisperSec * 20); tick <= appearTick; tick++) {
-      smokeTable.push({ 刻: tick, p: [altarCenter[0] + (rand() * 2 - 1), altarCenter[1] + (rand() * 2 - 1), altarCenter[2] + rand() * game.entityHeight], 种子: seed * 977 + tick });
+      smokeTable.push({ 刻: tick, p: [altarCenter[0] + (rand() * 2 - 1), altarCenter[1] + (rand() * 2 - 1), altarCenter[2] + rand() * game.entityHeight], seed: seed * 977 + tick });
     }
     // 灵魂火的烟：从仪式开始前 15 秒（烟最长活 5 秒，到放环时已是稳态）到整段结束
-    smokeTable.push(...soulFireSmokeTable(-300, Math.ceil(plan.总秒 * 20), seed));
+    smokeTable.push(...soulFireSmokeTable(-300, Math.ceil(plan.totalSec * 20), seed));
     // 现身：200 颗 FLAME，从实体脚边 0.3 格高炸开。速度 = (cos × f2, 0.01 + 随机 × 0.5, sin × f2) × 0.5，f2 = 随机 × 4（格/刻）
     const flameSpawns: ParticleSpawn[] = Array.from({ length: 200 }, (_, k) => {
       const f2 = rand() * 4;
       const f1 = rand() * Math.PI * 2;
       const [d1, d2, d3] = [Math.cos(f1) * f2, 0.01 + rand() * 0.5, Math.sin(f1) * f2];
-      return { 种: 'flame' as const, 刻: appearTick, p: [altarCenter[0] + d1 * 0.1, altarCenter[1] - d3 * 0.1, altarCenter[2] + 0.3] as V3, v: [d1 * 0.5, -d3 * 0.5, d2 * 0.5] as V3, 种子: seed * 131 + k };
+      return { kind: 'flame' as const, 刻: appearTick, p: [altarCenter[0] + d1 * 0.1, altarCenter[1] - d3 * 0.1, altarCenter[2] + 0.3] as V3, v: [d1 * 0.5, -d3 * 0.5, d2 * 0.5] as V3, seed: seed * 131 + k };
     });
     return { gatherWindTable, smokeTable, flameSpawns };
-  }, [plan.完成, plan.提示, plan.whisperSec, plan.appear, plan.总秒, seed, finishTick, appearTick, transitionTotalTicks]);
+  }, [plan.completed, plan.提示, plan.whisperSec, plan.appear, plan.totalSec, seed, finishTick, appearTick, transitionTotalTicks]);
 
   const currentTick = sec * 20;
   const unsacrificed = 1 - s.offeringAlpha;
   return (
     <group>
-      <RestRitualStructure 秒={sec} obsidianBase={obsidianBase} />
+      <RestRitualStructure sec={sec} obsidianBase={obsidianBase} />
       {s.offeringAlpha > 0 &&
         offerings.map((offering, i) => {
           const p = offeringPos(i);
           const pos: V3 = [lerp(p[0], activatorPos[0], unsacrificed), lerp(p[1], activatorPos[1], unsacrificed), lerp(p[2], activatorPos[2], unsacrificed) + Math.sin(unsacrificed * Math.PI) * 0.8];
           return (
-            <group key={offering.名} position={pos}>
-              <Offering 名={offering.名} 秒={sec} 缩放={s.offeringAlpha} />
+            <group key={offering.name} position={pos}>
+              <Offering name={offering.name} sec={sec} scale={s.offeringAlpha} />
             </group>
           );
         })}
       {s.hasActivator && (
         <group position={activatorPos}>
-          <BrokenRing 秒={sec} />
+          <BrokenRing sec={sec} />
         </group>
       )}
-      {sec >= 0 && <OfferingDebris 秒={sec} 起={0} 止={Math.min(plan.offeringVanishSec, plan.完成)} 种子={seed} />}
+      {sec >= 0 && <OfferingDebris sec={sec} start={0} end={Math.min(plan.offeringVanishSec, plan.completed)} seed={seed} />}
       <group position={altarCenter}>
         <LightPillar ageTick={currentTick - finishTick} />
-        <SummonCircle ageTick={s.transitionRealTick} 半边={s.circleHalf} ringHeight={s.ringHeight} />
-        {sec >= plan.完成 && <GatherWindBands 表={gatherWindTable} realTick={currentTick - finishTick} />}
+        <SummonCircle ageTick={s.transitionRealTick} halfSide={s.circleHalf} ringHeight={s.ringHeight} />
+        {sec >= plan.completed && <GatherWindBands 表={gatherWindTable} realTick={currentTick - finishTick} />}
       </group>
       <BigSmokes 表={smokeTable} currentTick={currentTick} />
-      <VanillaParticles spawns={flameSpawns} 秒={sec} />
+      <VanillaParticles spawns={flameSpawns} sec={sec} />
       {s.yaBoLunPresent && children}
     </group>
   );

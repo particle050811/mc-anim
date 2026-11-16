@@ -46,7 +46,7 @@ const circle = (r: number) => {
 
 const AltarLightLayer: React.FC<{ g: number }> = ({ g }) => {
   const altarGlowLayers = altarLight(g);
-  const mats = useMemo(() => new Map(params.lightParams.altarLight.radiusList.map((r, i) => [r as number, translucentMaterial(params.lightParams.色, params.lightParams.altarLight.强[i]!, THREE.FrontSide, circle(r).tex)])), []);
+  const mats = useMemo(() => new Map(params.lightParams.altarLight.radiusList.map((r, i) => [r as number, translucentMaterial(params.lightParams.色, params.lightParams.altarLight.strength[i]!, THREE.FrontSide, circle(r).tex)])), []);
   return (
     <group position={[0, 0, groundLightHeight]}>
       {altarGlowLayers.map(([r]) => (
@@ -60,8 +60,8 @@ const pillarGeoms = new Map<number, THREE.BoxGeometry>();
 const squarePillar = (w: number) => {
   let g = pillarGeoms.get(w);
   if (!g) {
-    g = new THREE.BoxGeometry(w, w, params.lightParams.lightPillar.高);
-    g.translate(0, 0, params.lightParams.lightPillar.高 / 2);
+    g = new THREE.BoxGeometry(w, w, params.lightParams.lightPillar.height);
+    g.translate(0, 0, params.lightParams.lightPillar.height / 2);
     pillarGeoms.set(w, g);
   }
   return g;
@@ -70,7 +70,7 @@ const squarePillar = (w: number) => {
 /** 光柱只画方柱的背面：光罩在她身后、被她挡住，不叠在她身上（她头发、帽子本来近白，叠上去脸就看不出了） */
 const LightPillarLayer: React.FC<{ g: number }> = ({ g }) => {
   const beamLayers = lightPillar(g);
-  const mats = useMemo(() => new Map(params.lightParams.lightPillar.宽.map((w, i) => [w as number, translucentMaterial(params.lightParams.色, params.lightParams.lightPillar.强[i]!, THREE.BackSide)])), []);
+  const mats = useMemo(() => new Map(params.lightParams.lightPillar.width.map((w, i) => [w as number, translucentMaterial(params.lightParams.色, params.lightParams.lightPillar.strength[i]!, THREE.BackSide)])), []);
   return (
     <group position={[params.liYing.feet[0], params.liYing.feet[1], 0]}>
       {beamLayers.map(([w]) => (
@@ -96,15 +96,15 @@ export const lightDots = (g: number): Particle[] => {
   }
   const pillars = lightPillar(g);
   if (pillars.length) {
-    const { 数: count, halfSize, 种子: seed } = params.lightParams.lightDot;
+    const { 数: count, halfSize, seed: seed } = params.lightParams.lightDot;
     const r = mulberry32(seed);
     const elapsedSec = toSec(g) - toSec(events.appear) + params.lightParams.lightPillar.startBeforeSec;
-    const beamWidth = params.lightParams.lightPillar.宽[0]!;
+    const beamWidth = params.lightParams.lightPillar.width[0]!;
     for (let i = 0; i < count; i++) {
       const [x, y, z0, v] = [(r() - 0.5) * beamWidth, (r() - 0.5) * beamWidth, r() * 2.2, 0.5 + r() * 0.6];
       const z = z0 + elapsedSec * v;
       // 光点的大小跟着光柱一档一档收（最外圈先灭）
-      out.push({ p: [params.liYing.feet[0] + x, params.liYing.feet[1] + y, z] as V3, half: halfSize * (pillars.length / params.lightParams.lightPillar.宽.length + 0.34), uv: uv(7 - (i % 4)), color: warmWhite });
+      out.push({ p: [params.liYing.feet[0] + x, params.liYing.feet[1] + y, z] as V3, half: halfSize * (pillars.length / params.lightParams.lightPillar.width.length + 0.34), uv: uv(7 - (i % 4)), color: warmWhite });
     }
   }
   return out;

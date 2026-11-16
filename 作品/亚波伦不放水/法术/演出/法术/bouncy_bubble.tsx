@@ -19,7 +19,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const soulBoltModel = getModel(soulBoltModelData, 'SoulBoltModel');
 
-const BouncyBubble: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const BouncyBubble: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const { trajectory, burstTick } = bubblePath(from, target);
   const r = mulberry32(seed * 13 + 1);
@@ -34,12 +34,12 @@ const BouncyBubble: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标:
       {tick < burstTick && (
         <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
           <group scale={[-1, -1, 1]}>
-            <ModelPart 模型={soulBoltModel} 图={png(bouncyBubblePng)} 画法="加色" opacity={0.5} partPoses={{ bolt: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
+            <ModelPart model={soulBoltModel} image={png(bouncyBubblePng)} 画法="加色" opacity={0.5} partPoses={{ bolt: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
           </group>
         </MinecraftSpace>
       )}
-      <TexturedParticles 类={dripClass(target[2])} spawns={drops} 秒={sec} />
-      <VanillaParticles spawns={serverSendParticles('splash', burstTick, [burstPos[0], burstPos[1], burstPos[2] + 0.5], 30, [0.3, 0.3, 0.3], 0.5, seed)} 秒={sec} />
+      <TexturedParticles type={dripClass(target[2])} spawns={drops} sec={sec} />
+      <VanillaParticles spawns={serverSendParticles('splash', burstTick, [burstPos[0], burstPos[1], burstPos[2] + 0.5], 30, [0.3, 0.3, 0.3], 0.5, seed)} sec={sec} />
     </>
   );
 };

@@ -16,16 +16,16 @@ import { clamp01, smootherstep01, rad } from '@engine/core/数学.ts';
 // 关键帧头尾都是巡航，镜段外就是巡航；相邻两处叠在一起时后一处在开头 `fadeSec` 秒里从前一处渐过来（镜头.ts 的 `合成`）。
 // 下面注释里的「帧」是原来的 1/24 秒一格，代码写成 n / 24 秒
 type PosCam = (g: number) => { C: Vec; weight: number } | null;
-type CamSpan = { 名: route.BossName | '起飞' | '降落'; 锚: number; Keys: Keys[]; 起: number; 止: number; coreStart: number; coreEnd: number; 位?: PosCam; keepInFrame?: boolean; focus?: () => Vec };
+type CamSpan = { name: route.BossName | '起飞' | '降落'; 锚: number; Keys: Keys[]; start: number; end: number; coreStart: number; coreEnd: number; 位?: PosCam; keepInFrame?: boolean; focus?: () => Vec };
 export const fadeSec = 0.5;
 const secAt = (T: number) => route.secAt(T);
 const pierceSecs = route.pierceSecs;
 const pierceTimes = route.pierceTimes;
 export const camSpans: CamSpan[] = [];
-const addSpan = (span: Omit<CamSpan, '起' | '止' | 'coreStart' | 'coreEnd'> & Partial<Pick<CamSpan, 'coreStart' | 'coreEnd'>>) => {
+const addSpan = (span: Omit<CamSpan, 'start' | 'end' | 'coreStart' | 'coreEnd'> & Partial<Pick<CamSpan, 'coreStart' | 'coreEnd'>>) => {
   const start = span.锚 + span.Keys[0][0];
   const end = span.锚 + span.Keys[span.Keys.length - 1][0];
-  camSpans.push({ ...span, 起: start, 止: end, coreStart: span.coreStart ?? start, coreEnd: span.coreEnd ?? end });
+  camSpans.push({ ...span, start: start, end: end, coreStart: span.coreStart ?? start, coreEnd: span.coreEnd ?? end });
 };
 
 // 首帧和 6-1-3 末帧是同一个画面：6-1-3 末帧的镜头偏移、构图换算成 P，开头 1 秒过渡到巡航（0.5 秒的话骑手一格放大 10%）
@@ -36,7 +36,7 @@ const addSpan = (span: Omit<CamSpan, '起' | '止' | 'coreStart' | 'coreEnd'> & 
   const fw = norm(sub(C613.tgt, C613.pos));
   const [x, y] = project(C0, fw, C613.lens, riderAt(0));
   const P0: Framing = { ...posToFraming(C0, 0), x, y, 焦: Math.log(C613.lens), 偏: 0 };
-  addSpan({ 名: '起飞', 锚: 0, Keys: [[0, P0], [1, cruiseFraming]] });
+  addSpan({ name: '起飞', 锚: 0, Keys: [[0, P0], [1, cruiseFraming]] });
 }
 
 // ---------- 近景（巫妖、冰雪女王，放慢）：贴近、钻墙洞、绕扫帚转一整圈、钻出去 ----------
@@ -81,9 +81,9 @@ const queenOrbit: OrbitPt[] = [
 ];
 const addNearSpan = (bossName: '巫妖' | '冰雪女王', orbit: OrbitPt[], slowIdx: number) => {
   const impactT = secAt(pierceTimes[bossName] + route.impactTime[bossName]!);
-  const resumeT = secAt(route.slowMoTable[slowIdx].止);
+  const resumeT = secAt(route.slowMoTable[slowIdx].end);
   const legacyKeys = nearKeys(impactT, pierceSecs[bossName], resumeT, orbit);
-  addSpan({ 名: bossName, 锚: pierceSecs[bossName], Keys: convertKeys(legacyKeys), coreStart: pierceSecs[bossName] + legacyKeys[0][0] + 1.25, coreEnd: resumeT + 34 / 24 });
+  addSpan({ name: bossName, 锚: pierceSecs[bossName], Keys: convertKeys(legacyKeys), coreStart: pierceSecs[bossName] + legacyKeys[0][0] + 1.25, coreEnd: resumeT + 34 / 24 });
 };
 
 // ---------- 巨人（近景，放慢，屋外侧视） ----------
@@ -92,7 +92,7 @@ const addNearSpan = (bossName: '巫妖' | '冰雪女王', orbit: OrbitPt[], slow
 // 不拉近；视线往小屋偏（`偏`）的时候骑手不出画（保画内）
 const addGiantSpan = () => {
   const impactT = secAt(pierceTimes.巨人 + route.impactTime.巨人!);
-  const resumeT = secAt(route.slowMoTable[2].止);
+  const resumeT = secAt(route.slowMoTable[2].end);
   const anchor = pierceSecs.巨人;
   const legacyKeys: LegacyKey[] = [
     [impactT - anchor - 80 / 24, { ...legacyCruise }],
@@ -108,7 +108,7 @@ const addGiantSpan = () => {
     [resumeT - anchor + 1.5, { back: 16, height: 6, side: 4, lookAhead: 50, low: 15, focalLength: 19 }],
     [resumeT - anchor + 56 / 24, { ...legacyCruise }],
   ];
-  addSpan({ 名: '巨人', 锚: anchor, Keys: convertKeys(legacyKeys, (i) => i === 0 || i === legacyKeys.length - 1), keepInFrame: true, focus: () => route.pierceTable.巨人.tip(0), coreStart: impactT - 50 / 24, coreEnd: resumeT + 1.5 });
+  addSpan({ name: '巨人', 锚: anchor, Keys: convertKeys(legacyKeys, (i) => i === 0 || i === legacyKeys.length - 1), keepInFrame: true, focus: () => route.pierceTable.巨人.tip(0), coreStart: impactT - 50 / 24, coreEnd: resumeT + 1.5 });
 };
 
 // ---------- 远景（九头蛇、暮初恶魂、雪怪首领，原速）：跟着扎下去 → 刹停 → 停住看 boss 炸开 → 追上去 ----------
@@ -121,7 +121,7 @@ const addGiantSpan = () => {
 const brakeSec = 16 / 24;
 const chaseMaxShrink = 0.2 * 24; // ln 距离每秒最多收这么多（每格 0.2）
 type FarParams = {
-  名: '九头蛇' | '暮初恶魂' | '雪怪首领';
+  name: '九头蛇' | '暮初恶魂' | '雪怪首领';
   stopDist: number;
   dive: number | null; // 压机头那一刻（相对贯穿，秒），平着撞进去的给 null
   preDive: Partial<LegacyParams>; // 压机头前 0.5 秒贴过去的机位
@@ -164,9 +164,9 @@ export const chaseSpans: { name: string; start: number; end: number }[] = [];
 const hallHeight = 4;
 const tunnelHeight = 1.2;
 const addFarSpan = (opts: FarParams) => {
-  const anchor = pierceSecs[opts.名];
-  const sp = route.markDist(`${opts.名}.贯穿`);
-  const hold = route.farHold[opts.名]!;
+  const anchor = pierceSecs[opts.name];
+  const sp = route.markDist(`${opts.name}.贯穿`);
+  const hold = route.farHold[opts.name]!;
   const diveT = opts.dive ?? -22 / 24;
   const follow: Partial<LegacyParams> = { back: 16, height: 6, lookAhead: 0, low: 0, focalLength: 22, lookBoss: 0.5 };
   const legacyKeys: LegacyKey[] = [
@@ -191,7 +191,7 @@ const addFarSpan = (opts: FarParams) => {
   }
   const stopTau = (lo + hi) / 2;
   const brakeStart = stopTau - brakeSec / 2;
-  if (brakeStart - anchor < diveT + 8 / 24 + 2 / 24) throw new Error(`一镜到底镜头 ${opts.名}：停距 ${opts.stopDist} 太远，刹停要在扎下去以前开始`);
+  if (brakeStart - anchor < diveT + 8 / 24 + 2 / 24) throw new Error(`一镜到底镜头 ${opts.name}：停距 ${opts.stopDist} 太远，刹停要在扎下去以前开始`);
   keys.push([brakeStart - anchor, preBrake]);
   // 停住、追的那几帧只排视线和焦距（位置在 位 里）
   const holdFraming: Framing = { ...preBrake, x: 0, y: 0, 焦: Math.log(22), 偏: 0.9 };
@@ -211,7 +211,7 @@ const addFarSpan = (opts: FarParams) => {
   if (!opts.inTunnel) {
     // 追：方向从停住时（从骑手看镜头）转到跟拍的方向，ln 距离按五次曲线收
     const lnD = (g: number) => Math.log(len(sub(stopPos, riderAt(g))));
-    const x1 = cruiseFraming.距;
+    const x1 = cruiseFraming.dist;
     const step = 0.5 / 24;
     const x0 = lnD(releaseT) - x1;
     const v0 = (lnD(releaseT + step) - lnD(releaseT - step)) / (2 * step);
@@ -283,9 +283,9 @@ const addFarSpan = (opts: FarParams) => {
       return { C: tunnelTrack(camDist(g)), weight: 1 - smootherstep01((g - exitT) / fadeSec) };
     };
   }
-  chaseSpans.push({ name: opts.名, start: releaseT, end: chaseEnd });
+  chaseSpans.push({ name: opts.name, start: releaseT, end: chaseEnd });
   // 视线从 boss 转到扫帚：`lookTurnSec` 秒，但要在镜头追过去、boss 和骑手分开到 45° 以前转完（不然 boss 跑到镜头侧面、身后时视线还偏着它）；每 1/48 秒查一次
-  const boss = route.pierceTable[opts.名].tip(0);
+  const boss = route.pierceTable[opts.name].tip(0);
   let lookDone = releaseT + opts.lookTurnSec;
   for (let i = 0; i / 48 < opts.lookTurnSec; i++) {
     const g = releaseT + i / 48;
@@ -298,7 +298,7 @@ const addFarSpan = (opts: FarParams) => {
   keys.push([Math.min(lookDone, chaseEnd - 0.25) - anchor, { ...holdFraming, 偏: 0 }]);
   // 追完以后 20/24 秒把构图（视线、焦距）换回巡航（焦距一格变 2.4%）
   keys.push([chaseEnd - anchor - 4 / 24, { ...cruiseFraming, x: 0, y: 0, 焦: Math.log(22), 偏: 0 }], [chaseEnd - anchor + 20 / 24, cruiseFraming]);
-  addSpan({ 名: opts.名, 锚: anchor, Keys: keys, 位: posCam, focus: () => route.pierceTable[opts.名].tip(0), coreStart: anchor + diveT - 0.5, coreEnd: chaseEnd });
+  addSpan({ name: opts.name, 锚: anchor, Keys: keys, 位: posCam, focus: () => route.pierceTable[opts.name].tip(0), coreStart: anchor + diveT - 0.5, coreEnd: chaseEnd });
 };
 
 // 九头蛇：从巡航高度平着接进来、压下机头扎下去，扎的时候镜头往上抬、退一点（`刹前`），停在九头蛇前 48 米的高处；
@@ -306,19 +306,19 @@ const addFarSpan = (opts: FarParams) => {
 // （大厅只有 ±35 米，西口隧道出口在 a −36），看着扫帚贯穿、钻进东口隧道，再沿路线追进去
 const farList: FarParams[] = [
   {
-    名: '九头蛇',
+    name: '九头蛇',
     stopDist: 48,
     dive: secAt(pierceTimes.九头蛇 + hydraChoreo.T_DIVE) - pierceSecs.九头蛇,
     preDive: {},
-    preBrake: { 距: Math.log(10), 仰: 35 },
+    preBrake: { dist: Math.log(10), 仰: 35 },
     holdLook: 0.5,
     lookTurnSec: 20 / 24,
     // 不拱的话第 363 帧镜头穿过土丘（石头和洞里的萤石，工具/一镜到底/离块.ts 量的）
     lift: 15,
   },
-  { 名: '暮初恶魂', stopDist: 46, dive: null, preDive: {}, preBrake: { 距: Math.log(8), 仰: 30 }, holdLook: 0.6, lookTurnSec: 20 / 24 },
+  { name: '暮初恶魂', stopDist: 46, dive: null, preDive: {}, preBrake: { dist: Math.log(8), 仰: 30 }, holdLook: 0.6, lookTurnSec: 20 / 24 },
   {
-    名: '雪怪首领',
+    name: '雪怪首领',
     stopDist: 25,
     dive: secAt(pierceTimes.雪怪首领 + chainPierceChoreo.YETI_T_DIVE) - pierceSecs.雪怪首领,
     preDive: { back: 12, height: 1.6 },
@@ -339,7 +339,7 @@ const addLandingSpan = () => {
     [40 / 24, { back: -3, height: 2.6, side: 7.5, lookAhead: 0, low: -0.4, focalLength: 26 }],
   ];
   const Keys = convertKeys(legacyKeys);
-  addSpan({ 名: '降落', 锚: route.G_LAND, Keys: [...Keys, [route.totalLength - route.G_LAND, Keys[Keys.length - 1][1]]], coreStart: route.G_LAND - 70 / 24, coreEnd: route.totalLength });
+  addSpan({ name: '降落', 锚: route.G_LAND, Keys: [...Keys, [route.totalLength - route.G_LAND, Keys[Keys.length - 1][1]]], coreStart: route.G_LAND - 70 / 24, coreEnd: route.totalLength });
 };
 
 // 按时间顺序排：先后决定谁盖谁（镜头.ts 的合成）

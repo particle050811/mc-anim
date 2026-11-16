@@ -26,15 +26,15 @@ export const firstFloor = {
   mainHall: [8, -18, 17, -7] as [number, number, number, number],
 };
 
-export type LampPos = { 种: 'lantern' | 'candle'; 位: V3; lit: boolean };
+export type LampPos = { kind: 'lantern' | 'candle'; 位: V3; lit: boolean };
 
 // markers 是方块底面中心（游戏坐标减 origin）。结构 NBT 里主厅的灯笼全是挂着的；蜡烛 3 根一组，模板 (16,5,8) 那组 lit=false
 const unlitSpots = [[16.5, 4, 8.5]];
 const samePoint = (a: number[], b: number[]) => a.every((v, i) => Math.abs(v - b[i]!) < 1e-6);
 const [x0, y0, x1, y1] = firstFloor.mainHall;
 const inMainHall = (m: number[]) => m[0]! > x0 && m[0]! < x1 && -m[2]! > y0 && -m[2]! < y1;
-const fetchLamps = (blockId: string, kind: LampPos['种']): LampPos[] =>
-  (houseInfo.markers[blockId] ?? []).filter(inMainHall).map((m) => ({ 种: kind, 位: fromGame(m), lit: !unlitSpots.some((n) => samePoint(m, n)) }));
+const fetchLamps = (blockId: string, kind: LampPos['kind']): LampPos[] =>
+  (houseInfo.markers[blockId] ?? []).filter(inMainHall).map((m) => ({ kind: kind, 位: fromGame(m), lit: !unlitSpots.some((n) => samePoint(m, n)) }));
 
 /** 主厅的灯：灯笼 9 盏、蜡烛 3 组（西墙门洞那盏和别的屋子的不算），位置是方块底面中心 */
 export const hallLamps: readonly LampPos[] = [...fetchLamps('minecraft:lantern', 'lantern'), ...fetchLamps('minecraft:candle', 'candle')];
@@ -51,16 +51,16 @@ export const firstFloorLight = {
   candle: 1.0,
   wick: { lantern: 0.3, candle: 0.5 },
   /** 从窗、门缝进来的天光：从上来的是略暖的白，从地上反上来的是木地板的暖色（侧面吃两者的平均，比顶面暗一些） */
-  skyLight: { 天: '#fff4e6', ground: '#e2cca6', 强: 1.8 },
-  ambient: { 色: '#fff0dc', 强: 0.3 },
+  skyLight: { 天: '#fff4e6', ground: '#e2cca6', strength: 1.8 },
+  ambient: { 色: '#fff0dc', strength: 0.3 },
   /** 东窗晨光：隐世之境锁在 2000 刻，原版这时太阳在正东、仰角约 42°（DimensionType.timeOfDay） */
-  morningLight: { 色: '#fff1d6', 强: 3.0, elevationDeg: 42 },
+  morningLight: { 色: '#fff1d6', strength: 3.0, elevationDeg: 42 },
   /** 东窗透进来的天光：窗里面一格放一盏冷白的点光源，屋子东半边亮一些（游戏截图里也是东边亮） */
-  windowLight: { 色: '#e8efff', 强: 2.5, 位: [16, -12.5, 2.5] as V3, 距离: 12, decay: 1.2 },
+  windowLight: { 色: '#e8efff', strength: 2.5, 位: [16, -12.5, 2.5] as V3, 距离: 12, decay: 1.2 },
 };
 
 // 晨光的阴影只要罩住主厅：中心、半边宽（格）
-const dawnLightVolume = { 中: [12.5, -12.5, 2] as V3, 半宽: 10 };
+const dawnLightVolume = { 中: [12.5, -12.5, 2] as V3, halfWidth: 10 };
 
 /** 东窗进来的太阳：要投影，墙挡住、只从窗口落到地上，所以画布没开阴影时这里打开（不开的话整片地板都被照亮） */
 const MorningLight: React.FC = () => {
@@ -69,7 +69,7 @@ const MorningLight: React.FC = () => {
     gl.shadowMap.enabled = true;
     gl.shadowMap.type = THREE.PCFShadowMap;
   }
-  const { 色: color, 强: strength, elevationDeg } = firstFloorLight.morningLight;
+  const { 色: color, strength: strength, elevationDeg } = firstFloorLight.morningLight;
   const light = useMemo(() => {
     const a = (elevationDeg * Math.PI) / 180;
     const sunDir = new THREE.Vector3(Math.cos(a), 0, Math.sin(a)); // 指向太阳：正东（+x）往上
@@ -79,7 +79,7 @@ const MorningLight: React.FC = () => {
     sun.target.position.set(cx, cy, cz);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
-    const r = dawnLightVolume.半宽;
+    const r = dawnLightVolume.halfWidth;
     Object.assign(sun.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 1, far: 80 });
     sun.shadow.bias = -0.0003;
     sun.shadow.normalBias = 0.03;
@@ -102,23 +102,23 @@ export const FirstFloorLighting: React.FC = () => {
   return (
     <>
       {/* 天光的「上」是灯的位置方向（Z 朝上） */}
-      <hemisphereLight args={[skylight.天, skylight.ground, skylight.强]} position={[0, 0, 1]} />
-      <ambientLight color={ambient.色} intensity={ambient.强} />
+      <hemisphereLight args={[skylight.天, skylight.ground, skylight.strength]} position={[0, 0, 1]} />
+      <ambientLight color={ambient.色} intensity={ambient.strength} />
       {/* 照 7-4-3 的室内灯：颜色 #ffb565、distance 9、decay 1.6 */}
       {hallLamps
         .filter((l) => l.lit)
         .map((l, i) => (
           <pointLight
             key={i}
-            position={[l.位[0], l.位[1], l.位[2] + firstFloorLight.wick[l.种]]}
+            position={[l.位[0], l.位[1], l.位[2] + firstFloorLight.wick[l.kind]]}
             color="#ffb565"
-            intensity={firstFloorLight[l.种]}
+            intensity={firstFloorLight[l.kind]}
             distance={9}
             decay={1.6}
           />
         ))}
       <MorningLight />
-      <pointLight position={windowLight.位} color={windowLight.色} intensity={windowLight.强} distance={windowLight.距离} decay={windowLight.decay} />
+      <pointLight position={windowLight.位} color={windowLight.色} intensity={windowLight.strength} distance={windowLight.距离} decay={windowLight.decay} />
     </>
   );
 };

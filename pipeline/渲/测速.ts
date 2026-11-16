@@ -29,16 +29,16 @@ import type { RenderLevel } from '../../engine/段/设置值.ts';
 
 export type BenchResult = {
   remotion: string;
-  浏览器: string;
-  共享内存: boolean;
-  日志级别: LogLevel;
-  段: string;
-  帧: [number, number];
+  browser: string;
+  sharedMemory: boolean;
+  logLevel: LogLevel;
+  segment: string;
+  frame: [number, number];
   打包秒: number;
   开浏览器秒: number;
   读组合秒: number;
-  求解缓存准备: { 新写: number; 秒: number };
-  轮: { 共享内存: boolean; 总秒: number; 首帧秒: number; 出帧秒: number; 收尾秒: number; 每帧中位毫秒: number; 每帧P90毫秒: number; 每帧P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[]; 最多的等待: { 标签: string; 总毫秒: number; 次: number }[]; 明细: string | null; 输出: string | null }[];
+  求解缓存准备: { 新写: number; sec: number };
+  轮: { sharedMemory: boolean; totalSec: number; 首帧秒: number; 出帧秒: number; 收尾秒: number; 每帧中位毫秒: number; 每帧P90毫秒: number; 每帧P99毫秒: number; slowestFrames: { frame: number; ms: number }[]; 最多的等待: { label: string; totalMs: number; count: number }[]; detail: string | null; output: string | null }[];
 };
 
 const browserVersionOf = (exePath: string | undefined) => {
@@ -50,12 +50,12 @@ const browserVersionOf = (exePath: string | undefined) => {
   }
 };
 
-export const bench = async (opts: { 段: string; 帧?: [number, number]; 级别?: RenderLevel; 次?: number; verbose?: boolean; logPath?: string; disableSharedMemory?: boolean; 浏览器?: string; noLogCollect?: boolean; keepOutput?: string; shading?: ShadingConfig }): Promise<BenchResult> => {
-  const level = opts.级别 ?? '视频';
-  const [s] = await selectSegs([opts.段]);
-  if (!s) throw new Error(`没有段 ${opts.段}`);
+export const bench = async (opts: { segment: string; frame?: [number, number]; level?: RenderLevel; count?: number; verbose?: boolean; logPath?: string; disableSharedMemory?: boolean; browser?: string; noLogCollect?: boolean; keepOutput?: string; shading?: ShadingConfig }): Promise<BenchResult> => {
+  const level = opts.level ?? '视频';
+  const [s] = await selectSegs([opts.segment]);
+  if (!s) throw new Error(`没有段 ${opts.segment}`);
   const allSegments = await loadAllSegments();
-  const frameRange: [number, number] = opts.帧 ?? [0, Math.min(99, segOutputWindow(allSegments, s).帧数 - 1)];
+  const frameRange: [number, number] = opts.frame ?? [0, Math.min(99, segOutputWindow(allSegments, s).frameCount - 1)];
   const params = segPictureParams(allSegments, [s], level)[0]!;
   // 打包、开浏览器这几步只有 --verbose 才开 verbose；renderMedia 默认 verbose，日志进明细
   const earlyLogLevel: LogLevel = opts.verbose ? 'verbose' : 'error';
@@ -66,10 +66,10 @@ export const bench = async (opts: { 段: string; 帧?: [number, number]; 级别?
   const remotion = (createRequire(path.join(codeRoot(), 'package.json'))('remotion/package.json') as { version: string }).version;
   try {
     let t = Date.now();
-    const serveUrl = await withSegResourcePack(workRoot(), s.键, () => bundleProject(undefined, undefined, { shading: !!opts.shading }));
+    const serveUrl = await withSegResourcePack(workRoot(), s.key, () => bundleProject(undefined, undefined, { shading: !!opts.shading }));
     const bundleSec = (Date.now() - t) / 1000;
     t = Date.now();
-    const browser = await openBrowser('chrome', { chromiumOptions: { gl: params.gl }, forceDeviceScaleFactor: params.scale, logLevel: earlyLogLevel, browserExecutable: opts.浏览器 ?? (await prepareBrowser()) });
+    const browser = await openBrowser('chrome', { chromiumOptions: { gl: params.gl }, forceDeviceScaleFactor: params.scale, logLevel: earlyLogLevel, browserExecutable: opts.browser ?? (await prepareBrowser()) });
     const openBrowserSec = (Date.now() - t) / 1000;
     collectTerrainUsage(browser);
     const solveCache = collectSolveCache(browser);
@@ -81,9 +81,9 @@ export const bench = async (opts: { 段: string; 帧?: [number, number]; 级别?
       await waitSolveCacheWrites();
       await waitTerrainUsageWrites();
       // 缓存键由页面里的求解决定，先读一次才能知道是否缺失；只有补写时才把这次冷启动归入准备、重新计时，热缓存不多开页面。
-      const solveCachePrep = { 新写: solveCache.新写, 秒: solveCache.新写 ? (Date.now() - t) / 1000 : 0 };
+      const solveCachePrep = { 新写: solveCache.新写, sec: solveCache.新写 ? (Date.now() - t) / 1000 : 0 };
       if (solveCachePrep.新写) {
-        console.error(`求解缓存准备：新写 ${solveCachePrep.新写} 份，${solveCachePrep.秒.toFixed(3)} 秒，不计入测速阶段`);
+        console.error(`求解缓存准备：新写 ${solveCachePrep.新写} 份，${solveCachePrep.sec.toFixed(3)} 秒，不计入测速阶段`);
         t = Date.now();
         compositions = await readCompositions();
         readCompositionsSec = (Date.now() - t) / 1000;
@@ -92,10 +92,10 @@ export const bench = async (opts: { 段: string; 帧?: [number, number]; 级别?
       }
       const composition = findComposition({ compositions }, s, allSegments);
       const rounds: BenchResult['轮'] = [];
-      for (let i = 0; i < (opts.次 ?? 1); i++) {
+      for (let i = 0; i < (opts.count ?? 1); i++) {
         if (opts.keepOutput) fs.mkdirSync(opts.keepOutput, { recursive: true });
         const out = path.join(opts.keepOutput ?? os.tmpdir(), `mc-anim-测速-${process.pid}-${i}.mp4`);
-        const label = `bench:${workName()}/${s.键}:${level}${opts.shading ? `:光影-${opts.shading.名}` : ''}`;
+        const label = `bench:${workName()}/${s.key}:${level}${opts.shading ? `:光影-${opts.shading.name}` : ''}`;
         const queueStartMs=Date.now();
         await passRenderGate(async () => {
           const t0 = Date.now();
@@ -104,7 +104,7 @@ export const bench = async (opts: { 段: string; 帧?: [number, number]; 级别?
           let sharedMemory = false;
           const detail = new DetailCollector(label, frameRange[0]);
           const run = () => renderMedia({
-              serveUrl, composition, outputLocation: out, inputProps: params.inputProps, envVariables: { ...segRenderEnv(s.键, segTerrainNow(s)), ...(opts.shading ? { [shadingEnvName]: opts.shading.值 } : {}) }, puppeteerInstance: browser, chromiumOptions: { gl: params.gl },
+              serveUrl, composition, outputLocation: out, inputProps: params.inputProps, envVariables: { ...segRenderEnv(s.key, segTerrainNow(s)), ...(opts.shading ? { [shadingEnvName]: opts.shading.value } : {}) }, puppeteerInstance: browser, chromiumOptions: { gl: params.gl },
               codec: params.codec, muted: params.muted, crf: params.crf, x264Preset: params.x264Preset,
               encodingMaxRate: params.encodingMaxRate, encodingBufferSize: params.encodingBufferSize, colorSpace: params.colorSpace, pixelFormat: params.pixelFormat,
               imageFormat: params.imageFormat, jpegQuality: params.jpegQuality, scale: params.scale, concurrency: params.concurrency,
@@ -126,30 +126,30 @@ export const bench = async (opts: { 段: string; 帧?: [number, number]; 级别?
             });
           try {
             if (opts.noLogCollect) await run();
-            else await detail.包(run, logStream ? (logText) => void logStream.write(logText + '\n') : undefined);
+            else await detail.pack(run, logStream ? (logText) => void logStream.write(logText + '\n') : undefined);
           } finally {
             if (!opts.keepOutput) fs.rmSync(out, { force: true });
           }
-          await recordMeasuredFrames(s.键, Array.from({ length: frameRange[1] - frameRange[0] + 1 }, (_, k) => frameRange[0] + k));
+          await recordMeasuredFrames(s.key, Array.from({ length: frameRange[1] - frameRange[0] + 1 }, (_, k) => frameRange[0] + k));
           const end = Date.now();
-          const { 文件: file, 明细: d } = await detail.writeOut([gateWait], { remotion, 浏览器: browserVersionOf(opts.浏览器), 日志级别: renderLogLevel, 共享内存: String(sharedMemory), roundNo: String(i + 1) });
+          const { file: file, detail: d } = await detail.writeOut([gateWait], { remotion, browser: browserVersionOf(opts.browser), logLevel: renderLogLevel, sharedMemory: String(sharedMemory), roundNo: String(i + 1) });
           rounds.push({
-            共享内存: sharedMemory,
-            总秒: (end - t0) / 1000,
+            sharedMemory: sharedMemory,
+            totalSec: (end - t0) / 1000,
             首帧秒: (firstFrameMs - t0) / 1000,
             出帧秒: (lastFrameAt - firstFrameMs) / 1000,
             收尾秒: (end - lastFrameAt) / 1000,
-            每帧中位毫秒: d.小结.中位毫秒,
-            每帧P90毫秒: d.小结.P90毫秒,
-            每帧P99毫秒: d.小结.P99毫秒,
-            最慢帧: d.小结.最慢帧,
-            最多的等待: d.等待.slice(0, 6).map((w) => ({ 标签: w.标签, 总毫秒: w.总毫秒, 次: w.次 })),
-            明细: file,
-            输出: opts.keepOutput ? out : null,
+            每帧中位毫秒: d.summary.medianMs,
+            每帧P90毫秒: d.summary.p90Ms,
+            每帧P99毫秒: d.summary.p99Ms,
+            slowestFrames: d.summary.slowestFrames,
+            最多的等待: d.waiting.slice(0, 6).map((w) => ({ label: w.label, totalMs: w.totalMs, count: w.count })),
+            detail: file,
+            output: opts.keepOutput ? out : null,
           });
-        }, (m) => console.error(`== 资源闸：${m}`),{}, {种:'bench',作品:workName(),段:s.键,帧数:frameRange[1]-frameRange[0]+1,帧:`${frameRange[0]}-${frameRange[1]}`,级别: level,用途:process.env.ANIM_PURPOSE??'实验'});
+        }, (m) => console.error(`== 资源闸：${m}`),{}, {kind:'bench',work:workName(),segment:s.key,frameCount:frameRange[1]-frameRange[0]+1,frame:`${frameRange[0]}-${frameRange[1]}`,level: level,purpose:process.env.ANIM_PURPOSE??'实验'});
       }
-      return { remotion, 浏览器: browserVersionOf(opts.浏览器), 共享内存: rounds.every((r) => r.共享内存), 日志级别: renderLogLevel, 段: `${workName()}/${s.键}`, 帧: frameRange, 打包秒: bundleSec, 开浏览器秒: openBrowserSec, 读组合秒: readCompositionsSec, 求解缓存准备: solveCachePrep, 轮: rounds };
+      return { remotion, browser: browserVersionOf(opts.browser), sharedMemory: rounds.every((r) => r.sharedMemory), logLevel: renderLogLevel, segment: `${workName()}/${s.key}`, frame: frameRange, 打包秒: bundleSec, 开浏览器秒: openBrowserSec, 读组合秒: readCompositionsSec, 求解缓存准备: solveCachePrep, 轮: rounds };
     } finally {
       await waitSolveCacheWrites();
       await waitTerrainUsageWrites();

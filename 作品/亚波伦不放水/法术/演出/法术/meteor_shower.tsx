@@ -12,13 +12,13 @@ import meta, { meteorShots } from './meteor_shower.元.ts';
 
 const fogColor = [hexColor(0x1a090d), hexColor(0x240d12)];
 
-const MeteorShower: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const MeteorShower: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const projectiles = meteorShots(target, seed);
   return (
     <>
-      <FogCloud spawns={projectiles.flatMap((projectile, i) => fogColor.map((color, j) => ({ 刻: projectile.launchTick, 位: projectile.spawnPos, 色: color, 尺寸: 3, 速: 1, 种子: seed * 103 + i * 2 + j })))} 刻={sec * 20} />
-      <FireballGroup projectiles={projectiles} 秒={sec} scale={3} 种子={seed} />
-      <VanillaParticles spawns={projectiles.map((projectile, i) => vanillaExplosion(trajectoryAt(projectile.trajectory, projectile.flightTick), projectile.launchTick + projectile.flightTick, seed * 17 + i))} 秒={sec} />
+      <FogCloud spawns={projectiles.flatMap((projectile, i) => fogColor.map((color, j) => ({ 刻: projectile.launchTick, 位: projectile.spawnPos, 色: color, 尺寸: 3, 速: 1, seed: seed * 103 + i * 2 + j })))} 刻={sec * 20} />
+      <FireballGroup projectiles={projectiles} sec={sec} scale={3} seed={seed} />
+      <VanillaParticles spawns={projectiles.map((projectile, i) => vanillaExplosion(trajectoryAt(projectile.trajectory, projectile.flightTick), projectile.launchTick + projectile.flightTick, seed * 17 + i))} sec={sec} />
     </>
   );
 };

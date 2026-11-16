@@ -16,17 +16,17 @@ import type { CheckReport, CheckContext } from '../源码/上下文.ts';
 
 type Box = { from: number[]; to: number[] };
 type FlattenArea = { x0: number; z0: number; nx: number; nz: number };
-type Change = { 名: string; 包: string; digBoxes: Box[]; flattenAreas: FlattenArea[] };
+type Change = { name: string; pack: string; digBoxes: Box[]; flattenAreas: FlattenArea[] };
 
 const registryFile = (c: CheckContext) => c.workPath('地点/地形改动.ts');
 
 /** 打包执行登记文件：asset: 换成数据根里的 JSON；缺字节返回 null（错误照抛） */
 const loadChanges = async (c: CheckContext, dataRoot: string): Promise<Change[] | null> => {
-  const assetLock = { ...readAssetLock(path.join(c.根, 'assets', '资产锁')), ...readAssetLock(workAssetLockPath(c.absPath(c.workDir))) };
+  const assetLock = { ...readAssetLock(path.join(c.root, 'assets', '资产锁')), ...readAssetLock(workAssetLockPath(c.absPath(c.workDir))) };
   let missingPath = '';
   const out = await build({
     entryPoints: [c.absPath(registryFile(c))],
-    absWorkingDir: c.根,
+    absWorkingDir: c.root,
     bundle: true,
     write: false,
     platform: 'node',
@@ -35,7 +35,7 @@ const loadChanges = async (c: CheckContext, dataRoot: string): Promise<Change[] 
     loader: { ...nonCodeLoaders, '.json': 'json' },
     logLevel: 'silent',
     plugins: [
-      esbuildAliasPlugin(c.根),
+      esbuildAliasPlugin(c.root),
       {
         name: '真资产',
         setup(b) {
@@ -44,7 +44,7 @@ const loadChanges = async (c: CheckContext, dataRoot: string): Promise<Change[] 
             const l = assetLock[a.path], f = l && bytesPath(l, dataRoot);
             if (!l) return { errors: [{ text: `资产锁里没有 asset:${a.path}` }] };
             // 贴图、音频同 宽松资产插件 给个字符串：挖框、整平用不到它们，真要解码会在执行时报错，不会悄悄算错
-            if (l.后缀 !== '.json') return { contents: `export default ${JSON.stringify(`asset:${a.path}`)};`, loader: 'js' };
+            if (l.suffix !== '.json') return { contents: `export default ${JSON.stringify(`asset:${a.path}`)};`, loader: 'js' };
             if (!fs.existsSync(f!)) { missingPath ||= a.path; return { contents: 'export default null;', loader: 'js' }; }
             return { contents: fs.readFileSync(f!, 'utf8'), loader: 'json' };
           });
@@ -76,34 +76,34 @@ export const checkTerrainChanges = async (c: CheckContext, report: CheckReport) 
   const dataRoot = c.dataRoot ?? configDataRoot();
   const changes = await loadChanges(c, dataRoot);
   if (!changes) {
-    report.跳过.push(`地形改动：数据根 ${dataRoot} 缺资产字节（anim assets pull），挖框、整平没核保真范围`);
+    report.skipped.push(`地形改动：数据根 ${dataRoot} 缺资产字节（anim assets pull），挖框、整平没核保真范围`);
     return;
   }
   const worlds = declarations(c);
-  const versionTable = c.exists('assets/地形版本.json') ? (JSON.parse(c.读('assets/地形版本.json')) as { 包: Record<string, { 版本: string }> }).包 : {};
+  const versionTable = c.exists('assets/地形版本.json') ? (JSON.parse(c.读('assets/地形版本.json')) as { pack: Record<string, { version: string }> }).pack : {};
   let count = 0;
   for (const r of changes) {
-    const w = worlds.find((x) => x.包.some((b) => b.名 === r.包));
-    if (!w) { report.错(`地形改动「${r.名}」用的包 ${r.包} 没有世界声明（sourcing/worlds/），核不了保真范围`, registryFile(c)); continue; }
-    const keepBoxes = w.visible.保真.map((x) => x.盒);
+    const w = worlds.find((x) => x.pack.some((b) => b.name === r.pack));
+    if (!w) { report.错(`地形改动「${r.name}」用的包 ${r.pack} 没有世界声明（sourcing/worlds/），核不了保真范围`, registryFile(c)); continue; }
+    const keepBoxes = w.visible.faithful.map((x) => x.boxes);
     const boxes: [string, number, number, number, number][] = [
       ...r.digBoxes.map((b): [string, number, number, number, number] => [`挖框 ${JSON.stringify(b.from)}～${JSON.stringify(b.to)}`, Math.min(b.from[0]!, b.to[0]!), Math.min(b.from[2]!, b.to[2]!), Math.max(b.from[0]!, b.to[0]!), Math.max(b.from[2]!, b.to[2]!)]),
       ...r.flattenAreas.map((f): [string, number, number, number, number] => [`整平罩 x ${f.x0}、z ${f.z0}、${f.nx}×${f.nz}`, f.x0, f.z0, f.x0 + f.nx - 1, f.z0 + f.nz - 1]),
     ];
     const outOfBounds = boxes.filter(([, x0, z0, x1, z1]) => !keepBoxes.some((b) => isInside(x0, z0, x1, z1, b)));
     count += boxes.length;
-    if (outOfBounds.length) report.错(`地形改动「${r.名}」有 ${outOfBounds.length} 处不在 sourcing/worlds/${w.名称}.toml 的 [[烘焙.保真]] 盒里（可见变换会换掉那里埋着的格，挖开就露出来）：${outOfBounds.slice(0, 3).map((x) => x[0]).join('；')}。加盒以后要回存档重烘`, registryFile(c));
+    if (outOfBounds.length) report.错(`地形改动「${r.name}」有 ${outOfBounds.length} 处不在 sourcing/worlds/${w.displayName}.toml 的 [[烘焙.保真]] 盒里（可见变换会换掉那里埋着的格，挖开就露出来）：${outOfBounds.slice(0, 3).map((x) => x[0]).join('；')}。加盒以后要回存档重烘`, registryFile(c));
   }
   // 登记的包版本做过可见变换的，记的设置要盖住声明
-  const packs = new Set(changes.map((r) => r.包));
+  const packs = new Set(changes.map((r) => r.pack));
   for (const packName of packs) {
-    const w = worlds.find((x) => x.包.some((b) => b.名 === packName)), version = versionTable[packName]?.版本;
+    const w = worlds.find((x) => x.pack.some((b) => b.name === packName)), version = versionTable[packName]?.version;
     if (!w || !version) continue;
     const f = path.join(dataRoot, 'terrain', packName, version, '包.json');
-    if (!fs.existsSync(f)) { report.跳过.push(`地形改动：${packName} 版本 ${version} 不在数据根，没核包记的可见变换`); continue; }
-    const record = (JSON.parse(fs.readFileSync(f, 'utf8')) as { 可见?: VisibleRecord }).可见;
+    if (!fs.existsSync(f)) { report.skipped.push(`地形改动：${packName} 版本 ${version} 不在数据根，没核包记的可见变换`); continue; }
+    const record = (JSON.parse(fs.readFileSync(f, 'utf8')) as { visible?: VisibleRecord }).visible;
     if (!record) { report.infoLines.push(`${packName}（${version}）没做可见变换`); continue; }
-    if (!recordCovers(record, toRecord({ fillBlock: w.visible.fillBlock, 保真: w.visible.保真.map((x) => x.盒) }))) report.错(`${packName} 登记的版本 ${version} 做可见变换时的设置没盖住 sourcing/worlds/${w.名称}.toml 现在的（填充 ${record.填充}、保真 ${record.保真.length} 个盒）：声明改过，要回存档重烘或 anim world transcode`, 'assets/地形版本.json');
+    if (!recordCovers(record, toRecord({ fillBlock: w.visible.fillBlock, faithful: w.visible.faithful.map((x) => x.boxes) }))) report.错(`${packName} 登记的版本 ${version} 做可见变换时的设置没盖住 sourcing/worlds/${w.displayName}.toml 现在的（填充 ${record.fill}、保真 ${record.faithful.length} 个盒）：声明改过，要回存档重烘或 anim world transcode`, 'assets/地形版本.json');
   }
   report.infoLines.push(`地形改动 ${count} 处都核了保真范围`);
 };

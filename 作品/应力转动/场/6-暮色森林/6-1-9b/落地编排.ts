@@ -101,7 +101,7 @@ const flight = (touchTime: number, stand: V3, seat: V3, gap: V3): Flight => {
   let hi = 60;
   for (let k = 0; k < 60; k++) {
     const mid = (lo + hi) / 2;
-    if (pathDist(mid, broomRelease.速度) > arc[ARC_N]) hi = mid;
+    if (pathDist(mid, broomRelease.speed) > arc[ARC_N]) hi = mid;
     else lo = mid;
   }
   return { at, arc, T: (lo + hi) / 2, t0: touchTime, touch, skidDir };
@@ -118,7 +118,7 @@ const offsetAt = (fl: Flight, g: number): V3 => {
     const left = skidLength * (1 - k) * (1 - k);
     return [-fl.skidDir[0] * left, -fl.skidDir[1] * left, 0];
   }
-  const s = pathDist(Math.max(0, fl.T + c), broomRelease.速度);
+  const s = pathDist(Math.max(0, fl.T + c), broomRelease.speed);
   let k = 0;
   while (k < ARC_N - 1 && fl.arc[k + 1] < s) k++;
   const u = (k + Math.min(1, Math.max(0, (s - fl.arc[k]) / (fl.arc[k + 1] - fl.arc[k])))) / ARC_N;

@@ -3,38 +3,38 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/block.sculk.step.3": {
-      "时长": 0.977104,
-      "峰值": -12.6,
-      "响度": -38,
+      "duration": 0.977104,
+      "peakDb": -12.6,
+      "loudness": -38,
       "sha": "ed2e94ae19c9"
     },
     "音效/block.sculk.step.4": {
-      "时长": 1.242313,
-      "峰值": -13.1,
-      "响度": -39,
+      "duration": 1.242313,
+      "peakDb": -13.1,
+      "loudness": -39,
       "sha": "5ed1e899eb2d"
     },
     "音效/block.sculk.step.5": {
-      "时长": 1.390292,
-      "峰值": -18.1,
-      "响度": -38.3,
+      "duration": 1.390292,
+      "peakDb": -18.1,
+      "loudness": -38.3,
       "sha": "724cd274985c"
     },
     "音效/entity.warden.hurt.2": {
-      "时长": 2.534958,
-      "峰值": -1.3,
-      "响度": -17.4,
+      "duration": 2.534958,
+      "peakDb": -1.3,
+      "loudness": -17.4,
       "sha": "3626ff733503"
     },
     "音效/entity.warden.tendril_clicks.6": {
-      "时长": 1.024104,
-      "峰值": -2,
-      "响度": -24.9,
+      "duration": 1.024104,
+      "peakDb": -2,
+      "loudness": -24.9,
       "sha": "f568609506ab"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

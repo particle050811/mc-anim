@@ -15,7 +15,7 @@ let glyphLibrary: Record<string, Glyph> | undefined;
 export const pixelFontAsset = '字体/像素字';
 /** 像素字点阵（资产 字体/像素字）；测试可以先 设字库 */
 export const setGlyphLibrary = (x: Record<string, Glyph>) => (glyphLibrary = x);
-const getGlyphLibrary = () => (glyphLibrary ??= JSON.parse(fs.readFileSync(resolveAsset(pixelFontAsset, readAssetLock()).文件, 'utf8')) as Record<string, Glyph>);
+const getGlyphLibrary = () => (glyphLibrary ??= JSON.parse(fs.readFileSync(resolveAsset(pixelFontAsset, readAssetLock()).file, 'utf8')) as Record<string, Glyph>);
 const getGlyph = (ch: string): Glyph => {
   const g = getGlyphLibrary()[ch];
   if (!g) throw new Error(`像素字（资产 字体/像素字）里没有「${ch}」：字幕用到的字要先取进点阵`);
@@ -51,18 +51,18 @@ export const subtitleBox = (text: string, subtitlePos: SubtitlePosition, picture
 type Rgba = [number, number, number, number];
 class Canvas {
   readonly pixels: Float64Array; // 非预乘 RGBA，0～1
-  readonly 宽: number;
-  readonly 高: number;
+  readonly width: number;
+  readonly height: number;
   constructor(width: number, height: number) {
-    this.宽 = width;
-    this.高 = height;
+    this.width = width;
+    this.height = height;
     this.pixels = new Float64Array(width * height * 4);
   }
   fillBox(x: number, y: number, w: number, h: number, [r, g, b, a]: Rgba) {
-    const x0 = Math.max(0, x), y0 = Math.max(0, y), x1 = Math.min(this.宽, x + w), y1 = Math.min(this.高, y + h);
+    const x0 = Math.max(0, x), y0 = Math.max(0, y), x1 = Math.min(this.width, x + w), y1 = Math.min(this.height, y + h);
     for (let yy = y0; yy < y1; yy++) {
       for (let xx = x0; xx < x1; xx++) {
-        const i = (yy * this.宽 + xx) * 4;
+        const i = (yy * this.width + xx) * 4;
         const da = this.pixels[i + 3]!;
         const oa = a + da * (1 - a);
         const mix = (src: number, dst: number) => (oa === 0 ? 0 : (src * a + dst * da * (1 - a)) / oa);
@@ -74,7 +74,7 @@ class Canvas {
     }
   }
   rgba() {
-    const out = Buffer.alloc(this.宽 * this.高 * 4);
+    const out = Buffer.alloc(this.width * this.height * 4);
     for (let i = 0; i < out.length; i++) out[i] = Math.round(this.pixels[i]! * 255);
     return out;
   }
@@ -185,7 +185,7 @@ export const splitClauses = (text: string) => {
   return out;
 };
 
-export type SubtitleCard = { 字: string; 原: string; 分句: { 音节: number; 标点断: boolean }[] };
+export type SubtitleCard = { char: string; 原: string; 分句: { 音节: number; 标点断: boolean }[] };
 
 export const breakScreens = (sentenceText: string, aspectRatio = 16 / 9): SubtitleCard[] => {
   const maxWidth = maxScreenWidth(aspectRatio);
@@ -245,7 +245,7 @@ export const breakScreens = (sentenceText: string, aspectRatio = 16 / 9): Subtit
   const screens: SubtitleCard[] = [];
   for (let j = n; j > 0; j = from[j]!) {
     const rawText = cs.slice(from[j]!, j).join('');
-    screens.unshift({ 字: screenText(from[j]!, j), 原: rawText, 分句: splitClauses(rawText).map((c) => ({ 音节: syllableCount(c), 标点断: isPunctBreak(c) })) });
+    screens.unshift({ char: screenText(from[j]!, j), 原: rawText, 分句: splitClauses(rawText).map((c) => ({ 音节: syllableCount(c), 标点断: isPunctBreak(c) })) });
   }
   return screens;
 };

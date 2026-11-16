@@ -42,7 +42,7 @@ const crackMaterial = (level: number) => {
 };
 
 /** 级：0～9（原版 destroyProgress × 10 取整）；格：被挖方块的中心（剖面坐标） */
-export const BlockCracks: React.FC<{ 格: readonly [number, number, number]; 级: number }> = ({ 格: cellPos, 级: level }) => {
+export const BlockCracks: React.FC<{ cell: readonly [number, number, number]; 级: number }> = ({ cell: cellPos, 级: level }) => {
   boxGeometry ??= new THREE.BoxGeometry(1.002, 1.002, 1.002);
   const levelInt = Math.max(0, Math.min(9, Math.floor(level)));
   return <mesh geometry={boxGeometry} material={crackMaterial(levelInt)} position={[cellPos[0], cellPos[1], cellPos[2]]} />;

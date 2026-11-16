@@ -49,13 +49,13 @@ export const lineTimes = (() => {
   return { naga: nagaLine, nagaLineEnd: nagaLineEnd, jiuhu: jiuhuLine, jiuhuLineEnd, summon: summonTime, speedrun: speedrunLine, seated: seatedTime };
 })();
 // 帧 写的是段内秒（mouthAt 每秒给 1）
-export const speedrunLine = { id: '6-1-3-李樱-看我速通暮色', 帧: lineTimes.speedrun };
+export const speedrunLine = { id: '6-1-3-李樱-看我速通暮色', frame: lineTimes.speedrun };
 // 娜迦那句有没有说进本段（句子短，可能在 6-1-2 里就说完了）
 export const nagaLineCarriesOver = lineTimes.nagaLineEnd > 0;
 // 台词轨（声音.tsx）和口型（起飞.tsx）共用；九胡那句开口在本段之前（负的），只放说进来的半截
 export const lineCues = [
-  ...(nagaLineCarriesOver ? [{ id: '6-1-2-李樱-不值一提', 帧: lineTimes.naga }] : []),
-  { id: '6-1-3-九胡-等等我', 帧: lineTimes.jiuhu },
+  ...(nagaLineCarriesOver ? [{ id: '6-1-2-李樱-不值一提', frame: lineTimes.naga }] : []),
+  { id: '6-1-3-九胡-等等我', frame: lineTimes.jiuhu },
   speedrunLine,
 ];
 const summonTime = lineTimes.summon;
@@ -94,7 +94,7 @@ export const courtyard = twilightLandmark('娜迦庭院');
 // 平飞高度取起飞方位前方 820 米处（末帧前后）的巡航高；取样点要跟着起飞方位转，否则末帧比一镜到底的起点低 17 米接不上
 const levelFlightZ = (() => {
   const point = courtyard.toWorld([820 * forwardXY[0], 820 * forwardXY[1], 0]);
-  return cruiseHeight(point[0], point[1]) - courtyard.原点[2];
+  return cruiseHeight(point[0], point[1]) - courtyard.origin[2];
 })();
 // 起飞后几秒放平：在 18/24～46/24 秒里解出正好爬到巡航高度的那一刻（真值，用户 11-16 定不再挑到 1/24 秒的格上）。
 // 末帧的扫帚位置跟着它挪，一镜到底整条航线跟着重解；穿刺对配乐的位置由一镜到底各首领放慢的 `起` 拉回原处（6-1-5、6-1-8、6-1-8b 编排）

@@ -52,7 +52,7 @@ type TerrainPack = {
 const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
   loadOnce(dir, async () => {
     const info = await fetchJson<PackageInfo>(`${dir}/包.json`, '先烘焙：见 工具/导入/烘焙.ts');
-    if (info.版本 !== formatVersion) throw new Error(`地形包是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：anim assets pull，或 anim world transcode`);
+    if (info.version !== formatVersion) throw new Error(`地形包是格式 ${info.version}，这版代码只读格式 ${formatVersion}：anim assets pull，或 anim world transcode`);
     const url = absoluteUrl(`${dir}/${modelFileName}`), res = await fetch(url);
     if (!res.ok) throw new Error(`取地形模型 ${url}：${res.status}，anim assets pull`);
     const bytes = new Uint8Array(await res.arrayBuffer());
@@ -61,8 +61,8 @@ const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
     const coarseHeights = decodeCoarseHeight(info);
     checkFrozenCoarse(packName, coarseHeights);
     let maxTop = -Infinity;
-    for (const height of coarseHeights.高) if (height !== -32768) maxTop = Math.max(maxTop, height);
-    return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, variesByPos: info.群系.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
+    for (const height of coarseHeights.height) if (height !== -32768) maxTop = Math.max(maxTop, height);
+    return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
   });
 
 const loadTileIndex = (pack: TerrainPack, fileName: string) => {
@@ -130,19 +130,19 @@ const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: nu
 type ReadyVoxels = { voxels: VoxelGrid; lastRound: number };
 
 export type ImportedTerrain = {
-  键: string; // 体素世界的缓存键（带版本，换了版本不会接着用旧版建的网格）；同一个包要分开缓存的（挖法、补水不同）在后面接后缀
-  来源: VoxelSource;
+  key: string; // 体素世界的缓存键（带版本，换了版本不会接着用旧版建的网格）；同一个包要分开缓存的（挖法、补水不同）在后面接后缀
+  source: VoxelSource;
   heightRange: [number, number]; // 场景 z 的范围（维度下界 ～ 最高的方块顶），给 体素世界 的 高度
   位置: (gamePos: number[]) => V3; // 游戏坐标（连续）→ 场景坐标（摆地标网格：网格放在 位置(origin)）
-  原点: [number, number, number]; // 包.json 的原点 [ox, oy, oz]（游戏坐标），换算见 区段包.ts 文件头
-  粗: CoarseHeightMap; // 粗高度图（16 米一格，−32768 = 这一格没数据，即导入范围外），engine/voxel/主世界地形.ts 拿它认导入范围
+  origin: [number, number, number]; // 包.json 的原点 [ox, oy, oz]（游戏坐标），换算见 区段包.ts 文件头
+  coarse: CoarseHeightMap; // 粗高度图（16 米一格，−32768 = 这一格没数据，即导入范围外），engine/voxel/主世界地形.ts 拿它认导入范围
 };
 
 const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[]): ImportedTerrain => {
-  const [ox, oy, oz] = pack.info.原点;
+  const [ox, oy, oz] = pack.info.origin;
   // 游戏方块范围（from、to 都含）→ 场景盒子 [x0, y0, z0, x1, y1, z1]
   const toSceneBox = (m: { from: number[]; to: number[] }) => [m.from[0] - ox, oz - 1 - m.to[2], m.from[1] - oy, m.to[0] + 1 - ox, oz - m.from[2], m.to[1] + 1 - oy];
-  const cutBoxes: CutBox[] = cutouts.map((m) => ({ 盒: toSceneBox(m), 留: m.留 ? globRegex(m.留) : null }));
+  const cutBoxes: CutBox[] = cutouts.map((m) => ({ boxes: toSceneBox(m), 留: m.留 ? globRegex(m.留) : null }));
   // `选区段` 拿 `采样` 的 z 当这一带的地物顶。没数据的地方给 0 而不是 −Infinity：`选区段` 只在区段中心取一次，粗级大区段中心没数据、角上有数据时，按无限远算就永远不细分
   const sample: TerrainSampler = (x, y, out) => {
     const height = coarseHeightAt(pack.coarseHeights, x, y);
@@ -151,13 +151,13 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   };
   const ctx: SectionContext = { info: pack.info, tables: pack.tables, variesByPos: pack.variesByPos, cutBoxes, flattenAreas };
   // 工人那边只要换体素块用的几项，粗高度图不发
-  const workerCtx = registerSource({ 原点: pack.info.原点, 状态: pack.info.状态, 群系: pack.info.群系 }, cutBoxes, flattenAreas);
+  const workerCtx = registerSource({ origin: pack.info.origin, state: pack.info.state, biome: pack.info.biome }, cutBoxes, flattenAreas);
   const ready = new Map<string, ReadyVoxels>();
   // 替下一帧先取、还没记进地形用量的区段：哪一帧真要到了才记，没用上的不记（用量只记画面真用到的）
   const unrecorded = new Set<string>();
   const source: VoxelSource = {
     采样: sample,
-    区段: (section) => {
+    sections: (section) => {
       if (!hasSection(pack.coarseHeights, section)) return null;
       const k = sectionKey(section);
       const done = ready.get(k);
@@ -212,12 +212,12 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
     },
   };
   return {
-    键: `导入:${pack.dir}`,
-    来源: source,
-    heightRange: [dimensionMinY[pack.info.维度] - oy, pack.maxTop],
+    key: `导入:${pack.dir}`,
+    source: source,
+    heightRange: [dimensionMinY[pack.info.dimension] - oy, pack.maxTop],
     位置: (g) => [g[0] - ox, oz - g[2], g[1] - oy],
-    原点: pack.info.原点,
-    粗: pack.coarseHeights,
+    origin: pack.info.origin,
+    coarse: pack.coarseHeights,
   };
 };
 

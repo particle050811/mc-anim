@@ -73,7 +73,7 @@ const tallPlants = new Set(['minecraft:tall_grass', 'minecraft:large_fern', 'min
 /** 炸之前：门口小木屋（补了南墙）和四周的平地。门、箱子在游戏里是方块（箱子是方块实体），这里都当方块放进去参与爆炸（这一场两样都炸没了，见 坑爆炸；方块拼搭 画不了箱子，种子换了要另画） */
 export const preBlastBlocks = (): PlacedBlock[] => {
   const out: PlacedBlock[] = [];
-  const placeBlock = (blockState: string, i: number, j: number, k: number) => out.push({ 状态: blockState, 位: [i, j, k] });
+  const placeBlock = (blockState: string, i: number, j: number, k: number) => out.push({ state: blockState, 位: [i, j, k] });
   const { westWall: W, eastWall: E, backWall: N } = cabin;
   const S = southWall;
   for (let i: number = flatArea.west; i <= flatArea.east; i++)
@@ -162,9 +162,9 @@ const dropItemOf = (blockState: string): string | null => {
   return n;
 };
 
-export type Explosion = { 心: readonly [number, number, number]; power: number; 种子: number };
+export type Explosion = { 心: readonly [number, number, number]; power: number; seed: number };
 /** 一堆掉落物：格 = 掉出来的那格；偏 = 落地后离那一列中心多远 [x, y]（Block.popResource 出生点 ±0.25 格）；浮动偏 = ItemEntity.bobOffs（上下浮、转圈的相位） */
-export type Drop = { item: string; itemCount: number; 格: readonly [number, number, number]; offset: readonly [number, number]; floatOffset: number };
+export type Drop = { item: string; itemCount: number; cell: readonly [number, number, number]; offset: readonly [number, number]; floatOffset: number };
 export type BlastResult = { remainingBlocks: PlacedBlock[]; destroyed: Set<string>; drops: Drop[] };
 
 const posKey = (i: number, j: number, k: number) => `${i},${j},${k}`;
@@ -172,7 +172,7 @@ const posKey = (i: number, j: number, k: number) => `${i},${j},${k}`;
 const cellAt = (x: number, y: number, z: number) => [Math.floor(x + 0.5), Math.floor(y), Math.floor(z)] as const;
 
 /** 炸：照 Explosion.explode 射线、照 finalizeExplosion 掉落。随机数的取用顺序同游戏（射线 16³ 表面依次各取一次，掉落每格一次） */
-export const explode = (blocks: readonly PlacedBlock[], { 心: center, power, 种子: seed }: Explosion): BlastResult => {
+export const explode = (blocks: readonly PlacedBlock[], { 心: center, power, seed: seed }: Explosion): BlastResult => {
   const blockMap = new Map(blocks.map((b) => [posKey(...b.位), b]));
   const r = new JavaRandom(seed);
   const destroyed = new Set<string>();
@@ -190,7 +190,7 @@ export const explode = (blocks: readonly PlacedBlock[], { 心: center, power, �
           const g = cellAt(x, y, z);
           const k = posKey(...g);
           const cell = blockMap.get(k);
-          if (cell) f -= (blastResistance(cell.状态) + 0.3) * 0.3; // 已经算进要炸的格也照样挡（方块到 finalizeExplosion 才一起拿掉）
+          if (cell) f -= (blastResistance(cell.state) + 0.3) * 0.3; // 已经算进要炸的格也照样挡（方块到 finalizeExplosion 才一起拿掉）
           if (f > 0 && cell && !destroyed.has(k)) {
             destroyed.add(k);
             order.push(k);
@@ -203,23 +203,23 @@ export const explode = (blocks: readonly PlacedBlock[], { 心: center, power, �
   const mergedDrops = new Map<string, Drop>();
   for (const k of order) {
     const b = blockMap.get(k)!;
-    const drop = dropItemOf(b.状态);
+    const drop = dropItemOf(b.state);
     if (!drop || r.nextFloat() > 1 / power) continue;
     const existing = mergedDrops.get(drop);
     if (existing) existing.itemCount++;
     else {
-      const d: Drop = { item: drop, itemCount: 1, 格: b.位, offset: [r.nextFloat() * 0.5 - 0.25, r.nextFloat() * 0.5 - 0.25], floatOffset: r.nextFloat() * Math.PI * 2 };
+      const d: Drop = { item: drop, itemCount: 1, cell: b.位, offset: [r.nextFloat() * 0.5 - 0.25, r.nextFloat() * 0.5 - 0.25], floatOffset: r.nextFloat() * Math.PI * 2 };
       mergedDrops.set(drop, d);
       drops.push(d);
     }
   }
   const unsupported = (b: PlacedBlock) => {
-    const n = baseName(b.状态);
+    const n = baseName(b.state);
     const [i, j, k] = b.位;
     if (n === 'minecraft:wall_torch') return destroyed.has(posKey(i, j + 1, k)); // 贴着北边那格墙
-    if (n === 'minecraft:oak_door') return b.状态.includes('half=upper') ? destroyed.has(posKey(i, j, k - 1)) || destroyed.has(posKey(i, j, k - 2)) : destroyed.has(posKey(i, j, k - 1)) || destroyed.has(posKey(i, j, k + 1));
+    if (n === 'minecraft:oak_door') return b.state.includes('half=upper') ? destroyed.has(posKey(i, j, k - 1)) || destroyed.has(posKey(i, j, k - 2)) : destroyed.has(posKey(i, j, k - 1)) || destroyed.has(posKey(i, j, k + 1));
     if (n.startsWith('minecraft:') && (tallPlants.has(n) || ['minecraft:grass', 'minecraft:fern', 'minecraft:poppy', 'minecraft:dandelion'].includes(n)))
-      return destroyed.has(posKey(i, j, k - 1)) || (b.状态.includes('half=upper') && destroyed.has(posKey(i, j, k - 2)));
+      return destroyed.has(posKey(i, j, k - 1)) || (b.state.includes('half=upper') && destroyed.has(posKey(i, j, k - 2)));
     return false;
   };
   const remainingBlocks = blocks.filter((b) => !destroyed.has(posKey(...b.位)) && !unsupported(b));
@@ -232,7 +232,7 @@ export const landHeight = (remainingBlocks: readonly PlacedBlock[], i: number, j
   for (const b of remainingBlocks) {
     const [bi, bj, bk] = b.位;
     if (bi !== i || bj !== j || bk + 1 > fromZ) continue;
-    if (blastResistance(b.状态) === 0) continue; // 花草、火把不托东西
+    if (blastResistance(b.state) === 0) continue; // 花草、火把不托东西
     maxTop = Math.max(maxTop, bk + 1);
   }
   return maxTop;
@@ -242,7 +242,7 @@ export const landHeight = (remainingBlocks: readonly PlacedBlock[], i: number, j
  *  南墙西半截（i 0～3）连西南角那根原木炸穿，门炸没；后墙炸开的两格（2,2,0）、（1,2,2）都在第 8 句补过的那块（i 1～2、k 0～2）里；
  *  屋里东边的工作台、熔炉、木桶、东墙都留着；外面看屋顶完好（天花板那层炸了几格，从南边看不见）；地板炸开一层，掉落物浮在这个浅坑里。
  *  门不掉（种子挑的）。Agent 暂定 */
-export const pitExplosion: Explosion = { 心: [0.7, 0.5, 0], power: 3, 种子: 91 };
+export const pitExplosion: Explosion = { 心: [0.7, 0.5, 0], power: 3, seed: 91 };
 
 let pitCache: BlastResult | undefined;
 /** 炸完的屋子和地（掉落物照原版算） */
@@ -251,7 +251,7 @@ export const crater = (): BlastResult => (pitCache ??= explode(preBlastBlocks(),
 // ---------- 掉落物落在哪、被谁捡走 ----------
 /** 掉落物实体的位置（脚底那点，格）：生成在那一格中心偏一点（Block.popResource 的 ±0.25），落到下面第一个实心方块顶上 */
 export const dropPos = (remainingBlocks: readonly PlacedBlock[], d: Drop): [number, number, number] => {
-  const [i, j, k] = d.格;
+  const [i, j, k] = d.cell;
   return [i + d.offset[0], j + 0.5 + d.offset[1], landHeight(remainingBlocks, i, j, k + 1)];
 };
 
@@ -283,7 +283,7 @@ export const chestSeed = 1450;
  *  再照 ItemEntity.tick 走：每刻先 −0.04、移动，在地上横向乘 0.6 × 0.98、空中乘 0.98，竖直乘 0.98，落地竖直速度归零。
  *  碰撞只看物品中心那一列：落到那一列最高的实心顶面上，横着撞进实心格就停下那个方向（原版按 0.25 见方的碰撞箱算，这里差不到一格的几分之一） */
 const spillOut = (remainingBlocks: readonly PlacedBlock[], cellPos: readonly [number, number, number], r: JavaRandom): [number, number, number] => {
-  const solidKeys = new Set(remainingBlocks.filter((b) => blastResistance(b.状态) > 0).map((b) => posKey(...b.位)));
+  const solidKeys = new Set(remainingBlocks.filter((b) => blastResistance(b.state) > 0).map((b) => posKey(...b.位)));
   const isSolid = (x: number, y: number, z: number) => solidKeys.has(posKey(...cellAt(x, y, z)));
   // Containers.dropItemStack：floor + nextDouble × 0.75 + 0.125（物品宽 0.25），竖直不加 0.125；MC 的 x、y、z 依次对场景的 x、z、y
   let x = cellPos[0] - 0.5 + r.nextDouble() * 0.75 + 0.125;

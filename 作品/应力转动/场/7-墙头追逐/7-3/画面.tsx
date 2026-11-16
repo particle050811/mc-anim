@@ -44,11 +44,11 @@ export const ScenePicture: React.FC<{ T: number; cam: Cam; width: number; height
   const huangPan = play.huangPanState(sceneT);
   const shield = play.shieldState(sceneT);
   return (
-    <AncientCity4xCanvas 段="7-3" cam={cam} width={width} height={height} wool={woolBlocks}>
+    <AncientCity4xCanvas segment="7-3" cam={cam} width={width} height={height} wool={woolBlocks}>
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
         {/* 冲刺往前扑（模型本地的前方是 −Y，绕 X 转正角就是往前倒） */}
         <group rotation={[rad(warden.forwardLean), 0, 0]}>
-          <Warden 秒={warden.秒} walkCycle={warden.walkCycle} hurt={warden.hurt} headYaw={warden.headYaw} headPitch={warden.headPitch} 音爆={warden.音爆} />
+          <Warden sec={warden.sec} walkCycle={warden.walkCycle} hurt={warden.hurt} headYaw={warden.headYaw} headPitch={warden.headPitch} 音爆={warden.音爆} />
         </group>
       </group>
       {play.stuckArrows(sceneT).map((a, i) => (
@@ -58,7 +58,7 @@ export const ScenePicture: React.FC<{ T: number; cam: Cam; width: number; height
         <Arrow key={`飞${i}`} p={a.p} dir={a.dir} />
       ))}
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-        <SpectralSteed 秒={play.horseSec(sceneT)} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
+        <SpectralSteed sec={play.horseSec(sceneT)} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
       </group>
       <LiuXinzhong pose={liu.pose} hurt={liu.hurt} />
       <HuangPan pose={huangPan.pose} bow={huangPan.bow} />
@@ -73,7 +73,7 @@ export const ScenePicture: React.FC<{ T: number; cam: Cam; width: number; height
       {play.torches.map((c, i) => (
         <TorchBlock key={i} cell={c.cell} 光={2} />
       ))}
-      <VanillaParticles spawns={particles} 秒={sceneT} />
+      <VanillaParticles spawns={particles} sec={sceneT} />
     </AncientCity4xCanvas>
   );
 };

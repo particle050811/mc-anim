@@ -31,9 +31,9 @@ export const oarPose = (f: number | null): Record<string, PartPose> => {
 
 /** 从静止起按着前进 刻 刻（可以带小数）以后的速度（格/刻）和走过的路（格） */
 export const rowingStroke = (tick: number) => {
-  if (tick <= 0) return { 速度: 0, 路: 0 };
+  if (tick <= 0) return { speed: 0, lane: 0 };
   const k = Math.pow(0.9, tick);
-  return { 速度: boatParams.maxSpeed * (1 - k), 路: boatParams.maxSpeed * (tick - 9 * (1 - k)) };
+  return { speed: boatParams.maxSpeed * (1 - k), lane: boatParams.maxSpeed * (tick - 9 * (1 - k)) };
 };
 
 /** 第 序 个乘客（0 = 驾船的）在船本地坐标里的位置（+Y 船头）和身子相对船头的转角（度，正 = 往左）。动物满员时侧坐，朝哪边由 动物朝左 选（原版按实体 id 单双） */

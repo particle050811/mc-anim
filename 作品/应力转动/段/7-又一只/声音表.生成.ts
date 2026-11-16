@@ -3,122 +3,122 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/block.chest.open": {
-      "时长": 0.515208,
-      "峰值": -0.7,
-      "响度": -14.1,
+      "duration": 0.515208,
+      "peakDb": -0.7,
+      "loudness": -14.1,
       "sha": "6b9b0c3672b4"
     },
     "音效/block.sculk_sensor.clicking.1": {
-      "时长": 1.295333,
-      "峰值": -3.2,
-      "响度": -23,
+      "duration": 1.295333,
+      "peakDb": -3.2,
+      "loudness": -23,
       "sha": "0cf5bf9d988f"
     },
     "音效/block.sculk_sensor.clicking.3": {
-      "时长": 0.943896,
-      "峰值": -1.6,
-      "响度": -17.8,
+      "duration": 0.943896,
+      "peakDb": -1.6,
+      "loudness": -17.8,
       "sha": "3003e277b377"
     },
     "音效/block.sculk_sensor.clicking.4": {
-      "时长": 1.791625,
-      "峰值": -0.5,
-      "响度": -17.9,
+      "duration": 1.791625,
+      "peakDb": -0.5,
+      "loudness": -17.9,
       "sha": "1cc999aeaa9f"
     },
     "音效/block.sculk_sensor.clicking_stop.2": {
-      "时长": 1.54,
-      "峰值": -13.1,
-      "响度": -36.3,
+      "duration": 1.54,
+      "peakDb": -13.1,
+      "loudness": -36.3,
       "sha": "f8eeca8f9244"
     },
     "音效/block.sculk_sensor.clicking_stop.3": {
-      "时长": 1.424104,
-      "峰值": -16.6,
-      "响度": -35.6,
+      "duration": 1.424104,
+      "peakDb": -16.6,
+      "loudness": -35.6,
       "sha": "5f91031b56a7"
     },
     "音效/block.sculk_sensor.clicking_stop.5": {
-      "时长": 1.295875,
-      "峰值": -16.4,
-      "响度": -35.2,
+      "duration": 1.295875,
+      "peakDb": -16.4,
+      "loudness": -35.2,
       "sha": "0c9fd5463340"
     },
     "音效/block.sculk_shrieker.shriek.3": {
-      "时长": 6.484146,
-      "峰值": -1.1,
-      "响度": -15.6,
+      "duration": 6.484146,
+      "peakDb": -1.1,
+      "loudness": -15.6,
       "sha": "1eeecb1c8939"
     },
     "音效/block.sculk_shrieker.shriek.4": {
-      "时长": 6.493375,
-      "峰值": -2.3,
-      "响度": -16.8,
+      "duration": 6.493375,
+      "peakDb": -2.3,
+      "loudness": -16.8,
       "sha": "38828b02caa7"
     },
     "音效/entity.horse.gallop.1": {
-      "时长": 0.537166,
-      "峰值": 0.1,
-      "响度": -17.2,
+      "duration": 0.537166,
+      "peakDb": 0.1,
+      "loudness": -17.2,
       "sha": "825efbb27b82"
     },
     "音效/entity.horse.gallop.2": {
-      "时长": 0.562517,
-      "峰值": 0.4,
-      "响度": -17.5,
+      "duration": 0.562517,
+      "peakDb": 0.4,
+      "loudness": -17.5,
       "sha": "48345b93aca7"
     },
     "音效/entity.horse.gallop.3": {
-      "时长": 0.500023,
-      "峰值": 0.3,
-      "响度": -17.5,
+      "duration": 0.500023,
+      "peakDb": 0.3,
+      "loudness": -17.5,
       "sha": "e8a26fc805b8"
     },
     "音效/entity.horse.gallop.4": {
-      "时长": 0.531293,
-      "峰值": 1,
-      "响度": -14,
+      "duration": 0.531293,
+      "peakDb": 1,
+      "loudness": -14,
       "sha": "01704b35910c"
     },
     "音效/entity.warden.emerge": {
-      "时长": 8.526063,
-      "峰值": -0.1,
-      "响度": -12.7,
+      "duration": 8.526063,
+      "peakDb": -0.1,
+      "loudness": -12.7,
       "sha": "db6fdfe8d155"
     },
     "音效/entity.warden.heartbeat.3": {
-      "时长": 1.271417,
-      "峰值": -1.1,
-      "响度": -19.9,
+      "duration": 1.271417,
+      "peakDb": -1.1,
+      "loudness": -19.9,
       "sha": "ef4f0afb84ae"
     },
     "音效/entity.warden.heartbeat.4": {
-      "时长": 1.099167,
-      "峰值": -1.2,
-      "响度": -19.8,
+      "duration": 1.099167,
+      "peakDb": -1.2,
+      "loudness": -19.8,
       "sha": "0b4e5b512905"
     },
     "音效/entity.warden.tendril_clicks.2": {
-      "时长": 1.448896,
-      "峰值": -3.5,
-      "响度": -19.4,
+      "duration": 1.448896,
+      "peakDb": -3.5,
+      "loudness": -19.4,
       "sha": "cd05b445dea7"
     },
     "音效/entity.warden.tendril_clicks.3": {
-      "时长": 0.943896,
-      "峰值": -1.6,
-      "响度": -17.8,
+      "duration": 0.943896,
+      "peakDb": -1.6,
+      "loudness": -17.8,
       "sha": "3003e277b377"
     },
     "音效/entity.warden.tendril_clicks.6": {
-      "时长": 1.024104,
-      "峰值": -2,
-      "响度": -24.9,
+      "duration": 1.024104,
+      "peakDb": -2,
+      "loudness": -24.9,
       "sha": "f568609506ab"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

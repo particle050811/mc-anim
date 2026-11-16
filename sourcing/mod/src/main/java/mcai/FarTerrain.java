@@ -52,11 +52,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * 一个区块用一份新建的 ProtoChunk，SURFACE 这一步的 WorldGenRegion 和游戏一样只有它自己（ChunkStatus.SURFACE 写半径 0，邻区块的群系照游戏回落到群系源现算），
  * 所以每个区块的结果和游戏生成那一刻的地形一样，和别的区块生没生成、按什么顺序无关。
  *
- * 任务（JSON）：{"维度": "...", "线程": n, "出": "<输出前缀>", "层": [{"名": "粗", "step": 32, "块边": 2048, "块": [[x0, z0], …]}]}
- *   每块 n×n 个点（n = 块边 / step + 1，含远边，和远景包加密层一样），点 (i, j) 是方块列 (x0 + i·step, z0 + j·step)，按块、块里 j 行 i 列排。
- * 输出：<出>.<名>.bin，每点 14 字节小端：int16 地面（最高的实心方块 y，不算黑森林树冠、云）、uint16 地面方块（下标进 方块名）、uint16 群系（地面那格的群系，下标进 群系名）、
+ * 任务（JSON，pipeline/世界/远景/任务.ts 写）：{"dimension": "...", "threads": n, "出": "<输出前缀>", "layers": [{"name": "粗", "step": 32, "tileEdge": 2048, "tile": [[x0, z0], …]}]}
+ *   每块 n×n 个点（n = tileEdge / step + 1，含远边，和远景包加密层一样），点 (i, j) 是方块列 (x0 + i·step, z0 + j·step)，按块、块里 j 行 i 列排。
+ * 输出：<出>.<名>.bin，每点 14 字节小端：int16 地面（最高的实心方块 y，不算黑森林树冠、云）、uint16 地面方块（下标进 方块名）、uint16 群系（地面那格的群系，下标进 biomeNames）、
  *   int16 水顶（地面上面最高的液体格，没有是 -32768）、int16 冠顶、int16 冠底（硬化黑森林树叶，没有是 -32768）、int16 云顶（巨魔云，没有是 -32768）；
- *   <出>.json：方块名、群系名、群系温度、各层点数、区块数、秒数。日志最后一行「mcai 远景：完成 <出>」（anim world server 的 wait: 认它）。
+ *   <出>.json（pipeline/世界/远景/打包.ts 读）：方块名、biomeNames、biomeTemps、各层（layers）、chunkCount、sec。日志最后一行「mcai 远景：完成 <出>」（anim world server 的 wait: 认它）。
  */
 public final class FarTerrain {
     private static final Logger LOG = LogUtils.getLogger();
@@ -92,25 +92,25 @@ public final class FarTerrain {
 
     public static void start(MinecraftServer server, Path jobFile) throws IOException {
         JsonObject job = JsonParser.parseString(Files.readString(jobFile, StandardCharsets.UTF_8)).getAsJsonObject();
-        ResourceKey<net.minecraft.world.level.Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(job.get("维度").getAsString()));
+        ResourceKey<net.minecraft.world.level.Level> dim = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(job.get("dimension").getAsString()));
         ServerLevel level = server.getLevel(dim);
         if (level == null) throw new IOException("没有这个维度：" + dim.location());
-        int threads = job.has("线程") ? job.get("线程").getAsInt() : Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
+        int threads = job.has("threads") ? job.get("threads").getAsInt() : Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
         String outPrefix = job.get("出").getAsString();
         List<Layer> layers = new ArrayList<>();
-        for (JsonElement e : job.getAsJsonArray("层")) {
+        for (JsonElement e : job.getAsJsonArray("layers")) {
             JsonObject o = e.getAsJsonObject();
-            int step = o.get("step").getAsInt(), tileSize = o.get("块边").getAsInt();
+            int step = o.get("step").getAsInt(), tileSize = o.get("tileEdge").getAsInt();
             int n = tileSize / step + 1;
-            JsonArray ts = o.getAsJsonArray("块");
+            JsonArray ts = o.getAsJsonArray("tile");
             int[][] tiles = new int[ts.size()][];
             for (int t = 0; t < tiles.length; t++) {
                 JsonArray a = ts.get(t).getAsJsonArray();
                 tiles[t] = new int[]{a.get(0).getAsInt(), a.get(1).getAsInt()};
             }
             long points = (long) tiles.length * n * n;
-            if (points * RECORD > Integer.MAX_VALUE) throw new IOException("层 " + o.get("名").getAsString() + " 点太多，拆成几次跑");
-            layers.add(new Layer(o.get("名").getAsString(), step, tileSize, n, tiles, ByteBuffer.allocate((int) (points * RECORD)).order(ByteOrder.LITTLE_ENDIAN)));
+            if (points * RECORD > Integer.MAX_VALUE) throw new IOException("层 " + o.get("name").getAsString() + " 点太多，拆成几次跑");
+            layers.add(new Layer(o.get("name").getAsString(), step, tileSize, n, tiles, ByteBuffer.allocate((int) (points * RECORD)).order(ByteOrder.LITTLE_ENDIAN)));
         }
         Thread t = new Thread(() -> {
             try {
@@ -186,38 +186,38 @@ public final class FarTerrain {
         }
         double sec = (System.nanoTime() - t0) / 1e9;
         JsonObject meta = new JsonObject();
-        meta.addProperty("版本", 1);
-        meta.addProperty("维度", level.dimension().location().toString());
-        meta.addProperty("种子", Long.toString(level.getSeed()));
-        meta.addProperty("海平面", gen.getSeaLevel());
+        meta.addProperty("version", 1);
+        meta.addProperty("dimension", level.dimension().location().toString());
+        meta.addProperty("seed", Long.toString(level.getSeed()));
+        meta.addProperty("seaLevel", gen.getSeaLevel());
         meta.addProperty("暮色地标网格", TwilightGrid.enabled ? TwilightGrid.GRID : 16);
         JsonArray ls = new JsonArray();
         for (Layer L : layers) {
             JsonObject o = new JsonObject();
-            o.addProperty("名", L.name);
+            o.addProperty("name", L.name);
             o.addProperty("step", L.step);
-            o.addProperty("块边", L.tileSize);
+            o.addProperty("tileEdge", L.tileSize);
             o.addProperty("n", L.n);
             o.addProperty("块数", L.tiles.length);
             ls.add(o);
         }
-        meta.add("层", ls);
+        meta.add("layers", ls);
         JsonArray bn = new JsonArray();
         blocks.names.forEach(bn::add);
         meta.add("方块名", bn);
         JsonArray gn = new JsonArray();
         biomes.names.forEach(gn::add);
-        meta.add("群系名", gn);
+        meta.add("biomeNames", gn);
         // 群系温度（Biome.getBaseTemperature，游戏里实际加载的群系），远景包按它判水面结冰（engine/voxel/远景群系.ts 的 waterFreezes）
         JsonArray gt = new JsonArray();
         for (String name : biomes.names) {
             Biome b = biomeRegistry.get(new ResourceLocation(name));
             gt.add(b == null ? 0.8f : b.getBaseTemperature());
         }
-        meta.add("群系温度", gt);
-        meta.addProperty("区块数", sorted.length);
-        meta.addProperty("线程", threads);
-        meta.addProperty("秒", Math.round(sec * 10) / 10.0);
+        meta.add("biomeTemps", gt);
+        meta.addProperty("chunkCount", sorted.length);
+        meta.addProperty("threads", threads);
+        meta.addProperty("sec", Math.round(sec * 10) / 10.0);
         Files.writeString(Path.of(outPrefix + ".json"), meta.toString(), StandardCharsets.UTF_8);
         LOG.info("mcai 远景：完成 {}（{} 区块，{} 秒，{} 区块/秒）", outPrefix, sorted.length, String.format("%.1f", sec), String.format("%.0f", sorted.length / sec));
     }

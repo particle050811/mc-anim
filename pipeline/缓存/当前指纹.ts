@@ -10,7 +10,7 @@ import type { SegFingerprint } from '../指纹/指纹.ts';
 import type { KeepSet } from './回收.ts';
 
 /** 缺字节时打进包的是占位，出片会先补字节再算指纹，这里没补，算出来的和渲染时的对不上 */
-const untrustedReason = (fp: SegFingerprint) => (fp.项.缺字节?.length ? `指纹里记了缺字节 ${fp.项.缺字节.length} 件（先 anim assets seed / pull）` : null);
+const untrustedReason = (fp: SegFingerprint) => (fp.items.缺字节?.length ? `指纹里记了缺字节 ${fp.items.缺字节.length} 件（先 anim assets seed / pull）` : null);
 
 /** 作品 的各段在各渲染级别下的当前切片进保留集；算的时候临时切到这部作品，算完切回去 */
 export const addCurrentFingerprints = async (keep: KeepSet, work: string, warn: (s: string) => void = () => {}, onProgress: (s: string) => void = () => {}) => {
@@ -22,19 +22,19 @@ export const addCurrentFingerprints = async (keep: KeepSet, work: string, warn: 
       segments = await loadAllSegments();
     } catch (e) {
       warn(`${work} 的清单读不出（${(e as Error).message.split('\n')[0]}），这部作品的母版整个留着`);
-      keep.addDir(dataPath('cache', '母版', work), { 类: '算不出', 说明: '清单读不出' });
+      keep.addDir(dataPath('cache', '母版', work), { type: '算不出', note: '清单读不出' });
       return;
     }
     onProgress(`${work}：算 ${segments.length} 段 ${renderLevels.join('、')} 级的指纹`);
     const addOne = (r: SegArtifact, level: RenderLevel) => {
-      const untrusted = untrustedReason(r.画面指纹) ?? untrustedReason(r.声音指纹);
+      const untrusted = untrustedReason(r.pictureFingerprint) ?? untrustedReason(r.soundFingerprint);
       if (untrusted) {
-        warn(`${work}/${r.段.键}（${level}）：${untrusted}，整个目录留着`);
-        keep.addDir(masterDir(r.段.键), { 类: '算不出', 说明: untrusted });
+        warn(`${work}/${r.segment.key}（${level}）：${untrusted}，整个目录留着`);
+        keep.addDir(masterDir(r.segment.key), { type: '算不出', note: untrusted });
         return;
       }
-      keep.加(r.画面, { 类: '当前', 说明: level });
-      keep.加(r.声音, { 类: '当前', 说明: level });
+      keep.加(r.画面, { type: '当前', note: level });
+      keep.加(r.sound, { type: '当前', note: level });
     };
     for (const level of renderLevels) {
       // 一次打包算全部（逐段各打一次包要慢几十倍）；整批抛了再逐段算，把失败的那段单独留下（排字幕要全部段，失败的多半是字幕读不出，那就整部留下）
@@ -52,8 +52,8 @@ export const addCurrentFingerprints = async (keep: KeepSet, work: string, warn: 
         try {
           addOne((await segmentProducts(segments, [s], level))[0]!, level);
         } catch (e) {
-          warn(`${work}/${s.键}（${level}）的当前指纹算不出（${(e as Error).message.split('\n')[0]}），整个目录留着`);
-          keep.addDir(masterDir(s.键), { 类: '算不出', 说明: '当前指纹算不出' });
+          warn(`${work}/${s.key}（${level}）的当前指纹算不出（${(e as Error).message.split('\n')[0]}），整个目录留着`);
+          keep.addDir(masterDir(s.key), { type: '算不出', note: '当前指纹算不出' });
         }
       }
     }

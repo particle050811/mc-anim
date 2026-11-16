@@ -91,7 +91,7 @@ export function* sectionsInBlock(voxelLib: VoxelLib, file: string) {
   for (const { slot, off, len } of items) {
     const raw = new Uint8Array(buf.buffer, buf.byteOffset + off, len);
     const id = voxelLib.sectionPack.sectionAtIndex(ti, tj, slot);
-    yield { slot, id, 字节: raw, 取: (): SectionData => (formatVersion === 1 ? decodeFormat1Section(raw) : formatVersion === 2 ? decodeFormat2Section(raw, id) : voxelLib.sectionDecoder.decodeSection(raw, id, sectionModel!)) };
+    yield { slot, id, bytes: raw, 取: (): SectionData => (formatVersion === 1 ? decodeFormat1Section(raw) : formatVersion === 2 ? decodeFormat2Section(raw, id) : voxelLib.sectionDecoder.decodeSection(raw, id, sectionModel!)) };
   }
 }
 

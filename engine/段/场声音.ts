@@ -6,17 +6,17 @@ import type { AudioInfo } from './声音助手.ts';
 
 /** 场声音的放法（时刻用场时间线的事件名或时刻，见 窗口段.ts 的 defineSceneTimeline） */
 export type SceneSoundOptions = {
-  资产: string;
+  asset: string;
   /** 片段名；同一条场时间线里不能重名（windowSeg 的 excludeSceneSound 按名挑）。默认取 id 最后一截 */
-  名?: string;
+  name?: string;
   /** 目标采样峰值 dBFS、目标积分响度 LUFS、直接给的增益倍数：三选一，都不给 = 原样（同 声音助手.ts 的 放） */
-  峰值?: number;
-  响度?: number;
+  peakDb?: number;
+  loudness?: number;
   增益?: number;
   /** 文件从第几秒放起 */
   入点秒?: number;
   速率?: number;
-  /** 循环：放完从文件头接着放，要给 止 */
+  /** 循环：放完从文件头接着放，要给 end */
   循环?: true;
   /** 整个声音最后几秒线性淡到 0（落在哪段就由哪段的那截带上） */
   fadeOutSec?: number;
@@ -24,7 +24,7 @@ export type SceneSoundOptions = {
 };
 
 /** 解出来的场声音：起秒、止秒是场时间线的秒（止秒不给 = 放到文件完） */
-export type ResolvedSceneSound = SceneSoundOptions & { 名: string; startSec: number; endSec?: number };
+export type ResolvedSceneSound = SceneSoundOptions & { name: string; startSec: number; endSec?: number };
 
 const round6 = (x: number) => Math.round(x * 1e6) / 1e6;
 
@@ -36,8 +36,8 @@ export const sceneSoundTailSec = (sceneSound: ResolvedSceneSound, audioFile: Aud
   const inSec = sceneSound.入点秒 ?? 0;
   const rate = sceneSound.速率 ?? 1;
   if (sceneSound.循环) return sceneSound.endSec!;
-  const remainSec = audioFile.时长 - inSec;
-  if (!(remainSec > 0)) throw new Error(`场声音「${sceneSound.名}」：入点秒 ${inSec} 已经到了文件尾（${audioFile.时长} 秒）`);
+  const remainSec = audioFile.duration - inSec;
+  if (!(remainSec > 0)) throw new Error(`场声音「${sceneSound.name}」：入点秒 ${inSec} 已经到了文件尾（${audioFile.duration} 秒）`);
   const playEndSec = sceneSound.startSec + remainSec / rate;
   return sceneSound.endSec === undefined ? playEndSec : Math.min(sceneSound.endSec, playEndSec);
 };
@@ -45,19 +45,19 @@ export const sceneSoundTailSec = (sceneSound: ResolvedSceneSound, audioFile: Aud
 /** 场时间线第 T 秒上文件放到第几秒（不循环的不取模；测试和文档用这个当「一口气放完」的标准答案） */
 export const sceneSoundPosition = (sceneSound: ResolvedSceneSound, audioFile: AudioInfo, T: number) => {
   const sec = (sceneSound.入点秒 ?? 0) + (T - sceneSound.startSec) * (sceneSound.速率 ?? 1);
-  return sceneSound.循环 ? sec % audioFile.时长 : sec;
+  return sceneSound.循环 ? sec % audioFile.duration : sec;
 };
 
 const baseGain = (sceneSound: ResolvedSceneSound, audioFile: AudioInfo): number => {
-  const givenCount = [sceneSound.增益, sceneSound.峰值, sceneSound.响度].filter((x) => x !== undefined).length;
-  if (givenCount > 1) throw new Error(`场声音「${sceneSound.名}」：峰值、响度、增益只能给一个`);
-  if (sceneSound.峰值 !== undefined) {
-    if (audioFile.峰值 === undefined) throw new Error(`场声音「${sceneSound.名}」：${sceneSound.资产} 量不出峰值（静音？），直接给 增益`);
-    return round6(10 ** ((sceneSound.峰值 - audioFile.峰值) / 20));
+  const givenCount = [sceneSound.增益, sceneSound.peakDb, sceneSound.loudness].filter((x) => x !== undefined).length;
+  if (givenCount > 1) throw new Error(`场声音「${sceneSound.name}」：峰值、响度、增益只能给一个`);
+  if (sceneSound.peakDb !== undefined) {
+    if (audioFile.peakDb === undefined) throw new Error(`场声音「${sceneSound.name}」：${sceneSound.asset} 量不出峰值（静音？），直接给 增益`);
+    return round6(10 ** ((sceneSound.peakDb - audioFile.peakDb) / 20));
   }
-  if (sceneSound.响度 !== undefined) {
-    if (audioFile.响度 === undefined) throw new Error(`场声音「${sceneSound.名}」：${sceneSound.资产} 没有响度数，按峰值给或直接给 增益`);
-    return round6(10 ** ((sceneSound.响度 - audioFile.响度) / 20));
+  if (sceneSound.loudness !== undefined) {
+    if (audioFile.loudness === undefined) throw new Error(`场声音「${sceneSound.name}」：${sceneSound.asset} 没有响度数，按峰值给或直接给 增益`);
+    return round6(10 ** ((sceneSound.loudness - audioFile.loudness) / 20));
   }
   return sceneSound.增益 ?? 1;
 };
@@ -80,14 +80,14 @@ export const sceneSoundSlice = (sceneSound: ResolvedSceneSound, span: { startSec
     if (fadeOutSec && y > endSec - fadeOutSec) {
       if (Math.abs(y - endSec) < 1e-9 && endSec - fadeOutSec >= x - 1e-9) return { ...(g !== 1 ? { 增益: g } : {}), fadeOutSec: fadeOutSec };
       const n = Math.floor((y - x) * segFps + 1e-6) + 1;
-      return { 增益: { 每秒: segFps, 值: Array.from({ length: n }, (_, i) => round6(g * Math.max(0, Math.min(1, (endSec - (x + i / segFps)) / fadeOutSec)))) } };
+      return { 增益: { perSec: segFps, value: Array.from({ length: n }, (_, i) => round6(g * Math.max(0, Math.min(1, (endSec - (x + i / segFps)) / fadeOutSec)))) } };
     }
     return g !== 1 ? { 增益: g } : {};
   };
   const cue = (x: number, y: number, inSec: number, loop: boolean): AssetCue => ({
-    秒: x - span.startSec,
-    资产: sceneSound.资产,
-    名: sceneSound.名,
+    sec: x - span.startSec,
+    asset: sceneSound.asset,
+    name: sceneSound.name,
     长秒: y - x,
     ...(sceneSound.档 !== undefined ? { 档: sceneSound.档 } : {}),
     ...(inSec > 1e-9 ? { 入点秒: inSec } : {}),
@@ -98,7 +98,7 @@ export const sceneSoundSlice = (sceneSound: ResolvedSceneSound, span: { startSec
   const startPos = sceneSoundPosition(sceneSound, audioFile, a);
   if (!sceneSound.循环) return [cue(a, b, startPos, false)];
   // 循环：刚好在文件头（或差不到一个采样）就一条到底
-  if (startPos < 1e-6 || audioFile.时长 - startPos < 1e-6) return [cue(a, b, 0, true)];
-  const m = Math.min(a + (audioFile.时长 - startPos) / rate, b);
+  if (startPos < 1e-6 || audioFile.duration - startPos < 1e-6) return [cue(a, b, 0, true)];
+  const m = Math.min(a + (audioFile.duration - startPos) / rate, b);
   return b - m > 1e-9 ? [cue(a, m, startPos, false), cue(m, b, 0, true)] : [cue(a, m, startPos, false)];
 };

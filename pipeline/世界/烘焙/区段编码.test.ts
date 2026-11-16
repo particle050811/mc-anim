@@ -127,16 +127,16 @@ describe('逐格预测压缩', () => {
     const a = encodeSection(makeNoiseSection(42)), b = encodeSection(terrainSectionData(1, 64));
     const json = JSON.stringify(
       {
-        噪声: { 长: a.length, sha256: crypto.createHash('sha256').update(a).digest('hex') },
-        地形: { 长: b.length, sha256: crypto.createHash('sha256').update(b).digest('hex') },
+        noise: { length: a.length, sha256: crypto.createHash('sha256').update(a).digest('hex') },
+        terrain: { length: b.length, sha256: crypto.createHash('sha256').update(b).digest('hex') },
         wasm: crypto.createHash('sha256').update(Buffer.from(wasmBase64, 'base64')).digest('hex'),
-        模型表: crypto.createHash('sha256').update(modelBytes(sectionModel)).digest('hex'),
+        modelTable: crypto.createHash('sha256').update(modelBytes(sectionModel)).digest('hex'),
       },
       null,
       1,
     );
     await expect(json + '\n').toMatchFileSnapshot('./金样/区段编码.json');
-    expect(sectionModel.init.length).toBe(tableLayout.总);
+    expect(sectionModel.init.length).toBe(tableLayout.grandTotal);
     expect(decoderSourceStale(fs.readFileSync(decoderGeneratedFile(), 'utf8'), fs.readFileSync(decoderSource(), 'utf8'))).toBe(false);
   });
 });

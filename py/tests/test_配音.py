@@ -32,7 +32,7 @@ def test_chinese_char_sentence():
 
 
 def _make_request(tmp: Path) -> SynthRequest:
-    return SynthRequest(id='7-黄叛-受死', 念='怪物受死！', 语言='中文', 参考音频=str(tmp / '参考.wav'), 参考逐字稿='怪物受死', 种子=7, 输出=str(tmp / '出.wav'), 语气='怒喝', 角色='黄叛')
+    return SynthRequest(id='7-黄叛-受死', spoken='怪物受死！', language='中文', 参考音频=str(tmp / '参考.wav'), 参考逐字稿='怪物受死', seed=7, output=str(tmp / '出.wav'), tone='怒喝', character='黄叛')
 
 
 def test_backend_only_image_flow_dry_run_no_network_or_model(tmp_path):
@@ -40,11 +40,11 @@ def test_backend_only_image_flow_dry_run_no_network_or_model(tmp_path):
     assert set(backend_map) == {'image-flow'}
     assert backend_map['image-flow'].paid and backend_map['image-flow'].cloud
     q = _make_request(tmp_path)
-    q.语气参考 = '/语气.wav'
+    q.toneRef = '/语气.wav'
     q.语气强度 = 0.65
-    q.参数 = {'top_k': 20}
+    q.params = {'top_k': 20}
     backend = get_backend('image-flow', {'imgflow': str(tmp_path / '没有.mjs')})
-    command = backend.describe(q)['命令']
+    command = backend.describe(q)['command']
     assert command[1:3] == ['speak', '--text'] and command[command.index('--voice_ref') + 1] == q.参考音频
     assert command[command.index('--emotion_ref') + 1] == '/语气.wav'
     assert 'emo_alpha=0.65' in command and 'top_k=20' in command
@@ -60,7 +60,7 @@ def test_backend_only_image_flow_dry_run_no_network_or_model(tmp_path):
 def test_image_flow_without_tone_ref_omits_tone_and_strength(tmp_path):
     q = _make_request(tmp_path)
     q.语气强度 = 0.8
-    command = get_backend('image-flow', {}).describe(q)['命令']
+    command = get_backend('image-flow', {}).describe(q)['command']
     assert '--emotion_ref' not in command and not any('emo_alpha' in x for x in command)
 
 
@@ -80,17 +80,17 @@ def test_image_flow_synthesize(tmp_path, monkeypatch):
     # 资产按 sha 存、没有后缀：交给 image-flow 的要带 .wav，有后缀的原样给
     (tmp_path / '6818727b').write_bytes(b'RIFF')
     (tmp_path / '参考.wav').write_bytes(b'RIFF')
-    q.语气参考 = str(tmp_path / '6818727b')
-    q.输出 = str(tmp_path / '这句第一次出' / '候选.wav')
+    q.toneRef = str(tmp_path / '6818727b')
+    q.output = str(tmp_path / '这句第一次出' / '候选.wav')
     result = get_backend('image-flow', {}).synthesize([q])[0]
-    assert result.成功 and '261031/1' in result.说明
-    assert Path(q.输出).parent.is_dir()
+    assert result.成功 and '261031/1' in result.note
+    assert Path(q.output).parent.is_dir()
     assert ran_commands[0][ran_commands[0].index('--voice_ref') + 1] == q.参考音频
     assert ran_commands[0][ran_commands[0].index('--emotion_ref') + 1].endswith('语气.wav')
-    assert ran_commands[0][2] == 'speak' and ran_commands[1][-3:] == ['-i', '/任务/a.flac', q.输出]
+    assert ran_commands[0][2] == 'speak' and ran_commands[1][-3:] == ['-i', '/任务/a.flac', q.output]
     fake_result['stdout'] = json.dumps({'gen_status': 'fail', 'submit_id': '261031/2', 'fail_reason': '余额不足'})
     result = get_backend('image-flow', {}).synthesize([q])[0]
-    assert not result.成功 and '余额不足' in result.说明 and '261031/2' in result.说明
+    assert not result.成功 and '余额不足' in result.note and '261031/2' in result.note
     fake_result.update(stdout='', returncode=3)
     assert not get_backend('image-flow', {}).synthesize([q])[0].成功
 
@@ -117,14 +117,14 @@ def test_export_finished_trims_silence_and_normalizes_loudness(tmp_path):
     finished_wav = tmp_path / '成.wav'
     m = export_finished(original_path, finished_wav)
     # 头留 0.03 秒、尾留 0.15 秒（同旧链）
-    assert abs(m['开口'] - 0.03) < 0.02
+    assert abs(m['mouthOpen'] - 0.03) < 0.02
     assert abs(m['有声长'] - 1.0) < 0.03
-    assert abs(m['时长'] - (m['开口'] + m['有声长'] + 0.15)) < 0.02
-    assert abs(wav_seconds(finished_wav) - m['时长']) < 0.002
+    assert abs(m['duration'] - (m['mouthOpen'] + m['有声长'] + 0.15)) < 0.02
+    assert abs(wav_seconds(finished_wav) - m['duration']) < 0.002
     r = subprocess.run(['ffmpeg', '-v', 'info', '-i', str(finished_wav), '-af', 'ebur128=peak=true', '-f', 'null', '-'], capture_output=True, text=True)
     integrated_loudness = float(r.stderr.rsplit('I:', 1)[1].split('LUFS')[0])
-    assert abs(integrated_loudness - (-18)) < 1 or m['增益dB'] < -18 - m['原响度'] + 0.1  # 被峰值上限压住时响度会低于 -18
+    assert abs(integrated_loudness - (-18)) < 1 or m['gainDb'] < -18 - m['原响度'] + 0.1  # 被峰值上限压住时响度会低于 -18
     with wave.open(str(finished_wav)) as w:
         assert (w.getnchannels(), w.getframerate(), w.getsampwidth()) == (1, 48000, 2)
     no_trim_result = export_finished(original_path, None, no_trim=True)
-    assert no_trim_result['开口'] == 0 and abs(no_trim_result['时长'] - 2.1) < 0.01
+    assert no_trim_result['mouthOpen'] == 0 and abs(no_trim_result['duration'] - 2.1) < 0.01

@@ -14,9 +14,9 @@ export interface Fireball {
 }
 
 /** 一发：中间一颗朝史蒂夫胸口，带 多颗 时两边各一颗（偏移用 种子） */
-export const fireballShot = (startPos: Vec3, target: Vec3, launchTick: number, opts: { inertia?: number; count?: number; 种子?: number; hitRadius?: number } = {}): Fireball[] => {
+export const fireballShot = (startPos: Vec3, target: Vec3, launchTick: number, opts: { inertia?: number; count?: number; seed?: number; hitRadius?: number } = {}): Fireball[] => {
   const dir = sub(aimPoint(target), startPos);
-  const r = mulberry32((opts.种子 ?? 0) * 31 + 7);
+  const r = mulberry32((opts.seed ?? 0) * 31 + 7);
   return Array.from({ length: 1 + (opts.count ?? 0) }, (_, i) => {
     const spawnPoint: Vec3 = i === 0 ? startPos : [startPos[0] + gaussian(r), startPos[1] + gaussian(r), startPos[2]];
     const trajectory = fireballTrajectory(spawnPoint, dir, { inertia: opts.inertia ?? 0.95 });

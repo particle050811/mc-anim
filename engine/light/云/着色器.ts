@@ -114,11 +114,11 @@ const coverageArg = (l: ExpandedLayer, varName: string, xz: string) => {
 };
 
 /** 积云主步进怎么走：起 = 循环前定 steps、起点 ro；取点 = 每一步开头定这一步的点 p、步长 sl。两者都只用 len、slP、dither */
-type MarchPlan = { 起: string; samplePoint: string };
+type MarchPlan = { start: string; samplePoint: string };
 
 /** 等步长：同 大气/云.ts（精确档逐字节不变靠它） */
 const uniformMarch = (D: string): MarchPlan => ({
-  起: `int steps = int(min(ceil(len / max(slP, 1.0)), float(${D}_MAX)));
+  start: `int steps = int(min(ceil(len / max(slP, 1.0)), float(${D}_MAX)));
   float sl = len / float(max(steps, 1));
   vec3 st = rd * sl;
   vec3 ro = o + rd * (ds.x + sl * dither);`,
@@ -129,7 +129,7 @@ const uniformMarch = (D: string): MarchPlan => ({
 const geometricMarch = (D: string, growth: number): MarchPlan => {
   const G = f(growth);
   return {
-    起: `int steps = int(min(ceil(log(1.0 + len * (${G} - 1.0) / max(slP, 1.0)) / log(${G})), float(${D}_MAX)));
+    start: `int steps = int(min(ceil(log(1.0 + len * (${G} - 1.0) / max(slP, 1.0)) / log(${G})), float(${D}_MAX)));
   float slN = len * (${G} - 1.0) / (pow(${G}, float(max(steps, 1))) - 1.0);
   vec3 ro = o + rd * ds.x;
   float tAt = 0.0;`,
@@ -143,7 +143,7 @@ const geometricMarch = (D: string, growth: number): MarchPlan => {
 // ---- 积云（同 大气/云.ts 的 pcCuBase、pcCuCoverage、pcCuDensity、pcCuOD、pcCumulus） ----
 const cumulus = (l: ExpandedLayer) => {
   const n = `pcCu${l.layerIndex}`, D = `PC_CU${l.layerIndex}`;
-  const q = l.步;
+  const q = l.step;
   const heightMap = l.smooth ? 'pcCuHeightS' : 'pcCuHeight';
   const keepTerm = l.acceptsHoles ? 'keep.x * keep.y' : 'keep.x';
   const densityExpr = l.density === 1 ? '' : ` * ${f(l.density)}`;
@@ -220,7 +220,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
   if (ds.y < 0.0 || planet && r < ${D}_R || dT >= 0.0 && r < ${D}_R && dT < ds.x) return pcNone();
   float len = clamp((dT >= 0.0 ? dT : ds.y) - ds.x, 0.0, 2e4);
   float slP = ${D}_T / max(abs(rd.y), ${D}_T / 2e4) / mix(float(${D}_H), float(${D}_Z), abs(rd.y));
-  ${stepper.起}
+  ${stepper.start}
   vec3 L = atmoSun;
   float c = dot(rd, L);
   float bounced = 0.4 * L.y / PC_PI;
@@ -280,7 +280,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
 // ---- 高积云（同 大气/云.ts 的 pcAcDensity、pcAcOD、pcAltocumulus） ----
 const altocumulus = (l: ExpandedLayer) => {
   const n = `pcAc${l.layerIndex}`, D = `PC_AC${l.layerIndex}`;
-  const q = l.步;
+  const q = l.step;
   const keepTerm = l.acceptsHoles ? 'keep.x * max(keep.y, added)' : 'keep.x';
   const densityExpr = l.density === 1 ? '' : ` * ${f(l.density)}`;
   return /* glsl */ `
@@ -552,12 +552,12 @@ const baseMacro = { Photon积云: 'PC_CU', Photon高积云: 'PC_AC', Photon卷�
 
 /** 按高低前后叠（同 大气/云.ts 的 pcDrawClouds：低的一层挡死、镜头又在它下面就不再往上算） */
 const stackLayers = (layers: readonly ExpandedLayer[]) => {
-  const layerCall = (l: ExpandedLayer) => `${shaderPrefix[l.算法]}${l.layerIndex}March(o, rd, sky, dTc, dither)`;
+  const layerCall = (l: ExpandedLayer) => `${shaderPrefix[l.algorithm]}${l.layerIndex}March(o, rd, sky, dTc, dither)`;
   const chainFrom = (i: number): string => {
     if (i >= layers.length) return '';
     const l = layers[i - 1]!;
     const nextCode = chainFrom(i + 1);
-    return `if (!(res.T < 1e-3 && pcCamR < ${baseMacro[l.算法]}${l.layerIndex}_R)) {\n    res = pcBlend(res, ${layerCall(layers[i]!)});\n    ${nextCode}\n  }`;
+    return `if (!(res.T < 1e-3 && pcCamR < ${baseMacro[l.algorithm]}${l.layerIndex}_R)) {\n    res = pcBlend(res, ${layerCall(layers[i]!)});\n    ${nextCode}\n  }`;
   };
   return layers.length
     ? `PcRes res = ${layerCall(layers[0]!)};\n  ${chainFrom(1)}`
@@ -589,13 +589,13 @@ precision highp float;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
 ${sharedGlsl(S)}
-${layers[0]?.算法 === 'Photon积云' ? `uniform sampler2D tSunBake;
+${layers[0]?.algorithm === 'Photon积云' ? `uniform sampler2D tSunBake;
 float bakeOD(vec3 pos,float bottom,float thick) {
  vec2 uv=clamp(pos.xz/48000.0+0.5,vec2(0.5/128.0),vec2(1.0-0.5/128.0));
  float z=clamp((pos.y-bottom)/thick*32.0-0.5,0.0,31.0); float lo=floor(z), hi=min(lo+1.0,31.0);
  vec2 vlo=vec2(uv.x,(lo+uv.y)/32.0), vhi=vec2(uv.x,(hi+uv.y)/32.0);
  return mix(texture(tSunBake,vlo).r,texture(tSunBake,vhi).r,fract(z)); }` : ''}
-${layers.map((l) => layerCode[l.算法](l)).join('\n')}
+${layers.map((l) => layerCode[l.algorithm](l)).join('\n')}
 ${drawCloudGlsl(layers)}
 uniform sampler2D tPrep;
 uniform sampler2D atmoSky;

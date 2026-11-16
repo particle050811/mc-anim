@@ -55,22 +55,22 @@ if (distance(startPos, openingPos(actStart)) > 1e-6 || distance(steveFoot, openi
 const yaBoLunArrange = (s: number) => secAt(yaBoLunClock(s));
 const timeline: readonly PerformanceBar[] = [
   ...openingTimeline,
-  { 起: yaBoLunArrange(0), 到: yaBoLunArrange(castStart), pose: '开盘', ease: '线性' },
-  { 起: yaBoLunArrange(castStart) + 0.1, 到: yaBoLunArrange(castStart) + 0.45, pose: '指向' },
-  { 起: yaBoLunArrange(killingSec) - 5 / 60, 到: yaBoLunArrange(killingSec), pose: '开盘', ease: '线性' },
-  { 起: yaBoLunArrange(killingSec) + 0.1, 到: yaBoLunArrange(killingSec) + 0.45, pose: '指向' },
+  { start: yaBoLunArrange(0), dest: yaBoLunArrange(castStart), pose: '开盘', ease: '线性' },
+  { start: yaBoLunArrange(castStart) + 0.1, dest: yaBoLunArrange(castStart) + 0.45, pose: '指向' },
+  { start: yaBoLunArrange(killingSec) - 5 / 60, dest: yaBoLunArrange(killingSec), pose: '开盘', ease: '线性' },
+  { start: yaBoLunArrange(killingSec) + 0.1, dest: yaBoLunArrange(killingSec) + 0.45, pose: '指向' },
 ];
-const shakeTimes = [...pureCastTable.map((cast) => cast.秒)].sort((a, b) => a - b).reduce<number[]>((picked, s) => (!picked.length || s - picked[picked.length - 1]! >= 0.3 ? [...picked, s] : picked), []);
+const shakeTimes = [...pureCastTable.map((cast) => cast.sec)].sort((a, b) => a - b).reduce<number[]>((picked, s) => (!picked.length || s - picked[picked.length - 1]! >= 0.3 ? [...picked, s] : picked), []);
 /** 冲的时候身子往冲的方向倒、急刹往后仰（同第 1、2 幕的 倾，系数按 20～30 格/秒取） */
 const lean: TiltSettings = { perSpeed: 1.0, perAccel: 0.03, limit: 25, 窗: 0.08 };
-const performBase = definePerformance({ timeline, 位: (τ) => yaBoLunLocalPos(τ - actStart), 目标: () => steveEye, swingTimes: shakeTimes.map((s) => secAt(yaBoLunClock(s - actStart))), lean });
+const performBase = definePerformance({ timeline, 位: (τ) => yaBoLunLocalPos(τ - actStart), target: () => steveEye, swingTimes: shakeTimes.map((s) => secAt(yaBoLunClock(s - actStart))), lean });
 /** 她的演出（编排的钟）：换到她的局部钟再取，索命那 16 帧连头发、身子一起定住 */
 export const perform = { ...performBase, 在: (t: number) => performBase.在(yaBoLunArrange(t - actStart)), 杖: (t: number) => performBase.杖(yaBoLunArrange(t - actStart)) };
 
 /** 轮盘：第 2 幕末已张满（齐放拍.ts 的 第二幕末盘刻），一直开到第 5 幕收；按住连放的那些格亮着，每出手一发那一格一闪（闪秒 淡完）。
  *  盘的钟是世界钟：打击停顿里照转。Agent 取的 */
 const flashSec = 0.3;
-const releases: readonly (readonly [string, number])[] = [[fireKey('revelation'), secAt(castStart)], ...pureCastTable.map((cast) => [fireKey(cast.id), cast.秒] as const)];
+const releases: readonly (readonly [string, number])[] = [[fireKey('revelation'), secAt(castStart)], ...pureCastTable.map((cast) => [fireKey(cast.id), cast.sec] as const)];
 const litKeys = [fireKey('revelation'), ...chainCastTable.map((x) => fireKey(x.id))];
 export const wheelParams = (t: number): MultiRingParams => {
   const flash: Record<string, number> = {};
@@ -89,7 +89,7 @@ export const cageSetup: CagePerformanceSetting = {
   ...cagePerformanceDefaults,
   flyOutSec: cageFlySec,
   from: perform.杖(throwSec).tip,
-  目标: cageCenter,
+  target: cageCenter,
   coverSec: secAt(deathTime) - throwSec - cageFlySec,
   shrinkBurnSec: 0,
 };
@@ -122,9 +122,9 @@ export const steveStateAt = (t: number): SteveState => {
   const release = swingSec !== undefined ? 1 - smoothstep01(swingSec / 0.1) : 0;
   // 每一剑身子往左右轮着拧一下，劈不同方向飞来的弹
   const twist = swingTimes.reduce((sum, c, i) => sum + (i % 2 ? -18 : 18) * smoothstep01(clamp01((s - c + raiseSwordSec) / raiseSwordSec)) * (1 - smoothstep01(clamp01((s - c - 0.15) / 0.35))), 0);
-  const nearestHit = takenHits.filter((h) => h.秒 <= s).pop();
-  const hitReactSec = nearestHit && s - nearestHit.秒 < leanTiming.restoreSec ? s - nearestHit.秒 : undefined;
-  const sinceHeavy = nearestHit && nearestHit.重 ? s - nearestHit.秒 : Infinity;
+  const nearestHit = takenHits.filter((h) => h.sec <= s).pop();
+  const hitReactSec = nearestHit && s - nearestHit.sec < leanTiming.restoreSec ? s - nearestHit.sec : undefined;
+  const sinceHeavy = nearestHit && nearestHit.重 ? s - nearestHit.sec : Infinity;
   const tilt = sinceHeavy < 0.6 ? 20 * Math.sin(Math.PI * clamp01(sinceHeavy / 0.6)) : 0;
   // 挣：罩严那一下想跑（脚抬不起来）、挨了重的腿软；钉住以后一直扎着马步晃，越到后面越使劲
   const cover = coverFull - actStart;
@@ -141,7 +141,7 @@ export const steveStateAt = (t: number): SteveState => {
     facing: faceYaBoLunDeg + twist + tilt,
     看: lookAt,
     // 待机、剑的光泽、光环自转接着第 2 幕末的相位走（开盘拍.ts 的 第二幕末史蒂夫秒）
-    秒: act2EndSteveSec + s,
+    sec: act2EndSteveSec + s,
     rightHand: '剑',
     leftHand: '空',
     ...(swingSec !== undefined ? { swingSec } : {}),

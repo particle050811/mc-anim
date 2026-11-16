@@ -19,26 +19,26 @@ const sampleIntervalMs = 10_000;
 // 一帧里短于这个的等待不逐帧记（只进总表），不然文件翻几倍
 const frameWaitMinMs = 20;
 
-export type FrameRecord = { 帧: number; 毫秒: number; 等?: Record<string, number> };
-export type WaitStat = { 标签: string; 次: number; 总毫秒: number; 最大毫秒: number };
+export type FrameRecord = { frame: number; ms: number; waits?: Record<string, number> };
+export type WaitStat = { label: string; count: number; totalMs: number; maxMs: number };
 type SamplePoint = '开始' | '采样' | '结束';
-export type SystemSample = Partial<TempReading> & { 时点?: SamplePoint; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
-export type DetailSummary = { 帧数: number; 首帧毫秒: number; 中位毫秒: number; P90毫秒: number; P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[] };
+export type SystemSample = Partial<TempReading> & { timePoint?: SamplePoint; gate?:number|null; pressure?:number|null; sec: number; load: number; freeMemoryGb: number; swapOutGb: number | null; childMemoryGb: number | null; childCpu: number | null };
+export type DetailSummary = { frameCount: number; firstFrameMs: number; medianMs: number; p90Ms: number; p99Ms: number; slowestFrames: { frame: number; ms: number }[] };
 export type RenderDetail = {
-  票?: string;
-  版本: number;
-  标签: string;
-  开始: string;
-  总秒: number;
-  主机: string;
-  平台: string;
-  环境: Record<string, string>;
-  小结: DetailSummary;
-  等待: WaitStat[];
-  阶段: StageRecord[];
-  系统: SystemSample[];
-  温度?: { 开始: TempReading; 结束: TempReading; 最高: TempReading };
-  帧: FrameRecord[];
+  ticket?: string;
+  version: number;
+  label: string;
+  startedAt: string;
+  totalSec: number;
+  host: string;
+  platform: string;
+  env: Record<string, string>;
+  summary: DetailSummary;
+  waiting: WaitStat[];
+  stage: StageRecord[];
+  system: SystemSample[];
+  temperature?: { startedAt: TempReading; endedAt: TempReading; peak: TempReading };
+  frame: FrameRecord[];
 };
 
 export const detailDir = () => path.join(path.dirname(timingLogPath()), '渲染明细');
@@ -55,24 +55,24 @@ export const classifyLabel = (label: string) =>
     .slice(0, 48);
 
 /** 一行 Remotion 日志是 delayRender 清除的话，取标签和毫秒 */
-export const parseWait = (line: string): { 标签: string; 毫秒: number } | null => {
+export const parseWait = (line: string): { label: string; ms: number } | null => {
   // Remotion 无色标签用方括号，彩色标签用背景色和空格（Windows 默认启用颜色）；去掉 ANSI 后两种边界都要认。
   const m = /delayRender\(\)\]?[ \t]+"(.*)" handle was cleared after (\d+)ms\s*$/.exec(line.replace(ANSI, ''));
-  return m ? { 标签: classifyLabel(m[1]!), 毫秒: Number(m[2]) } : null;
+  return m ? { label: classifyLabel(m[1]!), ms: Number(m[2]) } : null;
 };
 
 const quantile = (ascending: number[], p: number) => (ascending.length ? ascending[Math.min(ascending.length - 1, Math.floor(p * ascending.length))]! : 0);
 
 export const computeSummary = (frameRecords: readonly FrameRecord[]): DetailSummary => {
   // 首帧要建场景，单算，不进分位
-  const restFrameMs = frameRecords.slice(1).map((f) => f.毫秒).sort((a, b) => a - b);
+  const restFrameMs = frameRecords.slice(1).map((f) => f.ms).sort((a, b) => a - b);
   return {
-    帧数: frameRecords.length,
-    首帧毫秒: frameRecords[0]?.毫秒 ?? 0,
-    中位毫秒: quantile(restFrameMs, 0.5),
-    P90毫秒: quantile(restFrameMs, 0.9),
-    P99毫秒: quantile(restFrameMs, 0.99),
-    最慢帧: [...frameRecords].slice(1).sort((a, b) => b.毫秒 - a.毫秒).slice(0, 5).map((f) => ({ 帧: f.帧, 毫秒: f.毫秒 })),
+    frameCount: frameRecords.length,
+    firstFrameMs: frameRecords[0]?.ms ?? 0,
+    medianMs: quantile(restFrameMs, 0.5),
+    p90Ms: quantile(restFrameMs, 0.9),
+    p99Ms: quantile(restFrameMs, 0.99),
+    slowestFrames: [...frameRecords].slice(1).sort((a, b) => b.ms - a.ms).slice(0, 5).map((f) => ({ frame: f.frame, ms: f.ms })),
   };
 };
 
@@ -121,56 +121,56 @@ const takeSample = async (startMs: number, timePoint: SamplePoint): Promise<Syst
   const memory=readMemory();
   const descendants = ps ? sumDescendants(ps, process.pid) : null;
   return {
-    秒: sec, 时点: timePoint, ...temperature,
-    负载: Number(os.loadavg()[0]!.toFixed(1)),
-    空闲内存GB: Number(((memory?.空闲 ?? os.freemem()) / 1024 ** 3).toFixed(1)),
-    闸:memory?.空闲百分比??null,压力:readPressure(),
-    换出GB: swapOut ? parseSwapOut(swapOut) : null,
-    子进程内存GB: descendants?.memoryGb ?? null,
-    子进程CPU: descendants?.CPU ?? null,
+    sec: sec, timePoint: timePoint, ...temperature,
+    load: Number(os.loadavg()[0]!.toFixed(1)),
+    freeMemoryGb: Number(((memory?.free ?? os.freemem()) / 1024 ** 3).toFixed(1)),
+    gate:memory?.freePercent??null,pressure:readPressure(),
+    swapOutGb: swapOut ? parseSwapOut(swapOut) : null,
+    childMemoryGb: descendants?.memoryGb ?? null,
+    childCpu: descendants?.CPU ?? null,
   };
 };
 
-const tempSummary = (systemSamples: readonly SystemSample[]): NonNullable<RenderDetail['温度']> => {
-  const toReading = (s?: SystemSample): TempReading => ({ 芯片最高温: s?.芯片最高温 ?? null, 发热等级: s?.发热等级 ?? null });
+const tempSummary = (systemSamples: readonly SystemSample[]): NonNullable<RenderDetail['temperature']> => {
+  const toReading = (s?: SystemSample): TempReading => ({ chipMaxTemp: s?.chipMaxTemp ?? null, thermalLevel: s?.thermalLevel ?? null });
   const peakOf = (propKey: keyof TempReading) => {
     const values = systemSamples.flatMap(s => s[propKey] == null ? [] : [s[propKey]!]);
     return values.length ? Math.max(...values) : null;
   };
-  return { 开始: toReading(systemSamples.find(s => s.时点 === '开始')), 结束: toReading(systemSamples.findLast(s => s.时点 === '结束')), 最高: { 芯片最高温: peakOf('芯片最高温'), 发热等级: peakOf('发热等级') } };
+  return { startedAt: toReading(systemSamples.find(s => s.timePoint === '开始')), endedAt: toReading(systemSamples.findLast(s => s.timePoint === '结束')), peak: { chipMaxTemp: peakOf('chipMaxTemp'), thermalLevel: peakOf('thermalLevel') } };
 };
 
 /** 一次渲染的收集器：包住 renderMedia（把 verbose 日志收走不刷屏），onProgress 传进去，完了 写出 */
 export class DetailCollector {
   frameRecords: FrameRecord[] = [];
-  private 等待 = new Map<string, WaitStat>();
+  private waiting = new Map<string, WaitStat>();
   private currentWaits: Record<string, number> = {};
-  private 系统: SystemSample[] = [];
+  private system: SystemSample[] = [];
   private lastTime = 0;
   private lastFrameCount = 0;
-  private 起 = Date.now();
-  private 止: number | null = null;
-  private 票 = currentTicket();
+  private start = Date.now();
+  private end: number | null = null;
+  private ticket = currentTicket();
   private timer: NodeJS.Timeout | null = null;
   private pendingSamples: Promise<unknown>[] = [];
 
-  private 标签: string;
+  private label: string;
   private startFrame: number;
 
   constructor(label: string, startFrame = 0) {
-    this.标签 = label;
+    this.label = label;
     this.startFrame = startFrame;
   }
 
   行(logText: string) {
     const w = parseWait(logText);
     if (!w) return;
-    const s = this.等待.get(w.标签) ?? { 标签: w.标签, 次: 0, 总毫秒: 0, 最大毫秒: 0 };
-    s.次++;
-    s.总毫秒 += w.毫秒;
-    s.最大毫秒 = Math.max(s.最大毫秒, w.毫秒);
-    this.等待.set(w.标签, s);
-    if (w.毫秒 >= frameWaitMinMs) this.currentWaits[w.标签] = (this.currentWaits[w.标签] ?? 0) + w.毫秒;
+    const s = this.waiting.get(w.label) ?? { label: w.label, count: 0, totalMs: 0, maxMs: 0 };
+    s.count++;
+    s.totalMs += w.ms;
+    s.maxMs = Math.max(s.maxMs, w.ms);
+    this.waiting.set(w.label, s);
+    if (w.ms >= frameWaitMinMs) this.currentWaits[w.label] = (this.currentWaits[w.label] ?? 0) + w.ms;
   }
 
   /** 进度回调的同一帧数可能回调多次（编码进度也走这里），帧数变了才算出了一帧 */
@@ -178,10 +178,10 @@ export class DetailCollector {
     gateHeartbeat(framesDone);
     if (framesDone === this.lastFrameCount) return;
     const newFrames = framesDone - this.lastFrameCount;
-    const frameMs = Math.round((now - (this.lastFrameCount === 0 ? this.起 : this.lastTime)) / newFrames);
+    const frameMs = Math.round((now - (this.lastFrameCount === 0 ? this.start : this.lastTime)) / newFrames);
     for (let k = 0; k < newFrames; k++) {
-      const waits = k === 0 && Object.keys(this.currentWaits).length ? { 等: this.currentWaits } : {};
-      this.frameRecords.push({ 帧: this.startFrame + this.lastFrameCount + k, 毫秒: frameMs, ...waits });
+      const waits = k === 0 && Object.keys(this.currentWaits).length ? { waits: this.currentWaits } : {};
+      this.frameRecords.push({ frame: this.startFrame + this.lastFrameCount + k, ms: frameMs, ...waits });
     }
     this.currentWaits = {};
     this.lastTime = now;
@@ -189,59 +189,59 @@ export class DetailCollector {
   }
 
   /** fn 期间 console.log 全归 Remotion（只包 renderMedia、renderStill，它们不打别的）：verbose 日志不刷屏；系统采样同时跑。原样留一份给 转发（bench --verbose 的日志文件） */
-  async 包<T>(fn: () => Promise<T>, forward?: (logText: string) => void): Promise<T> {
+  async pack<T>(fn: () => Promise<T>, forward?: (logText: string) => void): Promise<T> {
     const originalLog = console.log;
     console.log = (...a: unknown[]) => {
       const logText = a.map(String).join(' ');
       this.行(logText);
       forward?.(logText);
     };
-    this.起 = Date.now();
-    this.pendingSamples.push(takeSample(this.起, '开始').then((x) => this.系统.push(x)));
-    this.timer = setInterval(() => this.pendingSamples.push(takeSample(this.起, '采样').then((x) => this.系统.push(x))), sampleIntervalMs);
+    this.start = Date.now();
+    this.pendingSamples.push(takeSample(this.start, '开始').then((x) => this.system.push(x)));
+    this.timer = setInterval(() => this.pendingSamples.push(takeSample(this.start, '采样').then((x) => this.system.push(x))), sampleIntervalMs);
     this.timer.unref();
     try {
       return await fn();
     } finally {
       console.log = originalLog;
       clearInterval(this.timer);
-      this.pendingSamples.push(takeSample(this.起, '结束').then((x) => this.系统.push(x)));
+      this.pendingSamples.push(takeSample(this.start, '结束').then((x) => this.system.push(x)));
     }
   }
 
   /** 总秒止于出完片：渲段之后在闸里派生段签、删旧，不算进这次渲染 */
   stopTimer(now = Date.now()) {
-    this.止 = now;
+    this.end = now;
   }
 
   /** 写出明细文件；写不成只提示，不影响渲染 */
-  async writeOut(stages: readonly StageRecord[], env: Record<string, string> = {}, dir = detailDir()): Promise<{ 文件: string | null; 明细: RenderDetail }> {
+  async writeOut(stages: readonly StageRecord[], env: Record<string, string> = {}, dir = detailDir()): Promise<{ file: string | null; detail: RenderDetail }> {
     await Promise.allSettled(this.pendingSamples);
     const detail: RenderDetail = {
-      版本: formatVersion,
-      票:this.票,
-      标签: this.标签,
-      开始: new Date(this.起).toISOString().replace(/\.\d+Z$/, 'Z'),
-      总秒: Number((((this.止 ?? Date.now()) - this.起) / 1000).toFixed(2)),
-      主机: config('主机'),
-      平台: `${process.platform}-${process.arch}`,
-      环境: env,
-      小结: computeSummary(this.frameRecords),
-      等待: [...this.等待.values()].sort((a, b) => b.总毫秒 - a.总毫秒),
-      阶段: stages.filter((r) => r.标签 === this.标签),
-      系统: this.系统.sort((a, b) => a.秒 - b.秒),
-      温度: this.系统.length ? tempSummary(this.系统) : undefined,
-      帧: this.frameRecords,
+      version: formatVersion,
+      ticket:this.ticket,
+      label: this.label,
+      startedAt: new Date(this.start).toISOString().replace(/\.\d+Z$/, 'Z'),
+      totalSec: Number((((this.end ?? Date.now()) - this.start) / 1000).toFixed(2)),
+      host: config('主机'),
+      platform: `${process.platform}-${process.arch}`,
+      env: env,
+      summary: computeSummary(this.frameRecords),
+      waiting: [...this.waiting.values()].sort((a, b) => b.totalMs - a.totalMs),
+      stage: stages.filter((r) => r.label === this.label),
+      system: this.system.sort((a, b) => a.sec - b.sec),
+      temperature: this.system.length ? tempSummary(this.system) : undefined,
+      frame: this.frameRecords,
     };
     try {
-      const fileName = `${detail.开始.replace(/[-:]/g, '').replace('T', '-').replace('Z', '')}-${this.标签.replace(/[\\/:*?"<>|\s]+/g, '_')}-${process.pid}.json`;
+      const fileName = `${detail.startedAt.replace(/[-:]/g, '').replace('T', '-').replace('Z', '')}-${this.label.replace(/[\\/:*?"<>|\s]+/g, '_')}-${process.pid}.json`;
       const file = path.join(dir, fileName);
       writeJson(file, detail);
       promptOnly('清旧明细', () => clearOldDetails(dir));
-      return { 文件: file, 明细: detail };
+      return { file: file, detail: detail };
     } catch (e) {
       console.error(`!! 渲染明细没写成：${(e as Error).message}`);
-      return { 文件: null, 明细: detail };
+      return { file: null, detail: detail };
     }
   }
 }
@@ -258,13 +258,13 @@ export const clearOldDetails = (detailDir: string, keepCount = defaultKeepCount)
 };
 
 /** 最近的明细，新的在前；给了 含 只要标签里含这个字的 */
-export const readDetailList = (o: { contains?: string; 最多?: number; 目录?: string } = {}): { 文件: string; 明细: RenderDetail }[] => {
+export const readDetailList = (o: { contains?: string; 最多?: number; 目录?: string } = {}): { file: string; detail: RenderDetail }[] => {
   const dir = o.目录 ?? detailDir();
-  const entries: { 文件: string; 明细: RenderDetail }[] = [];
+  const entries: { file: string; detail: RenderDetail }[] = [];
   for (const f of listDetails(dir).reverse()) {
     if (o.contains && !f.includes(o.contains.replace(/[\\/:*?"<>|\s]+/g, '_'))) continue;
     try {
-      entries.push({ 文件: path.join(dir, f), 明细: JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as RenderDetail });
+      entries.push({ file: path.join(dir, f), detail: JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as RenderDetail });
     } catch {
       continue;
     }
@@ -276,33 +276,33 @@ export const readDetailList = (o: { contains?: string; 最多?: number; 目录?:
 const fmtSec = (milliseconds: number) => `${(milliseconds / 1000).toFixed(1)} 秒`;
 
 const tempReport = (d: RenderDetail) => {
-  const t = d.温度?.最高;
-  return [t?.芯片最高温 == null ? '' : `最高芯温 ${t.芯片最高温.toFixed(1)}°C`, t?.发热等级 == null ? '' : `最高发热等级 ${t.发热等级}`].filter(Boolean).join('，');
+  const t = d.temperature?.peak;
+  return [t?.chipMaxTemp == null ? '' : `最高芯温 ${t.chipMaxTemp.toFixed(1)}°C`, t?.thermalLevel == null ? '' : `最高发热等级 ${t.thermalLevel}`].filter(Boolean).join('，');
 };
 
 /** anim timing <段>：一份明细给人看的报告 */
 export const detailReport = (d: RenderDetail, file?: string) => {
-  const frameTotalMs = d.帧.reduce((a, f) => a + f.毫秒, 0);
+  const frameTotalMs = d.frame.reduce((a, f) => a + f.ms, 0);
   const lines = [
-    `${d.标签}  ${d.开始}  ${d.主机}（${d.平台}）`,
-    ...Object.entries(d.环境).map(([k, v]) => `  ${k}：${v}`),
-    `总 ${d.总秒.toFixed(1)} 秒，${d.小结.帧数} 帧，首帧 ${fmtSec(d.小结.首帧毫秒)}；其后每帧 中位 ${d.小结.中位毫秒} 毫秒、P90 ${d.小结.P90毫秒}、P99 ${d.小结.P99毫秒}；出帧合计 ${fmtSec(frameTotalMs)}`,
+    `${d.label}  ${d.startedAt}  ${d.host}（${d.platform}）`,
+    ...Object.entries(d.env).map(([k, v]) => `  ${k}：${v}`),
+    `总 ${d.totalSec.toFixed(1)} 秒，${d.summary.frameCount} 帧，首帧 ${fmtSec(d.summary.firstFrameMs)}；其后每帧 中位 ${d.summary.medianMs} 毫秒、P90 ${d.summary.p90Ms}、P99 ${d.summary.p99Ms}；出帧合计 ${fmtSec(frameTotalMs)}`,
   ];
-  if (d.阶段.length) lines.push('阶段：', ...d.阶段.map((r) => `  ${r.阶段.padEnd(8, '　')} ${r.秒.toFixed(1)} 秒`));
-  if (d.等待.length) {
+  if (d.stage.length) lines.push('阶段：', ...d.stage.map((r) => `  ${r.stage.padEnd(8, '　')} ${r.sec.toFixed(1)} 秒`));
+  if (d.waiting.length) {
     lines.push('等得最多（delayRender，可能重叠，加起来不等于出帧合计）：');
-    for (const w of d.等待.slice(0, 10)) lines.push(`  ${fmtSec(w.总毫秒).padStart(9)}  ${String(w.次).padStart(5)} 次  最长 ${fmtSec(w.最大毫秒)}  ${w.标签}`);
+    for (const w of d.waiting.slice(0, 10)) lines.push(`  ${fmtSec(w.totalMs).padStart(9)}  ${String(w.count).padStart(5)} 次  最长 ${fmtSec(w.maxMs)}  ${w.label}`);
   }
-  if (d.小结.最慢帧.length) {
+  if (d.summary.slowestFrames.length) {
     lines.push('最慢的帧：');
-    for (const f of d.小结.最慢帧) {
-      const waits = d.帧.find((x) => x.帧 === f.帧)?.等 ?? {};
-      lines.push(`  第 ${f.帧} 帧 ${f.毫秒} 毫秒  ${Object.entries(waits).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${v}`).join('、')}`);
+    for (const f of d.summary.slowestFrames) {
+      const waits = d.frame.find((x) => x.frame === f.frame)?.waits ?? {};
+      lines.push(`  第 ${f.frame} 帧 ${f.ms} 毫秒  ${Object.entries(waits).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${v}`).join('、')}`);
     }
   }
-  if (d.系统.length) {
-    const maxOf = (extract: (s: SystemSample) => number | null) => Math.max(...d.系统.map((s) => extract(s) ?? 0));
-    lines.push(`机器（${d.系统.length} 次采样的最大值）：负载 ${maxOf((s) => s.负载)}，子进程内存 ${maxOf((s) => s.子进程内存GB)} GB，子进程 CPU ${maxOf((s) => s.子进程CPU)}%，换出 ${maxOf((s) => s.换出GB)} GB；空闲内存最少 ${Math.min(...d.系统.map((s) => s.空闲内存GB))} GB`);
+  if (d.system.length) {
+    const maxOf = (extract: (s: SystemSample) => number | null) => Math.max(...d.system.map((s) => extract(s) ?? 0));
+    lines.push(`机器（${d.system.length} 次采样的最大值）：负载 ${maxOf((s) => s.load)}，子进程内存 ${maxOf((s) => s.childMemoryGb)} GB，子进程 CPU ${maxOf((s) => s.childCpu)}%，换出 ${maxOf((s) => s.swapOutGb)} GB；空闲内存最少 ${Math.min(...d.system.map((s) => s.freeMemoryGb))} GB`);
   }
   if (tempReport(d)) lines.push(`温度（采样峰值）：${tempReport(d)}`);
   if (file) lines.push(`文件：${file}`);
@@ -310,5 +310,5 @@ export const detailReport = (d: RenderDetail, file?: string) => {
 };
 
 /** anim timing：最近几次一行一条 */
-export const detailOverview = (details: readonly { 明细: RenderDetail }[]) =>
-  details.map(({ 明细: d }) => `${d.开始}  ${d.总秒.toFixed(0).padStart(5)} 秒  ${String(d.小结.帧数).padStart(5)} 帧  中位 ${String(d.小结.中位毫秒).padStart(5)} 毫秒  P90 ${String(d.小结.P90毫秒).padStart(5)}  首帧 ${fmtSec(d.小结.首帧毫秒).padStart(8)}  ${d.等待[0]?.标签 ?? ''}  ${d.标签}${tempReport(d) ? '  ' + tempReport(d) : ''}`).join('\n');
+export const detailOverview = (details: readonly { detail: RenderDetail }[]) =>
+  details.map(({ detail: d }) => `${d.startedAt}  ${d.totalSec.toFixed(0).padStart(5)} 秒  ${String(d.summary.frameCount).padStart(5)} 帧  中位 ${String(d.summary.medianMs).padStart(5)} 毫秒  P90 ${String(d.summary.p90Ms).padStart(5)}  首帧 ${fmtSec(d.summary.firstFrameMs).padStart(8)}  ${d.waiting[0]?.label ?? ''}  ${d.label}${tempReport(d) ? '  ' + tempReport(d) : ''}`).join('\n');

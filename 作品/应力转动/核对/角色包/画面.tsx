@@ -52,7 +52,7 @@ const CompareRig: React.FC<{ view: CompareView; ortho: boolean }> = ({ view, ort
   return null;
 };
 
-const LiYingCompareShot: React.FC<{ 帧: number; width: number; height: number }> = ({ 帧: frame, width, height }) => {
+const LiYingCompareShot: React.FC<{ frame: number; width: number; height: number }> = ({ frame: frame, width, height }) => {
   const view = compareViews[frame]!;
   const k = rad(view.az + 25);
   const key: [number, number, number] = [Math.sin(k) * 3.3, Math.cos(k) * 3.3, 2.3];
@@ -178,7 +178,7 @@ const LipRig: React.FC<{ width: number; z: number }> = ({ width, z }) => {
   return null;
 };
 
-const LipPreviewShot: React.FC<{ 帧: number; width: number; height: number }> = ({ 帧: frame, width, height }) => {
+const LipPreviewShot: React.FC<{ frame: number; width: number; height: number }> = ({ frame: frame, width, height }) => {
   const view = MOUTH_PREVIEW_VIEWS[frame]!;
   const span = view.items.length * GAP;
   return (
@@ -206,13 +206,13 @@ const LipPreviewShot: React.FC<{ 帧: number; width: number; height: number }> =
 // ---------- 照口型演示（旧 口型预览.tsx 的 MouthDemo；视图表记的是那个 24 帧一秒的旧 Composition 的帧号，这里换成秒）。
 // 台词照旧 镜头/6-3-1/编排.ts 的 lines，帧 写开口秒（mouthAt 每秒给 1） ----------
 const lines631 = [
-  { id: '6-3-1-李樱-又回到这里', 帧: 1.0 },
-  { id: '6-3-1-九胡-边城脚下', 帧: 4.4 },
-  { id: '6-3-1-九胡-怎么下去', 帧: 8.25 },
+  { id: '6-3-1-李樱-又回到这里', frame: 1.0 },
+  { id: '6-3-1-九胡-边城脚下', frame: 4.4 },
+  { id: '6-3-1-九胡-怎么下去', frame: 8.25 },
 ];
 const OLD_COMPOSITION_FPS = 24;
 
-const LipDemoShot: React.FC<{ 帧: number; width: number; height: number }> = ({ 帧: oldFrame, width, height }) => {
+const LipDemoShot: React.FC<{ frame: number; width: number; height: number }> = ({ frame: oldFrame, width, height }) => {
   const sec = oldFrame / OLD_COMPOSITION_FPS;
   return (
     <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
@@ -230,14 +230,14 @@ const LipDemoShot: React.FC<{ 帧: number; width: number; height: number }> = ({
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
-  const size = { width: v.宽, height: v.高 };
+  const size = { width: v.width, height: v.height };
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, ...size }}>
-        {v.reference.id === '李樱对照' && <LiYingCompareShot 帧={v.reference.帧} {...size} />}
+        {v.reference.id === '李樱对照' && <LiYingCompareShot frame={v.reference.frame} {...size} />}
         {v.reference.id === '拔刀剑持刀对照' && <SwordCompareShot {...size} />}
-        {v.reference.id === '口型预览' && <LipPreviewShot 帧={v.reference.帧} {...size} />}
-        {v.reference.id === '口型演示' && <LipDemoShot 帧={v.reference.帧} {...size} />}
+        {v.reference.id === '口型预览' && <LipPreviewShot frame={v.reference.frame} {...size} />}
+        {v.reference.id === '口型演示' && <LipDemoShot frame={v.reference.frame} {...size} />}
       </div>
     </AbsoluteFill>
   );

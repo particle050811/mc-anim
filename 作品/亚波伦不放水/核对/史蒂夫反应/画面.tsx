@@ -38,17 +38,17 @@ const SceneView: React.FC<{ v: View }> = ({ v }) => {
   const totemTable = useMemo(() => totemParticleTable(originPos, 1, { ground: 0 }), []);
   const trajectory = useMemo(() => deathDropTrack(originPos, steveDropCount, 3), []);
   const whiteSmoke = useMemo(() => deathPoof(originPos, 0.6, 1.8, 0, 5), []);
-  const sinceDeath = v.状态.afterDeathSec;
-  const arrow = v.arrowSec === undefined || !v.状态.看 ? null : arrowFlight(arrowLaunchPoint(originPos), [v.状态.看[0], v.状态.看[1], v.状态.看[2] - arrowLaunchPoint(originPos)[2]], 1, v.arrowSec);
+  const sinceDeath = v.state.afterDeathSec;
+  const arrow = v.arrowSec === undefined || !v.state.看 ? null : arrowFlight(arrowLaunchPoint(originPos), [v.state.看[0], v.state.看[1], v.state.看[2] - arrowLaunchPoint(originPos)[2]], 1, v.arrowSec);
   return (
     <>
-      <ReactingSteve 状态={{ 位置: originPos, facing: 180, ...v.状态 }} />
+      <ReactingSteve state={{ 位置: originPos, facing: 180, ...v.state }} />
       {arrow && <Arrow p={arrow.p} dir={arrow.dir} />}
-      {v.totemSec !== undefined && <TotemParticles 表={totemTable} 秒={v.totemSec} />}
+      {v.totemSec !== undefined && <TotemParticles 表={totemTable} sec={v.totemSec} />}
       {sinceDeath !== undefined && (
         <>
-          <DeathDrop trajectory={trajectory} drops={steveDrops(sinceDeath)} 秒={sinceDeath} />
-          <VanillaParticles spawns={whiteSmoke} 秒={sinceDeath} />
+          <DeathDrop trajectory={trajectory} drops={steveDrops(sinceDeath)} sec={sinceDeath} />
+          <VanillaParticles spawns={whiteSmoke} sec={sinceDeath} />
         </>
       )}
     </>
@@ -59,7 +59,7 @@ const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: false }}>
         <color attach="background" args={['#5a5e66']} />
         <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -73,8 +73,8 @@ const picture: React.FC = () => {
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

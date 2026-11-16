@@ -3,127 +3,127 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/6-李樱-RoadRoller": {
-      "时长": 2.72,
-      "峰值": -5.9,
-      "响度": -18,
+      "duration": 2.72,
+      "peakDb": -5.9,
+      "loudness": -18,
       "sha": "a5b0f8578d40"
     },
     "音效/block.deepslate.break.2": {
-      "时长": 0.866729,
-      "峰值": -6.6,
-      "响度": -32.6,
+      "duration": 0.866729,
+      "peakDb": -6.6,
+      "loudness": -32.6,
       "sha": "8c2b92cba456"
     },
     "音效/block.deepslate.break.3": {
-      "时长": 0.921708,
-      "峰值": -6.2,
-      "响度": -29.5,
+      "duration": 0.921708,
+      "peakDb": -6.2,
+      "loudness": -29.5,
       "sha": "337166a0c5f8"
     },
     "音效/block.deepslate.break.4": {
-      "时长": 0.825292,
-      "峰值": -6.4,
-      "响度": -30.5,
+      "duration": 0.825292,
+      "peakDb": -6.4,
+      "loudness": -30.5,
       "sha": "49081ba48a64"
     },
     "音效/block.deepslate.fall.2": {
-      "时长": 0.913375,
-      "峰值": -7.1,
-      "响度": -31,
+      "duration": 0.913375,
+      "peakDb": -7.1,
+      "loudness": -31,
       "sha": "11895f18bea0"
     },
     "音效/block.gravel.break.1": {
-      "时长": 0.5,
-      "峰值": -1.5,
-      "响度": -23.9,
+      "duration": 0.5,
+      "peakDb": -1.5,
+      "loudness": -23.9,
       "sha": "55a610c8739c"
     },
     "音效/block.gravel.break.2": {
-      "时长": 0.5,
-      "峰值": -0.6,
-      "响度": -27.6,
+      "duration": 0.5,
+      "peakDb": -0.6,
+      "loudness": -27.6,
       "sha": "60ebf0ed49f2"
     },
     "音效/block.gravel.break.3": {
-      "时长": 0.5,
-      "峰值": -0.8,
-      "响度": -22.6,
+      "duration": 0.5,
+      "peakDb": -0.8,
+      "loudness": -22.6,
       "sha": "ab5e4b408d1e"
     },
     "音效/block.sculk.break.1": {
-      "时长": 1.994875,
-      "峰值": -10.8,
-      "响度": -35.7,
+      "duration": 1.994875,
+      "peakDb": -10.8,
+      "loudness": -35.7,
       "sha": "1f72278353b7"
     },
     "音效/block.sculk.break.13": {
-      "时长": 1.419771,
-      "峰值": -13.7,
-      "响度": -36.3,
+      "duration": 1.419771,
+      "peakDb": -13.7,
+      "loudness": -36.3,
       "sha": "16764846abc4"
     },
     "音效/block.sculk.break.4": {
-      "时长": 1.359896,
-      "峰值": -11.2,
-      "响度": -34.7,
+      "duration": 1.359896,
+      "peakDb": -11.2,
+      "loudness": -34.7,
       "sha": "303652913426"
     },
     "音效/block.stone.break.1": {
-      "时长": 0.5,
-      "峰值": -4.1,
-      "响度": -28.5,
+      "duration": 0.5,
+      "peakDb": -4.1,
+      "loudness": -28.5,
       "sha": "97f2a8a73b6f"
     },
     "音效/block.stone.break.2": {
-      "时长": 0.5,
-      "峰值": -3.5,
-      "响度": -29.2,
+      "duration": 0.5,
+      "peakDb": -3.5,
+      "loudness": -29.2,
       "sha": "98a5c3197845"
     },
     "音效/block.stone.break.3": {
-      "时长": 0.5,
-      "峰值": -7.2,
-      "响度": -28.6,
+      "duration": 0.5,
+      "peakDb": -7.2,
+      "loudness": -28.6,
       "sha": "19273f0e7e25"
     },
     "音效/block.stone.break.4": {
-      "时长": 0.5,
-      "峰值": -2.5,
-      "响度": -27.7,
+      "duration": 0.5,
+      "peakDb": -2.5,
+      "loudness": -27.7,
       "sha": "b164e7324510"
     },
     "音效/block.stone.fall.2": {
-      "时长": 0.484376,
-      "峰值": -7,
-      "响度": -33.9,
+      "duration": 0.484376,
+      "peakDb": -7,
+      "loudness": -33.9,
       "sha": "2cfbf8787436"
     },
     "音效/cataclysm.heavy_smash": {
-      "时长": 2.142857,
-      "峰值": 0.2,
-      "响度": -10.5,
+      "duration": 2.142857,
+      "peakDb": 0.2,
+      "loudness": -10.5,
       "sha": "1c5319f2ace4"
     },
     "音效/entity.player.big_fall": {
-      "时长": 0.25,
-      "峰值": -0.2,
-      "响度": -70,
+      "duration": 0.25,
+      "peakDb": -0.2,
+      "loudness": -70,
       "sha": "abd98f860210"
     },
     "音效/item.elytra.flying": {
-      "时长": 10.220333,
-      "峰值": -12.3,
-      "响度": -24.9,
+      "duration": 10.220333,
+      "peakDb": -12.3,
+      "loudness": -24.9,
       "sha": "0f51f0fd6647"
     }
   },
-  "台词": {
+  "lines": {
     "6-李樱-RoadRoller": {
-      "配音": "配音/6-李樱-RoadRoller",
-      "开口": 0,
-      "时长": 2.72
+      "voice": "配音/6-李樱-RoadRoller",
+      "mouthOpen": 0,
+      "duration": 2.72
     }
   }
 };

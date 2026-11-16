@@ -31,7 +31,7 @@ export const TakeOff: React.FC = () => {
   const t = useCurrentSec();
   const { width, height } = useVideoConfig();
   const local = choreo.camera(t);
-  const origin = choreo.courtyard.原点;
+  const origin = choreo.courtyard.origin;
   const toWorld = (p: number[]) => [p[0] + origin[0], p[1] + origin[1], p[2] + origin[2]];
   const cam = { ...local, pos: toWorld(local.pos), tgt: toWorld(local.tgt) };
   const broom = choreo.broom(t);
@@ -54,7 +54,7 @@ export const TakeOff: React.FC = () => {
               一镜到底（6-1-4+5）从第 0 帧起画它，这里不画的话末帧接 6-1-4+5 首帧时塔尖一下子冒出来（整合时逐像素比出来的）。
               时间照一镜到底的口径：6-1-3 末帧 = 一镜到底第 0 帧（物理时间 0），塔还没被撞 */}
           {t >= choreo.beats.takeoff && <LichScene t={t - choreo.beats.last - pierceTimes.巫妖} />}
-          <LandmarkPlacement 名="娜迦庭院">
+          <LandmarkPlacement name="娜迦庭院">
             {broom.appear > 0 && (
               <RideBroom
                 pos={broom.pos}

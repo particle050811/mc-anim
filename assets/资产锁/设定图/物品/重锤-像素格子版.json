@@ -1,6 +1,6 @@
 {
+  "lib": "私有",
   "sha256": "e67bb6bea596b7e9264ae82af60d47f2e5be71efde81f6ec83cb3da3e79559f0",
-  "后缀": ".png",
-  "大小": 82023,
-  "库": "私有"
+  "size": 82023,
+  "suffix": ".png"
 }

@@ -29,11 +29,11 @@ describe('sha缓存', () => {
     c.存();
     const c2 = new ShaCache(cacheFile(), root);
     expect(await c2.hash(a)).toBe(await fileSha(a));
-    expect(c2.统计).toMatchObject({ cacheHits: 1, computed: 0 });
+    expect(c2.stats).toMatchObject({ cacheHits: 1, computed: 0 });
     writeFile('cache/母版/x/a.mkv', 'bbbb', Date.parse('2026-10-02T00:00:00Z'));
     expect(c2.取(a)).toBeUndefined();
     expect(await c2.hash(a)).toBe(await fileSha(a));
-    expect(c2.统计.computed).toBe(1);
+    expect(c2.stats.computed).toBe(1);
   });
 
   it('键是相对根的 / 路径；存时合并磁盘上别人新写的、去掉文件已经不在的', async () => {
@@ -45,11 +45,11 @@ describe('sha缓存', () => {
     await secondCache.hash(b);
     cache.存();
     secondCache.存();
-    const j = JSON.parse(fs.readFileSync(cacheFile(), 'utf8')) as { 文件: Record<string, unknown> };
-    expect(Object.keys(j.文件).sort()).toEqual(['cache/母版/x/a.mkv', 'cache/母版/x/b.mkv']);
+    const j = JSON.parse(fs.readFileSync(cacheFile(), 'utf8')) as { file: Record<string, unknown> };
+    expect(Object.keys(j.file).sort()).toEqual(['cache/母版/x/a.mkv', 'cache/母版/x/b.mkv']);
     fs.rmSync(a);
     new ShaCache(cacheFile(), root).存();
-    expect(Object.keys((JSON.parse(fs.readFileSync(cacheFile(), 'utf8')) as { 文件: object }).文件)).toEqual(['cache/母版/x/b.mkv']);
+    expect(Object.keys((JSON.parse(fs.readFileSync(cacheFile(), 'utf8')) as { file: object }).file)).toEqual(['cache/母版/x/b.mkv']);
   });
 
   it('缓存文件坏了就从头算', async () => {
@@ -57,22 +57,22 @@ describe('sha缓存', () => {
     const a = writeFile('cache/母版/x/a.mkv', 'aaaa');
     const c = new ShaCache(cacheFile(), root);
     expect(await c.hash(a)).toBe(await fileSha(a));
-    expect(c.统计.computed).toBe(1);
+    expect(c.stats.computed).toBe(1);
   });
 
   it('找重复：只看不删（账本不存）时第二遍全走 sha 缓存', async () => {
     const testFiles = ['a', 'b', 'c'].map((n) => {
       const p = writeFile(`cache/母版/x/${n}.mkv`, 'same');
-      return { 路径: p, 大小: 4, 改于: fs.statSync(p).mtimeMs };
+      return { path: p, size: 4, modifiedAt: fs.statSync(p).mtimeMs };
     });
     const fileKey = (p: string) => path.relative(root, p);
     const c1 = new ShaCache(cacheFile(), root);
-    const firstGroups = await findDuplicates(testFiles, { 版本: 1, 文件: {} }, fileKey, { shaCache: c1 });
+    const firstGroups = await findDuplicates(testFiles, { version: 1, file: {} }, fileKey, { shaCache: c1 });
     c1.存();
-    expect(c1.统计.computed).toBe(3);
+    expect(c1.stats.computed).toBe(3);
     const c2 = new ShaCache(cacheFile(), root);
-    const secondGroups = await findDuplicates(testFiles, { 版本: 1, 文件: {} }, fileKey, { shaCache: c2 });
-    expect(c2.统计).toMatchObject({ cacheHits: 3, computed: 0 });
+    const secondGroups = await findDuplicates(testFiles, { version: 1, file: {} }, fileKey, { shaCache: c2 });
+    expect(c2.stats).toMatchObject({ cacheHits: 3, computed: 0 });
     expect(secondGroups).toEqual(firstGroups);
   });
 });

@@ -12,10 +12,10 @@ const unseen = Number.MAX_SAFE_INTEGER;
 let materialOrder = new Map<THREE.Material, number>();
 let groupStart = new Map<object, number>();
 let nextOrder = 0;
-const groupInfo = new WeakMap<THREE.Material, { 组: object; 位: number; 共: number }>();
+const groupInfo = new WeakMap<THREE.Material, { group: object; 位: number; total: number }>();
 // 一组材质的相对先后要固定、不看谁先出现时用（体素五类材质：哪类先出现随挑到的区段变）。第一次见到组里任何一个，整组连号占位
 export const orderInGroup = (material: THREE.Material, group: object, groupPos: number, groupSize: number) => {
-  groupInfo.set(material, { 组: group, 位: groupPos, 共: groupSize });
+  groupInfo.set(material, { group: group, 位: groupPos, total: groupSize });
 };
 // 导入的方块网格（engine/voxel/方块网格.tsx）的材质等资源取到才建，材质编号总比同一帧的其他材质大，于是它和手摆的方块共面时是它盖上来（6-举锤砸穿 的井壁和碎块，用户看过）。这个先后要留住
 const backMaterials = new WeakSet<THREE.Material>();
@@ -34,11 +34,11 @@ const recordMaterial = (material: THREE.Material) => {
     materialOrder.set(material, nextOrder++);
     return;
   }
-  let startIndex = groupStart.get(group.组);
+  let startIndex = groupStart.get(group.group);
   if (startIndex === undefined) {
     startIndex = nextOrder;
-    nextOrder += group.共;
-    groupStart.set(group.组, startIndex);
+    nextOrder += group.total;
+    groupStart.set(group.group, startIndex);
   }
   materialOrder.set(material, startIndex + group.位);
 };

@@ -1,25 +1,25 @@
 # anim verify accept 生成，别手改
-"段" = "核对-角色包"
-"指纹" = "d7742c2210cb240196f301638a5e12ca91c30a5ae77eddcacdbd210a80fe2f1d"
-"平台" = "darwin-arm64"
-"渲染级别" = "视频"
-"认可于" = "2026-10-22T05:00:21Z"
-"提交" = "28ba9e074375a79f03d580bcb00f14ab3ec5f780"
-"理由" = "重组 A1：配音解耦、注册工厂、别名，画面不该变；比对在阈值内"
-"上一版指纹" = "5e2328b44db6764d690be99272bc19cba8b9408ffa3fdda4dcb575be5425e103"
-"宽" = 2600
-"高" = 2400
-"帧数" = 8
-"间隔" = 24
-"音频sha" = "626db8bea999709c8faead0ec9d60025604676fcc44130abe6c1168b90989b3b"
-"响度" = -70
-"起音" = [
+"segment" = "核对-角色包"
+"fingerprint" = "d7742c2210cb240196f301638a5e12ca91c30a5ae77eddcacdbd210a80fe2f1d"
+"platform" = "darwin-arm64"
+"renderLevel" = "视频"
+"approvedAt" = "2026-10-22T05:00:21Z"
+"commit" = "28ba9e074375a79f03d580bcb00f14ab3ec5f780"
+"reason" = "重组 A1：配音解耦、注册工厂、别名，画面不该变；比对在阈值内"
+"prevFingerprint" = "5e2328b44db6764d690be99272bc19cba8b9408ffa3fdda4dcb575be5425e103"
+"width" = 2600
+"height" = 2400
+"frameCount" = 8
+"interval" = 24
+"audioSha" = "626db8bea999709c8faead0ec9d60025604676fcc44130abe6c1168b90989b3b"
+"loudness" = -70
+"onsets" = [
 ]
 
-[["帧"]]
-"帧" = 0
-"哈希" = "16c319fddad60ef31b81297a7eed1187450ad1395f0796cb42f95eb545022a13"
-"块均值" = [
+[["frame"]]
+"frame" = 0
+"hash" = "16c319fddad60ef31b81297a7eed1187450ad1395f0796cb42f95eb545022a13"
+"blockMeans" = [
   "fdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfd141414000000000000000000000000",
   "fdfdfdfdfdfdfdfdfde0dcda6c664a523f2a6d6749d1ccc9fdfdfdfdfdfdfdfdfd141414000000000000000000000000",
   "fdfdfdfdfdfdfdfdfddedddc7459488e695380614fcbc9c7fdfdfdfdfdfdfdfdfd141414000000000000000000000000",
@@ -31,10 +31,10 @@
   "fdfdfdfdfdfdfdfdfdfdfdfddbd9d8dad8d7dad8d7fafafafdfdfdfdfdfdfdfdfd141414000000000000000000000000",
 ]
 
-[["帧"]]
-"帧" = 7
-"哈希" = "9309a3903f9e38c548580fdec255444cb93553285fe8b5dfa5fe6963a9889c27"
-"块均值" = [
+[["frame"]]
+"frame" = 7
+"hash" = "9309a3903f9e38c548580fdec255444cb93553285fe8b5dfa5fe6963a9889c27"
+"blockMeans" = [
   "c6d6e2c6d6e2aab4b99ea2a18f959a9ea2a2a1a8acc6d6e2b1b6c7c1bdafc8d5dbc6d5dfcbcbb8abaabac6d6e295a1ab",
   "c6d6e2b9c4cd7567477f7d59563d2c817e59706343a7acb2c5cfd4deaf74e9ba58e7b354e5bb76cacac5c6d6e295a1ab",
   "c6d6e2c1d0db483c33694c41705644694a3f46362ba6b1b9cdc5b3d1a156c39167d19864c69254d1ccb5c6d6e295a1ab",

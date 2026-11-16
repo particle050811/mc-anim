@@ -27,7 +27,7 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
 
   it('只拍挖三填一：挖一、挖二、挖三、填土一拍一下（第 12～15 拍），挖开天窗在第 18 拍，段尾留够半秒阳光照进洞里（第 3 句从这里接）', () => {
     const expected = [[mainCutEvents.digFirst, 12], [mainCutEvents.digSecond, 13], [mainCutEvents.digThird, 14], [mainCutEvents.fillHole, 15], [mainCutEvents.digSkylight, 18]] as const;
-    for (const [e, n] of expected) expect(e.秒).toBeCloseTo(beatAt(n), 6);
+    for (const [e, n] of expected) expect(e.sec).toBeCloseTo(beatAt(n), 6);
     expect(frameCount - events.digSkylight).toBeGreaterThanOrEqual(Math.round(0.5 * fps));
     for (let f = events.digSkylight; f < frameCount; f++) {
       expect(pitStateAt(f)).toEqual({ dugCount: 3, dirtCovered: false });
@@ -41,18 +41,18 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
   });
 
   it('cue：原声铺满整段；音效是挖三填一、僵尸低吼和挖开天窗，挖、放在碎、放的那一帧，按实测峰值配到目标 dBFS', () => {
-    const soundCues = toFrameCues(seg).filter((c) => c.台词 === undefined);
-    const originalTrack = soundCues.find((c) => c.名 === '原声')!;
-    expect([originalTrack.帧, originalTrack.帧数]).toEqual([0, frameCount]);
-    const assets = soundCues.filter((c) => c.名 !== '原声');
-    expect(assets.map((c) => c.名)).toEqual(['挖一', '挖二', '挖三', '填土', '僵尸', '挖开天窗']);
+    const soundCues = toFrameCues(seg).filter((c) => c.lines === undefined);
+    const originalTrack = soundCues.find((c) => c.name === '原声')!;
+    expect([originalTrack.frame, originalTrack.frameCount]).toEqual([0, frameCount]);
+    const assets = soundCues.filter((c) => c.name !== '原声');
+    expect(assets.map((c) => c.name)).toEqual(['挖一', '挖二', '挖三', '填土', '僵尸', '挖开天窗']);
     for (const c of assets) {
-      expect(c.帧 + c.帧数).toBeLessThanOrEqual(frameCount);
-      const expectedLevels = soundFx[c.名 as keyof typeof soundFx];
-      expect(20 * Math.log10(c.增益 as number) + expectedLevels.峰值).toBeCloseTo(expectedLevels.到, 3);
-      expect(expectedLevels.到).toBeLessThanOrEqual(-15);
+      expect(c.frame + c.frameCount).toBeLessThanOrEqual(frameCount);
+      const expectedLevels = soundFx[c.name as keyof typeof soundFx];
+      expect(20 * Math.log10(c.增益 as number) + expectedLevels.peakDb).toBeCloseTo(expectedLevels.dest, 3);
+      expect(expectedLevels.dest).toBeLessThanOrEqual(-15);
     }
-    expect(assets.map((c) => c.帧)).toEqual([events.digFirst, events.digSecond, events.digThird, events.fillHole, zombiePassHoleFrame - Math.round(roarLeadSec * fps), events.digSkylight]);
+    expect(assets.map((c) => c.frame)).toEqual([events.digFirst, events.digSecond, events.digThird, events.fillHole, zombiePassHoleFrame - Math.round(roarLeadSec * fps), events.digSkylight]);
   });
 
   it('接 2-初入 一镜不切：同一个剖面机位、撤完了排；你站在坑那一格、朝东低头，段首就开始挥手挖', () => {
@@ -109,13 +109,13 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     // 站在坑底那格泥土上
     const pitColumn = crossSectionBlocks(pitStateAt(events.fillHole - 1)).filter((b) => b.位[0] === sectionOrigin[0] - 0.5 && b.位[1] === sectionOrigin[1]);
     expect(Math.max(...pitColumn.map((b) => b.位[2]))).toBe(groundLayers.pitBottom);
-    expect(pitColumn.find((b) => b.位[2] === groundLayers.pitBottom)?.状态).toBe('minecraft:dirt');
+    expect(pitColumn.find((b) => b.位[2] === groundLayers.pitBottom)?.state).toBe('minecraft:dirt');
     // 头顶 z −3 + 1.8 低于填上的土的底面（z −1）
     expect(SteveState(events.fillHole).z + 1.8).toBeLessThan(groundLayers.grassLayer);
     // 裂纹：碎之前长满，碎的那一帧没有
     expect(crackState(events.digSecond - 1)?.级).toBe(9);
     expect(crackState(events.digSecond)).toBeNull();
-    expect(crackState(events.digSkylight - 1)?.格).toEqual(shards[3]!.格);
+    expect(crackState(events.digSkylight - 1)?.cell).toEqual(shards[3]!.cell);
     // 挖的出手：0 → ½ 三刻、½ → 1 一刻
     expect([0, 1, 2, 3, 3.5, 4].map(digHand)).toEqual([0, 1 / 6, 2 / 6, 0.5, 0.75, 0]);
     // 原版下落一格约 4.6 刻

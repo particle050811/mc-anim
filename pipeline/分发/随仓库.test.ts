@@ -12,15 +12,15 @@ const putFile = (dataRoot: string, storage: 'store' | '私有', content: string)
   const h = sha(content);
   fs.mkdirSync(path.join(dataRoot, storage, h.slice(0, 2)), { recursive: true });
   fs.writeFileSync(path.join(dataRoot, storage, h.slice(0, 2), h), content);
-  return { sha256: h, 后缀: '.ogg', 大小: Buffer.byteLength(content), 库: storage };
+  return { sha256: h, suffix: '.ogg', size: Buffer.byteLength(content), lib: storage };
 };
 
 describe('随仓库', () => {
-  const makeBundleSet = (...entries: [string, LockEntry][]): BundleSet => ({ files: new Map(entries.map(([id, e]) => [e.sha256, { entry: e, ids: [id] }])), privateFiles: [], privateLibItems: new Map(), segKeys: ['2-甲'], 地形: [], issues: [] });
+  const makeBundleSet = (...entries: [string, LockEntry][]): BundleSet => ({ files: new Map(entries.map(([id, e]) => [e.sha256, { entry: e, ids: [id] }])), privateFiles: [], privateLibItems: new Map(), segKeys: ['2-甲'], terrain: [], issues: [] });
 
   it('随仓库.toml 只认非空的字符串数组', () => {
-    expect(readRepoManifest('"段" = ["2", "核对-封面帧"]').段).toEqual(['2', '核对-封面帧']);
-    expect(() => readRepoManifest('"段" = [2]')).toThrow(/章也写成字符串/);
+    expect(readRepoManifest('"segment" = ["2", "核对-封面帧"]').segment).toEqual(['2', '核对-封面帧']);
+    expect(() => readRepoManifest('"segment" = [2]')).toThrow(/章也写成字符串/);
     expect(() => readRepoManifest('')).toThrow(/段/);
   });
 
@@ -30,21 +30,21 @@ describe('随仓库', () => {
     const blobA = putFile(dataRoot, 'store', '甲的字节');
     const secondBytes = putFile(dataRoot, 'store', '乙的字节');
     const c = makeBundleSet(['贴图/甲', blobA], ['音效/乙', secondBytes]);
-    expect(writeRepoBundle(c, workDir, dataRoot)).toMatchObject({ added: [`${blobA.sha256.slice(0, 2)}/${blobA.sha256}`, `${secondBytes.sha256.slice(0, 2)}/${secondBytes.sha256}`], 改: [], removed: [], fileCount: 2 });
+    expect(writeRepoBundle(c, workDir, dataRoot)).toMatchObject({ added: [`${blobA.sha256.slice(0, 2)}/${blobA.sha256}`, `${secondBytes.sha256.slice(0, 2)}/${secondBytes.sha256}`], changed: [], removed: [], fileCount: 2 });
     const firstFile = path.join(bytesDir(workDir), blobA.sha256.slice(0, 2), blobA.sha256);
     expect(fs.readFileSync(firstFile, 'utf8')).toBe('甲的字节');
     expect(fs.statSync(firstFile).mode & 0o200).toBeTruthy();
-    expect(compareBytes(c, workDir)).toMatchObject({ added: [], 改: [], removed: [] });
+    expect(compareBytes(c, workDir)).toMatchObject({ added: [], changed: [], removed: [] });
 
     fs.writeFileSync(firstFile, '改坏了');
     fs.writeFileSync(path.join(bytesDir(workDir), 'readme.txt'), 'x');
     fs.mkdirSync(path.join(bytesDir(workDir), 'ff'));
     fs.writeFileSync(path.join(bytesDir(workDir), 'ff', secondBytes.sha256), '乙的字节');
     const r = compareBytes(c, workDir);
-    expect(r.改).toEqual([`${blobA.sha256.slice(0, 2)}/${blobA.sha256}`]);
+    expect(r.changed).toEqual([`${blobA.sha256.slice(0, 2)}/${blobA.sha256}`]);
     expect(r.removed.sort()).toEqual([`ff/${secondBytes.sha256}`, 'readme.txt'].sort());
     writeRepoBundle(c, workDir, dataRoot);
-    expect(compareBytes(c, workDir)).toMatchObject({ added: [], 改: [], removed: [] });
+    expect(compareBytes(c, workDir)).toMatchObject({ added: [], changed: [], removed: [] });
     expect(fs.existsSync(path.join(bytesDir(workDir), 'ff'))).toBe(false);
     expect(fs.readFileSync(firstFile, 'utf8')).toBe('甲的字节');
   });
@@ -53,7 +53,7 @@ describe('随仓库', () => {
     const dataRoot = tmp('随仓库数据根');
     const workDir = tmp('随仓库作品');
     const blobA = putFile(dataRoot, 'store', '甲的字节');
-    const missingEntry: LockEntry = { sha256: 'c'.repeat(64), 后缀: '.png', 大小: 1, 库: 'store' };
+    const missingEntry: LockEntry = { sha256: 'c'.repeat(64), suffix: '.png', size: 1, lib: 'store' };
     expect(() => writeRepoBundle(makeBundleSet(['贴图/甲', blobA], ['贴图/缺', missingEntry]), workDir, dataRoot)).toThrow(/贴图\/缺/);
     expect(fs.existsSync(bytesDir(workDir))).toBe(false);
     fs.writeFileSync(path.join(dataRoot, 'store', blobA.sha256.slice(0, 2), blobA.sha256), '被改了');
@@ -72,13 +72,13 @@ describe('随仓库', () => {
     fs.mkdirSync(path.dirname(storePath), { recursive: true });
     fs.writeFileSync(storePath, '乙的字节');
     const time = fs.statSync(storePath).mtimeMs;
-    expect(fillBytes(workDir, dataRoot)).toEqual({ copied: 1, 共: 2 });
+    expect(fillBytes(workDir, dataRoot)).toEqual({ copied: 1, total: 2 });
     const filledPath = path.join(dataRoot, 'store', blobA.sha256.slice(0, 2), blobA.sha256);
     expect(fs.readFileSync(filledPath, 'utf8')).toBe('甲的字节');
     if (process.platform !== 'win32') expect(fs.statSync(filledPath).mode & 0o222).toBe(0);
     expect(fs.statSync(storePath).mtimeMs).toBe(time);
     expect(fs.readdirSync(path.dirname(filledPath))).toEqual([blobA.sha256]);
-    expect(fillBytes(workDir, dataRoot)).toEqual({ copied: 0, 共: 2 });
+    expect(fillBytes(workDir, dataRoot)).toEqual({ copied: 0, total: 2 });
 
     // 换行被 git 改过这类：内容 sha 和文件名对不上
     const emptyRoot = tmp('空数据根');
@@ -87,6 +87,6 @@ describe('随仓库', () => {
     fs.writeFileSync(path.join(bytesDir(workDir), 'x.txt'), '');
     expect(() => fillBytes(workDir, emptyRoot)).toThrow(/只放/);
     // 没有 字节/ 的作品什么都不做
-    expect(fillBytes(tmp('无字节作品'), emptyRoot)).toEqual({ copied: 0, 共: 0 });
+    expect(fillBytes(tmp('无字节作品'), emptyRoot)).toEqual({ copied: 0, total: 0 });
   });
 });

@@ -31,7 +31,7 @@ const GX = -Math.sin((GHAST_HEADING * Math.PI) / 180);
 const GY = Math.cos((GHAST_HEADING * Math.PI) / 180);
 // 对正：进穿刺线以前直飞 320 米（1 秒），碰到身子以前目标在画面正中越来越大（直航设计.ts 的 对正）；穿出来再直飞 100 米才拐（同 后余）
 export const ghastPierceLine = {
-  名: '暮初恶魂',
+  name: '暮初恶魂',
   V: speed,
   facing: towerFrame.facing(GHAST_HEADING),
   tip: (a: number): V3 => towerFrame.toWorld([GHAST_AT[0] + GX * a, GHAST_AT[1] + GY * a, GHAST_AT[2]]),
@@ -41,7 +41,7 @@ export const ghastPierceLine = {
   出: UR_GHAST.bodySize / 2,
 };
 export const GHAST_DEATH = { boom: 3 / 24, gone: 6 / 24 };
-export const ghastShowWindow = { 起: -40, 止: 8 };
+export const ghastShowWindow = { start: -40, end: 8 };
 
 // ================= 雪怪首领（6-1-7b） =================
 // 雪怪洞窟是 65×65 米、顶面平的大土丘（顶面 z≈32，洞顶内表面 z≈24，长满挂雪云杉），洞在里面：十字形大厅，中央 49×49（本地 x、y 各 ±24.5），
@@ -72,7 +72,7 @@ const climbAngle = 20 * deg;
 const tailLen = 20;
 const cruiseZAt = (dist: number) => {
   const worldPt = caveFrame.toWorld([YETI_AT[0] + HX * dist, YETI_AT[1] + HY * dist, 0]);
-  return cruiseHeight(worldPt[0], worldPt[1]) - caveFrame.原点[2];
+  return cruiseHeight(worldPt[0], worldPt[1]) - caveFrame.origin[2];
 };
 // 从压机头那一点（a 0、高 高）往前积，保持 直 米；找俯仰过 贯穿角 的那一点（洞里那段弧上），把它挪到 (0, 胸口)
 const solveProfile = (height: number) => {
@@ -110,7 +110,7 @@ export const yetiTipLocal = (a: number): V3 => [YETI_AT[0] + HX * a, YETI_AT[1] 
 export const yetiTunnels = { enterGround: -61, enterCave: -36, exitCave: 34, exitGround: 92.5 };
 export const yetiProfileInfo = { diveStartA: yetiProfile.diveStart.a, climbEndA: yetiProfile.climbEndA };
 export const yetiPierceLine = {
-  名: '雪怪首领',
+  name: '雪怪首领',
   V: speed,
   facing: caveFrame.facing(YETI_HEADING),
   tip: (a: number): V3 => caveFrame.toWorld(yetiTipLocal(a)),
@@ -122,7 +122,7 @@ export const yetiPierceLine = {
 };
 export const YETI_T_DIVE = yetiProfile.diveStart.s / speed;
 export const YETI_DEATH = { boom: 4 / 24, gone: 6 / 24 };
-export const yetiShowWindow = { 起: -40, 止: 8 };
+export const yetiShowWindow = { start: -40, end: 8 };
 // 矛管（用户 10-02 追加）：矛尖连钻头虚影扫过的那一管方块当场崩成原版破坏粒子，不整块飞（模型/特效/方块飞溅.tsx）。
 // 点每 0.5 米一个，时刻按矛尖路线弧长 / 速度算（贯穿 = 0），再减去这次撞击的时刻。远景原速：粒子按原版时钟最长活 2 秒；每格每轴只取 2 份（8 个，原版 64 个）。常量对象：哪些格子在管里只算一次
 // 弧长表的范围（a，米）：两条隧道都在里面；碎块管子只取核心（网格只画 ±31.5）
@@ -148,7 +148,7 @@ export const yetiTimeAt = (dist: number) => {
   return (arcLen.s[k] + (arcLen.s[k + 1] - arcLen.s[k]) * frac) / speed;
 };
 const tubeFor = (impactA: number): SpearTube => ({
-  点: arcLen.as.flatMap((a, k) => (a >= tubeStartA && a <= tubeEndA ? [[...yetiTipLocal(a), arcLen.s[k] / speed - yetiTimeAt(impactA)]] : [])),
+  points: arcLen.as.flatMap((a, k) => (a >= tubeStartA && a <= tubeEndA ? [[...yetiTipLocal(a), arcLen.s[k] / speed - yetiTimeAt(impactA)]] : [])),
   radius: SPEAR_FIT.tubeRadius,
   particleClockScale: 1,
   density: 2,

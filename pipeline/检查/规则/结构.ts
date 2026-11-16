@@ -10,27 +10,27 @@ import { basisKey } from '../../指纹/去依据.ts';
 import type * as assetDirModule from '../../../engine/core/资产目录.ts';
 
 type LayerName = 'engine' | '库' | '作品公共' | '场' | '段' | '注册' | '核对' | 'pipeline' | '其他';
-type PathLayer = { 名: LayerName; 键?: string };
+type PathLayer = { name: LayerName; key?: string };
 
 /** 级数小的在左边：只能往级数小（或相等）的方向 import */
 const layerRank: Partial<Record<LayerName, number>> = { engine: 0, 库: 1, 作品公共: 2, 场: 3, 段: 4, 注册: 5 };
 
 export const layerOf = (p: string): PathLayer => {
-  if (p.startsWith('engine/')) return { 名: 'engine' };
-  if (p.startsWith('库/')) return { 名: '库' };
+  if (p.startsWith('engine/')) return { name: 'engine' };
+  if (p.startsWith('库/')) return { name: '库' };
   const m = /^作品\/[^/]+\/(场|段|核对)\/([^/]+)\//.exec(p);
-  if (m) return { 名: m[1] as '场' | '段' | '核对', 键: m[2] };
-  if (/^作品\/[^/]+\/(注册\.tsx|index\.ts)$/.test(p)) return { 名: '注册' };
-  if (p.startsWith('作品/')) return { 名: '作品公共' };
-  if (p.startsWith('pipeline/')) return { 名: 'pipeline' };
-  return { 名: '其他' };
+  if (m) return { name: m[1] as '场' | '段' | '核对', key: m[2] };
+  if (/^作品\/[^/]+\/(注册\.tsx|index\.ts)$/.test(p)) return { name: '注册' };
+  if (p.startsWith('作品/')) return { name: '作品公共' };
+  if (p.startsWith('pipeline/')) return { name: 'pipeline' };
+  return { name: '其他' };
 };
 
-const isRenderLayer = (l: PathLayer) => l.名 in layerRank || l.名 === '核对';
+const isRenderLayer = (l: PathLayer) => l.name in layerRank || l.name === '核对';
 const isForbiddenPkg = (pkg: string) => ['react', 'react-dom', 'three', 'remotion'].includes(pkg) || pkg.startsWith('@remotion/');
 export const binaryAssetExt = /\.(png|jpe?g|webp|gif|ogg|wav|mp3|m4a|flac|bin|ttf|otf|woff2?|mp4|mkv|mov|glb|gltf)$/i;
 
-const displayName = (l: PathLayer) => (l.键 ? `${l.名}/${l.键}` : l.名);
+const displayName = (l: PathLayer) => (l.key ? `${l.name}/${l.key}` : l.name);
 /** 文件属于哪部作品（作品/<名>/ 下的才有） */
 const ownerWork = (p: string) => /^作品\/([^/]+)\//.exec(p)?.[1];
 
@@ -46,26 +46,26 @@ export const edgeIssue = (c: CheckContext, fromFile: string, target: string, sce
   const toWork = ownerWork(target);
   if (fromWork && toWork && fromWork !== toWork) return `作品不许引用别的作品：${fromFile} → ${target}（两部作品共用的东西放 库/ 或 engine/）`;
   // 例外：核对段没有场，几段共用的场时间线放在头一段目录里（核对/<名>/时间线.ts），别的核对段可以引它
-  if (b.名 === '核对' && !(a.名 === '核对' && (a.键 === b.键 || target.endsWith(`/核对/${b.键}/时间线.ts`)))) {
+  if (b.name === '核对' && !(a.name === '核对' && (a.key === b.key || target.endsWith(`/核对/${b.key}/时间线.ts`)))) {
     return `不许引用 核对/：${fromFile} → ${target}（核对可以引任何东西，反过来不行；核对段之间只许引别的核对段的 时间线.ts）`;
   }
-  if (a.名 === 'pipeline') {
-    if (typeOnly && (b.名 === 'engine' || b.名 === '库')) return null;
+  if (a.name === 'pipeline') {
+    if (typeOnly && (b.name === 'engine' || b.name === '库')) return null;
     return isRenderLayer(b) && !isPureModule(target) ? `pipeline 只许 import 纯模块（清单.ts、段.ts、时间线.ts、末态.ts…）${typeOnly ? '，类型也一样' : ''}：${fromFile} → ${target}` : null;
   }
   if (!isRenderLayer(a)) return null; // remotion.config.ts 这类配置、工具脚本
   if (target === 'assets/地形版本.json') {
     return `渲染代码不许 import 地形版本表：${fromFile}（整表进闭包，改任何一个包声明没声明的段都过期；版本由渲染入口按段传，见 engine/voxel/区段包位置.ts）`;
   }
-  if (b.名 === 'pipeline' || (b.名 === '其他' && codeExtRegex.test(target))) return `渲染代码不许 import 管线和工具代码：${fromFile} → ${target}`;
-  if (a.名 === '核对' || b.名 === '其他') return null; // 核对可以引任何东西；其他 是进 Git 的数据文件（json）
-  if (a.名 === '段' && b.名 === '段' && a.键 !== b.键) return `段不许引用别的段：${fromFile} → ${target}（两段共用的东西往下放到场或作品公共目录）`;
-  if (a.名 === '场' && b.名 === '场' && a.键 !== b.键) {
-    const prevScene = sceneOrder && a.键 ? sceneOrder[sceneOrder.indexOf(a.键) - 1] : undefined;
-    if (target === c.workPath(`场/${b.键}/末态.ts`) && prevScene === b.键) return null;
+  if (b.name === 'pipeline' || (b.name === '其他' && codeExtRegex.test(target))) return `渲染代码不许 import 管线和工具代码：${fromFile} → ${target}`;
+  if (a.name === '核对' || b.name === '其他') return null; // 核对可以引任何东西；其他 是进 Git 的数据文件（json）
+  if (a.name === '段' && b.name === '段' && a.key !== b.key) return `段不许引用别的段：${fromFile} → ${target}（两段共用的东西往下放到场或作品公共目录）`;
+  if (a.name === '场' && b.name === '场' && a.key !== b.key) {
+    const prevScene = sceneOrder && a.key ? sceneOrder[sceneOrder.indexOf(a.key) - 1] : undefined;
+    if (target === c.workPath(`场/${b.key}/末态.ts`) && prevScene === b.key) return null;
     return `场只许引用上一场的 末态.ts：${fromFile} → ${target}${prevScene ? `（上一场是 ${prevScene}）` : '（清单里排不出上一场）'}`;
   }
-  if (layerRank[b.名]! > layerRank[a.名]!) return `分层方向反了：${displayName(a)} 不能引用 ${displayName(b)}（${fromFile} → ${target}；只能 engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册）`;
+  if (layerRank[b.name]! > layerRank[a.name]!) return `分层方向反了：${displayName(a)} 不能引用 ${displayName(b)}（${fromFile} → ${target}；只能 engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册）`;
   return null;
 };
 
@@ -77,14 +77,14 @@ export const readSceneOrder = async (c: CheckContext) => {
 
 export const checkLayers = async (c: CheckContext, report: CheckReport) => {
   const depGraph = await c.depGraph();
-  for (const e of depGraph.错误) report.错(`打包失败，依赖图不全：${e}`);
+  for (const e of depGraph.errors) report.错(`打包失败，依赖图不全：${e}`);
   const sceneOrder = await readSceneOrder(c);
 
   for (const [fromFile, edges] of depGraph.edges) {
     if (c.isOtherWork(fromFile)) continue; // 别的作品的文件只会经下面报过的跨作品引用进图，它自己的边归它自己查
     for (const e of edges) {
       if (e.external) continue;
-      const issue = edgeIssue(c, fromFile, e.到, sceneOrder);
+      const issue = edgeIssue(c, fromFile, e.dest, sceneOrder);
       if (issue) report.错(issue, fromFile);
     }
   }
@@ -102,18 +102,18 @@ export const checkLayers = async (c: CheckContext, report: CheckReport) => {
     };
     while (queue.length) {
       const f = queue.shift()!;
-      for (const id of depGraph.资产.get(f) ?? []) report.错(`纯模块的闭包里不能有 asset:（pipeline 在 Node 里直接执行它）：${chain(f)} → asset:${id}`, pureModule);
+      for (const id of depGraph.asset.get(f) ?? []) report.错(`纯模块的闭包里不能有 asset:（pipeline 在 Node 里直接执行它）：${chain(f)} → asset:${id}`, pureModule);
       for (const e of depGraph.edges.get(f) ?? []) {
         if (e.external) {
-          if (isForbiddenPkg(e.到) && !reported.has(e.到)) {
-            reported.add(e.到);
-            report.错(`纯模块的闭包里不能有 ${e.到}：${chain(f)} → ${e.到}`, pureModule);
+          if (isForbiddenPkg(e.dest) && !reported.has(e.dest)) {
+            reported.add(e.dest);
+            report.错(`纯模块的闭包里不能有 ${e.dest}：${chain(f)} → ${e.dest}`, pureModule);
           }
-        } else if (binaryAssetExt.test(e.到)) {
-          report.错(`纯模块的闭包里不能有资产文件：${chain(f)} → ${e.到}`, pureModule);
-        } else if (!parentOf.has(e.到)) {
-          parentOf.set(e.到, f);
-          queue.push(e.到);
+        } else if (binaryAssetExt.test(e.dest)) {
+          report.错(`纯模块的闭包里不能有资产文件：${chain(f)} → ${e.dest}`, pureModule);
+        } else if (!parentOf.has(e.dest)) {
+          parentOf.set(e.dest, f);
+          queue.push(e.dest);
         }
       }
     }
@@ -122,7 +122,7 @@ export const checkLayers = async (c: CheckContext, report: CheckReport) => {
   // 渲染代码用相对路径 import 资产文件
   for (const [fromFile, edges] of depGraph.edges) {
     if (!isRenderCode(fromFile)) continue;
-    for (const e of edges) if (!e.external && binaryAssetExt.test(e.到)) report.错(`资产要写 asset:<id> 引用，不用相对路径：${fromFile} → ${e.到}`, fromFile);
+    for (const e of edges) if (!e.external && binaryAssetExt.test(e.dest)) report.错(`资产要写 asset:<id> 引用，不用相对路径：${fromFile} → ${e.dest}`, fromFile);
   }
 };
 
@@ -193,9 +193,9 @@ const rendererEntry = 'pipeline/渲/渲染器.ts';
 const entryHint = `值导入必须通过 ${rendererEntry}（绑定 CJS 混音补丁；类型可直引）`;
 
 /** vitest 和 anim check 共用；不追踪拼接或变量，只守可直接识别的入口绕行。 */
-export const checkRendererEntry = (file: string, sourceText: string): { 行: number; 文本: string }[] => {
+export const checkRendererEntry = (file: string, sourceText: string): { 行: number; text: string }[] => {
   if (!file.startsWith('pipeline/') || !/\.[cm]?[jt]s$/.test(file) || /\.d\.[cm]?ts$/.test(file)) return [];
-  const issues: { 行: number; 文本: string }[] = [];
+  const issues: { 行: number; text: string }[] = [];
   const isTest = /\.test\.[cm]?[jt]s$/.test(file);
   const sf = parseSource(file, sourceText);
   const isRendererSpec = (n: ts.Node | undefined) => n && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) &&
@@ -211,10 +211,10 @@ export const checkRendererEntry = (file: string, sourceText: string): { 行: num
   const esmPath = 'renderer/' + 'dist/esm';
   const importResolveRegex = /import\s*\.\s*meta\s*\.\s*resolve\s*\(\s*(['"`])@remotion\/renderer\1/g;
   for (const m of sourceText.matchAll(new RegExp(esmPath, 'g'))) {
-    issues.push({ 行: sf.getLineAndCharacterOfPosition(m.index).line + 1, 文本: `不许引用 renderer 的 ESM 路径：${entryHint}` });
+    issues.push({ 行: sf.getLineAndCharacterOfPosition(m.index).line + 1, text: `不许引用 renderer 的 ESM 路径：${entryHint}` });
   }
   for (const m of sourceText.matchAll(importResolveRegex)) {
-    issues.push({ 行: sf.getLineAndCharacterOfPosition(m.index).line + 1, 文本: `不许用 import.meta.resolve 解析渲染器：${entryHint}` });
+    issues.push({ 行: sf.getLineAndCharacterOfPosition(m.index).line + 1, text: `不许用 import.meta.resolve 解析渲染器：${entryHint}` });
   }
   walk(sf, (n) => {
     if (isTest) {
@@ -222,7 +222,7 @@ export const checkRendererEntry = (file: string, sourceText: string): { 行: num
           ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'vi' &&
           ['mock', 'doMock'].includes(n.expression.name.text) &&
           n.arguments[0] && ts.isStringLiteralLike(n.arguments[0]) && n.arguments[0].text === rendererPkg) {
-        issues.push({ 行: lineNo(sf, n), 文本: `测试要 mock 渲染器.ts，不要 mock '${rendererPkg}'（拦不到 createRequire 加载的 CJS 渲染器）` });
+        issues.push({ 行: lineNo(sf, n), text: `测试要 mock 渲染器.ts，不要 mock '${rendererPkg}'（拦不到 createRequire 加载的 CJS 渲染器）` });
       }
       return;
     }
@@ -233,7 +233,7 @@ export const checkRendererEntry = (file: string, sourceText: string): { 行: num
     const badCall = ts.isCallExpression(n) && isRendererSpec(n.arguments[0]) &&
       !(ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'resolve');
     const badAlias = ts.isImportEqualsDeclaration(n) && !n.isTypeOnly && ts.isExternalModuleReference(n.moduleReference) && isRendererSpec(n.moduleReference.expression);
-    if (badImport || badExport || badCall || badAlias) issues.push({ 行: lineNo(sf, n), 文本: entryHint });
+    if (badImport || badExport || badCall || badAlias) issues.push({ 行: lineNo(sf, n), text: entryHint });
   });
   return issues;
 };
@@ -241,9 +241,9 @@ export const checkRendererEntry = (file: string, sourceText: string): { 行: num
 export const checkStructure = async (c: CheckContext, report: CheckReport) => {
   await checkLayers(c, report);
   checkCode(c, report);
-  for (const p of c.文件()) {
+  for (const p of c.file()) {
     if (!p.startsWith('pipeline/') || !/\.[cm]?[jt]s$/.test(p)) continue;
-    for (const q of checkRendererEntry(p, c.读(p))) report.错(q.文本, p, q.行);
+    for (const q of checkRendererEntry(p, c.读(p))) report.错(q.text, p, q.行);
   }
   checkSectionModelReg(c, report);
 };

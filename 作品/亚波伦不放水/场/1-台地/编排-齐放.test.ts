@@ -35,7 +35,7 @@ const format = (x: unknown) => JSON.stringify(x, (_k, v) => (typeof v === 'numbe
 /** 他这一刻的样子里会动的几样 */
 const steveSample = (t: number) => {
   const s = steveStateAt(t);
-  return format([s.位置, s.facing, s.看, s.秒, s.swingSec, s.hitReactSec, s.charge, s.afterDeathSec, s.leftHand]);
+  return format([s.位置, s.facing, s.看, s.sec, s.swingSec, s.hitReactSec, s.charge, s.afterDeathSec, s.leftHand]);
 };
 const yaBoLunSample = (t: number) => format([perform.在(t).props.pose, perform.在(t).props.bonePose, perform.杖(t).tip]);
 
@@ -56,21 +56,21 @@ describe('第 2 幕末接第 4 幕开头', () => {
     expect(t).toBeCloseTo(openingModule.actEnd, 9);
     const [firstProps, second] = [openingModule.perform.在(openingModule.actEnd).props, perform.在(t).props];
     expect(deepDiff(firstProps.pose, second.pose)).toBeLessThan(1e-9);
-    expect(firstProps.秒).toBeCloseTo(second.秒, 9);
+    expect(firstProps.sec).toBeCloseTo(second.sec, 9);
     // 第 4 幕开头她就开始漂，倾 往后看 0.08 秒，第一帧已经倾了 0.035 度（第 2 幕这一帧还停着）；看不出来，放 0.05 度
     expect(deepDiff(firstProps.bonePose, second.bonePose)).toBeLessThan(0.05);
     expect(deepDiff(openingModule.perform.杖(openingModule.actEnd).tip, perform.杖(t).tip)).toBeLessThan(1e-3);
     const [wheelAct2End, wheelNow] = [openingModule.act2WheelParams(openingModule.actEnd)!, wheelParams(t)];
     expect(deepDiff([wheelAct2End.放 === wheelNow.放 ? 0 : 1, wheelAct2End.刻, wheelAct2End.openClose], [0, wheelNow.刻, wheelNow.openClose])).toBeLessThan(1e-9);
     const [steveAct2End, steveNow] = [openingModule.steveStateAt(openingModule.actEnd, act2EndSteveSec), steveStateAt(t)];
-    expect(deepDiff([steveAct2End.位置, steveAct2End.facing, steveAct2End.看, steveAct2End.秒, steveAct2End.sneak ?? 0, steveAct2End.charge ?? 0], [steveNow.位置, steveNow.facing, steveNow.看, steveNow.秒, steveNow.sneak ?? 0, steveNow.charge ?? 0])).toBeLessThan(1e-6);
+    expect(deepDiff([steveAct2End.位置, steveAct2End.facing, steveAct2End.看, steveAct2End.sec, steveAct2End.sneak ?? 0, steveAct2End.charge ?? 0], [steveNow.位置, steveNow.facing, steveNow.看, steveNow.sec, steveNow.sneak ?? 0, steveNow.charge ?? 0])).toBeLessThan(1e-6);
     expect([steveAct2End.rightHand, steveAct2End.surge]).toEqual([steveNow.rightHand, undefined]);
   });
 });
 
 describe('第 4 幕打击停顿', () => {
   it('索命劈中：16 帧里她、他定住，过了停顿接着动', () => {
-    const startSec = secAt(killingPause.起);
+    const startSec = secAt(killingPause.start);
     for (let f = 1; f <= 16; f++) {
       expect(yaBoLunSample(startSec + f * frameSec)).toBe(yaBoLunSample(startSec));
       expect(steveSample(startSec + f * frameSec)).toBe(steveSample(startSec));
@@ -82,7 +82,7 @@ describe('第 4 幕打击停顿', () => {
   it('只有索命带自己的钟（撕裂照晋升之环缩过的施法刻，不再自己快放）；停顿里索命定住，盘照转', () => {
     expect([...new Set(castTable.filter((x) => x.clock).map((x) => x.id))]).toEqual(['killing']);
     const killCast = castTable.find((x) => x.id === 'killing')!;
-    const startSec = secAt(killingPause.起);
+    const startSec = secAt(killingPause.start);
     expect(killCast.clock!(startSec + 10 * frameSec)).toBeCloseTo(startSec, 9);
     expect(killCast.clock!(startSec + 20 * frameSec)).toBeCloseTo(startSec + 4 * frameSec, 9);
     expect(wheelParams(startSec + 10 * frameSec).刻).not.toBe(wheelParams(startSec).刻);

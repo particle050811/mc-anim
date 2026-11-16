@@ -3,98 +3,98 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/亚波伦/決戦の刻": {
-      "时长": 215.693061,
-      "峰值": 0.6,
-      "响度": -11,
+      "duration": 215.693061,
+      "peakDb": 0.6,
+      "loudness": -11,
       "sha": "210a1de4eb5a"
     },
     "音效/ambient.nether_wastes.mood.2": {
-      "时长": 18,
-      "峰值": -13.3,
-      "响度": -30.6,
+      "duration": 18,
+      "peakDb": -13.3,
+      "loudness": -30.6,
       "sha": "8441f44ac00c"
     },
     "音效/block.stone.step.1": {
-      "时长": 0.609388,
-      "峰值": -8.9,
-      "响度": -33.4,
+      "duration": 0.609388,
+      "peakDb": -8.9,
+      "loudness": -33.4,
       "sha": "e94a295a8764"
     },
     "音效/block.stone.step.2": {
-      "时长": 0.484376,
-      "峰值": -7,
-      "响度": -33.9,
+      "duration": 0.484376,
+      "peakDb": -7,
+      "loudness": -33.9,
       "sha": "2cfbf8787436"
     },
     "音效/block.stone.step.3": {
-      "时长": 0.421882,
-      "峰值": -12,
-      "响度": -36.4,
+      "duration": 0.421882,
+      "peakDb": -12,
+      "loudness": -36.4,
       "sha": "c5d71e8d3251"
     },
     "音效/block.stone.step.4": {
-      "时长": 0.546893,
-      "峰值": -5.9,
-      "响度": -31.8,
+      "duration": 0.546893,
+      "peakDb": -5.9,
+      "loudness": -31.8,
       "sha": "95820d0b75e8"
     },
     "音效/block.stone.step.5": {
-      "时长": 0.562517,
-      "峰值": -9.1,
-      "响度": -31.3,
+      "duration": 0.562517,
+      "peakDb": -9.1,
+      "loudness": -31.3,
       "sha": "67b1e50426b2"
     },
     "音效/block.stone.step.6": {
-      "时长": 0.609388,
-      "峰值": -5.5,
-      "响度": -29.7,
+      "duration": 0.609388,
+      "peakDb": -5.5,
+      "loudness": -29.7,
       "sha": "2b65e1bdb942"
     },
     "音效/item.trident.riptide_1": {
-      "时长": 1.780458,
-      "峰值": -7,
-      "响度": -22.2,
+      "duration": 1.780458,
+      "peakDb": -7,
+      "loudness": -22.2,
       "sha": "36fc7a12163c"
     },
     "音效/诡厄巫法/goety.apostle_pre_teleport": {
-      "时长": 2.647917,
-      "峰值": -0.3,
-      "响度": -15.9,
+      "duration": 2.647917,
+      "peakDb": -0.3,
+      "loudness": -15.9,
       "sha": "b69493a97818"
     },
     "音效/诡厄巫法/goety.apostle_prepare_spell.1": {
-      "时长": 3.871746,
-      "峰值": 0.5,
-      "响度": -10.1,
+      "duration": 3.871746,
+      "peakDb": 0.5,
+      "loudness": -10.1,
       "sha": "29c8a8dd5c2c"
     },
     "音效/诡厄巫法/goety.apostle_teleport.1": {
-      "时长": 0.915714,
-      "峰值": -0.1,
-      "响度": -21.7,
+      "duration": 0.915714,
+      "peakDb": -0.1,
+      "loudness": -21.7,
       "sha": "22ea617abb67"
     },
     "音效/诡厄巫法/goety.wind.1": {
-      "时长": 1.945625,
-      "峰值": -9.7,
-      "响度": -25.9,
+      "duration": 1.945625,
+      "peakDb": -9.7,
+      "loudness": -25.9,
       "sha": "99dfe31aad93"
     },
     "音效/诡厄巫法/goety.wind.2": {
-      "时长": 1.998292,
-      "峰值": -8.6,
-      "响度": -24.6,
+      "duration": 1.998292,
+      "peakDb": -8.6,
+      "loudness": -24.6,
       "sha": "48969cedd3fb"
     },
     "音效/诡厄巫法/goety.wind.3": {
-      "时长": 1.886021,
-      "峰值": -9.1,
-      "响度": -26,
+      "duration": 1.886021,
+      "peakDb": -9.1,
+      "loudness": -26,
       "sha": "09ae3887f11a"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

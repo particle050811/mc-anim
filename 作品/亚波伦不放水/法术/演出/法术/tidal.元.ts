@@ -35,7 +35,7 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'tidal',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // TidalSpell：PLAYER_SPLASH_HIGH_SPEED；浪每 5 刻一声 GENERIC_SWIM 音量 0.15（没记）
-  声音: [{ 资产: '音效/entity.player.splash.high_speed', 秒: 0 }],
+  sound: [{ asset: '音效/entity.player.splash.high_speed', sec: 0 }],
 });

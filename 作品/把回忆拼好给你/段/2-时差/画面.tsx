@@ -25,7 +25,7 @@ const picture: React.FC = () => {
   const outlineColor = lerpTone(palette.夏日白天, palette.褪色, SplitState(frame).fade).outlineColor;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <TimeLagSplit 帧={frame} joining 种子={frame} shading={shadingBySeg['2-时差']} realShading={shadingBySeg['2-时差/现实']} 叠层={<RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor }} />} />
+      <TimeLagSplit frame={frame} joining seed={frame} shading={shadingBySeg['2-时差']} realShading={shadingBySeg['2-时差/现实']} overlay={<RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor }} />} />
     </AbsoluteFill>
   );
 };

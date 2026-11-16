@@ -27,7 +27,7 @@ import seg from './段.ts';
 import { orbitBeat, orbitRig } from './绕拍.ts';
 import soundUrl from './声音地址.生成.ts';
 
-const yaBoLunGeometry = GirlYaBoLunCreature.definition.模型 as Parameters<typeof hemYieldLeg>[0];
+const yaBoLunGeometry = GirlYaBoLunCreature.definition.model as Parameters<typeof hemYieldLeg>[0];
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [lerp(a[0]!, b[0]!, k), lerp(a[1]!, b[1]!, k), lerp(a[2]!, b[2]!, k)];
 /** 段内片秒 → 编排的钟（世界秒） */
@@ -44,11 +44,11 @@ const dirTo = (a: readonly number[], b: readonly number[]): V3 => {
 const perpLeft = (v: readonly number[]): V3 => [-v[1]!, v[0]!, 0];
 
 /** 镜头从片秒 起 到 止，跟拍；摆(镜内片秒, 进度) */
-const follow = (name: string, startSec: number, endSec: number, cameraPath: (s: number, k: number) => Cam, stepSec = 0.05): Shot => ({ 名: name, 起: startSec, cameraRig: followShot(endSec - startSec, (s, k) => cameraPath(startSec + s, k), stepSec) });
+const follow = (name: string, startSec: number, endSec: number, cameraPath: (s: number, k: number) => Cam, stepSec = 0.05): Shot => ({ name: name, start: startSec, cameraRig: followShot(endSec - startSec, (s, k) => cameraPath(startSec + s, k), stepSec) });
 
 // 切点（片秒）：2-01 一直到他冲到半路、她已经瞬移走；2-02 她从烟里出来、他滑停在原地打转、回头蹲下蓄剑；2-03 切在她往上一拉那一下，他冲过来从她底下过去、她拉升，整段慢放在这一镜；2-04 他站起来抬头看她
-const cuts = [0, beats.移 + 0.1, orbitBeat.起, orbitBeat.止] as const;
-const segLengthSec = timeline.事件.wheelOpenDone.秒 - timeline.事件.summonDone.秒;
+const cuts = [0, beats.移 + 0.1, orbitBeat.start, orbitBeat.end] as const;
+const segLengthSec = timeline.events.wheelOpenDone.sec - timeline.events.summonDone.sec;
 const shotTable: Shot[] = [
   // 2-01 他冲的那条线东边、和人差不多高（16 mm）：她从祭坛一蹬飞出来、刹在他东北边，他蹲下、挥剑冲出去，她冒烟一缩没了，他冲进烟里。
   // 机位不动、只摇：72 格/秒冲过去跟着摇是甩镜头；取景点从两人中间慢慢移到她刹住的地方
@@ -83,24 +83,24 @@ export const actTwoShotTable = shotTable;
 if (Math.abs(toClipSec(beats.dashSecondSec) - beats.dashSecondSec) > 1e-9) throw new Error('2-开盘：慢放要在第二次冲之后才起');
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 段: thisSegment } = useSeg(seg);
+  const { sec: sec, segment: thisSegment } = useSeg(seg);
   const w = toWorldSec(sec);
   const t = actStart + w;
   const yaBoLun = perform.在(t);
   // 飞的时候两腿一前一后错开（角色/动作/亚波伦演出.ts 的 飞行、升空、升指），腿从袍子里戳出来的地方袍摆让开（同 6-结算舞）；腿收着时不改
-  const yaBoLunPose = { ...yaBoLun.props.bonePose, ...hemYieldLeg(yaBoLunGeometry, blendLayers([{ skeleton: animSkeletonTable(yaBoLun.props.秒, yaBoLun.props.act) }, { skeleton: yaBoLun.props.bonePose }], 'TLM')).bonePose };
-  const { cameraRig } = pickShot(shotTable, sec, thisSegment.秒);
+  const yaBoLunPose = { ...yaBoLun.props.bonePose, ...hemYieldLeg(yaBoLunGeometry, blendLayers([{ skeleton: animSkeletonTable(yaBoLun.props.sec, yaBoLun.props.act) }, { skeleton: yaBoLun.props.bonePose }], 'TLM')).bonePose };
+  const { cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
   const disc = act2WheelParams(t);
   return (
-    <TerraceCanvas ritualStructure cameraRig={cameraRig} ui={<YaBoLunHealthBar 宽={aspect.宽} s={2} healthRatio={1} />}>
+    <TerraceCanvas ritualStructure cameraRig={cameraRig} ui={<YaBoLunHealthBar width={aspect.width} s={2} healthRatio={1} />}>
       {/* 仪式做完后留在台地上的结构：方案的 总秒 之后就是静态的结构和火 */}
       <group position={altar}>
-        <RestRitualPerformance 秒={timeline.事件.summonDone.秒 - timeline.事件.placeRing.秒 + w} plan={summonPlans.短} />
+        <RestRitualPerformance sec={timeline.events.summonDone.sec - timeline.events.placeRing.sec + w} plan={summonPlans.短} />
       </group>
       <GirlYaBoLun {...yaBoLun.props} bonePose={yaBoLunPose} holdWand />
       {disc && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={disc} cellsPerPixel={cellsPerPixel} />}
-      <TeleportSmoke teleports={teleports} 秒={t} />
-      <ReactingSteve 状态={steveStateAt(t, w)} />
+      <TeleportSmoke teleports={teleports} sec={t} />
+      <ReactingSteve state={steveStateAt(t, w)} />
     </TerraceCanvas>
   );
 });

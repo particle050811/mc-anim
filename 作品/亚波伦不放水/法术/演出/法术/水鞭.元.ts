@@ -10,5 +10,5 @@ export default defineSpellMeta({
   id: 'water_whip',
   长秒: whipLifeTicks / 20,
   // 不写命中秒：鞭子只够到施法者面前 4 格，够不够得着看正片怎么站。打中时另有 WHIP_HIT（goety.whip_hit.1），段里够得着时自己加
-  声音: [{ 资产: '音效/诡厄巫法/goety.whip_swing.1', 秒: 0 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.whip_swing.1', sec: 0 }],
 });

@@ -18,14 +18,14 @@ import { events, floatStates, frameToTick, shotAt, type CameraRig } from './编�
 const tone = canvasTone('夏日白天');
 
 /** 递蛋糕：驯服成功的 7 颗爱心 */
-const hearts = tamingHearts(params.liYing.feet, params.hearts.宽, params.hearts.高, frameToTick(events.handOffFrame), params.hearts.种子);
+const hearts = tamingHearts(params.liYing.feet, params.hearts.width, params.hearts.height, frameToTick(events.handOffFrame), params.hearts.seed);
 
 /** 画布里的东西（场景坐标，画布已经转好 Z 朝上） */
 export const AltarScene: React.FC<{ g: number }> = ({ g }) => (
   <>
     <AltarTerrain />
     <MaidAltar />
-    {floatStates(g).map((s) => (s.kind === '光' ? null : <PillarTopItem key={s.名} floatState={s} brightColor={params.lightParams.色} />))}
+    {floatStates(g).map((s) => (s.kind === '光' ? null : <PillarTopItem key={s.name} floatState={s} brightColor={params.lightParams.色} />))}
     <You g={g} />
     <LiYing g={g} />
     <AltarLight g={g} />
@@ -35,12 +35,12 @@ export const AltarScene: React.FC<{ g: number }> = ({ g }) => (
 
 /** 整个画面（整页 1280×720，不含歌词、整片后期），放在 position 不是 static 的容器里；镜头按 编排.ts 的 镜头态。
  *  机：换一个镜头（第 4 句眼睛特写接着往里推，同一个场景、同一片天，接缝上不跳）；g 过了本句也行，她停在 末态.ts 那样 */
-export const AltarPicture: React.FC<{ g: number; 机?: CameraRig }> = ({ g, 机: rigOverride }) => {
+export const AltarPicture: React.FC<{ g: number; machine?: CameraRig }> = ({ g, machine: rigOverride }) => {
   const rig = rigOverride ?? shotAt(g);
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: aspect.宽, height: aspect.高, overflow: 'hidden' }}>
-      <AltarSky cameraRig={rig} 宽={aspect.宽} 高={aspect.高} />
-      <ToonCanvas 宽={aspect.宽} 高={aspect.高} cameraRig={{ 种: '透视', ...rig, farPlane: 640 }} tint={tone.tint} outline={tone.outline} style={{ position: 'absolute', left: 0, top: 0 }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: aspect.width, height: aspect.height, overflow: 'hidden' }}>
+      <AltarSky cameraRig={rig} width={aspect.width} height={aspect.height} />
+      <ToonCanvas width={aspect.width} height={aspect.height} cameraRig={{ kind: '透视', ...rig, farPlane: 640 }} tint={tone.tint} outline={tone.outline} style={{ position: 'absolute', left: 0, top: 0 }}>
         <AltarScene g={g} />
       </ToonCanvas>
     </div>

@@ -25,7 +25,7 @@ const electricYellow = hexColor(0xfef597);
 const orbSize = 4;
 const orbLifeTicks = 30;
 
-const releaseSpell: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+const releaseSpell: React.FC<SpellPerformanceProps> = ({ sec: sec, from, seed: seed }) => {
   const tick = sec * 20;
   const feet: Vec3 = [from[0], from[1], from[2] - 0.5];
   // 球：年龄一刻跳 2
@@ -43,14 +43,14 @@ const releaseSpell: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子:
   });
   return (
     <>
-      {tick < releaseRingLifeTicks && <GroundDecal 位={from} 图={ringImg} radius={10 * Math.min(2, Math.max(0, (tick / releaseRingLifeTicks) * 0.75))} lift={0} 混合="半透明" 色={electricYellow} opacity={1 - tick / releaseRingLifeTicks} />}
+      {tick < releaseRingLifeTicks && <GroundDecal 位={from} image={ringImg} radius={10 * Math.min(2, Math.max(0, (tick / releaseRingLifeTicks) * 0.75))} lift={0} blend="半透明" 色={electricYellow} opacity={1 - tick / releaseRingLifeTicks} />}
       {orbAlpha > 0 && (
-        <mesh position={[from[0], from[1], from[2]]} scale={orbScale} material={faceMaterial(null, { 混合: '加色', 色: electricYellow, opacity: orbAlpha })}>
+        <mesh position={[from[0], from[1], from[2]]} scale={orbScale} material={faceMaterial(null, { blend: '加色', 色: electricYellow, opacity: orbAlpha })}>
           <sphereGeometry args={[1, 32, 24]} />
         </mesh>
       )}
       {arcs.map((end, i) => (
-        <ElectricArc key={i} 起={feet} end={end} settings={arcPresets.shock} 刻={tick} lifeTicks={12} 色={electricYellow} 种子={seed * 131 + i} />
+        <ElectricArc key={i} start={feet} end={end} settings={arcPresets.shock} 刻={tick} lifeTicks={12} 色={electricYellow} seed={seed * 131 + i} />
       ))}
     </>
   );

@@ -24,7 +24,7 @@ import sand7Png from 'asset:贴图/特效/粒子/generic_7';
 import { mulberry32 } from '@engine/core/数学.ts';
 
 /** RisingParticle / FireParticle 的构造：先过 Particle 的随机速度，再 × 0.01 + 给定速度；位置抖 ±0.05（RisingParticle 才抖）。位、速都是场景坐标 */
-export const risingInitial = (seed: number, pos: Vec3, givenVelocity: Vec3, jitterPos = true): { 位: Vec3; 速: Vec3; 种子: number } => {
+export const risingInitial = (seed: number, pos: Vec3, givenVelocity: Vec3, jitterPos = true): { 位: Vec3; 速: Vec3; seed: number } => {
   const r = mulberry32(seed);
   // 游戏坐标 [x, y 竖直, z 南] = 场景 [x, z, −y]
   const [gx, gy, gz] = vanillaParticleInitSpeed(r, givenVelocity[0], givenVelocity[2], -givenVelocity[1]);
@@ -32,7 +32,7 @@ export const risingInitial = (seed: number, pos: Vec3, givenVelocity: Vec3, jitt
   return {
     位: [pos[0] + d(), pos[1] + d(), pos[2] + d()],
     速: [gx * 0.01 + givenVelocity[0], -gz * 0.01 + givenVelocity[1], gy * 0.01 + givenVelocity[2]],
-    种子: seed * 31 + 7,
+    seed: seed * 31 + 7,
   };
 };
 
@@ -41,15 +41,15 @@ export const defaultRadius = (r: () => number): number => 0.1 * (r() * 0.5 + 0.5
 
 /** FROST_NOVA：原版 FlameParticle.Provider + 霜的贴图（frost_1～6 再回 5～1），pickSprite 随机挑一张；大小随寿命缩到一半 */
 export const frostNovaClass: ParticleClass = {
-  帧: frostNovaFrames,
+  frame: frostNovaFrames,
   选帧: '随机',
   摩擦: 0.96,
-  大小: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5,
+  size: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5,
 };
 
 /** BIG_FIRE：FireParticle，半边长 × 3，寿命 8，不碰撞、不透明、贴图按年龄；ReversibleParticle 随机左右翻转这里没做 */
 export const bigFireClass: ParticleClass = {
-  帧: bigFireFrames,
+  frame: bigFireFrames,
   选帧: '按年龄',
   摩擦: 0.96,
 };
@@ -57,17 +57,17 @@ export const bigFireLifetime = 8;
 
 /** SPELL_SQUARE：贴图是 particle/trail，摩擦 0.96、重力 −0.1（往上飘），透明度 1 − 年龄 ÷ 寿命，满亮度半透明 */
 export const blockClass: ParticleClass = {
-  帧: spellSquareFrames,
+  frame: spellSquareFrames,
   选帧: '按年龄',
   摩擦: 0.96,
   重力: -0.1,
-  混合: '半透明',
+  blend: '半透明',
   opacity: (age, lifetime) => 1 - Math.min(1, Math.max(0, age / lifetime)),
 };
 
 /** SPELL_CLOUD：FireParticle.ColorProvider，半边长 × 3、寿命 8、不动、不透明，颜色给定；贴图 spell_cloud_0～11 按年龄 */
 export const cloudPieceClass: ParticleClass = {
-  帧: spellCloudFrames,
+  frame: spellCloudFrames,
   选帧: '按年龄',
   摩擦: 0.96,
 };
@@ -75,7 +75,7 @@ export const cloudPieceLifetime = 8;
 
 /** FALLING_DUST（方块粒子）：generic_0～7 按年龄，每刻竖直 −0.003（游戏里下限 −0.14，这里没封），不吃摩擦，颜色出生时定，半边长 × 0.675 */
 export const fallingDustClass = (ground: number): ParticleClass => ({
-  帧: [sand0Png, sand1Png, sand2Png, sand3Png, sand4Png, sand5Png, sand6Png, sand7Png].map(png),
+  frame: [sand0Png, sand1Png, sand2Png, sand3Png, sand4Png, sand5Png, sand6Png, sand7Png].map(png),
   选帧: '按年龄',
   重力: 0.075,
   摩擦: 1,
@@ -84,7 +84,7 @@ export const fallingDustClass = (ground: number): ParticleClass => ({
 
 /** RAIN（WaterDropParticle）：splash_0～3 随机一张，每刻竖直 −0.06（它自己的 tick 直接减 gravity，不乘 0.04，所以这里重力写 1.5），蓝色 (0.2, 0.3, 1.0)，出生竖直速度 0.1～0.3 */
 export const raindropClass: ParticleClass = {
-  帧: rainFrames,
+  frame: rainFrames,
   选帧: '随机',
   重力: 1.5,
   摩擦: 0.98,
@@ -93,25 +93,25 @@ export const raindropClass: ParticleClass = {
 
 /** BIG_FIRE_GROUND：FireParticle（半边长 × 3、寿命 8、不动），贴图 big_fire_ground_1～8 按年龄，不透明 */
 export const groundFireClass: ParticleClass = {
-  帧: bigFireGroundFrames,
+  frame: bigFireGroundFrames,
   选帧: '按年龄',
   摩擦: 0.96,
 };
 
 /** FIERY_PILLAR：半边长出生 0.4～0.65，之后每刻 1.0 + 年龄比 × 0.5；摩擦 0.99，寿命 10～29；半透明满亮度；贴图 big_fire_drop_1～8 按年龄 */
 export const fieryPillarClass: ParticleClass = {
-  帧: fieryPillarFrames,
+  frame: fieryPillarFrames,
   选帧: '按年龄',
   摩擦: 0.99,
-  混合: '半透明',
-  大小: (age, lifetime) => (1 + (age / lifetime) * 0.5) / 1,
+  blend: '半透明',
+  size: (age, lifetime) => (1 + (age / lifetime) * 0.5) / 1,
 };
 
 /** FROST_FLOWER（启示录 FrostFlowerParticle）：generic_7→0 按年龄，重力 0.225、每刻速度 ×(0.95, 0.9, 0.95)（这里并成一个 0.92），
  * 半边长 0.1 × (随机² + 1)，寿命 (int)(16 ÷ (随机 × 0.8 + 0.2)) + 2，色基本是 (0.69, 0.87, 0.9)（渲染时按年龄夹到 0.55/0.77/0.98，夹法写反了，只剩这一档），
  * 透明度前 8 刻淡入。没做：每刻绕圈抖 1/32 格。 */
 export const frostFlowerClass: ParticleClass = {
-  帧: frostFlowerFrames,
+  frame: frostFlowerFrames,
   选帧: '按年龄',
   重力: 0.225,
   摩擦: 0.92,
@@ -121,8 +121,8 @@ export const frostFlowerClass: ParticleClass = {
 
 /** BURNING（goety 注册成 FlameParticle.Provider，贴图 minecraft:lava）：摩擦 0.96、不动重力，半边长随年龄 × (1 − 年龄比² × 0.5)，寿命 (int)(8 ÷ (随机 × 0.8 + 0.2)) + 4，不透明 */
 export const burningClass: ParticleClass = {
-  帧: burningFrames,
+  frame: burningFrames,
   选帧: '按年龄',
   摩擦: 0.96,
-  大小: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5,
+  size: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5,
 };

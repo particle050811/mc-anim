@@ -3,10 +3,10 @@ import { frozenCoarse } from '@engine/voxel/冻结粗高度.ts';
 import { isInTwilightLandmark, twilightCellTop, twilightFrozen } from '../../../../地点/暮色新世界.tsx';
 
 const coarse = frozenCoarse(twilightFrozen);
-const cellTop = (x: number, y: number) => twilightCellTop(x, y, coarse.格 / 2);
+const cellTop = (x: number, y: number) => twilightCellTop(x, y, coarse.cell / 2);
 const treeClearance = 25;
 const clearanceTop = (x: number, y: number, clearance: number, drop: number) => {
-  const cellSize = coarse.格;
+  const cellSize = coarse.cell;
   const i0 = Math.floor((x - coarse.x0) / cellSize);
   const j0 = Math.floor((y - coarse.y0) / cellSize);
   const k = Math.ceil(clearance / cellSize);

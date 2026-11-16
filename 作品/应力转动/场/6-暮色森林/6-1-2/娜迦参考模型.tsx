@@ -39,7 +39,7 @@ type LiyingVersion = (t: number) => ReturnType<typeof choreo.liying>;
 export const LiyingVersion = React.createContext<LiyingVersion>(choreo.liying);
 
 
-export const courtyardOrigin = twilightLandmark('娜迦庭院').原点;
+export const courtyardOrigin = twilightLandmark('娜迦庭院').origin;
 export const courtyardToWorld = (p: number[]) => [p[0] + courtyardOrigin[0], p[1] + courtyardOrigin[1], p[2] + courtyardOrigin[2]];
 
 // 庭院的光（用户 10-13 定）：东偏北 70°、仰角 28°、灯 0.75 倍（相当于光倍 1.5）。原来一镜到底的黄昏光（200°/14°）在庭院里太低，整片地面落在树影里，又平又蓝。
@@ -68,8 +68,8 @@ const meshAO = Boolean((renderInput() as { meshAO?: boolean }).meshAO);
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
 // 口型用的台词开口（段内秒，cue 在 段/6-斩娜迦/段.ts）：打击停顿以后的台词跟着往后挪。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
 const nagaLineCues = (hitStopSec: number) => [
-  { id: '6-1-2-李樱-不值一提', 帧: choreo.lineStartSec + hitStopSec },
-  { id: '6-1-3-九胡-等等我', 帧: choreo.segSec(choreo.S3 + choreo.MAZE_SHOUT) + hitStopSec },
+  { id: '6-1-2-李樱-不值一提', frame: choreo.lineStartSec + hitStopSec },
+  { id: '6-1-3-九胡-等等我', frame: choreo.segSec(choreo.S3 + choreo.MAZE_SHOUT) + hitStopSec },
 ];
 type CamPose = { lens: number; pos: number[]; tgt: number[] };
 const Rig: React.FC<{ k: CamPose }> = ({ k }) => {
@@ -231,7 +231,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
           <TwilightTerrain camPos={courtyardToWorld(cam.pos)} landmarks={nagaLandmarks} t={sec} shadowLightDir={lightDir} />
           {/* 云同暮色各镜头（lib/暮色光照.tsx 的 TwilightClouds），按这里的光向打光 */}
           <TwilightClouds sun={lightDir} />
-          <LandmarkPlacement 名="娜迦庭院">
+          <LandmarkPlacement name="娜迦庭院">
             <SkyDome twilight sun={lightDir} />
             <LiyingVersion.Provider value={liyingVersion}>
               <Action t={storyTime} tn={motionV2 ? motion.nagaWarp(storyTime) : storyTime} liYingMouth={mouthAt(lineCues, '李樱', sec, 1)} jiuhuMouth={mouthAt(lineCues, '九胡', sec, 1)} />

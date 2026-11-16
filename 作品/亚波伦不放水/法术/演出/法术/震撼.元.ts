@@ -13,5 +13,5 @@ export default defineSpellMeta({
   长秒: (shakeDurTicks + shakeLifeTicks) / 20,
   hitSec: 0, // 射线判定，每刻结算一次伤害
   // ShockingSpell：每刻在施法者处响一声 ModSounds.ZAP（6 个变体，游戏随机挑，这里轮着排）
-  声音: Array.from({ length: shakeDurTicks }, (_, n) => ({ 资产: `音效/诡厄巫法/goety.zap.${(n % 6) + 1}`, 秒: n / 20 })),
+  sound: Array.from({ length: shakeDurTicks }, (_, n) => ({ asset: `音效/诡厄巫法/goety.zap.${(n % 6) + 1}`, sec: n / 20 })),
 });

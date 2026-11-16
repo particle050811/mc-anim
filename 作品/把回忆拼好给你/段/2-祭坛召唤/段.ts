@@ -11,18 +11,18 @@ import { toAssetCue, type FrameCue } from '../../声音/跨段音效.ts';
 const segKey = '2-祭坛召唤';
 const clock = segClock(segKey);
 const events = segMainCutEventFrames(segKey);
-const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
-const gainForPeak = (peakDb: number) => Math.round(10 ** ((soundFx.峰值 - peakDb) / 20) * 1e6) / 1e6;
+const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.frameCount - startFrame);
+const gainForPeak = (peakDb: number) => Math.round(10 ** ((soundFx.peakDb - peakDb) / 20) * 1e6) / 1e6;
 
 // 祭坛合成声：文件头对着点祭坛那一帧（一开头就响）
-const altarCue: FrameCue = { 帧: events.activateAltar, 资产: soundFx.祭坛.资产, 名: '祭坛合成', 帧数: clampFramesToSegEnd(events.activateAltar, soundFx.祭坛.秒), 增益: gainForPeak(soundFx.祭坛.峰值) };
+const altarCue: FrameCue = { frame: events.activateAltar, asset: soundFx.祭坛.asset, name: '祭坛合成', frameCount: clampFramesToSegEnd(events.activateAltar, soundFx.祭坛.sec), 增益: gainForPeak(soundFx.祭坛.peakDb) };
 
 export default defineSeg({
-  场: '2-祭坛',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-祭坛',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }, toAssetCue(altarCue)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: originalGain }, toAssetCue(altarCue)],
 });

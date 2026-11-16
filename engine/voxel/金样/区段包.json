@@ -1,4 +1,4 @@
 {
- "块头sha256": "262acae5cbc7e54ea58a3c99ce7207939b8eb79318a48f26fabbd46372462745",
- "粗高度指纹": "cc788dc0"
+ "chunkHeaderSha256": "262acae5cbc7e54ea58a3c99ce7207939b8eb79318a48f26fabbd46372462745",
+ "coarseHeightFingerprint": "cc788dc0"
 }

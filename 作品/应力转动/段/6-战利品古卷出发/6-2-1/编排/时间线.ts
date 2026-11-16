@@ -15,12 +15,12 @@ const segmentLengths: [SegmentName, number, string][] = [
 export const segmentTable = Object.fromEntries(
   segmentLengths.map(([name, length, title], i) => {
     const start = segmentLengths.slice(0, i).reduce((sum, [, l]) => sum + l, 0);
-    return [name, { 起: start, 止: start + length, 长: length, 名: title }];
+    return [name, { start: start, end: start + length, length: length, name: title }];
   }),
-) as Record<SegmentName, { 起: number; 止: number; 长: number; 名: string }>;
-export const lastSec = segmentTable['6-2-3'].止; // = 6-2-4 第 0 秒
-const seg22 = segmentTable['6-2-2'].起;
-const seg23 = segmentTable['6-2-3'].起;
+) as Record<SegmentName, { start: number; end: number; length: number; name: string }>;
+export const lastSec = segmentTable['6-2-3'].end; // = 6-2-4 第 0 秒
+const seg22 = segmentTable['6-2-2'].start;
+const seg23 = segmentTable['6-2-3'].start;
 
 // 台词开口（全局秒）照用户在剪映里放字幕的位置（配音见 src/配音/台词表.json）。「熔炼温度」比用户放的往后 5 帧：上一句 7.81 秒才说完，留 0.4 秒转头看血。
 // 夸克古卷那句有声 8.43 秒，从 6-2-2 说进 6-2-3：古卷页等这句说到「提升到80%」才收，拿指南针、「走吧九胡……」和后面的戏都排在它后面。

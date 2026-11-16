@@ -7,17 +7,17 @@ import path from 'node:path';
 export const releaseLockName = '发布锁.json';
 
 export type Attachment = {
-  名: string;
+  name: string;
   sha256: string;
-  大小: number;
+  size: number;
   /** 一批 store/ 字节：sha256 */
-  字节?: string[];
+  bytes?: string[];
   /** 同一个 tar 里 私有/ 库的字节（可见性已公开、库没搬的，docs/决策/0017-全部公开.md）：sha256 */
-  私有库字节?: string[];
+  privateLibBytes?: string[];
   /** 一个地形包：解开是 terrain/<包>/<版本>/ 下的文件 */
-  地形?: { 包: string; 版本: string };
+  terrain?: { pack: string; version: string };
 };
-export type ReleaseLock = { 仓库: string; 标签: string; 附件: Attachment[] };
+export type ReleaseLock = { repo: string; label: string; attachments: Attachment[] };
 
 export const releaseLockPath = (workRoot: string) => path.join(workRoot, releaseLockName);
 
@@ -33,17 +33,17 @@ export const terrainDir = (dataRoot: string, pack: string, version: string) => p
 
 /** 这个附件的东西数据根里还缺：字节缺几件，地形包整个目录不在 */
 export const missingAttachmentCount = (a: Attachment, dataRoot: string): number => {
-  if (a.地形) return fs.existsSync(terrainDir(dataRoot, a.地形.包, a.地形.版本)) ? 0 : 1;
+  if (a.terrain) return fs.existsSync(terrainDir(dataRoot, a.terrain.pack, a.terrain.version)) ? 0 : 1;
   const missingIn = (storage: string, shas: string[] = []) => shas.filter((sha) => !fs.existsSync(path.join(dataRoot, storage, sha.slice(0, 2), sha))).length;
-  return missingIn('store', a.字节) + missingIn('私有', a.私有库字节);
+  return missingIn('store', a.bytes) + missingIn('私有', a.privateLibBytes);
 };
 
 /** 有发布锁、数据根又缺它的东西时打一行（film、still、studio 开头）；不自动下：地形包上 GB */
 export const hintMissingRelease = (workRoot: string, dataRoot: string) => {
   const releaseLock = readReleaseLock(workRoot);
   if (!releaseLock) return;
-  const missing = releaseLock.附件.filter((a) => missingAttachmentCount(a, dataRoot) > 0);
+  const missing = releaseLock.attachments.filter((a) => missingAttachmentCount(a, dataRoot) > 0);
   if (!missing.length) return;
-  const totalBytes = missing.reduce((s, a) => s + a.大小, 0);
+  const totalBytes = missing.reduce((s, a) => s + a.size, 0);
   console.error(`!! 数据根还缺这部作品挂 Release 发的 ${missing.length} 个附件（${(totalBytes / 1e9).toFixed(2)} GB）：先 anim assets pull，不然用到的段渲不了`);
 };

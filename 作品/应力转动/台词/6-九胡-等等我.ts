@@ -1,18 +1,18 @@
-// 由 anim voice 生成（校验 a39667ed75eb），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-等等我（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 ac9f5107f658），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-等等我（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-九胡-等等我",
-  "角色": "九胡",
-  "念": "等等我啊狗修金Sama！",
-  "配音": "配音/6-九胡-等等我",
-  "成品sha": "107c3777eb01",
-  "开口": 0.03,
+  "character": "九胡",
+  "spoken": "等等我啊狗修金Sama！",
+  "voice": "配音/6-九胡-等等我",
+  "finishedSha": "107c3777eb01",
+  "mouthOpen": 0.03,
   "有声长": 1.815,
-  "时长": 1.995,
+  "duration": 1.995,
   "文件秒数": 1.99,
   "手修": true,
-  "字": [
+  "char": [
     ["等",0.03,0.19],
     ["等",0.2,0.36],
     ["我",0.37,0.49],

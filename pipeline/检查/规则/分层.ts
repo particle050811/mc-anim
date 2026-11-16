@@ -130,7 +130,7 @@ export const checkLayering = async (c: CheckContext, report: CheckReport) => {
   const depGraph = await c.depGraph();
   const sceneOrder = await readSceneOrder(c);
   for (const [from, edges] of graph.edges) {
-    const valueTargets = new Set((depGraph.edges.get(from) ?? []).map((e) => e.到));
+    const valueTargets = new Set((depGraph.edges.get(from) ?? []).map((e) => e.dest));
     for (const e of edges) {
       if (e.kind !== 'type' || valueTargets.has(e.to)) continue;
       const issue = edgeIssue(c, from, e.to, sceneOrder, true);

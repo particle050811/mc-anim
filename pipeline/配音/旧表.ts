@@ -5,11 +5,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { bytesPath, type AssetLock } from '../资产/资产锁.ts';
 
+// 两份整表是 store 里旧项目的字节（只增不改），键照旧是中文
 export type OldLineRow = { 角色: string; 字: string; 合成?: string; 文件: string | null; 副本?: string; 时长: number; 开口: number; 有声长: number; 内心?: boolean };
 export type OldLipRow = { 文: string; 时长: number; 字: [string, number, number][]; 嘴: [number, string][] };
-export type OldVoice = { oldId: string; 台词: OldLineRow; 口型?: OldLipRow };
+export type OldVoice = { oldId: string; lines: OldLineRow; lip?: OldLipRow };
 
-export const oldTableAssets = { lineTable: '数据/配音/台词表', 口型: '数据/配音/口型' } as const;
+export const oldTableAssets = { lineTable: '数据/配音/台词表', lip: '数据/配音/口型' } as const;
 
 /** 旧名.tsv 的 台词 行：旧 id → 新 id（旧表就是这些句子的） */
 export const oldLineRenames = (workRoot: string): Map<string, string> => {
@@ -30,9 +31,9 @@ export const readOldVoiceTable = (workRoot: string, assetLock: AssetLock, dataRo
     return JSON.parse(fs.readFileSync(bytesPath(e, dataRoot), 'utf8')) as Record<string, unknown>;
   };
   const legacyLineTable = readAsset(oldTableAssets.lineTable) as Record<string, OldLineRow>;
-  const lip = readAsset(oldTableAssets.口型) as Record<string, OldLipRow>;
+  const lip = readAsset(oldTableAssets.lip) as Record<string, OldLipRow>;
   const renamedIds = oldLineRenames(workRoot);
   const r = new Map<string, OldVoice>();
-  for (const [oldId, line] of Object.entries(legacyLineTable)) r.set(renamedIds.get(oldId) ?? oldId, { oldId, 台词: line, ...(lip[oldId] ? { 口型: lip[oldId] } : {}) });
+  for (const [oldId, line] of Object.entries(legacyLineTable)) r.set(renamedIds.get(oldId) ?? oldId, { oldId, lines: line, ...(lip[oldId] ? { lip: lip[oldId] } : {}) });
   return r;
 };

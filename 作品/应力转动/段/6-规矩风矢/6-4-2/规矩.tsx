@@ -29,13 +29,13 @@ export const RulesView: React.FC<{ t: number; cam?: Cam }> = ({ t, cam }) => {
   const woolState = choreo.wool(t);
   const tendrilClock = choreo.sensorClock(t);
   return (
-    <AncientCity4xCanvas 段="6-4-2" cam={cam ?? choreo.camera(t)} width={width} height={height} hide={HIDE} wool={woolState.wool} growingWool={woolState.growingWool} chestOpening={choreo.openChest(t)}>
+    <AncientCity4xCanvas segment="6-4-2" cam={cam ?? choreo.camera(t)} width={width} height={height} hide={HIDE} wool={woolState.wool} growingWool={woolState.growingWool} chestOpening={choreo.openChest(t)}>
       <LiYingWithBlade pose={choreo.liying(t)} />
       {choreo.sensors.map((b, i) => (
-        <SculkSensor key={i} p={blockBottomCenter(b)} 秒={tendrilClock} secSinceActive={t - choreo.activateSecs[i]} seed={i + 1} />
+        <SculkSensor key={i} p={blockBottomCenter(b)} sec={tendrilClock} secSinceActive={t - choreo.activateSecs[i]} seed={i + 1} />
       ))}
       {choreo.vibrations.map((v, i) => (
-        <VibrationSignal key={i} from={v.from} to={v.to} sec={t - v.t} 帧={i * 3} />
+        <VibrationSignal key={i} from={v.from} to={v.to} sec={t - v.t} frame={i * 3} />
       ))}
       <ShriekRings p={choreo.shriek.p} sec={t - choreo.shriek.t} />
       {/* 黑暗效果：雾和亮度照 1.20.1（模型/特效/黑暗效果.tsx），平时的雾是古城4x画布的 FOG_4X */}

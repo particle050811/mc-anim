@@ -81,9 +81,9 @@ export const cloudExtent = { west: -260, east: 260, south: -60, north: 230 } as 
 // ---------- 魔法阵、光柱、云洞、阳光 ----------
 /** 魔法阵：阵起 那一帧起几秒展开（24 fps 时 3 帧），每秒转几度。
  *  地光（演绎，同 2-祭坛 的画法）：阵底下两层同心圆片（圆边按贴图像素走成阶梯），硬边、普通半透明叠，阵的细线在远机位、手机上看不清时，地上还有一圈亮 */
-export const magicCircle = { expandSec: legacyFrameSec(3), turnsPerSec: 30, groundGlow: { 色: '#e8d6ff', radiusList: [1.0, 0.62] as const, 强: [0.28, 0.3] as const } } as const;
+export const magicCircle = { expandSec: legacyFrameSec(3), turnsPerSec: 30, groundGlow: { 色: '#e8d6ff', radiusList: [1.0, 0.62] as const, strength: [0.28, 0.3] as const } } as const;
 /** 她被自己的阵照亮（发光区：身子那一块不乘雷雨的色调） */
-export const herBrightZone = { 半宽: 0.6, 高: 2.6 } as const;
+export const herBrightZone = { halfWidth: 0.6, height: 2.6 } as const;
 /** 光柱（演绎，用户 11-03「这个类似信标光柱的特效有点太潦草了吧 这个重点优化一下吧」重做，原来是原版信标光柱的方柱）。画法见 光柱.tsx。
  *  底在她举着的两只手上面（离头顶 离头 格）；光柱起 起往上冲、越冲越快（进度的 冲幂 次方），零点几秒冲出画面顶，拨 那一帧冲到 顶高（云在几百格高）；
  *  光柱退 起 退秒 里变细、一格格碎掉（段尾离 光柱退 0.22 秒）。色 = 撞云的颜色（engine/light/云/原版方块云.tsx 的 撞）。
@@ -102,12 +102,12 @@ export const lightPillar = {
   里: { innerRadius: 0.25, 色: '#cfb4ff', brightness: 1.0 },
   halo: { haloRadius: 0.6, 色: '#9a66ff', alphas: [0.62, 0.32] as const },
   swellSec: 0.12,
-  surge: { 起: { 粗: 0, 亮: 0.25, 秒: 0.16 }, 拨: { 粗: 0.12, 亮: 0.15, 秒: 0.1 }, charge: { 粗: 0.25, 亮: 0.25 }, cloudBreak: { 粗: 0.35, 亮: 0.3, 秒: 0.14 } },
-  flow: { 速: [22, 40] as const, 长: [1.6, 4.5] as const, duty: 0.32 },
-  swirl: { strands: 2, radius: 0.4, ringHeight: 3.4, ringsPerSec: 2.6, 宽: 1 / 16 },
+  surge: { start: { 粗: 0, 亮: 0.25, sec: 0.16 }, 拨: { 粗: 0.12, 亮: 0.15, sec: 0.1 }, charge: { 粗: 0.25, 亮: 0.25 }, cloudBreak: { 粗: 0.35, 亮: 0.3, sec: 0.14 } },
+  flow: { 速: [22, 40] as const, length: [1.6, 4.5] as const, duty: 0.32 },
+  swirl: { strands: 2, radius: 0.4, ringHeight: 3.4, ringsPerSec: 2.6, width: 1 / 16 },
   starBurst: { armLen: 0.55, core: 0.12, starCharge: 0.4, flash: [0.5, 0.35] as const },
   ring: { gapSec: 0.28, 速: 16, radiusRange: [0.6, 1.3] as const, fadeHeight: 40 },
-  impact: { 手: { endRadius: 2.2, 秒: 0.34 }, ground: { endRadius: 7, 秒: 0.55 } },
+  impact: { 手: { endRadius: 2.2, sec: 0.34 }, ground: { endRadius: 7, sec: 0.55 } },
   lightDot: { 数: 80, radiusRange: [0.11, 0.17] as const },
   rune: { 数: 18, halfSize: 0.11 },
 } as const;
@@ -127,17 +127,17 @@ export const cloudHole = { r1: 20, r2: 64, edgeFuzz: 8, scatterSec: legacyFrameS
  *  云底在头顶 70 格、画面顶边才到 36 格高，撞的那一点在画外，原来亮一下就不动了，镜头又刚停，这一截像卡住（用户 11-03「为什么还卡了一下？」）；
  *  雨里曝光压到 雨曝光、闪电那两刻 闪曝光，转晴时回到 1。太阳从镜头背后（南偏西）高高照下来，洞开了阳光照在屋子正面。Agent 暂定 */
 export const rainCloud = {
-  海平面: 0,
-  层: [
-    { 算法: 'Photon积云', bottomHeight: 70, heightDiff: 120 },
-    { 算法: '贴图层', bottomHeight: 837 },
-    { 算法: 'Photon卷云', bottomHeight: 1770 },
+  seaLevel: 0,
+  layers: [
+    { algorithm: 'Photon积云', bottomHeight: 70, heightDiff: 120 },
+    { algorithm: '贴图层', bottomHeight: 837 },
+    { algorithm: 'Photon卷云', bottomHeight: 1770 },
   ] satisfies readonly CloudLayer[],
   holeRatio: 24,
   softEdge: 20,
   brightnessMult: 1,
   brightRatio: 2,
-  cloudCharge: { 起: 0.3, 到: 2.5, radiusMul: 2.2, exponent: 1.5, 跳: 7, pulseAmp: 0.12 },
+  cloudCharge: { start: 0.3, dest: 2.5, radiusMul: 2.2, exponent: 1.5, 跳: 7, pulseAmp: 0.12 },
   rainExposure: 0.3,
   flashExposure: 3,
   sun: [-0.3, -0.55, 0.78],
@@ -158,16 +158,16 @@ export const rainColor = { normal: '#8a96b0', flash: '#ffffff' } as const;
 // ---------- 声音（增益是线性倍数） ----------
 /** 闷雷：原版 entity.lightning_bolt.thunder 第 2 个（7.25 秒，前 0.25 秒几乎没声，之后是滚雷、没有落地那声炸响），起点往前挪 0.25 秒让滚雷和闪光同时到；
  *  第 7 句首字截掉，截之前 淡出秒 里线性淡掉（24 fps 时 12 帧） */
-export const thunderSound = { 资产: '音效/entity.lightning_bolt.thunder.2', 秒: 7.25, leadSec: 0.25, 增益: 0.4, fadeOutSec: 0.5 } as const;
+export const thunderSound = { asset: '音效/entity.lightning_bolt.thunder.2', sec: 7.25, leadSec: 0.25, 增益: 0.4, fadeOutSec: 0.5 } as const;
 /** 雨声：原版 weather.rain 1～4（各 2 秒左右）接着放，铺满两段。原版 0.2 音量、随机挑；这里按顺序接，增益 Agent 暂定 */
-export const rainSounds: readonly { 资产: string; 秒: number }[] = [
-  { 资产: '音效/把回忆拼好给你/weather.rain.1', 秒: 2.010667 },
-  { 资产: '音效/把回忆拼好给你/weather.rain.2', 秒: 1.978667 },
-  { 资产: '音效/把回忆拼好给你/weather.rain.3', 秒: 2.085333 },
-  { 资产: '音效/把回忆拼好给你/weather.rain.4', 秒: 2.165333 },
+export const rainSounds: readonly { asset: string; sec: number }[] = [
+  { asset: '音效/把回忆拼好给你/weather.rain.1', sec: 2.010667 },
+  { asset: '音效/把回忆拼好给你/weather.rain.2', sec: 1.978667 },
+  { asset: '音效/把回忆拼好给你/weather.rain.3', sec: 2.085333 },
+  { asset: '音效/把回忆拼好给你/weather.rain.4', sec: 2.165333 },
 ];
 export const rainSoundGain = 0.4;
 /** 雨声比第 6 句首字早进来几秒（2-抢龙蛋 最后这一截，淡入）：末地硬切雷雨，先听见雨再看见雨，两句接得上（核查 10-24「转场要丝滑」，Agent 暂定） */
 export const rainSoundLeadSec = 0.35;
 /** 光柱起来：原版 block.beacon.activate（2.95 秒），接第 8 句之前截掉，截之前 淡出秒 里淡掉（24 fps 时 8 帧） */
-export const beaconSoundParams = { 资产: '音效/把回忆拼好给你/block.beacon.activate', 秒: 2.953292, 增益: 0.55, fadeOutSec: legacyFrameSec(8) } as const;
+export const beaconSoundParams = { asset: '音效/把回忆拼好给你/block.beacon.activate', sec: 2.953292, 增益: 0.55, fadeOutSec: legacyFrameSec(8) } as const;

@@ -38,7 +38,7 @@ const buildHouseBlocks = (outsideDoor: boolean, outsideDoorLight: number): Place
   const out: PlacedBlock[] = [];
   const placeBlock = (blockState: string, i: number, j: number, k: number, bright?: number) => {
     if (outsideCell(i, j, k) !== outsideDoor) return;
-    out.push({ 状态: blockState, 位: [i, j, k], brightness: outsideDoor ? outsideDoorLight : bright });
+    out.push({ state: blockState, 位: [i, j, k], brightness: outsideDoor ? outsideDoorLight : bright });
   };
   // 地面：屋下墙脚圆石、中间橡木地板，过道也是橡木地板；屋外草方块只铺最前一排（往里是林间背景的中景，藏在这排后沿底下）。
   // 最前一排往下两层泥土，再往下石头（剖面）
@@ -84,8 +84,8 @@ const outsideDawn = buildHouseBlocks(true, bedroomBrightness.outsideDawn);
 
 // 门板：同 门口小木屋（facing=south，开着原样放在门洞左边一格，合页贴着墙）
 const doorPanel = (bright: number): PlacedBlock[] => [
-  { 状态: 'minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]', 位: [0, 0, 0], brightness: bright },
-  { 状态: 'minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]', 位: [0, 0, 1], brightness: bright },
+  { state: 'minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]', 位: [0, 0, 0], brightness: bright },
+  { state: 'minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]', 位: [0, 0, 1], brightness: bright },
 ];
 const doorPanelNight = doorPanel(bedroomBrightness.outsideDoorNight);
 const doorPanelDawn = doorPanel(bedroomBrightness.outsideDawn);
@@ -93,10 +93,10 @@ const doorPanelDawn = doorPanel(bedroomBrightness.outsideDawn);
 /** Z 朝上的场景内容（不带灯、机位）；放进三渲二画布。门外亮 = 天亮了、前屋的光透过来（画布要同时把 门外区 给平涂当发光区） */
 export const CabinBedroom: React.FC<{ outsideLit?: boolean }> = ({ outsideLit = false }) => (
   <group>
-    <BlockAssembly blocks={houseBlocks} 原点={gridOrigin} />
-    <BlockAssembly blocks={outsideLit ? outsideDawn : outsideNightBlocks} 原点={gridOrigin} />
+    <BlockAssembly blocks={houseBlocks} origin={gridOrigin} />
+    <BlockAssembly blocks={outsideLit ? outsideDawn : outsideNightBlocks} origin={gridOrigin} />
     <group position={[bedroom.门.openDoorPanel.x0 + 0.5, 0, 0]}>
-      <BlockAssembly blocks={outsideLit ? doorPanelDawn : doorPanelNight} 原点={gridOrigin} />
+      <BlockAssembly blocks={outsideLit ? doorPanelDawn : doorPanelNight} origin={gridOrigin} />
     </group>
     <Bed 位={bedroom.yourBed.位} facing={bedroom.yourBed.facing} />
     <MaidBed 位={bedroom.maidBed.位} facing={bedroom.maidBed.facing} />

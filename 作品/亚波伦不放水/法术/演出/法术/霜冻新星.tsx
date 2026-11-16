@@ -15,7 +15,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const radiusCells = 3;
 
-const FrostNova: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+const FrostNova: React.FC<SpellPerformanceProps> = ({ sec: sec, from, seed: seed }) => {
   const feet: Vec3 = [from[0], from[1], from[2] - 0.5];
   const r = mulberry32(seed * 7919 + 11);
   const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
@@ -34,14 +34,14 @@ const FrostNova: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: se
         const givenPoint: Vec3 = [(d3 / d6) * 0.5, (-d5 / d6) * 0.5, (d4 / d6) * 0.5];
         const rr = mulberry32(Math.floor(r() * 1e9));
         const initial = risingInitial(Math.floor(r() * 1e9), feet, givenPoint);
-        frosts.push({ 刻: 0, 位: initial.位, 速: initial.速, 寿命: Math.floor(8 / (rr() * 0.8 + 0.2)) + 4, radius: defaultRadius(rr), 种子: initial.种子 });
+        frosts.push({ 刻: 0, 位: initial.位, 速: initial.速, 寿命: Math.floor(8 / (rr() * 0.8 + 0.2)) + 4, radius: defaultRadius(rr), seed: initial.seed });
       }
     }
   }
   return (
     <>
-      <ShockwaveRing 位={from} 刻={sec * 20} 大小={radiusCells * 2 + 1} 色={[1, 1, 1]} 速={1} />
-      <TexturedParticles 类={frostNovaClass} spawns={frosts} 秒={sec} />
+      <ShockwaveRing 位={from} 刻={sec * 20} size={radiusCells * 2 + 1} 色={[1, 1, 1]} 速={1} />
+      <TexturedParticles type={frostNovaClass} spawns={frosts} sec={sec} />
     </>
   );
 };

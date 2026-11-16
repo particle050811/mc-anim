@@ -6,10 +6,10 @@ import { originalGain } from '../../场/1-隐世之境一楼/参数.ts';
 import { frameWindow } from './窗口.ts';
 
 export default defineSeg({
-  场: '核对',
-  秒: frameWindow.帧数 / fps,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
-  声音: [{ 秒: 0, 长秒: frameWindow.帧数 / fps, 入点秒: frameWindow.起帧 / fps, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }],
+  scene: '核对',
+  sec: frameWindow.frameCount / fps,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
+  sound: [{ sec: 0, 长秒: frameWindow.frameCount / fps, 入点秒: frameWindow.起帧 / fps, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: originalGain }],
 });

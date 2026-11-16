@@ -22,7 +22,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const quickGrowingVineModel = getModel(quickGrowingVineModelData, 'QuickGrowingVineModel');
 const [burstAnim, idleAnim, burrowAnim] = [getAnim(quickGrowingVineAnims, 'BURST'), getAnim(quickGrowingVineAnims, 'IDLE'), getAnim(quickGrowingVineAnims, 'BURROW')];
 
-const overgrowth: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const overgrowth: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const positions = vinePositions(target);
   const debris: DebrisBirth[] = positions.flatMap((pos, i) => [
@@ -41,15 +41,15 @@ const overgrowth: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target,
             <group rotation={[0, degToRad(180 - angleDeg), 0]}>
               <group scale={[-1, -1, 1]}>
                 <group position={[0, -1.501, 0]}>
-                  <ModelPart 模型={quickGrowingVineModel} 图={png(quickGrowingVinePng)} partPoses={partPoses} />
-                  <ModelPart 模型={quickGrowingVineModel} 图={png(quickGrowingVineGlowPng)} 画法="发光" partPoses={partPoses} />
+                  <ModelPart model={quickGrowingVineModel} image={png(quickGrowingVinePng)} partPoses={partPoses} />
+                  <ModelPart model={quickGrowingVineModel} image={png(quickGrowingVineGlowPng)} 画法="发光" partPoses={partPoses} />
                 </group>
               </group>
             </group>
           </MinecraftSpace>
         );
       })}
-      <BlockDebris spawns={debris} 秒={sec} ground={target[2]} />
+      <BlockDebris spawns={debris} sec={sec} ground={target[2]} />
     </>
   );
 };

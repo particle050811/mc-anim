@@ -92,7 +92,7 @@ export const stripOutlineFlats = (g: UntexturedModel): UntexturedModel => ({
  * 一根描边骨骼上各片的面，照贴图上色（片上都是纯色，取 UV 矩形正中那个像素；透明的面不出）。
  * 坐标是骨骼坐标（原点 = pivot，单位像素，X 取负，同 基岩模型.tsx），每面四个角从它朝的那一侧看是 左上、右上、右下、左下。
  */
-export const outlineFace = (bone: BedrockBone, image: Png): { 面: FaceName; 角: [number, number, number][]; 色: [number, number, number] }[] => {
+export const outlineFace = (bone: BedrockBone, image: Png): { 面: FaceName; angle: [number, number, number][]; 色: [number, number, number] }[] => {
   const outlines: ReturnType<typeof outlineFace> = [];
   for (const c of bone.cubes ?? []) {
     if (!isFlatCube(c) || Array.isArray(c.uv)) continue;
@@ -114,7 +114,7 @@ export const outlineFace = (bone: BedrockBone, image: Png): { 面: FaceName; 角
       const py = Math.min(image.h - 1, Math.max(0, Math.floor(u.uv[1] + u.uv_size[1] / 2)));
       const i = (py * image.w + px) * 4;
       if (image.px[i + 3]! < 26) continue;
-      outlines.push({ 面: face, 角: allFaces[face].map(([x, y, z]) => [x + bone.pivot[0], y - bone.pivot[1], z - bone.pivot[2]]), 色: [image.px[i]!, image.px[i + 1]!, image.px[i + 2]!] });
+      outlines.push({ 面: face, angle: allFaces[face].map(([x, y, z]) => [x + bone.pivot[0], y - bone.pivot[1], z - bone.pivot[2]]), 色: [image.px[i]!, image.px[i + 1]!, image.px[i + 2]!] });
     }
   }
   return outlines;
@@ -139,7 +139,7 @@ const outlineMount = (image: Png): Record<string, ReactNode> => {
     for (const f of outlineFaces) {
       const bottomIndex = pos.length / 3;
       color.setRGB(f.色[0] / 255, f.色[1] / 255, f.色[2] / 255, THREE.SRGBColorSpace);
-      for (const p of f.角) {
+      for (const p of f.angle) {
         pos.push(...p);
         col.push(color.r, color.g, color.b);
       }
@@ -156,25 +156,25 @@ const outlineMount = (image: Png): Record<string, ReactNode> => {
 };
 
 export const GirlYaBoLunCreature = defineCreature({
-  名: '娘化亚波伦',
-  模型: stripOutlineFlats(origGeometry),
+  name: '娘化亚波伦',
+  model: stripOutlineFlats(origGeometry),
   贴图: (v) => [skinTextures[v.贴图], ...(v.veil === '加' ? [patchLayers().veil] : []), ...(v.vortexHalo === '加' ? [patchLayers().vortex] : [])],
   variant: { 贴图: ['default', '2default', '3default', '4default', '5default'], veil: ['原样', '加'], vortexHalo: ['原样', '加'] },
-  缩放: 0.7 / 16,
-  动画: { 文件: animationFiles, defaultLayers: [], 口径: '通用', 环境: staticEnv },
+  scale: 0.7 / 16,
+  animation: { file: animationFiles, defaultLayers: [], 口径: '通用', env: staticEnv },
 });
 
 // 低优先级并行（主动画盖它）：0 头发的弹簧，1 眨眼（4 秒一遍，0.083～0.208 秒闭着），2 把拔刀剑的两个定位骨骼缩没。3～7 是空的
-const lowPriorityParallel: readonly AnimationLayerSetting[] = ['pre_parallel0', 'pre_parallel1', 'pre_parallel2'].map((name) => ({ 名: name }));
+const lowPriorityParallel: readonly AnimationLayerSetting[] = ['pre_parallel0', 'pre_parallel1', 'pre_parallel2'].map((name) => ({ name: name }));
 // 并行（盖主动画，转角相加）：0 眼睛跟头、胸部弹簧、浮块（藏掉了，骨骼照转）和漩涡光环自转，1 头饰开关（写的 Ribbon 这个模型没有）。2～7 是空的
-const parallel: readonly AnimationLayerSetting[] = ['parallel0', 'parallel1'].map((name) => ({ 名: name, blendMode: '叠加' as const }));
+const parallel: readonly AnimationLayerSetting[] = ['parallel0', 'parallel1'].map((name) => ({ name: name, blendMode: '叠加' as const }));
 
 /** 一刻的整套层：低优先并行 → 主（从下到上，后面的盖前面的；动作层的 秒 是这段动作自己播到第几秒）→ 并行 */
 export const yaBoLunLayers = (mainLayers: readonly AnimationLayerSetting[]): AnimationLayerSetting[] => [...lowPriorityParallel, ...mainLayers, ...parallel];
 
 export type YaBoLunAct = {
   layers: (sec: number) => readonly AnimationLayerSetting[];
-  环境: (sec: number) => MolangEnv;
+  env: (sec: number) => MolangEnv;
   /** 这一刻头发、胸部各弹簧的输出（ysm.second_order） */
   secondOrderAt: (sec: number) => SecondOrderFn;
   /** 持杖 而没另给 姿势 时右臂怎么摆 */
@@ -203,30 +203,30 @@ export const raisedPose = {
  */
 export const defineAct = (settings: {
   主: (sec: number) => readonly AnimationLayerSetting[];
-  环境?: (sec: number) => MolangEnv;
+  env?: (sec: number) => MolangEnv;
   springMode?: '推进' | '稳态';
   /** 默认 斜举.站；主动作是 fly 的给 斜举.飞 */
   wandHoldPose?: Readonly<Record<string, BonePose>>;
 }): YaBoLunAct => {
   const layers = (sec: number) => yaBoLunLayers(settings.主(sec));
-  const envAt = (sec: number): MolangEnv => settings.环境?.(sec) ?? {};
+  const envAt = (sec: number): MolangEnv => settings.env?.(sec) ?? {};
   const animFile = GirlYaBoLunCreature.animationFiles!;
-  const bottomEnv = GirlYaBoLunCreature.definition.动画!.环境!;
+  const bottomEnv = GirlYaBoLunCreature.definition.animation!.env!;
   const thruster = SecondOrderStepper((sec, second_order) => {
     const e = envAt(sec);
-    animationPose({ 文件: animFile, layers: layers(sec), 口径: '通用', 环境: { query: { ...bottomEnv.query, ...e.query }, external: { ...bottomEnv.external, ...e.external }, functions: { 'ysm.second_order': second_order } } }, sec);
+    animationPose({ file: animFile, layers: layers(sec), 口径: '通用', env: { query: { ...bottomEnv.query, ...e.query }, external: { ...bottomEnv.external, ...e.external }, functions: { 'ysm.second_order': second_order } } }, sec);
   });
-  return { layers, 环境: envAt, secondOrderAt: settings.springMode === '稳态' ? () => secondOrderSteady : thruster.在, wandHoldPose: settings.wandHoldPose ?? raisedPose.站 };
+  return { layers, env: envAt, secondOrderAt: settings.springMode === '稳态' ? () => secondOrderSteady : thruster.在, wandHoldPose: settings.wandHoldPose ?? raisedPose.站 };
 };
 
 /** 站着：idle 3 秒一遍 */
-export const stand = defineAct({ 主: () => [{ 名: 'idle' }] });
+export const stand = defineAct({ 主: () => [{ name: 'idle' }] });
 /** 悬停：fly 3 秒一遍，蜘蛛腿 c1、c2 跟着扇 */
-export const hover = defineAct({ 主: () => [{ 名: 'fly' }], wandHoldPose: raisedPose.飞 });
+export const hover = defineAct({ 主: () => [{ name: 'fly' }], wandHoldPose: raisedPose.飞 });
 
 export type GirlYaBoLunProps = {
   pose: { loc: number[]; yaw?: number };
-  秒: number;
+  sec: number;
   /** 默认 站立 */
   act?: YaBoLunAct;
   /** 默认 default（下界二阶段），面纱、漩涡光环照贴图原样 */
@@ -259,7 +259,7 @@ export type HeldStaff = { 挂: ReactNode; matrix: THREE.Matrix4; tip: readonly n
 export const animSkeletonTable = (sec: number, act: YaBoLunAct) => {
   const entityDef = GirlYaBoLunCreature.definition;
   return animationPose(
-    { 文件: GirlYaBoLunCreature.animationFiles!, layers: act.layers(sec), 口径: entityDef.动画!.口径, 环境: mergeEnv(entityDef.动画!.环境, { ...act.环境(sec), functions: { 'ysm.second_order': act.secondOrderAt(sec) } }) },
+    { file: GirlYaBoLunCreature.animationFiles!, layers: act.layers(sec), 口径: entityDef.animation!.口径, env: mergeEnv(entityDef.animation!.env, { ...act.env(sec), functions: { 'ysm.second_order': act.secondOrderAt(sec) } }) },
     sec,
   );
 };
@@ -277,7 +277,7 @@ const handCenter = new THREE.Vector3(-0.08, -5.78, 0.5);
  * 握偏：握点沿杖身往杖尾挪几格（物品空间；杖全长 31/16，默认的握点到杖尾 15/16），默认 0 = 模型 display 定的握点（杖身正中）
  */
 const staffGripCorrection = (boneTable: Readonly<Record<string, BonePose>>, gripOffset = 0): THREE.Matrix4 => {
-  const scale = GirlYaBoLunCreature.definition.缩放;
+  const scale = GirlYaBoLunCreature.definition.scale;
   const forearmToHand = skeletonMatrix(origGeometry, 'RightForeArm', boneTable, scale).invert().multiply(skeletonMatrix(origGeometry, 'RightHandLocator', boneTable, scale));
   const desired = handCenter.clone().applyMatrix4(forearmToHand.invert());
   const handPoint = new THREE.Vector3(gripPoint[0], gripPoint[1] - gripOffset, gripPoint[2]).applyMatrix4(heldStaffMatrix());
@@ -287,8 +287,8 @@ const staffGripCorrection = (boneTable: Readonly<Record<string, BonePose>>, grip
 // 整根骨骼缩成 0，基岩模型就不画它（engine/model/基岩模型.tsx）
 const hideGlowPose: Readonly<Record<string, BonePose>> = { ysmGlowbone24: { scale: 0 } };
 
-export const GirlYaBoLun: FC<GirlYaBoLunProps> = ({ 秒: sec, act = stand, holdWand, gripOffset, 杖: staff, wandOverlay, attach, bonePose, headRing, ringSec, ...rest }) => {
-  const e = act.环境(sec);
+export const GirlYaBoLun: FC<GirlYaBoLunProps> = ({ sec: sec, act = stand, holdWand, gripOffset, 杖: staff, wandOverlay, attach, bonePose, headRing, ringSec, ...rest }) => {
+  const e = act.env(sec);
   const image = GirlYaBoLunCreature.getModel(rest.variant).texture;
   const correction = holdWand ? staffGripCorrection(poseTable(sec, act, bonePose), gripOffset) : undefined;
   const correctionKey = correction?.elements.join(',');
@@ -311,7 +311,7 @@ export const GirlYaBoLun: FC<GirlYaBoLunProps> = ({ 秒: sec, act = stand, holdW
   );
   const basePose = bonePose ?? (holdWand ? act.wandHoldPose : undefined);
   const fullPose = useMemo(() => (headRing ? { ...basePose, ...hideGlowPose } : basePose), [headRing, basePose]);
-  return <GirlYaBoLunCreature {...rest} bonePose={fullPose} attach={attachments} 秒={sec} layers={act.layers(sec)} 环境={{ ...e, functions: { 'ysm.second_order': act.secondOrderAt(sec) } }} />;
+  return <GirlYaBoLunCreature {...rest} bonePose={fullPose} attach={attachments} sec={sec} layers={act.layers(sec)} env={{ ...e, functions: { 'ysm.second_order': act.secondOrderAt(sec) } }} />;
 };
 
 export type WandPose = {
@@ -330,14 +330,14 @@ export type WandPose = {
  * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势），不给 杖 就是原版的下界魔杖。
  * 旧握法：不做握杖修正，杖照定位骨原样挂（<手持下界魔杖> 直接挂 RightHandLocator）；只给封面草稿五稿及以前的旧案留着，不改它们的画面
  */
-export const holdWandPose = ({ pose, 秒: sec, act = stand, bonePose, 杖: staff, gripOffset, oldGrip }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | 'bonePose' | '杖' | 'gripOffset'> & { oldGrip?: boolean }): WandPose =>
+export const holdWandPose = ({ pose, sec: sec, act = stand, bonePose, 杖: staff, gripOffset, oldGrip }: Pick<GirlYaBoLunProps, 'pose' | 'sec' | 'act' | 'bonePose' | '杖' | 'gripOffset'> & { oldGrip?: boolean }): WandPose =>
   tableToWandPose(pose, poseTable(sec, act, bonePose), staff, oldGrip, gripOffset);
 
 const tableToWandPose = (pose: GirlYaBoLunProps['pose'], boneTable: Readonly<Record<string, BonePose>>, staff?: HeldStaff, oldGrip?: boolean, gripOffset?: number): WandPose => {
   const m = new THREE.Matrix4()
     .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
     .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
-    .multiply(skeletonMatrix(origGeometry, 'RightHandLocator', boneTable, GirlYaBoLunCreature.definition.缩放));
+    .multiply(skeletonMatrix(origGeometry, 'RightHandLocator', boneTable, GirlYaBoLunCreature.definition.scale));
   if (!oldGrip) m.multiply(staffGripCorrection(boneTable, gripOffset));
   m.multiply(staff?.matrix ?? heldStaffMatrix());
   const transformPoint = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
@@ -350,14 +350,14 @@ const tableToWandPose = (pose: GirlYaBoLunProps['pose'], boneTable: Readonly<Rec
  * 姿势 里右臂三根骨骼先摆个大概（肘弯多少、手腕怎么握由它定），解出来的右肩离它最近：阻尼最小二乘，步数固定，结果只看输入、和取帧顺序无关。
  * 朝 给目标点时方向 = 杖尖 → 目标（杖尖跟着手动，每步重算）；给 向 就是定死的方向。身子在动画里怎么倒、怎么晃都算在内，所以每帧解一次杖尖就一直指着目标。
  */
-export const aimStaff = ({ pose, 秒: sec, act = stand, bonePose, 杖: staff, aim }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | '杖'> & { bonePose: Readonly<Record<string, BonePose>>; aim: { 点: V3 } | { dir: V3 } }): Record<string, BonePose> => {
+export const aimStaff = ({ pose, sec: sec, act = stand, bonePose, 杖: staff, aim }: Pick<GirlYaBoLunProps, 'pose' | 'sec' | 'act' | '杖'> & { bonePose: Readonly<Record<string, BonePose>>; aim: { points: V3 } | { dir: V3 } }): Record<string, BonePose> => {
   const boneTable = poseTable(sec, act, bonePose);
   const startRot = (bonePose.RightArm?.rot ?? [0, 0, 0]).slice();
   const withRightArm = (r: readonly number[]) => ({ ...boneTable, RightArm: { ...boneTable.RightArm, rot: [...r] } });
   // 残差：杖身方向 − 要的方向（三个分量）
   const rotDiff = (r: readonly number[]): number[] => {
     const staffPose = tableToWandPose(pose, withRightArm(r), staff);
-    const toTarget = '点' in aim ? new THREE.Vector3(aim.点[0] - staffPose.tip[0], aim.点[1] - staffPose.tip[1], aim.点[2] - staffPose.tip[2]).normalize().toArray() : new THREE.Vector3(...aim.dir).normalize().toArray();
+    const toTarget = 'points' in aim ? new THREE.Vector3(aim.points[0] - staffPose.tip[0], aim.points[1] - staffPose.tip[1], aim.points[2] - staffPose.tip[2]).normalize().toArray() : new THREE.Vector3(...aim.dir).normalize().toArray();
     return [staffPose.axis[0] - toTarget[0]!, staffPose.axis[1] - toTarget[1]!, staffPose.axis[2] - toTarget[2]!];
   };
   let r = startRot.slice();
@@ -387,14 +387,14 @@ export const aimStaff = ({ pose, 秒: sec, act = stand, bonePose, 杖: staff, ai
 };
 
 /** 她右手手心（握杖修正 对的那一点）在场景里的位置：核对握杖、给手部特写定机位用 */
-export const rightHandCenter = ({ pose, 秒: sec, act = stand, bonePose }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | 'bonePose'>): V3 =>
+export const rightHandCenter = ({ pose, sec: sec, act = stand, bonePose }: Pick<GirlYaBoLunProps, 'pose' | 'sec' | 'act' | 'bonePose'>): V3 =>
   handCenter
     .clone()
     .applyMatrix4(
       new THREE.Matrix4()
         .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
         .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
-        .multiply(skeletonMatrix(origGeometry, 'RightForeArm', poseTable(sec, act, bonePose), GirlYaBoLunCreature.definition.缩放)),
+        .multiply(skeletonMatrix(origGeometry, 'RightForeArm', poseTable(sec, act, bonePose), GirlYaBoLunCreature.definition.scale)),
     )
     .toArray();
 

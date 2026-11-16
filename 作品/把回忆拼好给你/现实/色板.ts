@@ -21,5 +21,5 @@ export const realColors = {
   litCellColor: '#9fdcea',
   litFrameColor: '#e8fbff',
   /** 物品展示框的框（原版用白桦木板的贴图） */
-  框: ['#c8b77a', '#d6c98c', '#b4a26a', '#a08e5c'],
+  box: ['#c8b77a', '#d6c98c', '#b4a26a', '#a08e5c'],
 } as const;

@@ -14,9 +14,9 @@ const fallHeights = [0.3, 1, 2.5, 5, 23, 80];
 describe('原版下落正本', () => {
   it('前几刻：0、0、−0.0784、−0.233632……（先挪再改速度）；站着的竖直速度是 −0.0784', () => {
     expect(vanillaMotion.standingVertSpeed).toBeCloseTo(-0.0784, 12);
-    let s = { 高: 0, 速: 0 };
+    let s = { height: 0, 速: 0 };
     const heights = [0];
-    for (let i = 0; i < 4; i++) heights.push((s = fallOneTick(s.高, s.速)).高);
+    for (let i = 0; i < 4; i++) heights.push((s = fallOneTick(s.height, s.速)).height);
     expect(heights.map((x) => +x.toFixed(6))).toEqual([0, 0, -0.0784, -0.233632, -0.464159]);
     expect(fallHeightAtTick(2)).toBeCloseTo(-0.0784, 12);
     expect(fallHeightAtTick(2.5)).toBeCloseTo((-0.0784 - 0.233632) / 2, 9);
@@ -28,9 +28,9 @@ describe('原版下落正本', () => {
     expect(fallHeightAtTick(400, { 重力: vanillaMotion.itemGravity }) - fallHeightAtTick(399, { 重力: vanillaMotion.itemGravity })).toBeCloseTo(-1.96, 2);
   });
   it('物品、下落方块先加重力再挪：第一刻就掉 0.04，往后 −0.04 − 0.0792……', () => {
-    let s = { 高: 0, 速: 0 };
+    let s = { height: 0, 速: 0 };
     const heights = [0];
-    for (let i = 0; i < 3; i++) heights.push((s = fallOneTick(s.高, s.速, vanillaMotion.itemGravity, vanillaMotion.verticalDrag, true)).高);
+    for (let i = 0; i < 3; i++) heights.push((s = fallOneTick(s.height, s.速, vanillaMotion.itemGravity, vanillaMotion.verticalDrag, true)).height);
     expect(heights.map((x) => +x.toFixed(6))).toEqual([0, -0.04, -0.1192, -0.236816]);
     expect(fallHeightAtTick(2, itemFallOptions)).toBeCloseTo(-0.1192, 12);
     expect(fallHeightAtTick(1.5, { ...itemFallOptions, initSpeed: 0.2 })).toBeCloseTo(0.16 + 0.5 * (0.16 * 0.98 - 0.04), 12);

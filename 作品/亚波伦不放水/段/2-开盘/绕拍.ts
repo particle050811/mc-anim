@@ -24,13 +24,13 @@ const yaBoLunChest = (t: number): V3 => {
  * 半径：离她胸口几格；高：机位比她胸口高几格（开头齐胸，她拉起来以后在她下方往上看，背景是她身后的地和坡）；镜头：焦距（毫米）
  */
 export const orbitBeat = {
-  起: beats.liftStart,
-  止: 3.6,
+  start: beats.liftStart,
+  end: 3.6,
   orbit: [1.45, 3.45] as const,
   endRelDeg: 60,
   azimuthDeg: 180,
   radiusList: [4.4, 5.0] as const,
-  高: [0.2, -1.9, -1.3] as const,
+  height: [0.2, -1.9, -1.3] as const,
   lensMm: [18, 24] as const,
 };
 
@@ -46,10 +46,10 @@ export const orbitRig = (s: number): Cam => {
   const orbitCenter = yaBoLunChest(t);
   const angle = (orbitAzimuth(s) * Math.PI) / 180;
   // 开头齐胸、拍得到他从她脚底下冲过去；她往上蹿起来以后机位落到她下方
-  const dropT = smoothstep01((s - orbitBeat.起) / 0.45);
+  const dropT = smoothstep01((s - orbitBeat.start) / 0.45);
   const easedT = smoothstep01((s - orbitBeat.orbit[0]) / (orbitBeat.orbit[1] - orbitBeat.orbit[0]));
-  const height = lerp(lerp(orbitBeat.高[0], orbitBeat.高[1], dropT), orbitBeat.高[2], easedT);
-  const radius = lerp(orbitBeat.radiusList[0], orbitBeat.radiusList[1], smoothstep01((s - orbitBeat.起) / 0.8));
+  const height = lerp(lerp(orbitBeat.height[0], orbitBeat.height[1], dropT), orbitBeat.height[2], easedT);
+  const radius = lerp(orbitBeat.radiusList[0], orbitBeat.radiusList[1], smoothstep01((s - orbitBeat.start) / 0.8));
   const pos: V3 = [orbitCenter[0] + Math.cos(angle) * radius, orbitCenter[1] + Math.sin(angle) * radius, orbitCenter[2] + height];
   // 机位不低于脚下的地 + 0.8 格
   const groundZ = altarPoint[2] + localGroundHeight(pos[0] - altarPoint[0], pos[1] - altarPoint[1]) + 0.8;

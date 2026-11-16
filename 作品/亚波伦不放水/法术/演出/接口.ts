@@ -5,13 +5,13 @@ export type Vec3 = readonly [number, number, number];
 
 export interface SpellPerformanceProps {
   /** 出手后的秒数（带小数）。宿主只在 [0, 元.长秒) 里画 */
-  readonly 秒: number;
+  readonly sec: number;
   /** 法术从哪出来：轮盘上那一格或杖尖 */
   readonly from: Vec3;
   /** 打谁：史蒂夫脚底中心 */
-  readonly 目标: Vec3;
+  readonly target: Vec3;
   /** 这一发自己的随机数种子；同一个种子每帧算出来一样 */
-  readonly 种子: number;
+  readonly seed: number;
   /** 聚晶附魔、施法条件；不给 = 不附魔、原版快慢 */
   readonly options?: SpellOptions;
 }
@@ -28,9 +28,9 @@ export interface SpellOptions {
 
 export interface SpellSound {
   /** 资产 id，如 音效/诡厄巫法/goety.soul_bolt_cast */
-  readonly 资产: string;
+  readonly asset: string;
   /** 第几秒响：默认从出手算；写了 从命中 就从命中那一刻算（飞行时间随距离变的弹道类用） */
-  readonly 秒: number;
+  readonly sec: number;
   readonly fromHit?: boolean;
   /** 游戏里 playSound 的音量、音高（都默认 1）；段里怎么换成增益由段定 */
   readonly 音量?: number;
@@ -45,9 +45,9 @@ export interface SpellMeta {
   /** 打到目标的时刻（史蒂夫受击、震屏用）；没有命中一说的不写 */
   readonly hitSec?: number;
   /** 长秒、命中秒随起点和目标变的（弹道类：飞多久看多远）给这个函数；要是纯函数 */
-  readonly 时长?: (from: Vec3, target: Vec3, options?: SpellOptions) => { readonly 长秒: number; readonly hitSec?: number };
+  readonly duration?: (from: Vec3, target: Vec3, options?: SpellOptions) => { readonly 长秒: number; readonly hitSec?: number };
   /** 声音，没有就给空数组 */
-  readonly 声音: readonly SpellSound[];
+  readonly sound: readonly SpellSound[];
   /** 声音的时刻随 选项 变的（撕裂的预热跟着施法刻）给这个，给了就不用 声音 */
   readonly soundsFor?: (options?: SpellOptions) => readonly SpellSound[];
 }
@@ -55,14 +55,14 @@ export interface SpellMeta {
 export const defineSpellMeta = (meta: SpellMeta): SpellMeta => meta;
 
 /** 这一发实际演多久、几时命中 */
-export const spellDuration = (meta: SpellMeta, from: Vec3, target: Vec3, options?: SpellOptions): { 长秒: number; hitSec?: number } => meta.时长?.(from, target, options) ?? { 长秒: meta.长秒, hitSec: meta.hitSec };
+export const spellDuration = (meta: SpellMeta, from: Vec3, target: Vec3, options?: SpellOptions): { 长秒: number; hitSec?: number } => meta.duration?.(from, target, options) ?? { 长秒: meta.长秒, hitSec: meta.hitSec };
 
 /** 这一发各声音落在出手后第几秒（从命中 的已经换算好）；段.ts 里拿去 放() */
-export const spellSoundAt = (meta: SpellMeta, from: Vec3, target: Vec3, options?: SpellOptions): { 资产: string; 秒: number; 音量: number; 音高: number }[] => {
+export const spellSoundAt = (meta: SpellMeta, from: Vec3, target: Vec3, options?: SpellOptions): { asset: string; sec: number; 音量: number; 音高: number }[] => {
   const hitSec = spellDuration(meta, from, target, options).hitSec;
-  return (meta.soundsFor?.(options) ?? meta.声音).map((spellSound) => {
-    if (spellSound.fromHit && hitSec === undefined) throw new Error(`法术 ${meta.id} 的声音 ${spellSound.资产} 写了 从命中，元数据里却没有命中秒`);
-    return { 资产: spellSound.资产, 秒: (spellSound.fromHit ? hitSec! : 0) + spellSound.秒, 音量: spellSound.音量 ?? 1, 音高: spellSound.音高 ?? 1 };
+  return (meta.soundsFor?.(options) ?? meta.sound).map((spellSound) => {
+    if (spellSound.fromHit && hitSec === undefined) throw new Error(`法术 ${meta.id} 的声音 ${spellSound.asset} 写了 从命中，元数据里却没有命中秒`);
+    return { asset: spellSound.asset, sec: (spellSound.fromHit ? hitSec! : 0) + spellSound.sec, 音量: spellSound.音量 ?? 1, 音高: spellSound.音高 ?? 1 };
   });
 };
 

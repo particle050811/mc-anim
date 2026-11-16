@@ -24,7 +24,7 @@ export const lines: { id: string; startSec: number; text: string; estDuration: n
   { id: '7-2-2-李樱-开到了', startSec: gotItLineSec, text: '开到了！', estDuration: timeline.gotItLineDur },
 ];
 // 给 mouthAt 的句子：它的 帧 和 fps 是同一个单位，这里都用秒（fps 传 1）
-export const mouthCues = lines.map(({ id, startSec }) => ({ id, 帧: startSec }));
+export const mouthCues = lines.map(({ id, startSec }) => ({ id, frame: startSec }));
 
 // ---------- 机位 ----------
 // 段首 → 传走那一刻慢慢推近，之后停住、目标往下落到空羊毛上。

@@ -11,12 +11,12 @@ import { SlamWall } from '../零件/冲击波.tsx';
 import { CircleBurst } from '../零件/甲/爆.tsx';
 import meta from './战栗.元.ts';
 
-const Shudder: React.FC<SpellPerformanceProps> = ({ 秒: sec, from }) => {
+const Shudder: React.FC<SpellPerformanceProps> = ({ sec: sec, from }) => {
   const tick = sec * 20;
   return (
     <>
       <CircleBurst 位={from} 刻={tick} 色={[1, 1, 1]} 尺寸={6} 速={3} />
-      <SlamWall 位={[from[0], from[1], from[2] + 0.5]} 刻={tick} 宽={3} 色={[1, 1, 1]} 寿命={10} />
+      <SlamWall 位={[from[0], from[1], from[2] + 0.5]} 刻={tick} width={3} 色={[1, 1, 1]} 寿命={10} />
     </>
   );
 };

@@ -17,7 +17,7 @@ import solidTrailPng from 'asset:贴图/法术/goety/entity/projectiles/solid_tr
 
 const smackStoneModel = getModel(smackStoneModelData, 'SmackStoneModel');
 
-const SmackStone: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, options }) => {
+const SmackStone: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = smackStonePath(from, target, options?.highSpeed);
   if (tick >= arriveTick) return null;
@@ -26,10 +26,10 @@ const SmackStone: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: t
     <>
       <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
         <group scale={[-1, -1, 1]}>
-          <ModelPart 模型={smackStoneModel} 图={png(smackStonePng)} 画法="半透明" opacity={0.5} partPoses={{ rock: { rot: [degToRad(pitch), degToRad(yaw), 0], offset: [0, -2, 0] } }} />
+          <ModelPart model={smackStoneModel} image={png(smackStonePng)} 画法="半透明" opacity={0.5} partPoses={{ rock: { rot: [degToRad(pitch), degToRad(yaw), 0], offset: [0, -2, 0] } }} />
         </group>
       </MinecraftSpace>
-      {tick > 2 && <Trail points={trailPoints(trajectory, tick, { startTick: 2, offset: [0, 0, 0.125] })} 宽={0.2} 长={6} 图={png(solidTrailPng)} 色={hexColor(0x79553a)} 实心 混合="镂空" />}
+      {tick > 2 && <Trail points={trailPoints(trajectory, tick, { startTick: 2, offset: [0, 0, 0.125] })} width={0.2} length={6} image={png(solidTrailPng)} 色={hexColor(0x79553a)} 实心 blend="镂空" />}
     </>
   );
 };

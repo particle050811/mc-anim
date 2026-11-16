@@ -8,11 +8,11 @@ const buildLipData = (lineCues: readonly LineCue[]): LipData => {
   const lineStarts: Record<string, { 角色: string; 开口: number }> = {};
   for (const { 句: sentence } of lineCues) {
     lip[sentence.id] = { 嘴: sentence.嘴 as [number, string][] };
-    lineStarts[sentence.id] = { 角色: sentence.角色, 开口: sentence.开口 };
+    lineStarts[sentence.id] = { 角色: sentence.character, 开口: sentence.mouthOpen };
   }
-  return { 口型: lip, 台词: lineStarts };
+  return { lip: lip, lines: lineStarts };
 };
-const cueFrames = (lineCues: readonly LineCue[]) => lineCues.map(({ 句: sentence, 帧: frame }) => ({ id: sentence.id, 帧: frame }));
+const cueFrames = (lineCues: readonly LineCue[]) => lineCues.map(({ 句: sentence, frame: frame }) => ({ id: sentence.id, frame: frame }));
 
 export const sentenceLip = (lineCues: readonly LineCue[], speaker: string, frame: number, fps: number) => mouthAt(buildLipData(lineCues), cueFrames(lineCues), speaker, frame, fps);
 

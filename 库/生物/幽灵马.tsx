@@ -44,7 +44,7 @@ export const STEED = {
 export const VANILLA_RIDE = { legXRot: -81, legYRot: 18, armXRot: -36 };
 
 export type SteedProps = {
-  秒: number; // 游戏时间
+  sec: number; // 游戏时间
   walkCycle?: { legPhase: number; amplitude: number }; // limbSwing（累计）、limbSwingAmount（0～1）；用 马步态() 从速度算
   headYaw?: number; // 度，夹在 ±20
   headPitch?: number; // 度
@@ -82,7 +82,7 @@ export const steedPose = (props: SteedProps) => {
   pose.body.offset = [pose.body.offset[0], 11, pose.body.offset[2]];
   const f11 = mthCos(ls * 0.6662 + Math.PI);
   const f12 = f11 * 0.8 * la;
-  const paw = mthCos(props.秒 * 20 * 0.6 + Math.PI);
+  const paw = mthCos(props.sec * 20 * 0.6 + Math.PI);
   for (const leg of ['left_front_leg', 'right_front_leg']) pose[leg].offset = [pose[leg].offset[0], 2 * s + 14 * r, -6 * s - 10 * r];
   const hindTilt = Math.fround(0.2617994) * s;
   pose.left_hind_leg.rot[0] = hindTilt - f11 * 0.5 * la * r;
@@ -151,7 +151,7 @@ export const steedParticles = (posAtTick: (tick: number) => V3, t0: number, t1: 
     const gy = rand() * 2 * 0.75 - 0.75;
     const gz = rand() * 2 * 0.75 - 0.75;
     const at = posAtTick(k);
-    out.push({ 种: 'enchant', 刻: k, p: [at[0] + gx, at[1] - gz, at[2] + gy + 1], v: [gx * 0.01, -gz * 0.01, 0.08 + gy * 0.01], 种子: seed * 389 + k });
+    out.push({ kind: 'enchant', 刻: k, p: [at[0] + gx, at[1] - gz, at[2] + gy + 1], v: [gx * 0.01, -gz * 0.01, 0.08 + gy * 0.01], seed: seed * 389 + k });
   }
   return out;
 };

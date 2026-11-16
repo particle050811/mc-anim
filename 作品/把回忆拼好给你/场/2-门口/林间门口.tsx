@@ -24,8 +24,8 @@ export type ForestDoorCanvasProps = DoorCanvasProps & {
 
 /** 一块 宽 × 高 的定位容器：天、远景、中景、近景三维、叠层 */
 export const ForestDoorCanvas: React.FC<ForestDoorCanvasProps> = ({
-  宽: width = 1280,
-  高: height = 720,
+  width: width = 1280,
+  height: height = 720,
   framing = defaultFraming,
   topDepth = orthoTop,
   刻: tick = dayTick,
@@ -34,11 +34,11 @@ export const ForestDoorCanvas: React.FC<ForestDoorCanvasProps> = ({
   afterimage,
   tone: tone = '夏日白天',
   brightness = 1,
-  outlineWidth = defaultOutline.宽,
-  叠层: overlay,
+  outlineWidth = defaultOutline.width,
+  overlay: overlay,
   children,
   growth = 1,
-  群系: biomeName = biome,
+  biome: biomeName = biome,
   shading,
   ...houseProps
 }) => {
@@ -50,17 +50,17 @@ export const ForestDoorCanvas: React.FC<ForestDoorCanvasProps> = ({
   return (
     <DoorShading shading={shading}>
       <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden' }}>
-        <SideSectionSky framing={framing} 宽={width} 高={height} 色={skyColors} 刻={tick} arc={skyArc} lightDarkAmp={lightDarkAmp} afterimage={afterimage} />
-        <ForestBackdrop 宽={width} 高={height} framing={framing} topDepth={topDepth} tint={tint} fogColor={skyColors.horizon} growth={growth} 群系={biomeName} />
+        <SideSectionSky framing={framing} width={width} height={height} 色={skyColors} 刻={tick} arc={skyArc} lightDarkAmp={lightDarkAmp} afterimage={afterimage} />
+        <ForestBackdrop width={width} height={height} framing={framing} topDepth={topDepth} tint={tint} fogColor={skyColors.horizon} growth={growth} biome={biomeName} />
         <ToonCanvas
-          宽={width}
-          高={height}
+          width={width}
+          height={height}
           cameraRig={sideRig(framing, topDepth)}
           tint={tint}
-          outline={defaultOutline.开 ? { 宽: outlineWidth, 色: t.outlineColor } : false}
+          outline={defaultOutline.开 ? { width: outlineWidth, 色: t.outlineColor } : false}
           style={fullCoverStyle}
         >
-          <EntranceCabin {...houseProps} 群系={biomeName} />
+          <EntranceCabin {...houseProps} biome={biomeName} />
           {children}
         </ToonCanvas>
         {overlay}

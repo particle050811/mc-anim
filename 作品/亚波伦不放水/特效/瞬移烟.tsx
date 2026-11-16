@@ -12,12 +12,12 @@ import { type ParticleSpawn, VanillaParticles } from '@库/特效/原版粒子.t
 
 export type Teleport = {
   /** 开始冒烟（预兆）的秒 */
-  起: number;
+  start: number;
   /** 挪过去的那一秒 */
   移: number;
   /** 脚底：从哪、到哪 */
   从: V3;
-  到: V3;
+  dest: V3;
 };
 
 const width = 0.6;
@@ -30,14 +30,14 @@ export const teleportSmokeSpawns = (teleport: Teleport, seed: number): ParticleS
   const spawns: ParticleSpawn[] = [];
   let counter = 0;
   // 等的那几刻：她身上每刻 5 颗（脚底在 从 不动，片里的预兆也是她站在那儿收一下）
-  for (let tick = Math.ceil(teleport.起 * 20); tick < teleport.移 * 20; tick++) {
+  for (let tick = Math.ceil(teleport.start * 20); tick < teleport.移 * 20; tick++) {
     for (let i = 0; i < 5; i++) {
       spawns.push({
-        种: 'smoke',
+        kind: 'smoke',
         刻: tick,
         p: [teleport.从[0] + width * (2 * rand() - 1), teleport.从[1] + width * (2 * rand() - 1), teleport.从[2] + height * rand()],
         v: [gaussian() * 0.01, gaussian() * 0.01, gaussian() * 0.01],
-        种子: seed * 100003 + counter++,
+        seed: seed * 100003 + counter++,
       });
     }
   }
@@ -45,22 +45,22 @@ export const teleportSmokeSpawns = (teleport: Teleport, seed: number): ParticleS
   for (let i = 0; i < 128; i++) {
     const d = i / 127;
     spawns.push({
-      种: 'smoke',
+      kind: 'smoke',
       刻: teleport.移 * 20,
       p: [
-        teleport.从[0] + (teleport.到[0] - teleport.从[0]) * d + (rand() - 0.5) * width * 2,
-        teleport.从[1] + (teleport.到[1] - teleport.从[1]) * d + (rand() - 0.5) * width * 2,
-        teleport.从[2] + (teleport.到[2] - teleport.从[2]) * d + rand() * height,
+        teleport.从[0] + (teleport.dest[0] - teleport.从[0]) * d + (rand() - 0.5) * width * 2,
+        teleport.从[1] + (teleport.dest[1] - teleport.从[1]) * d + (rand() - 0.5) * width * 2,
+        teleport.从[2] + (teleport.dest[2] - teleport.从[2]) * d + rand() * height,
       ],
       v: [(rand() - 0.5) * 0.2, (rand() - 0.5) * 0.2, (rand() - 0.5) * 0.2],
-      种子: seed * 100003 + counter++,
+      seed: seed * 100003 + counter++,
     });
   }
   return spawns;
 };
 
 /** 画几次瞬移的烟。秒：和 瞬移 里的秒同一个钟；大小：整体放大（原版 1） */
-export const TeleportSmoke: React.FC<{ teleports: readonly Teleport[]; 秒: number; 大小?: number }> = ({ teleports, 秒: sec, 大小: size = 1 }) => {
+export const TeleportSmoke: React.FC<{ teleports: readonly Teleport[]; sec: number; size?: number }> = ({ teleports, sec: sec, size: size = 1 }) => {
   const spawns = useMemo(() => teleports.flatMap((teleport, i) => teleportSmokeSpawns(teleport, i + 1)), [teleports]);
-  return <VanillaParticles spawns={spawns} 秒={sec} size={size} />;
+  return <VanillaParticles spawns={spawns} sec={sec} size={size} />;
 };

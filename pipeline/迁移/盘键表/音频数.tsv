@@ -1,0 +1,7 @@
+# 格式：音频数　位置：<数据根>/cache/音频数/<sha>.json
+# 读写：pipeline/资产/音频量.ts　分类：缓存　现有 5 个文件（5 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+响度	loudness
+峰值	peakDb
+时长	duration

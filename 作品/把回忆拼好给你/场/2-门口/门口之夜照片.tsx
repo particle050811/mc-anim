@@ -29,15 +29,15 @@ const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 /** 照片是第 11 句（段 2-截图下线）截下的，2-空床 开头接着缩的也是这一张：光影跟着 2-截图下线 开不开走 */
 const shading = shadingBySeg['2-截图下线'];
 const holdFrame = freezeFrame;
-const shatterFrame = mainCutEvents.worldShatters.帧;
-const logOffFrame = mainCutEvents.logOff.帧;
+const shatterFrame = mainCutEvents.worldShatters.frame;
+const logOffFrame = mainCutEvents.logOff.frame;
 /** 把 门口之夜画布 交出来的各层按位置拼进 W×H 的离屏画布（远景那块比画面高、不从顶边起） */
 const composeLayers = (offscreen: HTMLCanvasElement, layers: readonly CaptureLayer[], W: number, H: number) => {
   if (offscreen.width !== W || offscreen.height !== H) Object.assign(offscreen, { width: W, height: H });
   const o = offscreen.getContext('2d')!;
   o.imageSmoothingEnabled = false;
   o.clearRect(0, 0, W, H);
-  for (const { 图: canvasImg, left, 上: top, 宽: width, 高: height } of layers) o.drawImage(canvasImg, Math.round(left * W), Math.round(top * H), Math.round(width * W), Math.round(height * H));
+  for (const { image: canvasImg, left, 上: top, width: width, height: height } of layers) o.drawImage(canvasImg, Math.round(left * W), Math.round(top * H), Math.round(width * W), Math.round(height * H));
 };
 // 碎块晚多久掉：确定性的小抖动
 const jitter = (i: number, j: number) => {
@@ -59,7 +59,7 @@ const drawBase = (ctx: CanvasRenderingContext2D, world: HTMLCanvasElement, frame
   ctx.imageSmoothingEnabled = false;
   if (frame < shatterFrame) ctx.drawImage(world, 0, 0, W, H);
   else {
-    const tileSize = shatter.块 * u;
+    const tileSize = shatter.tile * u;
     const cols = Math.ceil(W / tileSize), rows = Math.ceil(H / tileSize);
     const t0 = (frame - shatterFrame) / fps;
     for (let j = 0; j < rows; j++)
@@ -123,7 +123,7 @@ const drawCard = (ctx: CanvasRenderingContext2D, world: HTMLCanvasElement, frame
   ctx.filter = 'none';
   ctx.clearRect(0, 0, W, H);
   // 拍立得：照片从整屏缩到 缩放、斜过去；下线起裁成正方形、褪色蒙灰、缩成图标（几何在 门口之夜参数.ts 的 卡片）
-  const { 入: enterProgress, 下: dropT, s, w, h, borderWidth, bottomEdge, cx, cy, 角: angle, 源: srcRect, 点: dotCount } = photoCard(frame, W, H);
+  const { 入: enterProgress, 下: dropT, s, w, h, borderWidth, bottomEdge, cx, cy, angle: angle, 源: srcRect, points: dotCount } = photoCard(frame, W, H);
   const [sx, sy, sw, sh] = srcRect;
   ctx.translate(cx, cy);
   ctx.rotate(angle);
@@ -163,7 +163,7 @@ const drawCard = (ctx: CanvasRenderingContext2D, world: HTMLCanvasElement, frame
   }
 };
 
-export const DoorwayNightPhoto: React.FC<{ 帧: number; prevFrame?: number; 宽?: number; 高?: number }> = ({ 帧: frame, prevFrame, 宽: width = 1280, 高: height = 720 }) => {
+export const DoorwayNightPhoto: React.FC<{ frame: number; prevFrame?: number; width?: number; height?: number }> = ({ frame: frame, prevFrame, width: width = 1280, height: height = 720 }) => {
   const baseRef = useRef<HTMLCanvasElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
   const dpr = canvasDpr(1);
@@ -182,16 +182,16 @@ export const DoorwayNightPhoto: React.FC<{ 帧: number; prevFrame?: number; 宽?
   );
   return (
     <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden', background: '#000' }}>
-      <DoorNightCanvas 帧={isSettled ? photoFrame : frame} prevFrame={isSettled ? undefined : prevFrame} 宽={width} 高={height} capture={isSettled ? composite : undefined} style={isSettled ? { visibility: 'hidden' } : undefined} shading={shading} />
+      <DoorNightCanvas frame={isSettled ? photoFrame : frame} prevFrame={isSettled ? undefined : prevFrame} width={width} height={height} capture={isSettled ? composite : undefined} style={isSettled ? { visibility: 'hidden' } : undefined} shading={shading} />
       {isSettled && <canvas ref={baseRef} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: width, height: height }} />}
       {frame >= logOffFrame && (
         <PixelChatBar
           lines={[{ text: 'Steve退出了游戏', color: yellow, startTick: 0 }]}
           刻={((frame - logOffFrame) / fps) * 20}
-          缩放={chatScale}
+          scale={chatScale}
           字体={pixelFont}
-          宽={width}
-          高={height}
+          width={width}
+          height={height}
           chatWidth={line15ChatWidth}
         />
       )}
@@ -201,7 +201,7 @@ export const DoorwayNightPhoto: React.FC<{ 帧: number; prevFrame?: number; 宽?
 };
 
 /** 核对用：照片帧的世界缩成的 64×64 存档图标，最近邻放大到 边 个成片像素见方、放在画面正中（黑底） */
-export const DoorwayNightIcon: React.FC<{ side: number; 宽?: number; 高?: number }> = ({ side, 宽: width = 1280, 高: height = 720 }) => {
+export const DoorwayNightIcon: React.FC<{ side: number; width?: number; height?: number }> = ({ side, width: width = 1280, height: height = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const dpr = canvasDpr(1);
   const W = Math.round(width * dpr), H = Math.round(height * dpr);
@@ -222,7 +222,7 @@ export const DoorwayNightIcon: React.FC<{ side: number; 宽?: number; 高?: numb
   );
   return (
     <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden', background: '#000' }}>
-      <DoorNightCanvas 帧={photoFrame} 宽={width} 高={height} capture={composite} style={{ visibility: 'hidden' }} />
+      <DoorNightCanvas frame={photoFrame} width={width} height={height} capture={composite} style={{ visibility: 'hidden' }} />
       <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: width, height: height }} />
     </div>
   );

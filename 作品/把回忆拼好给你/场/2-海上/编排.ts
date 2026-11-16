@@ -14,7 +14,7 @@ export const segKey = '2-日落划船';
 export const segWindow = segmentWindow(segKey);
 export const events = mainCutEvents;
 /** 页面尺寸（成片的一半） */
-export const pageSize: { readonly 宽: number; readonly 高: number } = aspect;
+export const pageSize: { readonly width: number; readonly height: number } = aspect;
 /** 两头速度为 0 的平滑（smoothstep，最快处是平均速度的 1.5 倍） */
 const smoothStep = (t: number) => t * t * (3 - 2 * t);
 const radPerDeg = Math.PI / 180;
@@ -26,9 +26,9 @@ export const toSec = (g: number) => g / fps;
 
 // ---------- 镜头切换 ----------
 /** 匹配剪辑的叠化进度：「眼化日」前 0（只有眼睛），「海平线」起 1（只有海），中间按帧匀着走（海上.tsx 按 Bayer 阵一格一格换） */
-export const crossfade = (g: number) => clamp01((g - events.eyeToSun.帧) / (events.horizon.帧 - events.eyeToSun.帧));
+export const crossfade = (g: number) => clamp01((g - events.eyeToSun.frame) / (events.horizon.frame - events.eyeToSun.frame));
 /** 浪的进度：「浪起」0，到段尾（第 5 句起那一帧）1 = 盖满；段的最后一帧差一点盖满，第 5 句接着从 1 往 2 走（浪退出画面） */
-export const surgeIn = (g: number) => clamp01((g - events.waveRises.帧) / (segWindow.止帧 - events.waveRises.帧));
+export const surgeIn = (g: number) => clamp01((g - events.waveRises.frame) / (segWindow.止帧 - events.waveRises.frame));
 
 // ---------- 太阳 ----------
 /** 太阳中心的仰角（度）：原版天球角 0 在头顶、0.25 在西边地平线 */
@@ -44,36 +44,36 @@ export const sunsetTick = (() => {
   return (a + b) / 2;
 })();
 /** 歌曲帧 → 游戏刻（20 刻一秒，太阳照原版速度往下落） */
-export const gameTick = (g: number) => sunsetTick + ((g - events.horizon.帧) / fps) * 20;
+export const gameTick = (g: number) => sunsetTick + ((g - events.horizon.frame) / fps) * 20;
 /** 太阳方向（单位向量）：东升西落，转轴南北 */
 export const sunDirection = (tick: number): V3 => {
   const a = skySphereAngle(tick) * 2 * Math.PI;
   return [-Math.sin(a), 0, Math.cos(a)];
 };
 /** 原版太阳本体：离镜头 100 格、半边 7.5 格（贴图 32 格里正中 8 格，整张半边 30） */
-export const sunBody = { 距: 100, 半边: 7.5 } as const;
+export const sunBody = { dist: 100, halfSide: 7.5 } as const;
 
 // ---------- 船 ----------
 /** 你们开始划（按着前进）的秒数：第二桨的水声落在「桨入水」 */
-export const rowStartSec = events.oarDips.秒 - rowStartLeadTicks / 20;
+export const rowStartSec = events.oarDips.sec - rowStartLeadTicks / 20;
 const ticksSinceRowStart = (g: number) => (toSec(g) - rowStartSec) * 20;
 /** 船头方向（单位向量，场景 x 东、y 北）：yaw 同 FigurePose，0 朝北、90 朝西 */
 const boatDir: [number, number] = [-Math.sin(boatYaw * radPerDeg), Math.cos(boatYaw * radPerDeg)];
 /** 「海平线」那一刻船在原点 */
-const boatStartPath = rowingStroke(ticksSinceRowStart(events.horizon.帧)).路;
+const boatStartPath = rowingStroke(ticksSinceRowStart(events.horizon.frame)).lane;
 
-export type BoatState = { loc: V3; yaw: number; oar: number | null; 速度: number };
+export type BoatState = { loc: V3; yaw: number; oar: number | null; speed: number };
 export const BoatState = (g: number): BoatState => {
   const tick = ticksSinceRowStart(g);
-  const { 路: travelled, 速度: speed } = rowingStroke(tick);
+  const { lane: travelled, speed: speed } = rowingStroke(tick);
   const d = travelled - boatStartPath;
-  return { loc: [boatDir[0] * d, boatDir[1] * d, -boatParams.hullDraft], yaw: boatYaw, oar: tick > 0 ? tick * boatParams.oarRadPerTick : null, 速度: speed };
+  return { loc: [boatDir[0] * d, boatDir[1] * d, -boatParams.hullDraft], yaw: boatYaw, oar: tick > 0 ? tick * boatParams.oarRadPerTick : null, speed: speed };
 };
 
 /** 一桨的水声：原版桨位跨过 π/4 的那一刻（开划后第 2、18、34… 刻），两支桨同一刻各一声。只要海上镜头里的（「海平线」到「浪起」） */
 export const oarSoundSecs = (): number[] => {
   const r: number[] = [];
-  for (let k = 2; rowStartSec + k / 20 <= events.waveRises.秒; k += 16) if (rowStartSec + k / 20 >= events.horizon.秒) r.push(rowStartSec + k / 20);
+  for (let k = 2; rowStartSec + k / 20 <= events.waveRises.sec; k += 16) if (rowStartSec + k / 20 >= events.horizon.sec) r.push(rowStartSec + k / 20);
   return r;
 };
 
@@ -94,14 +94,14 @@ export const herPos = (g: number) => {
 export type Perspective = { 眼: V3; 看: V3; fov: number };
 
 /** 拉远的进度：「海平线」起、「拉远到位」止，两头慢 */
-export const pullBack = (g: number) => smoothStep(clamp01((g - events.horizon.帧) / (events.pullBackDone.帧 - events.horizon.帧)));
+export const pullBack = (g: number) => smoothStep(clamp01((g - events.horizon.frame) / (events.pullBackDone.frame - events.horizon.frame)));
 
 /** 海上的镜头：跟着船走，从 海镜.匹配 拉到 海镜.到位 */
 export const seaCameraRig = (g: number): Perspective => {
   const b = BoatState(g);
   const k = pullBack(g);
-  const { 匹配: a, arrive: z } = seaCamera;
-  const eye: V3 = [b.loc[0] + lerp(a.east, z.east, k), b.loc[1] - lerp(a.south, z.south, k), lerp(a.高, z.高, k)];
+  const { match: a, arrive: z } = seaCamera;
+  const eye: V3 = [b.loc[0] + lerp(a.east, z.east, k), b.loc[1] - lerp(a.south, z.south, k), lerp(a.height, z.height, k)];
   const yawOffset = lerp(a.yawOffset, z.yawOffset, k) * radPerDeg;
   const pitchRad = lerp(a.pitchDeg, z.pitchDeg, k) * radPerDeg;
   // 正西是 −x，往北偏 = 往 +y 转
@@ -127,7 +127,7 @@ export const shotBasis = (rig: Perspective) => {
 };
 
 /** 从眼出发的方向 d 落在页面上哪里（页面像素，左上角原点）；在镜头后面返回 null */
-export const projectDir = (rig: Perspective, d: V3, width = pageSize.宽, height = pageSize.高): [number, number] | null => {
+export const projectDir = (rig: Perspective, d: V3, width = pageSize.width, height = pageSize.height): [number, number] | null => {
   const { 前: forward, right, 上: up } = shotBasis(rig);
   const z = dot(d, forward);
   if (z <= 0) return null;
@@ -136,10 +136,10 @@ export const projectDir = (rig: Perspective, d: V3, width = pageSize.宽, height
   const ny = dot(d, up) / z / t;
   return [((nx + 1) / 2) * width, ((1 - ny) / 2) * height];
 };
-export const projectPoint = (rig: Perspective, p: V3, width = pageSize.宽, height = pageSize.高) => projectDir(rig, sub(p, rig.眼), width, height);
+export const projectPoint = (rig: Perspective, p: V3, width = pageSize.width, height = pageSize.height) => projectDir(rig, sub(p, rig.眼), width, height);
 
 /** 页面上 (x, y) 那一点的视线方向（单位向量），投影方向 的反函数 */
-export const sightDir = (rig: Perspective, x: number, y: number, width = pageSize.宽, height = pageSize.高): V3 => {
+export const sightDir = (rig: Perspective, x: number, y: number, width = pageSize.width, height = pageSize.height): V3 => {
   const { 前: forward, right, 上: up } = shotBasis(rig);
   const t = Math.tan((rig.fov * radPerDeg) / 2);
   const nx = ((x / width) * 2 - 1) * t * (width / height);
@@ -155,13 +155,13 @@ export const elevationAzimuthDiff = (d: V3): { elevation: number; 差: number } 
 };
 
 /** 太阳本体在页面上的中心和边长（页面像素） */
-export const sunScreen = (rig: Perspective, tick: number, width = pageSize.宽, height = pageSize.高) => {
+export const sunScreen = (rig: Perspective, tick: number, width = pageSize.width, height = pageSize.height) => {
   const d = sunDirection(tick);
   const c = projectDir(rig, d, width, height);
   if (!c) return null;
   // 本体的上下沿：沿太阳在天球上走的方向（和南北轴垂直）各偏 半边
   const sideDir: V3 = cross([0, 1, 0], d);
-  const sunEdgeOffset = (s: number): V3 => [d[0] * sunBody.距 + s * sideDir[0] * sunBody.半边, 0, d[2] * sunBody.距 + s * sideDir[2] * sunBody.半边];
+  const sunEdgeOffset = (s: number): V3 => [d[0] * sunBody.dist + s * sideDir[0] * sunBody.halfSide, 0, d[2] * sunBody.dist + s * sideDir[2] * sunBody.halfSide];
   const upperEdge = projectDir(rig, sunEdgeOffset(1), width, height);
   const lowerEdge = projectDir(rig, sunEdgeOffset(-1), width, height);
   const side = upperEdge && lowerEdge ? Math.hypot(upperEdge[0] - lowerEdge[0], upperEdge[1] - lowerEdge[1]) : 0;
@@ -169,14 +169,14 @@ export const sunScreen = (rig: Perspective, tick: number, width = pageSize.宽, 
 };
 
 /** 正对着镜头朝向的海平线在页面上的高度（页面像素） */
-export const seaHorizonY = (rig: Perspective, height = pageSize.高) => {
+export const seaHorizonY = (rig: Perspective, height = pageSize.height) => {
   const { 前: forward } = shotBasis(rig);
-  const p = projectDir(rig, normalize([forward[0], forward[1], 0]), pageSize.宽, height);
+  const p = projectDir(rig, normalize([forward[0], forward[1], 0]), pageSize.width, height);
   return p ? p[1] : height;
 };
 
 /** p 处一格有多少页面像素（沿镜头的上方向） */
-export const pixelsPerCellAt = (rig: Perspective, p: V3, height = pageSize.高) => {
+export const pixelsPerCellAt = (rig: Perspective, p: V3, height = pageSize.height) => {
   const z = dot(sub(p, rig.眼), shotBasis(rig).前);
   return height / (2 * z * Math.tan((rig.fov * radPerDeg) / 2));
 };
@@ -196,18 +196,18 @@ const hermite = (p0: number, p1: number, m0: number, m1: number, h: number, s: n
  *  右眼眼珠落在 海镜.匹配 里太阳的位置、和太阳本体一样高。离眼珠的距离取对数用三次插值，起点的速度是 末速（接缝上推镜不停、不跳）；
  *  视角不变，镜头一直朝北（正对她），左右上下平移把眼珠从画面正中慢慢送到太阳的位置 */
 export const eyeCameraRig = (g: number): Perspective => {
-  const sun = sunScreen(seaCameraRig(events.eyeToSun.帧), gameTick(events.eyeToSun.帧))!;
+  const sun = sunScreen(seaCameraRig(events.eyeToSun.frame), gameTick(events.eyeToSun.frame))!;
   const t = Math.tan((endRig.fov * radPerDeg) / 2);
-  const aspectRatio = pageSize.宽 / pageSize.高;
-  const endDist = (eyeBall.高 * pageSize.高) / (2 * t * sun.side);
-  const s = clamp01((g - joinFrame) / (events.eyeToSun.帧 - joinFrame));
-  const distance = Math.exp(hermite(Math.log(finalDist), Math.log(endDist), finalSpeed, 0, toSec(events.eyeToSun.帧) - toSec(joinFrame), s));
+  const aspectRatio = pageSize.width / pageSize.height;
+  const endDist = (eyeBall.height * pageSize.height) / (2 * t * sun.side);
+  const s = clamp01((g - joinFrame) / (events.eyeToSun.frame - joinFrame));
+  const distance = Math.exp(hermite(Math.log(finalDist), Math.log(endDist), finalSpeed, 0, toSec(events.eyeToSun.frame) - toSec(joinFrame), s));
   const k = smoothStep(s);
-  const nx = (sun.x / pageSize.宽) * 2 - 1;
-  const ny = 1 - (sun.y / pageSize.高) * 2;
+  const nx = (sun.x / pageSize.width) * 2 - 1;
+  const ny = 1 - (sun.y / pageSize.height) * 2;
   const eye: V3 = [eyeBall.rightEye[0] - k * nx * t * aspectRatio * distance, eyeBall.rightEye[1] - distance, eyeBall.rightEye[2] - k * ny * t * distance];
   return { 眼: eye, 看: [eye[0], eye[1] + 1, eye[2]], fov: endRig.fov };
 };
 
 /** 照片帧（第 8 句第二张照片取这一帧）：歌曲帧 */
-export const photoFrame = events.photoSunsetRowing.帧;
+export const photoFrame = events.photoSunsetRowing.frame;

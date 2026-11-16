@@ -3,26 +3,26 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     },
     "音效/item.elytra.flying": {
-      "时长": 10.220333,
-      "峰值": -12.3,
-      "响度": -24.9,
+      "duration": 10.220333,
+      "peakDb": -12.3,
+      "loudness": -24.9,
       "sha": "0f51f0fd6647"
     },
     "音效/万法皆通/wind_seeking_bell": {
-      "时长": 2.069313,
-      "峰值": -4.3,
-      "响度": -11.9,
+      "duration": 2.069313,
+      "peakDb": -4.3,
+      "loudness": -11.9,
       "sha": "a43ff1f9b22e"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

@@ -11,12 +11,12 @@ import { FireballGroup } from '../零件/甲/火球片.tsx';
 import { VanillaParticles } from '../零件/粒子.tsx';
 import meta, { lavaBombShots } from './lavaball.元.ts';
 
-const LavaBomb: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const LavaBomb: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const projectiles = lavaBombShots(from, target, seed);
   return (
     <>
-      <FireballGroup projectiles={projectiles} 秒={sec} scale={3} 种子={seed} />
-      <VanillaParticles spawns={projectiles.map((projectile, i) => vanillaExplosion(trajectoryAt(projectile.trajectory, projectile.flightTick), projectile.launchTick + projectile.flightTick, seed * 17 + i))} 秒={sec} />
+      <FireballGroup projectiles={projectiles} sec={sec} scale={3} seed={seed} />
+      <VanillaParticles spawns={projectiles.map((projectile, i) => vanillaExplosion(trajectoryAt(projectile.trajectory, projectile.flightTick), projectile.launchTick + projectile.flightTick, seed * 17 + i))} sec={sec} />
     </>
   );
 };

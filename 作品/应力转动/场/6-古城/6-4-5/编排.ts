@@ -44,7 +44,7 @@ export const turnEndSec = 2.95; // 也是切第二镜
 const crouchEndSec = 3.25; // 第一跳离地
 // 台词落点（段内秒）：1.4 秒开口，有声 2.95 秒、说到 4.35 秒，「有你们好受的」落在他蹲下、蹬起那一下
 export const lineDuration = lineTable['6-4-5-李樱-会会你们'].有声长;
-export const lines = { challenge: { id: '6-4-5-李樱-会会你们', 秒: 1.4 } } as const satisfies Record<string, LineAt>;
+export const lines = { challenge: { id: '6-4-5-李樱-会会你们', sec: 1.4 } } as const satisfies Record<string, LineAt>;
 
 // ---------- 李樱绕行：C → R1 → … → V（追兵钟 = 段内秒） ----------
 const landAbsorbSec = elite.landingSquatSec;

@@ -10,7 +10,7 @@ type V3 = [number, number, number];
 export type CagePerformanceSetting = {
   /** 结界中心的起点（场景坐标，施法者身前）、终点（史蒂夫半身高处；原版结界中心也在半身高） */
   from: V3;
-  目标: V3;
+  target: V3;
   /** 飞出：默认 1.5 秒 = 原版淡入的 30 刻，落到位时正好淡入完 */
   flyOutSec: number;
   /** 罩住：默认 67.5 秒（第二稿分镜从罩严到收缩的长度；正片按他几时死算） */
@@ -27,7 +27,7 @@ export type CagePerformanceSetting = {
   spinPhaseSec: number;
 };
 
-export const cagePerformanceDefaults: Omit<CagePerformanceSetting, 'from' | '目标'> = {
+export const cagePerformanceDefaults: Omit<CagePerformanceSetting, 'from' | 'target'> = {
   flyOutSec: 1.5,
   coverSec: 67.5,
   shrinkBurnSec: 2.5,
@@ -40,10 +40,10 @@ export const cagePerformanceDefaults: Omit<CagePerformanceSetting, 'from' | '目
 
 export type CagePhase = '未出' | '飞出' | '罩住' | '收缩焚烧' | '结束';
 export type CagePerformanceState = {
-  阶段: CagePhase;
+  stage: CagePhase;
   /** 本阶段走了几成 */
-  进度: number;
-  中心: V3;
+  progress: number;
+  center: V3;
   radiusFactor: number;
   /** 顶点离中心几格 */
   circumRadius: number;
@@ -62,9 +62,9 @@ export const cagePerformanceStateAt = (sec: number, settings: CagePerformanceSet
   const shrinkStartSec = coverStartSec + settings.coverSec;
   const end = shrinkStartSec + settings.shrinkBurnSec;
   const makeState = (stage: CagePhase, progress: number, center: V3, radiusFactor: number, fireIntensity = 0): CagePerformanceState => ({
-    阶段: stage,
-    进度: progress,
-    中心: center,
+    stage: stage,
+    progress: progress,
+    center: center,
     radiusFactor,
     circumRadius: radiusFactor * cageSphereRadius,
     // 淡入照原版：出手起 30 刻
@@ -77,17 +77,17 @@ export const cagePerformanceStateAt = (sec: number, settings: CagePerformanceSet
   if (sec < coverStartSec) {
     const x = sec / settings.flyOutSec;
     const u = easeOutQuad(x);
-    const center: V3 = [lerp(settings.from[0], settings.目标[0], u), lerp(settings.from[1], settings.目标[1], u), lerp(settings.from[2], settings.目标[2], u)];
+    const center: V3 = [lerp(settings.from[0], settings.target[0], u), lerp(settings.from[1], settings.target[1], u), lerp(settings.from[2], settings.target[2], u)];
     return makeState('飞出', x, center, lerp(settings.startRadiusFactor, settings.fullRadiusFactor, u));
   }
-  if (sec < shrinkStartSec) return makeState('罩住', (sec - coverStartSec) / settings.coverSec, settings.目标, settings.fullRadiusFactor);
+  if (sec < shrinkStartSec) return makeState('罩住', (sec - coverStartSec) / settings.coverSec, settings.target, settings.fullRadiusFactor);
   if (sec < end) {
     const x = (sec - shrinkStartSec) / settings.shrinkBurnSec;
     const collapse = smoothstep01(Math.min(1, x / settings.shrinkShare));
-    return makeState('收缩焚烧', x, settings.目标, lerp(settings.fullRadiusFactor, settings.shrinkToRadiusFactor, collapse), x);
+    return makeState('收缩焚烧', x, settings.target, lerp(settings.fullRadiusFactor, settings.shrinkToRadiusFactor, collapse), x);
   }
   // 烧完直接没有，不走原版的 30 刻淡出（第二稿烧完硬切第 5 幕、开头「结界没了」；正片他一死就没了）
-  return makeState('结束', 1, settings.目标, settings.shrinkToRadiusFactor, 0);
+  return makeState('结束', 1, settings.target, settings.shrinkToRadiusFactor, 0);
 };
 
 /** 各阶段从第几秒起（演出的钟） */

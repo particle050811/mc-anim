@@ -9,7 +9,7 @@ import { readAssetLock, bytesPath } from './资产锁.ts';
 export const assetJsonTable = (dataRoot?: string): Record<string, string> => {
   const assetJsonMap: Record<string, string> = {};
   for (const [id, l] of Object.entries(readAssetLock())) {
-    if (l.后缀 !== '.json') continue;
+    if (l.suffix !== '.json') continue;
     const f = bytesPath(l, dataRoot);
     if (fs.existsSync(f)) assetJsonMap[id] = f;
   }

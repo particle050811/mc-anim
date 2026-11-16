@@ -10,8 +10,8 @@ import { bytesPath, type AssetLock } from '../资产/资产锁.ts';
 import { expandArtifacts, type SourcingManifest } from './清单.ts';
 
 export type SideLocks = { 共用: AssetLock; 作品: AssetLock };
-export type Particle = { namespaceName: string; 名: string };
-export type ParticleFrameFile = { 粒子: string; definition: string; side: '共用' | '作品'; 文件: string; 文本: string; 帧: string[] };
+export type Particle = { namespaceName: string; name: string };
+export type ParticleFrameFile = { 粒子: string; definition: string; side: '共用' | '作品'; file: string; text: string; frame: string[] };
 export type ParticleFrameError = { 粒子: string; 错: string; missingTextures?: string[] };
 /** jar 里的路径 → 从它导出的资产 id（只收锁里有的） */
 export type SourceTable = Map<string, string[]>;
@@ -21,11 +21,11 @@ export const parseParticleName = (s: string): Particle => {
   const i = s.indexOf(':');
   const [a, b] = i >= 0 ? [s.slice(0, i), s.slice(i + 1)] : ['minecraft', s];
   if (!/^[a-z0-9_.-]+$/.test(a) || !/^[a-z0-9_./-]+$/.test(b)) throw new Error(`粒子名「${s}」不对：写 <命名空间>:<名>，如 goety:frost`);
-  return { namespaceName: a, 名: b };
+  return { namespaceName: a, name: b };
 };
 
-export const definitionPath = (p: Particle) => `assets/${p.namespaceName}/particles/${p.名}.json`;
-export const texturePath = (p: Particle) => `assets/${p.namespaceName}/textures/particle/${p.名}.png`;
+export const definitionPath = (p: Particle) => `assets/${p.namespaceName}/particles/${p.name}.json`;
+export const texturePath = (p: Particle) => `assets/${p.namespaceName}/textures/particle/${p.name}.png`;
 
 const globToRegExp = (s: string) => new RegExp(`^${s.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*').replace(/\?/g, '[^/]')}$`);
 
@@ -43,9 +43,9 @@ export const buildSourceTable = (q: SourcingManifest, assetLock: AssetLock): Sou
   };
   for (const e of q.entryMap.values()) {
     const fileToId = new Map<string, string>();
-    for (const [id, f] of expandArtifacts(e.产物, assetLock).对) if (assetLock[id]) fileToId.set(path.posix.normalize(f), id);
+    for (const [id, f] of expandArtifacts(e.artifacts, assetLock).对) if (assetLock[id]) fileToId.set(path.posix.normalize(f), id);
     if (!fileToId.size) continue;
-    for (const step of e.步骤) {
+    for (const step of e.steps) {
       const s = step.map((x) => (typeof x === 'string' ? x : ''));
       if (s[0] === 'python' && s[1]?.endsWith('/拷jar文件.py') && s.length === 5) {
         const id = fileToId.get(path.posix.normalize(s[4]!));
@@ -98,7 +98,7 @@ export const listParticles = (sourceTable: SourceTable): string[] =>
 
 /** 生成的文件放哪：定义在作品锁 → <作品根>/粒子帧/，在共用锁 → 库/粒子帧/ */
 export const particleFrameFile = (p: Particle, side: '共用' | '作品', codeRoot: string, workRoot: string) =>
-  path.join(side === '作品' ? workRoot : path.join(codeRoot, '库'), '粒子帧', p.namespaceName, ...`${p.名}.ts`.split('/'));
+  path.join(side === '作品' ? workRoot : path.join(codeRoot, '库'), '粒子帧', p.namespaceName, ...`${p.name}.ts`.split('/'));
 
 export const generatedHeader = '// anim extract --particle-frames 生成，别手改';
 
@@ -142,7 +142,7 @@ export const computeParticleFrames = (
 ): ParticleFrameFile | ParticleFrameError => {
   try {
     const p = parseParticleName(particleName);
-    const particleFullName = `${p.namespaceName}:${p.名}`;
+    const particleFullName = `${p.namespaceName}:${p.name}`;
     const definitions = sourceTable.get(definitionPath(p)) ?? [];
     if (!definitions.length) return { 粒子: particleFullName, 错: `定义没登记：在 sourcing/extract.toml 的粒子定义配方里加一步（拷jar文件.py 拷 ${definitionPath(p)}），再 anim extract <配方> --register` };
     if (definitions.length > 1) return { 粒子: particleFullName, 错: `定义登记了 ${definitions.length} 件：${definitions.join('、')}（只留一件）` };
@@ -160,7 +160,7 @@ export const computeParticleFrames = (
     const usable = side === '共用' ? assetLocks.共用 : { ...assetLocks.共用, ...assetLocks.作品 };
     const missing: string[] = [];
     const frames = textures.map((t) => {
-      const ids = (sourceTable.get(texturePath(parseParticleName(t))) ?? []).filter((id) => usable[id]?.后缀 === '.png');
+      const ids = (sourceTable.get(texturePath(parseParticleName(t))) ?? []).filter((id) => usable[id]?.suffix === '.png');
       if (!ids.length) {
         if (!missing.includes(t)) missing.push(t);
         return '';
@@ -170,7 +170,7 @@ export const computeParticleFrames = (
     });
     if (missing.length) return { 粒子: particleFullName, 错: `${missing.length} 张贴图没登记（哪条配方都没导）：${missing.map((t) => texturePath(parseParticleName(t))).join('、')}`, missingTextures: missing };
     const file = particleFrameFile(p, side, codeRoot, workRoot);
-    return { 粒子: particleFullName, definition, side, 文件: file, 文本: particleFrameText(particleFullName, definition, lockEntry.sha256, frames), 帧: frames };
+    return { 粒子: particleFullName, definition, side, file: file, text: particleFrameText(particleFullName, definition, lockEntry.sha256, frames), frame: frames };
   } catch (e) {
     return { 粒子: particleName, 错: (e as Error).message };
   }
@@ -218,8 +218,8 @@ export const checkParticleFrames = (codeRoot: string, workRoot: string, assetLoc
       if (!r.错.includes('字节不在数据根')) issues.push([f, r.错]);
       continue;
     }
-    if (path.resolve(r.文件) !== path.resolve(f)) issues.push([f, `应该在 ${r.文件}`]);
-    else if (r.文本 !== text) issues.push([f, '和按现在的定义、配方、资产锁生成的不一样（手改了，或贴图对应的 id 变了）：anim extract --particle-frames 重生成']);
+    if (path.resolve(r.file) !== path.resolve(f)) issues.push([f, `应该在 ${r.file}`]);
+    else if (r.text !== text) issues.push([f, '和按现在的定义、配方、资产锁生成的不一样（手改了，或贴图对应的 id 变了）：anim extract --particle-frames 重生成']);
   }
   return issues;
 };

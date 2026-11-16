@@ -67,12 +67,12 @@ fs.mkdirSync(outPath, { recursive: true })
 const points = JSON.parse(fs.readFileSync(path.join(caseDir, 'points.json'), 'utf8'))
 {
   const settings = NoiseGeneratorSettings.create({})
-  const rs = new RandomState(settings, BigInt(points.种子))
+  const rs = new RandomState(settings, BigInt(points.seed))
   const out = [], random = rng(20261005)
   for (const [id] of filesOfKind(caseDir, 'density_function')) {
-    const boxes = points.框[id.replace(/^mcai_test:/, '')]
+    const boxes = points.box[id.replace(/^mcai_test:/, '')]
     if (!boxes) throw new Error('points.json 里没有 ' + id + ' 的框')
-    evaluate(rs, settings, id, samplePoint(boxes, points.每个函数点数, random), out)
+    evaluate(rs, settings, id, samplePoint(boxes, points.pointsPerFunction, random), out)
   }
   fs.writeFileSync(path.join(outPath, '用例.txt'), out.join('\n') + '\n')
   console.log(`离线版：用例 ${out.length} 个点`)
@@ -95,7 +95,7 @@ const points = JSON.parse(fs.readFileSync(path.join(caseDir, 'points.json'), 'ut
 }
 
 {
-  const { 错例: badCases } = JSON.parse(fs.readFileSync(path.join(caseDir, 'bad-cases.json'), 'utf8'))
+  const { badCases } = JSON.parse(fs.readFileSync(path.join(caseDir, 'bad-cases.json'), 'utf8'))
   let missed = 0
   for (const [caseName, j] of badCases) {
     try {

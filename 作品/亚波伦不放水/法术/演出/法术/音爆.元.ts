@@ -9,5 +9,5 @@ export default defineSpellMeta({
   长秒: sonicBoomLifeTicks / 20,
   hitSec: 0, // 蓄满 60 刻后放出来当刻结算伤害和击退
   // SonicBoomSpell.SpellResult：原版 WARDEN_SONIC_BOOM，音量 3（蓄力时的 WARDEN_SONIC_CHARGE 在出手前，不在这）
-  声音: [{ 资产: '音效/entity.warden.sonic_boom.1', 秒: 0, 音量: 3 }],
+  sound: [{ asset: '音效/entity.warden.sonic_boom.1', sec: 0, 音量: 3 }],
 });

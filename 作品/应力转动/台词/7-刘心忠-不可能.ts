@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 db196e522a4d），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-不可能（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 261480f41389），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-不可能（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "7-刘心忠-不可能",
-  "角色": "刘心忠",
-  "念": "一百级的恼鬼……就这么没了？！",
-  "配音": "配音/7-刘心忠-不可能",
-  "成品sha": "e60ae48f1663",
-  "开口": 0.03,
+  "character": "刘心忠",
+  "spoken": "一百级的恼鬼……就这么没了？！",
+  "voice": "配音/7-刘心忠-不可能",
+  "finishedSha": "e60ae48f1663",
+  "mouthOpen": 0.03,
   "有声长": 2.39,
-  "时长": 2.57,
+  "duration": 2.57,
   "文件秒数": 2.57,
-  "字": [
+  "char": [
     ["一",0.08,0.24],
     ["百",0.24,0.4],
     ["级",0.4,0.56],

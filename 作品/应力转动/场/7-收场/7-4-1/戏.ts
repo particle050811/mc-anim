@@ -90,13 +90,13 @@ const bodyYaw = (T: number) => {
 };
 const liveFrame = (T: number): WardenFrame => {
   const boomStart = [...boomStarts].reverse().find((t) => T >= t && T < t + WARDEN.sonicBoomSec);
-  return { p: liveWarden(T), entityYaw: bodyYaw(T) + 180, forwardLean: 18, props: { 秒: T, 音爆: boomStart === undefined ? undefined : T - boomStart } };
+  return { p: liveWarden(T), entityYaw: bodyYaw(T) + 180, forwardLean: 18, props: { sec: T, 音爆: boomStart === undefined ? undefined : T - boomStart } };
 };
 
 // ======================= 风矢（同 6-4-3、7-1-5：1000 米/秒，弓前化出鼓风机虚影） =======================
 export const arrowSpeed = 1000;
 const huangHeight = 1.875;
-export type Arrow = { 放: number; 中: number; 起: V3; landing: V3; dir: V3; stuck: V3; yaw: number; pitch: number; lap: number; isChainHead: boolean };
+export type Arrow = { 放: number; 中: number; start: V3; landing: V3; dir: V3; stuck: V3; yaw: number; pitch: number; lap: number; isChainHead: boolean };
 const makeArrow = (releaseT: number, lap: number, first: boolean): Arrow => {
   const eye: V3 = [huangFoot[0], huangFoot[1], huangFoot[2] + 1.62];
   const target = wardenBodyPoint(liveFrame(releaseT), 0.3);
@@ -112,7 +112,7 @@ const makeArrow = (releaseT: number, lap: number, first: boolean): Arrow => {
   const surface = wardenBodyHit(liveFrame(hitT), start, dir) ?? aim;
   const tipIn = ARROW.tipAhead - 0.12; // 箭尖扎进身子 0.12 格
   const stuck: V3 = [surface[0] - dir[0] * tipIn, surface[1] - dir[1] * tipIn, surface[2] - dir[2] * tipIn];
-  return { 放: releaseT, 中: hitT, 起: start, landing: surface, dir, stuck: stuck, yaw, pitch: pitch, lap: lap, isChainHead: first };
+  return { 放: releaseT, 中: hitT, start: start, landing: surface, dir, stuck: stuck, yaw, pitch: pitch, lap: lap, isChainHead: first };
 };
 // 每圈它在西环道上往南跑的时候放一串 6 支，命中时它在 z `arrowHitZ`：西环道里沿每隔 7 米一根柱子，从门顶看过去只有几截看得见它整个上身
 //   （方块.py 逐 0.25 格查：z 206～212、215～222、225～228、231～235.5、238～243、245.5～257.5、259.5～262.5、266～268.5），每支都落在这几截里，间隔 0.13～0.22 秒
@@ -249,7 +249,7 @@ export const horseState = (T: number) => {
   const yaw = horseYaw(T);
   const speed = run.horseV(T);
   const amplitude = Math.max(horseGait(speed, 0).amplitude * (1 + 0.5 * smoothstep01((speed - 20) / 60)), horseTurning(T) ? 0.3 : 0);
-  return { p, yaw, entityYaw: yaw + 180, walkCycle: { legPhase: horseLegPhase(T), amplitude: amplitude }, 速度: speed, rear: steedRear(horseTakeoffs, T) };
+  return { p, yaw, entityYaw: yaw + 180, walkCycle: { legPhase: horseLegPhase(T), amplitude: amplitude }, speed: speed, rear: steedRear(horseTakeoffs, T) };
 };
 export const liuEye = (T: number): V3 => {
   const horse = horseState(T);
@@ -270,19 +270,19 @@ export const wardenState = (T: number) => {
   return {
     p,
     entityYaw: frame.entityYaw - 6 * Math.min(1.5, flinch),
-    秒: T,
+    sec: T,
     walkCycle: { legPhase: wardenLegPhase(T), amplitude: Math.min(1, v / 5.7) },
     hurt: hitTs.some((t) => T >= t && T < t + 0.5) ? 1 : 0,
     headPitch: 0, // 跑起来平视
     音爆: dead ? undefined : frame.props.音爆,
     forwardLean: (frame.forwardLean ?? 0) - 9 * Math.min(1.5, flinch),
-    速度: v,
+    speed: v,
     secSinceDeath: dead ? T - deathT : undefined,
   };
 };
 export const wardenFrame = (T: number): WardenFrame => {
   const w = wardenState(T);
-  return { p: w.p, entityYaw: w.entityYaw, forwardLean: w.forwardLean, props: { 秒: w.秒, walkCycle: w.walkCycle, headPitch: w.headPitch, 音爆: w.音爆 } };
+  return { p: w.p, entityYaw: w.entityYaw, forwardLean: w.forwardLean, props: { sec: w.sec, walkCycle: w.walkCycle, headPitch: w.headPitch, 音爆: w.音爆 } };
 };
 export const wardenChest = (T: number): V3 => wardenBodyPoint(wardenFrame(T), 0);
 // 倒下（原版死亡.tsx 的 VanillaTopple：在朝向、前倾之后再绕实体前后轴转）：身上的点跟着转
@@ -315,12 +315,12 @@ export const liuXinzhongPose = (T: number, extra: Partial<FigurePose> = {}): Fig
   const yawToWarden = nearYaw(horse.yaw, yawTo(chest[0] - eye[0], chest[1] - eye[1]));
   const yawOffset = Math.max(-100, Math.min(100, yawToWarden - horse.yaw));
   const look = T >= deathT ? 1 - smoothstep01((T - deathT - 1.2) / 0.6) : 1;
-  const crouch = smoothstep01((horse.速度 - 6.5) / 40);
+  const crouch = smoothstep01((horse.speed - 6.5) / 40);
   const castArm = (t: number) => smoothstep01((T - t + 0.3) / 0.25) * (1 - smoothstep01((T - t - 0.35) / 0.4));
   const point = Math.max(0, ...mortars.map((m) => castArm(m.fireT)));
   const twist = yawOffset * 0.45 * Math.max(point, look * 0.8);
   return ridePose(horse, {
-    pitch: -10 * smoothstep01(horse.速度 / 6.5) - 16 * crouch,
+    pitch: -10 * smoothstep01(horse.speed / 6.5) - 16 * crouch,
     headPitch: lerp(4, -Math.min(50, depression), look),
     headYaw: Math.max(-70, Math.min(70, (yawOffset - twist) * look)),
     twist,
@@ -367,16 +367,16 @@ export const fansAt = (T: number): BowWindFan[] =>
     const visibility = smoothstep01((T - (arrow.放 - lead)) / 0.08) * (1 - smoothstep01((T - arrow.放) / 0.15));
     if (visibility <= 0) return [];
     const off = ARROW.tipAhead + 0.04 + fanSize / 2;
-    const center: V3 = [0, 1, 2].map((k) => arrow.起[k] + arrow.dir[k] * off) as V3;
+    const center: V3 = [0, 1, 2].map((k) => arrow.start[k] + arrow.dir[k] * off) as V3;
     const mouth: V3 = [0, 1, 2].map((k) => center[k] + (arrow.dir[k] * fanSize) / 2) as V3;
-    return [{ visibility: visibility, dir: arrow.dir, 心: center, mouth: mouth, sideLength: fanSize, spinStart: arrow.放 - lead, windStop: arrow.放 + 0.15, rotSpeedRpm: 256, fastForward: 880, 种子: 7461 + 2 * i }];
+    return [{ visibility: visibility, dir: arrow.dir, 心: center, mouth: mouth, sideLength: fanSize, spinStart: arrow.放 - lead, windStop: arrow.放 + 0.15, rotSpeedRpm: 256, fastForward: 880, seed: 7461 + 2 * i }];
   });
 export const flyingArrows = (T: number) =>
   arrows
     .filter((a) => T >= a.放 && T < a.中)
     .map((a) => {
       const k = (T - a.放) / (a.中 - a.放);
-      return { p: [lerp(a.起[0], a.stuck[0], k), lerp(a.起[1], a.stuck[1], k), lerp(a.起[2], a.stuck[2], k)] as V3, dir: a.dir };
+      return { p: [lerp(a.start[0], a.stuck[0], k), lerp(a.start[1], a.stuck[1], k), lerp(a.start[2], a.stuck[2], k)] as V3, dir: a.dir };
     });
 
 // ======================= 身上插着的箭 =======================

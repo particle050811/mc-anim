@@ -28,7 +28,7 @@ const LootUiLayer: React.FC<{ sec: number }> = ({ sec }) => {
   const storySec = sec < windStart ? K642.toStorySec(sec) : K642.STORY_END + sec - windStart;
   const ui = K642.lootUi(storySec);
   if (ui.visibility <= 0) return null;
-  const cam = sec < windStart ? K642.camera(storySec) : camera643(segTable['6-4-3a'].起 + sec - windStart);
+  const cam = sec < windStart ? K642.camera(storySec) : camera643(segTable['6-4-3a'].start + sec - windStart);
   const win = chestWindowOverLid(lidTop, cam, WIN_ANCHOR_X, width, height);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
@@ -42,7 +42,7 @@ export const RulesWindArrow: React.FC = () => {
   const windStart = partStartSec['6-4-3a'];
   return (
     <>
-      {sec < windStart ? <RulesView t={K642.toStorySec(sec)} /> : <DeflectView g={segTable['6-4-3a'].起 + sec - windStart} />}
+      {sec < windStart ? <RulesView t={K642.toStorySec(sec)} /> : <DeflectView g={segTable['6-4-3a'].start + sec - windStart} />}
       <LootUiLayer sec={sec} />
     </>
   );

@@ -13,12 +13,12 @@ const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-验收命令-'));
 process.env.ANIM_DATA = dataRoot;
 const workRoot = path.join(dataRoot, '假作品');
 const fingerprintOf = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
-const current = vi.hoisted(() => ({ 指纹: '' }));
+const current = vi.hoisted(() => ({ fingerprint: '' }));
 const readPixelCalls = vi.hoisted(() => [] as string[]);
 const renderCalls = vi.hoisted(() => [] as string[][]);
 
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<typeof import('../环境/作品.ts')>()), listWorks: () => new Map([['应力转动', workRoot]]), workRoot: () => workRoot }));
-const segmentInfo = { 键: '甲', segmentName: '甲', 章: 0, 编号: null, 段: { 帧数: 48, fps: 24, 宽: 320, 高: 180 } };
+const segmentInfo = { key: '甲', segmentName: '甲', 章: 0, serial: null, segment: { frameCount: 48, fps: 24, width: 320, height: 180 } };
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), loadAllSegments: async () => [segmentInfo], selectSegs: async () => [segmentInfo] }));
 vi.mock('../闸/闸.ts', async (actual) => ({ ...(await actual<typeof import('../闸/闸.ts')>()), lazyPassGate: () => async () => {}, passGate: <T>(fn: () => Promise<T>) => fn(), passRenderGate: <T>(fn: () => Promise<T>) => fn() }));
 // 切片的路径、指纹照真的算法起名，指纹由 当前.指纹 定；测试的切片是 320×180 48 帧
@@ -26,15 +26,15 @@ vi.mock('../渲/段产物.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../渲/段产物.ts')>();
   return {
     ...actual,
-    segmentProducts: async (allFlag: unknown, segments: { 键: string }[]) =>
+    segmentProducts: async (allFlag: unknown, segments: { key: string }[]) =>
       segments.map((s) => {
-        const soundFingerprint = fingerprintOf(`${current.指纹}-声`);
-        return { 段: s, 画面指纹: { 段: s.键, 指纹: current.指纹, 项: {} }, 声音指纹: { 段: s.键, 指纹: soundFingerprint, 项: {} }, 画面: actual.segPicturePath(s.键, current.指纹), 声音: actual.segSoundPath(s.键, soundFingerprint), outputFrames: 48, outputStartFrame: 0, 参数: { inputProps: { 级别: '视频' } } };
+        const soundFingerprint = fingerprintOf(`${current.fingerprint}-声`);
+        return { segment: s, pictureFingerprint: { segment: s.key, fingerprint: current.fingerprint, items: {} }, soundFingerprint: { segment: s.key, fingerprint: soundFingerprint, items: {} }, 画面: actual.segPicturePath(s.key, current.fingerprint), sound: actual.segSoundPath(s.key, soundFingerprint), outputFrames: 48, outputStartFrame: 0, params: { inputProps: { level: '视频' } } };
       }),
   };
 });
 vi.mock('../渲/设置.ts', async (actual) => ({ ...(await actual<typeof import('../渲/设置.ts')>()), masterSize: () => [320, 180] }));
-vi.mock('../出片/渲段.ts', () => ({ renderSegments: async (allFlag: unknown, segments: { 键: string }[]) => (renderCalls.push(segments.map((s) => s.键)), []) }));
+vi.mock('../出片/渲段.ts', () => ({ renderSegments: async (allFlag: unknown, segments: { key: string }[]) => (renderCalls.push(segments.map((s) => s.key)), []) }));
 // 并排图写到临时数据根，不写主检出的 预览/
 vi.mock('../预览/预览.ts', async (actual) => ({
   ...(await actual<typeof import('../预览/预览.ts')>()),
@@ -54,7 +54,7 @@ const { conversion } = await import('./比较.ts');
 
 const makeRunRecord = () => {
   const eventMessages: string[] = [];
-  return { log: (_: string, m: string) => eventMessages.push(m), 产物: [] as string[], 事件: eventMessages } as unknown as RunRecord & { 事件: string[] };
+  return { log: (_: string, m: string) => eventMessages.push(m), artifacts: [] as string[], events: eventMessages } as unknown as RunRecord & { events: string[] };
 };
 /** 一份切片（mp4 不带声音）和配的 wav；带颗粒噪声，亮一级：整片 Y 加 1，哈希都变、肉眼看不出 */
 const makeFixture = (seed: string, brightenByOne = false) => {
@@ -76,12 +76,12 @@ const runVerify = (args: string[], r = makeRunRecord()) => verifyCommands['verif
 describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   beforeAll(async () => {
     fs.mkdirSync(workRoot, { recursive: true });
-    current.指纹 = F1;
+    current.fingerprint = F1;
     makeFixture(F1);
     await runVerify(['accept', '甲', '--reason', '测试']);
-    expect(readApproval(approvalFile('甲'))?.指纹).toBe(F1);
+    expect(readApproval(approvalFile('甲'))?.fingerprint).toBe(F1);
     // 新指纹：同一画面亮一级（噪声种子固定）
-    current.指纹 = F2;
+    current.fingerprint = F2;
     makeFixture(F2, true);
   });
   afterAll(() => fs.rmSync(dataRoot, { recursive: true, force: true }));
@@ -89,7 +89,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   it('accept 记下换算、从这版的切片备好认可参考（带旁记）', () => {
     const approval = readApproval(approvalFile('甲'))!;
     expect(approval.conversion).toBe(conversion);
-    expect(readSidecar(referenceFile(approval, platformId()))).toMatchObject({ 来源: '切片', 帧: [0, 24, 47] });
+    expect(readSidecar(referenceFile(approval, platformId()))).toMatchObject({ source: '切片', frame: [0, 24, 47] });
   });
 
   it('哈希不一样的帧解切片比块平均差，编码噪声在门槛内，过', async () => {
@@ -112,7 +112,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
       renderCalls.length = 0;
       const r = makeRunRecord();
       expect(await runVerify(['甲'], r)).toBe(1);
-      expect(r.事件.join('\n')).toContain('要重渲才能验收（anim film 甲 --rerender）');
+      expect(r.events.join('\n')).toContain('要重渲才能验收（anim film 甲 --rerender）');
       expect(readPixelCalls).toEqual([]);
       await expect(runVerify(['accept', '甲', '--reason', '测试'])).rejects.toThrow(/先 anim film 甲/);
       expect(renderCalls).toEqual([]);
@@ -126,13 +126,13 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   it('不是现行的认可（CRF1 时代的 1440p）：报要重新认可，不解码', async () => {
     const f = approvalFile('甲');
     const raw = fs.readFileSync(f, 'utf8');
-    fs.writeFileSync(f, raw.replace(/^"宽" = 320$/m, '"宽" = 2560').replace(/^"高" = 180$/m, '"高" = 1440'));
+    fs.writeFileSync(f, raw.replace(/^"width" = 320$/m, '"width" = 2560').replace(/^"height" = 180$/m, '"height" = 1440'));
     expect(fs.readFileSync(f, 'utf8')).not.toBe(raw);
     try {
       readPixelCalls.length = 0;
       const r = makeRunRecord();
       expect(await runVerify(['甲'], r)).toBe(1);
-      expect(r.事件.join('\n')).toMatch(/甲：这段没有现行认可，要重新认可（认可时是 2560×1440 48 帧，现在的切片是 320×180 48 帧/);
+      expect(r.events.join('\n')).toMatch(/甲：这段没有现行认可，要重新认可（认可时是 2560×1440 48 帧，现在的切片是 320×180 48 帧/);
       expect(readPixelCalls).toEqual([]);
     } finally {
       fs.writeFileSync(f, raw);
@@ -142,7 +142,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   it('认可记录的抽样间隔和段签不一样：签名里没有要的帧，解切片重算、都比像素，过', async () => {
     const f = approvalFile('甲');
     const raw = fs.readFileSync(f, 'utf8');
-    fs.writeFileSync(f, raw.replace(/^"间隔" = 24$/m, '"间隔" = 7'));
+    fs.writeFileSync(f, raw.replace(/^"interval" = 24$/m, '"interval" = 7'));
     expect(fs.readFileSync(f, 'utf8')).not.toBe(raw);
     try {
       readPixelCalls.length = 0;
@@ -156,7 +156,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   it('这版 accept：认可参考从这版的切片抽', async () => {
     await runVerify(['accept', '甲', '--reason', '测试']);
     const approval = readApproval(approvalFile('甲'))!;
-    expect(approval.指纹).toBe(F2);
-    expect(readSidecar(referenceFile(approval, platformId()))).toMatchObject({ 来源: '切片' });
+    expect(approval.fingerprint).toBe(F2);
+    expect(readSidecar(referenceFile(approval, platformId()))).toMatchObject({ source: '切片' });
   });
 });

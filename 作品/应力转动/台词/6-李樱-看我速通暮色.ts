@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 9ce1e3149131），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-看我速通暮色（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 ea28175b6bad），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-看我速通暮色（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-看我速通暮色",
-  "角色": "李樱",
-  "念": "坐好了，看我速通暮色！",
-  "配音": "配音/6-李樱-看我速通暮色",
-  "成品sha": "e84f89b5eb68",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "坐好了，看我速通暮色！",
+  "voice": "配音/6-李樱-看我速通暮色",
+  "finishedSha": "e84f89b5eb68",
+  "mouthOpen": 0.03,
   "有声长": 1.783,
-  "时长": 1.963,
+  "duration": 1.963,
   "文件秒数": 1.963,
-  "字": [
+  "char": [
     ["坐",0.16,0.32],
     ["好",0.32,0.48],
     ["了",0.48,0.64],

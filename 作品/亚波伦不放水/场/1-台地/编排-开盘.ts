@@ -43,9 +43,9 @@ import { act2EndWheelTick } from './开盘拍.ts';
 import { pointTrack } from './轨迹.ts';
 import timeline from './时间线.ts';
 
-const events = timeline.事件;
+const events = timeline.events;
 /** 场时间线的秒 → 现身后几秒 */
-export const afterAppear = (sceneSec: number) => sceneSec - events.yaBoLunAppears.秒;
+export const afterAppear = (sceneSec: number) => sceneSec - events.yaBoLunAppears.sec;
 export { actStart, actEnd };
 export { localGroundHeight, trappedLocal, hoverHeight } from './开盘时刻.ts';
 
@@ -111,7 +111,7 @@ export const steveEye = (t: number): V3 => {
 export const teleportTick = act(beats.移);
 /** 亚波伦的脚底：现身到第 2 幕开头站在祭坛上，之后照 开盘时刻.ts 飞，停在祭坛上空 悬停高（第 4 幕从这一点接） */
 export const yaBoLunPos = (t: number): V3 => toAirPos(t < actStart ? yaBoLunAppearLocal : yaBoLunSecondLocal(t - actStart));
-export const teleports: readonly Teleport[] = [{ 起: act(beats.smokeStart), 移: teleportTick, 从: toAirPos(hoverFirst), 到: toAirPos(yaBoLunSecondLocal(beats.移)) }];
+export const teleports: readonly Teleport[] = [{ start: act(beats.smokeStart), 移: teleportTick, 从: toAirPos(hoverFirst), dest: toAirPos(yaBoLunSecondLocal(beats.移)) }];
 /** 她的头（史蒂夫盯着的地方） */
 export const yaBoLunHead = (t: number): V3 => {
   const p = yaBoLunPos(t);
@@ -148,7 +148,7 @@ export const steveLook = (t: number): V3 => {
   return lerpV(followDashLook(t, 1), yaBoLunHead(t), easeBetween(w, turnWindows[1]![1], turnWindows[1]![1] + 0.15)) as V3;
 };
 /** 史蒂夫第 1 幕的位置、身子朝向、摆腿（从第 1 幕开头推起，那时面朝北）；第 2 幕的朝向另算（见 史蒂夫朝向） */
-export const steveWalk = defineWalk({ 位: stevePos, 看: steveLook, 起: afterAppear(events.开始.秒), initFacing: 0 });
+export const steveWalk = defineWalk({ 位: stevePos, 看: steveLook, start: afterAppear(events.开始.sec), initFacing: 0 });
 const [firstDashFacing, secondDashFacing] = [facingAngle(firstDir[0], firstDir[1]), facingAngle(secondDir[0], secondDir[1])];
 /** 第 2 幕末他面朝她（水平） */
 const endFacing = (() => {
@@ -170,24 +170,24 @@ export const steveFacing = (t: number): number => {
 export const steveRightHand = (t: number): RightHandItem => (t < act1.ringReleaseSec ? '环' : t < act1.drawSwordSec ? '空' : '剑');
 /** 挥手的点击（编排的钟）、招、蓄几秒：右键放环那一下也是挥手；两次冲各是潜行着左键挥一下。
  *  第一次挥跳劈（接第 1 幕拔剑后一直摆着的跳劈架势，不换招）、第二次横斩，挥剑的样子是本片的剑招（角色/剑招.ts），不是原版挥手 */
-const clicks: readonly { 秒: number; move?: MoveName; windUpSec?: number }[] = [
-  { 秒: act1.ringReleaseSec },
-  { 秒: act(beats.dashFirstSec), move: '跳劈', windUpSec: beats.dashFirstSec - beats.sneakFirstSec },
-  { 秒: act(beats.dashSecondSec), move: '横斩', windUpSec: beats.dashSecondSec - beats.lookBack[0] },
+const clicks: readonly { sec: number; move?: MoveName; windUpSec?: number }[] = [
+  { sec: act1.ringReleaseSec },
+  { sec: act(beats.dashFirstSec), move: '跳劈', windUpSec: beats.dashFirstSec - beats.sneakFirstSec },
+  { sec: act(beats.dashSecondSec), move: '横斩', windUpSec: beats.dashSecondSec - beats.lookBack[0] },
 ];
 const prevClick = (t: number) => {
   let nearestClick: (typeof clicks)[number] | undefined;
-  for (const c of clicks) if (t >= c.秒) nearestClick = c;
+  for (const c of clicks) if (t >= c.sec) nearestClick = c;
   return nearestClick;
 };
 /** 距上一次点击几秒；还没点过 = undefined */
 export const steveSwingSec = (t: number): number | undefined => {
   const c = prevClick(t);
-  return c && t - c.秒;
+  return c && t - c.sec;
 };
 /** 上一刀是哪一招 */
 export const steveMove = (t: number): MoveName | undefined => prevClick(t)?.move;
-const nextClick = (t: number) => clicks.find((c) => c.move && c.秒 > t);
+const nextClick = (t: number) => clicks.find((c) => c.move && c.sec > t);
 /** 下一刀（正在蓄的）是哪一招 */
 export const steveChargeMove = (t: number): MoveName | undefined => nextClick(t)?.move;
 /** 第 1 幕拔剑后摆的架势：举到跳劈蓄的 0.3（Agent 取的） */
@@ -196,7 +196,7 @@ const raiseStance = 0.3;
 export const steveCharge = (t: number): number => {
   const upcoming = nextClick(t);
   if (!upcoming) return 0;
-  const windUp = smoothstep01((t - (upcoming.秒 - upcoming.windUpSec!)) / upcoming.windUpSec!);
+  const windUp = smoothstep01((t - (upcoming.sec - upcoming.windUpSec!)) / upcoming.windUpSec!);
   const bottomCharge = upcoming === clicks[1] ? raiseStance * smoothstep01((t - act1.drawSwordSec - 0.1) / 0.3) : 0;
   return Math.max(windUp, bottomCharge);
 };
@@ -211,7 +211,7 @@ export const steveStateAt = (t: number, sec: number): SteveState => {
     // 第 2 幕朝向另算；冲刺贴地、高低差只有几厘米，不让 定走位 认跳
     ...(inAct2 ? { facing: steveFacing(t), 跳: {} } : {}),
     看: steveLook(t),
-    秒: sec,
+    sec: sec,
     rightHand: steveRightHand(t),
     // 用户 11-10 定：高端局，史蒂夫不拿盾
     leftHand: '空',
@@ -253,25 +253,25 @@ const lean: TiltSettings = { perSpeed: 0.35, perAccel: 0.012, limit: 12, 窗: 0.
 /** 她到举杖指着他为止的姿势轴（编排的钟）；后面的幕接着往下排（第 4 幕从最后的 指向 接着）。 */
 export const openingTimeline: readonly PerformanceBar[] = [
   // 第 1 幕：低头闭眼 → 抬头 → 转向他、甩杖 → 站好
-  { 起: 0, pose: '低头' },
-  { 起: 0.85, 到: 1.2, pose: '站立' },
-  { 起: act1.staffFlick[0], 到: act1.staffFlick[1], pose: '甩杖' },
-  { 起: 1.75, 到: 2.05, pose: '站立' },
+  { start: 0, pose: '低头' },
+  { start: 0.85, dest: 1.2, pose: '站立' },
+  { start: act1.staffFlick[0], dest: act1.staffFlick[1], pose: '甩杖' },
+  { start: 1.75, dest: 2.05, pose: '站立' },
   // 第 2 幕：一蹬飞出来 → 飞 → 刹住一收、冒烟瞬移 → 出来飞一下 → 悬停 → 看他回头往下一沉 → 往上一拉 → 拉升里伸直手臂、杖指他 → 慢放过了收回 指向（第 4 幕从这里接）
-  { 起: act(beats.takeoff), 到: act(beats.takeoff + 0.05), pose: '起飞' },
-  { 起: act(beats.takeoff + 0.05), 到: act(beats.takeoff + 0.16), pose: '飞行' },
-  { 起: act(beats.smokeStart), 到: act(beats.smokeStart + 0.12), pose: '瞬移收' },
-  { 起: teleportTick, 到: act(beats.移 + 0.08), pose: '飞行' },
-  { 起: act(beats.移 + 0.16), 到: act(beats.移 + 0.4), pose: '悬停' },
-  { 起: act(beats.sinkSec), 到: act(beats.liftStart), pose: '起飞' },
-  { 起: act(beats.liftStart), 到: act(beats.liftStart + 0.08), pose: '升空' },
-  { 起: act(beats.staffExtend[0]), 到: act(beats.staffExtend[1]), pose: '升指' },
-  { 起: act(beats.finishStanceSec[0]), 到: act(beats.finishStanceSec[1]), pose: '指向' },
+  { start: act(beats.takeoff), dest: act(beats.takeoff + 0.05), pose: '起飞' },
+  { start: act(beats.takeoff + 0.05), dest: act(beats.takeoff + 0.16), pose: '飞行' },
+  { start: act(beats.smokeStart), dest: act(beats.smokeStart + 0.12), pose: '瞬移收' },
+  { start: teleportTick, dest: act(beats.移 + 0.08), pose: '飞行' },
+  { start: act(beats.移 + 0.16), dest: act(beats.移 + 0.4), pose: '悬停' },
+  { start: act(beats.sinkSec), dest: act(beats.liftStart), pose: '起飞' },
+  { start: act(beats.liftStart), dest: act(beats.liftStart + 0.08), pose: '升空' },
+  { start: act(beats.staffExtend[0]), dest: act(beats.staffExtend[1]), pose: '升指' },
+  { start: act(beats.finishStanceSec[0]), dest: act(beats.finishStanceSec[1]), pose: '指向' },
 ];
 /** 袍摆、身后披风跟着飞拖（用户 11-11「飞行姿势很诡异」：八版衣服一动不动，像挂着的人偶）：27 格/秒往上蹿下摆往里收约 16 度、20 格/秒平飞往后拖约 12 度，
  *  刹住反着甩一下，飞得快时叠一点抖。第 2 幕末她停住了，这些都回到 0（第 4 幕不拖，一帧接上）。Agent 取的 */
 const dragSettings: DragSettings = { perSpeed: 0.6, perAccel: 0.02, limit: 22, jitterPerSpeed: 0.2, shakeMax: 4, shakeFreq: 3, 窗: 0.1 };
-export const perform = definePerformance({ timeline: openingTimeline, 位: yaBoLunPos, 目标: steveEye, yaw: yaBoLunFacing, lean, dragSettings, breakpoints: [teleportTick], eyeClose });
+export const perform = definePerformance({ timeline: openingTimeline, 位: yaBoLunPos, target: steveEye, yaw: yaBoLunFacing, lean, dragSettings, breakpoints: [teleportTick], eyeClose });
 
 // ── 轮盘：第 2 幕拉升里从杖尖张开（用户 11-11「飞行的时候伸出法杖 圆环缓缓张开」），第 4、5 幕接着用 ──
 /** 盘在世界里的半径（格）。用户 11-10 看了直径 12 格的说过大、「比人都大这么多」；缩到直径 4 格是 Agent 取的，用户没看过 */
@@ -290,7 +290,7 @@ export const act2WheelParams = (t: number): MultiRingParams | null => {
 /** 第 2 幕末（第 4 幕的起点）：编排的钟到 幕末 以后两人都停在这里不动 */
 export const act2End = {
   /** 编排的钟（世界秒）= 第 4 幕的 幕起（齐放拍.ts） */
-  秒: actEnd,
+  sec: actEnd,
   yaBoLunPos: yaBoLunPos(actEnd),
   yaBoLunFacing: yaBoLunFacing(actEnd),
   /** 姿势轴最后一条（杖指着他的 眼） */
@@ -308,11 +308,11 @@ export const act2End = {
 
 // ── 给测试用的 ──
 /** 每一下快动作：谁、什么、从几秒到几秒（编排的钟，世界秒；测试算峰值速度） */
-export const actionTable: readonly { 谁: '史蒂夫' | '亚波伦'; 名: string; 起: number; 止: number; slowMo?: boolean }[] = [
-  { 谁: '史蒂夫', 名: '第一次冲（断曜流光）', 起: act(beats.dashFirstSec), 止: act(beats.dashFirstSec + 0.6) },
-  { 谁: '史蒂夫', 名: '第二次冲（断曜流光）', 起: act(beats.dashSecondSec), 止: act(beats.dashSecondSec + 0.6), slowMo: true },
-  { 谁: '亚波伦', 名: '从祭坛飞出来', 起: act(beats.takeoff), 止: act(beats.arriveSec) },
-  { 谁: '亚波伦', 名: '往上一拉、飞到祭坛上空', 起: act(beats.liftStart), 止: act(beats.peakSec), slowMo: true },
+export const actionTable: readonly { who: '史蒂夫' | '亚波伦'; name: string; start: number; end: number; slowMo?: boolean }[] = [
+  { who: '史蒂夫', name: '第一次冲（断曜流光）', start: act(beats.dashFirstSec), end: act(beats.dashFirstSec + 0.6) },
+  { who: '史蒂夫', name: '第二次冲（断曜流光）', start: act(beats.dashSecondSec), end: act(beats.dashSecondSec + 0.6), slowMo: true },
+  { who: '亚波伦', name: '从祭坛飞出来', start: act(beats.takeoff), end: act(beats.arriveSec) },
+  { who: '亚波伦', name: '往上一拉、飞到祭坛上空', start: act(beats.liftStart), end: act(beats.peakSec), slowMo: true },
 ];
 /** 两人在第 1、2 幕里什么时候算「静止」：位置不动（速度低于 0.15 格/秒）且没在做动作（挥剑、姿势在过渡、转身、转激流）。给 编排-开盘.test.ts 报占比 */
 export const stillCheck = {

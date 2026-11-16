@@ -6,13 +6,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileSha } from '../环境/去重.ts';
 
-export type ShaEntry = { 大小: number; 改于: number; sha: string };
-type FileFormat = { 版本: 1; 文件: Record<string, ShaEntry> };
+export type ShaEntry = { size: number; modifiedAt: number; sha: string };
+type FileFormat = { version: 1; file: Record<string, ShaEntry> };
 
 const readShaFile = (file: string): Record<string, ShaEntry> => {
   try {
     const j = JSON.parse(fs.readFileSync(file, 'utf8')) as FileFormat;
-    if (j.版本 === 1 && j.文件 && typeof j.文件 === 'object') return j.文件;
+    if (j.version === 1 && j.file && typeof j.file === 'object') return j.file;
   } catch {
     // 没有或坏了就从头算
   }
@@ -20,58 +20,58 @@ const readShaFile = (file: string): Record<string, ShaEntry> => {
 };
 
 export class ShaCache {
-  readonly 文件: string;
-  readonly 根: string;
+  readonly file: string;
+  readonly root: string;
   private entryMap: Record<string, ShaEntry>;
   private newRecords = new Map<string, ShaEntry>();
   /** 这次命中、现算的个数和字节（报告提速用） */
-  readonly 统计 = { cacheHits: 0, hitBytes: 0, computed: 0, computedBytes: 0 };
+  readonly stats = { cacheHits: 0, hitBytes: 0, computed: 0, computedBytes: 0 };
 
   constructor(file: string, root: string) {
-    this.文件 = file;
-    this.根 = root;
+    this.file = file;
+    this.root = root;
     this.entryMap = readShaFile(file);
   }
 
-  键(p: string) {
-    return path.relative(this.根, p).split(path.sep).join('/');
+  key(p: string) {
+    return path.relative(this.root, p).split(path.sep).join('/');
   }
 
   /** 缓存里这个文件的 sha（大小、修改时间都对得上才算）；st 不给就现 stat */
   取(p: string, st: fs.Stats = fs.statSync(p)): string | undefined {
-    const e = this.entryMap[this.键(p)];
-    return e && e.大小 === st.size && e.改于 === st.mtimeMs ? e.sha : undefined;
+    const e = this.entryMap[this.key(p)];
+    return e && e.size === st.size && e.modifiedAt === st.mtimeMs ? e.sha : undefined;
   }
 
   remember(p: string, st: fs.Stats, sha: string) {
-    const e = { 大小: st.size, 改于: st.mtimeMs, sha };
-    this.entryMap[this.键(p)] = e;
-    this.newRecords.set(this.键(p), e);
+    const e = { size: st.size, modifiedAt: st.mtimeMs, sha };
+    this.entryMap[this.key(p)] = e;
+    this.newRecords.set(this.key(p), e);
   }
 
   /** 取不到就现算并记下 */
   async hash(p: string, st: fs.Stats = fs.statSync(p)): Promise<string> {
     const cached = this.取(p, st);
     if (cached) {
-      this.统计.cacheHits++;
-      this.统计.hitBytes += st.size;
+      this.stats.cacheHits++;
+      this.stats.hitBytes += st.size;
       return cached;
     }
     const sha = await fileSha(p);
-    this.统计.computed++;
-    this.统计.computedBytes += st.size;
+    this.stats.computed++;
+    this.stats.computedBytes += st.size;
     this.remember(p, st, sha);
     return sha;
   }
 
   /** 写回：磁盘上现有的 + 这次新记的，去掉文件已经不在的；原子改名 */
   存() {
-    const mergedFiles = { ...readShaFile(this.文件), ...Object.fromEntries(this.newRecords) };
-    for (const k of Object.keys(mergedFiles)) if (!fs.existsSync(path.join(this.根, ...k.split('/')))) delete mergedFiles[k];
-    fs.mkdirSync(path.dirname(this.文件), { recursive: true });
-    const tmp = `${this.文件}.写入中-${process.pid}`;
-    fs.writeFileSync(tmp, JSON.stringify({ 版本: 1, 文件: mergedFiles } satisfies FileFormat) + '\n', 'utf8');
-    fs.renameSync(tmp, this.文件);
+    const mergedFiles = { ...readShaFile(this.file), ...Object.fromEntries(this.newRecords) };
+    for (const k of Object.keys(mergedFiles)) if (!fs.existsSync(path.join(this.root, ...k.split('/')))) delete mergedFiles[k];
+    fs.mkdirSync(path.dirname(this.file), { recursive: true });
+    const tmp = `${this.file}.写入中-${process.pid}`;
+    fs.writeFileSync(tmp, JSON.stringify({ version: 1, file: mergedFiles } satisfies FileFormat) + '\n', 'utf8');
+    fs.renameSync(tmp, this.file);
     this.entryMap = mergedFiles;
     this.newRecords.clear();
   }

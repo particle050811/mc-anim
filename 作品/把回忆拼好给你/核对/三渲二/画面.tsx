@@ -48,7 +48,7 @@ const cakePos: V3 = [10.4, -11.4, firstFloor.carpetTop + 0.25];
 const rigParams = (v: View): CameraRigParams =>
   v.cameraRig === '侧面'
     ? { ...orthoRig({ 看: sideLookAt, facing: '北' }), topDepth: v.topDepth ?? orthoTop }
-    : { 种: '透视', ...(v.cameraRig === '透视' ? perspectiveRig : firstFloorRig) };
+    : { kind: '透视', ...(v.cameraRig === '透视' ? perspectiveRig : firstFloorRig) };
 
 // 她模型（YSM）不在统一的贴图像素网格上：多数方块 0.9 个模型单位一个贴图像素（头 6.3 单位 7 个），也有 0.92、1.09、0.54 的，原点也不在网格上。
 // 原大小一个贴图像素 0.9 × 0.65 / 16 格 = 3.5 成片像素。默认不缩放、只把脚底吸到像素网格；她贴图像素 的视图按 0.9 那种缩放，对比用
@@ -111,17 +111,17 @@ const picture: React.FC = () => {
     <AbsoluteFill style={{ background: '#000000' }}>
       <FilmPost grade={v.withPost ? tone.grade : null}>
         <ToonCanvas
-          宽={widthPx}
-          高={height}
+          width={widthPx}
+          height={height}
           cameraRig={cameraRig}
           天={tone.天}
           tint={tone.tint}
           glowRegions={v.lampGlow ? lampBox : undefined}
           AO={v.AO}
-          outline={v.outlineWidth ? { 宽: v.outlineWidth, 色: tone.outlineColor } : false}
+          outline={v.outlineWidth ? { width: v.outlineWidth, 色: tone.outlineColor } : false}
           flatShade={!v.原样}
         >
-          <Scene v={v} 眼={cameraRig.种 === '透视' ? cameraRig.眼 : undefined} />
+          <Scene v={v} 眼={cameraRig.kind === '透视' ? cameraRig.眼 : undefined} />
         </ToonCanvas>
         {v.cameraRig === '一楼机位' && (
           <>
@@ -132,7 +132,7 @@ const picture: React.FC = () => {
         <PixelTextLine />
       </FilmPost>
       <div style={{ position: 'absolute', left: 12, bottom: 8, fontFamily: 'sans-serif', fontSize: 18, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
-        核对-三渲二 · {v.名}
+        核对-三渲二 · {v.name}
         {v.withPost || v.tone ? ` · ${v.tone ?? '夏日白天'}` : ''}
       </div>
     </AbsoluteFill>

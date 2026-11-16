@@ -14,15 +14,15 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 };
 
 const makeSounds = (options?: SpellOptions) => [
-  { 资产: '音效/诡厄巫法/goety.blast_fungus_throw.1', 秒: 0, 音高: 0.75 },
-  { 资产: '音效/诡厄巫法/goety.quick_growing_vine_burrow.1', 秒: blossomPath([-10, 0, 7], [0, 0, 0], options?.highSpeed).arriveTick / 20, 音量: 2, 音高: 0.75 },
+  { asset: '音效/诡厄巫法/goety.blast_fungus_throw.1', sec: 0, 音高: 0.75 },
+  { asset: '音效/诡厄巫法/goety.quick_growing_vine_burrow.1', sec: blossomPath([-10, 0, 7], [0, 0, 0], options?.highSpeed).arriveTick / 20, 音量: 2, 音高: 0.75 },
 ];
 
 export default defineSpellMeta({
   id: 'blossoming',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // BlossomSpell：BLAST_FUNGUS_THROW 音高 0.75；落地 QUICK_GROWING_VINE_BURROW 音量 2、音高 0.75（落地时刻按参考距离写死）
-  声音: makeSounds(),
+  sound: makeSounds(),
   soundsFor: makeSounds,
 });

@@ -10,14 +10,14 @@ export const cloudSpaceMult = 3;
 // 算法表（编号和出处见 docs/云.md 第 1 节；用户 11-04「可以配置算法」）。前四种在光影层画（./着色器.ts 一种一段 GLSL）；
 // 原版方块是场景里的网格，光影层跳过它，由场景挂 ./原版方块.tsx；叠片、拉伸2D、烘焙体素只占了名字，配了报错（还没做）。
 export const cloudAlgorithms = {
-  Photon积云: { 编号: 'A', 画法: '光影层', 说明: '体积：2D 覆盖 × 高度剖面 − 3D Worley 侵蚀，多八度多散射（Photon cumulus.glsl）' },
-  Photon高积云: { 编号: 'B', 画法: '光影层', 说明: '体积薄层：同 A，层薄、步少（Photon altocumulus.glsl）' },
-  Photon卷云: { 编号: 'C', 画法: '光影层', 说明: '平面：一张球面 + 卷曲噪声，朝太阳走 6 步算光学深度（Photon cirrus.glsl）' },
-  贴图层: { 编号: 'C′', 画法: '光影层', 说明: '平面：高积云的覆盖噪声贴在球面上取一次，自阴影两点（Agent 写，用户 11-04 定 B5 远层用）' },
-  原版方块: { 编号: 'F', 画法: '场景网格', 说明: '原版 clouds.png 的格子拉成盒子（./原版方块.tsx）' },
-  叠片: { 编号: 'D', 画法: '没做', 说明: 'N 片平面叠出厚度（BSL、Lux 的思路，许可不让抄，要自己写）' },
-  拉伸2D: { 编号: 'E', 画法: '没做', 说明: '2D 贴图按高度阈值曲线挤出（Complementary Reimagined 的思路，许可不让抄）' },
-  烘焙体素: { 编号: 'G', 画法: '没做', 说明: '把 A 的密度烘成 3D 贴图（Nubis³ 的思路）' },
+  Photon积云: { serial: 'A', 画法: '光影层', note: '体积：2D 覆盖 × 高度剖面 − 3D Worley 侵蚀，多八度多散射（Photon cumulus.glsl）' },
+  Photon高积云: { serial: 'B', 画法: '光影层', note: '体积薄层：同 A，层薄、步少（Photon altocumulus.glsl）' },
+  Photon卷云: { serial: 'C', 画法: '光影层', note: '平面：一张球面 + 卷曲噪声，朝太阳走 6 步算光学深度（Photon cirrus.glsl）' },
+  贴图层: { serial: 'C′', 画法: '光影层', note: '平面：高积云的覆盖噪声贴在球面上取一次，自阴影两点（Agent 写，用户 11-04 定 B5 远层用）' },
+  原版方块: { serial: 'F', 画法: '场景网格', note: '原版 clouds.png 的格子拉成盒子（./原版方块.tsx）' },
+  叠片: { serial: 'D', 画法: '没做', note: 'N 片平面叠出厚度（BSL、Lux 的思路，许可不让抄，要自己写）' },
+  拉伸2D: { serial: 'E', 画法: '没做', note: '2D 贴图按高度阈值曲线挤出（Complementary Reimagined 的思路，许可不让抄）' },
+  烘焙体素: { serial: 'G', 画法: '没做', note: '把 A 的密度烘成 3D 贴图（Nubis³ 的思路）' },
 } as const;
 export type CloudAlgorithm = keyof typeof cloudAlgorithms;
 export type ShadingLayerCloudAlgorithm = 'Photon积云' | 'Photon高积云' | 'Photon卷云' | '贴图层';
@@ -25,7 +25,7 @@ export const isShadingLayerAlgorithm = (a: CloudAlgorithm): a is ShadingLayerClo
 
 // 层的字段照 UE、Photon、Bliss 的通行叫法起名（对照表见 docs/云.md 第 2 节），单位一律世界格（组件里乘 云空间倍 进云空间）
 export type CloudLayer = {
-  算法: CloudAlgorithm;
+  algorithm: CloudAlgorithm;
   /** 云底的世界高度（格）。积云是各团里最低的那团的云底 */
   bottomHeight: number;
   /** 层顶 − 层底（格）：不给按算法（积云 400、高积云 160、卷云 500、贴图层 60）。积云各团云底再错开 高低差 */
@@ -33,7 +33,7 @@ export type CloudLayer = {
   /** 积云各团云底的高低差（格）：不给 800（Photon 原样 × 云空间倍，见 大气/云.ts 的 CU_BH） */
   heightDiff?: number;
   /** 覆盖区间 [少, 多]（0～1，大尺度噪声在区间里插值，Photon 的做法）：不给按天气算 */
-  覆盖?: readonly [number, number];
+  overrides?: readonly [number, number];
   /** 覆盖乘多少（1 = 照天气或 覆盖） */
   coverMult?: number;
   /** 消光乘多少（大于 1 更实、更暗） */
@@ -65,7 +65,7 @@ export type CloudDither = 'Bayer' | '交错梯度' | '蓝噪声';
 /** 质量档：每一项都能单独开关（用户 11-04 要「给我过目以后看看质感」，一项一项比） */
 export type CloudQuality = {
   /** 云在几分之几的边长上算：1 = 成片原分辨率，0.5 = 半边长（四分之一的像素），再按深度加权放大 */
-  分辨率: 1 | 0.5;
+  resolution: 1 | 0.5;
   /** 主步数是 Photon 默认（积云 40～20、高积云 12～6）的几倍：Photon 靠十几帧时间累积压噪点，我们每帧独立 */
   stepMult: number;
   /** 积云、高积云每一步朝太阳走几步（Photon 默认积云 6、高积云 4） */
@@ -85,8 +85,8 @@ export type CloudQuality = {
 /** 精确 = 同 大气/云.ts（2-日落划船 等用户看过的画面逐字节一样）；快 = 用户 11-04 定的 B 类（画面会变，要过目）。
  *  快 留 Bayer、不开远步增、步数倍 3：半分辨率时放大的 4×4 帐篷权正好把 Bayer 的 16 档平均掉，蓝噪声、远步增 1.02、步数倍 2 在 2-收集快乐 地平线那团背光的云上都起颗粒（静帧比过，见 docs/云.md 第 3 节） */
 export const qualityTiers = {
-  精确: { 分辨率: 1, stepMult: 4, lightStep: 6, scatterCount: 8, dither: 'Bayer', farStepGrowth: 1, tightShell: false, reuse: true },
-  快: { 分辨率: 0.5, stepMult: 3, lightStep: 4, scatterCount: 4, dither: 'Bayer', farStepGrowth: 1, tightShell: true, reuse: true },
+  精确: { resolution: 1, stepMult: 4, lightStep: 6, scatterCount: 8, dither: 'Bayer', farStepGrowth: 1, tightShell: false, reuse: true },
+  快: { resolution: 0.5, stepMult: 3, lightStep: 4, scatterCount: 4, dither: 'Bayer', farStepGrowth: 1, tightShell: true, reuse: true },
 } as const satisfies Record<string, CloudQuality>;
 export type QualityTierName = keyof typeof qualityTiers;
 
@@ -100,24 +100,24 @@ export type CloudConfig = {
   /** 云的曝光（乘在散射光上） */
   exposure?: number;
   /** 海平面的世界高度（格）：大气、地球曲率从这里起算。不给按场景的 光影场.海平面，再没有按 0 */
-  海平面?: number;
+  seaLevel?: number;
   /** 不给 = 默认三层（积云、高积云、卷云，离海平面 300、1067、2000 格，同 大气/云.ts） */
-  层?: readonly CloudLayer[];
+  layers?: readonly CloudLayer[];
   /** 质量档名或在 快 上改几项；不给 = 快 */
   quality?: QualityTierName | ({ 档?: QualityTierName } & Partial<CloudQuality>);
 };
 
 /** 一帧里场景给的事（光影场.云）：洞 = 让开的竖直圆柱 [x, y, 半径, 软边]（格），亮 = 云底被照亮的一块，曝光倍 乘在曝光上 */
-export type CloudBaseLight = { 心: readonly [number, number]; radius: number; 强: number; 色: string };
+export type CloudBaseLight = { 心: readonly [number, number]; radius: number; strength: number; 色: string };
 export type CloudScene = { hole?: readonly [number, number, number, number]; brightness?: CloudBaseLight; exposureMult?: number };
 
 export const defaultWeather = { temperature: 0.5, humidity: 0.55, wind: 0.6 } as const;
 
 /** 默认三层（离海平面的高度，格）：积云云底 900 / 3、高积云 3200 / 3、卷云 6000 / 3（大气/云.ts 的 PC_CU_R、PC_AC_R、PC_CI_R） */
 export const defaultLayers = (seaLevel: number): CloudLayer[] => [
-  { 算法: 'Photon积云', bottomHeight: seaLevel + 900 / cloudSpaceMult },
-  { 算法: 'Photon高积云', bottomHeight: seaLevel + 3200 / cloudSpaceMult },
-  { 算法: 'Photon卷云', bottomHeight: seaLevel + 6000 / cloudSpaceMult },
+  { algorithm: 'Photon积云', bottomHeight: seaLevel + 900 / cloudSpaceMult },
+  { algorithm: 'Photon高积云', bottomHeight: seaLevel + 3200 / cloudSpaceMult },
+  { algorithm: 'Photon卷云', bottomHeight: seaLevel + 6000 / cloudSpaceMult },
 ];
 
 export const defaultThickness: Record<ShadingLayerCloudAlgorithm, number> = { Photon积云: 400, Photon高积云: 160, Photon卷云: 500, 贴图层: 60 };

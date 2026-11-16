@@ -5,7 +5,7 @@ import { cloudSpaceMult, cloudAlgorithms, defaultThickness, defaultLayers, weath
 export type CloudSteps = { mainHeight: number; mainDepth: number; 最多: number; 光: number; ambient: number; scatterSteps: number; growth: number };
 
 export type ExpandedLayer = {
-  算法: ShadingLayerCloudAlgorithm;
+  algorithm: ShadingLayerCloudAlgorithm;
   layerIndex: number;
   /** 云底离海平面（云空间米） */
   R: number;
@@ -18,7 +18,7 @@ export type ExpandedLayer = {
   smooth: boolean;
   acceptsHoles: boolean;
   receivesLight: boolean;
-  覆盖: readonly [number, number] | null;
+  overrides: readonly [number, number] | null;
   coverMult: number;
   density: number;
   尺寸: number;
@@ -28,7 +28,7 @@ export type ExpandedLayer = {
   hasOffset: boolean;
   offset: readonly [number, number];
   wind: readonly [number, number];
-  步: CloudSteps;
+  step: CloudSteps;
 };
 
 /** Photon 积云的高低差（格）：大气/云.ts 的 CU_BH 2400 ÷ 云空间倍 */
@@ -36,24 +36,24 @@ const baseHeightDiff = 2400 / cloudSpaceMult;
 
 export const expandLayers = (layers: readonly CloudLayer[], seaLevel: number, q: CloudQuality): ExpandedLayer[] => {
   const S = cloudSpaceMult;
-  for (const l of layers) if (cloudAlgorithms[l.算法].画法 === '没做') throw new Error(`云的算法「${l.算法}」（${cloudAlgorithms[l.算法].说明}）还没做`);
-  const sortedLayers = layers.filter((l): l is CloudLayer & { 算法: ShadingLayerCloudAlgorithm } => isShadingLayerAlgorithm(l.算法)).sort((a, b) => a.bottomHeight - b.bottomHeight);
+  for (const l of layers) if (cloudAlgorithms[l.algorithm].画法 === '没做') throw new Error(`云的算法「${l.algorithm}」（${cloudAlgorithms[l.algorithm].note}）还没做`);
+  const sortedLayers = layers.filter((l): l is CloudLayer & { algorithm: ShadingLayerCloudAlgorithm } => isShadingLayerAlgorithm(l.algorithm)).sort((a, b) => a.bottomHeight - b.bottomHeight);
   return sortedLayers.map((l, layerIndex) => {
-    const thickness = l.thickness ?? defaultThickness[l.算法];
+    const thickness = l.thickness ?? defaultThickness[l.algorithm];
     const heightDiff = l.heightDiff ?? baseHeightDiff;
     const offset = l.offset ?? [0, 0];
     const wind = l.wind ?? [0, 0];
     const stepScale = q.stepMult;
     const mainSteps = l.mainSteps;
     const baseStep: CloudSteps =
-      l.算法 === 'Photon积云'
+      l.algorithm === 'Photon积云'
         ? { mainHeight: 40 * stepScale, mainDepth: 20 * stepScale, 最多: 120 * stepScale, 光: q.lightStep, ambient: 2, scatterSteps: q.scatterCount, growth: q.farStepGrowth }
-        : l.算法 === 'Photon高积云'
+        : l.algorithm === 'Photon高积云'
           ? { mainHeight: 12 * stepScale, mainDepth: 6 * stepScale, 最多: 12 * stepScale, 光: Math.round((q.lightStep * 2) / 3), ambient: 2, scatterSteps: q.scatterCount, growth: 1 }
           : { mainHeight: 0, mainDepth: 0, 最多: 0, 光: 0, ambient: 0, scatterSteps: 4, growth: 1 };
     const steps: CloudSteps = { ...baseStep, ...(mainSteps ? { mainHeight: mainSteps[0], mainDepth: mainSteps[1], 最多: mainSteps[2] } : {}), ...(l.lightSteps !== undefined ? { 光: l.lightSteps } : {}) };
     return {
-      算法: l.算法,
+      algorithm: l.algorithm,
       layerIndex,
       // 取到 1e-6：底高按「海平面 + 3200 / 3」写时乘回来是 3200.0000000000005，日光（atmoLightAt）按高度算、尾数会进 uniform
       R: Math.round(S * (l.bottomHeight - seaLevel) * 1e6) / 1e6,
@@ -61,9 +61,9 @@ export const expandLayers = (layers: readonly CloudLayer[], seaLevel: number, q:
       BH: S * heightDiff,
       shellHeight: S * (q.tightShell ? heightDiff : Math.max(heightDiff, baseHeightDiff)),
       smooth: heightDiff !== baseHeightDiff,
-      acceptsHoles: l.acceptsHoles ?? l.算法 !== 'Photon卷云',
+      acceptsHoles: l.acceptsHoles ?? l.algorithm !== 'Photon卷云',
       receivesLight: l.receivesLight ?? true,
-      覆盖: l.覆盖 ?? null,
+      overrides: l.overrides ?? null,
       coverMult: l.coverMult ?? 1,
       density: l.density ?? 1,
       尺寸: l.尺寸 ?? 1,
@@ -73,21 +73,21 @@ export const expandLayers = (layers: readonly CloudLayer[], seaLevel: number, q:
       hasOffset: offset[0] !== 0 || offset[1] !== 0 || wind[0] !== 0 || wind[1] !== 0,
       offset,
       wind,
-      步: steps,
+      step: steps,
     };
   });
 };
 
-export type ExpandedConfig = { layers: ExpandedLayer[]; quality: CloudQuality; 海平面: number; weather: Required<NonNullable<CloudConfig['weather']>>; exposure: number };
+export type ExpandedConfig = { layers: ExpandedLayer[]; quality: CloudQuality; seaLevel: number; weather: Required<NonNullable<CloudConfig['weather']>>; exposure: number };
 
 export const expandCloud = (c: CloudConfig, sceneSeaLevel: number): ExpandedConfig => {
-  const seaLevel = c.海平面 ?? sceneSeaLevel;
+  const seaLevel = c.seaLevel ?? sceneSeaLevel;
   const quality = getQuality(c.quality);
-  const layers = c.层 ?? defaultLayers(seaLevel);
+  const layers = c.layers ?? defaultLayers(seaLevel);
   return {
     layers: expandLayers(layers, seaLevel, quality),
     quality,
-    海平面: seaLevel,
+    seaLevel: seaLevel,
     weather: { ...defaultWeather, ...c.weather },
     exposure: c.exposure ?? 1,
   };
@@ -98,13 +98,13 @@ export const layerValues = (e: ExpandedConfig, sunY: number, sec: number, lightA
   const S = cloudSpaceMult;
   const out: Record<string, number | readonly number[]> = {};
   for (const l of e.layers) {
-    const p = weatherParams(e.weather, sunY, l.算法 === 'Photon积云' ? l.T : 1200);
+    const p = weatherParams(e.weather, sunY, l.algorithm === 'Photon积云' ? l.T : 1200);
     // 覆盖、形态给了就顶掉天气算的（积云 l0、高积云和贴图层 l1 各用各的）
-    const coverFirst = l.覆盖 ?? p.l0Cov, coverSecond = l.覆盖 ?? p.l1Cov;
+    const coverFirst = l.overrides ?? p.l0Cov, coverSecond = l.overrides ?? p.l1Cov;
     const blendFirst = l.shape ?? p.l0Blend, blendSecond = l.shape ?? p.l1Blend;
     const offset = l.hasOffset ? [S * (l.offset[0] + l.wind[0] * sec), -S * (l.offset[1] + l.wind[1] * sec)] : null;
     const scaleNum = (x: number, k: number) => (k === 1 ? x : x * k);
-    if (l.算法 === 'Photon积云') {
+    if (l.algorithm === 'Photon积云') {
       const n = `pcCu${l.layerIndex}`;
       out[`${n}A`] = [scaleNum(coverFirst[0], l.coverMult), scaleNum(coverFirst[1], l.coverMult), scaleNum(p.l0Detail[0], l.detail), scaleNum(p.l0Detail[1], l.detail)];
       out[`${n}B`] = [p.l0Edge[0], p.l0Edge[1], p.l0AltScale, blendFirst];
@@ -113,15 +113,15 @@ export const layerValues = (e: ExpandedConfig, sunY: number, sec: number, lightA
       // 积云那层的日光取云底往上四分之一层厚（大气/云.ts 写的 1200 = 900 + 300）
       out[`${n}L`] = lightAt(l.R + l.T / 4);
       if (offset) out[`${n}Off`] = offset;
-    } else if (l.算法 === 'Photon高积云') {
+    } else if (l.algorithm === 'Photon高积云') {
       const n = `pcAc${l.layerIndex}`;
       // 高积云的量减半（用户 10-14，同 大气/云.ts）；正午系数同 Photon 的 time_noon
       out[`${n}P`] = [scaleNum(0.5 * coverSecond[0], l.coverMult), scaleNum(0.5 * coverSecond[1], l.coverMult), blendSecond, dampen(smoothstep(0.05, 0.3, sunY))];
       out[`${n}L`] = lightAt(l.R);
       if (offset) out[`${n}Off`] = offset;
-    } else if (l.算法 === 'Photon卷云') {
+    } else if (l.algorithm === 'Photon卷云') {
       const n = `pcCi${l.layerIndex}`;
-      out[`${n}P`] = [scaleNum(l.覆盖?.[0] ?? p.cirrus, l.coverMult), scaleNum(l.覆盖?.[1] ?? p.cirrocumulus, l.coverMult)];
+      out[`${n}P`] = [scaleNum(l.overrides?.[0] ?? p.cirrus, l.coverMult), scaleNum(l.overrides?.[1] ?? p.cirrocumulus, l.coverMult)];
       out[`${n}L`] = lightAt(l.R);
       if (offset) out[`${n}Off`] = offset;
     } else {

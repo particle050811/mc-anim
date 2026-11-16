@@ -41,7 +41,7 @@ const particles: ParticleSpawn[] = (() => {
 })();
 
 // 刘心忠说话时头随字轻点（withTalkNod）：句子的 帧 写段内秒，每秒给 1
-const nodCues = choreo.lines.map(({ id, startSec }) => ({ id, 帧: startSec }));
+const nodCues = choreo.lines.map(({ id, startSec }) => ({ id, frame: startSec }));
 export const KitePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, cam }) => {
   const { width, height } = useVideoConfig();
   const T = choreo.storyT(sec);
@@ -49,15 +49,15 @@ export const KitePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, cam }) 
   const warden = play.wardenState(T);
   const huangPan = play.huangPanState(T);
   return (
-    <AncientCity4xCanvas 段="7-4-1" cam={cam ?? choreo.camera(sec)} width={width} height={height} wool={woolBlocks}>
+    <AncientCity4xCanvas segment="7-4-1" cam={cam ?? choreo.camera(sec)} width={width} height={height} wool={woolBlocks}>
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-        <SpectralSteed 秒={T} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
+        <SpectralSteed sec={T} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
       </group>
       <LiuXinzhong pose={withTalkNod(choreo.liuXinzhongPose(sec), nodCues, '刘心忠', sec, 1)} />
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
         {/* 跑起来往前扑（同 7-3） */}
         <group rotation={[rad(warden.forwardLean), 0, 0]}>
-          <Warden 秒={warden.秒} walkCycle={warden.walkCycle} hurt={warden.hurt} headPitch={warden.headPitch} 音爆={warden.音爆} secSinceDeath={warden.secSinceDeath} />
+          <Warden sec={warden.sec} walkCycle={warden.walkCycle} hurt={warden.hurt} headPitch={warden.headPitch} 音爆={warden.音爆} secSinceDeath={warden.secSinceDeath} />
         </group>
       </group>
       {play.stuckArrows(T).map((a, i) => (
@@ -74,7 +74,7 @@ export const KitePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, cam }) 
       {play.mortars.map((c, i) => (
         <Blastwave key={`波${i}`} at={c.blastPos} tick={(T - c.hitT) * 20} seed={7415 + i} size={blastwaveSize} />
       ))}
-      <VanillaParticles spawns={particles} 秒={T} />
+      <VanillaParticles spawns={particles} sec={T} />
     </AncientCity4xCanvas>
   );
 };

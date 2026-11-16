@@ -17,11 +17,11 @@ export default defineSpellMeta({
   hitSec: eruptTicks[0]! / 20,
   // Volcano.finalizeSpawn：RUMBLE（音量 2）、WALL_ERUPT；每喷一颗 levelEvent 1018（烈焰人射击声）；寿命到 RUMBLE（音量 2）。
   // 火山弹炸开各一声 GENERIC_EXPLODE（音量 4、音高约 0.7），后六颗落地时刻随种子变，只记第一颗
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.rumble.1', 秒: 0, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.wall_erupt.1', 秒: 0 },
-    ...eruptTicks.map((tick) => ({ 资产: '音效/entity.blaze.shoot', 秒: tick / 20 })),
-    { 资产: '音效/entity.generic.explode.1', 秒: eruptTicks[0]! / 20, 音量: 4, 音高: 0.7 },
-    { 资产: '音效/诡厄巫法/goety.rumble.2', 秒: volcanoLifeTicks / 20, 音量: 2 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.rumble.1', sec: 0, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.wall_erupt.1', sec: 0 },
+    ...eruptTicks.map((tick) => ({ asset: '音效/entity.blaze.shoot', sec: tick / 20 })),
+    { asset: '音效/entity.generic.explode.1', sec: eruptTicks[0]! / 20, 音量: 4, 音高: 0.7 },
+    { asset: '音效/诡厄巫法/goety.rumble.2', sec: volcanoLifeTicks / 20, 音量: 2 },
   ],
 });

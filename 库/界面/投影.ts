@@ -8,8 +8,8 @@ export type Vec3 = readonly [number, number, number];
 export const zUpToThree = ([x, y, z]: Vec3): Vec3 => [x, z, -y];
 
 /** 照 第一人称机位 那样建一台透视相机：视角是竖直方向的度数，up 朝 +Y、不滚转 */
-export const makePerspectiveCamera = (o: { 眼: Vec3; 看: Vec3; fov: number; 宽: number; 高: number; near?: number; far?: number }) => {
-  const cam = new THREE.PerspectiveCamera(o.fov, o.宽 / o.高, o.near ?? 0.05, o.far ?? 512);
+export const makePerspectiveCamera = (o: { 眼: Vec3; 看: Vec3; fov: number; width: number; height: number; near?: number; far?: number }) => {
+  const cam = new THREE.PerspectiveCamera(o.fov, o.width / o.height, o.near ?? 0.05, o.far ?? 512);
   cam.position.set(...o.眼);
   cam.up.set(0, 1, 0);
   cam.lookAt(new THREE.Vector3(...o.看));

@@ -17,28 +17,28 @@ type EnvFunction = {
 };
 
 /** 画法名 → 模块文件；没有、或文件里没 defineDraw('<名>' 的报出来 */
-export const findDrawMethod = (c: CheckContext, drawName: string): { 文件: string } | { 错误: string } => {
+export const findDrawMethod = (c: CheckContext, drawName: string): { file: string } | { errors: string } => {
   for (const dir of drawMethodDirs) {
     const file = `${dir}/${drawName}.tsx`;
     if (!c.exists(file)) continue;
     const text = c.读(file);
-    if (!new RegExp(`defineDraw\\(\\s*['"]${drawName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`).test(text)) return { 错误: `${file} 里没有 defineDraw('${drawName}', …)（画法名要和文件名一样）` };
-    return { 文件: file };
+    if (!new RegExp(`defineDraw\\(\\s*['"]${drawName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`).test(text)) return { errors: `${file} 里没有 defineDraw('${drawName}', …)（画法名要和文件名一样）` };
+    return { file: file };
   }
-  return { 错误: `没有画法「${drawName}」：要有 ${drawMethodDirs.map((d) => `${d}/${drawName}.tsx`).join(' 或 ')}` };
+  return { errors: `没有画法「${drawName}」：要有 ${drawMethodDirs.map((d) => `${d}/${drawName}.tsx`).join(' 或 ')}` };
 };
 
 export const checkEnvDecl = async (c: CheckContext, report: CheckReport, segments: readonly SegItem[]) => {
   const envDeclFiles = c.workFiles().filter(isEnvDecl);
   if (!envDeclFiles.length) return;
-  const loadResult = c.exists(envModulePath) ? await c.loadModule(envModulePath) : { 错误: `没有 ${envModulePath}` };
-  if (!loadResult.模块) return report.错(`查环境声明要执行 ${envModulePath}：${loadResult.错误}`);
-  const f = loadResult.模块 as unknown as EnvFunction;
+  const loadResult = c.exists(envModulePath) ? await c.loadModule(envModulePath) : { errors: `没有 ${envModulePath}` };
+  if (!loadResult.modules) return report.错(`查环境声明要执行 ${envModulePath}：${loadResult.errors}`);
+  const f = loadResult.modules as unknown as EnvFunction;
   let okCount = 0;
   for (const p of envDeclFiles) {
     const r = await c.loadModule(p);
-    if (!r.模块) continue; // 执行出错 加载 已报
-    const v = r.模块.default as Record<string, unknown> | undefined;
+    if (!r.modules) continue; // 执行出错 加载 已报
+    const v = r.modules.default as Record<string, unknown> | undefined;
     if (!v || typeof v !== 'object') {
       report.错('环境.ts 要 export default 一份环境描述（定义环境）或环境轨（定义环境轨）', p);
       continue;
@@ -53,18 +53,18 @@ export const checkEnvDecl = async (c: CheckContext, report: CheckReport, segment
     }
     const base = (envTrack ? v.base : v) as { 画法: string };
     const renderer = findDrawMethod(c, base.画法);
-    if ('错误' in renderer) {
-      report.错(renderer.错误, p);
+    if ('errors' in renderer) {
+      report.错(renderer.errors, p);
       continue;
     }
     if (envTrack) {
       const segDir = p.slice(0, -'/环境.ts'.length);
       const seg = segments.find((s) => s.目录 === segDir);
       // 环境轨的关键帧按输出帧算（核对-环境 一帧一个视图）
-      const frameCount = seg?.definition ? Math.round(seg.definition.秒 * segFps) : undefined;
-      const outOfRange = frameCount === undefined ? [] : (v.keyframes as { 帧: number }[]).filter((k) => k.帧 >= frameCount);
+      const frameCount = seg?.definition ? Math.round(seg.definition.sec * segFps) : undefined;
+      const outOfRange = frameCount === undefined ? [] : (v.keyframes as { frame: number }[]).filter((k) => k.frame >= frameCount);
       if (outOfRange.length) {
-        report.错(`关键帧 ${outOfRange.map((k) => k.帧).join('、')} 不在段里（段长 ${seg!.definition!.秒} 秒，一秒 ${segFps} 帧共 ${frameCount} 帧）`, p);
+        report.错(`关键帧 ${outOfRange.map((k) => k.frame).join('、')} 不在段里（段长 ${seg!.definition!.sec} 秒，一秒 ${segFps} 帧共 ${frameCount} 帧）`, p);
         continue;
       }
     }

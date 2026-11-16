@@ -22,24 +22,24 @@ const clickOnsetSec = 0.13;
 
 /** 「绽」咔哒定格以后，世界里还在响的（最大那发的炸声）0.25 秒里收掉：照片定住了，声音也停在那一下 */
 const freezeFadeSec = 0.25;
-const freezeFrame = mainCutEvents.screenshotFreeze.帧;
+const freezeFrame = mainCutEvents.screenshotFreeze.frame;
 const freezeFade = (frame: number) => clamp01(1 - (frame - freezeFrame) / (freezeFadeSec * fps));
 
 const cue = (soundKind: keyof typeof doorNightSfxAssets, name: string, sec: number, onsetSec = 0, followFreeze = true): SongSound => {
   const g = soundGain[soundKind];
   return {
-    资产: doorNightSfxAssets[soundKind],
-    名: name,
+    asset: doorNightSfxAssets[soundKind],
+    name: name,
     起帧: toSongFrame(sec - onsetSec),
-    时长秒: fileSec[soundKind],
+    durationSec: fileSec[soundKind],
     增益: followFreeze ? (frame) => g * freezeFade(frame) : () => g,
   };
 };
 
 export const doorNightSounds: readonly SongSound[] = [
   cue('种树苗', '种樱花树苗', plantSec),
-  ...fireworks.flatMap((firework) => fireworkSounds(firework).map((s) => cue(s.种, `烟花${firework.名}${s.种}`, s.秒))),
-  cue('咔哒', '咔哒', mainCutEvents.screenshotFreeze.秒, clickOnsetSec, false),
+  ...fireworks.flatMap((firework) => fireworkSounds(firework).map((s) => cue(s.kind, `烟花${firework.name}${s.kind}`, s.sec))),
+  cue('咔哒', '咔哒', mainCutEvents.screenshotFreeze.sec, clickOnsetSec, false),
 ];
 
 /** 落在这一段窗口（秒）里的那几截 */

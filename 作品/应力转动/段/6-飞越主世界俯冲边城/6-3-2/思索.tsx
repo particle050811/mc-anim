@@ -288,7 +288,7 @@ const RollerItem: React.FC = () => {
 export const PonderSegment: React.FC<{ world?: boolean; sec?: number }> = ({ world: showWorld = true, sec: secOverride }) => {
   const cur = useCurrentSec();
   const sec = secOverride ?? cur;
-  const T = segTable['6-3-2'].起 + sec;
+  const T = segTable['6-3-2'].start + sec;
   const t = sec - uiOpen; // 思索场景时间（开界面以前是负的）
   // 整层（底色、场景板、李樱）：开界面时淡入盖住扫帚，6-3-3 开头淡掉露出真的俯冲；标题、按钮、说明框另外在关界面时淡掉
   const layerOpacity = T > 0 ? ponderLayerOpacity(T) : t < choreo.cues.close[0] ? choreo.uiOpacityAt(t) : 1;
@@ -297,7 +297,7 @@ export const PonderSegment: React.FC<{ world?: boolean; sec?: number }> = ({ wor
   const captions = ponderText.说明.map((text, i) => {
     const caption = choreo.captionTable[i];
     const anchor = choreo.pointerTarget(caption.pointsAt, caption.start);
-    return { 字: text, ponderPalette: caption.palette, 点: anchor ? choreo.projectUi(anchor) : null, fallbackY: caption.height, nearTarget: caption.nearTarget ?? true, fade: choreo.captionOpacity(i, t) };
+    return { char: text, ponderPalette: caption.palette, points: anchor ? choreo.projectUi(anchor) : null, fallbackY: caption.height, nearTarget: caption.nearTarget ?? true, fade: choreo.captionOpacity(i, t) };
   });
   const redBox = choreo.redBoxAt(t);
   const greenBox = choreo.greenBox(t);

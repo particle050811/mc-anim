@@ -17,12 +17,12 @@ export const missingMarker = '缺:静音';
 const silentSampleRate = 48000;
 
 /** 这条 cue 的资产是不是按 cue 现取的私有配乐 */
-export const isPrivateMusic = (id: string, assetLock: AssetLock) => id.startsWith('配乐/') && assetLock[id]?.库 === '私有';
+export const isPrivateMusic = (id: string, assetLock: AssetLock) => id.startsWith('配乐/') && assetLock[id]?.lib === '私有';
 
 /** 一段 cue 里的私有配乐 → sha（数据根里有字节）或 缺:静音；没有就是空表 */
-export const segPrivateMusic = (segmentDef: Pick<SegmentDef, '声音'>, assetLock: AssetLock, dataRoot: string): Record<string, string> => {
+export const segPrivateMusic = (segmentDef: Pick<SegmentDef, 'sound'>, assetLock: AssetLock, dataRoot: string): Record<string, string> => {
   const out: Record<string, string> = {};
-  for (const c of segmentDef.声音 ?? []) if (c.资产 !== undefined && isPrivateMusic(c.资产, assetLock)) out[c.资产] = fs.existsSync(bytesPath(assetLock[c.资产]!, dataRoot)) ? assetLock[c.资产]!.sha256 : missingMarker;
+  for (const c of segmentDef.sound ?? []) if (c.asset !== undefined && isPrivateMusic(c.asset, assetLock)) out[c.asset] = fs.existsSync(bytesPath(assetLock[c.asset]!, dataRoot)) ? assetLock[c.asset]!.sha256 : missingMarker;
   return out;
 };
 
@@ -52,29 +52,29 @@ export const silentWav = (durSec: number): Buffer => {
 const sha = (b: Buffer) => crypto.createHash('sha256').update(b).digest('hex');
 const fileShaOrNull = (f: string) => (fs.existsSync(f) ? sha(fs.readFileSync(f)) : null);
 
-export type MissingMusic = { id: string; 秒: number; expectedPath: string };
+export type MissingMusic = { id: string; sec: number; expectedPath: string };
 
 /**
  * 按这些段（一部作品的全部段）的 cue 备好 cache/私有配乐/<id>；返回缺字节、换成静音的。
  * 已经是想要的那份就不动；要换时先写临时文件再改名（别的渲染正在读也只会读到整份旧的或整份新的）。
  */
-export const preparePrivateMusic = (segments: { 段: Pick<SegmentDef, '声音'> }[], assetLock: AssetLock, dataRoot: string): MissingMusic[] => {
-  const needed: Map<string, { entry: LockEntry; 秒: number }> = new Map();
-  for (const { 段: segmentDef } of segments) {
-    for (const c of segmentDef.声音 ?? []) {
-      if (c.资产 === undefined || !isPrivateMusic(c.资产, assetLock)) continue;
-      const prevNeed = needed.get(c.资产);
-      needed.set(c.资产, { entry: assetLock[c.资产]!, 秒: Math.max(prevNeed?.秒 ?? 0, cueEndSec(c)) });
+export const preparePrivateMusic = (segments: { segment: Pick<SegmentDef, 'sound'> }[], assetLock: AssetLock, dataRoot: string): MissingMusic[] => {
+  const needed: Map<string, { entry: LockEntry; sec: number }> = new Map();
+  for (const { segment: segmentDef } of segments) {
+    for (const c of segmentDef.sound ?? []) {
+      if (c.asset === undefined || !isPrivateMusic(c.asset, assetLock)) continue;
+      const prevNeed = needed.get(c.asset);
+      needed.set(c.asset, { entry: assetLock[c.asset]!, sec: Math.max(prevNeed?.sec ?? 0, cueEndSec(c)) });
     }
   }
   const missing: MissingMusic[] = [];
-  for (const [id, { entry, 秒: durSec }] of needed) {
+  for (const [id, { entry, sec: durSec }] of needed) {
     const targetPath = path.join(privateMusicDir(dataRoot), ...id.split('/'));
     const sourcePath = bytesPath(entry, dataRoot);
     const exists = fs.existsSync(sourcePath);
     // 静音多留 1 秒：cue 的长秒有小数，解码器读到文件尾前后可能多要几个样本
     const silence = exists ? null : silentWav(durSec + 1);
-    if (!exists) missing.push({ id, 秒: Math.ceil(durSec + 1), expectedPath: sourcePath });
+    if (!exists) missing.push({ id, sec: Math.ceil(durSec + 1), expectedPath: sourcePath });
     const wantedSha = exists ? entry.sha256 : sha(silence!);
     if (fileShaOrNull(targetPath) === wantedSha) continue;
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -93,4 +93,4 @@ export const preparePrivateMusic = (segments: { 段: Pick<SegmentDef, '声音'> 
 };
 
 export const missingMusicHint = (x: MissingMusic) =>
-  `私有配乐「${x.id}」的字节不在 ${x.expectedPath}，这次换成 ${x.秒} 秒静音渲（补上字节后段指纹会变，再渲就带歌；怎么补见仓库根 README.md）`;
+  `私有配乐「${x.id}」的字节不在 ${x.expectedPath}，这次换成 ${x.sec} 秒静音渲（补上字节后段指纹会变，再渲就带歌；怎么补见仓库根 README.md）`;

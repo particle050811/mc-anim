@@ -32,7 +32,7 @@ const fx = (): FxParams => {
   if (FX) return FX;
   const shaft = fallChoreo.liYingShaft();
   const imp = fallTimeline.impactTime();
-  FX = { impact: imp, 中心: fallChoreo.shaftCellCenter(), groundZ: fallChoreo.groundZ, caveCeilingZ: fallChoreo.caveCeilingZ, ancientCityFloorZ: fallChoreo.ancientCityFloorZ, breachSec: imp + shaft.breachDelay, landSec: shaft.landSec };
+  FX = { impact: imp, center: fallChoreo.shaftCellCenter(), groundZ: fallChoreo.groundZ, caveCeilingZ: fallChoreo.caveCeilingZ, ancientCityFloorZ: fallChoreo.ancientCityFloorZ, breachSec: imp + shaft.breachDelay, landSec: shaft.landSec };
   return FX;
 };
 
@@ -66,17 +66,17 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 灯：同 6-3-下坠/画面.tsx 地面上那一套（天空穹顶跟着镜头） */}
           <FlightSky camPos={cam.pos} photon={!under} />
-          {!under && <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} />}
+          {!under && <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit.holeRect} />
-            {!actors && t < choreo.cues.cutToPit && <VanillaParticles spawns={splashes()} 秒={t} />}
+            {!actors && t < choreo.cues.cutToPit && <VanillaParticles spawns={splashes()} sec={t} />}
           </group>
           <SlabFloor holeRect={pit.holeRect} />
-          <group position={[fxParams.中心[0], fxParams.中心[1], 0]}>
+          <group position={[fxParams.center[0], fxParams.center[1], 0]}>
             <ShaftWalls />
             <ShaftFill w={physSec} />
           </group>
-          {cam.pos[2] < fallChoreo.groundZ + 30 && <AncientCity center={fxParams.中心} />}
+          {cam.pos[2] < fallChoreo.groundZ + 30 && <AncientCity center={fxParams.center} />}
           {actors ?? (
             <>
             {/* 卫兵（每人一张脸，同 6-3-4） */}

@@ -14,8 +14,8 @@ import meta, { thunderLifeTicks, boltLandPoint } from './雷霆.元.ts';
 
 const thunderColor = hexColor(0xb1abf1);
 
-const thunder: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => (
-  <ElectricArc 起={from} end={boltLandPoint(target)} settings={arcPresets.thunderBolt} 刻={sec * 20} lifeTicks={thunderLifeTicks} 色={thunderColor} 种子={seed} />
+const thunder: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => (
+  <ElectricArc start={from} end={boltLandPoint(target)} settings={arcPresets.thunderBolt} 刻={sec * 20} lifeTicks={thunderLifeTicks} 色={thunderColor} seed={seed} />
 );
 
 export default defineSpellPerformance(meta, thunder);

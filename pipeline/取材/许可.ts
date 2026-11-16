@@ -37,9 +37,9 @@ export const conjunction = (exprs: readonly string[]): string => {
   return unique.map((s) => (/\sOR\s/.test(s) && !/^\(.*\)$/.test(s) ? `(${s})` : s)).join(' AND ');
 };
 
-export type LicenseEntry = { id: string; 许可: JarLicense };
+export type LicenseEntry = { id: string; license: JarLicense };
 /** jars.toml 一条里查许可要的字段（清单.ts 的 JarRecord 带着这些；只写这几个，许可.ts 不引 清单.ts，免得两边互引） */
-export type LicensedJar = { id: string; sha256?: string; 许可?: JarLicense; 旧sha256前缀?: string[] };
+export type LicensedJar = { id: string; sha256?: string; license?: JarLicense; oldSha256Prefixes?: string[] };
 /**
  * sha256 前 12 位 → jar；资源索引另认 jars.toml 里记的历史前缀（Mojang 会更新同一个索引文件）。
  * 现算：jars.toml 没记 sha256 的（资源索引），按本机文件现算的前缀也认（登记时来源就是这么算的，见 登记.ts 来源串）；算不出返回 undefined
@@ -47,16 +47,16 @@ export type LicensedJar = { id: string; sha256?: string; 许可?: JarLicense; �
 export const licenseTable = (jars: Iterable<LicensedJar>, computeLocalSha?: (id: string) => string | undefined): Map<string, LicenseEntry> => {
   const m = new Map<string, LicenseEntry>();
   for (const j of jars) {
-    const item = { id: j.id, 许可: j.许可 ?? {} };
+    const item = { id: j.id, license: j.license ?? {} };
     if (j.sha256) m.set(j.sha256.slice(0, 12), item);
-    for (const p of j.旧sha256前缀 ?? []) m.set(p, item);
+    for (const p of j.oldSha256Prefixes ?? []) m.set(p, item);
     const localId = j.sha256 ? undefined : computeLocalSha?.(j.id);
     if (localId && !m.has(localId)) m.set(localId, item);
   }
   return m;
 };
 
-export type InheritResult = { 许可?: string; missing: string[] };
+export type InheritResult = { license?: string; missing: string[] };
 
 /** 来源（提取:<配方>@<sha12>+…）→ 继承的许可；有一个 jar 不认识或那一部分没定，就不给许可、在 缺 里说原因 */
 export const inheritLicense = (source: string, parts: readonly LicensePart[], licenseTable: Map<string, LicenseEntry>): InheritResult => {
@@ -71,10 +71,10 @@ export const inheritLicense = (source: string, parts: readonly LicensePart[], li
       continue;
     }
     for (const p of parts) {
-      const v = getPart(j.许可, p);
-      if (undetermined(v)) missing.push(`${j.id} 的${p}许可${v ? ` ${v}` : '没写'}${j.许可.原文 && !v ? `（原文：${j.许可.原文}）` : ''}`);
+      const v = getPart(j.license, p);
+      if (undetermined(v)) missing.push(`${j.id} 的${p}许可${v ? ` ${v}` : '没写'}${j.license.原文 && !v ? `（原文：${j.license.原文}）` : ''}`);
       else exprs.push(v!);
     }
   }
-  return missing.length ? { missing } : { 许可: conjunction(exprs), missing };
+  return missing.length ? { missing } : { license: conjunction(exprs), missing };
 };

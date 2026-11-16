@@ -5,9 +5,9 @@ export const sendCommandsInOrder = async (s: Server, commands: readonly string[]
   for (const c of commands) {
     if (c.startsWith('sleep:')) await new Promise((r) => setTimeout(r, Number(c.slice(6)) * 1000));
     else if (c.startsWith('wait:')) {
-      if (!(await s.等(c.slice(5), Infinity))) throw s.error ?? new Error(`等到「${c.slice(5)}」之前服务端退出了`);
+      if (!(await s.waits(c.slice(5), Infinity))) throw s.error ?? new Error(`等到「${c.slice(5)}」之前服务端退出了`);
     } else if (c.startsWith('expect:')) {
-      if (!(await s.等(c.slice(7), 30))) throw new Error(`上一条命令以后 30 秒内日志里没有「${c.slice(7)}」，停服（后面的命令不发）`);
+      if (!(await s.waits(c.slice(7), 30))) throw new Error(`上一条命令以后 30 秒内日志里没有「${c.slice(7)}」，停服（后面的命令不发）`);
     } else {
       log(`== > ${c}`);
       s.发(c);

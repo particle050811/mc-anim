@@ -21,14 +21,14 @@ const floatToBits = (x: number) => {
   return dv.getUint32(0).toString(16);
 };
 
-type RealJarSample = { 程序: PoseProgram; 根: EntityPart; 样例: { 输入: Record<string, [string, string]>; 真值: Record<string, string> }[] };
+type RealJarSample = { program: PoseProgram; root: EntityPart; 样例: { input: Record<string, [string, string]>; 真值: Record<string, string> }[] };
 
 describe.skipIf(jsonFiles.length === 0)('姿态程序求值器：真 jar 翻出的程序', () => {
   for (const f of jsonFiles) {
     it(`${f} 和 JVM 逐位相同`, () => {
       const fixture = JSON.parse(fs.readFileSync(path.join(dir!, f), 'utf8')) as RealJarSample;
-      const solve = poseEvaluator(fixture.程序, fixture.根);
-      for (const { 输入: input, 真值: truth } of fixture.样例) {
+      const solve = poseEvaluator(fixture.program, fixture.root);
+      for (const { input: input, 真值: truth } of fixture.样例) {
         const inputs: PoseInput = Object.fromEntries(Object.entries(input).map(([k, [t, v]]) => [k, t === 'f' ? bitsToFloat(v) : t === 'j' ? BigInt(v) : Number(v)]));
         const { partPoses, hidden } = solve(inputs);
         for (const [part, expected] of Object.entries(truth)) {

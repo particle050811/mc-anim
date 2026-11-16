@@ -56,9 +56,9 @@ export const digTimes = [events.digFirst, events.digSecond, events.digThird] as 
 export const pitStateAt = (f: number): PitState => ({ dugCount: digTimes.filter((b) => f >= b).length, dirtCovered: f >= events.fillHole && f < events.digSkylight });
 
 /** 四次方块碎掉（崩粒子、掉东西）：帧、哪一格（格中心，剖面坐标） */
-export const shards: readonly { 帧: number; 格: readonly [number, number, number] }[] = [
-  ...digTimes.map((startFrame, i) => ({ 帧: startFrame, 格: [0, 0.5, groundLayers.grassLayer - i + 0.5] as const })),
-  { 帧: events.digSkylight, 格: [0, 0.5, groundLayers.grassLayer + 0.5] as const },
+export const shards: readonly { frame: number; cell: readonly [number, number, number] }[] = [
+  ...digTimes.map((startFrame, i) => ({ frame: startFrame, cell: [0, 0.5, groundLayers.grassLayer - i + 0.5] as const })),
+  { frame: events.digSkylight, cell: [0, 0.5, groundLayers.grassLayer + 0.5] as const },
 ];
 
 /** 按住左键挖的几段：[起, 碎, 第几格]（段内帧，可以带小数），裂纹在这段里从 0 长到满。第一格段首就开始挖（接着 2-初入 低头站定），
@@ -72,12 +72,12 @@ const skylightDigStart = events.digSkylight - skylightDigSec * fps;
 
 /** 裂纹：原版 destroyBlockProgress = (int)(进度 × 10) − 1，−1 不画。进度多算一帧（按帧末算：起的那一帧已经挖了一帧），
  *  碎前最后一帧是满的第 9 级（多算的那截让进度过 1，封顶 9） */
-export const crackState = (f: number): { 格: readonly [number, number, number]; 级: number } | null => {
+export const crackState = (f: number): { cell: readonly [number, number, number]; 级: number } | null => {
   const crackSeg = [...digSegs, [skylightDigStart, events.digSkylight, 3] as const].find(([startFrame, breakFrame]) => f >= startFrame && f < breakFrame);
   if (!crackSeg) return null;
   const [startFrame, breakFrame, i] = crackSeg;
   const level = Math.min(9, Math.floor(((f - startFrame + 1) / (breakFrame - startFrame)) * 10) - 1);
-  return level < 0 ? null : { 格: shards[i]!.格, 级: level };
+  return level < 0 ? null : { cell: shards[i]!.cell, 级: level };
 };
 
 // ---------- 你 ----------
@@ -122,7 +122,7 @@ export type SteveState = {
 };
 
 /** 第 i 块掉落物被捡起来的那一帧 */
-export const pickupFrame = (i: number) => shards[i]!.帧 + Math.ceil((drop.pickupDelayTick * fps) / 20);
+export const pickupFrame = (i: number) => shards[i]!.frame + Math.ceil((drop.pickupDelayTick * fps) / 20);
 
 /** 站在坑那一格往脚下挖：每挖掉一格掉一格；填上头顶、缩下去；天亮前站起来挖开头顶 */
 export const SteveState = (f: number): SteveState => {
@@ -143,10 +143,10 @@ export const SteveState = (f: number): SteveState => {
 };
 
 // ---------- 掉落物 ----------
-type ItemPath = { 路: (readonly [number, number, number])[]; phaseOffset: number };
-const halfSize = drop.大小 / 2;
+type ItemPath = { lane: (readonly [number, number, number])[]; phaseOffset: number };
+const halfSize = drop.size / 2;
 /** 第 i 块碎掉时掉的那块泥土：原版 popResource 生成、ItemEntity.tick 的物理；坑是一格宽的竖井，四面贴墙，底随挖的进度往下 */
-const itemPaths: ItemPath[] = shards.map(({ 帧: startFrame, 格: cellPos }, i) => {
+const itemPaths: ItemPath[] = shards.map(({ frame: startFrame, cell: cellPos }, i) => {
   const r = mulberry32(2024 + i * 7919);
   const jitter = (a: number) => a - 0.25 + r() * 0.5;
   let [x, y, z] = [jitter(cellPos[0]), jitter(cellPos[1]), jitter(cellPos[2]) - halfSize];
@@ -174,10 +174,10 @@ const itemPaths: ItemPath[] = shards.map(({ 帧: startFrame, 格: cellPos }, i) 
     vz *= 0.98;
     trail.push([x, y, z]);
   }
-  return { 路: trail, phaseOffset };
+  return { lane: trail, phaseOffset };
 });
 
-const pointOnPath = (trail: ItemPath['路'], k: number): [number, number, number] => {
+const pointOnPath = (trail: ItemPath['lane'], k: number): [number, number, number] => {
   const i = Math.max(0, Math.min(trail.length - 2, Math.floor(k)));
   const t = clamp01(k - i);
   return [lerp(trail[i]![0], trail[i + 1]![0], t), lerp(trail[i]![1], trail[i + 1]![1], t), lerp(trail[i]![2], trail[i + 1]![2], t)];
@@ -186,13 +186,13 @@ const pointOnPath = (trail: ItemPath['路'], k: number): [number, number, number
 /** 这一帧看得见的掉落物：方块中心（含原版的上下浮）、绕竖轴转角（弧度）。捡起时 3 刻飞到你脚底往上 0.5 格（按平方缓入） */
 export const dropItems = (f: number): { 位: readonly [number, number, number]; 转: number }[] => {
   const out: { 位: readonly [number, number, number]; 转: number }[] = [];
-  shards.forEach(({ 帧: startFrame }, i) => {
+  shards.forEach(({ frame: startFrame }, i) => {
     if (f < startFrame) return;
     const age = frameToTick(f - startFrame);
-    const { 路: trail, phaseOffset } = itemPaths[i]!;
+    const { lane: trail, phaseOffset } = itemPaths[i]!;
     const floatOffset = Math.sin(age / 10 + phaseOffset) * 0.1 + 0.1;
     const rotationRad = age / 20 + phaseOffset;
-    const displayHeight = drop.大小; // ground 显示变换：0.25 × 缩放 0.25 + 3/16 = 0.25
+    const displayHeight = drop.size; // ground 显示变换：0.25 × 缩放 0.25 + 3/16 = 0.25
     if (age < drop.pickupDelayTick) {
       const p = pointOnPath(trail, age);
       out.push({ 位: [p[0], p[1], p[2] + floatOffset + displayHeight], 转: rotationRad });

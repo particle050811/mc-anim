@@ -49,7 +49,7 @@ const white: RGB = [255, 255, 255];
 
 /** 一张照片的地图画（边长 × 边长 的 RGBA，从上往下一行行排）：画面居中裁成正方形，按面积平均缩到 边长 − 2·白边，每个像素压到最近的地图色，外面一圈白边 */
 export const mapPixels = (photoSource: PhotoSource, sideLength: MapSize): Uint8Array => {
-  const { w, h, px } = photoSource.图;
+  const { w, h, px } = photoSource.image;
   const side = Math.min(w, h);
   const [x0, y0] = [(w - side) / 2, (h - side) / 2];
   const innerSize = sideLength - 2 * whiteBorder(sideLength);

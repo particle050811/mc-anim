@@ -14,12 +14,12 @@ export const noReExtractReason =
   '步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）';
 
 /** 一块网格：基 id（网格/<名>）、头、产物（id → 暂存目录里的文件）、属于哪一侧的锁 */
-export type PendingMesh = { meshName: string; 头: MeshHeader; 产物: Record<string, string>; 作品?: string };
+export type PendingMesh = { meshName: string; 头: MeshHeader; artifacts: Record<string, string>; work?: string };
 
 const headIdPattern = /^(网格\/.+)\/头$/;
 
 /** 配方里已经产出的 id（通配按锁展开） */
-export const recipeOutputIds = (q: SourcingManifest, assetLock: AssetLock) => new Set([...q.entryMap.values()].flatMap((e) => expandArtifacts(e.产物, assetLock).对.map(([id]) => id)));
+export const recipeOutputIds = (q: SourcingManifest, assetLock: AssetLock) => new Set([...q.entryMap.values()].flatMap((e) => expandArtifacts(e.artifacts, assetLock).对.map(([id]) => id)));
 
 /** mcai mesh 的 out（不带扩展名）：照资产表 旧路径（参考模型库/<out>.json）；没有就 src/模型/场景/<名，/ 换 ->.网格 */
 export const meshOutput = (meshName: string, oldPath?: string) => {
@@ -34,9 +34,9 @@ export const meshOutput = (meshName: string, oldPath?: string) => {
 export const missingMeshRecipes = (
   q: SourcingManifest,
   locks: [AssetLock, string | undefined][],
-  oldPathMap: Map<string, Pick<AssetEntry, '旧路径'>>,
+  oldPathMap: Map<string, Pick<AssetEntry, 'oldPath'>>,
   readHead = (e: AssetLock[string]) => JSON.parse(fs.readFileSync(bytesPath(e), 'utf8')) as MeshHeader,
-): { 网格: PendingMesh[]; unreadable: string[] } => {
+): { grid: PendingMesh[]; unreadable: string[] } => {
   const allLocks = Object.assign({}, ...locks.map(([l]) => l)) as AssetLock;
   const alreadyHave = recipeOutputIds(q, allLocks);
   const meshes: PendingMesh[] = [];
@@ -53,13 +53,13 @@ export const missingMeshRecipes = (
         unreadable.push(id);
         continue;
       }
-      const out = meshOutput(meshName, oldPathMap.get(id)?.旧路径);
+      const out = meshOutput(meshName, oldPathMap.get(id)?.oldPath);
       const artifacts: Record<string, string> = {};
       for (const [part, suffix] of [['图集', '.png'], ['头', '.json'], ['顶点', '.bin']] as const) if (assetLock[`${meshName}/${part}`]) artifacts[`${meshName}/${part}`] = out + suffix;
-      meshes.push({ meshName, 头: meshHeader, 产物: artifacts, ...(work ? { 作品: work } : {}) });
+      meshes.push({ meshName, 头: meshHeader, artifacts: artifacts, ...(work ? { work: work } : {}) });
     }
   }
-  return { 网格: meshes, unreadable };
+  return { grid: meshes, unreadable };
 };
 
 const coordText = (v: readonly number[]) => v.join(',');
@@ -67,7 +67,7 @@ const coordText = (v: readonly number[]) => v.join(',');
 /** 一块网格的两步：镜头挪到范围正上方、切到那个维度，再 mesh */
 export const meshSteps = (g: PendingMesh): Step[] => {
   const { dim, from, to, origin } = g.头;
-  const out = g.产物[`${g.meshName}/头`]!.replace(/\.json$/, '');
+  const out = g.artifacts[`${g.meshName}/头`]!.replace(/\.json$/, '');
   const center = [(Math.min(from[0], to[0]) + Math.max(from[0], to[0]) + 1) / 2, Math.min(Math.max(from[1], to[1]) + 30, 300), (Math.min(from[2], to[2]) + Math.max(from[2], to[2]) + 1) / 2];
   const rawParams = g.头.取材?.参数;
   const params = rawParams
@@ -85,7 +85,7 @@ export const groupMeshes = (meshes: readonly PendingMesh[], existingNames: Reado
   for (const g of meshes) {
     let groupName = `${g.meshName.split('/')[1]}网格`;
     if (existingNames.has(groupName)) groupName += '（反填）';
-    if (g.作品 && groups.get(groupName)?.some((x) => x.作品 !== g.作品)) groupName += `（${g.作品}）`;
+    if (g.work && groups.get(groupName)?.some((x) => x.work !== g.work)) groupName += `（${g.work}）`;
     groups.set(groupName, [...(groups.get(groupName) ?? []), g]);
   }
   return groups;
@@ -95,20 +95,20 @@ const quote = (s: string) => JSON.stringify(s);
 
 /** 一条配方的 TOML 文本（和 extract.toml 里手写的同一种写法） */
 export const meshRecipeText = (groupName: string, meshes: readonly PendingMesh[]) => {
-  const work = meshes[0]?.作品;
+  const work = meshes[0]?.work;
   const lines = [
-    '[["取材"]]',
-    `"名称" = ${quote(groupName)}`,
-    '"需要" = []',
-    '"要开游戏" = true',
-    ...(work ? [`"作品" = ${quote(work)}`] : []),
-    `"不重导" = ${quote(noReExtractReason)}`,
-    '"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」',
-    '"步骤" = [',
+    '[["sourcing"]]',
+    `"displayName" = ${quote(groupName)}`,
+    '"requires" = []',
+    '"needsGame" = true',
+    ...(work ? [`"work" = ${quote(work)}`] : []),
+    `"noReExtract" = ${quote(noReExtractReason)}`,
+    '"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」',
+    '"steps" = [',
     ...meshes.flatMap((g) => meshSteps(g).map((s) => `  [${s.map((a) => quote(a as string)).join(', ')}],`)),
     ']',
-    '["取材"."产物"]',
-    ...meshes.flatMap((g) => Object.entries(g.产物).map(([k, v]) => `${quote(k)} = ${quote(v)}`)),
+    '["sourcing"."artifacts"]',
+    ...meshes.flatMap((g) => Object.entries(g.artifacts).map(([k, v]) => `${quote(k)} = ${quote(v)}`)),
   ];
   return lines.join('\n') + '\n';
 };

@@ -40,7 +40,7 @@ export const compressShareAudio = (progress: (margin: number, outPath: string) =
     if (truePeak <= truePeakLimit) break;
     margin += truePeak - truePeakLimit + 0.1;
   }
-  return { 声音: outPath, 限幅dBFS: truePeakLimit - margin };
+  return { sound: outPath, limitDbfs: truePeakLimit - margin };
 };
 export const encodeShareVersion = async (filmPath: string, soundFile: string, outPath: string) => {
   const ffmpeg = config('ffmpeg');

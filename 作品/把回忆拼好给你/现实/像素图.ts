@@ -8,12 +8,12 @@ export const canvasScale = 2;
 
 export type PixelArt = {
   /** 贴图像素的宽高 */
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   c: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   /** 一个贴图像素 */
-  点: (x: number, y: number, color: string) => void;
+  points: (x: number, y: number, color: string) => void;
   /** 一块整贴图像素的方块（x、y、宽、高都按贴图像素） */
   fillRect: (x: number, y: number, width: number, height: number, color: string) => void;
   /** 一块方块里铺噪点：每个贴图像素按位置哈希从 色们 里挑一个（权 = 各色的份量，默认等分）；种 区分不同的东西，同一个种各帧一样 */
@@ -45,11 +45,11 @@ export const newPixelArt = (width: number, height: number, scale = canvasScale):
       }
   };
   return {
-    宽: width,
-    高: height,
+    width: width,
+    height: height,
     c,
     ctx,
-    点: (x, y, color) => fillRect(x, y, 1, 1, color),
+    points: (x, y, color) => fillRect(x, y, 1, 1, color),
     fillRect,
     noise,
     erase: (x, y, w, h) => ctx.clearRect(x * scale, y * scale, w * scale, h * scale),

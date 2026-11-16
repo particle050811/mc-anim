@@ -24,10 +24,10 @@ export default defineSpellMeta({
   长秒: (bigFangHitTick + 1 + stakeLifeTicks + 20) / 20,
   hitSec: bigFangHitTick / 20,
   // TeethSpell：大牙出生 TOOTH_SPAWN，施法者 EVOKER_CAST_SPELL；ViciousTooth.onHit：ZOMBIE_BREAK_WOODEN_DOOR（音高 0.5）；四根尖桩各一声 IMPALE（音高 0.85～1.05）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.tooth_spawn.1', 秒: 0 },
-    { 资产: '音效/entity.evoker.cast_spell.1', 秒: 0 },
-    { 资产: '音效/entity.zombie.break_wooden_door', 秒: bigFangHitTick / 20, 音高: 0.5 },
-    ...[0, 1, 2, 3].map(() => ({ 资产: '音效/诡厄巫法/goety.impale', 秒: (bigFangHitTick + 1) / 20, 音高: 0.95 })),
+  sound: [
+    { asset: '音效/诡厄巫法/goety.tooth_spawn.1', sec: 0 },
+    { asset: '音效/entity.evoker.cast_spell.1', sec: 0 },
+    { asset: '音效/entity.zombie.break_wooden_door', sec: bigFangHitTick / 20, 音高: 0.5 },
+    ...[0, 1, 2, 3].map(() => ({ asset: '音效/诡厄巫法/goety.impale', sec: (bigFangHitTick + 1) / 20, 音高: 0.95 })),
   ],
 });

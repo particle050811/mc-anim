@@ -1,0 +1,20 @@
+# 格式：金样　位置：*/金样/*.json（测试金样）
+# 读写：engine/voxel/网格.test.ts、pipeline/世界/烘焙/区段编码.test.ts 等　分类：Git　现有 7 个文件（6 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+单键	singleKey
+噪声	noise
+地形	terrain
+块头sha256	chunkHeaderSha256
+材	material
+模型表	modelTable
+段	segment
+混合	blend
+点	points
+粗	coarse
+粗高度指纹	coarseHeightFingerprint
+索引	index
+说明	note
+长	length
+面数	faceCount
+骨	bone

@@ -14,7 +14,7 @@ import { useCurrentSec, useFrameRate, useOutputFrameRemainder } from './时间.t
 /** anim cues 生成的 声音地址.生成.ts 的默认导出：资产 id → 打包后的地址，和本段的声音表 */
 export type SoundUrl = { urls: Readonly<Record<string, string>>; 表: SoundTable };
 
-type SegContext = { 段: SegmentDef; 声音: SoundUrl };
+type SegContext = { segment: SegmentDef; sound: SoundUrl };
 const segContext = createContext<SegContext | null>(null);
 
 // 帧号在这里由秒现算，可以带小数：Remotion 的 Sequence 收小数 from，@remotion/media 的 Audio 按 (当前帧 − from) ÷ fps 秒取文件（不取整）。
@@ -37,7 +37,7 @@ const PlaySound: React.FC<{ 声: SoundItem; src: string }> = ({ 声: sound, src 
   // 外面的 Sequence 带 trimBefore、从负帧起时声音从 外露 那帧才露出来，Remotion 给 volume 的帧从露出来那帧数起
   const shiftFrames = Math.max(0, exposeFrame - from);
   return (
-    <Sequence from={from} durationInFrames={sound.durSec * r + d} layout="none" name={sound.名}>
+    <Sequence from={from} durationInFrames={sound.durSec * r + d} layout="none" name={sound.name}>
       <Audio
         src={sound.distinctKey ? tagSrc(src, sound.distinctKey) : src}
         trimBefore={d ? -d * sound.速率 : sound.入点秒 * r}
@@ -53,13 +53,13 @@ const PlaySound: React.FC<{ 声: SoundItem; src: string }> = ({ 声: sound, src 
 export const SegSound: React.FC = () => {
   const c = useContext(segContext);
   if (!c) throw new Error('<段声音> 要放在 定义画面(…) 包着的画面里');
-  const sounds = segPlayPlan(c.段, c.声音.表, { lineGain: lineVolume });
+  const sounds = segPlayPlan(c.segment, c.sound.表, { lineGain: lineVolume });
   return (
     <>
       {sounds.map((sound, i) => {
-        const src = c.声音.urls[sound.资产];
-        if (src === undefined) throw new Error(`声音地址表里没有「${sound.资产}」：段.ts 的声音改过，跑 anim cues 重新生成`);
-        return <PlaySound key={`${i}-${sound.资产}`} 声={sound} src={src} />;
+        const src = c.sound.urls[sound.asset];
+        if (src === undefined) throw new Error(`声音地址表里没有「${sound.asset}」：段.ts 的声音改过，跑 anim cues 重新生成`);
+        return <PlaySound key={`${i}-${sound.asset}`} 声={sound} src={src} />;
       })}
     </>
   );
@@ -69,11 +69,11 @@ export const SegSound: React.FC = () => {
  * 段的画面：export default definePicture(段, 声音地址, () => …)。
  * 段：本段 段.ts 的默认导出；声音地址：本段 声音地址.生成.ts 的默认导出（anim cues 生成）。声音：false 时不自动挂 <SegSound>。
  */
-export const definePicture = (seg: SegmentDef, soundUrl: SoundUrl, Picture: React.FC, options: { 声音?: boolean } = {}): React.FC => {
-  const value: SegContext = { 段: seg, 声音: soundUrl };
+export const definePicture = (seg: SegmentDef, soundUrl: SoundUrl, Picture: React.FC, options: { sound?: boolean } = {}): React.FC => {
+  const value: SegContext = { segment: seg, sound: soundUrl };
   const component: React.FC = () => (
     <segContext.Provider value={value}>
-      {options.声音 !== false && <SegSound />}
+      {options.sound !== false && <SegSound />}
       <Picture />
     </segContext.Provider>
   );
@@ -87,10 +87,10 @@ export const definePicture = (seg: SegmentDef, soundUrl: SoundUrl, Picture: Reac
 export const useSeg = <S extends SegmentDef = SegmentDef>(segment?: S) => {
   const c = useContext(segContext);
   if (!c) throw new Error('use段() 要在 定义画面(…) 包着的画面里用');
-  if (segment && segment !== c.段) throw new Error('use段(段) 传进来的段和 定义画面 挂的不是同一个');
-  const seg = c.段 as S;
+  if (segment && segment !== c.segment) throw new Error('use段(段) 传进来的段和 定义画面 挂的不是同一个');
+  const seg = c.segment as S;
   const sec = useCurrentSec();
   type EventTable = S extends { eventSec: infer E } ? E : Readonly<Record<string, number>>;
   const events = ((seg as { eventSec?: unknown }).eventSec ?? {}) as EventTable;
-  return { 段: seg, 秒: sec, sceneSec: (seg.sceneWindow?.startSec ?? 0) + sec, 事件: events };
+  return { segment: seg, sec: sec, sceneSec: (seg.sceneWindow?.startSec ?? 0) + sec, events: events };
 };

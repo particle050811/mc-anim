@@ -25,15 +25,15 @@ export const findDatapack = async (dataPackName: string, serverDir: string, log?
   for (const f of candidates) if (isDatapack(f)) return f;
   const q = readManifest();
   for (const [id, j] of q.jars) {
-    const file = (j as { 文件?: string }).文件 ?? path.basename(j.到);
+    const file = (j as { file?: string }).file ?? path.basename(j.dest);
     if (file === dataPackName && dataPackName.endsWith('.zip')) return fetchJar(id, { sourcingManifest: q, 说: log });
   }
   throw new Error(`找不到数据包「${dataPackName}」：找过 ${candidates.join('、')}，jars.toml 里也没有文件名叫它的`);
 };
 
 /** server.properties 原文里改这几项（没有这一行就追加）；level-type 的冒号要转义成 \: */
-export const rewriteProps = (raw: string, newProps: { 种子: string; worldType: string; 生成结构: boolean }) => {
-  const value: Record<string, string> = { 'level-seed': newProps.种子, 'level-type': newProps.worldType.replaceAll(':', '\\:'), 'generate-structures': String(newProps.生成结构) };
+export const rewriteProps = (raw: string, newProps: { seed: string; worldType: string; generateStructures: boolean }) => {
+  const value: Record<string, string> = { 'level-seed': newProps.seed, 'level-type': newProps.worldType.replaceAll(':', '\\:'), 'generate-structures': String(newProps.generateStructures) };
   let text = raw;
   for (const [k, v] of Object.entries(value)) {
     const line = new RegExp(`^${k}=.*$`, 'm');
@@ -45,16 +45,16 @@ export const rewriteProps = (raw: string, newProps: { 种子: string; worldType:
 /** 开服后核对 /datapack list enabled：要盖住别人的包启用了、排在它盖的包之上 */
 export const checkEnabledPacks = async (s: Server, saveDir: string, overrides: readonly string[]) => {
   s.发('datapack list enabled');
-  const line = await s.等('data pack(s) enabled', 30);
+  const line = await s.waits('data pack(s) enabled', 30);
   const issues = checkOrder(saveDir, overrides, parseEnabledPacks(line ?? ''));
   if (!line || issues.length) throw new Error(line ? issues.join('\n') : '/datapack list enabled 30 秒没回');
 };
 
 export type BuildWorldOptions = {
-  声明: WorldDecl;
+  decl: WorldDecl;
   serverDir: string;
   /** 新存档的世界目录（里面还没有 level.dat） */
-  存档: string;
+  save: string;
   heap?: string;
   genThreads?: number;
   /** 建好以后接着发的命令（sleep:、wait:、expect: 照 anim world server） */
@@ -62,11 +62,11 @@ export type BuildWorldOptions = {
   说: (s: string) => void;
 };
 
-export type BuildWorldResult = { 存档: string; 数据包: string[]; 核对: string[] };
+export type BuildWorldResult = { save: string; datapacks: string[]; verify: string[] };
 
 export const buildWorld = async (o: BuildWorldOptions): Promise<BuildWorldResult> => {
-  const { 声明: w, serverDir, 存档: saveDir } = o;
-  if (w.种子 === undefined) throw new Error(`${w.文件} 没写 种子，建不了世界`);
+  const { decl: w, serverDir, save: saveDir } = o;
+  if (w.seed === undefined) throw new Error(`${w.file} 没写 种子，建不了世界`);
   if (fs.existsSync(path.join(saveDir, 'level.dat'))) throw new Error(`世界已经有了（${saveDir}）；要重建先删掉它`);
   const existedBefore = fs.existsSync(saveDir);
   if (existedBefore && fs.readdirSync(saveDir).some((n) => n !== 'datapacks')) throw new Error(`${saveDir} 已经有东西但不是世界（没有 level.dat）：不往里建，先看一眼再删`);
@@ -74,42 +74,42 @@ export const buildWorld = async (o: BuildWorldOptions): Promise<BuildWorldResult
   if (!fs.existsSync(props)) throw new Error(`${serverDir} 不是服务端目录（没有 server.properties；anim world install-server 装）`);
 
   // 先把数据包找齐：缺一个就不动手，免得建出少了数据包的世界
-  const packs: { 名: string; 路径: string }[] = [];
+  const packs: { name: string; path: string }[] = [];
   const missing: string[] = [];
-  for (const dataPackName of w.数据包) {
+  for (const dataPackName of w.datapacks) {
     try {
-      packs.push({ 名: dataPackName, 路径: await findDatapack(dataPackName, serverDir, o.说) });
+      packs.push({ name: dataPackName, path: await findDatapack(dataPackName, serverDir, o.说) });
     } catch (e) {
       missing.push((e as Error).message);
     }
   }
   if (missing.length) throw new Error(missing.join('\n'));
-  const dupNames = packs.map((p) => path.basename(p.路径)).filter((n, i, a) => a.indexOf(n) !== i);
+  const dupNames = packs.map((p) => path.basename(p.path)).filter((n, i, a) => a.indexOf(n) !== i);
   if (dupNames.length) throw new Error(`数据包落到世界里的名字重了：${dupNames.join('、')}`);
 
   fs.mkdirSync(path.join(saveDir, 'datapacks'), { recursive: true });
   try {
     for (const p of packs) {
-      const destPath = path.join(saveDir, 'datapacks', path.basename(p.路径));
-      if (fs.statSync(p.路径).isDirectory()) fs.cpSync(p.路径, destPath, { recursive: true });
-      else fs.copyFileSync(p.路径, destPath);
-      o.说(`放进数据包：${path.basename(p.路径)}`);
+      const destPath = path.join(saveDir, 'datapacks', path.basename(p.path));
+      if (fs.statSync(p.path).isDirectory()) fs.cpSync(p.path, destPath, { recursive: true });
+      else fs.copyFileSync(p.path, destPath);
+      o.说(`放进数据包：${path.basename(p.path)}`);
     }
     const preCheck = checkBeforeStart(serverDir, saveDir);
     if (preCheck.issues.length) throw new Error(preCheck.issues.join('\n'));
 
     const originalProps = fs.readFileSync(props, 'utf8');
-    fs.writeFileSync(props, rewriteProps(originalProps, { 种子: w.种子, worldType: w.worldType, 生成结构: w.生成结构 }));
+    fs.writeFileSync(props, rewriteProps(originalProps, { seed: w.seed, worldType: w.worldType, generateStructures: w.generateStructures }));
     let s: Server;
     try {
-      s = await Server.起({ 目录: serverDir, 存档: saveDir, allowNewWorld: true, loaderVersion: w.Forge, heap: o.heap, genThreads: o.genThreads, 提示: o.说, onLine: () => {} });
+      s = await Server.start({ 目录: serverDir, save: saveDir, allowNewWorld: true, loaderVersion: w.Forge, heap: o.heap, genThreads: o.genThreads, 提示: o.说, onLine: () => {} });
     } finally {
       fs.writeFileSync(props, originalProps);
     }
     const verifyNotes: string[] = [];
     try {
       const logLines = s.recentLogs();
-      for (const { 包: pack, 行: line } of requiredStartupLogs(saveDir)) {
+      for (const { pack: pack, 行: line } of requiredStartupLogs(saveDir)) {
         const matchedLine = logLines.find((l) => l.includes(line));
         if (!matchedLine) throw new Error(`世界里有数据包 ${pack}，可启动日志里没有「${line}」（取材 mod 太旧、没认出它？），停服；世界已建但不对，删掉重建`);
         verifyNotes.push(matchedLine.slice(matchedLine.indexOf(line)).trim());
@@ -120,12 +120,12 @@ export const buildWorld = async (o: BuildWorldOptions): Promise<BuildWorldResult
       }
       await sendCommandsInOrder(s, o.commands ?? [], o.说);
       s.发('save-all flush');
-      await s.等('Saved the game', 120);
+      await s.waits('Saved the game', 120);
     } finally {
       await s.停();
     }
     if (!fs.existsSync(path.join(saveDir, 'level.dat'))) throw new Error(`服务端停了但 ${saveDir} 里没有 level.dat，世界没建成`);
-    return { 存档: saveDir, 数据包: packs.map((p) => path.basename(p.路径)), 核对: verifyNotes };
+    return { save: saveDir, datapacks: packs.map((p) => path.basename(p.path)), verify: verifyNotes };
   } catch (e) {
     // 没建成的就收拾掉：留着半截的目录，下次会被当成「已经有东西」
     if (!existedBefore && !fs.existsSync(path.join(saveDir, 'level.dat'))) fs.rmSync(saveDir, { recursive: true, force: true });

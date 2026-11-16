@@ -8,13 +8,13 @@ import { checkSeg, type LineRow } from './生成.ts';
 import { knownAudioMeasure } from './音频数.ts';
 
 /** continueOldSeg 手给的起秒：老段按清单顺序摆，后一段不能起在前一段的止秒之前（跳过一截可以，重叠是抄错了），顺序要和清单一样。放这里不放 engine 的 checkOldSeg：engine 进指纹 */
-export const checkLegacySegStartSec = (legacySegs: readonly { 键: string; startSec: number; 秒: number }[], manifestOrder: readonly string[]): string[] => {
+export const checkLegacySegStartSec = (legacySegs: readonly { key: string; startSec: number; sec: number }[], manifestOrder: readonly string[]): string[] => {
   const issues: string[] = [];
-  const listIndexes = legacySegs.map((x) => manifestOrder.indexOf(x.键)).filter((i) => i >= 0);
-  if (listIndexes.some((i, k) => k > 0 && i < listIndexes[k - 1]!)) issues.push(`老段的顺序和清单不一样：${legacySegs.map((x) => x.键).join('、')}`);
+  const listIndexes = legacySegs.map((x) => manifestOrder.indexOf(x.key)).filter((i) => i >= 0);
+  if (listIndexes.some((i, k) => k > 0 && i < listIndexes[k - 1]!)) issues.push(`老段的顺序和清单不一样：${legacySegs.map((x) => x.key).join('、')}`);
   legacySegs.forEach((x, k) => {
     const prevOldSeg = legacySegs[k - 1];
-    if (prevOldSeg && x.startSec < prevOldSeg.startSec + prevOldSeg.秒 - 1e-6) issues.push(`老段 ${x.键} 起在第 ${x.startSec} 秒，和 ${prevOldSeg.键}（止于第 ${prevOldSeg.startSec + prevOldSeg.秒} 秒）重叠`);
+    if (prevOldSeg && x.startSec < prevOldSeg.startSec + prevOldSeg.sec - 1e-6) issues.push(`老段 ${x.key} 起在第 ${x.startSec} 秒，和 ${prevOldSeg.key}（止于第 ${prevOldSeg.startSec + prevOldSeg.sec} 秒）重叠`);
   });
   return issues;
 };
@@ -27,10 +27,10 @@ export const checkLegacySegContinuity = async (c: CheckContext, report: CheckRep
   const timelineFiles = c.workFiles().filter((p) => p.startsWith(c.workPath('场/')) && /\/场\/[^/]+\/时间线\.ts$/.test(p) && usesContinueOldSeg(c.读(p)));
   for (const p of timelineFiles) {
     const r = await c.loadModule(p);
-    const segModule = r.模块?.default as Parameters<typeof checkOldSeg>[0] | undefined;
+    const segModule = r.modules?.default as Parameters<typeof checkOldSeg>[0] | undefined;
     if (!segModule || !Array.isArray(segModule.legacySegs)) continue; // 加载失败由 加载 规则报
-    for (const x of checkOldSeg(segModule, (k) => segments.find((s) => s.键 === k)?.definition)) report.错(`${p}：${x}`, p);
-    for (const x of checkLegacySegStartSec(segModule.legacySegs, segments.map((s) => s.键))) report.错(`${p}：${x}`, p);
+    for (const x of checkOldSeg(segModule, (k) => segments.find((s) => s.key === k)?.definition)) report.错(`${p}：${x}`, p);
+    for (const x of checkLegacySegStartSec(segModule.legacySegs, segments.map((s) => s.key))) report.错(`${p}：${x}`, p);
   }
   if (timelineFiles.length) report.infoLines.push(`continueOldSeg 的场时间线 ${timelineFiles.length} 条，抄的老段段长和 段.ts 核对了`);
 };
@@ -43,7 +43,7 @@ export const checkSegFramework = async (c: CheckContext, report: CheckReport, se
   const assetLock = { ...lockPair.共用, ...lockPair.作品 };
   let lineTable: LineRow[] = [];
   try {
-    lineTable = ((c.readToml(c.workPath('台词.toml'))?.['台词'] ?? []) as LineRow[]);
+    lineTable = ((c.readToml(c.workPath('台词.toml'))?.['lines'] ?? []) as LineRow[]);
   } catch {
     // 台词.toml 解析失败由 台词 规则报
   }
@@ -51,8 +51,8 @@ export const checkSegFramework = async (c: CheckContext, report: CheckReport, se
   for (const s of frameworkSegs) {
     const i = filmSegments.indexOf(s);
     const prevSeg = async () => (i > 0 ? filmSegments[i - 1]!.definition : undefined);
-    const issues = await checkSeg(s.definition!, c.absPath(s.目录), c.根, { assetLock, lineTable, getMeasure: (id) => knownAudioMeasure(assetLock[id], c.dataRoot), prevSeg });
-    for (const x of issues) report.错(`${s.键}：${x}`, s.段文件);
+    const issues = await checkSeg(s.definition!, c.absPath(s.目录), c.root, { assetLock, lineTable, getMeasure: (id) => knownAudioMeasure(assetLock[id], c.dataRoot), prevSeg });
+    for (const x of issues) report.错(`${s.key}：${x}`, s.segmentFile);
   }
   report.infoLines.push(`段框架的段 ${frameworkSegs.length} 个，生成的声音表、声音地址都核对过`);
 };

@@ -11,13 +11,13 @@ import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { netherBrighter, RealNether } from '../../地点/真下界.tsx';
 import { altarBottomCut } from '../../地点/地形改动.ts';
 
-export const aspect = { 宽: 1280, 高: 720 } as const;
+export const aspect = { width: 1280, height: 720 } as const;
 
 const PlaceRig: React.FC<{ cameraRig: Cam }> = ({ cameraRig }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
-  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, aspect.宽 / aspect.高, { near: 0.05, far: 1400 });
+  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, aspect.width / aspect.height, { near: 0.05, far: 1400 });
   return null;
 };
 
@@ -34,7 +34,7 @@ export const followShot = (lengthSec: number, cameraPath: (shotSec: number, k: n
 /** 仪式结构：这一段画了安息仪式的结构（黑曜石底换掉那一层地面），地形要挖掉对应的格 */
 export const TerraceCanvas: React.FC<{ cameraRig: Cam; children: React.ReactNode; ui?: React.ReactNode; ritualStructure?: boolean }> = ({ cameraRig, children, ui, ritualStructure = false }) => (
   <AbsoluteFill style={{ background: netherBrighter.fog.色 }}>
-    <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
+    <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
       <PlaceRig cameraRig={cameraRig} />
       <ScreenAo />
       <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -47,12 +47,12 @@ export const TerraceCanvas: React.FC<{ cameraRig: Cam; children: React.ReactNode
 );
 
 /** 一幕里的镜头表：按段内秒切，机位是镜头内进度 u（0～1）的函数 */
-export type Shot = { 名: string; 起: number; cameraRig: (u: number, sec: number) => Cam };
+export type Shot = { name: string; start: number; cameraRig: (u: number, sec: number) => Cam };
 export const pickShot = (shotTable: readonly Shot[], sec: number, segLengthSec: number): { shot: Shot; cameraRig: Cam; shotSec: number } => {
   let i = 0;
-  while (i + 1 < shotTable.length && sec >= shotTable[i + 1]!.起) i++;
+  while (i + 1 < shotTable.length && sec >= shotTable[i + 1]!.start) i++;
   const shot = shotTable[i]!;
-  const end = shotTable[i + 1]?.起 ?? segLengthSec;
-  const shotSec = sec - shot.起;
-  return { shot, cameraRig: shot.cameraRig(Math.min(1, Math.max(0, shotSec / (end - shot.起))), shotSec), shotSec };
+  const end = shotTable[i + 1]?.start ?? segLengthSec;
+  const shotSec = sec - shot.start;
+  return { shot, cameraRig: shot.cameraRig(Math.min(1, Math.max(0, shotSec / (end - shot.start))), shotSec), shotSec };
 };

@@ -18,6 +18,6 @@ export const sonicBoomParticles = (wardenFeet: V3, targetEye: V3, tick: number, 
   const len = Math.hypot(...delta) || 1;
   const dir: V3 = [delta[0] / len, delta[1] / len, delta[2] / len];
   const out: ParticleSpawn[] = [];
-  for (let i = 1; i <= Math.floor(len) + sonicBoomParams.extraBlocks; i++) out.push({ 种: 'sonic_boom', 刻: tick, p: [origin[0] + dir[0] * i, origin[1] + dir[1] * i, origin[2] + dir[2] * i], 种子: seed * 977 + i });
+  for (let i = 1; i <= Math.floor(len) + sonicBoomParams.extraBlocks; i++) out.push({ kind: 'sonic_boom', 刻: tick, p: [origin[0] + dir[0] * i, origin[1] + dir[1] * i, origin[2] + dir[2] * i], seed: seed * 977 + i });
   return out;
 };

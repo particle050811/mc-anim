@@ -3,24 +3,24 @@
 import { segFps } from '@engine/段/段定义.ts';
 
 export type View =
-  | { 名: string; lightSet: '暮色' | '主世界投影' | '主世界'; usage: '现有' | '环境' }
-  | { 名: string; lightSet: '时刻'; usage: '环境'; lookUp?: true };
+  | { name: string; lightSet: '暮色' | '主世界投影' | '主世界'; usage: '现有' | '环境' }
+  | { name: string; lightSet: '时刻'; usage: '环境'; lookUp?: true };
 
 export const views: readonly View[] = [
-  { 名: '暮色-现有', lightSet: '暮色', usage: '现有' },
-  { 名: '暮色-环境', lightSet: '暮色', usage: '环境' },
-  { 名: '主世界投影-现有', lightSet: '主世界投影', usage: '现有' },
-  { 名: '主世界投影-环境', lightSet: '主世界投影', usage: '环境' },
-  { 名: '主世界-现有', lightSet: '主世界', usage: '现有' },
-  { 名: '主世界-环境', lightSet: '主世界', usage: '环境' },
-  { 名: '早晨1000', lightSet: '时刻', usage: '环境' },
-  { 名: '正午6000', lightSet: '时刻', usage: '环境' },
-  { 名: '日落12600', lightSet: '时刻', usage: '环境' },
-  { 名: '满月半夜18000', lightSet: '时刻', usage: '环境' },
-  { 名: '正午雷雨', lightSet: '时刻', usage: '环境' },
-  { 名: '满月半夜18000-仰望', lightSet: '时刻', usage: '环境', lookUp: true },
-  { 名: '第4天半夜90000-仰望', lightSet: '时刻', usage: '环境', lookUp: true },
-  { 名: '月落22500', lightSet: '时刻', usage: '环境' },
+  { name: '暮色-现有', lightSet: '暮色', usage: '现有' },
+  { name: '暮色-环境', lightSet: '暮色', usage: '环境' },
+  { name: '主世界投影-现有', lightSet: '主世界投影', usage: '现有' },
+  { name: '主世界投影-环境', lightSet: '主世界投影', usage: '环境' },
+  { name: '主世界-现有', lightSet: '主世界', usage: '现有' },
+  { name: '主世界-环境', lightSet: '主世界', usage: '环境' },
+  { name: '早晨1000', lightSet: '时刻', usage: '环境' },
+  { name: '正午6000', lightSet: '时刻', usage: '环境' },
+  { name: '日落12600', lightSet: '时刻', usage: '环境' },
+  { name: '满月半夜18000', lightSet: '时刻', usage: '环境' },
+  { name: '正午雷雨', lightSet: '时刻', usage: '环境' },
+  { name: '满月半夜18000-仰望', lightSet: '时刻', usage: '环境', lookUp: true },
+  { name: '第4天半夜90000-仰望', lightSet: '时刻', usage: '环境', lookUp: true },
+  { name: '月落22500', lightSet: '时刻', usage: '环境' },
 ];
 
 /** 一个视图占一帧输出（第 i 帧是第 i 个视图，静帧号和旧项目 24 帧时一样好比）；以前一个视图 1/24 秒，60 帧输出时一个视图摊 2～3 帧（用户 11-16 定不留 1/24 秒的格） */

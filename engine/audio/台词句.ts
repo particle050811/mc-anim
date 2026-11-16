@@ -4,28 +4,28 @@
 
 export type LineSentence = {
   id: string;
-  角色: string;
+  character: string;
   /** 念的字（交给 TTS、对口型的；字幕的 文本 只在 台词.toml，改字幕不让段过期） */
-  念: string;
+  spoken: string;
   /** 配音成品的资产 id；声音由画面 import 'asset:<配音>' 取 */
-  配音: string;
+  voice: string;
   /** 配音成品 sha256 前 12 位：句模块是对着哪版成品做的 */
-  成品sha: string;
+  finishedSha: string;
   /** 成品里第几秒开口（cue 的帧对的是它）、开口到说完几秒、文件几秒（裁静音时算的，放的时候按它算帧数） */
-  开口: number;
+  mouthOpen: number;
   有声长: number;
-  时长: number;
+  duration: number;
   /** 成品 wav 头里的秒数（3 位）：口型按它在句尾补静音 */
   文件秒数: number;
   /** 字的起止 [单位, 起秒, 止秒]：对齐器出的或 台词.toml 的 口型手修；手修 = 来自手修 */
-  字: readonly (readonly [string, number, number])[];
+  char: readonly (readonly [string, number, number])[];
   手修?: true;
   /** 嘴型关键帧 [文件里的秒, Rhubarb 嘴型 A～F、X]，由 字 按规则算出（py/anim_py/配音/口型.py） */
   嘴: readonly (readonly [number, string])[];
 };
 
 /** 段里放一句：帧 = 开口落在段内第几格（1/24 秒一格，可带小数、可为负：上一段就开口了） */
-export type LineCue = { 句: LineSentence; 帧: number; 音量?: number };
+export type LineCue = { 句: LineSentence; frame: number; 音量?: number };
 
 /** 一句从开口到说完要几帧 */
 export const lineFrames = (sentence: LineSentence, fps = 24) => Math.ceil(sentence.有声长 * fps);

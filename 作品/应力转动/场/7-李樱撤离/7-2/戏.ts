@@ -26,15 +26,15 @@ export const padWoolTime = landSec - 0.22; // 落地前 0.22 秒往落脚处垫�
 // 场景里已经有的（6-4-1～6-4-5 一路垫到 V），X 落地前 1/12 秒从小长到整块（同 6-4-5）
 const placedWool: AncientCity4xWool[] = placedWoolThrough('V');
 const woolGrowSec = 1 / 12;
-export const wool = (s: number): { placed: AncientCity4xWool[]; 长: { w: AncientCity4xWool; k: number }[] } => {
+export const wool = (s: number): { placed: AncientCity4xWool[]; length: { w: AncientCity4xWool; k: number }[] } => {
   const k = (s - padWoolTime) / woolGrowSec;
-  if (k >= 1) return { placed: [...placedWool, 'X'], 长: [] };
-  return { placed: placedWool, 长: k >= 0 ? [{ w: 'X', k }] : [] };
+  if (k >= 1) return { placed: [...placedWool, 'X'], length: [] };
+  return { placed: placedWool, length: k >= 0 ? [{ w: 'X', k }] : [] };
 };
 
 // ---------- 箱子 ----------
 // 开 #240：开盖、已开贴图都由画布按 模型/物品/箱子.tsx 算
-export const chestOpeningAt = (s: number): ChestOpening => ({ chestId: geom.chest.id, 开: timeline.lidOpenSec, closeSec: timeline.lidCloseSec, 秒: s });
+export const chestOpeningAt = (s: number): ChestOpening => ({ chestId: geom.chest.id, 开: timeline.lidOpenSec, closeSec: timeline.lidCloseSec, sec: s });
 
 // ---------- 振动链（同 6-4-2/编排.ts 的写法） ----------
 // 两遍：开箱（container_open）、关箱（container_close），都从箱子中心发。感测体只在不激活（激活后 30 + 10 刻以外）时收；
@@ -74,7 +74,7 @@ export const soundChain = (() => {
   shriekerHears(closeActivate, [shriekI]);
   // 振动还在路上的感测体也不收新的（VibrationSystem.Listener：已有 currentVibration 就不收）
   if (timeline.useStartSec < timeline.lidCloseSec || closeActivate.some((t) => timeline.useStartSec >= t + sensorBusySec)) throw new Error('7-2-2至3 按住传送石时有感测体不在激活里，会再收一次 item_interact_start');
-  return { vibrations: vibrations, activateSecs: openActivate, reactivateSecs: closeActivate, shriek: { 块: shrieking, p: geom.blockBottomCenter(shrieking), t: received[0].t } };
+  return { vibrations: vibrations, activateSecs: openActivate, reactivateSecs: closeActivate, shriek: { tile: shrieking, p: geom.blockBottomCenter(shrieking), t: received[0].t } };
 })();
 export const vibrations = soundChain.vibrations;
 export const activateSecs = soundChain.activateSecs; // 开箱那一遍各感测体激活的场内秒（≈ 开盖 + 1、4、6 刻）
@@ -137,7 +137,7 @@ const LOOK_BACK_YAW = 100;
 const gazeKeys: { t: number; yaw: number; pitch: number }[] = [
   { t: -Infinity, yaw: 0, pitch: -40 }, // 开箱时低头看箱子
   { t: alertSec, ...glance(gazeAt(geom.blockCenter(geom.sensors[firstClickI]))) },
-  { t: timeline.lidCloseSec + 0.65, ...glance(gazeAt(geom.blockCenter(shriek.块))) },
+  { t: timeline.lidCloseSec + 0.65, ...glance(gazeAt(geom.blockCenter(shriek.tile))) },
   { t: timeline.lidCloseSec + 1.15, yaw: LOOK_BACK_YAW, pitch: 0 },
   { t: timeline.lidCloseSec + 1.55, yaw: 10, pitch: 0 },
 ];

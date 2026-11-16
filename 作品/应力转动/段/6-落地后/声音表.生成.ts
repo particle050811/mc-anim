@@ -3,54 +3,54 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/Wasted": {
-      "时长": 180.238753,
-      "峰值": 1.8,
-      "响度": -5.3,
+      "duration": 180.238753,
+      "peakDb": 1.8,
+      "loudness": -5.3,
       "sha": "f779ec3814ab"
     },
     "配音/6-九胡-什么也没有": {
-      "时长": 3.838,
-      "峰值": -1.8,
-      "响度": -18,
+      "duration": 3.838,
+      "peakDb": -1.8,
+      "loudness": -18,
       "sha": "605c7bbfcc56"
     },
     "配音/6-李樱-没有最终boss": {
-      "时长": 3.634,
-      "峰值": -4.4,
-      "响度": -18,
+      "duration": 3.634,
+      "peakDb": -4.4,
+      "loudness": -18,
       "sha": "fcfd70bc6df7"
     },
     "音效/block.stone.fall.2": {
-      "时长": 0.484376,
-      "峰值": -7,
-      "响度": -33.9,
+      "duration": 0.484376,
+      "peakDb": -7,
+      "loudness": -33.9,
       "sha": "2cfbf8787436"
     },
     "音效/block.stone.fall.5": {
-      "时长": 0.562517,
-      "峰值": -9.1,
-      "响度": -31.3,
+      "duration": 0.562517,
+      "peakDb": -9.1,
+      "loudness": -31.3,
       "sha": "67b1e50426b2"
     },
     "音效/entity.player.big_fall": {
-      "时长": 0.25,
-      "峰值": -0.2,
-      "响度": -70,
+      "duration": 0.25,
+      "peakDb": -0.2,
+      "loudness": -70,
       "sha": "abd98f860210"
     }
   },
-  "台词": {
+  "lines": {
     "6-九胡-什么也没有": {
-      "配音": "配音/6-九胡-什么也没有",
-      "开口": 0.03,
-      "时长": 3.838
+      "voice": "配音/6-九胡-什么也没有",
+      "mouthOpen": 0.03,
+      "duration": 3.838
     },
     "6-李樱-没有最终boss": {
-      "配音": "配音/6-李樱-没有最终boss",
-      "开口": 0.03,
-      "时长": 3.634
+      "voice": "配音/6-李樱-没有最终boss",
+      "mouthOpen": 0.03,
+      "duration": 3.634
     }
   }
 };

@@ -12,7 +12,7 @@ import type { Vec3 } from '../接口.ts';
 export type SpreadMode = '正弦' | '线性升' | '线性升降';
 export interface ArcSettings {
   /** 一段的粗细（格），越靠终点越细：粗 × (0.5 + (1 − 进度) × 0.5) */
-  readonly 粗: number;
+  readonly coarse: number;
   readonly spreadMode: SpreadMode;
   readonly 段数?: number;
   readonly arcCount?: number;
@@ -25,9 +25,9 @@ export interface ArcSettings {
   readonly forkContinue?: number;
 }
 export const arcPresets = {
-  shock: { 粗: 0.04, spreadMode: '正弦' },
-  thunderBolt: { 粗: 0.25, spreadMode: '线性升' },
-  lightningBolt: { 粗: 0.5, spreadMode: '线性升', parallelNoise: 1, spreadFactor: 0.001 },
+  shock: { coarse: 0.04, spreadMode: '正弦' },
+  thunderBolt: { coarse: 0.25, spreadMode: '线性升' },
+  lightningBolt: { coarse: 0.5, spreadMode: '线性升', parallelNoise: 1, spreadFactor: 0.001 },
 } as const satisfies Record<string, ArcSettings>;
 
 type GameVec3 = [number, number, number];
@@ -69,12 +69,12 @@ export const generateArc = (from: Vec3, endPoint: Vec3, settings: ArcSettings, s
   const arcSegments: ArcSeg[] = [];
   if (segCount < 1 || totalLength === 0) return arcSegments;
   type ArcCache = { end: GameVec3; endRight: GameVec3; endBack: GameVec3 };
-  type Directive = { 起: GameVec3; 进度: number; cache: ArcCache | null; isBranch: boolean };
+  type Directive = { start: GameVec3; progress: number; cache: ArcCache | null; isBranch: boolean };
   for (let arcIndex = 0; arcIndex < (settings.arcCount ?? 1); arcIndex++) {
-    const queue: Directive[] = [{ 起: startPos, 进度: 0, cache: null, isBranch: false }];
+    const queue: Directive[] = [{ start: startPos, progress: 0, cache: null, isBranch: false }];
     while (queue.length > 0) {
       const head = queue.shift()!;
-      const progress = head.进度 + (1 / segCount) * (1 - parallelNoise + rand.rng() * parallelNoise * 2);
+      const progress = head.progress + (1 / segCount) * (1 - parallelNoise + rand.rng() * parallelNoise * 2);
       const spread = spreadValue(settings.spreadMode, progress);
       let segEnd: GameVec3;
       if (progress >= 1 && spread <= 0) {
@@ -85,13 +85,13 @@ export const generateArc = (from: Vec3, endPoint: Vec3, settings: ArcSettings, s
         // SegmentSpreader.NO_MEMORY：每段的横偏各算各的，不累加
         segEnd = addVec(addVec(startPos, scaleVec(startToEndDiff, progress)), scaleVec(randomDir, maxOffset * rand.gaussian()));
       }
-      const thick = settings.粗 * (0.5 + (1 - progress) * 0.5);
+      const thick = settings.coarse * (0.5 + (1 - progress) * 0.5);
       // createQuads
-      const segDelta = sub(segEnd, head.起);
+      const segDelta = sub(segEnd, head.start);
       const right = scaleVec(normalize(cross(segDelta, [0.5, 0.5, 0.5])), thick);
       const normalOffset = scaleVec(normalize(cross(segDelta, right)), thick);
       const halfRight = scaleVec(right, 0.5);
-      const startPoint = head.cache ? head.cache.end : head.起;
+      const startPoint = head.cache ? head.cache.end : head.start;
       const startRight = head.cache ? head.cache.endRight : addVec(startPoint, right);
       const startBack = head.cache ? head.cache.endBack : addVec(addVec(startPoint, halfRight), normalOffset);
       const endRight = addVec(segEnd, right);
@@ -99,9 +99,9 @@ export const generateArc = (from: Vec3, endPoint: Vec3, settings: ArcSettings, s
       arcSegments.push([startPoint, segEnd, endRight, startRight, startRight, endRight, segEnd, startPoint, startRight, endRight, endBack, startBack, startBack, endBack, endRight, startRight].map(toScene));
       if (progress >= 1) break;
       const cache: ArcCache = { end: segEnd, endRight: endRight, endBack: endBack };
-      if (!head.isBranch) queue.push({ 起: segEnd, 进度: progress, cache, isBranch: false });
-      else if (rand.rng() < (settings.forkContinue ?? 0)) queue.push({ 起: segEnd, 进度: progress, cache, isBranch: true });
-      while (rand.rng() < (settings.forkStart ?? 0) * (1 - progress)) queue.push({ 起: segEnd, 进度: progress, cache, isBranch: true });
+      if (!head.isBranch) queue.push({ start: segEnd, progress: progress, cache, isBranch: false });
+      else if (rand.rng() < (settings.forkContinue ?? 0)) queue.push({ start: segEnd, progress: progress, cache, isBranch: true });
+      while (rand.rng() < (settings.forkStart ?? 0) * (1 - progress)) queue.push({ start: segEnd, progress: progress, cache, isBranch: true });
     }
   }
   return arcSegments;

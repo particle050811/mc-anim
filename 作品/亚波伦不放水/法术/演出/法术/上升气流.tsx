@@ -12,15 +12,15 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const f = 1.5 + 1 / 2;
 
-const Updraft: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const Updraft: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const r = mulberry32(seed * 7919 + 23);
   const originAt = (absTick: number): Vec3 => [target[0], target[1], target[2] + Math.max(0, absTick - 20) * 0.25];
   const spawns: WindBirth[] = [];
   for (let t = 0; t < 30; t++) {
     if (t > tick) break;
-    spawns.push({ 刻: t, originAt, 宽: f - 1 + r() * 0.5, 高: 0, 种子: seed * 1009 + t * 2 });
-    spawns.push({ 刻: t, originAt, 宽: f + r() * 0.5, 高: 0, 种子: seed * 1009 + t * 2 + 1 });
+    spawns.push({ 刻: t, originAt, width: f - 1 + r() * 0.5, height: 0, seed: seed * 1009 + t * 2 });
+    spawns.push({ 刻: t, originAt, width: f + r() * 0.5, height: 0, seed: seed * 1009 + t * 2 + 1 });
   }
   return <WindParticles spawns={spawns} 刻={tick} 色={[1, 1, 1]} />;
 };

@@ -14,7 +14,7 @@ import { rad, clamp01 } from '@engine/core/数学.ts';
 
 export type PolaroidStyle = {
   /** 照片里的画面最后缩到原来的几倍（白边另加在外面） */
-  缩放: number;
+  scale: number;
   /** 最后斜几度，负数是逆时针 */
   tiltDeg: number;
   /** 闪白从定格帧起持续几秒（定格那一下全白，平方衰减） */
@@ -64,11 +64,11 @@ const PaperGrain: React.FC<{ 色: string }> = ({ 色: color }) => {
 
 export const Polaroid: React.FC<{
   freezeFrame: number;
-  字?: string;
+  char?: string;
   样式: PolaroidStyle;
   overlay?: React.ReactNode;
   children: (fs: number) => React.ReactNode;
-}> = ({ freezeFrame, 字: text, 样式: polaroidStyle, overlay, children }) => {
+}> = ({ freezeFrame, char: text, 样式: polaroidStyle, overlay, children }) => {
   const f = useSnappedFrame();
   const { width: W, height: H } = useVideoConfig();
   const fs = Math.min(f, freezeFrame);
@@ -77,7 +77,7 @@ export const Polaroid: React.FC<{
 
   // 进度 p：定格帧是 0，比 缩小秒 早一帧走完
   const p = sample([[0, 0], [Math.max(oneFrameSec, polaroidStyle.shrinkSec - oneFrameSec), 1]], t);
-  const k = 1 + (polaroidStyle.缩放 - 1) * p;
+  const k = 1 + (polaroidStyle.scale - 1) * p;
   const θ = polaroidStyle.tiltDeg * p;
   const borderWidth = polaroidStyle.borderWidth * W;
   const bottomEdge = polaroidStyle.bottomEdge * W;
@@ -125,7 +125,7 @@ export const Polaroid: React.FC<{
               alignItems: 'center',
               justifyContent: 'center',
               fontFamily: uiFontFamily,
-              fontSize: polaroidStyle.字号 / polaroidStyle.缩放,
+              fontSize: polaroidStyle.字号 / polaroidStyle.scale,
               letterSpacing: '0.12em',
               color: polaroidStyle.textColor,
               whiteSpace: 'nowrap',

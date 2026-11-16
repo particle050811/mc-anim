@@ -6,15 +6,15 @@ import type { SongSound } from '../../声音/跨段音效.ts';
 
 /** 文件本身的两个数照 场/1-隐世之境一楼/参数.ts 的 咔哒声（ffmpeg 解码实测）：开头约 0.11 秒近乎静音，主音的峰在 0.13 秒；文件长 0.88 秒。
  *  场之间不互相 import，抄过来 */
-export const clickSoundFile = { 资产: '音效/车万女仆/item.camera_use', onsetSec: 0.13, 时长秒: 0.88 } as const;
+export const clickSoundFile = { asset: '音效/车万女仆/item.camera_use', onsetSec: 0.13, durationSec: 0.88 } as const;
 /** 增益同 1-一如既往（0.7：叠着原声 × 0.5，母版样本峰值 −1.33 dBFS，同一个小节下拍、同一条原声） */
 export const clickGain = 0.7;
 
 /** cue 照 起音秒 提前，主音落在 合照咔哒 那一帧（闪白那一拍） */
 export const groupPhotoClickSound: SongSound = {
-  资产: clickSoundFile.资产,
-  名: '咔哒',
-  起帧: mainCutEvents.groupPhotoClick.帧 - Math.round(clickSoundFile.onsetSec * fps),
-  时长秒: clickSoundFile.时长秒,
+  asset: clickSoundFile.asset,
+  name: '咔哒',
+  起帧: mainCutEvents.groupPhotoClick.frame - Math.round(clickSoundFile.onsetSec * fps),
+  durationSec: clickSoundFile.durationSec,
   增益: () => clickGain,
 };

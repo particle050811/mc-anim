@@ -1,6 +1,6 @@
 {
+  "lib": "store",
   "sha256": "c323eb8c8bf533fcc9ba0f59aba9e5772ea15dd7a946047565f43ef01461d3aa",
-  "后缀": ".json",
-  "大小": 8620,
-  "库": "store"
+  "size": 8620,
+  "suffix": ".json"
 }

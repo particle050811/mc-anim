@@ -130,4 +130,4 @@ export const putDownBlock = (f: number, allDoneFrame: number, seed: number): { d
 export const timeLag = { 色: '#4f9be6', shadowOffset: [5, -4] as Vec2 } as const;
 
 /** 这个字在不在关键词里 */
-export const inWord = (wordEffect: WordEffect | undefined, j: number) => !!wordEffect && j >= wordEffect.从 && j <= wordEffect.到;
+export const inWord = (wordEffect: WordEffect | undefined, j: number) => !!wordEffect && j >= wordEffect.从 && j <= wordEffect.dest;

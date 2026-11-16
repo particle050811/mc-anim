@@ -80,12 +80,12 @@ export const LiYingWithBlade: React.FC<{ pose: FigurePose; bladeOn?: boolean; bl
 //   网格里那只用 hide 藏掉，原位放 模型/物品/箱子.tsx 的共用箱子（开盖、已开贴图都在那里）。
 // 朝向（facing = 锁扣那面朝哪）从片场存档 片场-古城4x 的 region 文件离线读方块属性：工具/游戏取材/古城4x/读箱子朝向.py → 模型/场景/古城4x箱子.json
 //   （全是单箱；号 = 工具/游戏取材/古城4x/out/量测.json 的编号，即 00-说明.md、古城4x布局.ts 里的 #210 等）。
-export type AncientCity4xChest = { chestId: number; block: V3; facing: ChestFacing; 块: string };
+export type AncientCity4xChest = { chestId: number; block: V3; facing: ChestFacing; tile: string };
 export const chests4x: AncientCity4xChest[] = (chestTable4x as unknown as { 号: number; block: number[]; facing: string }[]).map((c) => ({
   chestId: c.号,
   block: c.block as V3,
   facing: c.facing as ChestFacing,
-  块: partAt(c.block[0], c.block[2]) ?? '',
+  tile: partAt(c.block[0], c.block[2]) ?? '',
 }));
 const CHEST_HIDE_4X = chests4x.map((c) => chestHideBox(c.block));
 // 这一段里开关的那只箱子：箱子号 + 几秒开、几秒关、这一帧几秒（按这一段自己的钟）
@@ -113,14 +113,14 @@ export const AncientCity4xCanvas: React.FC<{
   cam: Cam;
   width: number;
   height: number;
-  段: AncientCitySegment;
+  segment: AncientCitySegment;
   wool?: AncientCity4xWool[];
   growingWool?: { w: AncientCity4xWool; k: number }[];
   chestOpening?: ChestOpening;
   hide?: number[][];
   hideBlocks?: number[][];
   children?: React.ReactNode;
-}> = ({ cam, width, height, 段: segment, wool: wool = [], growingWool = [], chestOpening: chestOpening, hide, hideBlocks, children }) => {
+}> = ({ cam, width, height, segment: segment, wool: wool = [], growingWool = [], chestOpening: chestOpening, hide, hideBlocks, children }) => {
   // 每帧按视锥重挑；块名没变就用同一个数组（Gucheng4x 不重挂网格）
   const inView = tilesInView(viewCamera(cam, width / height)).join();
   const drawParts = useMemo(() => inView.split(','), [inView]);
@@ -143,7 +143,7 @@ export const AncientCity4xCanvas: React.FC<{
         <Gucheng4x parts={drawParts} hide={hideBoxes} hideBlocks={hideBlockBoxes} />
         {slamShown && <SlamGround />}
         {chests4x
-          .filter((c) => drawnSet.has(c.块))
+          .filter((c) => drawnSet.has(c.tile))
           .map((c) => {
             const mine = own?.chestId === c.chestId ? own : undefined;
             return (

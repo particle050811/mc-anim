@@ -17,12 +17,12 @@ import { prevSegmentOf, computeLineLandings, readLineTable } from './台词落�
 export const placeFilmSubtitles = (allSegments: readonly SegInfo[], fps: number) => {
   const mainCut = allSegments.filter((s) => s.章 !== '核对');
   const startFrame = filmStartFrameTable(allSegments, fps);
-  if (!mainCut.some((s) => s.段.声音?.some((x) => x.台词 !== undefined))) return { 屏们: [] as SubtitleScreen[], 起帧: startFrame };
+  if (!mainCut.some((s) => s.segment.sound?.some((x) => x.lines !== undefined))) return { 屏们: [] as SubtitleScreen[], 起帧: startFrame };
   const assetLock = readWorkAssetLock(workRoot());
-  const placements = mainCut.map((s) => ({ 段: s, 全片起帧: startFrame.get(s.键)! }));
-  const landings = computeLineLandings(placements, readLineTable(), (id) => resolveAsset(id, assetLock).文件, fps, prevSegmentOf([...allSegments]));
-  const totalFrames = placements.reduce((a, c) => a + segFrameCount(c.段.段, fps), 0);
-  const cutPoints = placements.slice(1).map((c) => c.全片起帧);
+  const placements = mainCut.map((s) => ({ segment: s, filmStartFrame: startFrame.get(s.key)! }));
+  const landings = computeLineLandings(placements, readLineTable(), (id) => resolveAsset(id, assetLock).file, fps, prevSegmentOf([...allSegments]));
+  const totalFrames = placements.reduce((a, c) => a + segFrameCount(c.segment.segment, fps), 0);
+  const cutPoints = placements.slice(1).map((c) => c.filmStartFrame);
   const audioCache = new Map<string, Float32Array>();
   const readMonoCached = (f: string) => audioCache.get(f) ?? audioCache.set(f, readMono(f)).get(f)!;
   return { 屏们: placeSubtitles(landings, totalFrames, fps, readMonoCached, cutPoints).屏们, 起帧: startFrame };
@@ -31,20 +31,20 @@ export const placeFilmSubtitles = (allSegments: readonly SegInfo[], fps: number)
 /** 一段的字幕卡：本段输出帧 [起, 止)；全片要是按 输出fps 排的；画面宽高是成片像素 */
 export const segmentSubtitleCard = (s: SegInfo, filmSubtitles: ReturnType<typeof placeFilmSubtitles>, outputFps: number, pictureWidth: number, pictureHeight: number): SegSubtitle[] => {
   if (s.章 === '核对') return [];
-  const span = { 起: filmSubtitles.起帧.get(s.键)!, 帧数: segFrameCount(s.段, outputFps) };
+  const span = { start: filmSubtitles.起帧.get(s.key)!, frameCount: segFrameCount(s.segment, outputFps) };
   const imageCache = new Map<string, string>();
   const out: SegSubtitle[] = [];
   for (const p of filmSubtitles.屏们) {
-    const startFrame = Math.max(0, p.起帧 - span.起);
-    const endFrame = Math.min(span.帧数, p.止帧 - span.起);
+    const startFrame = Math.max(0, p.起帧 - span.start);
+    const endFrame = Math.min(span.frameCount, p.止帧 - span.start);
     if (endFrame <= startFrame) continue;
-    const key = `${p.位置}\u0000${p.字}`;
+    const key = `${p.位置}\u0000${p.char}`;
     let imagePath = imageCache.get(key);
     if (!imagePath) {
-      imagePath = `data:image/png;base64,${drawFullFrameCard(p.字, p.位置, pictureWidth, pictureHeight).toString('base64')}`;
+      imagePath = `data:image/png;base64,${drawFullFrameCard(p.char, p.位置, pictureWidth, pictureHeight).toString('base64')}`;
       imageCache.set(key, imagePath);
     }
-    out.push({ 图: imagePath, 起: startFrame, 止: endFrame });
+    out.push({ image: imagePath, start: startFrame, end: endFrame });
   }
   return out;
 };

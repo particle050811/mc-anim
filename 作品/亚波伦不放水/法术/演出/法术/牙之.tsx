@@ -45,7 +45,7 @@ const GreatFang: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick }
       <group rotation={[0, degToRad(90), 0]}>
         <group scale={[-f, -f, f]}>
           <group position={[0, -2.1, 0]}>
-            <ModelPart 模型={viciousToothModel} 图={png(viciousToothPng)} partPoses={partPoses} />
+            <ModelPart model={viciousToothModel} image={png(viciousToothPng)} partPoses={partPoses} />
           </group>
         </group>
       </group>
@@ -69,7 +69,7 @@ const Stake: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick }) =>
         <group scale={[-f1, -f1, f1]}>
           <group position={[0, -0.73, 0]}>
             <group scale={[0.5, 0.5, 0.5]}>
-              <ModelPart 模型={viciousPikeModel} 图={png(viciousPikePng)} partPoses={partPoses} />
+              <ModelPart model={viciousPikeModel} image={png(viciousPikePng)} partPoses={partPoses} />
             </group>
           </group>
         </group>
@@ -101,7 +101,7 @@ const dustFall = (fangPos: Vec3, groundZ: number, tick: number, seed: number): M
   return byFrame;
 };
 
-const FangAttack: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const FangAttack: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const fangPos: Vec3 = [target[0], target[1], target[2] + greatFangHeight(Math.min(tick, bigFangHitTick))];
   const dust = dustFall([target[0], target[1], target[2] + greatFangHeight(0)], target[2], tick, seed);
@@ -113,9 +113,9 @@ const FangAttack: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target,
     <>
       {tick < bigFangHitTick && <GreatFang 位={fangPos} 刻={tick} />}
       {dustFrames.map((image, i) => (
-        <QuadGroup key={i} 图={image} 项={dust.get(i) ?? []} 混合="镂空" />
+        <QuadGroup key={i} image={image} items={dust.get(i) ?? []} blend="镂空" />
       ))}
-      <BlockDebris spawns={scatterDebris(slamPos, 256, [0.5, 0.5, 0.75], 1, bigFangHitTick, seed * 17)} 秒={sec} 图={tuffImg} ground={target[2]} />
+      <BlockDebris spawns={scatterDebris(slamPos, 256, [0.5, 0.5, 0.75], 1, bigFangHitTick, seed * 17)} sec={sec} image={tuffImg} ground={target[2]} />
       {stakePositions.map((pos, i) => (
         <Stake key={i} 位={pos} 刻={tick - bigFangHitTick - 1} />
       ))}

@@ -56,7 +56,7 @@ describe.skipIf(!animBytes || !modelBytes)('魔法酒狐：播放器 × 手抄�
   const animations = parseAnimationFile(JSON.parse(animBytes!.toString('utf8')), 'TLM');
   const modelSkeleton = new Set((JSON.parse(modelBytes!.toString('utf8')) as { bones: { name: string }[] }).bones.map((b) => b.name));
   const frameAt = (animName: string, sec: number, external: Record<string, number> = {}, variables: Record<string, number | string> = {}) =>
-    sampleAnim(animations[animName]!, sec, { 环境: { external, 变量: variables }, 口径: 'TLM' }).skeleton;
+    sampleAnim(animations[animName]!, sec, { env: { external, 变量: variables }, 口径: 'TLM' }).skeleton;
   const { magicalWineFoxSitBones, magicalWineFoxHidden, magicalWineFoxStaffBones, magicalWineFoxHatOffBones } = await import('@库/角色/魔法酒狐.tsx');
 
   /** 常量姿势表：手抄的每根骨骼逐通道相等；播放器多出来的只能是模型里没有的骨骼，或原位值（转 0、移 0、缩放 1） */
@@ -167,7 +167,7 @@ describe.skipIf(!animBytes || !modelBytes)('魔法酒狐：播放器 × 手抄�
 
   // 尾巴：pre_parallel2 的目标是 molang2 里的正弦（变量 v.s、v.f 由 molang3 给），parallel3 的时间线给弹簧常数，parallel4 每步推 0.01 秒。
   // 手抄版用弹簧稳态解；这里从文件里求出常数和目标（尾巴稳态.ts），按稳态代回 pre_parallel2 的 Tail 表达式，再和手抄版比
-  const tailSteadyState = (sec: number) => sampleSkeleton(animations.pre_parallel2!, sec, { 环境: { 变量: tailSteadyVars(animations, sec) }, 口径: 'TLM' });
+  const tailSteadyState = (sec: number) => sampleSkeleton(animations.pre_parallel2!, sec, { env: { 变量: tailSteadyVars(animations, sec) }, 口径: 'TLM' });
 
   it('尾巴（pre_parallel2 + parallel3 + parallel4）：弹簧稳态和手抄版一致', () => {
     const diffs: DiffMessage[] = [];
@@ -180,7 +180,7 @@ describe.skipIf(!animBytes || !modelBytes)('魔法酒狐：播放器 × 手抄�
 
   it('尾巴：真按时间线一步步推弹簧（每步 0.01 秒），20 秒后贴近稳态（时间线、变量跨帧保留能跑通）', () => {
     const variables: Record<string, number | string> = {};
-    const options = { 环境: { 变量: variables }, 口径: 'TLM' } as const;
+    const options = { env: { 变量: variables }, 口径: 'TLM' } as const;
     playTo(animations.parallel3!, 0.5, 0.01, options);
     let playState: PlayState = initialPlayState;
     let skeleton: SkeletonTable = {};

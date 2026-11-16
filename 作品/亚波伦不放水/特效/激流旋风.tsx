@@ -14,7 +14,7 @@ const model: EntityModelData = {
 };
 
 /** 刻：开始转后第几刻（同人的 tickCount 相位）；放在人的脚底坐标系里（已经横躺、没打转），玩家缩放由外面给 */
-export const RiptideWhirl: React.FC<{ 刻: number; 缩放?: number }> = ({ 刻: tick, 缩放: scale = 0.9375 }) => {
+export const RiptideWhirl: React.FC<{ 刻: number; scale?: number }> = ({ 刻: tick, scale: scale = 0.9375 }) => {
   const tex = png(whirlwindPng);
   return (
     <>
