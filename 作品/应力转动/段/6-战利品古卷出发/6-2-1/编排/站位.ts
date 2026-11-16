@@ -15,7 +15,7 @@ export const COMPASS_SIZE = 0.38; // 同 6-2-4
 // 表壳加厚到 4/16 格以后，6-2-1 放下毛皮那一下毛皮的角擦进表圈顶 1.3 厘米，所以 x 往东挪了 2 厘米（放下时离毛皮最近 0.2 厘米）
 export const COMPASS_ON_TABLE: number[] = [2.74, -2.74, 1 + COMPASS_SIZE / 32 + 0.003];
 export const J0: number[] = [-1.2, -5.9, 0]; // 九胡在南窗边看海（窗玻璃内面 y = -7）
-export const F624 = 0; // 6-2-4 的第 0 帧
+export const F624 = 0; // 6-2-4 的第 0 帧（6-2-4 编排还按 1/24 秒一格取）
 export const LY_END = K624.liyingOnFoot(F624)!;
 export const JH_END = K624.jiuhuOnFoot(F624)!;
 export const CP_END = K624.compass(F624)!;

@@ -35,18 +35,18 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad, mulberry32 } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
-// 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口帧是段内帧（cue 在 段/6-进入森林/段.ts）
-const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 }];
-// 台词口型：段内帧，编排帧 = 段内帧 + 1
-const liYingMouth = (choreoFrame: number) => mouthAt(lineCues, '李樱', choreoFrame - 1);
+// 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口是段内秒（cue 在 段/6-进入森林/段.ts）。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
+const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 / 24 }];
+// 台词口型：段内秒，编排时间 = 段内秒 + 1/24
+const liYingMouth = (choreoT: number) => mouthAt(lineCues, '李樱', choreoT - 1 / 24, 1);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
-const Rig: React.FC<{ f: number }> = ({ f: frame }) => {
+const Rig: React.FC<{ t: number }> = ({ t }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
-  const c0 = choreo.camera(frame);
-  const tf = choreo.world(frame) === 'tf';
+  const c0 = choreo.camera(t);
+  const tf = choreo.world(t) === 'tf';
   const worldCam = tf ? { ...c0, pos: courtyardToWorld(c0.pos), tgt: courtyardToWorld(c0.tgt) } : { ...c0, pos: islandToWorld(c0.pos), tgt: islandToWorld(c0.tgt) };
   const cam = camera as THREE.PerspectiveCamera;
   // 焦距按 36mm 横向画幅换算，three.js 用竖向视角
@@ -114,57 +114,57 @@ const Splash: React.FC<{ sec: number; at: V3 }> = ({ sec, at }) => {
   );
 };
 
-const Island: React.FC<{ f: number }> = ({ f: frame }) => (
+const Island: React.FC<{ t: number }> = ({ t }) => (
   <>
     <OverworldSky />
     <SunLight sun={SUN_OW} center={islandToWorld(choreo.islandShadowCenter)} extent={30} />
     {/* 环境光照主世界的配比压过（原来 0.9，×0.34 同 lib/光照配比.ts 的 overworldMix），闪电那一下照旧 */}
-    <ambientLight intensity={0.3 + 0.7 * choreo.flash(frame)} />
-    <BaseIslandTerrain camPos={islandToWorld(choreo.camera(frame).pos)} />
+    <ambientLight intensity={0.3 + 0.7 * choreo.flash(t)} />
+    <BaseIslandTerrain camPos={islandToWorld(choreo.camera(t).pos)} />
     <group position={islandOffset}>
-      <IslandScene f={frame} />
+      <IslandScene t={t} />
     </group>
   </>
 );
 
-const IslandScene: React.FC<{ f: number }> = ({ f: frame }) => {
-  const ly = choreo.liying(frame);
-  const jh = choreo.jiuhu(frame);
-  const diamond = choreo.diamond(frame);
-  const fl = choreo.flash(frame);
+const IslandScene: React.FC<{ t: number }> = ({ t }) => {
+  const ly = choreo.liying(t);
+  const jh = choreo.jiuhu(t);
+  const diamond = choreo.diamond(t);
+  const fl = choreo.flash(t);
   return (
     <>
       <SkyDome sun={SUN_OW} />
-      <PortalIsland active={choreo.portalActive(frame)} poolOnly />
-      {ly.visible && <LiYingSheathed pose={ly.pose} mouth={liYingMouth(frame)} />}
+      <PortalIsland active={choreo.portalActive(t)} poolOnly />
+      {ly.visible && <LiYingSheathed pose={ly.pose} mouth={liYingMouth(t)} />}
       {jh.visible && <Jiuhu pose={jh.pose} tail={jh.tail} />}
       {/* 钻石正面朝 -Y（镜头在南边），稍微仰一点让上沿的斜面受光；飞的时候绕竖轴打转 */}
       {diamond && diamond.scale > 0 && <Diamond position={diamond.loc} size={0.32 * diamond.scale} rotation={[rad(8), 0, rad(-12 + diamond.spin)]} />}
-      <Splash sec={choreo.splashSec(frame)} at={[PORTAL_ISLAND.pool[0] + 0.1, PORTAL_ISLAND.pool[1] + 0.1, PORTAL_ISLAND.pool[2]]} />
-      <WaterGlow alpha={choreo.waterGlow(frame)} />
+      <Splash sec={choreo.splashSec(t)} at={[PORTAL_ISLAND.pool[0] + 0.1, PORTAL_ISLAND.pool[1] + 0.1, PORTAL_ISLAND.pool[2]]} />
+      <WaterGlow alpha={choreo.waterGlow(t)} />
       <LightningBolt position={choreo.BOLT_AT} seed={choreo.BOLT_SEED} flash={fl} />
-      <PortalParticles emitters={choreo.islandEmitters()} sec={choreo.particleSec(frame)} size={2.2} />
+      <PortalParticles emitters={choreo.islandEmitters()} sec={t} size={2.2} />
     </>
   );
 };
 
 const nagaLandmarks: ['娜迦庭院'] = ['娜迦庭院'];
-const TwilightForest: React.FC<{ f: number; t: number }> = ({ f: frame, t }) => {
+const TwilightForest: React.FC<{ t: number; sec: number }> = ({ t, sec }) => {
   useTwilightFog(courtyardLightDir);
-  const ly = choreo.liying(frame);
-  const jh = choreo.jiuhu(frame);
+  const ly = choreo.liying(t);
+  const jh = choreo.jiuhu(t);
   return (
     <>
       {/* 主光同 6-1-2 的庭院（70°/28°、0.75 倍，2026-10-13 起），不放进平移的组（平行光的目标在世界原点） */}
       <TwilightSunLight shadowFar={shadowFarFor(VIEW_FOG.far)} lightDir={courtyardLightDir} gain={courtyardLightGain} />
-      <TwilightTerrain camPos={courtyardToWorld(choreo.camera(frame).pos)} landmarks={nagaLandmarks} t={t} shadowLightDir={courtyardLightDir} />
+      <TwilightTerrain camPos={courtyardToWorld(choreo.camera(t).pos)} landmarks={nagaLandmarks} t={sec} shadowLightDir={courtyardLightDir} />
       <TwilightClouds sun={courtyardLightDir} />
       <LandmarkPlacement 名="娜迦庭院">
         {/* 暮色森林没有太阳：深蓝天、星星、地平线一圈薄荷绿，主光、天光、云都和 6-1-2 一样 */}
         <SkyDome twilight sun={courtyardLightDir} />
-        {ly.visible && <LiYingSheathed pose={ly.pose} mouth={liYingMouth(frame)} />}
+        {ly.visible && <LiYingSheathed pose={ly.pose} mouth={liYingMouth(t)} />}
         {jh.visible && <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} />}
-        <PortalParticles emitters={choreo.tfEmitters()} sec={choreo.particleSec(frame)} size={2.2} />
+        <PortalParticles emitters={choreo.tfEmitters()} sec={t} size={2.2} />
       </LandmarkPlacement>
     </>
   );
@@ -172,10 +172,9 @@ const TwilightForest: React.FC<{ f: number; t: number }> = ({ f: frame, t }) => 
 
 export const EnterForest: React.FC = () => {
   const sec = useCurrentSec();
-  const frame = sec * choreo.FPS;
   const { width, height } = useVideoConfig();
-  const choreoFrame = frame + 1;
-  const island = choreo.world(choreoFrame) === 'island';
+  const choreoT = sec + 1 / 24;
+  const island = choreo.world(choreoT) === 'island';
   // 不超采样（用户 10-07 比过 2K 下超采样和不超采样，选不超采样，见 lib/渲染级别.ts）。
   // 声音照 段.ts 的 cue 放（definePicture 自动挂，决策 0015），不在这里挂。
   if (island)
@@ -186,10 +185,10 @@ export const EnterForest: React.FC = () => {
           <color attach="background" args={[SKY.horizon]} />
           <FlightFog visibility={overworldWindowView.visibility} />
           <OverworldWaterSky />
-          <Rig f={choreoFrame} />
+          <Rig t={choreoT} />
           <ScreenAo />
           <group rotation={[-Math.PI / 2, 0, 0]}>
-            <Island f={choreoFrame} />
+            <Island t={choreoT} />
           </group>
         </ThreeCanvas>
       </>
@@ -200,11 +199,11 @@ export const EnterForest: React.FC = () => {
         <color attach="background" args={[twilightFogColor]} />
         {/* 雾只给暮色森林（和 6-1-2 一样挂在场景上，满视距、只在视距边上淡出，lib/视距.ts） */}
         <fog attach="fog" args={[twilightFogColor, VIEW_FOG.near, VIEW_FOG.far]} />
-        <Rig f={choreoFrame} />
+        <Rig t={choreoT} />
         <PostFx drawsScene={false} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <TwilightForest f={choreoFrame} t={sec} />
+          <TwilightForest t={choreoT} sec={sec} />
         </group>
       </ThreeCanvas>
     </>

@@ -7,16 +7,16 @@ import { Loot } from './6-2-1/战利品.tsx';
 import { WhatElse } from './6-2-2/还差什么.tsx';
 import { AncientScroll } from './6-2-3/古卷.tsx';
 import { SetOff } from './6-2-4/出发.tsx';
-import { FPS, segmentFrames as frames621 } from './6-2-1/编排/时间线.ts';
+import { SEGMENT_STEPS_PER_SEC, segmentSteps as steps621 } from './6-2-1/编排/时间线.ts';
 import { FRAMES as frames624 } from './6-2-4/编排.ts';
 import segment from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
 const cuts = [
-  { 段: '6-2-1', picture: Loot, 从: 0, 到: frames621('6-2-1') },
-  { 段: '6-2-2', picture: WhatElse, 从: 1, 到: frames621('6-2-2') },
-  { 段: '6-2-3', picture: AncientScroll, 从: 1, 到: frames621('6-2-3') - 1 },
+  { 段: '6-2-1', picture: Loot, 从: 0, 到: steps621('6-2-1') },
+  { 段: '6-2-2', picture: WhatElse, 从: 1, 到: steps621('6-2-2') },
+  { 段: '6-2-3', picture: AncientScroll, 从: 1, 到: steps621('6-2-3') - 1 },
   { 段: '6-2-4', picture: SetOff, 从: 0, 到: frames624 },
 ];
 
-export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} 每秒={FPS} />);
+export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} 每秒={SEGMENT_STEPS_PER_SEC} />);

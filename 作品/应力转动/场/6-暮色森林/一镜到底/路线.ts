@@ -13,39 +13,39 @@
 // 穿刺线（各段 编排.ts 的 `穿刺线`）本身是输入：前端对正直飞、后端穿出直飞。九头蛇、雪怪首领的俯冲剖面（6-1-6、6-1-7 的 编排.ts）也用同一套构件。
 //
 // ====== 三层时间 ======
-// - 全局帧 F（24 帧/秒）：F = 0 是 6-1-3 的末帧（= 6-1-4+5 的首帧）；各段的段内帧 = F − 段起帧。
-// - 物理时间 T（秒）：扫帚、碎块、粒子、药水全按它走。平时 dT/dF = 1/24；只在巫妖、冰雪女王、巨人三处（近景，演 boss 的死亡过程）
+// - 画面时间 g（秒）：g = 0 是 6-1-3 的末帧（= 6-1-4+5 的首帧）；段内秒 = g − 段起秒。
+// - 物理时间 T（秒）：扫帚、碎块、粒子、药水全按它走。平时 dT/dg = 1；只在巫妖、冰雪女王、巨人三处（近景，演 boss 的死亡过程）
 //   时钟缩放（子弹时间）：画面时钟变慢，物理速度不变。九头蛇、暮初恶魂、雪怪首领是远景，原速。
 // - 路程 s（米）：扫帚（杆中心）沿规划航线走过的弧长。真实飞行的偏移不改路程。
 // 实现拆在 路线/ 下，按依赖顺序：输入表 → 航线（求解、拼接、按路程查）→ 时钟 → 真实航迹 → 扫帚；粗高度独立。这里转出并放各 boss 的局部时间、镜头要的时刻。
 import * as lichChoreo from '../6-1-5/编排.ts';
 import * as snowQueenChoreo from '../6-1-8/编排.ts';
 import * as giantChoreo from '../6-1-8b/编排.ts';
-import { FPS, ORDER, type BossName } from './路线/输入表.ts';
+import { ORDER, type BossName } from './路线/输入表.ts';
 import { headingRate, markDist, T_ARRIVE, routeDist, pierceTimes } from './路线/航线.ts';
-import { physicalTime, frameAt, clockRate } from './路线/时钟.ts';
+import { physicalTime, secAt, clockRate } from './路线/时钟.ts';
 
-export { FPS, V_CRUISE, limits, legTurnRate, takeoffBearing, pierceTable, ORDER } from './路线/输入表.ts';
+export { V_CRUISE, limits, legTurnRate, takeoffBearing, pierceTable, ORDER } from './路线/输入表.ts';
 export type { Pierce, BossName } from './路线/输入表.ts';
 export { effectiveTop, cameraGround } from './路线/粗高度.ts';
 export { legTable, turnTable, routeLength, plannedPos, speedAt, headingRate, markDist, viewTurnSpeedAt, timeAtDist, T_ARRIVE, routeDist, pierceTimes } from './路线/航线.ts';
 export type { Turn } from './路线/航线.ts';
-export { slowMoTable, totalFrames, physicalTime, frameAt, clockRate, pierceFrames, slowMoFrames } from './路线/时钟.ts';
+export { slowMoTable, totalLength, physicalTime, secAt, secAtDist, clockRate, pierceSecs, slowMoTimes } from './路线/时钟.ts';
 export { trackAnchors, disturbance, offset, positionAt, tangentAt, steerBank } from './路线/真实航迹.ts';
 export type { AnchorSeg } from './路线/真实航迹.ts';
 export { broom, landingDuration } from './路线/扫帚.ts';
 export type { BroomState } from './路线/扫帚.ts';
 
 // ---------- 各 boss 的局部时间 ----------
-export const localTime = (bossName: BossName, F: number) => physicalTime(F) - pierceTimes[bossName];
+export const localTime = (bossName: BossName, g: number) => physicalTime(g) - pierceTimes[bossName];
 
 // ---------- 镜头要的时刻 ----------
 // 远景停住多久（秒）：看 boss 炸开（暮初恶魂、雪怪首领 0.25 秒化成白烟；用户 10-08 嫌杀死九头蛇后等太久才跟进）
 export const farHold: Partial<Record<BossName, number>> = { 九头蛇: 0.25, 暮初恶魂: 0.25, 雪怪首领: 0.25 };
 // 近景撞墙的物理时刻（相对贯穿）
 export const impactTime: Partial<Record<BossName, number>> = { 巫妖: lichChoreo.T_IMPACT, 冰雪女王: snowQueenChoreo.T_SOUTH, 巨人: giantChoreo.T_SOUTH };
-export const F_LAND = frameAt(T_ARRIVE);
-// 扫帚这一帧每帧转几度（规划航线，段表挑切点用：切在扫帚直飞的帧上）
-export const rotSpeed = (F: number) => Math.abs(headingRate(routeDist(physicalTime(F)))) * clockRate(F) / FPS;
+export const G_LAND = secAt(T_ARRIVE);
+// 扫帚这一刻每秒（画面时间）转几度（规划航线，段表挑切点用：切在扫帚直飞的帧上）
+export const rotSpeed = (g: number) => Math.abs(headingRate(routeDist(physicalTime(g)))) * clockRate(g);
 // 穿刺线上（前～后）的路程区间
 export const pierceRanges = ORDER.map((n) => [markDist(`${n}.前`), markDist(`${n}.后`)] as [number, number]);

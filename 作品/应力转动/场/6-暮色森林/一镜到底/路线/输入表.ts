@@ -11,7 +11,6 @@ import * as giantChoreo from '../../6-1-8b/编排.ts';
 import * as castleChoreo from '../../6-1-9/编排.ts';
 import { smoothstep01, rad, deg } from '@engine/core/数学.ts';
 
-export const FPS = 24;
 export const V_CRUISE = 1000;
 
 // ====================== 输入表 ======================
@@ -60,8 +59,9 @@ const courtyard = twilightLandmark('娜迦庭院');
 export const B0 = courtyard.toWorld(P613.LAST.broom().pos);
 export const V0 = P613.LAST.speed();
 export const A0 = (() => {
-  const lastFrame = P613.beats.末帧;
-  return (len(P613.velocity(lastFrame + 0.25)) - len(P613.velocity(lastFrame - 0.25))) * 2 * FPS;
+  const last = P613.beats.last;
+  const h = 0.25 / 24;
+  return (len(P613.velocity(last + h)) - len(P613.velocity(last - h))) / (2 * h);
 })();
 export const D0 = (() => {
   const velVec = P613.LAST.velocity();

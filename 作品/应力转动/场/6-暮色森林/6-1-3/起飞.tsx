@@ -1,4 +1,4 @@
-// 6-1-3 起飞：把模型库里的场景、角色、扫帚按 编排.ts 组装成镜头。时间按秒取（决策 0015），编排的数是格（1/24 秒）。
+// 6-1-3 起飞：把模型库里的场景、角色、扫帚按 编排.ts 组装成镜头。时间按秒取（决策 0015）。
 // 声音（台词、音效、配乐）照 段.ts 的 cue 放（definePicture 自动挂），这里不挂。
 // 场景：娜迦庭院导出网格 + 四周游戏真实地貌导入的地形（模型/场景/暮色新世界.tsx，2026-10-05 起）；李樱、九胡、扫帚都是取材的实机模型。
 // 编排是庭院本地坐标：人、扫帚、宝箱、云都放进 <地标位 名="娜迦庭院">，镜头加上庭院原点换成世界坐标，地形照世界坐标画。
@@ -26,34 +26,34 @@ import { LichScene } from '../6-1-5/戏.tsx';
 import { pierceTimes } from '../一镜到底/路线.ts';
 const sheath = <WornSheath />;
 
-// 只画画面，第几格 = 秒 × 24（带小数）；声音照用到它的段（6-起飞、6-穿塔斩首领）段.ts 的 cue 放
+// 只画画面；声音照用到它的段（6-起飞、6-穿塔斩首领）段.ts 的 cue 放
 export const TakeOff: React.FC = () => {
-  const frame = useCurrentSec() * 24;
+  const t = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const local = choreo.camera(frame);
+  const local = choreo.camera(t);
   const origin = choreo.courtyard.原点;
   const toWorld = (p: number[]) => [p[0] + origin[0], p[1] + origin[1], p[2] + origin[2]];
   const cam = { ...local, pos: toWorld(local.pos), tgt: toWorld(local.tgt) };
-  const broom = choreo.broom(frame);
-  const riders = choreo.riders(frame);
-  const ly = choreo.liyingOnFoot(frame);
-  const jh = choreo.jiuhuOnFoot(frame);
-  const shot1 = frame < choreo.beats.cutToMedium;
-  const liYingMouth = mouthAt(choreo.lineCues, '李樱', frame);
-  const jiuhuMouth = mouthAt(choreo.lineCues, '九胡', frame);
+  const broom = choreo.broom(t);
+  const riders = choreo.riders(t);
+  const ly = choreo.liyingOnFoot(t);
+  const jh = choreo.jiuhuOnFoot(t);
+  const shot1 = t < choreo.beats.cutToMedium;
+  const liYingMouth = mouthAt(choreo.lineCues, '李樱', t, 1);
+  const jiuhuMouth = mouthAt(choreo.lineCues, '九胡', t, 1);
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(frame)} fogNear={twilightFogNear(choreo.fogFar(frame))} aboveGround={choreo.aboveGround(frame)} {...farViewLighting(choreo.farView(), choreo.farViewRamp(frame))} />
+        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(t)} fogNear={twilightFogNear(choreo.fogFar(t))} aboveGround={choreo.aboveGround(t)} {...farViewLighting(choreo.farView(), choreo.farViewRamp(t))} />
         <FlightRig c={cam} />
         {/* 屏幕空间 AO：同 6-1-2、一镜到底一直开着（云也画在它里面） */}
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <TwilightTerrain camPos={cam.pos} landmarks={['娜迦庭院']} t={choreo.T612 + frame / 24} clearPlants={choreo.clearPlants(frame)} shadowLightDir={twilightSunDir} farView={choreo.farView()} />
+          <TwilightTerrain camPos={cam.pos} landmarks={['娜迦庭院']} t={choreo.T612 + t} clearPlants={choreo.clearPlants(t)} shadowLightDir={twilightSunDir} farView={choreo.farView()} />
           {/* 巫妖怪塔：起飞朝东南 135° 以后它就在正前方 2 公里（直航，用户 10-05「为什么起飞的时候就不能把那个扫帚摆好方向」），升上林海以后地平线上看得见塔尖。
               一镜到底（6-1-4+5）从第 0 帧起画它，这里不画的话末帧接 6-1-4+5 首帧时塔尖一下子冒出来（整合时逐像素比出来的）。
               时间照一镜到底的口径：6-1-3 末帧 = 一镜到底第 0 帧（物理时间 0），塔还没被撞 */}
-          {frame >= choreo.beats.takeoff && <LichScene t={(frame - choreo.beats.末帧) / 24 - pierceTimes.巫妖} />}
+          {t >= choreo.beats.takeoff && <LichScene t={t - choreo.beats.last - pierceTimes.巫妖} />}
           <LandmarkPlacement 名="娜迦庭院">
             {broom.appear > 0 && (
               <RideBroom

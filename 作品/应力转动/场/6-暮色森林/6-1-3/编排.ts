@@ -1,4 +1,4 @@
-// 6-1-3 起飞：时间轴与姿态，纯函数，输入帧号 f（0 = 段首；24 帧/秒，共 `FRAMES` 帧）。
+// 6-1-3 起飞：时间轴与姿态，纯函数，输入段内秒 t（0 = 段首，共 `LENGTH` 秒）。原来按 1/24 秒一格排，注释里的「帧」是这种格，代码里写成 n / 24 秒。
 // 故事（用户 10-01 定）：九胡在 6-1-2 结尾被传送进迷宫，顺着水池南边的通道笔直跑到中心李樱身边，二人在庭院中心上扫帚，拔地而起、猛加速冲上高空。
 //   第 0 帧 = 6-1-2 末帧（同一画面：九胡在通道里往东跑，镜头在她后上方，尽头是李樱）；
 //   镜头 1：跟她跑到中心，她在李樱身边刹住 → 切中景 → 唤出扫帚 → 两人跨上 → 下沉蓄力 → drop 起飞（之后的轨迹、末帧接一镜到底，见 `LAST`）。
@@ -15,54 +15,59 @@ import { cruiseHeight, twilightLandmark, twilightHeightAboveGround, viewEdgeDist
 import { cruiseFogFar, farViewOf, TWILIGHT_FAR_VIEW } from '../../../地点/暮色新世界/超远景.ts';
 import * as choreo612 from '../6-1-2/编排.ts';
 // 6-1-2 的正式版（段长、台词开口都含打击停顿；末帧的李樱是收刀后站定带呼吸微动的样子）
-import { officialLiying, officialLineStart, officialJiuhuLineStart, officialFrames } from '../6-1-2/动作改进.ts';
+import { officialLiying, officialLineStart, officialJiuhuLineStart, officialLength } from '../6-1-2/动作改进.ts';
 import { frameInSegment } from '../../../配乐/配乐音轨.tsx';
 import lineTable from 'asset:数据/配音/台词表';
 import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
+import { onTick } from '../时刻.ts';
 
 export const segmentId = '6-1-3';
-// 6-1-2 末帧的状态：九胡跑到路线上的哪儿（t = 传送后的帧数）、李樱收刀站定的姿势、宝箱
+// 6-1-2 末帧的状态：九胡跑到路线上的哪儿（t = 传送后的秒数）、李樱收刀站定的姿势、宝箱
 const T0 = choreo612.MAZE_T612;
-// 九胡停稳的帧（本段帧号）
-const JH_ARRIVE = Math.round(choreo612.MAZE_ARRIVE - T0);
+// 九胡停稳的那一帧（本段秒，取到 60 帧/秒的帧上）
+const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 60) / 60;
 // 台词（本段帧号，负数是还在 6-1-2 里）：
 //   娜迦：6-1-2 滑停站稳就开口「暮色的boss就算加强了十倍，也不过如此。」；本段第 0 帧 = 6-1-2 末帧，所以开口帧 = 6-1-2 的开口帧 − (6-1-2 帧数 − 1)；
 //   九胡：「等等我啊，狗修金Sama！」在 6-1-2 迷宫那一镜开跑后边跑边喊（用户 10-20，6-1-2 编排的 `MAZE_SHOUT`），开口帧同样换过来，本段放说进来的后半截，她刹车前说完；
 //   李樱：扫帚冒出来停稳就说「坐好了，看我速通暮色！」（用户 10-20：骑扫帚这一下要说明白是速通暮色），两人跳上扫帚时说，坐稳时说完，不动段长；
 //   坐稳 `seatedHold` 帧就往下一沉、起飞。
-// 长度读 src/配音/台词表.json 的 有声长（开口到说完）。两句都在九胡跑到前后说完，唤出是她停稳后喘 1 秒、抬头看他（`JH_ARRIVE` + 24）。
-const voicedFrames = (id: string) => Math.ceil((lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长 * 24);
-const seatedHold = 12;
-export const lineFrames = (() => {
-  const nagaLine = officialLineStart - (officialFrames - 1);
-  const nagaLineEnd = nagaLine + voicedFrames('6-1-2-李樱-不值一提');
-  const jiuhuLine = officialJiuhuLineStart - (officialFrames - 1);
-  const jiuhuLineEnd = jiuhuLine + voicedFrames('6-1-3-九胡-等等我');
-  const summonFrame = Math.max(JH_ARRIVE + 24, nagaLineEnd + 12, jiuhuLineEnd + 12); // 她停稳以后喘口气（24 帧），话也说完了，他再唤出扫帚
-  const seatedFrame = summonFrame + 61;
-  const speedrunLine = summonFrame + 10; // 扫帚冒出来停稳（`broom` 的 appear）
-  return { naga: nagaLine, nagaLineEnd: nagaLineEnd, jiuhu: jiuhuLine, jiuhuLineEnd, summon: summonFrame, speedrun: speedrunLine, seated: seatedFrame };
+// 长度读 src/配音/台词表.json 的 有声长（开口到说完）。两句都在九胡跑到前后说完，唤出是她停稳后喘 1 秒、抬头看他（`JH_ARRIVE` + 1 秒）。
+// 有声长用真值，不再往上取到 1/24 秒的格（用户 11-16 定；唤出到起飞整串因此比旧版早几十毫秒）
+const voicedSec = (id: string) => (lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长;
+const seatedHold = 0.5;
+// 6-1-2 末帧（officialLength − 1/24）是本段第 0 秒
+const T612_LAST = officialLength - 1 / 24;
+export const lineTimes = (() => {
+  const nagaLine = officialLineStart - T612_LAST;
+  const nagaLineEnd = nagaLine + voicedSec('6-1-2-李樱-不值一提');
+  const jiuhuLine = officialJiuhuLineStart - T612_LAST;
+  const jiuhuLineEnd = jiuhuLine + voicedSec('6-1-3-九胡-等等我');
+  const summonTime = Math.max(JH_ARRIVE + 1, nagaLineEnd + 0.5, jiuhuLineEnd + 0.5); // 她停稳以后喘口气（1 秒），话也说完了，他再唤出扫帚
+  const seatedTime = summonTime + 61 / 24;
+  const speedrunLine = summonTime + 10 / 24; // 扫帚冒出来停稳（`broom` 的 appear）
+  return { naga: nagaLine, nagaLineEnd: nagaLineEnd, jiuhu: jiuhuLine, jiuhuLineEnd, summon: summonTime, speedrun: speedrunLine, seated: seatedTime };
 })();
-export const speedrunLine = { id: '6-1-3-李樱-看我速通暮色', 帧: lineFrames.speedrun };
+// 帧 写的是段内秒（mouthAt 每秒给 1）
+export const speedrunLine = { id: '6-1-3-李樱-看我速通暮色', 帧: lineTimes.speedrun };
 // 娜迦那句有没有说进本段（句子短，可能在 6-1-2 里就说完了）
-export const nagaLineCarriesOver = lineFrames.nagaLineEnd > 0;
+export const nagaLineCarriesOver = lineTimes.nagaLineEnd > 0;
 // 台词轨（声音.tsx）和口型（起飞.tsx）共用；九胡那句开口在本段之前（负的），只放说进来的半截
 export const lineCues = [
-  ...(nagaLineCarriesOver ? [{ id: '6-1-2-李樱-不值一提', 帧: lineFrames.naga }] : []),
-  { id: '6-1-3-九胡-等等我', 帧: lineFrames.jiuhu },
+  ...(nagaLineCarriesOver ? [{ id: '6-1-2-李樱-不值一提', 帧: lineTimes.naga }] : []),
+  { id: '6-1-3-九胡-等等我', 帧: lineTimes.jiuhu },
   speedrunLine,
 ];
-const summonFrame = lineFrames.summon;
-const takeoffFrame = lineFrames.seated + seatedHold + 15;
+const summonTime = lineTimes.summon;
+const takeoffTime = lineTimes.seated + seatedHold + 15 / 24;
 // 速度：起飞瞬间 40 米/秒，之后 v = 1000 - 960·e^(-t/τ)，τ ≈ 3.16 秒（1 秒时正好 300 米/秒）。
 const V_CRUISE = 1000;
 const V_KICK = 40;
 const TAU = -1 / Math.log((V_CRUISE - 300) / (V_CRUISE - V_KICK));
-const postTakeoffFrames = 60;
-const speedAfter = (df: number) => (df < 0 ? 0 : V_CRUISE - (V_CRUISE - V_KICK) * Math.exp(-df / 24 / TAU));
+const postTakeoffSec = 2.5;
+const speedAfter = (dt: number) => (dt < 0 ? 0 : V_CRUISE - (V_CRUISE - V_KICK) * Math.exp(-dt / TAU));
 // 方向：先笔直往上冲 1/3 秒（越过四周 30 多格高的树冠），然后扫帚头往起飞方位压，翻过来（放平）以后朝起飞方位平飞。
-// 放平的高度就是一镜到底开头的巡航高度（用户 10-05 定 80 米，10-07 改离树冠 60 米）：按它挑翻过来那一帧，末帧在起飞方位前方 800 来米处的巡航高度上
-const pathAngleKeys = (flipFrame: number): Key[] => [[0, 90], [8, 90], [flipFrame - 8, 15], [flipFrame, 0]];
+// 放平的高度就是一镜到底开头的巡航高度（用户 10-05 定 80 米，10-07 改离树冠 60 米）：按它挑翻过来那一格，末帧在起飞方位前方 800 来米处的巡航高度上
+const pathAngleKeys = (flipT: number): Key[] => [[0, 90], [8 / 24, 90], [flipT - 8 / 24, 15], [flipT, 0]];
 // 起飞方位（世界方位，0 = 北、顺时针为正）：唤出扫帚时杆头就朝着第一程（庭院 → 巫妖怪塔）的直线，拔起来、翻过来以后一镜到底接着直飞，不起飞后掉头（用户 10-05 要求）。
 // 144.5° 是 归档/参考模型库/工具/一镜到底/直航设计.ts 的 `solveTakeoff` 解的、再按 工具/一镜到底/弯速.ts 二分调的：一镜到底的进场线提前 450 米（路线.ts 的 `alignAheadM`），第一个弯是进对正前的左转。
 // 庭院网格没转，本地方位 = 世界方位；唤出、上扫帚、下沉、起飞和镜头 3 都绕起飞点转过来，镜头 2 挪到东边（见 `C2`），
@@ -72,12 +77,14 @@ export const takeoffBearing = 144.5;
 export const takeoffYaw = -takeoffBearing;
 const forwardXY: [number, number] = [Math.sin((takeoffBearing * Math.PI) / 180), Math.cos((takeoffBearing * Math.PI) / 180)];
 const broomToCourtyard = (p: number[]): V3 => [p[0] * forwardXY[1] + p[1] * forwardXY[0], -p[0] * forwardXY[0] + p[1] * forwardXY[1], p[2] ?? 0];
-const climbHeight = (flipFrame: number) => {
-  const keys = pathAngleKeys(flipFrame);
+// 爬升按 1/192 秒一步积分（原来每格 8 步）
+const CLIMB_STEPS_PER_SEC = 192;
+const climbHeight = (flipT: number) => {
+  const keys = pathAngleKeys(flipT);
   let z = 0;
-  for (let i = 0; i < postTakeoffFrames * 8; i++) {
-    const df = (i + 0.5) / 8;
-    z += (speedAfter(df) / 24 / 8) * Math.sin((sample(keys, df) * Math.PI) / 180);
+  for (let i = 0; i < postTakeoffSec * CLIMB_STEPS_PER_SEC; i++) {
+    const dt = (i + 0.5) / CLIMB_STEPS_PER_SEC;
+    z += (speedAfter(dt) / CLIMB_STEPS_PER_SEC) * Math.sin((sample(keys, dt) * Math.PI) / 180);
   }
   return z;
 };
@@ -88,31 +95,36 @@ const levelFlightZ = (() => {
   const point = courtyard.toWorld([820 * forwardXY[0], 820 * forwardXY[1], 0]);
   return cruiseHeight(point[0], point[1]) - courtyard.原点[2];
 })();
+// 起飞后几秒放平：在 18～46 格（1/24 秒）里按格挑（挑出来是 26/24）。
+// 没改成解出来的真值（早 12 毫秒）：本段末帧的扫帚位置跟着挪 2.6 米，一镜到底整条航线重解，六个首领的穿刺在画面里都早 125 毫秒、离开配乐卡点。
+// 用户 11-16 定 1/24 格的取整一处不留，这一处牵动一镜到底的卡点，留给用户定
 const flipDelay = (() => {
   let best = 46;
-  for (let candidate = 18; candidate <= 46; candidate++) if (Math.abs(climbHeight(candidate) - levelFlightZ) < Math.abs(climbHeight(best) - levelFlightZ)) best = candidate;
-  return best;
+  for (let candidate = 18; candidate <= 46; candidate++) if (Math.abs(climbHeight(candidate / 24) - levelFlightZ) < Math.abs(climbHeight(best / 24) - levelFlightZ)) best = candidate;
+  return best / 24;
 })();
+// 都落到刻上（时刻.ts）：切镜、上扫帚这些判断正好落在某一帧上，不能差一点浮点零头
 export const beats = {
-  liyingTurn: JH_ARRIVE - 14, // 她快跑到时回过身
-  cutToMedium: JH_ARRIVE + 8, // 她停稳、他转过来以后切到中景
-  summon: summonFrame,
-  liYingMount: summonFrame + 31,
-  jiuHuUp: summonFrame + 46,
-  seated: summonFrame + 61,
-  sinkStart: takeoffFrame - 15,
-  takeoff: takeoffFrame,
-  flip: takeoffFrame + flipDelay,
-  末帧: takeoffFrame + postTakeoffFrames,
+  liyingTurn: onTick(JH_ARRIVE - 14 / 24), // 她快跑到时回过身
+  cutToMedium: onTick(JH_ARRIVE + 8 / 24), // 她停稳、他转过来以后切到中景
+  summon: onTick(summonTime),
+  liYingMount: onTick(summonTime + 31 / 24),
+  jiuHuUp: onTick(summonTime + 46 / 24),
+  seated: onTick(summonTime + 61 / 24),
+  sinkStart: onTick(takeoffTime - 15 / 24),
+  takeoff: onTick(takeoffTime),
+  flip: onTick(takeoffTime + flipDelay),
+  last: onTick(takeoffTime + postTakeoffSec), // 末帧
 };
 // 配乐晚几帧进（用户 10-10 定）：整条往后推，让 drop（[5, 1]）落在起飞那一帧，渐大的几拍落在扫帚下沉蓄力上；前奏（没有鼓）垫在九胡跑来、两人上扫帚的几秒（drop 前的前奏比本段这一截长，段首切进去的是前奏中间），之前没有配乐
-export const musicDelay = beats.takeoff - frameInSegment(segmentId, [5, 1]);
-export const songSec = (f: number) => (f - musicDelay) / 24;
-export const FRAMES = beats.末帧 + 1;
+// 配音轨.tsx 的 frameInSegment 还按 1/24 秒一格数（共用），这里换成秒
+export const musicDelay = beats.takeoff - frameInSegment(segmentId, [5, 1]) / 24;
+export const songSec = (t: number) => t - musicDelay;
+export const LENGTH = beats.last + 1 / 24;
 // 6-1-2 末帧的李樱（正式版）：站定后的呼吸、头左右看、重心挪动接着用 6-1-2/动作改进.ts 的 `微动`；回身、唤出、跳上扫帚都叠在它上面
-const LY_END: FigurePose = officialLiying(choreo612.END - 1).pose;
-const standingPose = (f: number): FigurePose => officialLiying(choreo612.END - 1 + Math.max(0, f)).pose;
-export const CHEST = choreo612.chest(choreo612.END - 1).loc;
+const LY_END: FigurePose = officialLiying(choreo612.END - 1 / 24).pose;
+const standingPose = (t: number): FigurePose => officialLiying(choreo612.END - 1 / 24 + Math.max(0, t)).pose;
+export const CHEST = choreo612.chest(choreo612.END - 1 / 24).loc;
 
 // ---------- 扫帚：唤出在两人中间，杆头朝起飞方位（东南） ----------
 // 李樱在 (2.6, -0.8)，九胡停在他西南 (0.1, -3.6)，宝箱在 (-1, -0.8)。两人连线东北—西南，杆头朝东南正好垂直：李樱从东北、九胡从西南各自侧着跨上去
@@ -121,67 +133,69 @@ const HOVER = 0.65;
 const Z_SINK = 0.35; // 4.4 一沉到底的高度
 export type BroomState = { pos: V3; yaw: number; pitch: number; roll: number; appear: number; speed: number };
 
-const LAUNCH = beats.takeoff - 0.5; // 起飞的瞬间（取帧的中点：5.1 那一帧已经离地）
-const speedAt = (f: number) => (f < LAUNCH ? 0 : speedAfter(f - LAUNCH));
-const GAMMA: Key[] = pathAngleKeys(flipDelay).map(([frame, angle]) => [LAUNCH + frame, angle]);
-const gammaAt = (f: number) => sample(GAMMA, f);
-const SUB = 8;
+const LAUNCH = beats.takeoff - 0.5 / 24; // 起飞的瞬间（取那一格的中点：5.1 那一格已经离地）
+const speedAt = (t: number) => (t < LAUNCH ? 0 : speedAfter(t - LAUNCH));
+const GAMMA: Key[] = pathAngleKeys(flipDelay).map(([t, angle]) => [LAUNCH + t, angle]);
+const gammaAt = (t: number) => sample(GAMMA, t);
+// 航迹按 1/192 秒一步积分成表，到末帧后 2 格
+const FLIGHT_STEPS_PER_SEC = 192;
+const FLIGHT_LAST = Math.round((beats.last + 2 / 24 - LAUNCH) * FLIGHT_STEPS_PER_SEC);
 const FLIGHT: V3[] = (() => {
   const out: V3[] = [];
   let horizDist = 0;
   let z = Z_SINK;
-  for (let i = 0; i <= (beats.末帧 + 2 - LAUNCH) * SUB; i++) {
+  for (let i = 0; i <= FLIGHT_LAST; i++) {
     out.push([BROOM_XY[0] + forwardXY[0] * horizDist, BROOM_XY[1] + forwardXY[1] * horizDist, z]);
-    const frame = LAUNCH + (i + 0.5) / SUB;
-    const step = speedAt(frame) / 24 / SUB;
-    const gammaRad = (gammaAt(frame) * Math.PI) / 180;
+    const t = LAUNCH + (i + 0.5) / FLIGHT_STEPS_PER_SEC;
+    const step = speedAt(t) / FLIGHT_STEPS_PER_SEC;
+    const gammaRad = (gammaAt(t) * Math.PI) / 180;
     horizDist += step * Math.cos(gammaRad);
     z += step * Math.sin(gammaRad);
   }
   return out;
 })();
-const flightAt = (frame: number): V3 => {
-  const x = Math.max(0, (frame - LAUNCH) * SUB);
+const flightAt = (t: number): V3 => {
+  const x = Math.max(0, (t - LAUNCH) * FLIGHT_STEPS_PER_SEC);
   const i = Math.min(Math.floor(x), FLIGHT.length - 2);
   const k = x - i;
   return FLIGHT[i].map((v, c) => v + (FLIGHT[i + 1][c] - v) * k) as V3;
 };
-export const broom = (frame: number): BroomState => {
-  const appear = frame < beats.summon ? 0 : sample([[beats.summon, 0], [beats.summon + 6, 1.15], [beats.summon + 10, 1]], frame);
-  if (frame >= beats.takeoff) {
-    // 扫帚头：4 帧内翘起来、跟上航迹角（笔直往上冲时也竖起来，最多 88°，封顶太低会像斜着往上滑），之后跟着航迹角压下来，末帧和速度方向一致；人往前压着贴住扫帚（见 `riders` 的前倾）
-    const pitch = frame < beats.takeoff + 4 ? lerp(6, Math.min(88, gammaAt(frame)), smoothstep01((frame - beats.takeoff) / 4)) : Math.min(88, gammaAt(frame));
-    return { pos: flightAt(frame), yaw: takeoffYaw, pitch: pitch, roll: 0, appear, speed: speedAt(frame) };
+export const broom = (t: number): BroomState => {
+  const appear = t < beats.summon ? 0 : sample([[beats.summon, 0], [beats.summon + 0.25, 1.15], [beats.summon + 10 / 24, 1]], t);
+  if (t >= beats.takeoff) {
+    // 扫帚头：4 格内翘起来、跟上航迹角（笔直往上冲时也竖起来，最多 88°，封顶太低会像斜着往上滑），之后跟着航迹角压下来，末帧和速度方向一致；人往前压着贴住扫帚（见 `riders` 的前倾）
+    const pitch = t < beats.takeoff + 4 / 24 ? lerp(6, Math.min(88, gammaAt(t)), smoothstep01((t - beats.takeoff) / (4 / 24))) : Math.min(88, gammaAt(t));
+    return { pos: flightAt(t), yaw: takeoffYaw, pitch: pitch, roll: 0, appear, speed: speedAt(t) };
   }
-  const bob = 0.05 * Math.sin((2 * Math.PI * frame) / 40);
-  let z = HOVER + bob + 0.25 * smoothstep01((frame - beats.seated) / 30);
+  const bob = 0.05 * Math.sin((2 * Math.PI * t) / (40 / 24));
+  let z = HOVER + bob + 0.25 * smoothstep01((t - beats.seated) / 1.25);
   let pitch = 0;
-  if (frame >= beats.sinkStart) {
-    const k = smoothstep01((frame - beats.sinkStart) / 6);
-    z = lerp(z, Z_SINK, k) + 0.035 * Math.sin(frame * 2.7) * k;
+  if (t >= beats.sinkStart) {
+    const k = smoothstep01((t - beats.sinkStart) / 0.25);
+    z = lerp(z, Z_SINK, k) + 0.035 * Math.sin(t * 64.8) * k; // 每格 2.7 弧度的抖
     pitch = 6 * k;
   }
   return { pos: [BROOM_XY[0], BROOM_XY[1], z], yaw: takeoffYaw, pitch: pitch, roll: 0, appear, speed: 0 };
 };
-export const velocity = (frame: number): V3 => {
-  const speed = speedAt(frame);
-  const gammaRad = (gammaAt(frame) * Math.PI) / 180;
+export const velocity = (t: number): V3 => {
+  const speed = speedAt(t);
+  const gammaRad = (gammaAt(t) * Math.PI) / 180;
   return [forwardXY[0] * speed * Math.cos(gammaRad), forwardXY[1] * speed * Math.cos(gammaRad), speed * Math.sin(gammaRad)];
 };
 
 // ---------- 九胡：沿 6-1-2 的路线跑到中心，刹住喘气，看李樱，跳上后座 ----------
 export type JiuhuOnFoot = { pose: FigurePose; tail: number; bend: number; gait: number; run: number } | null;
-export const jiuhuOnFoot = (frame: number): JiuhuOnFoot => {
-  if (frame >= beats.jiuHuUp) return null;
-  const maze = choreo612.jiuhuMaze(T0 + frame);
+export const jiuhuOnFoot = (t: number): JiuhuOnFoot => {
+  if (t >= beats.jiuHuUp) return null;
+  const maze = choreo612.jiuhuMaze(T0 + t);
   const mazePose = maze.pose;
-  const stopped = smoothstep01((frame - JH_ARRIVE + 4) / 8);
-  const pant = Math.sin((2 * Math.PI * 2.2 * frame) / 24);
-  const look = smoothstep01((frame - JH_ARRIVE - 14) / 10);
-  const flinch = Math.sin(Math.PI * Math.min(1, Math.max(0, (frame - beats.summon) / 10)));
-  const hopK = smoothstep01((frame - (beats.jiuHuUp - 8)) / 8);
-  const crouch = frame > beats.jiuHuUp - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.jiuHuUp - 12)) / 6)) : 0;
-  const hopZ = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (frame > beats.jiuHuUp - 8 ? 1 : 0);
+  const stopped = smoothstep01((t - JH_ARRIVE + 4 / 24) / (8 / 24));
+  const pant = Math.sin(2 * Math.PI * 2.2 * t);
+  const look = smoothstep01((t - JH_ARRIVE - 14 / 24) / (10 / 24));
+  const flinch = Math.sin(Math.PI * Math.min(1, Math.max(0, (t - beats.summon) / (10 / 24))));
+  const hopK = smoothstep01((t - (beats.jiuHuUp - 8 / 24)) / (8 / 24));
+  const crouch = t > beats.jiuHuUp - 0.5 ? Math.sin(Math.PI * Math.min(1, (t - (beats.jiuHuUp - 0.5)) / 0.25)) : 0;
+  const hopZ = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (t > beats.jiuHuUp - 8 / 24 ? 1 : 0);
   const [x, y] = mazePose.loc;
   const back = 0.45 * flinch * (1 - hopK);
   const yaw0 = mazePose.yaw ?? 0;
@@ -212,17 +226,17 @@ const YAW_RIDE = (() => {
   const y = takeoffYaw + 29;
   return y + 360 * Math.round((YAW_FACE - y) / 360);
 })();
-export const liyingOnFoot = (frame: number): FigurePose | null => {
-  if (frame >= beats.liYingMount) return null;
-  const turn = smoothstep01((frame - beats.liyingTurn + 2) / 12);
-  const summon = smoothstep01((frame - (beats.summon - 7)) / 7) * (1 - smoothstep01((frame - (beats.summon + 12)) / 10));
-  const hopK = smoothstep01((frame - (beats.liYingMount - 8)) / 8);
-  const crouch = frame > beats.liYingMount - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.liYingMount - 12)) / 6)) : 0;
-  const base = standingPose(frame);
+export const liyingOnFoot = (t: number): FigurePose | null => {
+  if (t >= beats.liYingMount) return null;
+  const turn = smoothstep01((t - beats.liyingTurn + 2 / 24) / 0.5);
+  const summon = smoothstep01((t - (beats.summon - 7 / 24)) / (7 / 24)) * (1 - smoothstep01((t - (beats.summon + 0.5)) / (10 / 24)));
+  const hopK = smoothstep01((t - (beats.liYingMount - 8 / 24)) / (8 / 24));
+  const crouch = t > beats.liYingMount - 0.5 ? Math.sin(Math.PI * Math.min(1, (t - (beats.liYingMount - 0.5)) / 0.25)) : 0;
+  const base = standingPose(t);
   const [x0, y0] = base.loc;
   const x = lerp(x0, BROOM_XY[0] + 0.35 * forwardXY[0], hopK);
   const y = lerp(y0, BROOM_XY[1] + 0.35 * forwardXY[1], hopK);
-  const z = 1.0 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (frame > beats.liYingMount - 8 ? 1 : 0);
+  const z = 1.0 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (t > beats.liYingMount - 8 / 24 ? 1 : 0);
   const yaw = lerp(lerp(YAW_END, YAW_FACE, turn), YAW_RIDE, hopK);
   return {
     ...base,
@@ -241,26 +255,27 @@ export const liyingOnFoot = (frame: number): FigurePose | null => {
 };
 
 // ---------- 骑在扫帚上 ----------
-export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: { lean: number; hugWaist: number; tailPhase: number; wind: number; headRaise: number } | false } => {
-  const sink = frame >= beats.sinkStart ? smoothstep01((frame - beats.sinkStart) / 6) : 0;
-  const launched = smoothstep01((frame - beats.takeoff) / 4);
+export const riders = (t: number): { liYing: RideLiYing | false; jiuhu: { lean: number; hugWaist: number; tailPhase: number; wind: number; headRaise: number } | false } => {
+  const sink = t >= beats.sinkStart ? smoothstep01((t - beats.sinkStart) / 0.25) : 0;
+  const launched = smoothstep01((t - beats.takeoff) / (4 / 24));
   // 竖直往上冲时（航迹角大过 25°）再往前压一点，贴住竖起来的扫帚
-  const vertical = frame >= beats.takeoff ? Math.max(0, (gammaAt(frame) - 25) / (90 - 25)) : 0;
-  const lean = 22 + 26 * sink + 10 * launched * (1 - smoothstep01((frame - beats.flip) / 10)) + 8 * vertical * launched;
+  const vertical = t >= beats.takeoff ? Math.max(0, (gammaAt(t) - 25) / (90 - 25)) : 0;
+  const lean = 22 + 26 * sink + 10 * launched * (1 - smoothstep01((t - beats.flip) / (10 / 24))) + 8 * vertical * launched;
   return {
-    liYing: frame >= beats.liYingMount ? { lean, headRaise: 10 * (1 - sink) + 20 * launched } : false,
-    jiuhu: frame >= beats.jiuHuUp ? { lean: 18 + 20 * sink, hugWaist: smoothstep01((frame - beats.jiuHuUp) / 6), tailPhase: frame / 9, wind: launched, headRaise: 10 * launched } : false,
+    liYing: t >= beats.liYingMount ? { lean, headRaise: 10 * (1 - sink) + 20 * launched } : false,
+    // 尾巴相位每 9 格走 1
+    jiuhu: t >= beats.jiuHuUp ? { lean: 18 + 20 * sink, hugWaist: smoothstep01((t - beats.jiuHuUp) / 0.25), tailPhase: t / (9 / 24), wind: launched, headRaise: 10 * launched } : false,
   };
 };
-export const liyingRidePose = (frame: number) => {
-  const liying = riders(frame).liYing;
+export const liyingRidePose = (t: number) => {
+  const liying = riders(t).liYing;
   return liying ? liYingFinalPose(liying) : null;
 };
 
 // ---------- 镜头 ----------
 export type Cam = { pos: number[]; tgt: number[]; lens: number; roll?: number };
 // 镜头 1（0～切中景）：6-1-2 镜头 3 那个跟拍（6-1-2 编排的 `mazeCam`）接着往下走：在她后上方 7.5 格、高 8.5 格，通道尽头的李樱越来越近，快到时视线挪到两人中间。
-const chase = (f: number): Cam => choreo612.mazeCam(T0 + f);
+const chase = (t: number): Cam => choreo612.mazeCam(T0 + t);
 // 镜头 2（切中景～下沉）：中心空地东边的中景，离地 3 格往西看：右边（近）是回身的李樱，左边（远）是刚刹住弯腰喘气的九胡；扫帚在两人中间冒出来，杆头朝画面左前方（东南），坐稳后是 3/4 正面。整段慢慢往前推。
 // 机位在东边的原因：杆头朝东南后，机位在东南则扫帚正对镜头缩成点；挪到西边看则人和宝箱逆光（暮色主光从东南偏东来，lib/光照配比.ts 的 `twilightSunDir`）、宝箱遮掉扫帚尾巴。东边顺光，扫帚斜 45°，宝箱在扫帚后面。
 // 东边 x 9 起是 5 格高的树篱，机位最远只能退到 x 7.9（离扫帚 6.6 格），焦距从 24 起推到 30 不变
@@ -275,49 +290,50 @@ const besideBroom = (point: number[]): V3 => {
 const C3_START: V3 = besideBroom([-1.5, -6.0, 0.65]);
 const C3_PRE: V3 = besideBroom([-1.4, -5.5, 0.6]);
 const C3_OFF: V3 = broomToCourtyard([0, -10.5, 6]); // 追上以后镜头相对扫帚的位置
-export const camera = (frame: number): Cam => {
-  if (frame < beats.cutToMedium) return chase(frame);
-  if (frame < beats.sinkStart) {
-    const t = Math.min(1, (frame - C2.pos[0][0]) / (C2.pos[1][0] - C2.pos[0][0]));
-    const eased = smoothstep01(t) * 0.6 + t * 0.4;
-    return { pos: lerpV(C2.pos[0][1], C2.pos[1][1], eased), tgt: lerpV(C2.tgt0, C2.tgt1, smoothstep01((frame - beats.cutToMedium - 10) / 40)), lens: lerp(24, 30, eased) };
+export const camera = (t: number): Cam => {
+  if (t < beats.cutToMedium) return chase(t);
+  if (t < beats.sinkStart) {
+    const u = Math.min(1, (t - C2.pos[0][0]) / (C2.pos[1][0] - C2.pos[0][0]));
+    const eased = smoothstep01(u) * 0.6 + u * 0.4;
+    return { pos: lerpV(C2.pos[0][1], C2.pos[1][1], eased), tgt: lerpV(C2.tgt0, C2.tgt1, smoothstep01((t - beats.cutToMedium - 10 / 24) / (40 / 24))), lens: lerp(24, 30, eased) };
   }
-  const bp = broom(frame).pos;
-  if (frame < beats.takeoff) return { pos: lerpV(C3_START, C3_PRE, (frame - beats.sinkStart) / (beats.takeoff - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
-  // 起飞那一帧起镜头跟着扫帚一起往上冲（相对位置从低机位慢慢挪到后上方），不原地仰头追（那样背景几乎全是天）：镜头和扫帚一样高平视，10 帧内挪到后上方往下看
-  const pre = broom(beats.takeoff - 1).pos;
+  const bp = broom(t).pos;
+  if (t < beats.takeoff) return { pos: lerpV(C3_START, C3_PRE, (t - beats.sinkStart) / (beats.takeoff - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
+  // 起飞那一帧起镜头跟着扫帚一起往上冲（相对位置从低机位慢慢挪到后上方），不原地仰头追（那样背景几乎全是天）：镜头和扫帚一样高平视，10 格内挪到后上方往下看
+  const pre = broom(beats.takeoff - 1 / 24).pos;
   const off0 = [C3_PRE[0] - pre[0], C3_PRE[1] - pre[1], C3_PRE[2] - pre[2]];
-  const k = smoothstep01((frame - beats.takeoff) / 10);
+  const k = smoothstep01((t - beats.takeoff) / (10 / 24));
   const off = lerpV(off0, C3_OFF, k);
   const pos = [bp[0] + off[0], bp[1] + off[1], bp[2] + off[2]];
-  const kl = smoothstep01((frame - (beats.flip - 12)) / (beats.末帧 - beats.flip + 12));
+  const kl = smoothstep01((t - (beats.flip - 0.5)) / (beats.last - beats.flip + 0.5));
   const nearLook = broomToCourtyard([0, 1, 0.8]);
   const farLook = broomToCourtyard([0, 40, -24]);
   const look = lerpV([bp[0] + nearLook[0], bp[1] + nearLook[1], bp[2] + nearLook[2]], [bp[0] + farLook[0], bp[1] + farLook[1], bp[2] + farLook[2]], kl);
-  return { pos, tgt: look, lens: lerp(24, 18, smoothstep01((frame - beats.takeoff) / 30)) };
+  return { pos, tgt: look, lens: lerp(24, 18, smoothstep01((t - beats.takeoff) / 1.25)) };
 };
 // 清草：中心空地（一格高的草会挡住人的脚和悬在离地 0.65 格的扫帚）。迷宫通道里的草和 6-1-2 一样留着
 export const CLEAR_PLANTS = [[-5.5, -9.5, 9.5, 5.5]];
 // 镜头 1 接 6-1-2 末帧：6-1-2 没清草，画面深处就是中心空地，所以切中景以前草照画，不然首帧和 6-1-2 末帧对不上。同一个数组对象，换的时候场景网格只重建一次
-export const clearPlants = (f: number) => (f < beats.cutToMedium ? undefined : CLEAR_PLANTS);
-export const LAST = { camera: () => camera(beats.末帧), broom: () => broom(beats.末帧), speed: () => broom(beats.末帧).speed, velocity: () => velocity(beats.末帧) };
+export const clearPlants = (t: number) => (t < beats.cutToMedium ? undefined : CLEAR_PLANTS);
+export const LAST = { camera: () => camera(beats.last), broom: () => broom(beats.last), speed: () => broom(beats.last).speed, velocity: () => velocity(beats.last) };
 
 // 镜头离脚下树冠多高（米）
 // 镜头离脚下地物多高（起飞后在世界坐标里量；起飞前就是离庭院地面的高度）
-export const aboveGround = (frame: number) => {
-  const camPos = camera(frame).pos;
-  return frame < beats.takeoff ? camPos[2] : twilightHeightAboveGround(courtyard.toWorld(camPos));
+export const aboveGround = (t: number) => {
+  const camPos = camera(t).pos;
+  return t < beats.takeoff ? camPos[2] : twilightHeightAboveGround(courtyard.toWorld(camPos));
 };
 // 雾的远端（米）：同 6-1-2 的暮色线性雾，地面上是满视距（lib/视距.ts），升空后按镜头离地高度放远（lib/暮色光照.tsx）。起飞到放平那一帧放到一镜到底的巡航下限（`TWILIGHT_CRUISE_FOG_FAR`），
 // 才和 6-1-4 首帧接得上；往导入范围边上看时压到边以内（`clampFogToEdge`）。
 // 超远景（用户 11-07 定 10 公里，暮色新世界/超远景.ts）：起飞后跟着这条放远的曲线一起放进（`farViewRamp`），起飞前林子里的雾、高度雾不变，首帧接得上 6-1-2
 export const farView = () => farViewOf(TWILIGHT_FAR_VIEW);
-export const farViewRamp = (frame: number) => (frame < beats.takeoff ? 0 : smoothstep01((frame - beats.takeoff) / flipDelay));
-export const fogFar = (frame: number) => {
-  const nearFog = twilightFogFar(aboveGround(frame));
-  if (frame < beats.takeoff) return nearFog;
-  const cam = camera(frame);
-  const farFog = Math.max(nearFog, VIEW_DISTANCE + (TWILIGHT_CRUISE_FOG_FAR - VIEW_DISTANCE) * farViewRamp(frame));
-  return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.toWorld(cam.pos), courtyard.toWorld(cam.tgt)), clampFogToEdge, farView(), farViewRamp(frame));
+export const farViewRamp = (t: number) => (t < beats.takeoff ? 0 : smoothstep01((t - beats.takeoff) / flipDelay));
+export const fogFar = (t: number) => {
+  const nearFog = twilightFogFar(aboveGround(t));
+  if (t < beats.takeoff) return nearFog;
+  const cam = camera(t);
+  const farFog = Math.max(nearFog, VIEW_DISTANCE + (TWILIGHT_CRUISE_FOG_FAR - VIEW_DISTANCE) * farViewRamp(t));
+  return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.toWorld(cam.pos), courtyard.toWorld(cam.tgt)), clampFogToEdge, farView(), farViewRamp(t));
 };
-export const T612 = (officialFrames - 1) / 24;
+// 6-1-2 末帧在 6-1-2 段内的秒数（= 本段第 0 秒）
+export const T612 = T612_LAST;

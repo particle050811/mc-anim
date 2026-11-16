@@ -1,7 +1,7 @@
 // 九胡：在南窗边看海，听到「对了」回头转身，小跑到屋子中间，最后贴到 6-2-4 首帧的姿态。
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { mixPose, walkSwing, yawToward } from '../动作.ts';
-import { FPS, lastFrame, cues } from './时间线.ts';
+import { lastSec, cues } from './时间线.ts';
 import { J0, JH_END, jiuhuPath, walkPlans, trip } from './站位.ts';
 import { liying } from './李樱.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
@@ -11,11 +11,10 @@ export type JiuhuState = { pose: FigurePose; tail: number; bend: number; gait: n
 const jhStand = (loc: number[], yaw: number, d: Partial<FigurePose> = {}): FigurePose => ({ ...standPose(loc), yaw, ...d });
 // 角度挪到 [180, 360)：九胡从朝南（180）一路转到朝东北（6-2-4 首帧 -65.5 = 294.5），都在这一圈里，插值不绕远路
 const deg180 = (a: number) => ((((a - 180) % 360) + 360) % 360) + 180;
-export const jiuhu = (globalFrame: number): JiuhuState => {
-  const tail = (globalFrame - lastFrame) / 9; // 6-2-4 第 0 帧尾巴相位为 0
-  if (globalFrame >= lastFrame) return { pose: JH_END.pose, tail: JH_END.tail, bend: JH_END.bend, gait: 0, run: 0 };
-  const t = globalFrame / FPS;
-  const lyLoc = liying(globalFrame).loc;
+export const jiuhu = (t: number): JiuhuState => {
+  const tail = (t - lastSec) / (9 / 24); // 6-2-4 第 0 帧尾巴相位为 0，每 9/24 秒走 1
+  if (t >= lastSec) return { pose: JH_END.pose, tail: JH_END.tail, bend: JH_END.bend, gait: 0, run: 0 };
+  const lyLoc = liying(t).loc;
   const [m0, m1] = cues.jiuhuTurn;
   const [j0, j1] = cues.jiuhuWalk;
   if (t < j0) {
@@ -29,7 +28,7 @@ export const jiuhu = (globalFrame: number): JiuhuState => {
   // 小跑到屋子中间，然后一直侧身看着李樱；最后转到 6-2-4 首帧的朝向
   const progress = trip(t, j0, j1, jiuhuPath.length, walkPlans.jiuhu[2]);
   const loc = jiuhuPath.at(progress.s);
-  const turnIn = deg180(yawToward(J0, liying(j0 * FPS).loc));
+  const turnIn = deg180(yawToward(J0, liying(j0).loc));
   const track = deg180(yawToward(loc, lyLoc));
   let yaw = lerp(turnIn, deg180(jiuhuPath.heading(progress.s)), smoothstep01((t - j0) / 0.35));
   yaw = lerp(yaw, track, smoothstep01((t - (j1 - 0.3)) / 0.8));

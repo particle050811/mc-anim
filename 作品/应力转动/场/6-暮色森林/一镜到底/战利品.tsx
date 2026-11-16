@@ -149,14 +149,14 @@ export const LootLayer: React.FC<{ T: number; broom: THREE.Matrix4; camPos: numb
 };
 
 // ---------- 动力钻头虚影 ----------
-// 每处冲刺：矛尖离撞上的第一样东西（穿刺线的 `撞`）还有 8 米时亮足（之前 6 帧淡入），穿出（`出`）后再 10 米开始收、8 帧收完。
-// 淡入淡出按画面帧算（显示上的亮起收掉），转速按物理时间（每秒 50 圈，慢放 100 倍时半秒一圈）
+// 每处冲刺：矛尖离撞上的第一样东西（穿刺线的 `撞`）还有 8 米时亮足（之前 0.25 秒淡入），穿出（`出`）后再 10 米开始收、8/24 秒收完。
+// 淡入淡出按画面时间算（显示上的亮起收掉），转速按物理时间（每秒 50 圈，慢放 100 倍时半秒一圈）
 const drillWindows = ORDER.map((bossName) => {
   const pierce = route.pierceTable[bossName];
   const T0 = route.pierceTimes[bossName];
-  return { on: route.frameAt(T0 + (pierce.impactPos - 8) / pierce.V), off: route.frameAt(T0 + (pierce.出 + 10) / pierce.V) };
+  return { on: route.secAt(T0 + (pierce.impactPos - 8) / pierce.V), off: route.secAt(T0 + (pierce.出 + 10) / pierce.V) };
 });
-export const drillGhost = (F: number) => Math.max(0, ...drillWindows.map((w) => 0.6 * smoothstep01((F - (w.on - 6)) / 6) * (1 - smoothstep01((F - w.off) / 8))));
+export const drillGhost = (g: number) => Math.max(0, ...drillWindows.map((w) => 0.6 * smoothstep01((g - (w.on - 0.25)) / 0.25) * (1 - smoothstep01((g - w.off) / (8 / 24)))));
 export const drillSpin = (T: number) => T * 2 * Math.PI * 50;
 // 包在矛头外面：钻尖比矛尖前 0.06 格，放大 1.1 倍（刃半径 0.34 格，整个包住 0.3 格宽、0.7 格长的矛头）
 const drillSleeveScale = SPEAR_FIT.scale;
