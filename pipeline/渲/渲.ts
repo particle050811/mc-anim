@@ -6,7 +6,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
-import { prepareBrowser } from './浏览器.ts';
+import { expectedVersion, prepareBrowser } from './浏览器.ts';
+import { withShaderCache } from './着色器缓存.ts';
 import { openBrowserWithWatchdog } from './页面崩溃.ts';
 import { getCompositions, openBrowser, renderFrames, renderStill, type HeadlessBrowser } from './渲染器.ts';
 import { codeRoot, relativeToCodeRoot } from '../环境/路径.ts';
@@ -16,7 +17,7 @@ import { shadingEnvName, applyShadingTrial, type ShadingConfig } from './光影�
 import { telescopeEnvName, applyTelescope, type TelescopeConfig } from './望远.ts';
 import { stableCacheName } from './缓存名.ts';
 import { passRenderGate } from '../闸/闸.ts';
-import { dataRoot } from '../环境/配置.ts';
+import { dataPath, dataRoot } from '../环境/配置.ts';
 import { keepAwake } from '../环境/子进程.ts';
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { verifySegResourcePacks, withSegResourcePack, readWorkAssetLock } from '../资产/资产锁.ts';
@@ -101,7 +102,9 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
   try {
     const opened = await measureStage(records, label, '开浏览器', async () => {
       const exePath = await prepareBrowser();
-      return openBrowserWithWatchdog(() => openBrowser('chrome', { chromiumOptions: { gl: params.gl }, forceDeviceScaleFactor: params.scale, logLevel: 'error', browserExecutable: exePath }), exePath, (b) => b.close({ silent: true }));
+      const shaderStore = dataPath('cache', '着色器', `${expectedVersion()}-${params.gl}`);
+      const launch = () => openBrowser('chrome', { chromiumOptions: { gl: params.gl }, forceDeviceScaleFactor: params.scale, logLevel: 'error', browserExecutable: exePath });
+      return openBrowserWithWatchdog(() => withShaderCache(shaderStore, launch), exePath, (b) => b.close({ silent: true }));
     });
     browser = opened.browser;
     const watchdog = opened.watchdog;
