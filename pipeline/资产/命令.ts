@@ -131,7 +131,7 @@ const fillMeasure = async (checkOnly: boolean, runRecord: Parameters<Command['�
 export const assetCommands: Record<string, Command> = {
   assets: {
     usage: 'assets add <id> <文件> [--replace] | assets measure [--check] | assets vendor [--check] | assets seed | assets pack [--upload] | assets pull | assets packs',
-    note: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--check 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（film、still、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--upload 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "pack"、"封顶"，[段] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
+    note: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--check 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（film、still、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--upload 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "pack"、"cap"，[segment] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { toggles: ['--replace', '--check', '--upload'] });
       const [subcommand, id, file] = p.位置;
@@ -145,9 +145,9 @@ export const assetCommands: Record<string, Command> = {
         return;
       }
       if (subcommand === 'packs' && p.位置.length === 1 && !p.toggles.size) {
-        // 试样（环境变量）只建那一份；不然 材质包.toml 里的每一种选用（"pack" 和 [段] 另选的）各建一份
+        // 试样（环境变量）只建那一份；不然 材质包.toml 里的每一种选用（"pack" 和 [segment] 另选的）各建一份
         const selections = readResourcePackSelection(workRoot()).source === '环境' ? [readResourcePackSelection(workRoot())] : workResourcePackSelections(workRoot());
-        if (!selections.length) throw new Error(`这部作品没选用材质包：在 ${relativeToCodeRoot(workResourcePackTablePath(workRoot()))} 写 "pack" = ["材质包/<名>"]（或 [段] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
+        if (!selections.length) throw new Error(`这部作品没选用材质包：在 ${relativeToCodeRoot(workResourcePackTablePath(workRoot()))} 写 "pack" = ["材质包/<名>"]（或 [segment] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
         for (const packSelection of selections) {
           const r = buildResourcePackOverride(workRoot(), packSelection);
           const report = r.resourcePackLock.report as { resolution: { policy: string; blockAtlasCell: number }; blockAtlas: { replaced: number; total: number; notInPack: number; mismatched: number }; singleTextures: { total: number; replaced: number; notInPack: number; missingUpscaledInGroup: string[]; mismatched: { id: string; cause: string }[] }; scale: Record<string, number>; perPackContribution: Record<string, number>; biomeColor: { changed: number } | null; warnings: string[] };

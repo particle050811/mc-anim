@@ -100,18 +100,18 @@ export const applySwap = (assetLock: AssetLock, workRoot: string): AssetLock => 
 // 作品在 <作品根>/材质包.toml 写 "pack" = [...] 选用（顺序同 MC 资源包界面，上面的盖下面的），anim assets packs 生成覆盖层锁：
 // 被包换掉的 id → 换后的字节，盖在作品锁上，打包、指纹都看盖过的（换了的贴图 sha 不同，段指纹跟着变）。没写或空 = 原版，锁、指纹都不变。
 // 试样不改作品：环境变量 ANIM_PACKS=<名,名…> 顶掉作品的选用（=原版 关掉），覆盖层锁放数据根 cache/材质包/<作品>/。变量名用 ASCII：本机 zsh 会把中文变量名搅乱。
-// 封顶：一格最多几个贴图像素（16 = 缩回原版尺寸；不写按作品画风放到最大，见 材质包.ts 放大上限），环境变量 ANIM_PACKS_RES 或 材质包.toml 的 "封顶" = 16（全作品一个）。
+// 封顶：一格最多几个贴图像素（16 = 缩回原版尺寸；不写按作品画风放到最大，见 材质包.ts 放大上限），环境变量 ANIM_PACKS_RES 或 材质包.toml 的 "cap" = 16（全作品一个）。
 // 分辨率：材质包.toml 的 "resolution" = 64（全作品一个）同试验倍数一样不按画风整除，照这个分辨率上屏（用户 11-07 定《把回忆拼好给你》直接用 64x）。
 // 试验倍数（用户 11-06 要看 64x、128x、256x 真上屏的样子和渲染时长）：环境变量 ANIM_PACKS_TRY=64|128|256 只跟 ANIM_PACKS 一起才起作用，
 // 不按画风整除、照这个分辨率放（一个贴图像素不再是整数个成片像素），覆盖层锁名带 @试验<N>；作品的 材质包.toml 不认它。
-// 按段选（用户 11-02「材质包应该也是可选项 而不是耦合的」）：材质包.toml 的 [段] 小节 "<段键>" = [...] 给这一段换包，[] = 这一段用原版，没写的段用 "pack"。
+// 按段选（用户 11-02「材质包应该也是可选项 而不是耦合的」）：材质包.toml 的 [segment] 小节 "<段键>" = [...] 给这一段换包，[] = 这一段用原版，没写的段用 "pack"。
 // 选的包只进那一段自己的指纹（换了的贴图 sha 在它闭包的 asset: 叶子里），别的段不动；打包、算指纹按选用分组，一组一个打包（按材质包分组、照材质包选用）。
-// Studio（remotion.config.ts）只有一个打包，按作品的 "pack"：[段] 里另选的段在 Studio 里看到的是作品的包，以 anim still、film 为准。
+// Studio（remotion.config.ts）只有一个打包，按作品的 "pack"：[segment] 里另选的段在 Studio 里看到的是作品的包，以 anim still、film 为准。
 export const resourcePackEnvVar = 'ANIM_PACKS';
 export const resourcePackCapEnvVar = 'ANIM_PACKS_RES';
 export const resourcePackTrialEnvVar = 'ANIM_PACKS_TRY';
 export const workResourcePackTablePath = (workRoot: string) => path.join(workRoot, '材质包.toml');
-/** 来自：作品 = 作品的 "pack"；段 = [段] 小节给这一段另选的（和 "pack" 一样的算 作品）；环境 = 试样的环境变量 */
+/** 来自：作品 = 作品的 "pack"；段 = [segment] 小节给这一段另选的（和 "pack" 一样的算 作品）；环境 = 试样的环境变量 */
 export type ResourcePackSelection = { pack: string[]; source: '无' | '作品' | '段' | '环境'; resolutionCap?: number; trial?: number; resolution?: number };
 export type ResourcePackLock = { pack: { id: string; sha256: string }[]; resolutionCap?: number; trial?: number; resolution?: number; overrides: AssetLock; report?: unknown };
 
@@ -119,7 +119,7 @@ const addPackPrefix = (x: string) => (x.startsWith('材质包/') ? x : `材质�
 
 const readResCap = (x: string, source: string) => {
   const n = Number(x.trim());
-  if (!Number.isInteger(n) || n < 16 || (n & (n - 1)) !== 0) throw new Error(`${source}：封顶要写 16、32、64 这样 16 起的 2 的幂，现在是「${x}」`);
+  if (!Number.isInteger(n) || n < 16 || (n & (n - 1)) !== 0) throw new Error(`${source}：cap（封顶）要写 16、32、64 这样 16 起的 2 的幂，现在是「${x}」`);
   return n;
 };
 
@@ -134,7 +134,7 @@ const readPackArray = (x: string, source: string) => {
 export type ResourcePackTable = { file: string; pack: string[]; resolutionCap?: number; resolution?: number; segment: Map<string, string[]> };
 
 /** <作品根>/材质包.toml；没有这个文件是 null。这个文件随 remotion.config.ts 打包，不能用 TOML 库，只认下面这几种写法：
- *  "pack" = [ … ]、"封顶" = 32、"resolution" = 64、[段] 小节里一行一段 "<段键>" = [ … ]（# 开头的行是注释） */
+ *  "pack" = [ … ]、"cap" = 32、"resolution" = 64、[segment] 小节里一行一段 "<段键>" = [ … ]（# 开头的行是注释） */
 export const readResourcePackTable = (workRoot: string): ResourcePackTable | null => {
   const f = workResourcePackTablePath(workRoot);
   if (!fs.existsSync(f)) return null;
@@ -143,25 +143,25 @@ export const readResourcePackTable = (workRoot: string): ResourcePackTable | nul
   const topText = (sectionIndex < 0 ? lines : lines.slice(0, sectionIndex)).join('\n');
   const m = /^\s*"?pack"?\s*=\s*\[([^\]]*)\]/m.exec(topText);
   if (!m) throw new Error(`${f}：要写成 "pack" = ["材质包/<名>", …]（空数组 = 原版）`);
-  const c = /^\s*"?封顶"?\s*=\s*(\S+)/m.exec(topText);
+  const c = /^\s*"?cap"?\s*=\s*(\S+)/m.exec(topText);
   const resolutionMatch = /^\s*"?resolution"?\s*=\s*(\S+)/m.exec(topText);
   const segmentPacks = new Map<string, string[]>();
   if (sectionIndex >= 0) {
-    if (lines[sectionIndex]!.trim() !== '[段]') throw new Error(`${f}：只认 [段] 小节，现在是「${lines[sectionIndex]!.trim()}」`);
+    if (lines[sectionIndex]!.trim() !== '[segment]') throw new Error(`${f}：只认 [segment] 小节，现在是「${lines[sectionIndex]!.trim()}」`);
     let body = lines.slice(sectionIndex + 1).join('\n');
     for (const e of body.matchAll(/^\s*"([^"]+)"\s*=\s*\[([^\]]*)\]/gm)) {
-      if (segmentPacks.has(e[1]!)) throw new Error(`${f}：[段] 里「${e[1]}」写了两次`);
-      segmentPacks.set(e[1]!, readPackArray(e[2]!, `${f} [段] 的「${e[1]}」`));
+      if (segmentPacks.has(e[1]!)) throw new Error(`${f}：[segment] 里「${e[1]}」写了两次`);
+      segmentPacks.set(e[1]!, readPackArray(e[2]!, `${f} [segment] 的「${e[1]}」`));
       body = body.replace(e[0], '');
     }
-    if (body.trim()) throw new Error(`${f}：[段] 里一行一段，写成 "<段键>" = ["材质包/<名>", …]（[] = 这段用原版），这里认不出：${body.trim().split('\n')[0]}`);
+    if (body.trim()) throw new Error(`${f}：[segment] 里一行一段，写成 "<段键>" = ["材质包/<名>", …]（[] = 这段用原版），这里认不出：${body.trim().split('\n')[0]}`);
   }
   return { file: f, pack: readPackArray(m[1]!, `${f} 的「包」`), ...(c ? { resolutionCap: readResCap(c[1]!, f) } : {}), ...(resolutionMatch ? { resolution: readResCap(resolutionMatch[1]!, f) } : {}), segment: segmentPacks };
 };
 
 const samePacks = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 
-/** 选用哪些材质包：环境变量（试样，所有段一样）> 材质包.toml [段] 里这一段的 > "pack"。不给段键就是作品的 */
+/** 选用哪些材质包：环境变量（试样，所有段一样）> 材质包.toml [segment] 里这一段的 > "pack"。不给段键就是作品的 */
 export const readResourcePackSelection = (workRoot: string, env = process.env[resourcePackEnvVar], envResCap = process.env[resourcePackCapEnvVar], segKey?: string, envTrialRes = process.env[resourcePackTrialEnvVar]): ResourcePackSelection => {
   const withResCap = (packSelection: ResourcePackSelection, resCap: number | undefined): ResourcePackSelection => (packSelection.pack.length && resCap !== undefined ? { ...packSelection, resolutionCap: resCap } : packSelection);
   const envResCapNum = envResCap !== undefined && envResCap.trim() !== '' ? readResCap(envResCap, resourcePackCapEnvVar) : undefined;
@@ -180,7 +180,7 @@ export const readResourcePackSelection = (workRoot: string, env = process.env[re
   return withResolution(withResCap({ pack: resourcePackTable.pack, source: resourcePackTable.pack.length ? '作品' : '无' }, resCap));
 };
 
-/** 材质包.toml 里用得上的每一种选用（作品的 "pack" 和 [段] 另选的，去重、不含原版），anim assets packs 逐个建覆盖层锁 */
+/** 材质包.toml 里用得上的每一种选用（作品的 "pack" 和 [segment] 另选的，去重、不含原版），anim assets packs 逐个建覆盖层锁 */
 export const workResourcePackSelections = (workRoot: string): ResourcePackSelection[] => {
   const resourcePackTable = readResourcePackTable(workRoot);
   if (!resourcePackTable) return [];
@@ -233,7 +233,7 @@ export const verifySegResourcePacks = (workRoot: string, segKey: string) => {
   if (resourcePackSelectionKey(segmentPack) !== resourcePackSelectionKey(resourcePackPick)) throw new Error(`${segKey} 选用的材质包是 ${describeSelection(segmentPack)}，这次打包按的是 ${describeSelection(resourcePackPick)}：调用处要按材质包分组打包（资产锁.ts 逐组照材质包）`);
 };
 
-/** 覆盖层锁放哪：作品选用的进 Git（<作品根>/材质包.锁.json，像资产锁一样钉住字节；[段] 另选的是 材质包-<包+包>[@封顶].锁.json）；环境变量试样的放数据根 cache/ */
+/** 覆盖层锁放哪：作品选用的进 Git（<作品根>/材质包.锁.json，像资产锁一样钉住字节；[segment] 另选的是 材质包-<包+包>[@封顶].锁.json）；环境变量试样的放数据根 cache/ */
 export const resourcePackLockPath = (workRoot: string, packSelection: ResourcePackSelection, root = dataRoot()) => {
   const lockName = `${packSelection.pack.map((x) => x.slice('材质包/'.length)).join('+')}${packSelection.resolutionCap !== undefined ? `@${packSelection.resolutionCap}` : ''}${trialSuffix(packSelection)}`;
   if (packSelection.source === '作品') return path.join(workRoot, '材质包.锁.json');

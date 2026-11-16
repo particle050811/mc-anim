@@ -19,9 +19,9 @@ describe('材质包覆盖层', () => {
     expect(readResourcePackSelection(workRoot, '原版', undefined)).toEqual({ pack: [], source: '无' });
   });
 
-  it('封顶：材质包.toml 的 "封顶"、环境变量 ANIM_PACKS_RES（顶掉作品的），只认 16 起的 2 的幂；没选包就没有封顶；试样锁名带 @封顶', () => {
+  it('封顶：材质包.toml 的 "cap"、环境变量 ANIM_PACKS_RES（顶掉作品的），只认 16 起的 2 的幂；没选包就没有封顶；试样锁名带 @封顶', () => {
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
-    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = ["甲"]\n"封顶" = 16\n');
+    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = ["甲"]\n"cap" = 16\n');
     expect(readResourcePackSelection(workRoot, undefined, undefined)).toEqual({ pack: ['材质包/甲'], source: '作品', resolutionCap: 16 });
     expect(readResourcePackSelection(workRoot, undefined, '32')).toEqual({ pack: ['材质包/甲'], source: '作品', resolutionCap: 32 });
     expect(readResourcePackSelection(workRoot, '乙', '16')).toEqual({ pack: ['材质包/乙'], source: '环境', resolutionCap: 16 });
@@ -43,9 +43,9 @@ describe('材质包覆盖层', () => {
     expect(resourcePackSelectionKey({ pack: ['材质包/乙'], source: '环境', trial: 128 })).not.toBe(resourcePackSelectionKey({ pack: ['材质包/乙'], source: '环境' }));
   });
 
-  it('分辨率：材质包.toml 的 "resolution" 给作品和 [段] 另选的包都带上，[] 原版和环境变量试样不带', () => {
+  it('分辨率：材质包.toml 的 "resolution" 给作品和 [segment] 另选的包都带上，[] 原版和环境变量试样不带', () => {
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
-    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = ["甲"]\n"resolution" = 64\n\n[段]\n"2-雷雨" = []\n"2-抢龙蛋" = ["乙"]\n');
+    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = ["甲"]\n"resolution" = 64\n\n[segment]\n"2-雷雨" = []\n"2-抢龙蛋" = ["乙"]\n');
     expect(readResourcePackSelection(workRoot, '', '')).toEqual({ pack: ['材质包/甲'], source: '作品', resolution: 64 });
     expect(readResourcePackSelection(workRoot, '', '', '2-抢龙蛋')).toEqual({ pack: ['材质包/乙'], source: '段', resolution: 64 });
     expect(readResourcePackSelection(workRoot, '', '', '2-雷雨')).toEqual({ pack: [], source: '无' });
@@ -54,9 +54,9 @@ describe('材质包覆盖层', () => {
     expect(() => readResourcePackSelection(workRoot, '', '')).toThrow(/2 的幂/);
   });
 
-  it('按段选：[段] 里的段换包或 [] 退回原版，没写的段跟 "pack"；和 "pack" 一样的算作品的；环境变量顶掉所有段；锁各一份', () => {
+  it('按段选：[segment] 里的段换包或 [] 退回原版，没写的段跟 "pack"；和 "pack" 一样的算作品的；环境变量顶掉所有段；锁各一份', () => {
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
-    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = ["甲"]\n"封顶" = 32\n\n[段]\n# 注释\n"2-雷雨" = []\n"2-抢龙蛋" = ["乙", "甲"]\n"2-初入" = ["材质包/甲"]\n');
+    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = ["甲"]\n"cap" = 32\n\n[segment]\n# 注释\n"2-雷雨" = []\n"2-抢龙蛋" = ["乙", "甲"]\n"2-初入" = ["材质包/甲"]\n');
     expect([...readResourcePackTable(workRoot)!.segment]).toEqual([['2-雷雨', []], ['2-抢龙蛋', ['材质包/乙', '材质包/甲']], ['2-初入', ['材质包/甲']]]);
     expect(readResourcePackSelection(workRoot, '', '', '2-雷雨')).toEqual({ pack: [], source: '无' });
     expect(readResourcePackSelection(workRoot, '', '', '2-抢龙蛋')).toEqual({ pack: ['材质包/乙', '材质包/甲'], source: '段', resolutionCap: 32 });
@@ -69,7 +69,7 @@ describe('材质包覆盖层', () => {
     const packGroups = groupByResourcePackSelection(workRoot, ['2-归隐', '2-雷雨', '2-初入', '2-抢龙蛋', '2-烟花'], (x) => x);
     expect(packGroups.map((g) => [g.选.source, g.items])).toEqual([['作品', ['2-归隐', '2-初入', '2-烟花']], ['无', ['2-雷雨']], ['段', ['2-抢龙蛋']]]);
     // 写错了报出来，不悄悄当原版
-    for (const badToml of ['"pack" = []\n[段]\n2-雷雨 = []\n', '"pack" = []\n[别的]\n', '"pack" = []\n[段]\n"甲" = []\n"甲" = []\n', '"pack" = []\n[段]\n"甲" = [乙]\n']) {
+    for (const badToml of ['"pack" = []\n[segment]\n2-雷雨 = []\n', '"pack" = []\n[别的]\n', '"pack" = []\n[segment]\n"甲" = []\n"甲" = []\n', '"pack" = []\n[segment]\n"甲" = [乙]\n']) {
       fs.writeFileSync(path.join(workRoot, '材质包.toml'), badToml);
       expect(() => readResourcePackSelection(workRoot, '', '', '甲')).toThrow(/材质包\.toml/);
     }
@@ -77,7 +77,7 @@ describe('材质包覆盖层', () => {
 
   it('照材质包选用 里 读作品资产锁 默认按那一组；渲一段前核对打包的选用和这一段的一样', () => {
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
-    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = []\n[段]\n"甲" = ["某"]\n');
+    fs.writeFileSync(path.join(workRoot, '材质包.toml'), '"pack" = []\n[segment]\n"甲" = ["某"]\n');
     expect(currentResourcePackSelection(workRoot)).toEqual({ pack: [], source: '无' });
     expect(() => verifySegResourcePacks(workRoot, '乙')).not.toThrow();
     expect(() => verifySegResourcePacks(workRoot, '甲')).toThrow(/调用处要按材质包分组/);

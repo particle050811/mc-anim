@@ -4,7 +4,7 @@ import { readModel, modelFileName, sectionFormatVersion } from '../../../engine/
 // 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
 // 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（分发/随仓库.ts）。
 // 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（分发/发布.ts）。
-// 写了 材质包.toml 的作品：[段] 里的段键在清单里，每一种选用的覆盖层锁都建了、和现在登记的包对得上（资产/资产锁.ts 套材质包）。
+// 写了 材质包.toml 的作品：[segment] 里的段键在清单里，每一种选用的覆盖层锁都建了、和现在登记的包对得上（资产/资产锁.ts 套材质包）。
 // 粒子帧/ 下 anim extract --particle-frames 生成的模块和定义、配方、锁对得上（取材/粒子帧.ts）。
 // --deep：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import { decoderSourceStale } from '../../世界/区段解码器.ts';
@@ -133,7 +133,7 @@ const checkRepoBundle = async (c: CheckContext, report: CheckReport, assetLock: 
   }
 };
 
-/** 材质包.toml：[段] 的段键要在清单里；作品的 "pack" 和 [段] 另选的每一种，覆盖层锁都要建了、对得上（不然渲到那一段才报错） */
+/** 材质包.toml：[segment] 的段键要在清单里；作品的 "pack" 和 [segment] 另选的每一种，覆盖层锁都要建了、对得上（不然渲到那一段才报错） */
 const checkResourcePack = async (c: CheckContext, report: CheckReport, assetLock: AssetLock) => {
   const workRoot = c.absPath(c.workDir);
   const tablePath = c.workPath(path.basename(workResourcePackTablePath(workRoot)));
@@ -146,7 +146,7 @@ const checkResourcePack = async (c: CheckContext, report: CheckReport, assetLock
     return;
   }
   const parsedContent = await readContent(c);
-  if (!('errors' in parsedContent)) for (const k of segKeys) if (!parsedContent.segments.some((s) => s.key === k)) report.错(`[段] 的「${k}」不是清单里的段键（写段键，不写段名、编号）`, tablePath);
+  if (!('errors' in parsedContent)) for (const k of segKeys) if (!parsedContent.segments.some((s) => s.key === k)) report.错(`[segment] 的「${k}」不是清单里的段键（写段键，不写段名、编号）`, tablePath);
   for (const packSelection of workResourcePackSelections(workRoot)) {
     try {
       applyResourcePack(assetLock, workRoot, packSelection);

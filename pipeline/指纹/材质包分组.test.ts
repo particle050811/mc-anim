@@ -32,13 +32,13 @@ describe('材质包按段选进各段自己的指纹', () => {
   const resourcePackLock: ResourcePackLock = { pack: [{ id: resourcePack, sha256: sharedLock[resourcePack]!.sha256 }], overrides: { [smokeBlockPath]: { ...sharedLock[smokeBlockPath]!, sha256: 'f'.repeat(64) } } };
   fs.writeFileSync(path.join(workRoot, '材质包-faithful-32x.锁.json'), JSON.stringify(resourcePackLock));
 
-  it('[段] 给一段换包：只有这一段过期，差异说得出是哪件资产；写 [] 和没写一样', async () => {
+  it('[segment] 给一段换包：只有这一段过期，差异说得出是哪件资产；写 [] 和没写一样', async () => {
     const firstRun = await calc();
     writeTable('"pack" = []\n');
     const emptyResult = await calc();
     for (const k of ['甲', '乙', '丙']) expect(emptyResult[k]!.fingerprint).toBe(firstRun[k]!.fingerprint);
 
-    writeTable('"pack" = []\n\n[段]\n"甲" = ["faithful-32x"]\n"乙" = []\n');
+    writeTable('"pack" = []\n\n[segment]\n"甲" = ["faithful-32x"]\n"乙" = []\n');
     const changed = await calc();
     expect(changed.甲!.fingerprint).not.toBe(firstRun.甲!.fingerprint);
     expect(fingerprintDiff(firstRun.甲!, changed.甲!)).toContain(`资产 改了 ${smokeBlockPath}`);
@@ -49,13 +49,13 @@ describe('材质包按段选进各段自己的指纹', () => {
     expect((await computeSegFingerprints([{ segment: segments[0]!, renderSettings: {} }]))[0]!.fingerprint).toBe(changed.甲!.fingerprint);
   });
 
-  it('作品选了包、[段] 让一段退回原版：只有那一段和原版一样，其余换', async () => {
+  it('作品选了包、[segment] 让一段退回原版：只有那一段和原版一样，其余换', async () => {
     fs.rmSync(path.join(workRoot, '材质包.toml'), { force: true });
     const firstRun = await calc();
     fs.copyFileSync(path.join(workRoot, '材质包-faithful-32x.锁.json'), path.join(workRoot, '材质包.锁.json'));
     writeTable('"pack" = ["faithful-32x"]\n');
     const allSwapped = await calc();
-    writeTable('"pack" = ["faithful-32x"]\n[段]\n"乙" = []\n');
+    writeTable('"pack" = ["faithful-32x"]\n[segment]\n"乙" = []\n');
     const revertedB = await calc();
     expect(revertedB.乙!.fingerprint).toBe(firstRun.乙!.fingerprint);
     expect(revertedB.甲!.fingerprint).toBe(allSwapped.甲!.fingerprint);
