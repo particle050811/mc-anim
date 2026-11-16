@@ -7,12 +7,13 @@
 //   6-4-3c 镜头留在李樱这边（用户 10-10：箭被弹飞不给特写）：箭在画外击穿洞顶，八声碎裂挨一声（慢放里的声音按画面时间原速放，见 音效/慢放.ts），钉住后几帧回到原速：李樱抬头、尖啸体尖啸；切黄叛愣住；再切回李樱戒备，石块砸到他身边。
 // `跟拍时钟` 是演法参数：主方案 1/12，另有备选（段.tsx），换的只是时钟，各段剧情起止不变。
 import { HIT_STOP_SEC } from '../../../默认.ts';
+import { segFps } from '@engine/段/段定义.ts';
 import * as geom from './几何.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 import type { LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 
-// g → T 是积分出来的表，一格 1/24 秒（原来一格一帧，切点、段界照旧落在格上），格间线性
-export const samplesPerSec = 24;
+// g → T 是积分出来的折线，每 1/24 秒（画面）一个点（原来一格一帧，点的疏密照旧，改了会挪画面），点间线性；切点、段界落在输出帧上
+const samplesPerSec = 24;
 const arrivalSec = (s: number) => geom.shootTime + geom.arrowArriveTime(s); // 箭（实体位置）走到离搭箭点 s 米的剧情时刻
 
 // 镜头切换的剧情时刻（也是段的分界）
@@ -26,7 +27,7 @@ export const cuts = {
   C3: geom.deflect + 1.174, // → 李樱身后（东边，越过他右肩往西看；洞顶掉下来的石块从画面左上方砸下来，落到他左前方那道墙后面，见编排.ts 的 C3a、落石落地）
   END: geom.deflect + 2.924,
 };
-// 剧情时间在这两刻之间的不演（用户 10-18 定：删掉等拉弓），A1 最后一格之后直接是 A3
+// 剧情时间在这两刻之间的不演（用户 10-18 定：删掉等拉弓），画面到 A2 那一刻直接接 A3
 const skipTimes = [cuts.A2, cuts.A3] as const;
 // 跟拍里时钟的几个点（箭的程，米）：快起来、开始慢、慢到 1/500
 export const followDist = { 快: geom.ductEndDist + 5.5, slowStart: geom.deflectDist - 7, slowEnd: geom.deflectDist - 1.5 };
@@ -71,64 +72,89 @@ export const buildTimeline = (followClock: number, variant?: Staging) => {
     }
     return 1;
   };
-  // 画面时间 → 剧情时间：按画面时间积分 dT = 时钟(T) dt，每格细分 64 步（慢放最狠时一格只有 0.08 毫秒剧情时间）
+  // 画面时间 → 剧情时间：按画面时间积分 dT = 时钟(T) dt，每 1/24 秒（画面）记一个点、其间细分 64 步（慢放最狠时一步只有 0.08 毫秒剧情时间）。
+  // 跳过、停顿的起止按积分到的真时刻另插点，不挪到 1/24 秒的点上（用户 11-16 定不留 1/24 秒的格）：跳过是同一画面秒上的两个点（A2、A3），停顿是剧情秒相同的两个点
   const SUB = 64;
-  const STORY: number[] = (() => {
-    const out = [0];
-    let storySec = 0;
+  const { G, T } = (() => {
+    const G = [0];
+    const T = [0];
+    const push = (g: number, storySec: number) => {
+      G.push(g);
+      T.push(storySec);
+    };
+    const subStep = 1 / samplesPerSec / SUB;
     const stop = variant?.pause;
+    let g = 0;
+    let storySec = 0;
+    let skipped = false;
+    let paused = false;
     while (storySec < cuts.END) {
-      for (let k = 0; k < SUB; k++) {
-        const subStep = 1 / samplesPerSec / SUB;
+      const knotSec = (Math.floor(g * samplesPerSec + 1e-9) + 1) / samplesPerSec;
+      let event = false;
+      while (g < knotSec && !event) {
+        const steps = Math.max(1, Math.ceil((knotSec - g) / subStep - 1e-6));
+        const h = (knotSec - g) / steps;
         const k1 = clock(storySec);
-        const k2 = clock(storySec + (k1 * subStep) / 2);
-        const next = storySec + k2 * subStep;
-        // 跳过：跨过 A2 这一格直接落在 A3
-        if (storySec < skipTimes[0] && next >= skipTimes[0]) {
+        const k2 = clock(storySec + (k1 * h) / 2);
+        const next = storySec + k2 * h;
+        // 跳过：积分到 A2 的那一刻直接接 A3
+        if (!skipped && storySec < skipTimes[0] && next >= skipTimes[0]) {
+          g += (h * (skipTimes[0] - storySec)) / (next - storySec);
+          push(g, skipTimes[0]);
+          push(g, skipTimes[1]);
           storySec = skipTimes[1];
-          break;
-        }
-        // 跨过停顿那一刻：这一格落在那一刻上，再重复几格
-        if (stop && storySec < stop.storySec && next >= stop.storySec) {
+          skipped = event = true;
+        } else if (stop && !paused && storySec < stop.storySec && next >= stop.storySec) {
+          // 停顿：到那一刻定住 HIT_STOP_SEC（画面秒）
+          g += (h * (stop.storySec - storySec)) / (next - storySec);
+          push(g, stop.storySec);
+          g += HIT_STOP_SEC;
+          push(g, stop.storySec);
           storySec = stop.storySec;
-          for (let n = 0; n < HIT_STOP_SEC * samplesPerSec; n++) out.push(storySec);
-          break;
+          paused = event = true;
+        } else {
+          g = steps === 1 ? knotSec : g + h;
+          storySec = next;
         }
-        storySec = next;
       }
-      out.push(storySec);
+      if (g > G[G.length - 1]) push(g, storySec);
     }
-    return out;
+    return { G, T };
   })();
-  const totalSec = STORY.length / samplesPerSec;
+  // 画面秒 g 落在哪两个点之间（同一画面秒上的两个点取后一个：跳过那一刻已是 A3）
+  const knotBefore = (g: number) => {
+    let lo = 0;
+    let hi = G.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (G[mid] <= g) lo = mid + 1;
+      else hi = mid;
+    }
+    return Math.min(Math.max(lo - 1, 0), G.length - 2);
+  };
   const storyTime = (g: number) => {
-    const x = g * samplesPerSec;
-    const i = Math.min(Math.max(Math.floor(x), 0), STORY.length - 2);
-    return STORY[i] + (STORY[i + 1] - STORY[i]) * (x - i);
+    const i = knotBefore(g);
+    return T[i] + ((T[i + 1] - T[i]) * (g - G[i])) / (G[i + 1] - G[i]);
   };
-  // 第一个剧情时间 ≥ T 的格
-  const sampleAt = (storySec: number) => {
-    const i = STORY.findIndex((t) => t >= storySec);
-    return i < 0 ? STORY.length - 1 : i;
-  };
-  // 剧情时间 T 以后的第一个格点（画面秒）
-  const gridSecAt = (storySec: number) => sampleAt(storySec) / samplesPerSec;
-  // 剧情时间 → 画面秒（`storyTime` 的反函数，格间线性）
+  // 剧情时间 → 画面秒（`storyTime` 的反函数，点间线性）：跳过的那截都算在跳过那一刻，停顿那一刻算停住的头一刻
   const secFractional = (storySec: number) => {
-    const i = sampleAt(storySec);
-    if (i <= 0) return 0;
-    if (storySec >= skipTimes[0] && storySec <= skipTimes[1]) return i / samplesPerSec; // 跳过的那截都算在 A3 切进来那一格
-    const t0 = STORY[i - 1];
-    const t1 = STORY[i];
-    return (i - 1 + (t1 > t0 ? Math.min(1, Math.max(0, (storySec - t0) / (t1 - t0))) : 1)) / samplesPerSec;
+    const j = T.findIndex((t) => t >= storySec);
+    if (j <= 0) return j < 0 ? G[G.length - 1] : 0;
+    const t0 = T[j - 1];
+    const t1 = T[j];
+    return t1 > t0 ? G[j - 1] + ((G[j] - G[j - 1]) * (storySec - t0)) / (t1 - t0) : G[j];
   };
-  // 段表（画面秒，[起, 止)，落在格上）
+  // 剧情时间 T 以后的第一个输出帧（画面秒）：切点、段界落在这里
+  const frameSecAt = (storySec: number) => Math.ceil(secFractional(storySec) * segFps - 1e-6) / segFps;
+  // 末帧是剧情时间到 END 的第一个输出帧
+  const totalSec = frameSecAt(cuts.END) + 1 / segFps;
+  // 段表（画面秒，[起, 止)，落在输出帧上）
   const segmentTable: Record<SegmentName, { 起: number; 止: number; 名: string }> = {
-    '6-4-3a': { 起: 0, 止: gridSecAt(cuts.B1), 名: '风矢' },
-    '6-4-3b': { 起: gridSecAt(cuts.B1), 止: gridSecAt(cuts.C1), 名: '挡箭' },
-    '6-4-3c': { 起: gridSecAt(cuts.C1), 止: totalSec, 名: '挑飞' },
+    '6-4-3a': { 起: 0, 止: frameSecAt(cuts.B1), 名: '风矢' },
+    '6-4-3b': { 起: frameSecAt(cuts.B1), 止: frameSecAt(cuts.C1), 名: '挡箭' },
+    '6-4-3c': { 起: frameSecAt(cuts.C1), 止: totalSec, 名: '挑飞' },
   };
-  return { samplesPerSec, followClock, clock, totalSec, storyTime, sampleAt, gridSecAt, secFractional, segTable: segmentTable, segSec: (segment: SegmentName) => segmentTable[segment].止 - segmentTable[segment].起 };
+  return { followClock, clock, totalSec, storyTime, frameSecAt, secFractional, segTable: segmentTable, segSec: (segment: SegmentName) => segmentTable[segment].止 - segmentTable[segment].起 };
 };
 export type SegmentName = '6-4-3a' | '6-4-3b' | '6-4-3c';
 
@@ -140,26 +166,26 @@ const mainTimeline = buildTimeline(mainFollowClock);
 export const clock = mainTimeline.clock;
 export const totalSec = mainTimeline.totalSec;
 export const storyTime = mainTimeline.storyTime;
-export const gridSecAt = mainTimeline.gridSecAt;
+export const frameSecAt = mainTimeline.frameSecAt;
 export const secFractional = mainTimeline.secFractional;
 export const segTable = mainTimeline.segTable;
 export const segSec = mainTimeline.segSec;
 // 机位切换的画面秒
 export const cutSecs = {
-  A2: gridSecAt(cuts.A2),
-  A3: gridSecAt(cuts.A3),
+  A2: frameSecAt(cuts.A2),
+  A3: frameSecAt(cuts.A3),
   B1: segTable['6-4-3b'].起,
-  deflect: gridSecAt(geom.deflect),
+  deflect: frameSecAt(geom.deflect),
   C1: segTable['6-4-3c'].起,
-  C2: gridSecAt(cuts.C2),
-  C3: gridSecAt(cuts.C3),
+  C2: frameSecAt(cuts.C2),
+  C3: frameSecAt(cuts.C3),
 };
 // 给 6-4-3b 刀光那一路对时间用（主方案的画面秒）：
 // `swingStartSec` = 刀开始动（6-1-2 帧 98、拔刀起）；`slashSpawnSec` = 刀挥到正前方（6-1-2 帧 104，斩击实体生成），两者之间剧情上 0.045 秒；
-// `deflectSec` = 刀刃扫过箭路、箭被挑开的那一格（6-1-2 帧 104.576，见 几何.ts 的 弹开关键帧）。
-export const swingStartSec = gridSecAt(geom.drawStart);
-export const deflectSec = gridSecAt(geom.deflect);
-export const slashSpawnSec = gridSecAt(geom.swingTime);
+// `deflectSec` = 刀刃扫过箭路、箭被挑开的那一帧（6-1-2 帧 104.576，见 几何.ts 的 弹开关键帧）。
+export const swingStartSec = frameSecAt(geom.drawStart);
+export const deflectSec = frameSecAt(geom.deflect);
+export const slashSpawnSec = frameSecAt(geom.swingTime);
 // 黄叛「纳命来」的开口（画面秒）：放箭前 3/4 秒（用户 10-12 在剪映里放的位置，「来」正对放箭）；用户 10-18 删了等拉弓以后前半句落在李樱翻箱子的镜头里。
 // 画面的点头口型用；声音照 段/6-规矩风矢 段.ts 的台词 cue 放（原来在 声音.tsx，那份声音表 11-06 迁成原生段后没人用、删了），两边要一起改。放箭那一刻对齐到 1/60 秒（输出帧）
 export const shoutLeadSec = 3 / 4;

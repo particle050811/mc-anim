@@ -45,9 +45,9 @@ export const tl = buildTimeline(followClock, {
   pause: { storySec: pauseTime },
 });
 const startSec = tl.segTable['6-4-3b'].起;
-const cutStartSec = tl.gridSecAt(cuts.C2);
-export const deflectArrowSec = tl.gridSecAt(bEnd) - startSec;
-export const flickArrowSec = tl.gridSecAt(cuts.C3) - cutStartSec;
+const cutStartSec = tl.frameSecAt(cuts.C2);
+export const deflectArrowSec = tl.frameSecAt(bEnd) - startSec;
+export const flickArrowSec = tl.frameSecAt(cuts.C3) - cutStartSec;
 // 段内 0 秒在这条时间线上的画面秒
 export const segStartSec = { '6-4-3b': startSec, '6-4-3c': cutStartSec };
 export const liying = choreo.makeLiying({ windup: true });
@@ -58,7 +58,7 @@ export const liying = choreo.makeLiying({ windup: true });
 // 挡箭不放北侧：李樱北边、东边是台阶柱和兵营东墙，北侧机位（机位核对.py --搜 搜的几处，静帧比过）都只拍到墙后面他一个头
 const cutSec = tl.secFractional(cutToLiYing);
 const push1 = tl.secFractional(returnSpeedTime);
-const stopSec = tl.gridSecAt(pauseTime);
+const stopSec = tl.secFractional(pauseTime); // 定住的头一刻
 const arrowRight: V3 = norm(cross(geom.incomingDir, [0, 0, 1]));
 const arrowUp: V3 = norm(cross(arrowRight, geom.incomingDir));
 // 画面上的箭速 → 0（慢）～1（快）：8 米/秒（接 6-4-3a 风道里的 1/120）起，167 米/秒以上算满
@@ -76,7 +76,7 @@ const arrowDistAt = (g: number) => Math.max(0, geom.incomingArrowDist(tl.storyTi
 // g 是这条时间线的画面秒
 export const cameraAt = (g: number): Cam => {
   const t = tl.storyTime(g);
-  // 主方案按格切机位（mainCutSecs），这条时间线切在剧情时间上：剧情时间过了切点、换到主方案还差不到一格的，算到切点那一格，不然 6-4-3c 第 0 帧还是上一个机位
+  // 主方案按输出帧切机位（mainCutSecs），这条时间线切在剧情时间上：剧情时间过了切点、换到主方案还差不到一帧的，算到切点那一帧，不然 6-4-3c 第 0 帧还是上一个机位
   if (t >= cuts.C2) return choreo.camera(Math.max(mainSecFractional(t), mainCutSecs.C2, t >= cuts.C3 ? mainCutSecs.C3 : 0));
   if (t < cutToLiYing) return followPose(arrowDistAt(g), speedWeight(g));
   const push = smoothstep01((g - cutSec) / (push1 - cutSec));

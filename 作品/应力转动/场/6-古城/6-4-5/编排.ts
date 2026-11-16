@@ -24,11 +24,12 @@ import { lineTable } from '../../../配音/台词轨.tsx';
 import type * as THREE from 'three';
 import { sheathConstraint as sheathConstraint, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
 import { lerp } from '@engine/core/数学.ts';
+import { segFps } from '@engine/段/段定义.ts';
 import type { Cam } from '@engine/core/机位.ts';
 import type { LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 
-// 6-4-3c 末帧那一格（主时间线的画面秒）
-export const startGlobalSec = timeline643.totalSec - 1 / timeline643.samplesPerSec;
+// 6-4-3c 末帧（主时间线的画面秒）
+export const startGlobalSec = timeline643.totalSec - 1 / segFps;
 export const globalSecAt = (t: number) => startGlobalSec + t;
 export const storySecAt = (t: number) => choreo643.storySecAt(globalSecAt(t));
 export const FOOT: V3 = liYingDeflectFeet;
@@ -258,7 +259,7 @@ const smoothedWaist = (t: number): V3 => {
   }
   return sum;
 };
-const LENS2: Key[] = [[turnEndSec, 32], [jump1.f1, 30], [durationSec - 1 / 24, 28]];
+const LENS2: Key[] = [[turnEndSec, 32], [jump1.f1, 30], [durationSec - 1 / 60, 28]];
 export const camera = (t: number): Cam => {
   if (t < turnEndSec) return firstCam(t);
   const target = smoothedWaist(Math.max(t, turnEndSec + 1 / 8));
