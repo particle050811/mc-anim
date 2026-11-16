@@ -20,6 +20,7 @@ import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useOverworldTerrain, overworldPack, overworldDistantPack, overworldWindowView } from '@engine/voxel/主世界地形.ts';
 import { overworldOrigin, gameToScene } from './主世界116.ts';
 import { basePoolBlock, baseIslandDigBoxes } from './基地小岛挖框.ts';
+import { trialFarM } from '@engine/light/高度雾.ts';
 
 export const baseSite = { x: 39740, z: -1130, groundY: 68 };
 // 房间本地 → 世界：只平移，不转（本地轴就是世界轴）
@@ -32,7 +33,7 @@ export const islandOffset: V3 = [1373.5 + (poolBlock.x - 1372) - overworldOrigin
 export const islandToWorld = (p: number[]): V3 => [p[0] + islandOffset[0], p[1] + islandOffset[1], p[2] + islandOffset[2]];
 
 
-// 地形只画到 主世界窗外.远（30 公里）：这几段镜头都在岛上贴着地面，雾用 主世界窗外.能见度（12 公里），30 公里外画了也看不见
+// 地形只画到 overworldWindowView.farM（30 公里）：这几段镜头都在岛上贴着地面，远雾在 30 公里拉满成天色，再远画了也看不见
 export const BaseIslandTerrain: React.FC<{ camPos: number[] }> = ({ camPos: camPos }) => {
   const terrain = useOverworldTerrain(overworldPack, overworldDistantPack, baseIslandDigBoxes, undefined, '基地小岛');
   useEffect(() => {
@@ -42,5 +43,5 @@ export const BaseIslandTerrain: React.FC<{ camPos: number[] }> = ({ camPos: camP
     if (packOrigin.some((v, i) => Math.abs(v - expectedOrigin[i]) > 1e-6)) cancelRender(new Error(`基地小岛：区段包 ${overworldPack} 的原点变了（${packOrigin} ≠ ${expectedOrigin}），改 主世界116.ts 的 overworldOrigin`));
   }, [terrain]);
   if (!terrain) return null;
-  return <VoxelWorld key={terrain.key} source={terrain.source} center={camPos} pixel={LevelParams.视频.pixel} far={overworldWindowView.farM} heightRange={terrain.heightRange} />;
+  return <VoxelWorld key={terrain.key} source={terrain.source} center={camPos} pixel={LevelParams.视频.pixel} far={trialFarM(overworldWindowView.farM)} heightRange={terrain.heightRange} />;
 };

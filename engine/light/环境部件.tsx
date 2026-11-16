@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SunLight } from 'three/examples/jsm/lights/SunLight.js';
 import { CascadedShadow } from './级联阴影.ts';
-import { useDirFog, useHeightFog } from './高度雾.ts';
+import { useDirFog, useFarFog, useHeightFog, useSkyFog } from './高度雾.ts';
 import { useSelfLight } from './光照配比.ts';
 import { Clouds } from './天空.tsx';
 import type { V3, EnvDescription, Cloud, Fog, LightCoeffs } from './环境.ts';
@@ -23,6 +23,15 @@ export const HeightFogLayer: React.FC<{ params: NonNullable<EnvDescription['heig
 };
 export const DirFogLayer: React.FC<{ opts: Parameters<typeof useDirFog>[0] }> = ({ opts }) => {
   useDirFog(opts);
+  return null;
+};
+export const FarFogLayer: React.FC<{ far: number }> = ({ far }) => {
+  useFarFog({ far });
+  return null;
+};
+// 远雾在不开大气的画法里要天色：只登记色带，比例 0（雾色照旧）
+export const SkyBandsLayer: React.FC<{ opts: NonNullable<Parameters<typeof useSkyFog>[0]> }> = ({ opts }) => {
+  useSkyFog(opts);
   return null;
 };
 export const SelfLightLayer: React.FC<{ k: number }> = ({ k }) => {

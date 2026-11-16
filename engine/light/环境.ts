@@ -62,6 +62,8 @@ export type EnvDescription = {
   lightSpec: { tier: TierName; intensity?: number } | { lightMix: LightMix; intensity?: number };
   fog: Fog;
   heightFog?: HeightFog;
+  /** 远雾（高度雾.ts 的 useFarFog）：远 = 地形最远距离（米）。给了：起 × 远 以内不加雾、到 远 拉满成视线方向的天色，暮色画法拿它代替线性雾当底；不给照旧 */
+  farFog?: { far: number };
   /** 主世界画法的 Photon 大气：地形远端（米，边界雾在这里融进天色）；null = 不开大气（钻到地下时）。不给 = 40000 */
   atmosphereFar?: number | null;
   cloud: Cloud;
@@ -229,6 +231,7 @@ export const defineEnvironment = (e: EnvDescription, displayName = '环境'): En
   const f = e.fog;
   if (f.种类 === '线性' && !(f.near >= 0 && f.far > f.near)) throw new Error(`${displayName}：线性雾 近 ${f.near}、远 ${f.far} 要 0 ≤ 近 < 远`);
   if (f.种类 === '指数平方' && !(f.visibility > 0)) throw new Error(`${displayName}：能见度 ${f.visibility} 要大于 0`);
+  if (e.farFog && !(e.farFog.far > 0)) throw new Error(`${displayName}：远雾.远 ${e.farFog.far} 要大于 0`);
   if (e.heightFog && !(e.heightFog.halfLife > 0 && e.heightFog.density >= 0)) throw new Error(`${displayName}：高度雾 半衰要大于 0、浓度不能是负的`);
   if (e.cloud.种类 === 'photon' && (e.cloud.加?.length ?? 0) > 4) throw new Error(`${displayName}：Photon 云最多加 4 朵`);
   if (e.shadow && e.shadow.far !== undefined && !(e.shadow.far > 0)) throw new Error(`${displayName}：投影.远 ${e.shadow.far} 要大于 0`);

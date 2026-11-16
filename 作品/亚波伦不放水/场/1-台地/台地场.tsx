@@ -8,7 +8,7 @@ import { rigSpline, type Cam } from '@engine/core/机位.ts';
 import { placeCamera } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
-import { netherBrighter, RealNether } from '../../地点/真下界.tsx';
+import { netherBrighter, netherFarM, RealNether } from '../../地点/真下界.tsx';
 import { altarBottomCut } from '../../地点/地形改动.ts';
 
 export const aspect = { width: 1280, height: 720 } as const;
@@ -17,7 +17,8 @@ const PlaceRig: React.FC<{ cameraRig: Cam }> = ({ cameraRig }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
-  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, aspect.width / aspect.height, { near: 0.05, far: 1400 });
+  // 远裁面至少 1400；远雾的 D 放大到再往外时跟着放（下界高差不到 128 格，D 外加 200 够）
+  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, aspect.width / aspect.height, { near: 0.05, far: Math.max(1400, netherFarM(netherBrighter) + 200) });
   return null;
 };
 

@@ -47,21 +47,3 @@ export const pickSections = (params: PickSectionsParams): SectionId[] => {
     for (let i = Math.floor((cx - params.farM) / S0); i <= Math.floor((cx + params.farM) / S0); i++) visit(coarsestLevel, i, j);
   return out;
 };
-
-// 远裁：挑区段比的是区段离镜头最近的那点，区段从 32 改成 64 格以后，最外一圈画到 farM 以外远了一倍，雾尽头外面露出雾色的台阶剪影（6-战利品古卷出发 2600）。
-// 跨过 farM 的区段按四块 32 × 32 格各自照同一个算法再比一次，远过 farM 的那几块在着色器里丢掉（材质.ts `voxelClipMaterial`），画到的范围就和 32 × 32 时一样（用户 11-16 定）。
-// 只在着色器里丢：重转地形包不归这次改；整片地形都丢片元会关掉提前深度测试（engine/core/光栅深度.ts 量过不透明遍慢三倍），所以只给跨过 farM 的区段换材质。
-export const clipQuarterCells = sectionCells / 2;
-/** 第 a + 2b 位：区段里 x 第 a 块、y 第 b 块（各 `clipQuarterCells` 格）离镜头最近也远过 farM，要丢。0 = 整块都画 */
-export const farDropMask = (section: SectionId, camPos: number[], farM: number) => {
-  const [cx, cy] = camPos;
-  const quarterM = clipQuarterCells * 2 ** section.L;
-  let mask = 0;
-  for (let b = 0; b < 2; b++)
-    for (let a = 0; a < 2; a++) {
-      const x0 = (section.i * 2 + a) * quarterM;
-      const y0 = (section.j * 2 + b) * quarterM;
-      if (Math.hypot(Math.max(x0 - cx!, 0, cx! - x0 - quarterM), Math.max(y0 - cy!, 0, cy! - y0 - quarterM)) > farM) mask |= 1 << (a + 2 * b);
-    }
-  return mask;
-};

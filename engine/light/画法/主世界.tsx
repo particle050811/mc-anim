@@ -9,7 +9,7 @@ import { SKY, SkyDome, TWILIGHT } from '../天空.tsx';
 import { tierMix } from '../灯光档位.ts';
 import { effectiveGameTime, type V3 } from '../环境.ts';
 import { VanillaStarMoon } from '../星月.tsx';
-import { defineDraw, ParallelMainLight, ShadowMainLight, vanillaCloud, SelfLightLayer, fogElement, fogFarEnd, type DrawProps } from '../环境部件.tsx';
+import { defineDraw, FarFogLayer, ParallelMainLight, ShadowMainLight, vanillaCloud, SelfLightLayer, fogElement, fogFarEnd, type DrawProps } from '../环境部件.tsx';
 
 // 按时刻算到月光时主光的颜色：暂定借暮色的偏蓝灰（同是原版光照贴图天暗时往蓝里偏，见 天空.tsx 的 TWILIGHT.light）
 const moonLightColor = TWILIGHT.light;
@@ -23,6 +23,7 @@ const overworldPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight
   return (
     <>
       <SelfLightLayer k={mix.selfLight} />
+      {e.farFog && <FarFogLayer far={e.farFog.far} />}
       {fogElement(e.fog, SKY.fog)}
       <group rotation={[-Math.PI / 2, 0, 0]}>
         {atmosphereFar !== null && <Atmosphere sun={lighting.sun} far={atmosphereFar} />}

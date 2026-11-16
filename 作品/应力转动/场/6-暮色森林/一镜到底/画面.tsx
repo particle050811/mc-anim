@@ -18,7 +18,7 @@ import { WornSheath } from '@库/物品/拔刀剑.tsx';
 import { SpearInHand } from '@库/物品/下界合金长矛.tsx';
 import { ItemPickup, type PickupItem } from '@库/特效/物品拾取.tsx';
 import { TwilightTerrain, twilightLandmark, twilightHeightAboveGround, viewEdgeDistance, type TwilightLandmarkName } from '../../../地点/暮色新世界.tsx';
-import { cruiseFogFar, farViewOf, farViewLighting, TWILIGHT_FAR_VIEW, type TwilightFarView } from '../../../地点/暮色新世界/超远景.ts';
+import { cruiseFogFar, farViewOf, farViewLighting, twilightFarViewM, TWILIGHT_FAR_VIEW, type TwilightFarView } from '../../../地点/暮色新世界/超远景.ts';
 import * as P613 from '../6-1-3/编排.ts';
 import * as castleChoreo from '../6-1-9/编排.ts';
 import { LichScene, lichRiderTweak } from '../6-1-5/戏.tsx';
@@ -199,7 +199,8 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; level?: RenderLevel; sc
   ...overrides
 }) => {
   const far = farViewOf(officialFar);
-  const { pixel: lodPixels, far: farDist, dpr } = { ...LevelParams[level], ...overrides };
+  const { pixel: lodPixels, far: farLevel, dpr } = { ...LevelParams[level], ...overrides };
+  const farDist = far ? twilightFarViewM(farLevel) : farLevel;
   const { width, height } = useVideoConfig();
   const cam = camOverride ?? cameraAt(g);
   const broom = route.broom(g);
@@ -220,7 +221,7 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; level?: RenderLevel; sc
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(dpr)}>
-        <TwilightLighting camPos={cam.pos} fogFar={fogFar} aboveGround={aboveGround} {...farViewLighting(far)} />
+        <TwilightLighting camPos={cam.pos} fogFar={fogFar} aboveGround={aboveGround} {...farViewLighting(far)} farFog={far ? { far: farDist } : undefined} />
         <FlightRig c={cam} near={0.05} far={150000} />
         {AO && <ScreenAo />}{/* 照 Voxy 的屏幕空间 AO（用户 10-03），默认开，关掉传 屏幕AO={false} */}
         <group rotation={[-Math.PI / 2, 0, 0]}>

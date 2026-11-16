@@ -160,6 +160,7 @@ describe('定义环境：写错了加载时就报', () => {
     expect(() => defineEnvironment(overworldBase({ weather: { 雨: 1.5, 雷: 0 } }))).toThrow(/0～1/);
     expect(() => defineEnvironment(overworldBase({ fog: { 种类: '线性', near: 100, far: 50 } }))).toThrow(/近 < 远/);
     expect(() => defineEnvironment(overworldBase({ fog: { 种类: '指数平方', visibility: 0 } }))).toThrow(/能见度/);
+    expect(() => defineEnvironment(overworldBase({ farFog: { far: 0 } }))).toThrow(/远雾/);
   });
   it('自定配比不能是负的', () => {
     expect(() => defineEnvironment(overworldBase({ lightSpec: { lightMix: { direct: 3, skylight: -1, ambient: 0, selfLight: 0 } } }))).toThrow(/配比\.skylight/);

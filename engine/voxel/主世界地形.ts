@@ -27,9 +27,10 @@ export const overworldPack = '主世界-116';
 export const overworldDistantPack = '主世界-116-远景';
 // 远景兜底后看得到多远画多远：6-2-5 的雾浓到一半在 38～45 km（镜头/6-2-5/编排.ts 的 `visibility`），体素世界默认 24 km（lib/渲染级别.ts）会在雾还淡处截断，所以主世界镜头用 40 km
 export const overworldFarM = 40000;
-// 基地窗外（基地屋里朝东窗、南窗看海）：雾按能见度 12 km（`<FlightFog visibility={overworldWindowView.visibility} />`），体素世界只画到 30 km（`<VoxelWorld 远={overworldWindowView.远} … />`，不用 地形.远）。
-// 为什么：修整包只保证窗外 30°～240° 的 30 km 里是海，再往外是陆地；按 6-2-5 低空 38 km 雾，东窗 55°～125°、南窗 145°～215° 的地平线会露出 30～43 km 的陆地和雪山头，而场景描述（归档的 v.md）写的窗外是「一直铺到天边淡淡的海雾里」。
-// FlightFog 是 exp²，雾 = 1 − 2^−(距离/能见度)²：12 km 雾到 30 km 浓到 98.7%，30 km 外看不见；15 km 雾到 30 km 是 94%，雪山头还隐约透出，所以取 12 km（预览 主世界远景/00～03）。
+// 基地窗外（基地屋里朝东窗、南窗看海）：体素世界只画到 30 km（`<VoxelWorld far={overworldWindowView.farM} … />`，不用 地形.远），远雾（`<FlightFog far={overworldWindowView.farM} />`）在 30 km 拉满成天色。
+// 为什么不画远：修整包只保证窗外 30°～240° 的 30 km 里是海，再往外是陆地，场景描述（归档的 v.md）写的窗外是「一直铺到天边淡淡的海雾里」。
+// 30 km（用户 11-16 定）：比过 30/20/15/10 km，20 km 少了远处的山头；30 km 外露出地平线的陆地挡云挖成方块的事已在 engine/light/大气/云.ts 修掉。
+// 能见度 12 km 只管投影远端（开着 Photon 大气时材质的雾换成远雾，exp² 不起作用）。
 export const overworldWindowView = { visibility: 12000, farM: 30000 };
 
 export type OverworldTerrain = {

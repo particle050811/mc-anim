@@ -35,6 +35,7 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad, mulberry32 } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
+import { trialFarM } from '@engine/light/高度雾.ts';
 // 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口是段内秒（cue 在 段/6-进入森林/段.ts）。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
 const lineCues = [{ id: '6-1-1-李樱-出征暮色', frame: 4 / 24 }];
 // 台词口型：段内秒
@@ -183,7 +184,7 @@ export const EnterForest: React.FC = () => {
         {/* 两块画布的 key 不同：gl 的设置只在建画布时生效，同一个位置只换 props 会沿用旧画布，暮色那一半就跟着开了对数深度 */}
         <ThreeCanvas key="海岛" width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
           <color attach="background" args={[SKY.horizon]} />
-          <FlightFog visibility={overworldWindowView.visibility} />
+          <FlightFog visibility={overworldWindowView.visibility} far={trialFarM(overworldWindowView.farM)} />
           <OverworldWaterSky />
           <Rig t={choreoT} />
           <ScreenAo />

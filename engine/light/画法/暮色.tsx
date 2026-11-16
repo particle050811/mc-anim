@@ -6,7 +6,7 @@ import { SkyDome, TWILIGHT, twilightCloudColor, twilightFogColor } from '../天�
 import { TwilightClouds, shadowFarFor } from '../暮色光照.tsx';
 import { tierMix } from '../灯光档位.ts';
 import type { V3 } from '../环境.ts';
-import { defineDraw, DirFogLayer, ParallelMainLight, ShadowMainLight, vanillaCloud, SelfLightLayer, fogElement, fogFarEnd, HeightFogLayer, type DrawProps } from '../环境部件.tsx';
+import { defineDraw, DirFogLayer, FarFogLayer, SkyBandsLayer, ParallelMainLight, ShadowMainLight, vanillaCloud, SelfLightLayer, fogElement, fogFarEnd, HeightFogLayer, type DrawProps } from '../环境部件.tsx';
 
 // 按时刻算到月光时主光的颜色：暂定用暮色的偏蓝灰（原版光照贴图天暗时往蓝里偏，见 天空.tsx 的 TWILIGHT.light）
 const moonLightColor = TWILIGHT.light;
@@ -26,6 +26,8 @@ const twilightPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight,
       {e.heightFog && <HeightFogLayer params={e.heightFog} />}
       <DirFogLayer opts={twilightDusk && { sunDir: lighting.sun, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength }} />
       <SelfLightLayer k={mix.selfLight} />
+      {e.farFog && <FarFogLayer far={e.farFog.far} />}
+      {e.farFog && <SkyBandsLayer opts={{ k: 0, bands: twilightDusk?.skyColors ?? TWILIGHT.sky, glow: twilightDusk?.afterglow ?? null, glowK: twilightDusk?.afterglowStrength ?? 0, sunDir: lighting.sun }} />}
       <color attach="background" args={[fogColor]} />
       {fogElement(e.fog, fogColor)}
       <group rotation={[-Math.PI / 2, 0, 0]}>

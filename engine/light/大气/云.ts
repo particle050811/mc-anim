@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { useWriter, newWriteSlot } from '../../core/写入者.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoLightAt, atmoUniforms, atmosphere, photonCloudsOn } from '../大气.ts';
 import { registerMidPass, type MidPassContext } from '../../voxel/中间步骤.ts';
+import { farFogUniforms } from '../高度雾.ts';
 import { clamp01, linearstep, smoothstep, lerp } from '../../core/数学.ts';
 
 // 云高（用户 10-14：世界放大了，云高改合理）：Photon 默认 10 是按原版地形定的，云底离海只有 120 格。我们的史诗地形最高峰 y 435～444，
@@ -566,6 +567,7 @@ uniform mat4 uInvProj;
 uniform mat4 uCamWorld;
 uniform float uLogFar;
 uniform float uExposure;
+uniform vec4 fogEdge;
 layout(location = 0) out highp vec4 oCol;
 layout(location = 1) out highp vec4 oDep;
 void main() {
@@ -581,8 +583,17 @@ void main() {
   ivec2 bq = ivec2(gl_FragCoord.xy) & 3;
   float dither = (BAYER[bq.y * 4 + bq.x] + 0.5) / 16.0;
   vec3 sky = atmoSkyAt(atmoSky, vec3(wdir.x, -wdir.z, wdir.y));
+  // 远雾（engine/light/高度雾.ts 的 useFarFog）：地形在远雾里染成了天色，云还按深度停在它前面的话，D 外露出地平线的地形会把后面的云挡成
+  // 一块块区段形的缺口（用户 11-16 看到窗外 30 km 的低云被挖成方块）。远雾浓度 a：a = 1 当天空、云一直步进到底；0 < a < 1 停在地形前面的和当天空的两份按 a 混
+  float a = tScene > 0.0 && fogEdge.y > 0.0 ? smoothstep(fogEdge.x, fogEdge.y, tScene * length(wdir.xz)) : 0.0;
   float apparent;
-  vec4 c = pcDrawClouds(wdir, sky, tScene, dither, apparent);
+  vec4 c = pcDrawClouds(wdir, sky, a >= 1.0 ? -1.0 : tScene, dither, apparent);
+  if (a > 0.0 && a < 1.0) {
+    float apparentSky;
+    vec4 cSky = pcDrawClouds(wdir, sky, -1.0, dither, apparentSky);
+    c = mix(c, cSky, a);
+    apparent = min(apparent, apparentSky);
+  }
   float A = 1.0 - c.a;
   if (A < 1e-4) {
     oCol = vec4(0.0);
@@ -690,6 +701,7 @@ const getPass = () => {
       uCamWorld: { value: new THREE.Matrix4() },
       uLogFar: { value: 1 },
       uExposure: { value: 1 },
+      ...farFogUniforms,
     },
     vertexShader: VS,
     fragmentShader: FS,

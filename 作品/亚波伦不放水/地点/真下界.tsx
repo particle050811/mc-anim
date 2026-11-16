@@ -8,7 +8,9 @@
 // - 底光照原版光照图（LightTexture.updateLightTexture）在下界、方块光 0、天光 0、亮度滑块 50% 时算出的颜色，每个朝向再乘下界的面明暗
 //   （constantAmbientLight：上下 0.9、南北 0.8、东西 0.6）。原版在 sRGB 数值上乘，这里按 2.2 次幂折到线性光里：一盏环境光（东西面的亮度）加四盏平行光补出上下、南北面。
 // - 熔岩按贴图原色 × 熔岩亮 发光（方块光 15 的光照图是全白）。熔岩照亮周围 15 格的那一圈没有画：岸边、熔岩瀑布旁的岩壁比游戏里暗。
-// - 雾是线性雾。原版下界（isFoggyAt 恒真）雾从 视距 × 0.05 起、到 min(视距, 192) × 0.5 = 96 格全满，雾色是群系的 fog_color（下界荒地 #330808）。
+// - 雾色、雾远照原版：原版下界（isFoggyAt 恒真）是线性雾，从 视距 × 0.05 起、到 min(视距, 192) × 0.5 = 96 格全满，雾色是群系的 fog_color（下界荒地 #330808）。
+//   雾的形状换成全片的远雾（engine/light/高度雾.ts 的 `useFarFog`，用户 11-16 定下界也用）：D = 雾远，0.9 D 以内没有雾、到 D 拉满成雾色（也是底色），
+//   线性雾的近端不起作用。地形越出 D 的部分全进雾，地平线上不再多出一圈熔岩和剪影（原来靠远裁）。
 //
 // 熔岩的材质：体素世界把液体都归进「水」那一类材质（波纹、菲涅尔、反射天色）。下界的包里液体只有熔岩，这里把这个世界的水类网格换成一份改过的材质
 // （不反射天、粗糙度照方块、不透明、自发光），只换本世界键下的网格，别的世界和 engine 的水材质不动。
@@ -17,9 +19,10 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { useSelfLight } from '@engine/light/光照配比.ts';
+import { trialFarM, useFarFog } from '@engine/light/高度雾.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
-import { isVoxelWater } from '@engine/voxel/材质.ts';
+import { voxelMaterial } from '@engine/voxel/材质.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
@@ -29,7 +32,7 @@ export type NetherLight = {
   baseLight: readonly [number, number, number];
   /** 熔岩自发光 = 贴图原色 × 这个数 */
   lavaBright: number;
-  /** 线性雾：色（#rrggbb，也是底色）、从几格起、到几格全满 */
+  /** 雾：色（#rrggbb，也是底色）、从几格起（远雾开着不起作用）、到几格全满（远雾的 D） */
   fog: { 色: string; near: number; far: number };
   /** 地形最远画到多远（格）；不给 = 雾.远 */
   renderFar?: number;
@@ -40,21 +43,19 @@ export const netherVanilla: NetherLight = { baseLight: [0.393, 0.323, 0.267], la
 /** 整体提亮、雾放远（用户 11-10 嫌黑、要看清背景）：底光提到原版方块光约 12 级的亮度，雾推到 32 区块外才满，雾色提亮 */
 export const netherBrighter: NetherLight = { baseLight: [0.86, 0.74, 0.64], lavaBright: 1.1, fog: { 色: '#5a1a12', near: 96, far: 640 } };
 
+/** 远雾的 D（格）= 雾远；试看 {"雾曲线": {"远": 格}} 盖掉，地形最远距离跟着换（用户 11-16 要比下界放大视距）。包只烘了 x 0～1535、z −1536～511 */
+export const netherFarM = (light: NetherLight) => trialFarM(light.fog.far);
+
 // 面明暗（下界 constantAmbientLight）：东西 0.6、南北 0.8、上下 0.9
 const faceShade = { eastWest: 0.6, northSouth: 0.8, upDown: 0.9 };
 const toLinear = (v: number) => v ** 2.2;
 const noCuts: LandmarkCutout[] = [];
 
 const lavaGlow = { value: 1 };
-// 一份体素水的材质一份熔岩：不裁的一份，跨过雾尽头的区段的远裁水（engine/voxel/区段.ts `farDropMask`）每种丢法各一份，丢法跟着水的材质走
-const lavaMaterials = new Map<THREE.Material, THREE.Material>();
+let lavaMaterial: THREE.Material | null = null;
 const getLavaMaterial = (waterMaterial: THREE.Material) => {
-  const cached = lavaMaterials.get(waterMaterial);
-  if (cached) return cached;
-  const farClip = waterMaterial.userData.voxelWaterClip === true;
+  if (lavaMaterial) return lavaMaterial;
   const m = waterMaterial.clone() as THREE.MeshStandardMaterial;
-  delete m.userData.voxelWaterClip;
-  m.userData.voxelWaterSwap = true;
   m.roughness = 0.95;
   m.transparent = false;
   m.depthWrite = true;
@@ -68,8 +69,8 @@ const getLavaMaterial = (waterMaterial: THREE.Material) => {
     // engine 的水材质改了写法这里就对不上：宁可报错，不要悄悄画成反射天色的水
     if (!sh.fragmentShader.includes('diffuseColor.rgb * lavaGlow') || sh.fragmentShader.includes('waterReflMax)')) throw new Error('真下界：熔岩材质接不上 engine/voxel/材质.ts、水面.ts 的着色器（那边改了写法）');
   };
-  m.customProgramCacheKey = () => `体素-熔岩${farClip ? '-远裁' : ''}`;
-  lavaMaterials.set(waterMaterial, m);
+  m.customProgramCacheKey = () => '体素-熔岩';
+  lavaMaterial = m;
   return m;
 };
 
@@ -80,6 +81,8 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
   const scene = useThree((s) => s.scene);
   const groupRef = useRef<THREE.Group>(null);
   useSelfLight(0);
+  const farM = netherFarM(netherLight);
+  useFarFog({ far: farM });
   lavaGlow.value = netherLight.lavaBright;
   // 雾、底色挂在场景上（<fog attach> 在场景组里挂不到 scene）
   const fog = scene.fog instanceof THREE.Fog ? scene.fog : (scene.fog = new THREE.Fog(netherLight.fog.色, netherLight.fog.near, netherLight.fog.far));
@@ -95,12 +98,13 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
     },
     [scene],
   );
-  // 这个世界的水类网格（全是熔岩）换材质：体素世界每次渲染把这一帧要画的网格挂进组里、换上这一帧该用的水（远裁的也算），画之前照它换成熔岩。
-  // 远裁的水要换成同样远裁的熔岩：雾按纵深算，画面两边远过雾尽头的地方雾没满，不裁就比 32 × 32 格的区段多画出一圈熔岩（核对-真下界 第 1080 帧两边的地平线）
+  // 这个世界的水类网格（全是熔岩）换材质：体素世界每次渲染把这一帧要画的网格挂进组里，画之前换
   useFrame(() => {
+    const waterMaterial = voxelMaterial('水');
+    const rockMat = getLavaMaterial(waterMaterial);
     groupRef.current?.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (Array.isArray(mesh.material) && isVoxelWater(mesh.material[0])) mesh.material = [getLavaMaterial(mesh.material[0]!)];
+      if (Array.isArray(mesh.material) && mesh.material[0] === waterMaterial) mesh.material = [rockMat];
     });
   });
   if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
@@ -116,7 +120,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      {t && <VoxelWorld key={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? netherLight.fog.far} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
+      {t && <VoxelWorld key={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );
 };

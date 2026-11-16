@@ -13,6 +13,7 @@ import { renderInput } from '@engine/core/渲染设置.ts';
 import { rad } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
+import { useFarFog } from '@engine/light/高度雾.ts';
 export type CamPose = { pos: number[]; tgt: number[]; lens: number; roll?: number };
 export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number }> = ({ c: camPose, near = 0.05, far = 150000 }) => {
   const { camera, size, gl } = useThree();
@@ -91,7 +92,9 @@ export const FlightSky: React.FC<{ camPos: number[]; sun?: [number, number, numb
   );
 };
 
-// 公里尺度的雾：指数平方雾，能见度 = 雾浓到一半的距离（米）
-export const FlightFog: React.FC<{ visibility: number; color?: string }> = ({ visibility, color: color = SKY.fog }) => (
-  <fogExp2 attach="fog" args={[color, Math.sqrt(Math.LN2) / visibility]} />
-);
+// 公里尺度的雾：指数平方雾，能见度 = 雾浓到一半的距离（米）。开着 Photon 大气（FlightSky、OverworldSky）时材质的雾整个换成 Photon 的空气雾和边界雾，这条指数平方不起作用，能见度只管投影远端。
+// 远：这个镜头的地形最远距离（米，VoxelWorld 的 far），给了就开远雾（engine/light/高度雾.ts 的 useFarFog：起 × 远 以内不加、到 远 拉满成穹顶色）
+export const FlightFog: React.FC<{ visibility: number; color?: string; far?: number }> = ({ visibility, color: color = SKY.fog, far }) => {
+  useFarFog(far === undefined ? null : { far });
+  return <fogExp2 attach="fog" args={[color, Math.sqrt(Math.LN2) / visibility]} />;
+};

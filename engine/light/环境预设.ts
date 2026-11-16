@@ -7,8 +7,8 @@ import { shadowFarFor, twilightHeightFog } from './暮色光照.tsx';
 import { defineEnvironment, type EnvDescription } from './环境.ts';
 import { twilightForest } from './维度.ts';
 
-/** 雾远、雾近：同 TwilightLighting 的 fogFar、fogNear（米；雾近不给 = 雾远 × 0.25） */
-export const twilightEnv = (o: { fogFar: number; fogNear?: number }): EnvDescription =>
+/** 雾远、雾近：同 TwilightLighting 的 fogFar、fogNear（米；雾近不给 = 雾远 × 0.25）；远：同 TwilightLighting 的 farFog.far（地形最远距离，给了开远雾） */
+export const twilightEnv = (o: { fogFar: number; fogNear?: number; far?: number }): EnvDescription =>
   defineEnvironment(
     {
       dimension: twilightForest,
@@ -16,6 +16,7 @@ export const twilightEnv = (o: { fogFar: number; fogNear?: number }): EnvDescrip
       sun: twilightSunDir,
       lightSpec: { tier: '暮色' },
       fog: { 种类: '线性', near: o.fogNear ?? o.fogFar * 0.25, far: o.fogFar, 色: twilightFogColor },
+      ...(o.far === undefined ? {} : { farFog: { far: o.far } }),
       heightFog: { start: twilightHeightFog.start, halfLife: twilightHeightFog.halfLife, density: twilightHeightFog.density },
       cloud: { 种类: 'photon', seaLevel: 0 },
       shadow: { far: shadowFarFor(o.fogFar) },
