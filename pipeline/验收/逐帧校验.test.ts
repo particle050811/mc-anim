@@ -5,10 +5,11 @@ import path from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RunRecord } from '../运行记录/记录.ts';
 import { UsageError } from '../cli/参数.ts';
+import { encode } from 'fast-png';
 
 const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-逐帧校验-'));
 process.env.ANIM_DATA = dataRoot;
-const fake = vi.hoisted(() => ({ fingerprint: 'a'.repeat(64), changedFrames: new Set<number>(), renderCalls: [] as { frame: number[]; withAudio: boolean }[], 打包: 0, gate: 0, thumb: false, missingTerrain: new Set<string>(), lookPrevFrame: false }));
+const fake = vi.hoisted(() => ({ fingerprint: 'a'.repeat(64), changedFrames: new Set<number>(), renderCalls: [] as { frame: number[]; withAudio: boolean }[], 打包: 0, gate: 0, passGate: 0, thumb: false, missingTerrain: new Set<string>(), lookPrevFrame: false, png: null as ((f: number, changed: boolean) => Buffer) | null }));
 
 const makeSegmentInfo = (segKey: string, frameCount: number) => ({ key: segKey, segmentName: segKey, 章: 0, serial: null, 目录: `/没有/${segKey}`, segment: { frameCount: frameCount, fps: 24, width: 320, height: 180 } });
 const firstSegment = makeSegmentInfo('甲', 5);
@@ -23,7 +24,7 @@ vi.mock('../渲/段产物.ts', () => ({
   segmentProducts: async (allFlag: unknown, segments: { key: string; segment: { frameCount: number } }[]) => segments.map((s) => ({ segment: s, pictureFingerprint: { segment: s.key, fingerprint: fake.fingerprint, items: { terrain: {} } }, outputFrames: s.segment.frameCount, params: {} })),
 }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), loadAllSegments: async () => [] }));
-vi.mock('../闸/闸.ts', async (actual) => ({ ...(await actual<typeof import('../闸/闸.ts')>()), passRenderGate: <T>(fn: () => Promise<T>) => (fake.gate++, fn()) }));
+vi.mock('../闸/闸.ts', async (actual) => ({ ...(await actual<typeof import('../闸/闸.ts')>()), passRenderGate: <T>(fn: () => Promise<T>) => (fake.gate++, fn()), passGate: <T>(fn: () => Promise<T>) => (fake.passGate++, fn()) }));
 vi.mock('../分发/随仓库.ts', () => ({ fillBytesAndReport: () => {} }));
 vi.mock('../渲/求解缓存收集.ts', () => ({ waitSolveCacheWrites: async () => {}, collectSolveCache: () => {} }));
 vi.mock('../渲/渲.ts', async (actual) => ({
@@ -36,23 +37,23 @@ vi.mock('../渲/渲.ts', async (actual) => ({
     // 看前一帧：照真实情况，一帧的结果随同页面前一帧变
     let prev = -1;
     for (const f of frames) {
-      o.onFrame(Buffer.alloc(fake.thumb ? 10 : 100_000, `${f}${fake.changedFrames.has(f) ? '改' : ''}${fake.lookPrevFrame ? `接${prev}` : ''}`), f);
+      o.onFrame(fake.png ? fake.png(f, fake.changedFrames.has(f)) : Buffer.alloc(fake.thumb ? 10 : 100_000, `${f}${fake.changedFrames.has(f) ? '改' : ''}${fake.lookPrevFrame ? `接${prev}` : ''}`), f);
       prev = f;
     }
   },
 }));
 
-const { runPerFrame, parseFrames, frameNumText, pickRenderFrames, compareChecks, checkFile, writeCheckRecord, readCheckRecord } = await import('./逐帧校验.ts');
+const { runPerFrame, parseFrames, frameNumText, pickRenderFrames, compareChecks, checkFile, baselineImageDir, writeCheckRecord, readCheckRecord } = await import('./逐帧校验.ts');
 const makeRunRecord = () => {
   const eventMessages: string[] = [];
   return { log: (_: string, m: string) => eventMessages.push(m), stage: [], artifacts: [] as string[], events: eventMessages } as unknown as RunRecord & { events: string[] };
 };
-const runFrameCheck = (segments: unknown[], o: { checkMode: '存' | '比'; name: string; frame?: number[]; keepDir?: string }, r = makeRunRecord()) => runPerFrame(segments as never, { frame: null, keepDir: null, ...o, runRecord: r });
+const runFrameCheck = (segments: unknown[], o: { checkMode: '存' | '比'; name: string; frame?: number[]; keepDir?: string; noImages?: boolean; tolerance?: number }, r = makeRunRecord()) => runPerFrame(segments as never, { frame: null, keepDir: null, ...o, runRecord: r });
 
 afterAll(() => fs.rmSync(dataRoot, { recursive: true, force: true }));
 beforeEach(() => {
   fs.rmSync(path.join(dataRoot, 'run'), { recursive: true, force: true });
-  Object.assign(fake, { fingerprint: 'a'.repeat(64), changedFrames: new Set(), renderCalls: [], 打包: 0, gate: 0, thumb: false, missingTerrain: new Set(), lookPrevFrame: false });
+  Object.assign(fake, { fingerprint: 'a'.repeat(64), changedFrames: new Set(), renderCalls: [], 打包: 0, gate: 0, passGate: 0, thumb: false, missingTerrain: new Set(), lookPrevFrame: false, png: null });
   vi.spyOn(console, 'log').mockImplementation(() => {});
 });
 
@@ -80,6 +81,13 @@ describe('纯函数', () => {
   it('比校验只比这次渲了的帧，按帧号排', () => {
     const m = (o: Record<number, string>) => new Map(Object.entries(o).map(([k, v]) => [Number(k), { sha: v, bytes: 1 }]));
     expect(compareChecks(m({ 1: 'x', 2: 'y', 3: 'z' }), m({ 2: 'y', 3: 'q', 1: 'p' }))).toEqual({ 相同: 1, 不同: [{ frame: 1, baseline: 'x', current: 'p' }, { frame: 3, baseline: 'z', current: 'q' }] });
+  });
+  it('记录带基准图目录的，写了读回来一样', () => {
+    const f = path.join(dataRoot, '记录图', '甲.tsv');
+    const r = { segment: '甲', 段帧数: 5, fingerprint: 'b'.repeat(64), commit: 'abc', imageDir: '/某处/甲', frame: new Map([[2, { sha: 'd'.repeat(64), bytes: 34 }]]) };
+    writeCheckRecord(f, r);
+    expect(readCheckRecord(f)).toEqual(r);
+    fs.rmSync(path.dirname(f), { recursive: true });
   });
   it('记录写了读回来一样；sha 坏了报错', () => {
     const f = path.join(dataRoot, '记录', '甲.tsv');
@@ -256,5 +264,83 @@ describe('存了再比', () => {
     const r = makeRunRecord();
     expect(await runFrameCheck([firstSegment], { checkMode: '存', name: '改前' }, r)).toBe(0);
     expect(r.events.join()).toMatch(/可能是纯色.*0-4/);
+  });
+});
+
+describe('报差多少', () => {
+  // 32×32 的真 PNG：每帧一个底色，改过的帧左上角 8×8 加 级差
+  let levelDelta = 40;
+  const makePng = (f: number, changed: boolean) => {
+    const data = new Uint8Array(32 * 32 * 3).fill(f * 10 + 20);
+    if (changed) for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) for (let c = 0; c < 3; c++) data[(y * 32 + x) * 3 + c]! += levelDelta;
+    return Buffer.from(encode({ width: 32, height: 32, data, channels: 3, depth: 8 }));
+  };
+  beforeEach(() => {
+    fake.png = makePng;
+    levelDelta = 40;
+  });
+
+  it('--save 默认把 PNG 留在 tsv 旁边的 <段键>/，记录里写着；--no-images 不留', async () => {
+    expect(await runFrameCheck([firstSegment], { checkMode: '存', name: '改前' })).toBe(0);
+    const dir = baselineImageDir('改前', '甲');
+    expect(dir).toBe(path.join(dataRoot, 'run', '逐帧校验', '假作品', '改前', '甲'));
+    expect(fs.readdirSync(dir).sort()).toEqual([0, 1, 2, 3, 4].map((f) => `甲-第000${f}帧.png`));
+    expect(readCheckRecord(checkFile('改前', '甲')).imageDir).toBe(dir);
+    expect(await runFrameCheck([secondSeg], { checkMode: '存', name: '无图', noImages: true })).toBe(0);
+    expect(fs.existsSync(baselineImageDir('无图', '乙'))).toBe(false);
+    expect(readCheckRecord(checkFile('无图', '乙')).imageDir).toBeUndefined();
+  });
+
+  it('--compare：不同的帧报差像素占比、最大差、块平均差，结尾列最差的几帧；判过不过照旧逐字节；临时图不留', async () => {
+    await runFrameCheck([firstSegment, secondSeg], { checkMode: '存', name: '改前' });
+    fake.changedFrames = new Set([1, 3]);
+    // 本机同时在跑的 anim 也会有临时目录，只看这次多没多
+    const scratchDirs = () => new Set(fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith('anim-逐帧比图-')));
+    const before = scratchDirs();
+    const r = makeRunRecord();
+    expect(await runFrameCheck([firstSegment, secondSeg], { checkMode: '比', name: '改前' }, r)).toBe(1);
+    const errorText = r.events.join('\n');
+    // 左上角 8×8 = 64 个像素差 40 级：占 32×32 的 6.25%；8×8 窗口平均差 40，16×16 窗口 10
+    expect(errorText).toMatch(/甲：5 帧里 2 帧不同（1、3）/);
+    expect(errorText).toMatch(/第 1 帧：差像素 >0 6\.25%（64 像素）、>8 6\.25%（64 像素）、>32 6\.25%（64 像素），最大差 40 级；块平均差 16×16 10\.0、64×64 0\.0、8×8 40\.0（按 reuse 的门槛：变了）/);
+    expect(errorText).toMatch(/乙：3 帧里 1 帧不同（1）/);
+    expect(fake.passGate).toBe(2);
+    const output = vi.mocked(console.log).mock.calls.map((c) => String(c[0])).join('\n');
+    expect(output).toMatch(/最差的 3 帧（共比了 3 帧不同的）：\n  (甲|乙) 第 [13] 帧：差像素/);
+    expect([...scratchDirs()].filter((f) => !before.has(f))).toEqual([]);
+  });
+
+  it('--tolerance：最大差不超过它的帧算过；超过的照报；不给就照旧逐字节', async () => {
+    await runFrameCheck([firstSegment], { checkMode: '存', name: '改前' });
+    fake.changedFrames = new Set([2]);
+    levelDelta = 2;
+    expect(await runFrameCheck([firstSegment], { checkMode: '比', name: '改前' })).toBe(1);
+    expect(await runFrameCheck([firstSegment], { checkMode: '比', name: '改前', tolerance: 2 })).toBe(0);
+    expect(vi.mocked(console.log).mock.calls.map((c) => String(c[0])).join('\n')).toMatch(/✓ 甲：5 帧里 1 帧字节不同，最大差都不超过 2 级（--tolerance），算过/);
+    const r = makeRunRecord();
+    expect(await runFrameCheck([firstSegment], { checkMode: '比', name: '改前', tolerance: 1 }, r)).toBe(1);
+    expect(r.events.join()).toMatch(/第 2 帧：差像素 >0 6\.25%.*最大差 2 级/);
+  });
+
+  it('基准没留图：只报 sha，说清报不了差多少，--tolerance 也用不上', async () => {
+    await runFrameCheck([firstSegment], { checkMode: '存', name: '无图', noImages: true });
+    fake.changedFrames = new Set([0]);
+    levelDelta = 1;
+    const r = makeRunRecord();
+    expect(await runFrameCheck([firstSegment], { checkMode: '比', name: '无图', tolerance: 5 }, r)).toBe(1);
+    expect(r.events.join()).toMatch(/第 0 帧：基准 [0-9a-f]{16}，这次 [0-9a-f]{16}/);
+    expect(vi.mocked(console.log).mock.calls.map((c) => String(c[0])).join('\n')).toMatch(/基准没留图.*报不了差多少，--tolerance 也用不上/);
+    expect(fake.passGate).toBe(0);
+  });
+
+  it('--keep-images 时不同的帧留在那里，差多少照报', async () => {
+    const compareDir = path.join(dataRoot, '比图留');
+    await runFrameCheck([firstSegment], { checkMode: '存', name: '改前' });
+    fake.changedFrames = new Set([4]);
+    const r = makeRunRecord();
+    expect(await runFrameCheck([firstSegment], { checkMode: '比', name: '改前', keepDir: compareDir }, r)).toBe(1);
+    expect(fs.readdirSync(compareDir)).toEqual(['甲-第0004帧.png']);
+    expect(r.events.join()).toMatch(/第 4 帧：差像素 >0 6\.25%/);
+    fs.rmSync(compareDir, { recursive: true });
   });
 });

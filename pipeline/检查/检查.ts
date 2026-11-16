@@ -22,7 +22,7 @@ export const ruleTable: Record<RuleKind, { note: string; 跑: (c: CheckContext, 
   manifest: { note: '段目录和清单一一对应、段键段名合规唯一、不撞旧名、连续段接帧', 跑: checkManifest },
   load: { note: '在 Node 里执行全部纯模块，断言都跑到；环境.ts 的声明（时刻、天气、档位、画法、关键帧）合法；作品的地形改动落在世界声明的保真范围里', 跑: checkLoad },
   lines: { note: 'cue 的台词都登记、每句恰好开口一次（接上段的接在开口后面）、开口和字幕位置、文本哈希和成品 sha、口型绑定成品、句模块跟得上', 跑: checkLines },
-  assets: { note: '引用的 id 都登记、共用和作品两侧的表锁对得上、许可来源可见性齐全、公开构建无私有资产、角色包；--deep 逐个核 sha', 跑: checkAssets },
+  assets: { note: '引用的 id 都登记、共用和作品两侧的表锁对得上、许可来源可见性齐全、公开构建无私有资产、角色包；发布锁对不上只提示，--release 才算违规、还查 Release 附件；--deep 逐个核 sha', 跑: checkAssets },
   rules: { note: '例外 和 作品的 规矩.toml 双向对得上、默认值落点在、出处引用的记忆在', 跑: ruleCheck },
   platform: { note: 'Windows 合法文件名、结构层 ASCII、不开 shell、不用 fcntl', 跑: checkPlatform },
   dupes: { note: 'lerp、toThree、Cam 这类共用函数不许新写副本（import engine/core、库 的正本）；旧副本冻在 docs/副本表.tsv，只许减少', 跑: copyRule },
@@ -30,10 +30,10 @@ export const ruleTable: Record<RuleKind, { note: string; 跑: (c: CheckContext, 
   idents: { note: '代码里不新增中文标识符（字符串、注释、文件名不算）；现有的冻在 pipeline/检查/中文标识符基线.txt，只许减少', 跑: hanIdentifierRule },
 };
 
-export type CheckOptions = { 只?: readonly RuleKind[]; 快?: boolean; depthCheck?: boolean; dataRoot?: string; work?: string };
+export type CheckOptions = { 只?: readonly RuleKind[]; 快?: boolean; depthCheck?: boolean; release?: boolean; dataRoot?: string; work?: string };
 
 export const runChecks = async (root: string, options: CheckOptions = {}): Promise<Map<RuleKind, CheckReport>> => {
-  const c = new CheckContext(root, { depthCheck: options.depthCheck, dataRoot: options.dataRoot, work: options.work });
+  const c = new CheckContext(root, { depthCheck: options.depthCheck, release: options.release, dataRoot: options.dataRoot, work: options.work });
   const reports = new Map<RuleKind, CheckReport>();
   try {
     for (const ruleName of ruleNames) {
@@ -56,3 +56,4 @@ export const runChecks = async (root: string, options: CheckOptions = {}): Promi
 };
 
 export const violationCount = (reports: Map<RuleKind, CheckReport>) => [...reports.values()].reduce((n, r) => n + r.violations.length, 0);
+export const noticeCount = (reports: Map<RuleKind, CheckReport>) => [...reports.values()].reduce((n, r) => n + r.notices.length, 0);

@@ -272,3 +272,33 @@ describe('随仓库发的字节', () => {
     expect((await runRule('assets', makeAssetRepo({ '作品/应力转动/随仓库.toml': '"segment" = ["8"]' }))).violations.join()).toMatch(/「8」没对上清单里的段/);
   });
 });
+
+describe('挂 Release 发的发布锁', () => {
+  // 7-甲 的画面 import 贴图/甲：该发的就是这一件字节；发布锁写的是另一件，和当前代码对不上
+  const contentA = '甲的字节';
+  const staleLock = { repo: 'a/b', label: 'assets-v1', attachments: [{ name: 'bytes-000000000000.tar', sha256: 'x', size: 1, bytes: ['9'.repeat(64)] }] };
+  const makeReleaseRepo = (...fileLayers: Record<string, string | null>[]) =>
+    makeRepo(base(), { 'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry(sha(contentA)) }), '作品/应力转动/随发布.toml': '"repo" = "a/b"\n"label" = "assets-v1"\n"segment" = ["7"]', '作品/应力转动/发布锁.json': JSON.stringify(staleLock) }, ...fileLayers);
+
+  it('平时：发布锁对不上只提示、说清发布前要 pack --upload，不算违规；别的资产违规照报', async () => {
+    const r = await runRule('assets', makeReleaseRepo());
+    expect(r.violations).toEqual([]);
+    expect(r.report.notices.map((q) => q.text).join('\n')).toMatch(/随发布：发布锁和当前代码不一致（发布锁少 1 件字节；发布锁多 1 件字节.*平时不算违规；发布前要 anim assets pack --upload/);
+    const other = await runRule('assets', makeReleaseRepo({ 'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry(sha(contentA)), '贴图/没登记': lockEntry('b'.repeat(64)) }) }));
+    expect(other.violations.join('\n')).toMatch(/资产锁里的「贴图\/没登记」没在资产表登记/);
+    expect(other.report.notices).toHaveLength(1);
+  });
+
+  it('--release：发布锁对不上算违规，不再是提示；没有发布锁也算', async () => {
+    const r = await runRule('assets', makeReleaseRepo(), { release: true });
+    expect(r.violations.join('\n')).toMatch(/随发布：发布锁少 1 件字节（anim assets pack --upload 照当前代码重打、传上去）/);
+    expect(r.report.notices).toEqual([]);
+    expect((await runRule('assets', makeReleaseRepo({ '作品/应力转动/发布锁.json': null }), { release: true })).violations.join()).toMatch(/没有 发布锁.json/);
+    expect((await runRule('assets', makeReleaseRepo({ '作品/应力转动/发布锁.json': null }))).report.notices.map((q) => q.text).join()).toMatch(/没有 发布锁.json/);
+  });
+
+  it('随发布.toml 写坏了、有发布锁没有随发布.toml：平时也算违规', async () => {
+    expect((await runRule('assets', makeReleaseRepo({ '作品/应力转动/随发布.toml': '"repo" = "a"' }))).violations.join()).toMatch(/随发布.toml 要写/);
+    expect((await runRule('assets', makeReleaseRepo({ '作品/应力转动/随发布.toml': null }))).violations.join()).toMatch(/却没有 随发布.toml/);
+  });
+});
