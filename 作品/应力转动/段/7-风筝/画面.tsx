@@ -40,9 +40,8 @@ const particles: ParticleSpawn[] = (() => {
   return out;
 })();
 
-// 刘心忠说话时头随字轻点（withTalkNod）：它的平滑按样号走，照旧编排 1/24 秒一样，开口和段内秒都换成样号，改样密度会挪点头
-const nodSamplesPerSec = 24;
-const nodCues = choreo.lines.map(({ id, startSec }) => ({ id, 帧: startSec * nodSamplesPerSec }));
+// 刘心忠说话时头随字轻点（withTalkNod）：句子的 帧 写段内秒，每秒给 1
+const nodCues = choreo.lines.map(({ id, startSec }) => ({ id, 帧: startSec }));
 export const KitePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, cam }) => {
   const { width, height } = useVideoConfig();
   const T = choreo.storyT(sec);
@@ -54,7 +53,7 @@ export const KitePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, cam }) 
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
         <SpectralSteed 秒={T} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
       </group>
-      <LiuXinzhong pose={withTalkNod(choreo.liuXinzhongPose(sec), nodCues, '刘心忠', sec * nodSamplesPerSec, nodSamplesPerSec)} />
+      <LiuXinzhong pose={withTalkNod(choreo.liuXinzhongPose(sec), nodCues, '刘心忠', sec, 1)} />
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
         {/* 跑起来往前扑（同 7-3） */}
         <group rotation={[rad(warden.forwardLean), 0, 0]}>

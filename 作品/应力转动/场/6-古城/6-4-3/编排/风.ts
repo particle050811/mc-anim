@@ -14,12 +14,12 @@ export const fanFadeSec = geom.shootTime + 0.15;
 export const fanStopSec = geom.shootTime + 0.4;
 export const fanRpm = (t: number) => (t < fanFadeSec ? 256 * smoothstep01((t - 1.85) / (geom.roar - 1.85)) : 256 * (1 - smoothstep01((t - fanFadeSec) / (fanStopSec - fanFadeSec))));
 export const fanVisibility = (t: number) => smoothstep01((t - 1.85) / 0.15) * (1 - smoothstep01((t - fanFadeSec) / (fanStopSec - fanFadeSec)));
-// 叶片转角是逐格累加的（库/物品/鼓风机.tsx 的 bladeVisualAngle，一格封顶转多少度），格跟着时间线的表走（1/24 秒一格）
-const perSec = timeline.samplesPerSec;
+// 叶片转角按画面秒累加（库/物品/鼓风机.tsx 的 bladeVisualAngle，每秒封顶转多少度），从剧情 1.8 秒起（在跳过的那截里，就是切进 A3 那一刻）
+const fanStartSec = timeline.secFractional(1.8);
 export const fanState = (g: number) => {
   const t = storySecAt(g);
   const visibility = fanVisibility(t);
-  const spin = bladeVisualAngle(g * perSec, (i) => ({ rpm: fanRpm(storySecAt(i / perSec)), storySec: storySecAt((i + 1) / perSec) - storySecAt(i / perSec) }), { startFrame: timeline.gridSecAt(1.8) * perSec });
+  const spin = bladeVisualAngle(g, (s, h) => ({ rpm: fanRpm(storySecAt(s)), storySec: storySecAt(s + h) - storySecAt(s) }), { startSec: fanStartSec });
   return { pos: geom.fanCenter, facing: geom.incomingDir, sideLength: geom.fanSideLength, spin, opacity: 0.55 * visibility };
 };
 export const airflow = (g: number): AirFlowParticle[] => {

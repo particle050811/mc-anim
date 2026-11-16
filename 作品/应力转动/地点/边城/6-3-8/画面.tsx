@@ -90,7 +90,7 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
                 </group>
               );
             })}
-            {huang.present && <HuangPan pose={withTalkNod(huang.pose, choreo.lineCuesBySegment['6-3-8'], '黄叛', t * choreo.nodSamplesPerSec, choreo.nodSamplesPerSec)} />}
+            {huang.present && <HuangPan pose={withTalkNod(huang.pose, choreo.lineCuesBySegment['6-3-8'], '黄叛', t, 1)} />}
             {liu.present && <LiuXinzhong pose={liu.pose} />}
             </>
           )}

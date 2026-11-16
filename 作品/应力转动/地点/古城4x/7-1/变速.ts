@@ -1,14 +1,14 @@
 // 变速的打斗段（7-1-3、7-1-7、7-3-3 的 编排.ts）共用的变速：段内秒 → 场时刻 t（见 时间线.ts）。戏还是 戏.ts 那条时间轴，只换画面上怎么放。
-// 时钟 = 画面 1 秒对应多少场秒，时钟点之间按 smoothstep 过渡（标「对数」的按对数，同 6-4-3/时间线.ts）；`stops`（打中的场时刻）在那一刻把世界定住（打击停顿，`HIT_STOP_FRAMES`，见 默认.ts）。
+// 时钟 = 画面 1 秒对应多少场秒，时钟点之间按 smoothstep 过渡（标「对数」的按对数，同 6-4-3/时间线.ts）；`stops`（打中的场时刻）在那一刻把世界定住（打击停顿，`HIT_STOP_SEC`，见 默认.ts）。
 // 场时刻表每 1/24 秒（段内秒）记一个样（samplesPerSec），样与样之间线性插值；改样密度会挪动画面。
-// 打中的那一刻按真时刻插两个点（定住的起止），不挪到样上（用户 11-16 定：1/24 秒格的取整一处不留）；定住多久照读 `HIT_STOP_FRAMES`（还是 1/24 秒一格的格数）。
-import { HIT_STOP_FRAMES } from '../../../默认.ts';
+// 打中的那一刻按真时刻插两个点（定住的起止），不挪到样上（用户 11-16 定：1/24 秒格的取整一处不留）。
+import { HIT_STOP_SEC } from '../../../默认.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 
 export type ClockPoint = [t: number, clock: number, 对数?: boolean];
 export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[], stops: number[] = []) => {
   const samplesPerSec = 24;
-  const hitStopSec = HIT_STOP_FRAMES / 24;
+  const hitStopSec = HIT_STOP_SEC;
   const clock = (t: number) => {
     if (t <= points[0][0]) return points[0][1];
     for (let i = 1; i < points.length; i++) {

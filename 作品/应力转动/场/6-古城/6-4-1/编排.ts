@@ -73,7 +73,7 @@ const C3_POS: VKey[] = [
   [windows[2].起, G4(-952.0, -38.5, 205.0)],
   [windows[2].止, G4(-953.5, -38.7, 204.5)],
 ];
-const torsoOnB = torsoAt(jumpBuild.landSec('B') + 1 / 24);
+const torsoOnB = torsoAt(jumpBuild.landSec('B') + 1 / 60); // 落地后头一帧
 const FOLLOW3: Key[] = [[windows[2].起, 0.35], [jumpBuild.landSec('B'), 0], [jumpBuild.takeoffSec('B'), 0], [windows[2].止, 0.6]];
 const LENS3: Key[] = [[windows[2].起, 28], [jumpBuild.landSec('B'), 28], [jumpBuild.takeoffSec('B') - 1 / 4, 36], [windows[2].止, 32]];
 const cam3 = (f: number): Cam => {

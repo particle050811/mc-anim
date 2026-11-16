@@ -1,17 +1,17 @@
 // 7-1 二人的跳：每一跳的起落时刻，空中姿势、蓄力和落地缓冲、起跳前后的转身、站着喘气。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { PUSH, flightPose, launchShape, nearYaw } from '../../6-4-1/古城戏.ts';
+import { PUSH_SEC, flightPose, launchShape, nearYaw } from '../../6-4-1/古城戏.ts';
 import { elite, eliteLeap, leapFeetAt, withHang, type Jump } from '../../布局.ts';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
-import { leapCellsPerSec as cps } from './公用.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
-// 顶点前后慢多少（`withHang`，用户 10-18 定每跳不一样）按起跳时刻和起点取，加跳、挪时刻都不用另配；只改沿弧的快慢，起落时刻、弧不变
-export const leapAtSec = (p0: V3, p1: V3, apexHeight: number, t0: number): Jump => withHang(eliteLeap(p0, p1, apexHeight, t0 * cps), Math.round((t0 * cps) / 5) + Math.round(p0[0]));
-export const landT = (J: Jump) => J.f1 / cps;
-export const takeoffT = (J: Jump) => J.f0 / cps;
+// 顶点前后慢多少（`withHang`，用户 10-18 定每跳不一样）按起跳时刻和起点取，加跳、挪时刻都不用另配；只改沿弧的快慢，起落时刻、弧不变。
+// 起跳时刻每 5/24 秒换一号只是挑号（不是时刻取整），照原来的分档，各跳分到的 hang 不变
+export const leapAtSec = (p0: V3, p1: V3, apexHeight: number, t0: number): Jump => withHang(eliteLeap(p0, p1, apexHeight, t0), Math.round(t0 / (5 / 24)) + Math.round(p0[0]));
+export const landT = (J: Jump) => J.f1;
+export const takeoffT = (J: Jump) => J.f0;
 export const isAirborne = (J: Jump, t: number) => t >= takeoffT(J) && t < landT(J);
 export const liuStart = geom.pursuersStart.刘;
 export const huangStart = geom.pursuersStart.黄;
@@ -35,12 +35,12 @@ export const windArrowReleaseT = takeoffT(huangLeaps.H3) + huangLeaps.H3.tUp;
 // 空中的姿势：古城戏.ts 的 `flightPose`（6-4-5、6-4-6 共用的那一套，不垫羊毛）。yaw 可以和飞的方向不一样（回身、后跃）：
 // 面朝的方向和飞的方向反着时（闪避跳往后跃）上身往后仰，不往监守者那边栽；离地后头 0.25 跳里才仰过去，接得上 `crouch` 蹬地时往前的那一下
 export const airPose = (leap: Jump, t: number, yaw: number): FigurePose => {
-  const pose = flightPose(leap, t * cps, { place: false });
-  const u = (t * cps - leap.f0) / (leap.f1 - leap.f0);
+  const pose = flightPose(leap, t, { place: false });
+  const u = (t - leap.f0) / (leap.f1 - leap.f0);
   const backward = Math.max(0, -Math.cos(((yaw - leap.yaw) * Math.PI) / 180)) * smoothstep01(u / 0.25);
   return { ...pose, pitch: pose.pitch * (1 - 1.6 * backward), yaw };
 };
-// 地上那几帧怎么蹲（`crouchAmount` 算、`crouch` 叠到站姿上）：深 蹲的深浅（负 = 落地起身冲过头那一点），蹬 起跳最后 `PUSH` 帧往 `launchShape` 蹬直的程度，
+// 地上那几帧怎么蹲（`crouchAmount` 算、`crouch` 叠到站姿上）：深 蹲的深浅（负 = 落地起身冲过头那一点），蹬 起跳最后 `PUSH_SEC` 秒往 `launchShape` 蹬直的程度，
 // 栽 落地压到底时上身往前栽，头 低头晚一拍，手 两臂前后摆（度，正 = 往前）
 export type Crouch = { depth: number; push: number; plant: number; 头: number; 手: number };
 const noCrouch: Crouch = { depth: 0, push: 0, plant: 0, 头: 0, 手: 0 };
@@ -126,12 +126,12 @@ export const leapChainPos = (startPos: V3, leaps: Jump[], t: number): V3 => {
   let pos = startPos;
   for (const leap of leaps) {
     if (t < takeoffT(leap)) return pos;
-    if (t < landT(leap)) return leapFeetAt(leap, t * cps);
+    if (t < landT(leap)) return leapFeetAt(leap, t);
     pos = leap.p1;
   }
   return pos;
 };
-// 起跳前 蓄力秒 蹲下、手往后甩，最后 `PUSH` 帧蹬直；落地后 0.5 秒缓冲。空中不蹲（连跳时上一跳的缓冲还没完就又起跳了）
+// 起跳前 蓄力秒 蹲下、手往后甩，最后 `PUSH_SEC` 秒蹬直；落地后 0.5 秒缓冲。空中不蹲（连跳时上一跳的缓冲还没完就又起跳了）
 export const crouchAmount = (leaps: Jump[], t: number): Crouch => {
   if (leaps.some((leap) => isAirborne(leap, t))) return noCrouch;
   let k = 0;
@@ -139,7 +139,7 @@ export const crouchAmount = (leaps: Jump[], t: number): Crouch => {
   let arms = 0;
   for (const leap of leaps) {
     const takeoffAt = takeoffT(leap);
-    const pushAt = takeoffAt - PUSH / cps;
+    const pushAt = takeoffAt - PUSH_SEC;
     const windAt = pushAt - elite.takeoffCrouchSec;
     if (t >= windAt && t < pushAt) {
       const x = (t - windAt) / elite.takeoffCrouchSec;
@@ -148,7 +148,7 @@ export const crouchAmount = (leaps: Jump[], t: number): Crouch => {
     }
     if (t >= pushAt && t < takeoffAt) {
       k = Math.max(k, 1);
-      push = smoothstep01((t - pushAt) / (PUSH / cps));
+      push = smoothstep01((t - pushAt) / PUSH_SEC);
       arms -= 50;
     }
   }

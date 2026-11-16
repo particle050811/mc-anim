@@ -20,7 +20,7 @@ import type { Cam } from '@engine/core/机位.ts';
 import type { LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 
 export const durationSec = durationSec647;
-const lastSec = durationSec - 1 / 24; // 末帧（原来按 1/24 秒一格）
+const lastSec = durationSec - 1 / 60; // 末帧（原来按 1/24 秒一格算，用户 11-16 定不留 1/24 秒的格）
 export const τ = τ647;
 // 第四次尖啸（段内秒）
 export const shriekSec = fourthShriek.t - startSec647;

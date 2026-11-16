@@ -15,7 +15,7 @@
 //
 // 声音：只有黄叛一句台词（台词轨）；没有配乐。音效只加画面里有、游戏里真会响的：脚步、落水（见 声音.tsx）。
 // 代码分在 编排/ 下：时间线（台词、时刻、段表）、站位、二人、卫兵、机位、工具。
-export { lineIds, huangLineSec, chaseCueOffset, cues, skipSec, storySec, afterImpact, fallTime, type SegmentName, fallSkipSec, filmToChoreoSec, segmentTable, lastSec, lineStartSec, nodSamplesPerSec, lineCuesBySegment, toSec } from './编排/时间线.ts';
+export { lineIds, huangLineSec, chaseCueOffset, cues, skipSec, storySec, afterImpact, fallTime, type SegmentName, fallSkipSec, filmToChoreoSec, segmentTable, lastSec, lineStartSec, lineCuesBySegment, toSec } from './编排/时间线.ts';
 export { faceShaft } from './编排/站位.ts';
 export { leaderPoolJump, type Person, huangPanState, liuXinzhongState } from './编排/二人.ts';
 export { type GuardPose, guardPoseAt, guardLowerSec, guardPoolJump, guardPositions } from './编排/卫兵.ts';

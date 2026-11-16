@@ -16,7 +16,7 @@ import { STEED, horseGait, riderFeet, steedRear } from '@库/生物/幽灵马.ts
 import { shieldPos } from '@库/特效/护盾术.tsx';
 import { mortarTrajectory } from '@库/特效/苦力怕迫击炮.tsx';
 import { WARDEN, pinToWardenBody, wardenBodyHit, wardenBodyPinAt, wardenBodyPoint, type BodyPin, type WardenFrame } from '@库/生物/监守者.tsx';
-import { airPose, landPose, nearYaw, takeoffPose, yawTo } from '../6-4-1/古城戏.ts';
+import { airPose, landPoseSec, nearYaw, takeoffPose, yawTo } from '../6-4-1/古城戏.ts';
 import { bowPointWorld, BOW_ARROW_TIP, bowTextureFor } from '@库/物品/弓.tsx';
 import { arena, eliteLeap, leapFeetAt, type Jump } from '../布局.ts';
 import { G4, toGame4 } from '../../古城4x.tsx';
@@ -41,7 +41,6 @@ export const horseSec = (T: number) => scene1T(T);
 
 // ======================= 马 =======================
 const liuEyeHeight = STEED.riderHeight + 1.62;
-const fps = chase.leapCellsPerSec;
 const { leap1, leap2, leap3 } = timeline;
 const towerDir = (() => {
   const d = [geom.towerTop[0] - geom.wallTopEast[0], geom.towerTop[1] - geom.wallTopEast[1]];
@@ -57,9 +56,9 @@ const gallopDist = (u: number) => {
 };
 const horseMotion = (T: number): { p: V3; v: number; airborne: boolean } => {
   if (T < timeline.leap1T) return { p: geom.horseStart, v: 0, airborne: false };
-  if (T < timeline.leap1LandT) return { p: leapFeetAt(leap1, T * fps), v: leap1.horizSpeed, airborne: true };
+  if (T < timeline.leap1LandT) return { p: leapFeetAt(leap1, T), v: leap1.horizSpeed, airborne: true };
   if (T < timeline.leap2T) return { p: geom.wallTopEast, v: 0, airborne: false };
-  if (T < timeline.leap2LandT) return { p: leapFeetAt(leap2, T * fps), v: leap2.horizSpeed, airborne: true };
+  if (T < timeline.leap2LandT) return { p: leapFeetAt(leap2, T), v: leap2.horizSpeed, airborne: true };
   if (T < timeline.towerStopT) {
     const u = T - timeline.leap2LandT;
     const v0 = leap2.horizSpeed;
@@ -72,7 +71,7 @@ const horseMotion = (T: number): { p: V3; v: number; airborne: boolean } => {
     const s = timeline.towerStop;
     return { p: [s[0] + timeline.knockDir[0] * slide, s[1] + timeline.knockDir[1] * slide, s[2]], v, airborne: false };
   }
-  if (T < timeline.leap3LandT) return { p: leapFeetAt(leap3, T * fps), v: leap3.horizSpeed, airborne: true };
+  if (T < timeline.leap3LandT) return { p: leapFeetAt(leap3, T), v: leap3.horizSpeed, airborne: true };
   const u = T - timeline.leap3LandT;
   return { p: chase.avenueEast(gallopDist(u)), v: Math.min(chase.horseChaseSpeed, leap3.horizSpeed + chase.horseAccel * u), airborne: false };
 };
@@ -327,8 +326,8 @@ export const huangArrows = [timeline.huangArrowHitT].map((hitT) => {
   return { ...arrow, dir, stuck: stuck };
 });
 const theArrow = huangArrows[0];
-export const huangPanLeap: Jump = eliteLeap(huangFeet, geom.huangPanExit, 7, timeline.huangLeapT * fps, fps);
-const huangLandT = huangPanLeap.f1 / fps;
+export const huangPanLeap: Jump = eliteLeap(huangFeet, geom.huangPanExit, 7, timeline.huangLeapT);
+const huangLandT = huangPanLeap.f1;
 export const huangPanState = (T: number) => {
   const wardenPos = wardenChest(T);
   const lookYaw = yawFromTo(huangFeet, wardenPos);
@@ -351,10 +350,10 @@ export const huangPanState = (T: number) => {
     return { pose, bow: bowTextureFor(T < theArrow.放, k) };
   }
   if (T < timeline.huangLeapT) return { pose: takeoffPose(huangFeet, nearYaw(theArrow.yaw, huangPanLeap.yaw), (T - crouchT) / 0.2), bow: bowTextureFor(false, 0) };
-  if (T < huangLandT) return { pose: airPose(huangPanLeap, T * fps), bow: bowTextureFor(false, 0) };
-  return { pose: landPose(geom.huangPanExit, huangPanLeap.yaw, (T - huangLandT) * fps, 6), bow: bowTextureFor(false, 0) };
+  if (T < huangLandT) return { pose: airPose(huangPanLeap, T), bow: bowTextureFor(false, 0) };
+  return { pose: landPoseSec(geom.huangPanExit, huangPanLeap.yaw, T - huangLandT, 0.25), bow: bowTextureFor(false, 0) };
 };
-export const huangPanFeetAt = (T: number): V3 => (T < timeline.huangLeapT ? huangFeet : T < huangLandT ? leapFeetAt(huangPanLeap, T * fps) : geom.huangPanExit);
+export const huangPanFeetAt = (T: number): V3 => (T < timeline.huangLeapT ? huangFeet : T < huangLandT ? leapFeetAt(huangPanLeap, T) : geom.huangPanExit);
 // 鼓风机虚影和风道（同 7-1 的 fansAt、画法见 ../7-1/弓前风扇.tsx）：放箭前 0.35 秒化出、放箭后 0.3 秒散；他站着不动
 export const fansAt = (T: number): BowWindFan[] =>
   huangArrows.flatMap((arrow, i) => {

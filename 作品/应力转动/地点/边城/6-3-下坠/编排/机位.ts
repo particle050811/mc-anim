@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { BORDER_TOWN } from '../../../边城轮廓.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
-import { cityDefense, impactSegSec, segTable, physicalTime, start, yawVec } from '../时间线.ts';
+import { cityDefense, impactSegSec, segTable, physicalTime, start, yawVec, boundaryFrameSec } from '../时间线.ts';
 import { add, sub } from './工具.ts';
 import { groundZ, caveCeilingZ, ancientCityFloorZ } from './地面.ts';
 import { liYing, liYingShaft, maceHeadPos } from './李樱.ts';
@@ -83,7 +83,7 @@ const cam634 = (globalSec: number): Cam => {
     return withDir(HIGH, viewDir, lensLerp(LENS_WIDE, LENS_FIND, smoothstep01((globalSec - t0 - 1 / 6) / (t1 - t0 - 1 / 12))));
   }
   if (globalSec < cityDefense.inScope) {
-    const k = smoothstep01((globalSec - cityDefense.raiseScope) / (cityDefense.inScope - 1 / 24 - cityDefense.raiseScope));
+    const k = smoothstep01((globalSec - cityDefense.raiseScope) / (cityDefense.inScope - boundaryFrameSec - cityDefense.raiseScope));
     const pos = lerpV(ROW.pos0, ROW.pos1, k);
     return withDir(pos, norm(sub(lerpV(ROW.tgt, add(ROW.tgt, [-1, 0, 0]), k), pos)), ROW.lens);
   }

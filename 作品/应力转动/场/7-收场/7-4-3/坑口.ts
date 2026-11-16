@@ -6,7 +6,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { type FigurePose } from '@库/角色/骨架.tsx';
 import { eliteLeap, type Jump } from '../../../地点/古城4x/布局/强者.ts';
-import { FPS as cityPlayFps, flightPose, landPose, mixPose, nearYaw, standAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { flightPose, landPoseSec, mixPose, nearYaw, standAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { shaftCellCenter } from '../../../地点/边城/6-3-下坠/编排.ts';
 import pitSurfaceTable from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
 import { guardPoseAt, lastSec as lastSec6, guardPositions, type GuardPose } from '../../../地点/边城/6-3-8/编排.ts';
@@ -14,8 +14,6 @@ import { borderTownPos } from '../../../地点/主世界116.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
-// `eliteLeap` 的 f0、f1 和 `flightPose`、`landPose` 的帧都按 古城戏 的旧网格（1/24 秒一格）数，这里秒乘它换过去
-const leapCellsPerSec = cityPlayFps;
 const D2R = Math.PI / 180;
 const add = (a: number[], b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const yawTo = (p: number[], q: number[]) => Math.atan2(-(q[0] - p[0]), q[1] - p[1]) / D2R;
@@ -39,13 +37,13 @@ const RISE_SEC = 1 / 3; // 蹲完站直
 type Leaper = { leap: Jump; armRScale: number; look: (t: number) => { yaw: number; headYaw: number; headPitch: number } };
 const leaper = (dx0: number, dy0: number, dx1: number, dy1: number, startSec: number) => {
   const c = shaftCellCenter();
-  return eliteLeap(add(c, [dx0, dy0, -15]), onSurface(dx1, dy1), 7, startSec * leapCellsPerSec);
+  return eliteLeap(add(c, [dx0, dy0, -15]), onSurface(dx1, dy1), 7, startSec);
 };
 const liuLeap = leaper(-0.6, -0.7, -1.3, 4.7, 5 / 12);
 const huangLeap = leaper(0.6, -0.5, 1.4, 4.4, 0.625);
-const landSec = (L: Jump) => L.f1 / leapCellsPerSec;
+const landSec = (L: Jump) => L.f1;
 // 冒出井口（脚底高过井口一圈的坑面）的那一刻，卫兵从这一刻起反应
-const emergeSec = (L: Jump) => L.f0 / leapCellsPerSec + L.tUp - Math.sqrt(Math.max(0, L.top - (L.p0[2] + 7)) / 16);
+const emergeSec = (L: Jump) => L.f0 + L.tUp - Math.sqrt(Math.max(0, L.top - (L.p0[2] + 7)) / 16);
 
 // 落地站直以后：黄叛先扭头看刘心忠、身子跟着侧过来；刘心忠扫一眼东边围着的卫兵，身子也带过去一点
 const huangLook = (t: number) => {
@@ -65,15 +63,13 @@ const LEAPERS: Record<'刘' | '黄', Leaper> = {
 };
 export const leaperPose = (who: '刘' | '黄', t: number): FigurePose | null => {
   const { leap, armRScale, look } = LEAPERS[who];
-  const cell = t * leapCellsPerSec;
-  const landCells = LAND_SEC * leapCellsPerSec;
-  if (cell < leap.f0) return null; // 还在井下
-  if (cell < leap.f1) return flightPose(leap, cell, { place: false, armRScale });
-  const s = cell - leap.f1;
+  if (t < leap.f0) return null; // 还在井下
+  if (t < leap.f1) return flightPose(leap, t, { place: false, armRScale });
+  const s = t - leap.f1;
   const lk = look(t);
-  if (s < landCells) return landPose(leap.p1, leap.yaw, s, landCells);
+  if (s < LAND_SEC) return landPoseSec(leap.p1, leap.yaw, s, LAND_SEC);
   const stand = standAt(leap.p1, nearYaw(leap.yaw, lk.yaw), lk.headYaw, lk.headPitch);
-  return mixPose(landPose(leap.p1, leap.yaw, landCells, landCells), { ...stand, loc: leap.p1 }, smoothstep01((s / leapCellsPerSec - LAND_SEC) / RISE_SEC));
+  return mixPose(landPoseSec(leap.p1, leap.yaw, LAND_SEC, LAND_SEC), { ...stand, loc: leap.p1 }, smoothstep01((s - LAND_SEC) / RISE_SEC));
 };
 const chestOf = (who: '刘' | '黄', t: number): V3 | null => {
   const p = leaperPose(who, t);

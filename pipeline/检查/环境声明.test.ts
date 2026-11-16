@@ -38,8 +38,8 @@ describe('环境声明（加载）', () => {
   });
 
   it('关键帧超出段的帧数、顺序反了', async () => {
-    const outOfRange = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 3, 雨: 1 }, { 帧: 240, 雨: 0 }] };`)))).violations.join('\n');
-    expect(outOfRange).toMatch(/关键帧 240 不在段里（段长 10 秒，一秒 24 帧共 240 帧）/);
+    const outOfRange = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 3, 雨: 1 }, { 帧: 600, 雨: 0 }] };`)))).violations.join('\n');
+    expect(outOfRange).toMatch(/关键帧 600 不在段里（段长 10 秒，一秒 60 帧共 600 帧）/);
     const failureMessage = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 5, 雨: 1 }, { 帧: 2, 雨: 0 }] };`)))).violations.join('\n');
     expect(failureMessage).toMatch(/从小到大/);
   });

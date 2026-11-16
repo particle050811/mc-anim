@@ -44,4 +44,4 @@ for (const k of ctx.keys()) {
   wavUrls[k.replace(/^\.\//, '')] = typeof wavModule === 'string' ? wavModule : wavModule.default;
 }
 
-export const { lineFrameCount, lineTable } = makeLineTrack(lineTableJson, wavUrls);
+export const { lineTable } = makeLineTrack(lineTableJson, wavUrls);

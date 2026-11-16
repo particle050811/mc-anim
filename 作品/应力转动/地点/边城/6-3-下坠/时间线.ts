@@ -6,7 +6,7 @@
 //
 // 三层时间：
 // - 全局秒 T：T = 0 是 6-3-3 首帧（= 6-3-2 末帧，思索转场开始淡出那一刻）；6-3-1、6-3-2 在 T < 0。
-//   段长、节拍原来按 1/24 秒一格数帧调的，换成秒以后除不尽的写成 n / 24。
+//   节拍原来按 1/24 秒一格数帧调的，换成秒以后除不尽的写成 n / 24；段界落在输出帧（1/60 秒）上。
 // - 物理时间 w（秒）：人、扫帚、碎块全按它走。跃出到翻成头朝下是重力加空气阻力；翻完被推着下冲（见 `鼓风机`）。
 //   T < 0 是 0 往前倒推的负数（两人还坐在扫帚上）；T = 0 跳到 `刻`.俯冲起，这一跳藏在不透明的思索界面后面。
 //   用户 10-05：下坠是有人用鼓风机加速，不按重力算，选「翻身后约 1 秒冲到 300～400 米/秒，几秒内砸地」，卫兵转身举镜那段慢放像子弹时间。
@@ -20,6 +20,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import * as K626 from '../6-2-6/编排.ts';
 import { segmentSpanSec as ponderSpanSec } from '../6-3-2/台词.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
+import { segFps } from '@engine/段/段定义.ts';
 
 // ---------- 起点：6-2-6 末帧 ----------
 export const start = {
@@ -31,11 +32,11 @@ export const start = {
 
 // ---------- 段表（全局秒） ----------
 // 各段的长只在 `段长` 里写（止 − 起，秒），起止由 `buildSegmentTable` 累加（用户 10-13：段长不要耦合）。
-// 段表的 止 是这一段末格的起点：旧版一格 1/24 秒，段界那一格归上一段（`lastCellSec`，拼段时按它截）。
-// 连着拍的两段共用段界（下一段起 = 上一段止）；`跳回` 里的段是硬切、物理时间往回跳，起点接在上一段末格后面，不共用。
+// 段表的 止 是这一段末帧：段界那一帧归上一段（`boundaryFrameSec`，拼段时按它截）。
+// 连着拍的两段共用段界（下一段起 = 上一段止）；`unsharedSegs` 里的段是硬切、物理时间往回跳，起点接在上一段末帧后面，不共用。
 // 锚点：全局秒 0 = 6-3-3 首帧，6-3-1、6-3-2 往负的倒排。段内节点写成「本段起点 + 偏移」或「本段止 − 偏移」，不写绝对全局秒。
 export type SegmentName = '6-3-1' | '6-3-2' | '6-3-3' | '6-3-4' | '6-3-5' | '6-3-6';
-export const lastCellSec = 1 / 24;
+export const boundaryFrameSec = 1 / segFps;
 // 6-3-4 城防各拍的长（秒，按顺序，第一拍从段首起，最后一拍到 6-3-5 硬切；含义见 `城防`）。分拍依据用户 10-13：先瞭望、听到回头、看到金光再举镜。
 // 瞭望原速，太长的话卫兵举镜时他已经砸地了。回头、见光两拍按卫兵的反应（编排/卫兵.ts 的 `REACT`）一起缩（用户 10-20：反应太慢，「整个镜头都要对应缩短」）。
 // 举镜：一排人在物理时间 0.3 秒里先后举好，全举好再停一下就切镜中
@@ -48,9 +49,10 @@ export const segSpanSec: Record<SegmentName, number> = {
   // 原速：从思索里放大的李樱淡到真的天空，跟着他往下冲，到切城墙为止。用户 10-20 嫌思索过后下落太短，加长 1 秒，多出来的那段路由扫帚拉高补上（`思索拉高`）；
   // 切城墙那一刻（`刻`.俯冲起 + 41 / 24 ≈ 3.958 秒）≈ 6-3-5 首帧的物理时间（两边从同一刻起演）
   '6-3-3': 5 / 3,
-  '6-3-4': Object.values(cityDefenseBeats).reduce((a, b) => a + b, 0) - lastCellSec, // 首帧硬切到城墙，止是镜中最后一格，硬切 6-3-5
+  // 首帧硬切到城墙，止是镜中最后一帧，硬切 6-3-5：各拍加起来（5.2917 秒）不是整帧，6-3-5 首帧落在过了它的头一帧（原来落在 1/24 秒的格上，用户 11-16 定不留）
+  '6-3-4': Math.ceil(Object.values(cityDefenseBeats).reduce((a, b) => a + b, 0) * segFps - 1e-9) / segFps - boundaryFrameSec,
   // 原速，从切城墙那一刻拍到砸地前（首帧物理时间 = 撞击时刻 − (本段长 + 撞击段内秒) ≈ 切城墙那一刻），装得下整句台词（../6-3-下坠/声音.tsx 的 `RoadRoller`）
-  '6-3-5': 3.25 - lastCellSec,
+  '6-3-5': 3.25 - boundaryFrameSec,
   // 竖井用古城4x 的（用户 10-13 嫌坑浅）：岩层 141 米、入井速度 140，落地半蹲缓冲、起身、扫一眼（../6-3-6/落地.ts）。
   // 撞击时刻、首帧、段内 `撞击段内秒` 砸地不动；6-3-6 → 6-3-8 硬切（6-3-8 的 `afterImpact` 按这里的段长算）
   '6-3-6': 4.5,
@@ -65,7 +67,7 @@ const buildSegmentTable = () => {
   let cursorSec = 0;
   for (let i = anchorIdx; i < segmentNames.length; i++) {
     const seg = segmentNames[i];
-    if (i > anchorIdx && unsharedSegs.includes(seg)) cursorSec += lastCellSec;
+    if (i > anchorIdx && unsharedSegs.includes(seg)) cursorSec += boundaryFrameSec;
     t[seg] = { 起: cursorSec, 止: cursorSec + segSpanSec[seg], 名: segmentTitles[seg], refVideo: true };
     cursorSec = t[seg].止;
   }
@@ -80,8 +82,8 @@ const buildSegmentTable = () => {
 };
 export const segTable = buildSegmentTable();
 export const segSpan = (seg: SegmentName) => segTable[seg].止 - segTable[seg].起;
-// 一段在拼段里放多长（秒）：段长加上段界那一格
-export const segPlaySec = (seg: SegmentName) => segSpan(seg) + lastCellSec;
+// 一段在拼段里放多长（秒）：段长加上段界那一帧
+export const segPlaySec = (seg: SegmentName) => segSpan(seg) + boundaryFrameSec;
 export const impactSegSec = 0.125; // 6-3-6 段内 0.125 秒锤头砸到地面（剪的时候按它对齐）
 // 6-3-4 的节点（全局秒，= 段首 + 前面各拍之和，见 `城防拍长`）。各拍之间硬切（用户 10-13），世界和物理时间连续，只换机位：
 // 切墙（段首）：北城墙中远景，卫兵值守——瞭望；察觉：4 号先回头，其余陆续跟着；回看：身后高处，镜头抬到天上——看见金光；
@@ -137,7 +139,7 @@ const CLOCK: [number, number][] = [
   [cityDefense.notice + 1 / 6, bulletTime.guard],
   [cityDefense.回看, bulletTime.guard],
   [(cityDefense.回看 + cityDefense.raiseScope) / 2, bulletTime.raiseScope],
-  [cityDefense.inScope - 1 / 24, bulletTime.raiseScope],
+  [cityDefense.inScope - boundaryFrameSec, bulletTime.raiseScope], // 切进望远镜前的最后一帧还是举镜的慢放
   // 切进望远镜：镜中追着他
   [cityDefense.inScope, bulletTime.telescope],
   [segTable['6-3-4'].止, bulletTime.telescope],
@@ -150,7 +152,7 @@ const clockAt = (globalSec: number) => {
   }
   return CLOCK[CLOCK.length - 1][1];
 };
-// 积分表：每 1/192 秒一格，从 T = 0（物理时间 `刻`.俯冲起）到 6-3-5 首帧（6-3-4 末格往后半格也要算）
+// 积分表：每 1/192 秒一格，从 T = 0（物理时间 `刻`.俯冲起）到 6-3-5 首帧（6-3-4 末帧往后半帧也要算）
 const clockSamplesPerSec = 192;
 const T5 = segTable['6-3-5'].起;
 let W_TAB: number[] | null = null;
@@ -270,13 +272,13 @@ export const physicalTime = (globalSec: number): number => {
   return physTimes[i] + (physTimes[i + 1] - physTimes[i]) * (x - i);
 };
 export const clampedClock = (T: number) => (T >= T5 ? 1 : clockAt(T));
-// 物理时间 → 全局秒：两边各自单调。`城墙这边` = true 只在 6-3-4 末格以前找（城墙上、俯冲、更早），否则物理时间在城墙结束以后的落在 6-3-5 起那边。
+// 物理时间 → 全局秒：两边各自单调。`城墙这边` = true 只在 6-3-4 末帧以前找（城墙上、俯冲、更早），否则物理时间在城墙结束以后的落在 6-3-5 起那边。
 // 0 ～ `刻`.俯冲起 之间（跃出、翻身，没上画面）都落在 T = 0
-export const wallEndPhysicalTime = () => physicalTime(segTable['6-3-4'].止 + lastCellSec / 2);
+export const wallEndPhysicalTime = () => physicalTime(segTable['6-3-4'].止 + boundaryFrameSec / 2);
 export const globalSec = (physSec: number, onWallSide = physSec <= wallEndPhysicalTime()): number => {
   if (!onWallSide) return T5 + (physSec - physicalTime(T5));
   let lo = segTable['6-3-1'].起 - 2;
-  let hi = segTable['6-3-4'].止 + lastCellSec / 2;
+  let hi = segTable['6-3-4'].止 + boundaryFrameSec / 2;
   for (let k = 0; k < 60; k++) {
     const mid = (lo + hi) / 2;
     if (physicalTime(mid) < physSec) lo = mid;

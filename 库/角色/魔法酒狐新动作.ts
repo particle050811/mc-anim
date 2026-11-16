@@ -26,7 +26,8 @@ const addRot = (a: number[] | undefined, b: number[]) => b.map((x, i) => x + (a?
 
 // ---------- 站：idle ----------
 // idle 里只有上身两根骨骼随时间动（3 秒一循环、线性插值），腿、脚是常量；头的左顾右盼（18 秒起）不抄，头由 看 给。
-// UpperBody 是游戏导出时按 1/24 秒烘好的 73 个值，原样抄。
+// UpperBody 是游戏导出时按 1/24 秒烘好的 73 个值，原样抄（`chestSamplesPerSec`），样间线性插值。
+const chestSamplesPerSec = 24;
 const upperBodyKeyframes: readonly (readonly [number, number])[] = [[0, -1], [0.5417, -0.50785], [1.0833, 0.73395], [1.5, 1], [2.0417, 0.4795], [2.5833, -0.69829], [3, -1]];
 const chestFrames = [
   2, 2, 1.99, 1.97, 1.95, 1.91, 1.86, 1.8, 1.72, 1.63, 1.53, 1.41, 1.28, 1.13, 0.97, 0.8, 0.61, 0.41, 0.21, 0, -0.21, -0.41, -0.61, -0.8,
@@ -44,8 +45,8 @@ const lerpKeys = (K: readonly (readonly [number, number])[], t: number) => {
 /** 第 秒 秒 idle 的呼吸（上身前后晃 ±1°、胸口 ±2°） */
 export const magicalWineFoxBreath = (sec: number): SkeletonTable => {
   const t = ((sec % 3) + 3) % 3;
-  const f = t * 24;
-  const i = Math.min(71, Math.floor(f));
+  const f = t * chestSamplesPerSec;
+  const i = Math.min(chestFrames.length - 2, Math.floor(f));
   const chestRot = chestFrames[i]! + (chestFrames[i + 1]! - chestFrames[i]!) * (f - i);
   return { UpBody: { rot: [lerpKeys(upperBodyKeyframes, t), 0, 0] }, UpperBody: { rot: [chestRot, 0, 0] } };
 };

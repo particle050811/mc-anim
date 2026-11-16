@@ -27,8 +27,8 @@ export { wardenMaxHp, wardenHits, wardenHpAt, type WardenHit };
 // ======================= 接 6-4-9 末帧（首尾核对） =======================
 // 场时刻 0 就是 6-4-9 末帧：监守者、二人的位置朝向、头、吼叫、游戏秒、弓都得和 6-4-9/编排.ts 末帧一样，对不上就在加载时报错：段与段硬切，世界状态要连续（CLAUDE.md 漫剧规则，报告第 13 条）
 {
-  const f = geom.handoffFrame649;
-  const end649 = { 监守者: K649.warden(f), pursuers: K649.pursuers(f), bow: K649.bowAt(f) };
+  const s = geom.handoffSec649;
+  const end649 = { 监守者: K649.wardenAt(s), pursuers: K649.pursuersAt(s), bow: K649.bowTextureAt(s) };
   const start71 = { 监守者: wardenState(0), 刘: liuXinzhongPose(0), 黄: huangPanState(0) };
   const off: string[] = [];
   const near = (what: string, a: number | undefined, b: number | undefined, tol: number) => {

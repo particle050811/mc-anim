@@ -49,10 +49,10 @@ const warp = (u: number, ua: number, hang: number) => {
   const s = (u - ua) / (1 - ua);
   return ua + (1 - ua) * (s - hang * s * (1 - s));
 };
-// 跳的 f0、f1 是秒（`eliteLeap`、`leapFeetAt` 的每秒格数给 1）
+// 跳的 f0、f1 是秒
 const flightU = (jump: Jump, t: number) => clamp01((t - jump.f0) / jump.T);
 const flightFeetAt = (jump: Jump, i: number, t: number): V3 =>
-  leapFeetAt(jump, jump.f0 + warp(flightU(jump, t), jump.tUp / jump.T, jumpStyle(i).hang) * jump.T, 1);
+  leapFeetAt(jump, jump.f0 + warp(flightU(jump, t), jump.tUp / jump.T, jumpStyle(i).hang) * jump.T);
 // 蹬离地面那一刻的样子（地上最后一帧和空中第一帧一样）：后腿（左）蹬直、前腿（右）提膝，上身前倾，两臂往前上方甩
 const launchShape = (foot: V3, yaw: number): FigurePose => ({
   loc: foot, pitch: -26, squash: 1, headPitch: 16, headYaw: 0, legR: 60, kneeR: 80, legL: -40, kneeL: 8,
@@ -125,7 +125,7 @@ export const jumps: Jump[] = (() => {
   let f0 = firstJumpSec;
   for (const k of route) {
     const p1 = feetOnWool(allWool[k]);
-    const jump = eliteLeap(p0, p1, woolLeapApex[k] ?? elite.apexHeight, f0, 1);
+    const jump = eliteLeap(p0, p1, woolLeapApex[k] ?? elite.apexHeight, f0);
     out.push(jump);
     p0 = p1;
     f0 = k === 'B' ? jump.f1 + LAND_B + LOOT_LEN - LOOT_TURN_OVERLAP + TURN_LEN : jump.f1 + jumpStyle(out.length - 1).groundSec;

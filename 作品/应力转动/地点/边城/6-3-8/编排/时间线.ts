@@ -60,11 +60,11 @@ export const filmToChoreoSec = (u: number) => (u < cues.jumpCut ? u : cues.splas
 
 // ---------- 段表（成片秒） ----------
 // 6-3-8 从城墙演到切坑以前（中间跳下镜 → 落水镜硬切），6-3-10 从切坑那一刻起是坑口（硬切）。
-// 6-3-10 的起止是切坑、演完那两刻取整到 1/24 秒的格（6-追进竖井 段.ts 的声音按它排）
-const onOldGrid = (s: number) => Math.round(s * 24) / 24;
+// 6-3-10 的起止是切坑、演完那两刻对到最近的输出帧（原来取整到 1/24 秒的格，用户 11-16 定不留 1/24 秒的格；6-追进竖井 段.ts 的声音按它排）
+const onOutputFrame = (s: number) => Math.round(s * segFps) / segFps;
 export type SegmentName = '6-3-8' | '6-3-10';
-const pitShotStart = onOldGrid(cues.cutToPit);
-const pitShotEnd = onOldGrid(cues.seg10End);
+const pitShotStart = onOutputFrame(cues.cutToPit);
+const pitShotEnd = onOutputFrame(cues.seg10End);
 export const segmentTable: Record<SegmentName, { 起: number; 名: string }> = {
   '6-3-8': { 起: 0, 名: '二人登场' },
   '6-3-10': { 起: pitShotStart - fallSkipSec, 名: '追进竖井' },
@@ -74,10 +74,9 @@ export const lastSec = pitShotEnd;
 
 // 台词落点（段内秒，开口那一刻；字幕组和 声音.tsx 都从这里取）。台词轨的落点 = 开口（第一个有声的时刻）
 export const lineStartSec = { huangPanReappears: cues.huangSpeaks };
-// 点头（`withTalkNod`）的平滑按格取样，格的大小跟着 fps 走，所以照旧给 1/24 秒一格的数：帧 = 开口秒 × 24
-export const nodSamplesPerSec = 24;
+// 点头（`withTalkNod`）用的句子：帧 写段内秒，每秒给 1
 export const lineCuesBySegment: Record<SegmentName, { id: string; 帧: number }[]> = {
-  '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartSec.huangPanReappears * nodSamplesPerSec }],
+  '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartSec.huangPanReappears }],
   '6-3-10': [],
 };
 
