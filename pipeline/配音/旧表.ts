@@ -5,8 +5,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { bytesPath, type AssetLock } from '../资产/资产锁.ts';
 
-export type OldLineRow = { character: string; char: string; synth?: string; file: string | null; 副本?: string; duration: number; mouthOpen: number; 有声长: number; 内心?: boolean };
-export type OldLipRow = { 文: string; duration: number; char: [string, number, number][]; 嘴: [number, string][] };
+// 两份整表是 store 里旧项目的字节（只增不改），键照旧是中文
+export type OldLineRow = { 角色: string; 字: string; 合成?: string; 文件: string | null; 副本?: string; 时长: number; 开口: number; 有声长: number; 内心?: boolean };
+export type OldLipRow = { 文: string; 时长: number; 字: [string, number, number][]; 嘴: [number, string][] };
 export type OldVoice = { oldId: string; lines: OldLineRow; lip?: OldLipRow };
 
 export const oldTableAssets = { lineTable: '数据/配音/台词表', lip: '数据/配音/口型' } as const;

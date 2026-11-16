@@ -6,10 +6,12 @@ import { createElement, type ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { codeRoot } from '../环境/路径.ts';
 import { readOldVoiceTable } from './旧表.ts';
+import type { LineEntry } from '../../engine/audio/台词轨.tsx';
 import { bytesPath, readAssetLock, assetLockPath } from '../资产/资产锁.ts';
 import { listSentenceModules, sentencePath, readSentenceModule } from './句模块.ts';
 
-type TableItem = { character: string; file: string; duration: number; mouthOpen: number; 有声长: number };
+// 做台词轨 读的是旧整表的形状（台词轨.tsx 的 台词项，中文键），台词句轨 要照它拼
+type TableItem = LineEntry;
 const mockState = vi.hoisted(() => ({ 表: {} as Record<string, unknown>, sound: {} as Record<string, string>, lines: [] as unknown[] }));
 vi.mock('../../engine/audio/台词轨.tsx', () => ({
   makeLineTrack: (lineTable: Record<string, unknown>, sounds: Record<string, string>) => {
@@ -40,8 +42,8 @@ describe('台词句轨', () => {
       const legacyLine = oldTable.get(id)!.lines;
       renderToStaticMarkup(createElement(lineCueTrack, { lineCues: [{ 句: sentence, frame: 12.5 }, { 句: sentence, frame: 40, 音量: 0.5 }], sound: { [id]: `blob:${id}` } }));
       const item = mockState.表[id] as TableItem;
-      expect([item.character, item.mouthOpen, item.duration, item.有声长]).toEqual([legacyLine.character, legacyLine.mouthOpen, legacyLine.duration, legacyLine.有声长]);
-      expect(mockState.sound[item.file]).toBe(`blob:${id}`);
+      expect([item.角色, item.开口, item.时长, item.有声长]).toEqual([legacyLine.角色, legacyLine.开口, legacyLine.时长, legacyLine.有声长]);
+      expect(mockState.sound[item.文件!]).toBe(`blob:${id}`);
       expect(mockState.lines).toEqual([{ id, frame: 12.5 }, { id, frame: 40, 音量: 0.5 }]);
     }
   });
