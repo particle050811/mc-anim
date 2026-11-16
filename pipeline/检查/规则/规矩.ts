@@ -1,4 +1,4 @@
-// 规矩：所查作品的 规矩.toml 的格式（只管这部作品；全片通用的在 rules/通用.toml）；代码里每个 例外('规矩id', 值, {段|场, 原因}) 都在表里那条规矩的 例外 里登记过、值对得上，
+// 规矩：所查作品的 规矩.toml 的格式（只管这部作品；全片通用的在 rules/通用.toml）；代码里每个 exception('规矩id', 值, { segment|scene, cause }) 都在表里那条规矩的 exceptions 里登记过、值对得上，
 // 表里登记的例外代码里也都找得到（段或场还没搬进来的算待迁移）；默认值的落点（<路径> [符号、符号…]）文件和符号都在。
 // 落点以「旧:」或「待迁移:」开头的是还在旧项目里的，算待迁移，搬完改成新路径。
 // 出处里 M/<名>.md 指的记忆（根是配置 记忆，ANIM_MEMORY）要在；记忆仓库不在本机（别的机器、公开版）就跳过，不算违规。
@@ -113,7 +113,7 @@ export const parseLanding = (s: string): { pendingMigration: true } | { path: st
   if (/^(旧|待迁移):/.test(s)) return { pendingMigration: true };
   const noComment = s.replace(/（[^）]*）|\([^)]*\)/g, ' ').trim();
   const [filePath, ...restTokens] = noComment.split(/\s+/);
-  if (!filePath || !landingRoots.includes(filePath.split('/')[0]!)) return { 错: `落点「${s}」要写成 <路径> [符号、符号…]（路径从 ${landingRoots.join('、')} 开头），还在旧项目的写 旧: 开头；没有共用落点就留空数组，说明写进 备注` };
+  if (!filePath || !landingRoots.includes(filePath.split('/')[0]!)) return { 错: `落点「${s}」要写成 <路径> [符号、符号…]（路径从 ${landingRoots.join('、')} 开头），还在旧项目的写 旧: 开头；没有共用落点就留空数组，说明写进 remark（备注）` };
   return { path: filePath.replace(/\/$/, ''), symbols: restTokens.join(' ').split(/[、，,\s]+/).filter(Boolean) };
 };
 
@@ -166,21 +166,21 @@ export const ruleCheck = async (c: CheckContext, report: CheckReport) => {
       continue;
     }
     if (exceptionMap.has(r.id)) report.错(`${displayName} 重复`, path);
-    if (r.defaultValue === undefined || r.defaultValue === '') report.错(`${displayName}：要写 默认值`, path);
-    if (r.level !== '原话' && r.level !== '参考') report.错(`${displayName}：级别 只能是 原话 或 参考`, path);
-    if (!Array.isArray(r.quotes) || r.quotes.some((x) => typeof x !== 'string')) report.错(`${displayName}：原话 要是字符串数组（没有就写 []）`, path);
-    else if (r.level === '原话' && r.quotes.length === 0) report.错(`${displayName}：级别是 原话，原话却是空的`, path);
-    if (typeof r.appliesTo !== 'string' || !r.appliesTo) report.错(`${displayName}：要写 针对`, path);
-    if (!Array.isArray(r.provenance) || r.provenance.length === 0) report.错(`${displayName}：出处 要是非空数组`, path);
+    if (r.defaultValue === undefined || r.defaultValue === '') report.错(`${displayName}：要写 defaultValue（默认值）`, path);
+    if (r.level !== '原话' && r.level !== '参考') report.错(`${displayName}：level（级别）只能是 原话 或 参考`, path);
+    if (!Array.isArray(r.quotes) || r.quotes.some((x) => typeof x !== 'string')) report.错(`${displayName}：quotes（原话）要是字符串数组（没有就写 []）`, path);
+    else if (r.level === '原话' && r.quotes.length === 0) report.错(`${displayName}：level 是 原话，quotes 却是空的`, path);
+    if (typeof r.appliesTo !== 'string' || !r.appliesTo) report.错(`${displayName}：要写 appliesTo（针对）`, path);
+    if (!Array.isArray(r.provenance) || r.provenance.length === 0) report.错(`${displayName}：provenance（出处）要是非空数组`, path);
     else for (const s of r.provenance) if (typeof s === 'string') sources.push({ rule: r.id, provenance: s });
-    if (!Array.isArray(r.placement) || r.placement.some((x) => typeof x !== 'string')) report.错(`${displayName}：落点 要是字符串数组（没有共用落点写 []）`, path);
+    if (!Array.isArray(r.placement) || r.placement.some((x) => typeof x !== 'string')) report.错(`${displayName}：placement（落点）要是字符串数组（没有共用落点写 []）`, path);
     if (!Array.isArray(r.exceptions)) {
-      report.错(`${displayName}：例外 要是数组（没有写 []）`, path);
+      report.错(`${displayName}：exceptions（例外）要是数组（没有写 []）`, path);
       exceptionMap.set(r.id, []);
     } else {
       for (const x of r.exceptions as RuleExceptionEntry[]) {
-        if ((typeof x.segment === 'string') === (typeof x.scene === 'string')) report.错(`${displayName} 的例外要写 段 或 场（二选一）`, path);
-        if (x.value === undefined || typeof x.cause !== 'string' || !x.cause || typeof x.provenance !== 'string' || !x.provenance) report.错(`${displayName} 的例外（${describeScope(x)}）要写 值、原因、出处`, path);
+        if ((typeof x.segment === 'string') === (typeof x.scene === 'string')) report.错(`${displayName} 的例外要写 segment（段）或 scene（场），二选一`, path);
+        if (x.value === undefined || typeof x.cause !== 'string' || !x.cause || typeof x.provenance !== 'string' || !x.provenance) report.错(`${displayName} 的例外（${describeScope(x)}）要写 value（值）、cause（原因）、provenance（出处）`, path);
         else sources.push({ rule: r.id, provenance: x.provenance });
       }
       exceptionMap.set(r.id, r.exceptions as RuleExceptionEntry[]);
