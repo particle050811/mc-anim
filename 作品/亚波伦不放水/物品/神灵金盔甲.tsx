@@ -21,7 +21,7 @@ import { settleCape, capeVertexTable, type CapeData } from './神灵金披风.ts
 
 const textureMap = { 旧版: oldTexturePng, 新版: newTexturePng } as const;
 
-type RawArmorMesh = { bone: number; 顶点: number[] };
+type RawArmorMesh = { 骨: number; 顶点: number[] };
 const armorData = armorMeshData as unknown as { 骨: string[]; 槽: Record<'head' | 'chest' | 'legs' | 'feet', RawArmorMesh[]>; 披风: CapeData };
 
 export type ApocalyptiumPiece = '头盔' | '胸甲' | '护腿' | '靴子';
@@ -51,7 +51,7 @@ export const useApocalyptiumArmorMaterials = (pieces: readonly ApocalyptiumPiece
   const meshes: ArmorMesh[] = [];
   for (const pieceName of apocalyptiumFullSet) {
     if (!pieces.includes(pieceName)) continue;
-    armorData.槽[slotNames[pieceName]].forEach((m, i) => meshes.push({ key: `${pieceName}${i}`, bone: armorData.骨[m.bone]!, 顶点: m.顶点, geometry: buildMeshGeometry(m) }));
+    armorData.槽[slotNames[pieceName]].forEach((m, i) => meshes.push({ key: `${pieceName}${i}`, bone: armorData.骨[m.骨]!, 顶点: m.顶点, geometry: buildMeshGeometry(m) }));
     if (pieceName === '胸甲') meshes.push({ key: '披风', bone: 'body', 顶点: capeVertices(), geometry: capeGeometry() });
   }
   return { material, grid: meshes };
