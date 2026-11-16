@@ -129,7 +129,8 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
   const after = physSec >= imp;
   // 6-3-1、6-3-2（T < 0）：机位、两人姿势、李樱手里的指南针换成 6-3-1/编排.ts、6-3-2/扫帚上.ts 的。
   // 正好落在 6-3-1 止上的那一刻算 6-3-2（段表是累加出来的秒，1e-9 是浮点余量）
-  const preLeap = globalSec < timeline.segTable['6-3-1'].end - 1e-9 ? backToTown(globalSec) : globalSec < 0 ? onBroomState(globalSec) : null;
+  const preLeapAt = (s: number) => (s < timeline.segTable['6-3-1'].end - 1e-9 ? backToTown(s) : s < 0 ? onBroomState(s) : null);
+  const preLeap = preLeapAt(globalSec);
   const cam = preLeap?.cam ?? choreo.camPose(globalSec);
   const under = cam.pos[2] < choreo.groundZ - 0.5;
   // 已看过的顺序画面在入井后保留了入井前最后一帧的大气后期和云影。
@@ -213,7 +214,7 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
     <AbsoluteFill style={{ backgroundColor: UNDER_BACKGROUND }}>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
         {under ? <UnderFog /> : <FlightFog visibility={timeline.start.visibility} />}
-        <FlightRig c={cam} near={0.02} />
+        <FlightRig c={cam} near={0.02} ahead={(dt) => preLeapAt(globalSec + dt)?.cam ?? choreo.camPose(globalSec + dt)} />
         <ScreenAo atmosphereCamera={under ? atmosphereReference?.camera : undefined} />
         <OverworldSky active={!under} />
         {/* 入井后旧顺序画面的水面停在最后有天空的帧；显式接住这个时刻，不能随跳帧历史停在别处，也不能被天空卸载复位。 */}

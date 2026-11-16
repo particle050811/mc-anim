@@ -14,13 +14,11 @@ import { rad } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
 import { useFarFog } from '@engine/light/高度雾.ts';
+import { useLookahead } from '@engine/voxel/世界.tsx';
 export type CamPose = { pos: number[]; tgt: number[]; lens: number; roll?: number };
-export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number }> = ({ c: camPose, near = 0.05, far = 150000 }) => {
-  const { camera, size, gl } = useThree();
-  gl.toneMapping = THREE.NeutralToneMapping;
-  gl.toneMappingExposure = 1.0;
-  const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = lensToFov(camPose.lens, size.width / size.height);
+// 把机位摆进相机（FlightRig 自己的相机、按航线往后看的相机共用）
+const placeCamera = (cam: THREE.PerspectiveCamera, camPose: CamPose, aspect: number, near: number, far: number) => {
+  cam.fov = lensToFov(camPose.lens, aspect);
   cam.near = near;
   cam.far = far;
   cam.position.copy(sceneToThree(camPose.pos));
@@ -29,6 +27,24 @@ export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number }> = 
   if (camPose.roll) cam.rotateZ(-rad(camPose.roll));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
+};
+// ahead：往后 dt 秒的机位（各段 编排.ts 查表算的，同 c 的来处），给了体素世界就按航线提前备区段（engine/voxel/世界.tsx 的 `useLookahead`），不改画面
+export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahead?: (dtSec: number) => CamPose }> = ({ c: camPose, near = 0.05, far = 150000, ahead }) => {
+  const { camera, size, gl } = useThree();
+  gl.toneMapping = THREE.NeutralToneMapping;
+  gl.toneMappingExposure = 1.0;
+  const cam = camera as THREE.PerspectiveCamera;
+  placeCamera(cam, camPose, size.width / size.height, near, far);
+  useLookahead(
+    camera,
+    ahead &&
+      ((dtSec, target) => {
+        const pose = ahead(dtSec);
+        target.aspect = size.width / size.height; // R3F 只替它自己的相机设
+        placeCamera(target, pose, size.width / size.height, near, far);
+        return pose.pos;
+      }),
+  );
   return null;
 };
 
