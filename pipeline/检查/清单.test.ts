@@ -45,7 +45,7 @@ describe('清单', () => {
 
   it('注册.tsx 收的目录没有文件：报出来（新作品还没有正片段、段/ 没占位）', async () => {
     const registrationFiles = {
-      '作品/应力转动/注册.tsx': "export const modules = { segment: import.meta.webpackContext('./段', { regExp: /x/ }), verify: import.meta.webpackContext('./核对', { regExp: /x/ }) };\n",
+      '作品/应力转动/注册.tsx': "export const modules = { '段': import.meta.webpackContext('./段', { regExp: /x/ }), '核对': import.meta.webpackContext('./核对', { regExp: /x/ }) };\n",
     };
     const v = (await runRule('manifest', makeRepo(base(), registrationFiles))).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/核对\/ 没有文件/);
