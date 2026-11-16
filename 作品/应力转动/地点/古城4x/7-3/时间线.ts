@@ -8,7 +8,7 @@
 //   7-3-3 第三炮炸在冲过来的它身上，它冲出烟团、到塔脚刹住，杖一推出护盾，它当场放出音爆，同一刻黄叛在高台上开鼓风机一箭钉在它身上；音爆穿过护盾打中他，
 //     马被冲得在塔顶横滑，他稳住、拨马一跃下到墙外大道往东冲（硬切 7-4-1）。音爆前后慢到 1/4（用户 10-19 定：保留音波慢放特写，变速在 7-3-3/编排.ts）。
 import { horseStart, towerTop, wallTopEast, avenue } from './几何.ts';
-import { leapApex, leapFrom, leapCellsPerSec, towerBrakeSec, knockSlide, wardenRouteToHold, wardenRouteToTower, wardenStairTopS, horseChaseSpeed, horseAccel } from './追逐.ts';
+import { leapApex, leapFrom, towerBrakeSec, knockSlide, wardenRouteToHold, wardenRouteToTower, wardenStairTopS, horseChaseSpeed, horseAccel } from './追逐.ts';
 import { G4 } from '../../古城4x.tsx';
 import { sceneFrames } from '../7-1/段界.ts';
 import { STEED } from '@库/生物/幽灵马.tsx';
@@ -19,10 +19,10 @@ import { scene73 } from '../布局.ts';
 export const turnEastT = 0.02;
 export const turnEastSec = 0.3;
 export const leap1 = leapFrom(horseStart, wallTopEast, leapApex.一, turnEastT + turnEastSec + 0.03);
-export const leap1T = leap1.f0 / leapCellsPerSec;
+export const leap1T = leap1.f0;
 export const leap1LandT = leap1T + leap1.T;
 export const leap2 = leapFrom(wallTopEast, towerTop, leapApex.二, leap1LandT + 1 / 12);
-export const leap2T = leap2.f0 / leapCellsPerSec;
+export const leap2T = leap2.f0;
 export const leap2LandT = leap2T + leap2.T;
 export const towerStopT = leap2LandT + towerBrakeSec;
 const towerDir = [towerTop[0] - wallTopEast[0], towerTop[1] - wallTopEast[1]];
@@ -73,7 +73,7 @@ export const slideEnd = [towerStop[0] + knockDir[0] * slide, towerStop[1] + knoc
 export const steadyT = hitT + 0.5; // 稳住
 export const turnDownSec = 0.35; // 拨马头朝大道
 export const leap3 = leapFrom(slideEnd, avenue, leapApex.三, steadyT + turnDownSec + 0.03);
-export const leap3T = leap3.f0 / leapCellsPerSec;
+export const leap3T = leap3.f0;
 export const leap3LandT = leap3T + leap3.T;
 // 落地顺大道往东冲：从落地的水平速度加到全速
 export const gallopAccelSec = (horseChaseSpeed - leap3.horizSpeed) / horseAccel;

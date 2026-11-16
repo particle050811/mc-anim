@@ -17,7 +17,7 @@ import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import { AirFlowQuads } from '@库/特效/气流.tsx';
 import { particleTexture, ParticleQuads } from '@库/特效/粒子面片.tsx';
 import { withTalkNod, type Mouth } from '../../../配音/口型.ts';
-import { lipCues, TALK_NOD_PER_SEC } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { lipCues } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { AncientCity4xCanvas, LiYingWithBlade } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { LiuXinzhong } from '../../../角色/追兵.tsx';
 import * as choreo from './编排.ts';
@@ -88,7 +88,7 @@ export const DeflectView: React.FC<{ g: number; cam?: Cam; liying?: LiyingFn; fx
   return (
     <AncientCity4xCanvas 段="6-4-3" cam={cam ?? choreo.camera(g)} width={width} height={height} hide={choreo.HIDE} chestOpening={choreo.openChest(g)} wool={choreo.WOOL_NAMES}>
       <LiYingWithBlade pose={ly.pose} bladeOn={ly.bladeOn} blade={ly.blade} bladeSide={ly.bladeSide} mouth={mouth} />
-      <HuangPan pose={withTalkNod(hp.pose, lipCues([shoutLine], TALK_NOD_PER_SEC), '黄叛', g * TALK_NOD_PER_SEC)} bow={hp.bow} />
+      <HuangPan pose={withTalkNod(hp.pose, lipCues([shoutLine]), '黄叛', g, 1)} bow={hp.bow} />
       <LiuXinzhong pose={choreo.liuxinzhong(g)} />
       {(arrow.阶段 === '来' || arrow.阶段 === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
       {fan.opacity > 0 && (

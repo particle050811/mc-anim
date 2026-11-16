@@ -54,7 +54,7 @@ export const liYingDetour: { name: WoolName; jump: Jump }[] = (() => {
   for (const k of Object.keys(wool645) as (keyof typeof wool645)[]) {
     const nextPos = feetOnWool(wool645[k]);
     // f0、f1 是秒（每秒 1 格）
-    const jump = withHang(eliteLeap(pos, nextPos, woolLeapApex[k] ?? elite.apexHeight, t, 1), out.length);
+    const jump = withHang(eliteLeap(pos, nextPos, woolLeapApex[k] ?? elite.apexHeight, t), out.length);
     out.push({ name: k, jump: jump });
     pos = nextPos;
     t = jump.f1 + landAbsorbSec;
@@ -214,17 +214,21 @@ const liyingRaw = (t: number): LiYingPose => {
 // 收刀约束（同 6-1-2 的修法，见 6-1-2/收刀.ts）：左手把鞘转过来迎刀，刀尖落进鞘口、顺着鞘的轴线滑进去，右手、左手用 IK 追刀柄和鞘口。
 // 节奏按段内时刻：0.15 秒起从戒备姿势收，0.41 秒刀尖进鞘口，0.6 秒入鞘（收刀声那一刻，不挪），之后 0.4 秒鞘转回腰上、右手回到按刀（站定）。
 // 收刀只有 0.45 秒，不学 6-1-2 新版先把刀横在右侧停一拍，走原版路线（从收势经身前翻下来对鞘口）
-// 库/物品/拔刀剑收刀.ts 按格算（半格一步往前解、提前 3 格拧），照旧给 1/24 秒一格
-const SHEATH_PER_SEC = 24;
-export const sheatheRhythm645: SheathTiming = { start: sheatheStartSec * SHEATH_PER_SEC, tipIn: 0.41 * SHEATH_PER_SEC, sheathed: sheathedSec * SHEATH_PER_SEC, release: [sheathedSec * SHEATH_PER_SEC, settleSec * SHEATH_PER_SEC] };
+export const sheatheRhythm645: SheathTiming = { start: sheatheStartSec, tipIn: 0.41, sheathed: sheathedSec, release: [sheathedSec, settleSec] };
 // 收刀修前：不加约束（核对穿模用）
 export const liying = (t: number, rawSheathe = false): LiYingPose => {
   const raw = liyingRaw(t);
   if (rawSheathe) return raw;
-  const constrained = sheathConstraint(raw.pose, t * SHEATH_PER_SEC, sheatheRhythm645, (cell) => {
-    const rawAt = liyingRaw(cell / SHEATH_PER_SEC);
-    return [rawAt.pose, rawAt.blade, rawAt.bladeSide];
-  });
+  const constrained = sheathConstraint(
+    raw.pose,
+    t,
+    sheatheRhythm645,
+    (sec) => {
+      const rawAt = liyingRaw(sec);
+      return [rawAt.pose, rawAt.blade, rawAt.bladeSide];
+    },
+    1,
+  );
   return { ...raw, bladeOn: constrained.bladeOut ?? raw.bladeOn, sheathedState: constrained.sheath, sheathBlade: constrained.blade };
 };
 

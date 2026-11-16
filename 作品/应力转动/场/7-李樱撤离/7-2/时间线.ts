@@ -10,12 +10,9 @@
 //     第 6 章他已满 4 级警告，尖啸后 90 刻 `tryRespond` 会再召唤一只监守者（并给 40 格内的人上黑暗）。所以开到东西就走：镜头在回应（尖啸后 4.5 秒）之前切走，回应、黑暗、第二只监守者都不演。
 //   - 看界面、移东西要 2 秒多，关箱（container_close）时三个感测体都已过了 40 刻（激活 30 + 冷却 10），又咔嗒一遍；尖啸体在叫或在 10 秒警告冷却里，不再叫。
 //     开始按住传送石（item_interact_start）时感测体还在第二遍的 40 刻里，不响；用完（item_interact_finish）人已传走。时序由 戏.ts 核对。
-import { FPS as cityPlayFps } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { sceneFrames } from '../../../地点/古城4x/7-1/段界.ts';
 import { eliteLeap, feetOnWool, wool722, lookoutFeet } from '../../../地点/古城4x/布局.ts';
 
-// 跳的接口（布局 的 eliteLeap、Jump 的 f0/f1，6-4-1/古城戏.ts 的 airPose、landPose）是 6 章共用的，按旧编排 1/24 秒一格数；本场的秒在调用处换成格
-export const leapCellsPerSec = cityPlayFps;
 const tickSec = 1 / 20;
 
 // ---------- 7-2-1 ----------
@@ -36,8 +33,8 @@ export const takeoffSec = turnBackStart + 0.65; // 离开 V 上的羊毛
 export const slipLineT = takeoffSec;
 export const slipLineDur = 0.93; // 配音有声 0.93 秒（src/配音/台词表.json）
 // 强者跳：V → X，19.7 米、落差 8 格。离地照 ../7-1/几何.ts 的 `leapApex` 的规矩：落差大、跳得短，水平到不了 28 米/秒，取最快的 1.5（最高点比 V 上的脚底高 1.5），1.08 秒
-export const leap = eliteLeap(lookoutFeet, feetOnWool(wool722.X), 1.5, takeoffSec * leapCellsPerSec);
-export const landSec = leap.f1 / leapCellsPerSec; // 场内秒
+export const leap = eliteLeap(lookoutFeet, feetOnWool(wool722.X), 1.5, takeoffSec);
+export const landSec = leap.f1; // 场内秒
 export const landSquatSec = 0.3; // 秒
 export const lidOpenSec = landSec + 0.45; // 右键开箱：箱盖开始翻、container_open 振动、开箱声
 

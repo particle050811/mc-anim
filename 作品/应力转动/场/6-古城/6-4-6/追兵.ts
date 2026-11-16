@@ -50,12 +50,12 @@ export const stompSec = fourthShriekSec - stompDelay;
 const liuStompJumpRaw = eliteLeap(footOf(pursuerStops.刘), liuXinzhongStompPoint, liuXinzhongStompApex);
 // 踩的这一跳顶点停得最久（`withHang` 第 4 档），落下来最快、最重；跟跳停得短
 // f0、f1 是追兵钟的秒（每秒 1 格）
-export const liuStompJump: Jump = withHang(eliteLeap(footOf(pursuerStops.刘), liuXinzhongStompPoint, liuXinzhongStompApex, stompSec - liuStompJumpRaw.T, 1), 4);
+export const liuStompJump: Jump = withHang(eliteLeap(footOf(pursuerStops.刘), liuXinzhongStompPoint, liuXinzhongStompApex, stompSec - liuStompJumpRaw.T), 4);
 // 黄叛：比第四次晚一点落地（冷却里），蹲 0.25 秒，再起步往西走、到末帧正好 1.6 米/秒走到 衔接.六四八首.黄
 const huangWalkSec = (2 * dist(huangPanLanding647, handoffs.handoffTo648.黄)) / handoffs.handoffTo648.walkSpeed; // 从 0 匀加速到 1.6 米/秒走完这一截
 const huangLandSec = endSec647 - huangWalkSec - elite.landingSquatSec;
 const huangJumpRaw = eliteLeap(footOf(pursuerStops.黄), huangPanLanding647, liuXinzhongStompApex);
-export const huangFollowJump: Jump = withHang(eliteLeap(footOf(pursuerStops.黄), huangPanLanding647, liuXinzhongStompApex, huangLandSec - huangJumpRaw.T, 1), 2);
+export const huangFollowJump: Jump = withHang(eliteLeap(footOf(pursuerStops.黄), huangPanLanding647, liuXinzhongStompApex, huangLandSec - huangJumpRaw.T), 2);
 // 刘心忠：重重一踩，蹲 0.2 秒，然后同样匀加速走到 衔接.六四八首.刘
 const liuCrouchSec = 0.2;
 const liuWalkSec = (2 * dist(liuXinzhongStompPoint, handoffs.handoffTo648.刘)) / handoffs.handoffTo648.walkSpeed;

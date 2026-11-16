@@ -76,7 +76,7 @@ export const Lure: React.FC<LureParams> = ({ rawSheathe = false, closeup: closeu
   return (
     <>
       <AncientCity4xCanvas 段="6-4-5" cam={closeupBearing === undefined ? choreo.camera(t) : closeupCam(ly, closeupBearing)} width={width} height={height} hide={K3.HIDE} chestOpening={K3.openChest(g)} wool={wool.wool} growingWool={wool.growingWool}>
-        <SheathingLiYing ly={ly} mouth={mouthAt(lipCues([choreo.lines.challenge], 1), '李樱', t, 1)} />
+        <SheathingLiYing ly={ly} mouth={mouthAt(lipCues([choreo.lines.challenge]), '李樱', t, 1)} />
         {(arrow.阶段 === '来' || arrow.阶段 === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
         <BlockDebris data={DEBRIS} atlas={debrisAtlas} bursts={K3.debrisBursts(g)} fixWinding />
         {K3.sensorStates(g).map((q, i) => (

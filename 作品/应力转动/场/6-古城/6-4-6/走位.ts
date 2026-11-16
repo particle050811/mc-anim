@@ -34,7 +34,7 @@ export const buildEliteRoute = (cells: BlockPos[], jumpHeights: number[], startS
   const jumps: Jump[] = [];
   let t = startSec;
   for (let i = 1; i < cells.length; i++) {
-    const leap = withHang(eliteLeap(footOf(cells[i - 1]), footOf(cells[i]), jumpHeights[i - 1], t, 1), i - 1 + (label === '刘' ? 3 : 0));
+    const leap = withHang(eliteLeap(footOf(cells[i - 1]), footOf(cells[i]), jumpHeights[i - 1], t), i - 1 + (label === '刘' ? 3 : 0));
     jumps.push(leap);
     t = leap.f1 + elite.landingSquatSec;
   }

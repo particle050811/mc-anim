@@ -1,6 +1,7 @@
 // 台词口型：口型表（旧项目 工具/配音/口型.py 按字对齐算的 Rhubarb 嘴型 A～F、X）对到画面上。口型表、台词表是作品的资产，
 // 由作品传进 做口型（作品的 配音/口型.ts 绑好后导出 mouthAt、withTalkNod），本文件不 import 任何资产。
-// 用法：mouthAt(句们, '李樱', 帧) → { open, width }，这时没在说话返回 undefined（九胡说话时要藏起平常的 ω 嘴，得分得清）。句们就是传给 <LineTrack 句们> 的那份（帧 = 这句开口落在这段的第几帧），
+// 用法：mouthAt(句们, '李樱', 秒, 1) → { open, width }，这时没在说话返回 undefined（九胡说话时要藏起平常的 ω 嘴，得分得清）。句们的 帧 和传进来的时刻同一个单位、fps 是这个单位一秒几个：
+// 正片一律写秒、fps 给 1（用户 11-16 定不留 1/24 秒格）；fps 默认 24 只留给还按旧格传的 6-2-4（出发.tsx），那边改按秒后删默认值。
 // 只看这个角色的句子。说出口的台词才动嘴，旁白、内心独白不动嘴、别传进来（见作品规矩「台词说出口」）。角色怎么画张嘴见 李樱.tsx、九胡.tsx 的 `嘴`；脸上没嘴的用 `withTalkNod`。
 // 不在几个嘴型之间硬切（用户 10-15 嫌切来切去），换形时张开、宽窄都连续过渡：张嘴快、合嘴慢。
 // 不引 台词轨.tsx（它带 Remotion 的音频组件），编排.ts 这种纯函数文件也能用。
@@ -60,12 +61,14 @@ export const mouthAt = ({ 口型: cuesById, 台词: lines }: LipData, cues: read
 const NOD_PITCH = 12; // 度：每个字点一下
 const NOD_DIP = 2; // 度：说话时整体低一点
 const NOD_YAW = 8;
+// 往回 1.5 秒、每 1/96 秒采一个（平滑核的离散，和帧率、句子的单位都无关：fps 给 1 按秒、给 24 按旧格，点头一样）
+const NOD_WINDOW_SAMPLES = 144;
 const smoothedOpen = (lipData: LipData, cues: readonly Cue[], role: string, frame: number, fps: number, tau: number) => {
   let sum = 0;
   let weights = 0;
-  for (let back = 0; back < 1.5 * fps; back += 0.25) {
-    const w = Math.exp(-back / fps / tau);
-    sum += w * (mouthAt(lipData, cues, role, frame - back, fps)?.open ?? 0);
+  for (let k = 0; k < NOD_WINDOW_SAMPLES; k++) {
+    const w = Math.exp(-k / 96 / tau);
+    sum += w * (mouthAt(lipData, cues, role, frame - (k * fps) / 96, fps)?.open ?? 0);
     weights += w;
   }
   return sum / weights;

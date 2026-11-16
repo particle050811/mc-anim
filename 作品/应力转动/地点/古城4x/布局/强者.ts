@@ -37,18 +37,18 @@ export const vanilla = {
   vibrationRange: 8,
 };
 
-// 强者跳：脚底 p0 → p1（场景坐标，Z 朝上），最高点比两头较高的那头高 离地 米，第 f0 帧离地。水平匀速、竖直按 重力 的抛物线。
+// 强者跳：脚底 p0 → p1（场景坐标，Z 朝上），最高点比两头较高的那头高 离地 米，f0 秒离地、f1 秒落地（场内秒，用户 11-16 定全按秒）。水平匀速、竖直按 重力 的抛物线。
 // 字段和 ../镜头/6-4-1/古城戏.ts 的 Leap 一样（p0、p1、top、f0、T、tUp、f1、yaw），可以直接喂 leapAt / airPose / placeFrame。
 // hang：顶点前后慢多少（见 `flightWarp`），没有就照重力匀着走（6-4-1、6-4-2 李樱的连跳自己在 ../6-4-1/跳搭.ts 里变形，不填）
 export type Jump = { p0: V3; p1: V3; top: number; f0: number; T: number; tUp: number; f1: number; yaw: number; horizontal: number; horizSpeed: number; launchVz: number; hang?: number };
-export const eliteLeap = (p0: V3, p1: V3, apexHeight = elite.apexHeight, f0 = 0, fps = 24): Jump => {
+export const eliteLeap = (p0: V3, p1: V3, apexHeight = elite.apexHeight, f0 = 0): Jump => {
   const rise = Math.max(0, p1[2] - p0[2]);
   const top = Math.max(p0[2], p1[2]) + Math.max(1.5, Math.min(apexHeight, elite.maxRise - rise));
   const tUp = Math.sqrt((2 * (top - p0[2])) / gravity);
   const flightSec = tUp + Math.sqrt((2 * (top - p1[2])) / gravity);
   const horizDist = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
   return {
-    p0, p1, top, f0, T: flightSec, tUp, f1: f0 + flightSec * fps,
+    p0, p1, top, f0, T: flightSec, tUp, f1: f0 + flightSec,
     yaw: (Math.atan2(-(p1[0] - p0[0]), p1[1] - p0[1]) * 180) / Math.PI,
     horizontal: horizDist, horizSpeed: horizDist / flightSec, launchVz: gravity * tUp,
   };
@@ -66,9 +66,9 @@ export const flightWarp = (u: number, ua: number, hang: number) => {
 // 每跳顶点停多久不一样（同 跳搭.ts 的 HANG）：第 i 跳轮着取；滞空不到 1.2 秒的按比例少停（0.8 秒的闪避跳不能飘）
 const HANGS = [0.32, 0.42, 0.26, 0.38, 0.46, 0.3, 0.36];
 export const withHang = <L extends { T: number }>(leap: L, i: number): L & { hang: number } => ({ ...leap, hang: HANGS[((i % HANGS.length) + HANGS.length) % HANGS.length] * Math.min(1, leap.T / 1.2) });
-// 第 f 帧的脚底（f 在 f0～f1 之外夹到两端）；有 hang 就按 `flightWarp` 走
-export const leapFeetAt = (leap: Jump, frame: number, fps = 24): V3 => {
-  const t0 = Math.min(leap.T, Math.max(0, (frame - leap.f0) / fps));
+// 第 time 秒的脚底（在 f0～f1 之外夹到两端）；有 hang 就按 `flightWarp` 走
+export const leapFeetAt = (leap: Jump, time: number): V3 => {
+  const t0 = Math.min(leap.T, Math.max(0, time - leap.f0));
   const t = leap.hang ? flightWarp(t0 / leap.T, leap.tUp / leap.T, leap.hang) * leap.T : t0;
   const k = t / leap.T;
   return [leap.p0[0] + (leap.p1[0] - leap.p0[0]) * k, leap.p0[1] + (leap.p1[1] - leap.p0[1]) * k, leap.p0[2] + gravity * leap.tUp * t - 0.5 * gravity * t * t];

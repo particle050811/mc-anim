@@ -1,14 +1,14 @@
 // 6-4-3b、6-4-3c 的正式演法（用户 10-17 嫌打斗僵硬，对照《设身处地10》改）：剧情、箭和人的物理时刻都同 时间线.ts 的主方案，只换演法。
 // 主方案（段.tsx 的跟拍备选、6-4-3关键帧 还在用）的问题：刀在镜头从跟拍挪到侧面那 0.9 秒里挥完，镜头停稳时刀已到正前，之后 1/500～1/80 慢放 2.5 秒，招架闪光（寿命 4 刻）跟着定住，读成卡帧。
 // 这里改成「蓄 → 斩 → 停 → 收」：
-// - 时钟：跟拍 1/2（用户 10-18 定：原速「太快了 改成 1/2 倍速」，整个画面一起慢）；刀甩出那一刻硬切到李樱（用户 10-18：要直接挥出，不看抽刀），挥刀 1/6，弹开定住（打击停顿，作品 默认.ts 的 `HIT_STOP_FRAMES` 格，一格 1/24 秒；弹开慢动作是用户 10-10 要的），
+// - 时钟：跟拍 1/2（用户 10-18 定：原速「太快了 改成 1/2 倍速」，整个画面一起慢）；刀甩出那一刻硬切到李樱（用户 10-18：要直接挥出，不看抽刀），挥刀 1/6，弹开定住（打击停顿，作品 默认.ts 的 `HIT_STOP_SEC`；弹开慢动作是用户 10-10 要的），
 //   挥完的余势 1/16，然后 0.04 剧情秒里回到原速；
 // - 人：听到「哄」压低重心、往后拧着蓄力，刀甩出时收回（编排/李樱.ts 的 李樱演法）；
 // - 镜头：跟拍一直在箭的右手边（北）贴着侧拍往左看（用户 10-18）；切到南侧对着李樱拍挥刀，一直慢推，弹开不震屏（用户 10-18 嫌冲击镜头不好，全删）。
 //   用户 10-18 删掉了刹车、等他直身转身（「还等他转身干嘛」）和挥完抬头看那两截：6-4-3b 挥完就完，6-4-3c 从切黄叛（C2）起，中间跳过的 0.3 秒不演；
 //   用户 10-18 定：删掉意义不明的运镜，6-4-3c 只留黄叛愣住（C2），C3 李樱身后慢推那一镜不演，接 6-4-4。
 import { exception } from '@engine/core/例外.ts';
-import { HIT_STOP_FRAMES } from '../../../默认.ts';
+import { HIT_STOP_SEC } from '../../../默认.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import * as choreo from './编排.ts';
 import { sideCamPos, sideTarget } from './编排/机位.ts';
@@ -89,7 +89,7 @@ export const fxAt = (g: number) => {
   const t = tl.storyTime(g);
   const sinceStop = g - stopSec;
   return {
-    parrySec: sinceStop < 0 ? -1 : Math.max(0, sinceStop - HIT_STOP_FRAMES / tl.samplesPerSec),
+    parrySec: sinceStop < 0 ? -1 : Math.max(0, sinceStop - HIT_STOP_SEC),
     trailVisibleSec: 0.15 * (t < momentumEnd ? tl.clock(t) : 1 / 16),
     trailFadeSec: 0.2 / 16,
     exactParry: true,

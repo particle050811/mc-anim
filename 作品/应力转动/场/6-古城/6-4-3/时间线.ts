@@ -6,7 +6,7 @@
 //   6-4-3b 跟拍：箭出画面切跟拍，时钟几帧里快到 `跟拍时钟`（主方案 1/12），镜头离箭 5 米（18mm），离弹开点 7 米起按对数慢下来，1.5 米前慢到 1/500，镜头刹住；李樱听到「哄」直起身拔刀，刀刃扫过飞到身前 1.5 米的箭把它挑飞，镜头不跟，箭往上飞出画面，之后慢放逐步放开（时钟表见 建时间线）；
 //   6-4-3c 镜头留在李樱这边（用户 10-10：箭被弹飞不给特写）：箭在画外击穿洞顶，八声碎裂挨一声（慢放里的声音按画面时间原速放，见 音效/慢放.ts），钉住后几帧回到原速：李樱抬头、尖啸体尖啸；切黄叛愣住；再切回李樱戒备，石块砸到他身边。
 // `跟拍时钟` 是演法参数：主方案 1/12，另有备选（段.tsx），换的只是时钟，各段剧情起止不变。
-import { HIT_STOP_FRAMES } from '../../../默认.ts';
+import { HIT_STOP_SEC } from '../../../默认.ts';
 import * as geom from './几何.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 import type { LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
@@ -34,7 +34,7 @@ export const followDist = { 快: geom.ductEndDist + 5.5, slowStart: geom.deflect
 export type Timeline = ReturnType<typeof buildTimeline>;
 // [剧情秒, 时钟, 这一段按对数过渡?]
 export type ClockPoint = [number, number, boolean?];
-// 换演法（打斗编排.ts）：`跟拍后` 换掉跟拍快起来以后的时钟点；`停顿` 在这一剧情秒把整个世界定住（打击停顿，定几格用作品 默认.ts 的 `HIT_STOP_FRAMES`，一格 1/24 秒）
+// 换演法（打斗编排.ts）：`跟拍后` 换掉跟拍快起来以后的时钟点；`停顿` 在这一剧情秒把整个世界定住（打击停顿，定多久用作品 默认.ts 的 `HIT_STOP_SEC`）
 export type Staging = { followAfter: ClockPoint[]; pause?: { storySec: number } };
 export const buildTimeline = (followClock: number, variant?: Staging) => {
   const CLOCK: ClockPoint[] = [
@@ -91,7 +91,7 @@ export const buildTimeline = (followClock: number, variant?: Staging) => {
         // 跨过停顿那一刻：这一格落在那一刻上，再重复几格
         if (stop && storySec < stop.storySec && next >= stop.storySec) {
           storySec = stop.storySec;
-          for (let n = 0; n < HIT_STOP_FRAMES; n++) out.push(storySec);
+          for (let n = 0; n < HIT_STOP_SEC * samplesPerSec; n++) out.push(storySec);
           break;
         }
         storySec = next;

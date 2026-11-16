@@ -74,10 +74,9 @@ export const lastSec = pitShotEnd;
 
 // 台词落点（段内秒，开口那一刻；字幕组和 声音.tsx 都从这里取）。台词轨的落点 = 开口（第一个有声的时刻）
 export const lineStartSec = { huangPanReappears: cues.huangSpeaks };
-// 点头（`withTalkNod`）的平滑按格取样，格的大小跟着 fps 走，所以照旧给 1/24 秒一格的数：帧 = 开口秒 × 24
-export const nodSamplesPerSec = 24;
+// 点头（`withTalkNod`）用的句子：帧 写段内秒，每秒给 1
 export const lineCuesBySegment: Record<SegmentName, { id: string; 帧: number }[]> = {
-  '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartSec.huangPanReappears * nodSamplesPerSec }],
+  '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartSec.huangPanReappears }],
   '6-3-10': [],
 };
 

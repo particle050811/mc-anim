@@ -5,7 +5,7 @@ import { type FigurePose } from '@库/角色/骨架.tsx';
 import { warpStoneUseParticles, teleportParticles } from '@库/物品/传送石.tsx';
 import type { ParticleSpawn } from '@库/特效/原版粒子.tsx';
 import { vibrationTravelTicks } from '@库/特效/振动粒子.tsx';
-import { airPose, landPose, mixPose, nearYaw, pivotStep, standAt, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { airPose, landPoseSec, mixPose, nearYaw, pivotStep, standAt, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { placedWoolThrough, type ChestOpening, type AncientCity4xWool } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as geom from './几何.ts';
 import * as timeline from './时间线.ts';
@@ -15,7 +15,6 @@ import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 const ramp = (s: number, a: number, b: number) => smoothstep01((s - a) / (b - a));
 const tickSec = 1 / 20;
-const cps = timeline.leapCellsPerSec;
 
 // ---------- 跳 ----------
 // V → X 的强者跳（时间线.ts 算好的：19.7 米、最高点比 V 高 3 格、1.26 秒）
@@ -195,24 +194,23 @@ export const liYingStateAt = (sec: number): LiYingState => {
     return { pose, 在: true, teleportStone: false };
   }
   // 转回东南、蹲、跳
-  const cell = sec * cps;
-  if (cell < leap.f0) {
+  if (sec < leap.f0) {
     const yaw = lerp(gazeYaw, turnBackYaw, ramp(sec, timeline.turnBackStart, timeline.turnBackEnd));
     if (sec < timeline.crouchStart) return { pose: standAt(geom.roofFeet, yaw, 0, lerp(gazeHeadPitch, -14, ramp(sec, timeline.turnBackStart, timeline.turnBackEnd))), 在: true, teleportStone: false };
     const crouchProgress = (sec - timeline.crouchStart) / (timeline.takeoffSec - timeline.crouchStart);
     return { pose: takeoffPose(geom.roofFeet, yaw, crouchProgress), 在: true, teleportStone: false };
   }
-  if (cell < leap.f1) return { pose: { ...airPose(leap, cell), yaw: turnBackYaw }, 在: true, teleportStone: false };
+  if (sec < leap.f1) return { pose: { ...airPose(leap, sec), yaw: turnBackYaw }, 在: true, teleportStone: false };
   const sinceLand = sec - landSec;
   if (sinceLand < timeline.landSquatSec) {
     const yaw = lerp(turnBackYaw, openChestYaw, ramp(sinceLand, 0, timeline.landSquatSec));
-    return { pose: landPose(geom.chestFrontFeet, yaw, sinceLand * cps, timeline.landSquatSec * cps), 在: true, teleportStone: false };
+    return { pose: landPoseSec(geom.chestFrontFeet, yaw, sinceLand, timeline.landSquatSec), 在: true, teleportStone: false };
   }
   if (sec < timeline.teleportSec) {
     // 落地蹲完接开箱姿势：头 0.15 秒从蹲的姿势混过去；感测体再咔嗒一响就混进警觉的姿势（0.25 秒）
     const openPose = openChestPose(Math.min(sec, alertSec));
     const blend = ramp(sinceLand, timeline.landSquatSec, timeline.landSquatSec + 0.15);
-    const settled = blend < 1 ? mixPose(landPose(geom.chestFrontFeet, openChestYaw, timeline.landSquatSec * cps, timeline.landSquatSec * cps), openPose, blend) : openPose;
+    const settled = blend < 1 ? mixPose(landPoseSec(geom.chestFrontFeet, openChestYaw, timeline.landSquatSec, timeline.landSquatSec), openPose, blend) : openPose;
     const w = ramp(sec, alertSec, alertSec + 0.25);
     const alert = alertPose(sec);
     const pose = w > 0 ? { ...mixPose(settled, alert, w), squash: lerp(settled.squash, alert.squash, w), armRYaw: (alert.armRYaw ?? 0) * w } : settled;

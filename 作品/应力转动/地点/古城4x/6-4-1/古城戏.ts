@@ -16,17 +16,10 @@ import { type FigurePose, standPose } from '@库/角色/骨架.tsx';
 import { flightWarp } from '../布局/强者.ts';
 import { rad, smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
 
-// 第 7 章还按 1/24 秒一格调这几个（FPS、PUSH、landPose），等第 7 章改按秒后删；6-4-1～6-4-9 都按秒
-export const FPS = 24;
-export const PUSH = 2;
-export const landPose = (foot: V3, yaw: number, framesSinceLand: number, len: number, rest = 0): FigurePose => landPoseSec(foot, yaw, framesSinceLand / FPS, len / FPS, rest);
-
-// 台词落点（这句开口落在本段第几秒）。库/角色/口型.ts 的句子还叫「帧」：mouthAt 给每秒格数 1 就是按秒；withTalkNod 的点头按格往回采样，
-// 采样密度跟着格走，所以照旧给 1/24 秒一格（`TALK_NOD_PER_SEC`），换成秒会改画面
+// 台词落点（这句开口落在本段第几秒）。库/角色/口型.ts 的句子还叫「帧」，这里写秒，mouthAt、withTalkNod 每秒给 1
 export type LineAt = { id: string; 秒: number };
-export const lipCues = (lines: readonly LineAt[], perSec: number) => lines.map((l) => ({ id: l.id, 帧: l.秒 * perSec }));
-export const TALK_NOD_PER_SEC = 24;
-// 原来 1/24 秒一格的时刻和 60 帧的输出帧都在 1/120 秒的格上：加减出来离格不到百万分之一格的落回格上，
+export const lipCues = (lines: readonly LineAt[]) => lines.map((l) => ({ id: l.id, 帧: l.秒 }));
+// 手调的 n/24 秒时刻和 60 帧的输出帧都在 1/120 秒的格上：加减出来离格不到百万分之一格的落回格上，
 // 输出帧正好落在事件那一刻时不因浮点零头跑到另一边（离格远的不动，别的帧率照常）
 export const snapSec = (t: number) => {
   const n = Math.round(t * 120);
@@ -46,8 +39,7 @@ export const blockCenter = ([x, y, z]: number[]): V3 => [x + 720.5, 239.5 - z, y
 const gravity = 32; // 格/秒²：游戏里玩家下落的重力（0.08 格/刻²）
 const bump = (x: number, a: number, b: number) => Math.sin(Math.PI * clamp01((x - a) / (b - a)));
 
-// 一跳：从脚底 p0 离地（f0 那一刻）跳到 p1，最高点脚底高 top（场景 z）。水平匀速，竖直按重力 G 的抛物线；有 hang 时沿弧的快慢按 `flightWarp`。
-// f0、f1 的单位跟着造它的钟（6-4 各段按秒，第 7 章还有按 1/24 秒一格的），T、tUp 总是秒；下面几个函数只用 (t − f0) ÷ (f1 − f0)，两种都能喂。
+// 一跳：从脚底 p0 离地（f0 秒）跳到 p1（f1 秒落地），最高点脚底高 top（场景 z）。水平匀速，竖直按重力 G 的抛物线；有 hang 时沿弧的快慢按 `flightWarp`。
 export type Leap = { p0: V3; p1: V3; top: number; f0: number; T: number; tUp: number; f1: number; yaw: number; hang?: number };
 // 离地后过了几秒（夹在 0～T）
 const secIntoLeap = (jump: Leap, time: number) => Math.min(jump.T, Math.max(0, ((time - jump.f0) / (jump.f1 - jump.f0)) * jump.T));

@@ -6,7 +6,8 @@
 // 3. 入鞘：刀沿鞘的弧线（同一个弯度）滑进去直到护手贴住鞘口；最后一截手够不着，右手顺着刀柄滑到柄头推进去；
 // 4. 松手：鞘连着刀转回腰上原角度，右手松开回到按刀（原版入鞘后马上松，新版按着刀柄说一阵台词再松）。
 // 找鞘口、入鞘两段刀由鞘带着画（位置精确），两手用两骨解析 IK 去追刀柄、鞘口。
-// 全部在髋坐标系（骨架 hip 插槽：脚底为原点、腰在 z=12、单位像素，跟着转身和前倾、不跟胸扭转）里算；纯函数，只看剧情帧和当帧姿态。
+// 全部在髋坐标系（骨架 hip 插槽：脚底为原点、腰在 z=12、单位像素，跟着转身和前倾、不跟胸扭转）里算；纯函数，只看剧情时刻和当时姿态。
+// 时刻的单位由调用方定（`perSec` = 一秒几个单位）：6-4-5 给秒（1）；默认 24 是 6-1-2 还按旧 1/24 秒一格传的，那边改按秒后删默认值
 import * as THREE from 'three';
 import { bladeInHand, type FigurePose, handMatrix, hipMatrix } from '../角色/骨架.tsx';
 import { KATANA_DIMS as katanaDims, SHEATH_HANG_QUAT, SHEATHED_BLADE } from './拔刀剑.tsx';
@@ -14,10 +15,10 @@ import { rad, smoothstep01 } from '../../engine/core/数学.ts';
 const vec3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const figureHeight = 1.875;
 
-// 节奏（剧情帧）：起 = 收刀开始（刀从甩刀收势的姿势动起来）；侧 = 刀横到身体右侧、停住的起止（只有新版有）；对口 = 刀尖进鞘口；
+// 节奏（剧情时刻）：起 = 收刀开始（刀从甩刀收势的姿势动起来）；侧 = 刀横到身体右侧、停住的起止（只有新版有）；对口 = 刀尖进鞘口；
 // 入鞘 = 护手贴住鞘口（放收刀声）；松 = 右手松开、鞘转回腰上的起止
 export type SheathTiming = { start: number; side?: [number, number]; tipIn: number; sheathed: number; release: [number, number] };
-// 原版：时间照原来的 uchigatana_scrap（剧情帧 139 刀从前上方落下、147 入鞘，下一帧娜迦自毁，见 编排.ts 的 `sheathConstraint`、`DIS`），只把刀和鞘对上
+// 原版：时间照原来的 uchigatana_scrap（旧 1/24 秒一格的剧情帧 139 刀从前上方落下、147 入鞘，下一帧娜迦自毁，见 编排.ts 的 `sheathConstraint`、`DIS`），只把刀和鞘对上；按格写，perSec 给 24
 export const originalTiming: SheathTiming = { start: 139, tipIn: 142.5, sheathed: 147, release: [147, 153] };
 
 const sheathMount = vec3(-5.3, 1.6, 12.6);
@@ -109,7 +110,7 @@ export type SheathResult = {
 };
 
 // 某一时刻的约束目标：鞘的变换、刀（髋坐标系，不在手上时没有）、右手握点和左手扶点（髋坐标系）、胸多拧的角度
-const targetsAt = (frame: number, timing: SheathTiming, startBlade: THREE.Matrix4, pitch: number) => {
+const targetsAt = (frame: number, timing: SheathTiming, startBlade: THREE.Matrix4, pitch: number, perSec: number) => {
   const k = frame < timing.release[0] ? smoothstep01((frame - timing.start) / (timing.tipIn - timing.start)) : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0]));
   const sheath = sheathXform(k);
   const sheathInHip = new THREE.Matrix4().makeTranslation(sheathMount.x, sheathMount.y, sheathMount.z).multiply(sheath);
@@ -139,21 +140,22 @@ const targetsAt = (frame: number, timing: SheathTiming, startBlade: THREE.Matrix
   const gripPt = vec3(0, 0, -gripSlide).applyMatrix4(bladeInHip ?? sheathInHip.clone().multiply(bladeInSheath(0)));
   // 左手扶鞘：握在鞘口往里 3.3 像素、偏刀背一侧的鞘身上（握鞘口上刀尖进口会穿过手）
   const holdPt = vec3(0, 0.8, 3.3).applyMatrix4(sheathInHip);
-  // 入鞘时胸往左多拧 25°（右肩送到前面）：不拧的话右臂伸直过去贴着肚子，小臂会插进身体
-  const extraTwist = 25 * smoothstep01((frame - (timing.tipIn - 3)) / 3) * (1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0])));
+  // 入鞘时胸往左多拧 25°（右肩送到前面）：不拧的话右臂伸直过去贴着肚子，小臂会插进身体；对口前 1/8 秒拧起
+  const twistLead = perSec / 8;
+  const extraTwist = 25 * smoothstep01((frame - (timing.tipIn - twistLead)) / twistLead) * (1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0])));
   return { sheath: sheath, sheathInHip: sheathInHip, bladeInHip: bladeInHip, grip: gripPt, holdPt: holdPt, twist: extraTwist };
 };
 
 // pose：当帧姿态（会改手臂、胸扭转）；原姿：同一版动作不带收刀约束的姿态（[pose, blade, bladeSide]）
-// IK 两组解在手经过肩膀高度时会换边，逐帧各挑各的会一帧翻过去，所以从收刀起点每半帧解一次、每次挑离上一次近的，一路接到当帧（只看帧号，确定性）
-export const sheathConstraint = (pose: FigurePose, frame: number, timing: SheathTiming, rawPose: (t: number) => [FigurePose, number, number]): SheathResult => {
+// IK 两组解在手经过肩膀高度时会换边，逐帧各挑各的会一帧翻过去，所以从收刀起点每 1/48 秒解一次、每次挑离上一次近的，一路接到当时（只看时刻，确定性）
+export const sheathConstraint = (pose: FigurePose, frame: number, timing: SheathTiming, rawPose: (t: number) => [FigurePose, number, number], perSec = 24): SheathResult => {
   if (frame <= timing.start || frame >= timing.release[1]) return { sheath: sheathXform(0) };
   const [p0, b0, s0] = rawPose(timing.start);
   const startBlade = handBladeMat(p0, b0, s0);
   let refR: [number, number] = [p0.armR, p0.armRRoll];
   let refL: [number, number] = [p0.armL, -p0.armLRoll];
   const solveAt = (framePose: FigurePose, t: number) => {
-    const targets = targetsAt(t, timing, startBlade, framePose.pitch);
+    const targets = targetsAt(t, timing, startBlade, framePose.pitch, perSec);
     const chestInv = new THREE.Matrix4().makeRotationZ(rad((framePose.twist ?? 0) + targets.twist)).invert();
     const rightSol = solveArm(vec3(6, 0, 22), targets.grip.clone().applyMatrix4(chestInv), refR);
     const leftSol = solveArm(vec3(-6, 0, 22), targets.holdPt.clone().applyMatrix4(chestInv), refL);
@@ -161,16 +163,19 @@ export const sheathConstraint = (pose: FigurePose, frame: number, timing: Sheath
     refL = [leftSol[0], leftSol[1]];
     return { g: targets, R: rightSol, L: leftSol };
   };
-  for (let t = timing.start + 0.5; t < frame; t += 0.5) solveAt(rawPose(t)[0], t);
+  const ikStep = perSec / 48;
+  for (let t = timing.start + ikStep; t < frame; t += ikStep) solveAt(rawPose(t)[0], t);
   const { g: targets, R: rightSol, L: leftSol } = solveAt(pose, frame);
   pose.twist = (pose.twist ?? 0) + targets.twist;
   pose.headYaw -= targets.twist;
-  const wR = frame < timing.release[0] ? 1 : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - 1));
+  // 松手：两手比鞘转回腰上早 1/24 秒到位
+  const handLead = perSec / 24;
+  const wR = frame < timing.release[0] ? 1 : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - handLead));
   pose.armR += (rightSol[0] - pose.armR) * wR;
   pose.armRRoll += (rightSol[1] - pose.armRRoll) * wR;
   pose.elbowR = (pose.elbowR ?? 0) + (rightSol[2] - (pose.elbowR ?? 0)) * wR;
   // 左手扶鞘（左臂的 roll 在骨架里取反：Figure 的 joint 里是 -armLRoll）
-  const wL = frame < timing.release[0] ? smoothstep01((frame - timing.start) / (timing.tipIn - timing.start)) : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - 1));
+  const wL = frame < timing.release[0] ? smoothstep01((frame - timing.start) / (timing.tipIn - timing.start)) : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - handLead));
   pose.armL += (leftSol[0] - pose.armL) * wL;
   pose.armLRoll += (-leftSol[1] - pose.armLRoll) * wL;
   pose.elbowL = (pose.elbowL ?? 0) + (leftSol[2] - (pose.elbowL ?? 0)) * wL;

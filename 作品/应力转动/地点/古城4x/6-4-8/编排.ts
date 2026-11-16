@@ -80,7 +80,7 @@ export const shriekSec = (t: number) => t + 1.0;
 // 站定后交换一个眼神（刘心忠扭头看黄叛、点一下头，黄叛飞快瞟他一眼又盯回去）。姿势零件见 二人.ts。
 const handoff = handoffs.handoffTo648;
 const FACE_W = yawTo(-1, 0);
-const holdSec = handoff.holdFrames / 24; // 衔接.ts 还按 1/24 秒一格记
+const holdSec = handoff.holdSec;
 const walkDist = handoff.walkSpeed * holdSec; // 1.2
 const hopApex = 1.5; // 强者跳的最低离地（古城4x布局/强者.ts 的 eliteLeap 最低 1.5）
 const beats = {
@@ -92,8 +92,8 @@ const beats = {
 };
 // f0、f1 是段内秒（每秒 1 格）
 export const hops = {
-  刘: eliteLeap(liuXinzhongSpot, hopTo.刘, hopApex, beats.刘.takeoff, 1),
-  黄: eliteLeap(huangPanSpot, hopTo.黄, hopApex, beats.黄.takeoff, 1),
+  刘: eliteLeap(liuXinzhongSpot, hopTo.刘, hopApex, beats.刘.takeoff),
+  黄: eliteLeap(huangPanSpot, hopTo.黄, hopApex, beats.黄.takeoff),
 };
 // 刘心忠右脚往前一踏落地那一刻（秒）：振动按 1 格/刻飞到监守者（`warden` 的触角就在这时亮）
 export const liuPlantSec = beats.刘.plant[1];
@@ -104,7 +104,7 @@ const feetAt = (who: '刘' | '黄', t: number): V3 => {
     const walked = walkDist * Math.min(1, t / holdSec);
     return [spot[0] + walkDist - walked, spot[1], spot[2]];
   }
-  return leapFeetAt(hop, t, 1);
+  return leapFeetAt(hop, t);
 };
 const walkAmp: Key[] = [[0, 1], [emergeStartSec + 1 / 4, 0], [durationSec, 0]];
 // 头看监守者：先低头看翻涌的地面，跟着它往上爬抬起头（看点从地面升到头的高度）
