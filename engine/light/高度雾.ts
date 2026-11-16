@@ -166,8 +166,8 @@ for (const k of Object.keys(THREE.ShaderLib) as (keyof typeof THREE.ShaderLib)[]
   if (uniforms.fogColor) Object.assign(uniforms, farFogUniforms);
 }
 Object.assign(THREE.UniformsLib.fog as Record<string, THREE.IUniform>, farFogUniforms);
-// 起：远雾从 D 的几成开始升（用户还没定 0.8 还是 0.9，试看 {"雾曲线": {"起": 0.9}} 换）
-export const FAR_FOG_START = 0.8;
+// 起：远雾从 D 的几成开始升，全片 0.9（用户 11-16 定；0.8 时 0.8～0.9 D 的山已经淡了）。试看 {"雾曲线": {"起": 0.8}} 还能换
+export const FAR_FOG_START = 0.9;
 export const farFogStart = () => trialParams<{ 起?: number }>('雾曲线')?.起 ?? FAR_FOG_START;
 // 试看 {"雾曲线": {"远": 米}}：换这个镜头的 D，地形最远距离跟着换（用户 11-16 要比不同视距看不看得出、省多少）
 export const trialFarM = (m: number) => trialParams<{ 远?: number }>('雾曲线')?.远 ?? m;
