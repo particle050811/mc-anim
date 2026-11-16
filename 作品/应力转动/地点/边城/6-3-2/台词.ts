@@ -53,7 +53,7 @@ export const lineTable: Record<
 };
 const requested = (() => {
   try {
-    return (renderInput() as { lines?: LineVersion }).lines;
+    return (renderInput() as { '台词'?: LineVersion })['台词']; // 键是 --props 里的名字（见文件头），不是属性名
   } catch {
     return undefined; // 诊断脚本在 node 里跑，没有 Remotion 环境
   }
