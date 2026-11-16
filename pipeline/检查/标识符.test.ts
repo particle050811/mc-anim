@@ -11,16 +11,16 @@ describe('标识符', () => {
       "const label = '字符串里的 宽度';",
       'const t = `模板 ${label} 中段 ${label} 结尾`;',
       'const re = /[一-龥]+/;',
-      'export const View = () => <div title="属性值">text {t}{re.source}</div>;',
+      'export const View = () => <div title="属性值">文本 {t}{re.source}</div>;',
       'export const 起秒 = 1;',
-      'const o = { height: 2, "引号键": 3 };',
-      'export const y = o.height + 起秒;',
+      'const o = { 高: 2, "引号键": 3 };',
+      'export const y = o.高 + 起秒;',
     ].join('\n');
-    expect(Object.fromEntries(hanIdentifiers('a.tsx', src))).toEqual({ '起秒': [6, 8], 'height': [7, 8] });
+    expect(Object.fromEntries(hanIdentifiers('a.tsx', src))).toEqual({ '起秒': [6, 8], '高': [7, 8] });
   });
 
   it('合规：代码里的中文名都在基线里', async () => {
-    const root = makeRepo(baselineFile('起秒', '高'), { 'engine/a.ts': 'export const 起秒 = 1;\nexport const y = ({ height: 2 }).height + 起秒;\n' });
+    const root = makeRepo(baselineFile('起秒', '高'), { 'engine/a.ts': 'export const 起秒 = 1;\nexport const y = ({ 高: 2 }).高 + 起秒;\n' });
     const { violations, report } = await runRule('idents', root);
     expect(violations).toEqual([]);
     expect(report.infoLines.join('\n')).toMatch(/基线 2 个名字，代码里现有 2 个/);

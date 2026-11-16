@@ -8,9 +8,9 @@ import { runChecks } from './检查.ts';
 
 const segSource = "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '1-片头', sec: 24, width: 640, height: 360, terrain: [] });\n";
 const example = {
-  '作品/示例/清单.ts': "export const manifest = [{ key: '1-标题', 章: 1 }];\nexport const segDir = (key: string) => `段/${key}`;\n",
+  '作品/示例/清单.ts': "export const manifest = [{ key: '1-标题', 章: 1 }];\nexport const segDir = (键: string) => `段/${键}`;\n",
   '作品/示例/段/1-标题/段.ts': segSource,
-  '作品/示例/段/1-标题/画面.tsx': "export default () => <div style={{ fontSize: 40 }}>title</div>;\n",
+  '作品/示例/段/1-标题/画面.tsx': "export default () => <div style={{ fontSize: 40 }}>标题</div>;\n",
 };
 /** 应力转动 那边放一处违规：段目录不在清单里 */
 const stressRotationBadFiles = { '作品/应力转动/段/7-多余/段.ts': segSource.replace('1-片头', '7-场一') };
@@ -39,7 +39,7 @@ describe('按作品查', () => {
   });
 
   it('用了台词 cue 或 例外 却没有对应的表：报错', async () => {
-    const usesLineFiles = { '作品/示例/段/1-标题/段.ts': segSource.replace('地形: []', "地形: [], 声音: [{ 秒: 0, 台词: '1-甲-你好' }]") };
+    const usesLineFiles = { '作品/示例/段/1-标题/段.ts': segSource.replace('terrain: []', "terrain: [], sound: [{ sec: 0, lines: '1-甲-你好' }]") };
     expect((await runRule('lines', makeRepo(base(), example, usesLineFiles), { work: '示例' })).violations.join()).toMatch(/没有 作品\/示例\/台词.toml，1-标题 却有台词 cue/);
     const usingExceptionFiles = { '作品/示例/段/1-标题/停.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { segment: '1-标题', cause: '试' });\n" };
     expect((await runRule('rules', makeRepo(base(), example, usingExceptionFiles), { work: '示例' })).violations.join()).toMatch(/例外用的规矩「打击停顿」，这部作品却没有 作品\/示例\/规矩.toml/);

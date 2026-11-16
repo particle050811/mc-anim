@@ -4,8 +4,8 @@ import { isSegKeyValid } from './规则/清单.ts';
 
 const segList = (...segKeys: string[]) => ({
   '作品/应力转动/清单.ts': [
-    `export const manifest = [${segKeys.map((k) => `{ 键: '${k}', 章: ${k.startsWith('核对-') ? "'核对'" : k.split('-')[0]} }`).join(', ')}];`,
-    "export const segDir = (key: string) => (key.startsWith('核对-') ? `核对/${key.slice(3)}` : `段/${key}`);",
+    `export const manifest = [${segKeys.map((k) => `{ key: '${k}', 章: ${k.startsWith('核对-') ? "'核对'" : k.split('-')[0]} }`).join(', ')}];`,
+    "export const segDir = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
 });
 const makeSeg = (segKey: string, defSource: string) => ({
@@ -18,8 +18,8 @@ describe('清单', () => {
     const root = makeRepo(
       base(),
       segList('7-甲', '7-乙', '核对-看看'),
-      makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 0, endSec: 10 } }"),
-      makeSeg('7-乙', "{ 场: '7-场一', 秒: 5, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 10, endSec: 15 }, continuous: true }"),
+      makeSeg('7-甲', "{ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sceneWindow: { startSec: 0, endSec: 10 } }"),
+      makeSeg('7-乙', "{ scene: '7-场一', sec: 5, width: 4, height: 4, terrain: [], sceneWindow: { startSec: 10, endSec: 15 }, continuous: true }"),
       { '作品/应力转动/核对/看看/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '核对', sec: 1, width: 4, height: 4, terrain: [] });\n", '作品/应力转动/核对/看看/画面.tsx': 'export default () => null;\n' },
     );
     expect((await runRule('manifest', root)).violations).toEqual([]);
@@ -29,11 +29,11 @@ describe('清单', () => {
     const root = makeRepo(
       base(),
       segList('7-甲', '7-乙', '8-甲', '7-老名', '7-丙_x'),
-      makeSeg('7-乙', "{ 场: '7-场一', 秒: 5, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 11, endSec: 16 }, continuous: true }"),
-      makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 0, endSec: 10 } }"),
-      makeSeg('8-甲', "{ 场: '8-场', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
-      makeSeg('7-老名', "{ 场: '7-场一', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
-      makeSeg('7-多余', "{ 场: '7-场一', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
+      makeSeg('7-乙', "{ scene: '7-场一', sec: 5, width: 4, height: 4, terrain: [], sceneWindow: { startSec: 11, endSec: 16 }, continuous: true }"),
+      makeSeg('7-甲', "{ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sceneWindow: { startSec: 0, endSec: 10 } }"),
+      makeSeg('8-甲', "{ scene: '8-场', sec: 1, width: 4, height: 4, terrain: [] }"),
+      makeSeg('7-老名', "{ scene: '7-场一', sec: 1, width: 4, height: 4, terrain: [] }"),
+      makeSeg('7-多余', "{ scene: '7-场一', sec: 1, width: 4, height: 4, terrain: [] }"),
     );
     const v = (await runRule('manifest', root)).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/段\/7-多余\/ 不在清单里/);
@@ -71,8 +71,8 @@ describe('加载', () => {
   });
 
   it('段.ts、时间线.ts 里的断言 throw 了就拦', async () => {
-    const root = makeRepo(base(), makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 0, endSec: 9 } }"), {
-      '作品/应力转动/场/7-场一/时间线.ts': "const events = { start: 30, end: 20 };\nif (events.end < events.start) throw new Error('时间线：止 在 起 前面');\nexport default events;\n",
+    const root = makeRepo(base(), makeSeg('7-甲', "{ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sceneWindow: { startSec: 0, endSec: 9 } }"), {
+      '作品/应力转动/场/7-场一/时间线.ts': "const 事件 = { 起: 30, 止: 20 };\nif (事件.止 < 事件.起) throw new Error('时间线：止 在 起 前面');\nexport default 事件;\n",
     });
     const v = (await runRule('load', root)).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/段.ts 执行出错：场窗口 \[0, 9\) 有 9 秒，段长是 10 秒/);
