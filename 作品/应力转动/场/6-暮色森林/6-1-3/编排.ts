@@ -24,14 +24,15 @@ import { onTick } from '../时刻.ts';
 export const segmentId = '6-1-3';
 // 6-1-2 末帧的状态：九胡跑到路线上的哪儿（t = 传送后的秒数）、李樱收刀站定的姿势、宝箱
 const T0 = choreo612.MAZE_T612;
-// 九胡停稳的那一格（本段秒）
-const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 24) / 24;
+// 九胡停稳的那一帧（本段秒，取到 60 帧/秒的帧上）
+const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 60) / 60;
 // 台词（本段帧号，负数是还在 6-1-2 里）：
 //   娜迦：6-1-2 滑停站稳就开口「暮色的boss就算加强了十倍，也不过如此。」；本段第 0 帧 = 6-1-2 末帧，所以开口帧 = 6-1-2 的开口帧 − (6-1-2 帧数 − 1)；
 //   九胡：「等等我啊，狗修金Sama！」在 6-1-2 迷宫那一镜开跑后边跑边喊（用户 10-20，6-1-2 编排的 `MAZE_SHOUT`），开口帧同样换过来，本段放说进来的后半截，她刹车前说完；
 //   李樱：扫帚冒出来停稳就说「坐好了，看我速通暮色！」（用户 10-20：骑扫帚这一下要说明白是速通暮色），两人跳上扫帚时说，坐稳时说完，不动段长；
 //   坐稳 `seatedHold` 帧就往下一沉、起飞。
-// 长度读 src/配音/台词表.json 的 有声长（开口到说完）。两句都在九胡跑到前后说完，唤出是她停稳后喘 1 秒、抬头看他（`JH_ARRIVE` + 24）。
+// 长度读 src/配音/台词表.json 的 有声长（开口到说完）。两句都在九胡跑到前后说完，唤出是她停稳后喘 1 秒、抬头看他（`JH_ARRIVE` + 1 秒）。
+// 有声长还按 1/24 秒一格往上取：改按帧取会让唤出到起飞整串早 17～33 毫秒，超过允许挪的 1/120 秒
 const voicedSec = (id: string) => Math.ceil((lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长 * 24) / 24;
 const seatedHold = 0.5;
 // 6-1-2 末帧（officialLength − 1/24）是本段第 0 秒
@@ -94,7 +95,7 @@ const levelFlightZ = (() => {
   const point = courtyard.toWorld([820 * forwardXY[0], 820 * forwardXY[1], 0]);
   return cruiseHeight(point[0], point[1]) - courtyard.原点[2];
 })();
-// 起飞后几秒放平：在 18～46 格里按格挑
+// 起飞后几秒放平：在 18～46 格（1/24 秒）里按格挑。改按帧挑会挑到早 1/60 秒的那一帧，航线跟着变，所以不动
 const flipDelay = (() => {
   let best = 46;
   for (let candidate = 18; candidate <= 46; candidate++) if (Math.abs(climbHeight(candidate / 24) - levelFlightZ) < Math.abs(climbHeight(best / 24) - levelFlightZ)) best = candidate;

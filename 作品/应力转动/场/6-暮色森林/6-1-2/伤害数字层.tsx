@@ -30,6 +30,7 @@ import * as choreo from './编排.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
+import { onTick } from '../时刻.ts';
 
 // ---------- 伤害 ----------
 export const nagaHealth = (120 + 130) * 10; // 困难（极限模式）× 原文的十倍
@@ -68,7 +69,7 @@ const nagaGap = (storyTime: number) => {
   const segGaps = segs.map((s) => gapToBox(eye, [s.loc[0], s.loc[1], s.loc[2] + GAME_NAGA.segmentSize / 2], GAME_NAGA.segmentSize / 2));
   return Math.min(gapToBox(eye, [head.loc[0], head.loc[1], head.loc[2] + headZ], GAME_NAGA.headSize / 2), ...segGaps);
 };
-// 斩中前娜迦还没开始按 nagaWarp 停，原版、正式版同一刻。按格（1/24 秒）往后找第一格够得着的
+// 斩中前娜迦还没开始按 nagaWarp 停，原版、正式版同一刻。按格（1/24 秒）往后找第一格够得着的；改按帧找会早 1/40 秒，超过允许挪的 1/120 秒
 const jadeOnTime = (() => {
   let k = 0;
   while (choreo.S2 + k / 24 < choreo.CUT_TIME && nagaGap(choreo.S2 + k / 24) > jadeReach) k++;
@@ -77,8 +78,9 @@ const jadeOnTime = (() => {
 const headGoneTimes = new Map<boolean, number>();
 const headGoneTime = (motionV2: boolean) => {
   if (!headGoneTimes.has(motionV2)) {
+    // 按帧（1/60 秒）往后找；落到刻上（../时刻.ts），头消失那一刻正好落在帧上时不差浮点零头
     let k = 0;
-    const at = (n: number) => choreo.CUT_TIME + n / 24;
+    const at = (n: number) => onTick(choreo.CUT_TIME + n / 60);
     while (at(k) < choreo.S3 && choreo.naga(motionV2 ? nagaWarp(at(k)) : at(k)).pose.head.scale !== 0) k++;
     headGoneTimes.set(motionV2, at(k));
   }

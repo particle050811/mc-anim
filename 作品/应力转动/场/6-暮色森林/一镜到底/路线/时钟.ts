@@ -19,8 +19,8 @@ const SLOW: SlowSpan[] = [
   { 起: pierceTimes.巨人 + giantChoreo.slowMo.起, 止: pierceTimes.巨人 + giantChoreo.slowMo.止, factor: 80, rampIn: 14 / 24, 出: 1.25 },
 ];
 export const slowMoTable = SLOW;
-// 脱手以后再放这么久：收扫帚、两人冲到屋顶上站定（6-1-9/编排.ts 的 下扫帚）；按 1/24 秒一格取整
-const HOLD_END = Math.round(castleChoreo.dismount.holdSec * 24) / 24;
+// 脱手以后再放这么久：收扫帚、两人冲到屋顶上站定（6-1-9/编排.ts 的 下扫帚）
+const HOLD_END = castleChoreo.dismount.holdSec;
 // 时钟表每 1/192 秒画面时间一格（原来每 1/24 秒 8 格）
 const CLOCK_STEPS_PER_SEC = 192;
 const F_T: number[] = [0]; // 每格的物理时间
@@ -71,8 +71,8 @@ const F_T: number[] = [0]; // 每格的物理时间
 }
 const ARRIVE_STEPS = F_T.length - 1;
 const G_ARRIVE = ARRIVE_STEPS / CLOCK_STEPS_PER_SEC;
-// 一镜到底多长（秒）：到站那一刻往上取整到 1/24 秒一格，再放 HOLD_END
-export const totalLength = Math.ceil(ARRIVE_STEPS / (CLOCK_STEPS_PER_SEC / 24)) / 24 + HOLD_END;
+// 一镜到底多长（秒）：到站那一刻往上取到 60 帧/秒的帧上，再放 HOLD_END
+export const totalLength = Math.ceil((ARRIVE_STEPS * 60) / CLOCK_STEPS_PER_SEC) / 60 + HOLD_END;
 // 画面时间 → 物理时间（落地以后接着按原速走，给悬停的晃动用）
 export const physicalTime = (g: number) => {
   const x = g * CLOCK_STEPS_PER_SEC;

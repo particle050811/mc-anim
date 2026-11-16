@@ -166,7 +166,7 @@ const tunnelHeight = 1.2;
 const addFarSpan = (opts: FarParams) => {
   const anchor = pierceSecs[opts.名];
   const sp = route.markDist(`${opts.名}.贯穿`);
-  const hold = Math.round(route.farHold[opts.名]! * 24) / 24;
+  const hold = route.farHold[opts.名]!;
   const diveT = opts.dive ?? -22 / 24;
   const follow: Partial<LegacyParams> = { back: 16, height: 6, lookAhead: 0, low: 0, focalLength: 22, lookBoss: 0.5 };
   const legacyKeys: LegacyKey[] = [
