@@ -59,7 +59,9 @@ export const T_TOPPLE = toppleDuration(SNOW_QUEEN.chest, V);
 export const T_DEATH = T_TOUCH + T_TOPPLE * deathToFlatRatio;
 // 白烟的时钟：比 特效倍速 再快一倍（同 6-1-5 巫妖的白烟、药水），散得快
 export const smokeSpeed = 55;
-export const slowMo = { 起: T_SOUTH - 0.003, 止: T_DEATH + 0.005 };
+// 起、止 的毫秒零头是对着配乐拉回来的：时钟改按真时刻算、6-1-3 放平改真值以后（用户 11-16 定 1/24 秒的格一处不留），照原样放慢穿刺在画面上晚半秒多；
+// 调 起（放慢 100 倍，差 1 毫秒画面上差 0.1 秒）让六次穿刺在配乐里的位置和改之前用户看过的一样（一镜到底/路线/时钟.ts）
+export const slowMo = { 起: T_SOUTH + 0.0012193, 止: T_DEATH + 0.005 };
 export const fxSpeed = 28;
 
 // ---------- 墙 ----------

@@ -82,7 +82,9 @@ export const T_TOUCH = pierceLine.bodies.map((b) => b.touch / V);
 // 倒平、化成白烟（模型/特效/生物死亡.tsx 的 倒地：胸口绕脚底的线速度 = 飞行速度，胸口离脚底 5.5 米，倒平 27 毫秒，化烟 40 毫秒）
 export const T_TOPPLE = toppleDuration(GIANT.chest, V);
 export const T_DEATH = T_TOUCH.map((t) => t + T_TOPPLE * deathToFlatRatio);
-export const slowMo = { 起: T_SOUTH - 0.003, 止: T_DEATH[1] + 0.004 };
+// 起、止 的毫秒零头是对着配乐拉回来的：时钟改按真时刻算、6-1-3 放平改真值以后（用户 11-16 定 1/24 秒的格一处不留），照原样放慢穿刺在画面上晚半秒多；
+// 调 起（放慢 80 倍，差 1 毫秒画面上差 0.08 秒）让六次穿刺在配乐里的位置和改之前用户看过的一样（一镜到底/路线/时钟.ts）
+export const slowMo = { 起: T_SOUTH + 0.0021331, 止: T_DEATH[1] + 0.004 };
 export const fxSpeed = 28;
 
 // ---------- 墙 ----------

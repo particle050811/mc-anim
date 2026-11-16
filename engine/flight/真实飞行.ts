@@ -16,10 +16,10 @@
 //
 // 约束和做法：
 // - 确定性纯函数：调用 `realFlight`() 时按 `种子` 一次积分完（RK4，步长 1/480 秒，物理时间），之后按帧查表、Hermite 插值。Remotion 乱序出帧，不能逐帧累积。调用方在模块顶层调一次。
-// - 锚点 { 帧, 止帧?, 前, 后 }（全局帧；前后渐变帧数默认 48）：帧～止帧之间扰动恒为 0（`at`() 精确返回 0，不经插值），前后用 smootherstep 渐变（偏移及一、二阶导在锚点处为 0）；
+// - 锚点 { 帧, 止帧?, 前, 后 }（全局「帧」，单位是 1/`fps` 秒，默认 fps = 1 即秒；前后渐变默认 2 秒）：帧～止帧之间扰动恒为 0（`at`() 精确返回 0，不经插值），前后用 smootherstep 渐变（偏移及一、二阶导在锚点处为 0）；
 //   输入在锚点前 前×1.5 帧就开始渐弱，状态在锚点区间清零。起帧总是从静止开始；止帧不自动归零，要接下一段就给锚点。
 //   低速段（约 500 米/秒以下）要放进锚点：航向扰动 = atan(横速 / V)，V 低时同样横速航向大好几倍。
-// - 物理时间：一镜到底有子弹时间（画面时钟变慢、物理速度不变），扰动按物理时间走，传 `frameToTime` = 路线.ts 的 `physTime`，默认 F/24。
+// - 物理时间：一镜到底有子弹时间（画面时钟变慢、物理速度不变），扰动按物理时间走，传 `frameToTime` = 路线.ts 的 `physTime`，默认 F/fps。
 // - 里程口径不变：库只给相对航线的偏移，沿航线里程 s(F) 仍用调用方的；不要拿偏移后的几何重算里程（会绕回来）。
 //   航线曲率 κ 处横向偏移 y 让路程按 (1 − κy) 伸缩，所以暮色急弯要把 `inputGain` 压下去。
 // - 地形净空由调用方保证：在「偏移后的水平航线」上重做地形跟随，再叠竖直扰动。`vertFloor`(s)（米，一般为负）是软下限：
@@ -51,10 +51,10 @@ export const combineRoll = (bankDeg: number, bumpRoll: number) => {
 };
 // ---------- 主体 ----------
 export type Anchor = {
-  帧: number; // 全局帧：从这一帧起扰动为 0
+  帧: number; // 全局帧（1/fps 秒）：从这一刻起扰动为 0
   止帧?: number; // 到这一帧（含）为止都是 0；不给就是单个点
-  前?: number; // 之前渐变多少帧（默认 48）；0 = 不渐变（只在起帧上有意义）
-  后?: number; // 之后渐变多少帧（默认 48）
+  前?: number; // 之前渐变多少帧（默认 2 秒）；0 = 不渐变（只在起帧上有意义）
+  后?: number; // 之后渐变多少帧（默认 2 秒）
 };
 export type RealFlightOptions = {
   种子: number;
@@ -62,7 +62,7 @@ export type RealFlightOptions = {
   止帧: number; // 全局帧，含
   distAt: (t: number) => number; // 物理时间（秒）→ 沿航线的里程（米），单调不减
   frameToTime?: (frame: number) => number; // 全局帧 → 物理时间（秒），默认 F/fps
-  fps?: number; // 默认 24：锚点的渐变帧数按它换成物理秒
+  fps?: number; // 默认 1（帧就是秒）：锚点的渐变帧数按它换成物理秒
   anchors?: Anchor[];
   vertFloor?: (dist: number) => number; // 里程 → 竖直偏移的下限（米，一般为负）
   inputGain?: (dist: number) => number; // 里程 → 0～1，乘到漂移和阵风上（急弯里压掉）
@@ -76,9 +76,11 @@ export type DisturbFrame = {
   weight: number; 速度: number; s: number;
 };
 
+// 锚点前后渐变的默认长度（秒）
+const DEFAULT_FADE_SEC = 2;
 export const realFlight = (opts: RealFlightOptions) => {
   const params = deepMerge(defaultParams, opts.参数);
-  const fps = opts.fps ?? 24;
+  const fps = opts.fps ?? 1;
   const F2T = opts.frameToTime ?? ((F: number) => F / fps);
   const step = integStepSec;
   const T0 = F2T(opts.起帧);
@@ -100,8 +102,8 @@ export const realFlight = (opts: RealFlightOptions) => {
   const anchorWins = (opts.anchors ?? []).map((a) => ({
     Ta: F2T(a.帧),
     Tb: F2T(a.止帧 ?? a.帧),
-    r1: (a.前 ?? 48) / fps,
-    r2: (a.后 ?? 48) / fps,
+    r1: a.前 === undefined ? DEFAULT_FADE_SEC : a.前 / fps,
+    r2: a.后 === undefined ? DEFAULT_FADE_SEC : a.后 / fps,
   }));
   const windowAt = (time: number, k: number) => {
     let weight = 1;

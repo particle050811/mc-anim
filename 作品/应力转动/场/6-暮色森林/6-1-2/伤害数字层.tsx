@@ -101,7 +101,8 @@ const headGoneTime = (motionV2: boolean) => {
 };
 const jadeFadeSec = 2 / 24;
 const nagaJade = (storyTime: number, motionV2: boolean) => {
-  const fadeIn = (storyTime - jadeOnTime + 1 / 24) / jadeFadeSec;
+  // 淡入的中点落在提示条出现那一刻
+  const fadeIn = (storyTime - jadeOnTime) / jadeFadeSec + 0.5;
   const fadeOut = (headGoneTime(motionV2) - storyTime) / jadeFadeSec;
   return { visibility: Math.max(0, Math.min(1, fadeIn, fadeOut)), health: storyTime < choreo.CUT_TIME ? nagaHealth : 0 };
 };

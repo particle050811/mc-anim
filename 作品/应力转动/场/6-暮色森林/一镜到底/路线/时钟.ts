@@ -21,84 +21,78 @@ const SLOW: SlowSpan[] = [
 export const slowMoTable = SLOW;
 // 脱手以后再放这么久：收扫帚、两人冲到屋顶上站定（6-1-9/编排.ts 的 下扫帚）
 const HOLD_END = castleChoreo.dismount.holdSec;
-// 时钟表每 1/192 秒画面时间一格（原来每 1/24 秒 8 格）
-const CLOCK_STEPS_PER_SEC = 192;
-const F_T: number[] = [0]; // 每格的物理时间
+// 放慢的四截（画面时间）：normal 原速，到物理时刻 起 − 降的那截物理时长 开始降（rampIn 秒），降到底正好是 起；1/倍数 放到 止；再 出 秒升回原速。
+// 切换按真时刻算（用户 11-16 定 1/24 秒的格一处不留）：原来按 1/192 秒一步走状态机，开始降那一刻落到步上，放慢 100 倍以后画面上差到半秒，上游挪一点就跳
+const rIn = (S: number, u: number) => Math.exp(-Math.log(S) * smoothstep01(u));
+const rOut = (S: number, u: number) => Math.exp(-Math.log(S) * (1 - smoothstep01(u)));
+// ∫0^u rate(S, x) dx（辛普森，128 格）
+const rampIntegral = (rate: (S: number, u: number) => number, S: number, u: number) => {
+  if (u <= 0) return 0;
+  const n = 128;
+  const h = u / n;
+  let sum = rate(S, 0) + rate(S, u);
+  for (let i = 1; i < n; i++) sum += (i % 2 ? 4 : 2) * rate(S, i * h);
+  return (sum * h) / 3;
+};
+type ClockSpan = SlowSpan & { gIn: number; gHold: number; gOut: number; gNormal: number; tIn: number; tOutEnd: number };
+const SPANS: ClockSpan[] = [];
 {
-  const rIn = (S: number, u: number) => Math.exp(-Math.log(S) * smoothstep01(u));
-  const inSpan = (span: SlowSpan) => {
-    let avgRate = 0;
-    for (let k = 0; k < 200; k++) avgRate += rIn(span.factor, (k + 0.5) / 200) / 200;
-    return span.rampIn * avgRate;
-  };
+  let g = 0;
   let physT = 0;
-  let step = 0;
-  let ev = 0;
-  let state: 'normal' | 'in' | 'hold' | 'out' = 'normal';
-  let step0 = 0;
-  // 至少走过 1/24 秒
-  while (physT < T_ARRIVE || step < CLOCK_STEPS_PER_SEC / 24) {
-    const span = SLOW[ev];
-    let rate = 1;
-    if (state === 'normal' && span && physT >= span.起 - inSpan(span)) {
-      state = 'in';
-      step0 = step;
-    }
-    if (state === 'in') {
-      const progress = (step - step0) / CLOCK_STEPS_PER_SEC / span.rampIn;
-      if (progress >= 1) state = 'hold';
-      else rate = rIn(span.factor, progress);
-    }
-    if (state === 'hold') {
-      rate = 1 / span.factor;
-      if (physT >= span.止) {
-        state = 'out';
-        step0 = step;
-      }
-    }
-    if (state === 'out') {
-      const progress = (step - step0) / CLOCK_STEPS_PER_SEC / span.出;
-      if (progress >= 1) {
-        state = 'normal';
-        ev++;
-        rate = 1;
-      } else rate = Math.exp(-Math.log(span.factor) * (1 - smoothstep01(progress)));
-    }
-    physT += rate / CLOCK_STEPS_PER_SEC;
-    step++;
-    F_T.push(physT);
+  for (const span of SLOW) {
+    const tIn = span.起 - span.rampIn * rampIntegral(rIn, span.factor, 1);
+    if (tIn < physT) throw new Error(`一镜到底时钟：物理 ${span.起} 秒那处放慢和上一处叠在一起了`);
+    const gIn = g + (tIn - physT);
+    const gHold = gIn + span.rampIn;
+    const gOut = gHold + (span.止 - span.起) * span.factor;
+    const gNormal = gOut + span.出;
+    const tOutEnd = span.止 + span.出 * rampIntegral(rOut, span.factor, 1);
+    SPANS.push({ ...span, gIn, gHold, gOut, gNormal, tIn, tOutEnd });
+    g = gNormal;
+    physT = tOutEnd;
   }
 }
-const ARRIVE_STEPS = F_T.length - 1;
-const G_ARRIVE = ARRIVE_STEPS / CLOCK_STEPS_PER_SEC;
-// 一镜到底多长（秒）：到站那一刻往上取到 60 帧/秒的帧上，再放 HOLD_END
-export const totalLength = Math.ceil((ARRIVE_STEPS * 60) / CLOCK_STEPS_PER_SEC) / 60 + HOLD_END;
+const exactPhysicalTime = (g: number) => {
+  let gPrev = 0;
+  let tPrev = 0;
+  for (const span of SPANS) {
+    if (g < span.gIn) break;
+    if (g < span.gHold) return span.tIn + span.rampIn * rampIntegral(rIn, span.factor, (g - span.gIn) / span.rampIn);
+    if (g < span.gOut) return span.起 + (g - span.gHold) / span.factor;
+    if (g < span.gNormal) return span.止 + span.出 * rampIntegral(rOut, span.factor, (g - span.gOut) / span.出);
+    gPrev = span.gNormal;
+    tPrev = span.tOutEnd;
+  }
+  return tPrev + (g - gPrev);
+};
+// 到站那一刻（画面秒）
+const lastSpan = SPANS[SPANS.length - 1];
+if (T_ARRIVE <= lastSpan.tOutEnd) throw new Error('一镜到底时钟：到站时还在放慢');
+const G_ARRIVE = lastSpan.gNormal + (T_ARRIVE - lastSpan.tOutEnd);
+// 查表：每 1/192 秒画面时间一格，格点上是真值，格间线性插
+const CLOCK_STEPS_PER_SEC = 192;
+const F_T: number[] = Array.from({ length: Math.ceil(G_ARRIVE * CLOCK_STEPS_PER_SEC) + 1 }, (_, i) => exactPhysicalTime(i / CLOCK_STEPS_PER_SEC));
+// 一镜到底多长（秒）：到站再放 HOLD_END
+export const totalLength = G_ARRIVE + HOLD_END;
 // 画面时间 → 物理时间（落地以后接着按原速走，给悬停的晃动用）
 export const physicalTime = (g: number) => {
   const x = g * CLOCK_STEPS_PER_SEC;
   if (x <= 0) return g;
-  if (x >= F_T.length - 1) return F_T[F_T.length - 1] + (g - G_ARRIVE);
+  if (x >= F_T.length - 1) return T_ARRIVE + (g - G_ARRIVE);
   const i = Math.floor(x);
   return F_T[i] + (F_T[i + 1] - F_T[i]) * (x - i);
 };
 // 物理时间 → 画面时间（二分）
 export const secAt = (physT: number) => {
   if (physT <= 0) return physT;
-  if (physT >= F_T[F_T.length - 1]) return G_ARRIVE + (physT - F_T[F_T.length - 1]);
+  if (physT >= T_ARRIVE) return G_ARRIVE + (physT - T_ARRIVE);
   const lo = bisect(F_T, physT);
   return (lo + (physT - F_T[lo]) / (F_T[lo + 1] - F_T[lo])) / CLOCK_STEPS_PER_SEC;
 };
 export const secAtDist = (s: number) => secAt(timeAtDist(s));
 // 时钟倍率（画面上 1 秒对应多少物理秒），前后各半格（1/48 秒）差分
-export const clockRate = (g: number) => (physicalTime(g + 1 / 48) - physicalTime(g - 1 / 48)) * 24;
+const RATE_HALF_WINDOW = 1 / 48;
+export const clockRate = (g: number) => (physicalTime(g + RATE_HALF_WINDOW) - physicalTime(g - RATE_HALF_WINDOW)) / (2 * RATE_HALF_WINDOW);
 export const pierceSecs = Object.fromEntries(ORDER.map((n) => [n, secAt(pierceTimes[n])])) as Record<BossName, number>;
 // 子弹时间各段在画面上从哪一刻开始放慢、哪一刻慢到底、哪一刻开始回升、哪一刻恢复原速（秒）
-export const slowMoTimes = SLOW.map((span) => {
-  const secOf = (physT: number) => {
-    let i = 0;
-    while (i < F_T.length - 1 && F_T[i] < physT) i++;
-    return i / CLOCK_STEPS_PER_SEC;
-  };
-  const bottom = secOf(span.起);
-  return { 开始: bottom - span.rampIn, bottom, rise: secOf(span.止), recover: secOf(span.止) + span.出 };
-});
+export const slowMoTimes = SPANS.map((span) => ({ 开始: span.gIn, bottom: span.gHold, rise: span.gOut, recover: span.gNormal }));

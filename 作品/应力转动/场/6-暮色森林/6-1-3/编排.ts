@@ -16,18 +16,19 @@ import { cruiseFogFar, farViewOf, TWILIGHT_FAR_VIEW } from '../../../地点/暮�
 import * as choreo612 from '../6-1-2/编排.ts';
 // 6-1-2 的正式版（段长、台词开口都含打击停顿；末帧的李樱是收刀后站定带呼吸微动的样子）
 import { officialLiying, officialLineStart, officialJiuhuLineStart, officialLength } from '../6-1-2/动作改进.ts';
-import { frameInSegment } from '../../../配乐/配乐音轨.tsx';
+import { segmentRange } from '../../../配乐/配乐音轨.tsx';
+import { posToSec } from '@engine/audio/曲目.ts';
 import lineTable from 'asset:数据/配音/台词表';
 import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 import { onTick } from '../时刻.ts';
 
 export const segmentId = '6-1-3';
-// 6-1-2 末帧的状态：九胡跑到路线上的哪儿（t = 传送后的秒数）、李樱收刀站定的姿势、宝箱
+// 本段第 0 秒接着 6-1-2 段尾：九胡跑到路线上的哪儿（t = 传送后的秒数）、李樱收刀站定的姿势、宝箱
 const T0 = choreo612.MAZE_T612;
-// 九胡停稳的那一帧（本段秒，取到 60 帧/秒的帧上）
-const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 60) / 60;
-// 台词（本段帧号，负数是还在 6-1-2 里）：
-//   娜迦：6-1-2 滑停站稳就开口「暮色的boss就算加强了十倍，也不过如此。」；本段第 0 帧 = 6-1-2 末帧，所以开口帧 = 6-1-2 的开口帧 − (6-1-2 帧数 − 1)；
+// 九胡停稳的那一刻（本段秒，真值：本段的秒不落在输出帧上，取到 1/60 秒也对不上帧）
+const JH_ARRIVE = choreo612.MAZE_ARRIVE - T0;
+// 台词（本段秒，负数是还在 6-1-2 里）：
+//   娜迦：6-1-2 滑停站稳就开口「暮色的boss就算加强了十倍，也不过如此。」；本段第 0 秒 = 6-1-2 段尾，所以开口 = 6-1-2 的开口秒 − 6-1-2 段长；
 //   九胡：「等等我啊，狗修金Sama！」在 6-1-2 迷宫那一镜开跑后边跑边喊（用户 10-20，6-1-2 编排的 `MAZE_SHOUT`），开口帧同样换过来，本段放说进来的后半截，她刹车前说完；
 //   李樱：扫帚冒出来停稳就说「坐好了，看我速通暮色！」（用户 10-20：骑扫帚这一下要说明白是速通暮色），两人跳上扫帚时说，坐稳时说完，不动段长；
 //   坐稳 `seatedHold` 帧就往下一沉、起飞。
@@ -35,12 +36,12 @@ const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 60) / 60;
 // 有声长用真值，不再往上取到 1/24 秒的格（用户 11-16 定；唤出到起飞整串因此比旧版早几十毫秒）
 const voicedSec = (id: string) => (lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长;
 const seatedHold = 0.5;
-// 6-1-2 末帧（officialLength − 1/24）是本段第 0 秒
-const T612_LAST = officialLength - 1 / 24;
+// 本段第 0 秒在 6-1-2 段内的秒数：接在 6-1-2 段尾
+const T612_END = officialLength;
 export const lineTimes = (() => {
-  const nagaLine = officialLineStart - T612_LAST;
+  const nagaLine = officialLineStart - T612_END;
   const nagaLineEnd = nagaLine + voicedSec('6-1-2-李樱-不值一提');
-  const jiuhuLine = officialJiuhuLineStart - T612_LAST;
+  const jiuhuLine = officialJiuhuLineStart - T612_END;
   const jiuhuLineEnd = jiuhuLine + voicedSec('6-1-3-九胡-等等我');
   const summonTime = Math.max(JH_ARRIVE + 1, nagaLineEnd + 0.5, jiuhuLineEnd + 0.5); // 她停稳以后喘口气（1 秒），话也说完了，他再唤出扫帚
   const seatedTime = summonTime + 61 / 24;
@@ -95,13 +96,19 @@ const levelFlightZ = (() => {
   const point = courtyard.toWorld([820 * forwardXY[0], 820 * forwardXY[1], 0]);
   return cruiseHeight(point[0], point[1]) - courtyard.原点[2];
 })();
-// 起飞后几秒放平：在 18～46 格（1/24 秒）里按格挑（挑出来是 26/24）。
-// 没改成解出来的真值（早 12 毫秒）：本段末帧的扫帚位置跟着挪 2.6 米，一镜到底整条航线重解，六个首领的穿刺在画面里都早 125 毫秒、离开配乐卡点。
-// 用户 11-16 定 1/24 格的取整一处不留，这一处牵动一镜到底的卡点，留给用户定
+// 起飞后几秒放平：在 18/24～46/24 秒里解出正好爬到巡航高度的那一刻（真值，用户 11-16 定不再挑到 1/24 秒的格上）。
+// 末帧的扫帚位置跟着它挪，一镜到底整条航线跟着重解；穿刺对配乐的位置由一镜到底各首领放慢的 `起` 拉回原处（6-1-5、6-1-8、6-1-8b 编排）
 const flipDelay = (() => {
-  let best = 46;
-  for (let candidate = 18; candidate <= 46; candidate++) if (Math.abs(climbHeight(candidate / 24) - levelFlightZ) < Math.abs(climbHeight(best / 24) - levelFlightZ)) best = candidate;
-  return best / 24;
+  const miss = (sec: number) => climbHeight(sec) - levelFlightZ;
+  let lo = 18 / 24;
+  let hi = 46 / 24;
+  if (Math.sign(miss(lo)) === Math.sign(miss(hi))) throw new Error('6-1-3 放平：18/24～46/24 秒里爬不到（或一下就过了）巡航高度');
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (Math.sign(miss(mid)) === Math.sign(miss(lo))) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
 })();
 // 都落到刻上（时刻.ts）：切镜、上扫帚这些判断正好落在某一帧上，不能差一点浮点零头
 export const beats = {
@@ -117,14 +124,18 @@ export const beats = {
   last: onTick(takeoffTime + postTakeoffSec), // 末帧
 };
 // 配乐晚几帧进（用户 10-10 定）：整条往后推，让 drop（[5, 1]）落在起飞那一帧，渐大的几拍落在扫帚下沉蓄力上；前奏（没有鼓）垫在九胡跑来、两人上扫帚的几秒（drop 前的前奏比本段这一截长，段首切进去的是前奏中间），之前没有配乐
-// 配音轨.tsx 的 frameInSegment 还按 1/24 秒一格数（共用），这里换成秒
-export const musicDelay = beats.takeoff - frameInSegment(segmentId, [5, 1]) / 24;
+// drop 用歌里的真时刻，不用配乐音轨.tsx 的 `frameInSegment`（它取整到 1/24 秒的格，drop 会早 16 毫秒；用户 11-16 定取整一处不留）
+export const musicDelay = (() => {
+  const range = segmentRange(segmentId);
+  return beats.takeoff - (posToSec(range.table.song, [5, 1]) - range.start);
+})();
 export const songSec = (t: number) => t - musicDelay;
-export const LENGTH = beats.last + 1 / 24;
-// 6-1-2 末帧的李樱（正式版）：站定后的呼吸、头左右看、重心挪动接着用 6-1-2/动作改进.ts 的 `微动`；回身、唤出、跳上扫帚都叠在它上面
-const LY_END: FigurePose = officialLiying(choreo612.END - 1 / 24).pose;
-const standingPose = (t: number): FigurePose => officialLiying(choreo612.END - 1 / 24 + Math.max(0, t)).pose;
-export const CHEST = choreo612.chest(choreo612.END - 1 / 24).loc;
+// 本段到末帧这一刻为止，一镜到底的第 0 秒接在这里
+export const LENGTH = beats.last;
+// 6-1-2 段尾的李樱（正式版）：站定后的呼吸、头左右看、重心挪动接着用 6-1-2/动作改进.ts 的 `微动`；回身、唤出、跳上扫帚都叠在它上面
+const LY_END: FigurePose = officialLiying(choreo612.END).pose;
+const standingPose = (t: number): FigurePose => officialLiying(choreo612.END + Math.max(0, t)).pose;
+export const CHEST = choreo612.chest(choreo612.END).loc;
 
 // ---------- 扫帚：唤出在两人中间，杆头朝起飞方位（东南） ----------
 // 李樱在 (2.6, -0.8)，九胡停在他西南 (0.1, -3.6)，宝箱在 (-1, -0.8)。两人连线东北—西南，杆头朝东南正好垂直：李樱从东北、九胡从西南各自侧着跨上去
@@ -133,13 +144,13 @@ const HOVER = 0.65;
 const Z_SINK = 0.35; // 4.4 一沉到底的高度
 export type BroomState = { pos: V3; yaw: number; pitch: number; roll: number; appear: number; speed: number };
 
-const LAUNCH = beats.takeoff - 0.5 / 24; // 起飞的瞬间（取那一格的中点：5.1 那一格已经离地）
+const LAUNCH = beats.takeoff; // 起飞的瞬间：这一刻起离地
 const speedAt = (t: number) => (t < LAUNCH ? 0 : speedAfter(t - LAUNCH));
 const GAMMA: Key[] = pathAngleKeys(flipDelay).map(([t, angle]) => [LAUNCH + t, angle]);
 const gammaAt = (t: number) => sample(GAMMA, t);
-// 航迹按 1/192 秒一步积分成表，到末帧后 2 格
+// 航迹按 1/192 秒一步积分成表，到末帧后再多 0.1 秒
 const FLIGHT_STEPS_PER_SEC = 192;
-const FLIGHT_LAST = Math.round((beats.last + 2 / 24 - LAUNCH) * FLIGHT_STEPS_PER_SEC);
+const FLIGHT_LAST = Math.round((beats.last + 0.1 - LAUNCH) * FLIGHT_STEPS_PER_SEC);
 const FLIGHT: V3[] = (() => {
   const out: V3[] = [];
   let horizDist = 0;
@@ -300,7 +311,7 @@ export const camera = (t: number): Cam => {
   const bp = broom(t).pos;
   if (t < beats.takeoff) return { pos: lerpV(C3_START, C3_PRE, (t - beats.sinkStart) / (beats.takeoff - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
   // 起飞那一帧起镜头跟着扫帚一起往上冲（相对位置从低机位慢慢挪到后上方），不原地仰头追（那样背景几乎全是天）：镜头和扫帚一样高平视，10 格内挪到后上方往下看
-  const pre = broom(beats.takeoff - 1 / 24).pos;
+  const pre = flightAt(LAUNCH);
   const off0 = [C3_PRE[0] - pre[0], C3_PRE[1] - pre[1], C3_PRE[2] - pre[2]];
   const k = smoothstep01((t - beats.takeoff) / (10 / 24));
   const off = lerpV(off0, C3_OFF, k);
@@ -335,5 +346,5 @@ export const fogFar = (t: number) => {
   const farFog = Math.max(nearFog, VIEW_DISTANCE + (TWILIGHT_CRUISE_FOG_FAR - VIEW_DISTANCE) * farViewRamp(t));
   return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.toWorld(cam.pos), courtyard.toWorld(cam.tgt)), clampFogToEdge, farView(), farViewRamp(t));
 };
-// 6-1-2 末帧在 6-1-2 段内的秒数（= 本段第 0 秒）
-export const T612 = T612_LAST;
+// 本段第 0 秒在 6-1-2 段内的秒数
+export const T612 = T612_END;

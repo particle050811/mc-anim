@@ -1,4 +1,4 @@
-// 6-1-1 进入森林：全部时间轴与姿态，纯函数，输入编排时间 t（秒，= 段内秒 + 1/24：原来按 1/24 秒一格排、第 1 格是段首，常数照原来的格写成 n / 24）。
+// 6-1-1 进入森林：全部时间轴与姿态，纯函数，输入编排时间 t（秒，= 段内秒 + `T0`：原来按 1/24 秒一格排、第 1 格是段首，常数照原来的格写成 n / 24）。
 // 注释里的「帧」「f」是这种格。
 // 场景坐标 Z 朝上，1 = MC 一格。前半段在主世界传送门海岛（模型/场景/传送门海岛.tsx），后半段在暮色森林返回传送门（模型/场景/娜迦庭院.tsx）。
 // 最后一帧和 6-1-2 第 1 帧完全一样（机位、落脚点、落地姿势直接调 6-1-2 的函数）。
@@ -29,9 +29,12 @@ const LY_POP = CUT + 14 / 24; // 李樱从返回传送门里弹出来（之前 1
 const JH_POP = LY_POP + 8 / 24; // 九胡隔 8 格弹出来
 const POP_N = 18 / 24; // 弹出来到落地 0.75 秒
 export const D2 = JH_POP + 9 / 24; // 九胡飞到最高点，切到 6-1-2 的机位（第 1 场段界：6-1-2 从这一镜起，见 6-1/段界.ts）
-const LAST = JH_POP + POP_N; // 九胡落地 = 最后一帧 = 6-1-2 第 1 帧
-export const END = LAST + 1 / 24;
-const F612 = 1 / 24; // 6-1-2 的第 1 格
+// 九胡落地：这一刻起由 6-1-2 段首接着演（同一时刻、同一机位、同一落地姿势）
+export const LAST = JH_POP + POP_N;
+// 段首（段内第 0 秒）在编排时间里的时刻：关键帧表是从这里写起的
+export const T0 = 1 / 24;
+export const segSec = (t: number) => t - T0;
+const F612 = choreo612.STORY_T0; // 6-1-2 段首的剧情时间
 export const world = (t: number): 'island' | 'tf' => (t < CUT ? 'island' : 'tf');
 export const portalActive = (t: number) => t >= STRIKE;
 
@@ -57,16 +60,16 @@ const hop = (start: number[], end: number[], dur: number, t: number, gravity = J
   return [lerp(start[0], end[0], k), lerp(start[1], end[1], k), start[2] + vz * t - (gravity * t * t) / 2];
 };
 
-const LY_ARM_R: Key[] = [[1 / 24, 28], [W0, 28], [W0 + 7 / 24, -55], [REL, 72], [REL + 4 / 24, 100], [REL + 16 / 24, 12], [END, 12]];
-const LY_ELBOW_R: Key[] = [[1 / 24, 45], [W0, 40], [W0 + 7 / 24, 8], [REL, 12], [REL + 4 / 24, 18], [REL + 16 / 24, 8], [END, 8]];
-const LY_ARM_L: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, 18], [REL, -25], [REL + 4 / 24, -30], [REL + 16 / 24, -4], [END, -4]];
-const LY_PITCH: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, 5], [REL, -9], [REL + 4 / 24, -11], [REL + 18 / 24, -2], [END, -2]];
+const LY_ARM_R: Key[] = [[1 / 24, 28], [W0, 28], [W0 + 7 / 24, -55], [REL, 72], [REL + 4 / 24, 100], [REL + 16 / 24, 12], [LAST, 12]];
+const LY_ELBOW_R: Key[] = [[1 / 24, 45], [W0, 40], [W0 + 7 / 24, 8], [REL, 12], [REL + 4 / 24, 18], [REL + 16 / 24, 8], [LAST, 8]];
+const LY_ARM_L: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, 18], [REL, -25], [REL + 4 / 24, -30], [REL + 16 / 24, -4], [LAST, -4]];
+const LY_PITCH: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, 5], [REL, -9], [REL + 4 / 24, -11], [REL + 18 / 24, -2], [LAST, -2]];
 const LY_HEAD: Key[] = [
-  [1 / 24, -18], [W0, -16], [W0 + 7 / 24, -8], [REL, 2], [REL + 11 / 24, 8], [LAND, -24], [STRIKE - 1 / 24, -24], [STRIKE + 3 / 24, -8], [STRIKE + 12 / 24, -14], [END, -14],
+  [1 / 24, -18], [W0, -16], [W0 + 7 / 24, -8], [REL, 2], [REL + 11 / 24, 8], [LAND, -24], [STRIKE - 1 / 24, -24], [STRIKE + 3 / 24, -8], [STRIKE + 12 / 24, -14], [LAST, -14],
 ];
-const LY_HEAD_YAW: Key[] = [[1 / 24, 0], [BEAT + 1 / 24, 0], [BEAT + 4 / 24, 55], [BEAT + 9 / 24, 55], [BEAT + 12 / 24, 0], [END, 0]];
-const LY_LEG_R: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, -14], [REL + 4 / 24, -16], [REL + 20 / 24, -4], [END, -4]];
-const LY_LEG_L: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, 14], [REL + 4 / 24, 18], [REL + 20 / 24, 5], [END, 5]];
+const LY_HEAD_YAW: Key[] = [[1 / 24, 0], [BEAT + 1 / 24, 0], [BEAT + 4 / 24, 55], [BEAT + 9 / 24, 55], [BEAT + 12 / 24, 0], [LAST, 0]];
+const LY_LEG_R: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, -14], [REL + 4 / 24, -16], [REL + 20 / 24, -4], [LAST, -4]];
+const LY_LEG_L: Key[] = [[1 / 24, 0], [W0, 0], [W0 + 7 / 24, 14], [REL + 4 / 24, 18], [REL + 20 / 24, 5], [LAST, 5]];
 const J0 = LY_UP - 0.25;
 const LY_JUMP = {
   pitch: [[J0, -2], [LY_UP - 2 / 24, -12], [LY_UP, -8], [LY_UP + 5 / 24, -4], [LY_IN, -2]] as Key[],
@@ -81,14 +84,14 @@ const LY_JUMP = {
 // 九胡：站在旁边看；闪电劈下时吓一跳（往后一缩、两手抬到胸前），回过神来跟着跳
 const JH_PITCH: Key[] = [[1 / 24, 0], [STRIKE, 0], [STRIKE + 2 / 24, 9], [STRIKE + 12 / 24, 2], [JH_UP - 6 / 24, 0], [JH_UP - 2 / 24, -14], [JH_UP, -6], [JH_UP + 5 / 24, -4], [JH_IN, -4]];
 const JH_ARM: Key[] = [[1 / 24, 0], [STRIKE, 0], [STRIKE + 2 / 24, 70], [STRIKE + 12 / 24, 58], [STRIKE + 18 / 24, 6], [JH_UP - 2 / 24, -40], [JH_UP, 60], [JH_UP + 5 / 24, 50], [JH_IN, 40]];
-const JH_ARM_ROLL: Key[] = [[1 / 24, 0], [STRIKE, 0], [STRIKE + 2 / 24, 30], [STRIKE + 12 / 24, 28], [STRIKE + 18 / 24, 0], [END, 0]];
+const JH_ARM_ROLL: Key[] = [[1 / 24, 0], [STRIKE, 0], [STRIKE + 2 / 24, 30], [STRIKE + 12 / 24, 28], [STRIKE + 18 / 24, 0], [LAST, 0]];
 // 李樱回头看她时，她看回去、点一下头
 const JH_HEAD: Key[] = [
   [1 / 24, -14], [REL, -6], [LAND, -22], [STRIKE, -22], [STRIKE + 2 / 24, 6], [STRIKE + 12 / 24, -6], [STRIKE + 18 / 24, -14],
-  [BEAT + 4 / 24, -6], [BEAT + 7 / 24, -26], [BEAT + 10 / 24, -4], [BEAT + 13 / 24, -14], [END, -14],
+  [BEAT + 4 / 24, -6], [BEAT + 7 / 24, -26], [BEAT + 10 / 24, -4], [BEAT + 13 / 24, -14], [LAST, -14],
 ];
 // 头先转过去看李樱扔（他在她右前方，往右转是负），再看水池；点头时又转向李樱
-const JH_HEAD_YAW: Key[] = [[1 / 24, -30], [REL, -18], [LAND, 0], [BEAT + 1 / 24, 0], [BEAT + 4 / 24, -32], [BEAT + 12 / 24, -32], [BEAT + 15 / 24, 0], [END, 0]];
+const JH_HEAD_YAW: Key[] = [[1 / 24, -30], [REL, -18], [LAND, 0], [BEAT + 1 / 24, 0], [BEAT + 4 / 24, -32], [BEAT + 12 / 24, -32], [BEAT + 15 / 24, 0], [LAST, 0]];
 const JH_LEG_R: Key[] = [[1 / 24, 0], [JH_UP - 6 / 24, 0], [JH_UP - 2 / 24, 22], [JH_UP, -12], [JH_UP + 5 / 24, 34], [JH_IN, 30]];
 const JH_LEG_L: Key[] = [[1 / 24, 0], [JH_UP - 6 / 24, 0], [JH_UP - 2 / 24, 20], [JH_UP, -16], [JH_UP + 5 / 24, -18], [JH_IN, -10]];
 

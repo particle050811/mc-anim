@@ -3,25 +3,22 @@
 // 这里的段是旧段号的窗口（编排、声音按它分），成片的段界（拼成哪几个 Composition）见 ../6-2至6-3段界/段表.ts。
 import { smoothstep01 } from '@engine/core/数学.ts';
 
-// ---------- 段表（下一段首帧 = 上一段末帧） ----------
+// ---------- 段表（下一段的第 0 秒接着上一段的段尾） ----------
 export type SegmentName = '6-2-1' | '6-2-2' | '6-2-3';
-// 段长按台词和界面停留的时间定（用户：段长可以调）：每个界面至少停 2.5 秒，标注一条一条出来，读得完。
-// 段长、段界按格记（1/24 秒一格，`SEGMENT_STEPS_PER_SEC`），起止秒 = 格数 / 24。6-2-3 含结构罗盘界面的 66 格
-export const SEGMENT_STEPS_PER_SEC = 24;
+// 段长（秒）按台词和界面停留的时间定（用户：段长可以调）：每个界面至少停 2.5 秒，标注一条一条出来，读得完。
+// 原来按 1/24 秒一格定，写成 n / 24。6-2-3 含结构罗盘界面的 66 格
 const segmentLengths: [SegmentName, number, string][] = [
-  ['6-2-1', 288, '战利品'],
-  ['6-2-2', 158, '还差什么'],
-  ['6-2-3', 464, '古卷'],
+  ['6-2-1', 288 / 24, '战利品'],
+  ['6-2-2', 158 / 24, '还差什么'],
+  ['6-2-3', 464 / 24, '古卷'],
 ];
 export const segmentTable = Object.fromEntries(
   segmentLengths.map(([name, length, title], i) => {
     const start = segmentLengths.slice(0, i).reduce((sum, [, l]) => sum + l, 0);
-    return [name, { 起: start / SEGMENT_STEPS_PER_SEC, 止: (start + length) / SEGMENT_STEPS_PER_SEC, startStep: start, endStep: start + length, 名: title }];
+    return [name, { 起: start, 止: start + length, 长: length, 名: title }];
   }),
-) as Record<SegmentName, { 起: number; 止: number; startStep: number; endStep: number; 名: string }>;
-// 一段画多少格（含首末两格；拼段用）
-export const segmentSteps = (segment: SegmentName) => segmentTable[segment].endStep - segmentTable[segment].startStep + 1;
-export const lastSec = segmentTable['6-2-3'].止; // = 6-2-4 第 0 帧
+) as Record<SegmentName, { 起: number; 止: number; 长: number; 名: string }>;
+export const lastSec = segmentTable['6-2-3'].止; // = 6-2-4 第 0 秒
 const seg22 = segmentTable['6-2-2'].起;
 const seg23 = segmentTable['6-2-3'].起;
 
@@ -33,17 +30,18 @@ export const lineStarts = {
   notWasted: 8 / 24,
   chainBase: 3.75,
   smeltTemp: 197 / 24,
-  sediment: (segmentTable['6-2-2'].startStep + 7) / 24,
-  quarkTome: (segmentTable['6-2-2'].startStep + 116) / 24,
+  sediment: seg22 + 7 / 24,
+  quarkTome: seg22 + 116 / 24,
 };
 const quarkSec = lineStarts.quarkTome;
 // 「走吧九胡，我们现在去古城寻宝！」开口（全局秒）。说这句时李樱端着指南针（拿针、端平见 `cues`）
-export const ancientCityLineStart = (segmentTable['6-2-3'].startStep + 189) / 24;
+export const ancientCityLineStart = seg23 + 189 / 24;
 // 结构罗盘界面（模型/界面/结构罗盘.tsx，游戏里录的 66 帧，每秒 24 帧）：李樱端稳指南针、镜头推成俯拍以后打开，开着时戏停住，关掉以后接着演（`uiClose` 起算）
-export const compassUiOpenSec = (segmentTable['6-2-3'].startStep + 221) / 24;
+export const compassUiOpenSec = seg23 + 221 / 24;
+// 录的界面每秒 24 张，一张一张换（游戏截图，不插值）
 const COMPASS_UI_FPS = 24;
 const compassUiFrames = 66;
-const uiClose = (segmentTable['6-2-3'].startStep + 221 + compassUiFrames) / COMPASS_UI_FPS;
+const uiClose = compassUiOpenSec + compassUiFrames / COMPASS_UI_FPS;
 export const segmentStartSec = { seg22, seg23, uiClose };
 
 // ---------- 时刻（全局秒） ----------
