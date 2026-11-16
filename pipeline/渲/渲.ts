@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { bundle } from '@remotion/bundler';
 import { expectedVersion, prepareBrowser } from './浏览器.ts';
 import { withShaderCache } from './着色器缓存.ts';
@@ -76,18 +77,21 @@ export const bundleProject = async (runRecord?: RunRecord, label = `会话:${wor
 };
 
 type RenderSession = { serveUrl: string; browser: HeadlessBrowser; params: RenderParamsTable; compositions: Awaited<ReturnType<typeof getCompositions>> };
+type Composition = RenderSession['compositions'][number];
+/** skipCompositions：不读 Composition 列表（compositions 是空的），调用方自己用 expectedComposition 算 */
+type SessionOpts = BundleOpts & { skipCompositions?: boolean };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承；会话期间不让电脑闲置睡眠 */
-export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, bundleOpts: BundleOpts = {}): Promise<T> => {
+export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, sessionOpts: SessionOpts = {}): Promise<T> => {
   const releaseAntiSleep = keepAwake();
   try {
-    return await inSession(level, fn, runRecord, bundleOpts);
+    return await inSession(level, fn, runRecord, sessionOpts);
   } finally {
     releaseAntiSleep();
   }
 };
 
-const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, bundleOpts: BundleOpts = {}): Promise<T> => {
+const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, { skipCompositions, ...bundleOpts }: SessionOpts = {}): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {
@@ -108,21 +112,24 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
     });
     browser = opened.browser;
     const watchdog = opened.watchdog;
-    // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
+    // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读；
+    // 不读列表时由出帧的页面自己算、关页面时收走
     collectSolveCache(browser);
     collectTerrainUsage(browser);
     const b = browser;
-    const compositions = await measureStage(records, label, '读组合', () =>
-      watchdog.pack(() =>
-        getCompositions(serveUrl, {
-          inputProps: params.inputProps,
-          puppeteerInstance: b,
-          chromiumOptions: { gl: params.gl },
-          timeoutInMilliseconds: frameTimeoutMs,
-          logLevel: 'error',
-        }),
-      ),
-    );
+    const compositions = skipCompositions
+      ? []
+      : await measureStage(records, label, '读组合', () =>
+          watchdog.pack(() =>
+            getCompositions(serveUrl, {
+              inputProps: params.inputProps,
+              puppeteerInstance: b,
+              chromiumOptions: { gl: params.gl },
+              timeoutInMilliseconds: frameTimeoutMs,
+              logLevel: 'error',
+            }),
+          ),
+        );
     if (records) console.log(`会话就绪：${stageSummary(records.slice(startIndex))}`);
     return await watchdog.pack(() => fn({ serveUrl, browser: b, params: params, compositions }));
   } finally {
@@ -159,17 +166,40 @@ const recordFrameEncode = (records: StageRecord[], label: string, t0: number, ti
 };
 
 /**
+ * 这段的 Composition 不开页面算出来的样子：注册工厂.tsx 登记时只给 id、帧数、帧率、宽高，Remotion 从页面读回来的另外几项都是空的。
+ * 帧数和切片的输出窗同一个算法（段产物.ts 的 segOutputWindow）。props 是读列表时给的 inputProps（段的组件不收 props，画面不看它）。
+ * anim still 用它，省掉为读列表另开一页把整个包求值一遍；出片、校验照旧从页面读，findComposition 核对两边一样。
+ */
+export const expectedComposition = (s: SegInfo, allSegments: readonly SegInfo[], props: Composition['props'], id = s.key): Composition => ({
+  id,
+  width: s.segment.width,
+  height: s.segment.height,
+  fps: filmProfile().fps,
+  durationInFrames: segOutputWindow(allSegments, s).frameCount,
+  props,
+  defaultProps: {},
+  defaultCodec: null,
+  defaultOutName: null,
+  defaultVideoImageFormat: null,
+  defaultPixelFormat: null,
+  defaultProResProfile: null,
+  defaultSampleRate: null,
+});
+
+/**
  * 打包里这段的 Composition，核对和切片的输出窗一样：打包按成片档的输出帧率注册（engine/段/注册工厂.tsx），帧数 = 段长 × 帧率，
- * 这里用同一个算法（段产物.ts 的 段输出窗于）算应有的帧数，差一帧也不认。全部 = 整部作品的段（段要在清单里）
+ * 这里用同一个算法算应有的帧数，差一帧也不认。allSegments = 整部作品的段（段要在清单里）。
+ * 别的项也要和 expectedComposition 一样：静帧不读列表，注册工厂哪天多登记了东西（defaultProps 之类），这里先报出来
  */
 export const findComposition = (h: Pick<RenderSession, 'compositions'>, s: SegInfo, allSegments: readonly SegInfo[], id = s.key) => {
   verifySegResourcePacks(workRoot(), s.key);
   const c = h.compositions.find((x) => x.id === id);
   if (!c) throw new Error(`打包里没有 Composition ${id}（作品的 注册.tsx 按清单和 段.ts 的叠层登记，清单里有它吗？）`);
-  const outputWindow = segOutputWindow(allSegments, s);
-  if (c.fps !== filmProfile().fps || c.durationInFrames !== outputWindow.frameCount || c.width !== s.segment.width || c.height !== s.segment.height) {
-    throw new Error(`${id} 的 Composition（${c.durationInFrames} 帧 ${c.fps}fps ${c.width}×${c.height}）和 段.ts、全片位置对不上（应是 ${outputWindow.frameCount} 帧 ${filmProfile().fps}fps ${s.segment.width}×${s.segment.height}）`);
+  const expected = expectedComposition(s, allSegments, c.props, id);
+  if (c.fps !== expected.fps || c.durationInFrames !== expected.durationInFrames || c.width !== expected.width || c.height !== expected.height) {
+    throw new Error(`${id} 的 Composition（${c.durationInFrames} 帧 ${c.fps}fps ${c.width}×${c.height}）和 段.ts、全片位置对不上（应是 ${expected.durationInFrames} 帧 ${expected.fps}fps ${expected.width}×${expected.height}）`);
   }
+  if (!isDeepStrictEqual(c, expected)) throw new Error(`${id} 的 Composition 和 anim still 不开页面算的不一样（渲.ts 的 expectedComposition 要跟上）：页面读到 ${JSON.stringify(c)}，算的 ${JSON.stringify(expected)}`);
   return c;
 };
 
@@ -268,13 +298,13 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
     o.shading?.map((c) => ({ env: { [shadingEnvName]: c.value }, suffix: `-光影-${c.name}` })) ?? o.telescope?.map((c) => ({ env: { [telescopeEnvName]: c.value }, suffix: `-望远-${c.name}` }));
   await withSegResourcePack(workRoot(), s.key, () => openSession(level, async (h) => {
     const allSegments = await loadAllSegments();
-    const composition = findComposition(h, s, allSegments);
+    verifySegResourcePacks(workRoot(), s.key);
+    const composition = expectedComposition(s, allSegments, h.params.inputProps);
     for (const f of toEmit) {
       if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.key} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
     }
     // 段里画的字幕（母版 = 成片切片，用户 11-05 定）静帧也画上，和成片这一帧一样
     const subtitled = { ...h, params: segPictureParams(allSegments, [s], level)[0]! };
-    await waitSolveCacheWrites();
     const label = `still:${workName()}/${s.key}:${level}`;
     const queueStartMs = Date.now();
     await passRenderGate(async () => {
@@ -295,6 +325,8 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
       await detail.writeOut(records ?? []);
       console.log(`${stageSummary([gateWait, outputTime])}（${toEmit.length} 帧）`);
     }, undefined, {}, {kind:'still',work:workName(),segment:s.key,level: level,frameCount:toEmit.length,frame:toEmit.join(',').slice(0,60),purpose:process.env.ANIM_PURPOSE??'核对'});
-  }, runRecord, { shading: !!o.shading, telescope: !!o.telescope }));
+    // 没有读列表那一页替它先算，缺的求解是出帧的页面自己算的，关页面时才收走写盘；连出（renderFrames）关页面不等，这里等写完再关浏览器
+    await waitSolveCacheWrites();
+  }, runRecord, { shading: !!o.shading, telescope: !!o.telescope, skipCompositions: true }));
   return variants ? variants.flatMap((c) => toEmit.map((f) => stillFile(outDir, s.key, f, c.suffix))) : toEmit.map((f) => stillFile(outDir, s.key, f));
 };
