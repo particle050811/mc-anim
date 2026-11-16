@@ -8,6 +8,7 @@
 // 数值原样存：Float64Array 按字节，-0、NaN、±Infinity 单独标出（JSON 会把 -0 写成 0、NaN 写成 null），读回来和现算逐位一样。
 import { getRemotionEnvironment } from 'remotion';
 import { canFetchSync, fetchTextSync } from './数据源.ts';
+import { base64Bytes } from './base64.ts';
 
 declare const __SOLVER_FINGERPRINTS__: Record<string, string> | undefined;
 
@@ -56,8 +57,7 @@ const encode = (x: unknown) =>
 const decode = (s: string) =>
   JSON.parse(s, (_k, value) => {
     if (value && typeof value === 'object' && '$f64' in value) {
-      const bytes = Uint8Array.from(atob(value.$f64), (c) => c.charCodeAt(0));
-      return new Float64Array(bytes.buffer);
+      return new Float64Array(base64Bytes(value.$f64).buffer);
     }
     if (value && typeof value === 'object' && '$n' in value) return value.$n === '-0' ? -0 : Number(value.$n);
     return value;

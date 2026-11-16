@@ -4,6 +4,7 @@ import { wasmBase64 } from './区段解码器.生成.ts';
 import { paddedSectionCols } from './区段.ts';
 import type { SectionModel } from './区段模型.ts';
 import type { SectionData } from './区段包.ts';
+import { base64Bytes } from '../core/base64.ts';
 
 const columnCount = paddedSectionCols * paddedSectionCols; // 要和 wasm/区段解码.ts 的 sectionSide 一致
 
@@ -14,7 +15,7 @@ let wasmModule: WebAssembly.Module | undefined;
 const decoderCache = new WeakMap<SectionModel, SectionDecoder>();
 
 const createDecoder = (m: SectionModel): SectionDecoder => {
-  wasmModule ??= new WebAssembly.Module(Uint8Array.from(atob(wasmBase64), (c) => c.charCodeAt(0)));
+  wasmModule ??= new WebAssembly.Module(base64Bytes(wasmBase64));
   const { decodeSection: decode, memory } = new WebAssembly.Instance(wasmModule).exports as { decodeSection: DecodeFn; memory: WebAssembly.Memory };
   const align = (x: number) => (x + 7) & ~7;
   const T = 65536, W = align(T + m.init.byteLength), M = align(W + m.init.byteLength), F = align(M + 65536), D = align(F + m.weights.byteLength);

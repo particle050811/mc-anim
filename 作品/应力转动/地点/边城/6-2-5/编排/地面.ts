@@ -3,6 +3,7 @@ import { coarseHeightAt } from '@engine/voxel/区段包.ts';
 import { frozenCoarse, type FrozenCoarseHeightFile } from '@engine/voxel/冻结粗高度.ts';
 import overworldFrozen from '../../../../../../assets/冻结粗高度/主世界-116.json';
 import groundRouteJson from 'asset:数据/镜头/6-2-5/航线地面';
+import { base64Bytes } from '@engine/core/base64.ts';
 const groundJson = groundRouteJson as unknown as { x0: number; y0: number; 格: number; nx: number; ny: number; 高: string };
 
 // ---------- 地面 ----------
@@ -12,7 +13,7 @@ const groundJson = groundRouteJson as unknown as { x0: number; y0: number; 格: 
 // 导入范围外退回 航线地面.json（工具/导入/航线地面.ts 算的 64 米一格的最高顶，远景那边不含树）。航线全在导入走廊里，退回的只有走廊边上几格
 const coarse = frozenCoarse(overworldFrozen as FrozenCoarseHeightFile);
 const groundGrid = (() => {
-  const bytes = Uint8Array.from(atob(groundJson.高), (c) => c.charCodeAt(0));
+  const bytes = base64Bytes(groundJson.高);
   return { ...groundJson, height: new Int16Array(bytes.buffer, 0, groundJson.nx * groundJson.ny) };
 })();
 export const routeGround = (x: number, y: number) => {

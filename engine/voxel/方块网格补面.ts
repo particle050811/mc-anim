@@ -7,7 +7,7 @@
 //
 // 坐标：.bin 里是游戏坐标减 origin（y 朝上、南 = +z），叫「bin 坐标」；盒子（`hide`、`hideBlocks`、`clearPlants`）是参考模型坐标（Z 朝上、南 = −Y，同 `BlockMesh`）。
 import type { BlockMeshInfo } from './方块网格信息.ts';
-import { BoxBuckets, dot, emitSubFace, HORIZ_DIRS, innerPoint, NORMALS, readFace, splitIntoCells, TV, type ExtraFaces, type Face } from './方块网格面.ts';
+import { BoxBuckets, cellCount, cellHi, cellLo, dot, emitSubFace, HORIZ_DIRS, innerPoint, NORMALS, readFace, splitIntoCells, TV, type ExtraFaces, type Face } from './方块网格面.ts';
 
 export type { ExtraFaces } from './方块网格面.ts';
 
@@ -110,6 +110,11 @@ export const arrangeFaces = (info: Pick<BlockMeshInfo, 'from' | 'to' | 'origin' 
   };
 
   const keep: (number[] | null)[] = [];
+  // 逐面读出来的面、算「所属格」用的点各复用一个，不逐面新建对象（每个面都过这里，新建的话时间大半花在分配和回收上）；
+  // 面要记下来（recordCell）时拷一份，一个面拷一次
+  const innerPt = [0, 0, 0];
+  const scratchFace: Face = { d: -1, w: 0, s0: 0, s1: 0, t0: 0, t1: 0, c: [0, 0, 0, 0] };
+  let faceCopy: Face | null = null;
   // 按方块藏切开过的大面（层 → 面序号）：补光不重画它们（整张重画会把藏掉的格画回来）
   const splitQuads: Set<number>[] = info.layers.map(() => new Set());
   for (let li = 0; li < layerCount; li++) {
@@ -140,7 +145,8 @@ export const arrangeFaces = (info: Pick<BlockMeshInfo, 'from' | 'to' | 'origin' 
         if (hideBoxes.has(cx, cy, cz)) continue;
       }
       const needFace = !hideBlockBoxes.empty || shouldRecord;
-      const face = needFace ? readFace(dv, at, stride) : null;
+      const face = needFace ? readFace(dv, at, stride, scratchFace) : null;
+      faceCopy = null;
       if (!hideBlockBoxes.empty && face) {
         if (face.d < 0) {
           // 斜面（花草十字面等）：面心沿法向往里退 0.01（法向 (v1 − v0) × (v3 − v0)，同 方块网格.tsx）
@@ -152,34 +158,41 @@ export const arrangeFaces = (info: Pick<BlockMeshInfo, 'from' | 'to' | 'origin' 
           const normalLen = Math.hypot(normal[0], normal[1], normal[2]) || 1;
           if (hideBlockBoxes.has(center[0] - (0.01 * normal[0]) / normalLen, center[1] - (0.01 * normal[1]) / normalLen, center[2] - (0.01 * normal[2]) / normalLen)) { tally('按方块藏'); continue; }
         } else {
-          const cells = splitIntoCells(face);
-          const hiddenFlags = cells.map(([sa, sb, ta, tb]) => {
-            const innerPt = innerPoint(face, sa, sb, ta, tb);
-            return hideBlockBoxes.has(innerPt[0], innerPt[1], innerPt[2]);
-          });
-          const hiddenCount = hiddenFlags.filter(Boolean).length;
-          if (hiddenCount === cells.length) { tally('按方块藏'); continue; }
+          // 先数有几格在盒子里（不建数组）：全在、全不在的占绝大多数
+          const ns = cellCount(face.s0, face.s1), nt = cellCount(face.t0, face.t1);
+          let hiddenCount = 0;
+          for (let si = 0; si < ns; si++)
+            for (let ti = 0; ti < nt; ti++) {
+              innerPoint(face, cellLo(face.s0, face.s1, si), cellHi(face.s0, face.s1, ns, si), cellLo(face.t0, face.t1, ti), cellHi(face.t0, face.t1, nt, ti), innerPt);
+              if (hideBlockBoxes.has(innerPt[0], innerPt[1], innerPt[2])) hiddenCount++;
+            }
+          if (hiddenCount === ns * nt) { tally('按方块藏'); continue; }
           if (hiddenCount > 0) {
             // 合并的大面跨在盒子边上：按格切开，盒子外的几格留下
             tally('大面切开');
             splitQuads[li].add(quadIdx);
-            cells.forEach(([sa, sb, ta, tb], i) => {
-              if (hiddenFlags[i]) return;
+            for (const [sa, sb, ta, tb] of splitIntoCells(face)) {
+              innerPoint(face, sa, sb, ta, tb, innerPt);
+              if (hideBlockBoxes.has(innerPt[0], innerPt[1], innerPt[2])) continue;
               emitSubFace(dv, at, stride, face, sa, sb, ta, tb, extra[li]);
               if (shouldRecord) recordCell(li, at, face, sa, sb, ta, tb);
-            });
+            }
             continue;
           }
         }
       }
       k.push(quadIdx);
-      if (shouldRecord && face && face.d >= 0) for (const [sa, sb, ta, tb] of splitIntoCells(face)) recordCell(li, at, face, sa, sb, ta, tb);
+      if (shouldRecord && face && face.d >= 0) {
+        const ns = cellCount(face.s0, face.s1), nt = cellCount(face.t0, face.t1);
+        for (let si = 0; si < ns; si++)
+          for (let ti = 0; ti < nt; ti++) recordCell(li, at, face, cellLo(face.s0, face.s1, si), cellHi(face.s0, face.s1, ns, si), cellLo(face.t0, face.t1, ti), cellHi(face.t0, face.t1, nt, ti));
+      }
     }
     keep.push(k.length === layer.quads ? null : k);
   }
 
   function recordCell(layerIdx: number, at: number, face: Face, sa: number, sb: number, ta: number, tb: number) {
-    const innerPt = innerPoint(face, sa, sb, ta, tb);
+    innerPoint(face, sa, sb, ta, tb, innerPt);
     const x = Math.floor(innerPt[0] + origin[0]), y = Math.floor(innerPt[1] + origin[1]), z = Math.floor(innerPt[2] + origin[2]);
     if (x < fromPos[0] - 1 || x > toPos[0] + 1 || y < fromPos[1] - 1 || y > toPos[1] + 1 || z < fromPos[2] - 1 || z > toPos[2] + 1) return;
     // 带子外面只记导出上限那一层（截平的树冠、尖顶在网格中间也有）
@@ -191,9 +204,11 @@ export const arrangeFaces = (info: Pick<BlockMeshInfo, 'from' | 'to' | 'origin' 
     const fullSize = fullWidth && tb - ta >= 0.999;
     const isSide = face.d !== 2 && face.d !== 3;
     // 侧面：整格宽、从格底起（半砖、雪片的侧面算，栅栏柱、灯笼不算）；顶面、底面：整格大小
-    if (isSide ? !(fullWidth && Math.abs(ta + dot(origin, TV[face.d]) - Math.floor(ta + dot(origin, TV[face.d]) + 1e-6)) < 1e-3) : !fullSize) return;
+    const bottomT = isSide ? ta + dot(origin, TV[face.d]) : 0;
+    if (isSide ? !(fullWidth && Math.abs(bottomT - Math.floor(bottomT + 1e-6)) < 1e-3) : !fullSize) return;
     const i = records.length;
-    records.push({ L: layerIdx, at, f: face, sa, sb, ta, tb, textureId: textureId(dv, at), onGridPlane, fullWidth, full: fullSize });
+    faceCopy ??= { ...face, c: face.c.slice() };
+    records.push({ L: layerIdx, at, f: faceCopy, sa, sb, ta, tb, textureId: textureId(dv, at), onGridPlane, fullWidth, full: fullSize });
     const key = cellKey(x, y, z) * 6 + face.d;
     let recIdxs = cellFaces.get(key);
     if (!recIdxs) cellFaces.set(key, (recIdxs = []));

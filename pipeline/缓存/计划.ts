@@ -62,6 +62,7 @@ export const reportOnlyDirs: Record<string, string> = {
   'cache/映射': '官方映射等本机自取、不许再分发的文件（anim extract 用，删了下次按 jars.toml 重下）',
   'cache/动作翻译映射': '动作翻译早先临时下的官方映射（新的进 cache/映射/，1.21.11 的还靠这份）',
   'cache/浏览器': '渲染用的 chrome-headless-shell，按 Remotion 期望版本一个目录（现用那版渲染都用，删了下次渲染从 node_modules 克隆或重下）；旧版留给 anim bench --browser 做对照',
+  'cache/着色器': '浏览器编过的着色器程序（Chrome 的 GPUCache），按浏览器版本和 gl 后端一个目录、里面留最新两份（pipeline/渲/着色器缓存.ts；删了下次首帧现编）',
 };
 
 /** 数据根 run/、cache/ 下 anim 认得的条目（别的只报告） */

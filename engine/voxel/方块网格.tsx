@@ -165,17 +165,27 @@ const build = (info: BlockMeshInfo, data: Uint8Array, { base: baseTex, plant: pl
         const rectIdx = extra.r[j >> 2];
         if (rectIdx > 0) rect.set(info.rects![rectIdx - 1], i * 4);
       }
-    const corner = new THREE.Vector3();
-    const edgeU = new THREE.Vector3();
-    const edgeV = new THREE.Vector3();
+    // 面法线 = (v1 − v0) × (v3 − v0) 归一。算式照 THREE.Vector3 的 sub、cross、normalize 写开（结果逐位一样）：
+    // 每个面都过这里，不逐面调 Vector3 的方法、不建临时数组（首帧的主线程时间大半花在方块网格上）
     for (let quad = 0; quad < quads; quad++) {
-      const firstVert = quad * 4;
-      corner.fromArray(pos, firstVert * 3);
-      edgeU.fromArray(pos, (firstVert + 1) * 3).sub(corner);
-      edgeV.fromArray(pos, (firstVert + 3) * 3).sub(corner);
-      edgeU.cross(edgeV).normalize();
-      for (let k = 0; k < 4; k++) edgeU.toArray(nor, (firstVert + k) * 3);
-      idx.set([firstVert, firstVert + 1, firstVert + 2, firstVert, firstVert + 2, firstVert + 3], quad * 6);
+      const p = quad * 12;
+      const cx = pos[p], cy = pos[p + 1], cz = pos[p + 2];
+      const ux = pos[p + 3] - cx, uy = pos[p + 4] - cy, uz = pos[p + 5] - cz;
+      const vx = pos[p + 9] - cx, vy = pos[p + 10] - cy, vz = pos[p + 11] - cz;
+      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+      const inv = 1 / (Math.sqrt(nx * nx + ny * ny + nz * nz) || 1);
+      for (let k = p; k < p + 12; k += 3) {
+        nor[k] = nx * inv;
+        nor[k + 1] = ny * inv;
+        nor[k + 2] = nz * inv;
+      }
+      const firstVert = quad * 4, i6 = quad * 6;
+      idx[i6] = firstVert;
+      idx[i6 + 1] = firstVert + 1;
+      idx[i6 + 2] = firstVert + 2;
+      idx[i6 + 3] = firstVert;
+      idx[i6 + 4] = firstVert + 2;
+      idx[i6 + 5] = firstVert + 3;
     }
     const geom = new THREE.BufferGeometry();
     geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
