@@ -8,7 +8,9 @@
 // - 底光照原版光照图（LightTexture.updateLightTexture）在下界、方块光 0、天光 0、亮度滑块 50% 时算出的颜色，每个朝向再乘下界的面明暗
 //   （constantAmbientLight：上下 0.9、南北 0.8、东西 0.6）。原版在 sRGB 数值上乘，这里按 2.2 次幂折到线性光里：一盏环境光（东西面的亮度）加四盏平行光补出上下、南北面。
 // - 熔岩按贴图原色 × 熔岩亮 发光（方块光 15 的光照图是全白）。熔岩照亮周围 15 格的那一圈没有画：岸边、熔岩瀑布旁的岩壁比游戏里暗。
-// - 雾是线性雾。原版下界（isFoggyAt 恒真）雾从 视距 × 0.05 起、到 min(视距, 192) × 0.5 = 96 格全满，雾色是群系的 fog_color（下界荒地 #330808）。
+// - 雾色、雾远照原版：原版下界（isFoggyAt 恒真）是线性雾，从 视距 × 0.05 起、到 min(视距, 192) × 0.5 = 96 格全满，雾色是群系的 fog_color（下界荒地 #330808）。
+//   雾的形状换成全片的远雾（engine/light/高度雾.ts 的 `useFarFog`，用户 11-16 定下界也用）：D = 雾远，0.9 D 以内没有雾、到 D 拉满成雾色（也是底色），
+//   线性雾的近端不起作用。地形越出 D 的部分全进雾，地平线上不再多出一圈熔岩和剪影（原来靠远裁）。
 //
 // 熔岩的材质：体素世界把液体都归进「水」那一类材质（波纹、菲涅尔、反射天色）。下界的包里液体只有熔岩，这里把这个世界的水类网格换成一份改过的材质
 // （不反射天、粗糙度照方块、不透明、自发光），只换本世界键下的网格，别的世界和 engine 的水材质不动。
@@ -17,6 +19,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { useSelfLight } from '@engine/light/光照配比.ts';
+import { useFarFog } from '@engine/light/高度雾.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { voxelMaterial } from '@engine/voxel/材质.ts';
@@ -29,7 +32,7 @@ export type NetherLight = {
   baseLight: readonly [number, number, number];
   /** 熔岩自发光 = 贴图原色 × 这个数 */
   lavaBright: number;
-  /** 线性雾：色（#rrggbb，也是底色）、从几格起、到几格全满 */
+  /** 雾：色（#rrggbb，也是底色）、从几格起（远雾开着不起作用）、到几格全满（远雾的 D） */
   fog: { 色: string; near: number; far: number };
   /** 地形最远画到多远（格）；不给 = 雾.远 */
   renderFar?: number;
@@ -75,6 +78,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
   const scene = useThree((s) => s.scene);
   const groupRef = useRef<THREE.Group>(null);
   useSelfLight(0);
+  useFarFog({ far: netherLight.fog.far });
   lavaGlow.value = netherLight.lavaBright;
   // 雾、底色挂在场景上（<fog attach> 在场景组里挂不到 scene）
   const fog = scene.fog instanceof THREE.Fog ? scene.fog : (scene.fog = new THREE.Fog(netherLight.fog.色, netherLight.fog.near, netherLight.fog.far));

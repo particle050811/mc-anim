@@ -3,7 +3,7 @@
 // 画法（本片自定，不是原版的）：每条棱一张朝着镜头的面片，片元按离线心多远算亮度：中间一条不透明的亮芯（芯心橙黄、芯边炽红），外面一圈加色的晕。
 // 20 个顶点各叠一个亮点（长度 0 的线，只剩两头的圆帽）。粗细按世界里的格数算，远了不小于「最小芯宽像素」，全景里不会细成丝。
 // 混合：预乘，源 ONE、目标 1−源透明度，芯的透明度 1（盖住背景）、晕的透明度 0（纯加色），一遍画完。不写深度：结界里要灌法术粒子，写了会把后画的半透明挡出缝；有深度测试，会被地面、人挡住。
-// 雾：加色的东西不能往雾色上混，按场景雾的浓度把亮度压下去。没做全屏泛光（engine/post/后期.tsx：全场景泛光用户 10-17 定不做），晕是片元里按距离算的。
+// 雾：加色的东西不能往雾色上混，按场景雾的浓度把亮度压下去；开着远雾（真下界，engine/light/高度雾.ts 的 `useFarFog`）按远雾的浓度，和地形一起淡。没做全屏泛光（engine/post/后期.tsx：全场景泛光用户 10-17 定不做），晕是片元里按距离算的。
 // 坐标：同 炼狱结界线框，放在场景坐标（Z 朝上）的 group 里，原点是结界中心。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
@@ -80,10 +80,11 @@ void main() {
   float k = opacity;
   #ifdef USE_FOG
     #ifdef FOG_EXP2
-      k *= exp(-fogDensity * fogDensity * vFogDepth * vFogDepth);
+      float fogK = 1.0 - exp(-fogDensity * fogDensity * vFogDepth * vFogDepth);
     #else
-      k *= 1.0 - smoothstep(fogNear, fogFar, vFogDepth);
+      float fogK = smoothstep(fogNear, fogFar, vFogDepth);
     #endif
+    k *= 1.0 - (fogEdge.y > 0.0 ? farFogAt(cameraPosition, vFogWorld) : fogK);
   #endif
   vec3 coreColor = mix(coreCenter, coreEdge, smoothstep(0.25, 1.0, dist / coreRatio));
   gl_FragColor = vec4(mix(haloColor * halo, coreColor, core) * k, core * k);
