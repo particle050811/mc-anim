@@ -10,7 +10,7 @@ import { lerp } from '@engine/core/数学.ts';
 export type Vec2 = readonly [number, number];
 
 /** 一块笔画：块里的点（字格里的坐标）和中心 */
-export type RuneBlock = { 点: readonly Vec2[]; 心: Vec2 };
+export type RuneBlock = { points: readonly Vec2[]; 心: Vec2 };
 
 /** 一个字分几块：点少于 60 的 2 块，其余 3 块（一块 20～37 个点，手机上看得出是一大块笔画落上来；核查 10-24：原来 2～5 块、一块只有十几个点，看着像碎屑）。Agent 定 */
 export const tileCount = (pointCount: number) => (pointCount < 60 ? 2 : 3);
@@ -29,7 +29,7 @@ const splitCache = new Map<string, RuneBlock[]>();
 export const splitBlocks = (char: string, glyph: DotMatrix): RuneBlock[] => {
   const cachedChunk = splitCache.get(char);
   if (cachedChunk) return cachedChunk;
-  const points = glyph.点;
+  const points = glyph.points;
   const k = Math.min(tileCount(points.length), points.length);
   const d2 = (a: Vec2, b: Vec2) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;
   let centers: [number, number][] = [];
@@ -62,22 +62,22 @@ export const splitBlocks = (char: string, glyph: DotMatrix): RuneBlock[] => {
     });
   }
   const out = centers
-    .map((c, i) => ({ 点: points.filter((_, j) => merged[j] === i), 心: [c[0], c[1]] as Vec2 }))
-    .filter((b) => b.点.length > 0)
+    .map((c, i) => ({ points: points.filter((_, j) => merged[j] === i), 心: [c[0], c[1]] as Vec2 }))
+    .filter((b) => b.points.length > 0)
     .sort((a, b) => a.心[1] * 2 + a.心[0] - (b.心[1] * 2 + b.心[0]));
   splitCache.set(char, out);
   return out;
 };
 
 /** 一枚符文怎么飞：起 = 起飞帧，落 = 落定帧（段内帧，带小数）；dx、dy = 起点离落点几点（往右、往下为正，不含竖直那一落）；抬 = 原版那 1.2 格的落差（点）；亮 = 明暗（0.8～1：原版粒子 0.4～1 有深有浅，太暗的在夜里看不见） */
-export type FlyPiece = { letter: string; 起: number; landTime: number; dx: number; dy: number; lift: number; brightness: number };
+export type FlyPiece = { letter: string; start: number; landTime: number; dx: number; dy: number; lift: number; brightness: number };
 
 /**
  * 飞的参数（Agent 定）：从字的右边 20～34 点（一到两个字宽）飞来，起点上下差 −3～3 点，最后落差 4～7 点；符文（按 符文倍 画）顶不高过字格顶 顶空 点
  * （顶上那行的边距 11 点，符文不出画面），底不低过字格底 下伸 点（不压下面的画面）。最短秒 = 24 fps 时 2 帧。
  * 都从右边来：字从左往右拼出，右边是还空着的地方，符文从那里流过来不压已经拼好的字
  */
-export const flyParams = { lateral: [20, 34], 竖: [-3, 3], lift: [4, 7], topGap: 10, extendDown: 6, minFlySec: legacyFrameSec(2) } as const;
+export const flyParams = { lateral: [20, 34], vertical: [-3, 3], lift: [4, 7], topGap: 10, extendDown: 6, minFlySec: legacyFrameSec(2) } as const;
 
 /** 飞着的符文半高（点） */
 const halfHeight = 3.5 * runeScale;
@@ -86,19 +86,19 @@ const halfHeight = 3.5 * runeScale;
  * 一个字每块的符文：第 k 块在 起～完 之间按顺序落定（第一块 起、最后一块 完），起飞 = 落定 − 飞秒，但不早于这个字进场（入）；
  * 起晚了的飞得近（路程按飞的时长缩，速度不变），不到 飞法.最短秒 的不飞（直接落定、照样闪）。种 = 这个字在全片里的定死编号
  */
-export const flyBlocks = (chunks: readonly RuneBlock[], pinyin: string, timeSpan: { 起: number; end: number; 入: number }, flySec: number, seed: number): FlyPiece[] =>
+export const flyBlocks = (chunks: readonly RuneBlock[], pinyin: string, timeSpan: { start: number; end: number; 入: number }, flySec: number, seed: number): FlyPiece[] =>
   chunks.map((runeBlock, k) => {
     const n = chunks.length;
-    const landTime = n === 1 ? timeSpan.end : timeSpan.起 + ((timeSpan.end - timeSpan.起) * k) / (n - 1);
+    const landTime = n === 1 ? timeSpan.end : timeSpan.start + ((timeSpan.end - timeSpan.start) * k) / (n - 1);
     const startFrame = Math.max(landTime - flySec * fps, timeSpan.入);
     const flies = (landTime - startFrame) / fps >= flyParams.minFlySec;
     const flyRatio = flies ? (landTime - startFrame) / (flySec * fps) : 0;
     // 竖直偏移 = dy·(1−p) − 抬·(1−p⁴)，在 min(dy, 0) − 抬 和 max(dy, 0) 之间：两头夹在 顶空、下伸 里
-    const dy = Math.min(Math.round(lerp(flyParams.竖[0], flyParams.竖[1], scatter(seed, k, 12)) * flyRatio), Math.floor(16 + flyParams.extendDown - halfHeight - runeBlock.心[1]));
+    const dy = Math.min(Math.round(lerp(flyParams.vertical[0], flyParams.vertical[1], scatter(seed, k, 12)) * flyRatio), Math.floor(16 + flyParams.extendDown - halfHeight - runeBlock.心[1]));
     const lift = Math.round(lerp(flyParams.lift[0], flyParams.lift[1], scatter(seed, k, 13)) * flyRatio);
     return {
       letter: pinyin[k % pinyin.length]!,
-      起: flies ? startFrame : landTime,
+      start: flies ? startFrame : landTime,
       landTime,
       dx: Math.round(lerp(flyParams.lateral[0], flyParams.lateral[1], scatter(seed, k, 11)) * flyRatio),
       dy,
@@ -109,8 +109,8 @@ export const flyBlocks = (chunks: readonly RuneBlock[], pinyin: string, timeSpan
 
 /** 第 f 帧这枚符文中心离落点的偏移（点，没取整）；还没起飞或已经落定给 null。原版那条线：横竖都按 p 线性收拢，竖直再加 抬·(1 − p⁴) */
 export const flyPos = (flight: FlyPiece, f: number): Vec2 | null => {
-  if (f < flight.起 || f >= flight.landTime) return null;
-  const p = (f - flight.起) / (flight.landTime - flight.起);
+  if (f < flight.start || f >= flight.landTime) return null;
+  const p = (f - flight.start) / (flight.landTime - flight.start);
   return [flight.dx * (1 - p), flight.dy * (1 - p) - flight.lift * (1 - p ** 4)];
 };
 

@@ -27,7 +27,7 @@ const twilightFogFar = VIEW_DISTANCE;
 
 const sceneBlocks = (() => {
   const out: PlacedBlock[] = [];
-  const placeBlock = (blockState: string, i: number, j: number, k: number) => out.push({ 状态: blockState, 位: [i, j, k] });
+  const placeBlock = (blockState: string, i: number, j: number, k: number) => out.push({ state: blockState, 位: [i, j, k] });
   for (let i = -24; i < 24; i++) for (let j = -24; j < 24; j++) placeBlock('minecraft:grass_block', i, j, -1);
   // 小木屋：x 0～6、y 0～5，四角原木，圆石墙基，木板墙，南墙开门、东墙开窗，木板平顶
   for (let i = 0; i <= 6; i++)
@@ -56,7 +56,7 @@ const sceneBlocks = (() => {
 
 const Scene: React.FC = () => {
   const meshes = useMemo(() => {
-    const ms = assemblyMeshes(sceneBlocks, { 群系: 'minecraft:plains' });
+    const ms = assemblyMeshes(sceneBlocks, { biome: 'minecraft:plains' });
     for (const m of ms) m.castShadow = m.receiveShadow = true;
     return ms;
   }, []);
@@ -78,7 +78,7 @@ const Scene: React.FC = () => {
   );
 };
 
-const SkyLight: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
+const SkyLight: React.FC<{ frame: number }> = ({ frame: frame }) => {
   const v = views[frame]!;
   const cam = cameraRig;
   if (v.lightSet === '暮色')
@@ -87,7 +87,7 @@ const SkyLight: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
     ) : (
       <Environment description={twilightEnv({ fogFar: twilightFogFar, fogNear: twilightFogNear(twilightFogFar) })} 画法={twilightStyle} cameraPos={cam.pos} />
     );
-  if (v.lightSet === '时刻') return <Environment description={envTrack} 画法={overworldStyle} cameraPos={cam.pos} 帧={frame} />;
+  if (v.lightSet === '时刻') return <Environment description={envTrack} 画法={overworldStyle} cameraPos={cam.pos} frame={frame} />;
   const castShadow = v.lightSet === '主世界投影';
   return v.usage === '现有' ? (
     <FlightFog visibility={visibility} />
@@ -104,7 +104,7 @@ const picture: React.FC = () => {
   return (
     <AbsoluteFill>
       <ThreeCanvas key={frame} width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <SkyLight 帧={frame} />
+        <SkyLight frame={frame} />
         <FlightRig c={v.lightSet === '时刻' && v.lookUp ? lookUpRig : cameraRig} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>

@@ -3,7 +3,7 @@
 import { mulberry32 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 
-export type DropTrack = { 路: V3[]; phaseRad: number };
+export type DropTrack = { lane: V3[]; phaseRad: number };
 /** 本片史蒂夫死后掉几件（史蒂夫掉落.tsx 的 史蒂夫掉落件 一一对应） */
 export const steveDropCount = 8;
 
@@ -36,6 +36,6 @@ export const deathDropTrack = (feet: V3, itemCount: number, seed: number, option
       vz *= 0.98;
       trail.push([x, y, z]);
     }
-    return { 路: trail, phaseRad };
+    return { lane: trail, phaseRad };
   });
 };

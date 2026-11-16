@@ -26,12 +26,12 @@ export const load = async () => {
   const voxelLib = await loadVoxelLib();
   const loadModule = <T>(fileName: string) => import(pathToFileURL(path.join(codeRoot(), 'engine', 'voxel', fileName)).href) as Promise<T>;
   const [meshLib, importSectionLoaded] = await Promise.all([loadModule<typeof meshModule>('网格.ts'), loadModule<typeof importSectionModule>('导入区段.ts')]);
-  return { 库: voxelLib, 网格: meshLib, importSectionLoaded };
+  return { lib: voxelLib, grid: meshLib, importSectionLoaded };
 };
 export type TerrainVisEnv = Awaited<ReturnType<typeof load>>;
 
 export type TerrainPack = {
-  名: string; dir: string; 模型: SectionModel; info: PackageInfo; tables: PackTable;
+  name: string; dir: string; model: SectionModel; info: PackageInfo; tables: PackTable;
   /** 第 L 级的区段，按块文件名、块内索引先后（和 wasm/实验/测地形.mjs 同一顺序，留出集才对得上） */
   级: SectionItem[][];
   lookup: Map<string, SectionItem>;
@@ -49,7 +49,7 @@ export const openPack = (env: TerrainVisEnv, terrainRoot: string, name: string):
   const dir = path.join(terrainRoot, terrainPackDirs[name]!);
   const sectionModel = readModel(fs.readFileSync(path.join(dir, '模型.bin')));
   const info = JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as PackageInfo;
-  const { tileEntryCount, tileHeaderLen, buildPackTables } = env.库.sectionPack;
+  const { tileEntryCount, tileHeaderLen, buildPackTables } = env.lib.sectionPack;
   const levels: SectionItem[][] = Array.from({ length: 7 }, () => []);
   const lookup = new Map<string, SectionItem>();
   const fds = new Map<string, number>();
@@ -72,16 +72,16 @@ export const openPack = (env: TerrainVisEnv, terrainRoot: string, name: string):
     if (slot !== tileEntryCount) throw new Error('块索引项数对不上');
   }
   const tables = buildPackTables(info);
-  const stoneState = info.状态.indexOf('minecraft:stone');
+  const stoneState = info.state.indexOf('minecraft:stone');
   if (stoneState < 0) throw new Error(`${name} 的状态表里没有 minecraft:stone`);
-  const FULL = env.库.blockTable.blockProps.full;
-  const stateFull = Uint8Array.from(info.状态, (_, s) => FULL[tables.值[s]!]!);
+  const FULL = env.lib.blockTable.blockProps.full;
+  const stateFull = Uint8Array.from(info.state, (_, s) => FULL[tables.value[s]!]!);
   if (!stateFull[stoneState]) throw new Error('石头不是整格不透明');
-  const { leaf: LEAF, layer: CLS } = env.库.blockTable.blockProps;
-  const stateCover = Uint8Array.from(info.状态, (_, s) => { const v = tables.值[s]!; return FULL[v]! | (LEAF[v]! << 1) | (CLS[v] === 3 ? 4 : 0); });
+  const { leaf: LEAF, layer: CLS } = env.lib.blockTable.blockProps;
+  const stateCover = Uint8Array.from(info.state, (_, s) => { const v = tables.value[s]!; return FULL[v]! | (LEAF[v]! << 1) | (CLS[v] === 3 ? 4 : 0); });
   const read = (s: SectionItem) => { const raw = Buffer.alloc(s.len); if (fs.readSync(fd(s.file), raw, 0, s.len, s.off) !== s.len) throw new Error('读短了'); return raw; };
-  const voxelContext = { info, tables, variesByPos: info.群系.map(env.库.群系色.variesByPos), cutBoxes: [], flattenAreas: [] };
-  return { 名: name, dir, 模型: sectionModel, info, tables, 级: levels, lookup, stoneState, stateFull, stateCover, 读: read, decodeSection: (s) => env.库.sectionDecoder.decodeSection(read(s), s.id, sectionModel), voxelContext };
+  const voxelContext = { info, tables, variesByPos: info.biome.map(env.lib.biomeColor.variesByPos), cutBoxes: [], flattenAreas: [] };
+  return { name: name, dir, model: sectionModel, info, tables, 级: levels, lookup, stoneState, stateFull, stateCover, 读: read, decodeSection: (s) => env.lib.sectionDecoder.decodeSection(read(s), s.id, sectionModel), voxelContext };
 };
 
 /** 和 wasm/实验/测地形.mjs 同一个留出集：种子 31841，各 L 打乱后取前 min(⌊半数⌋, 96) 个测，接着最多 384 个训练。会打乱 包.级 */
@@ -97,12 +97,12 @@ export const holdoutSplit = (pack: TerrainPack) => {
 // 格子和四项变换用管线的正本（pipeline/世界/烘焙/可见.ts）；这里的 成格子 按原型的包结构取状态表、石头
 export const makeCellGrid = (pack: TerrainPack, d: SectionData): CellGrid => pipelineToGrid(d, pack.stateFull, pack.stoneState);
 /** 渲染那条路建网格（树叶第 0 级镂空、粗级实心） */
-export const buildMesh = (env: TerrainVisEnv, pack: TerrainPack, g: CellGrid, solidLeaves = g.id.L >= 1): SectionMesh => env.网格.buildSectionMesh(env.importSectionLoaded.importedSectionVoxels(makeSection(g), pack.voxelContext), solidLeaves);
+export const buildMesh = (env: TerrainVisEnv, pack: TerrainPack, g: CellGrid, solidLeaves = g.id.L >= 1): SectionMesh => env.grid.buildSectionMesh(env.importSectionLoaded.importedSectionVoxels(makeSection(g), pack.voxelContext), solidLeaves);
 
 const arraysEqual = (a: Uint16Array, b: Uint16Array) => a.length === b.length && Buffer.compare(Buffer.from(a.buffer, a.byteOffset, a.byteLength), Buffer.from(b.buffer, b.byteOffset, b.byteLength)) === 0;
 /** 用现行编码器压，再用正式 WASM 解回逐格比（同 区段编码.ts 的 压并核对） */
 export const compress = (env: TerrainVisEnv, d: SectionData, sectionModel: SectionModel): Uint8Array => {
-  const cm = toColumnMajor(d), bytes = encodeSection(d, sectionModel, cm), decoded = env.库.sectionDecoder.decodeSection(bytes, d, sectionModel);
+  const cm = toColumnMajor(d), bytes = encodeSection(d, sectionModel, cm), decoded = env.lib.sectionDecoder.decodeSection(bytes, d, sectionModel);
   if (decoded.kBottom !== d.kBottom || decoded.nz !== d.nz || !arraysEqual(decoded.palette, d.palette) || !arraysEqual(toColumnMajor(decoded), cm)) throw new Error(`区段 ${sectionKey(d)} 压完解回来不一样`);
   return bytes;
 };

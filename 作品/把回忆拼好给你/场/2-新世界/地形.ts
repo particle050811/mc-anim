@@ -11,7 +11,7 @@ import { smoothstep } from '@engine/core/数学.ts';
 import { plainsParams, cherryGrove, fineNoise, mountainHeightAt, plainsUndulation, isForest, groveTrees, plainsFlower, petalFacing, type GroveTree } from '../../地点/新世界地形.ts';
 import { oakTree, cherryTree } from '../../地点/原版树.ts';
 
-const farNoise = simplex2(plainsParams.种子 + 41);
+const farNoise = simplex2(plainsParams.seed + 41);
 
 const radPerDeg = Math.PI / 180;
 /** 从出生点看樱花林的方位角（弧度，0 朝北、正 = 偏东） */
@@ -20,11 +20,11 @@ const groveAzimuth = Math.atan2(cherryGrove.心[0], cherryGrove.心[1]);
 /** 远山在 (i, j) 抬多高（格，小数）：离出生点 远山.起 以内是 0，到 远山.满 抬满；坡的形状是低频噪声，樱花林方向让开 */
 const farHillHeightAt = (i: number, j: number): number => {
   const distance = Math.hypot(i, j);
-  if (distance <= farHills.起) return 0;
+  if (distance <= farHills.start) return 0;
   const angleOffset = Math.abs(Math.atan2(i, j) - groveAzimuth);
   const clearing = smoothstep(farHills.forestYieldDeg[0] * radPerDeg, farHills.forestYieldDeg[1] * radPerDeg, angleOffset);
   const slope = Math.min(1, Math.max(0, fbm(farNoise, i, j, farHills.scale, 3) + farHills.offset));
-  return farHills.高 * smoothstep(farHills.起, farHills.full, distance) * clearing * slope;
+  return farHills.height * smoothstep(farHills.start, farHills.full, distance) * clearing * slope;
 };
 
 /** (i, j) 那一列地面顶的高度（整数格，出生点 0） */
@@ -53,7 +53,7 @@ export const trees = (): GroveTree[] => {
         const i = Math.round(gx * e + (hash2(gx, gy, 21 + n) - 0.5) * e * 0.7);
         const j = Math.round(gy * e + (hash2(gx, gy, 22 + n) - 0.5) * e * 0.7);
         if (Math.hypot(i - lx, j - ly) > grove.radius) continue;
-        out.push({ i, j, 种: '橡', 高: 4 + Math.floor(hash2(gx, gy, 23 + n) * 3), 种子: i * 7 + j });
+        out.push({ i, j, kind: '橡', height: 4 + Math.floor(hash2(gx, gy, 23 + n) * 3), seed: i * 7 + j });
       }
   });
   return out;
@@ -67,24 +67,24 @@ const column = (i: number, j: number, place: (b: PlacedBlock) => void, o: { hasT
   let bottom = h;
   for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) bottom = Math.min(bottom, groundHeight(i + di, j + dj));
   const lowestY = o.bottom ?? bottom - 1;
-  place({ 状态: o.hasTree ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [i, j, h - 1] });
-  for (let k = h - 2; k >= lowestY; k--) place({ 状态: h - 1 - k > 3 ? 'minecraft:stone' : 'minecraft:dirt', 位: [i, j, k] });
+  place({ state: o.hasTree ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [i, j, h - 1] });
+  for (let k = h - 2; k >= lowestY; k--) place({ state: h - 1 - k > 3 ? 'minecraft:stone' : 'minecraft:dirt', 位: [i, j, k] });
   if (o.hasTree || o.growGrass === false) return;
   // 地上的东西：平原上只铺到离出生点 植物半径（再远一株草不到几个像素，原版远处也一样有，这里省掉）
   if (Math.hypot(i, j) > terrainRange.plantRadius && !inForest) return;
   const u = hash2(i, j, 11);
   if (inForest) {
-    if (u < cherryGrove.petalClusterRate) place({ 状态: `minecraft:pink_petals[facing=${petalFacing[Math.floor(hash2(i, j, 12) * 4)]},flower_amount=${1 + Math.floor(hash2(i, j, 13) * 4)}]`, 位: [i, j, h] });
-    else if (u < cherryGrove.petalClusterRate + 0.12) place({ 状态: 'minecraft:grass', 位: [i, j, h] });
+    if (u < cherryGrove.petalClusterRate) place({ state: `minecraft:pink_petals[facing=${petalFacing[Math.floor(hash2(i, j, 12) * 4)]},flower_amount=${1 + Math.floor(hash2(i, j, 13) * 4)}]`, 位: [i, j, h] });
+    else if (u < cherryGrove.petalClusterRate + 0.12) place({ state: 'minecraft:grass', 位: [i, j, h] });
     return;
   }
   // 平原：草丛成片（噪声），高草夹在里面，花零星
   const grassDensity = plainsParams.grassRate * (0.55 + 0.9 * Math.max(0, fbm(fineNoise, i + 300, j, 14, 2) + 0.3));
-  if (u < plainsParams.flowerRate) place({ 状态: plainsFlower(i, j), 位: [i, j, h] });
+  if (u < plainsParams.flowerRate) place({ state: plainsFlower(i, j), 位: [i, j, h] });
   else if (u < plainsParams.flowerRate + grassDensity * plainsParams.tallGrassShare) {
-    place({ 状态: 'minecraft:tall_grass[half=lower]', 位: [i, j, h] });
-    place({ 状态: 'minecraft:tall_grass[half=upper]', 位: [i, j, h + 1] });
-  } else if (u < plainsParams.flowerRate + grassDensity) place({ 状态: 'minecraft:grass', 位: [i, j, h] });
+    place({ state: 'minecraft:tall_grass[half=lower]', 位: [i, j, h] });
+    place({ state: 'minecraft:tall_grass[half=upper]', 位: [i, j, h + 1] });
+  } else if (u < plainsParams.flowerRate + grassDensity) place({ state: 'minecraft:grass', 位: [i, j, h] });
 };
 
 export type NewWorldBlocks = { plains: PlacedBlock[]; cherryGrove: PlacedBlock[] };
@@ -106,8 +106,8 @@ export const NewWorldBlocks = (): NewWorldBlocks => {
   for (const t of treeTable) {
     if (!paved(t.i, t.j)) continue;
     const z0 = groundHeight(t.i, t.j);
-    const placer = makePlacer(t.种 === '樱');
-    (t.种 === '橡' ? oakTree : cherryTree)(t, z0, (b) => {
+    const placer = makePlacer(t.kind === '樱');
+    (t.kind === '橡' ? oakTree : cherryTree)(t, z0, (b) => {
       if (b.位[2] >= groundHeight(b.位[0], b.位[1])) placer(b);
     });
   }
@@ -127,7 +127,7 @@ export type PitState = { dugCount: number; dirtCovered: boolean };
 /** 这一列归剖面的哪一截：'剖' = 坑这一排和后墙那一排（按坑态重铺），'剥' = 坑和镜头之间撤掉的那几排，null = 不归剖面（新世界方块 照常铺）。
  *  这两截从 新世界方块 里拿掉，另外铺到 剖面.底（世界.tsx 分开建网格） */
 export const sectionColumn = (i: number, j: number): '剖' | '剥' | null => {
-  if ((j === pit.j || j === pit.j + 1) && Math.abs(i - pit.i) <= crossSection.半宽) return '剖';
+  if ((j === pit.j || j === pit.j + 1) && Math.abs(i - pit.i) <= crossSection.halfWidth) return '剖';
   if (j >= pit.j - crossSection.stripRows && j < pit.j && Math.abs(i - pit.i) <= crossSection.stripHalfWidth) return '剥';
   return null;
 };
@@ -137,7 +137,7 @@ export const sectionColumn = (i: number, j: number): '剖' | '剥' | null => {
 export const crossSectionBlocks = (pitState: PitState): PlacedBlock[] => {
   const out: PlacedBlock[] = [];
   for (const j of [pit.j, pit.j + 1])
-    for (let i = pit.i - crossSection.半宽; i <= pit.i + crossSection.半宽; i++) {
+    for (let i = pit.i - crossSection.halfWidth; i <= pit.i + crossSection.halfWidth; i++) {
       if (!paved(i, j)) continue;
       const isPitCell = i === pit.i && j === pit.j;
       const backWall = i === pit.i && j === pit.j + 1;
@@ -147,7 +147,7 @@ export const crossSectionBlocks = (pitState: PitState): PlacedBlock[] => {
         if (isPitCell && k < h && k >= h - pitState.dugCount) return;
         out.push(backWall && k < h - 1 ? { ...b, brightness: crossSection.backWallLight } : b);
       }, { hasTree: false, bottom: crossSection.bottom, growGrass: Math.abs(i - pit.i) > crossSection.grassClearDist });
-      if (isPitCell && pitState.dirtCovered) out.push({ 状态: 'minecraft:dirt', 位: [i, j, h - 1] });
+      if (isPitCell && pitState.dirtCovered) out.push({ state: 'minecraft:dirt', 位: [i, j, h - 1] });
     }
   return out;
 };

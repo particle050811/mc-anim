@@ -11,16 +11,16 @@ const segKey = '2-雷雨';
 const clock = segClock(segKey);
 const toCue = (cue: SongSound) => {
   const c = clipToSegment(clock.sceneWindow, cue);
-  if (!c) throw new Error(`${cue.名} 不在 ${segKey} 的窗口里`);
+  if (!c) throw new Error(`${cue.name} 不在 ${segKey} 的窗口里`);
   return c;
 };
 
 export default defineSeg({
-  场: '2-雷雨',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-雷雨',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: mainCutOriginalGain }, toCue(thunder), toCue(nearThunder), ...rainSounds.map((cue) => clipToSegment(clock.sceneWindow, cue)).filter((c) => c !== null)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: mainCutOriginalGain }, toCue(thunder), toCue(nearThunder), ...rainSounds.map((cue) => clipToSegment(clock.sceneWindow, cue)).filter((c) => c !== null)],
 });

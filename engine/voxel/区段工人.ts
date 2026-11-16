@@ -39,7 +39,7 @@ self.onmessage = (event: MessageEvent<WorkerMessage>) => {
   const msg = event.data;
   if (msg.type === '模型') { models.set(msg.url, readModel(msg.bytes)); return; }
   if (msg.type === '来源') {
-    contexts.set(msg.ctx, { info: msg.info, tables: buildPackTables(msg.info), variesByPos: msg.info.群系.map(variesByPos), cutBoxes: msg.cutBoxes, flattenAreas: msg.flattenAreas });
+    contexts.set(msg.ctx, { info: msg.info, tables: buildPackTables(msg.info), variesByPos: msg.info.biome.map(variesByPos), cutBoxes: msg.cutBoxes, flattenAreas: msg.flattenAreas });
     return;
   }
   run(msg).then(

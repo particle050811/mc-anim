@@ -50,7 +50,7 @@ export const bundleProject = async (runRecord?: RunRecord, label = `会话:${wor
     if (runRecord) runRecord.log('警告', missingMusicHint(x));
     else console.error(`!! ${missingMusicHint(x)}`);
   }
-  recordPhase(runRecord?.阶段, label, '备素材', prepStartMs, (Date.now() - prepStartMs) / 1000);
+  recordPhase(runRecord?.stage, label, '备素材', prepStartMs, (Date.now() - prepStartMs) / 1000);
   const t0 = Date.now();
   const entryFile = path.join(workRoot(), 'index.ts');
   const rewrittenRoot = o.shading ? applyShadingTrial(webpackOverride(workDir)) : webpackOverride(workDir);
@@ -69,12 +69,12 @@ export const bundleProject = async (runRecord?: RunRecord, label = `会话:${wor
     onSymlinkDetected: () => {},
   });
   registerBundle(serveUrl);
-  recordPhase(runRecord?.阶段, label, 'webpack', t0, (Date.now() - t0) / 1000);
+  recordPhase(runRecord?.stage, label, 'webpack', t0, (Date.now() - t0) / 1000);
   console.log(`打包 ${((Date.now() - t0) / 1000).toFixed(0)} 秒`);
   return serveUrl;
 };
 
-type RenderSession = { serveUrl: string; browser: HeadlessBrowser; 参数: RenderParamsTable; compositions: Awaited<ReturnType<typeof getCompositions>> };
+type RenderSession = { serveUrl: string; browser: HeadlessBrowser; params: RenderParamsTable; compositions: Awaited<ReturnType<typeof getCompositions>> };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承；会话期间不让电脑闲置睡眠 */
 export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, bundleOpts: BundleOpts = {}): Promise<T> => {
@@ -94,7 +94,7 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
   }
   const params = renderParams(level);
   const label = `会话:${workName()}:${level}`;
-  const records = runRecord?.阶段;
+  const records = runRecord?.stage;
   const startIndex = records?.length ?? 0;
   const serveUrl = await measureStage(records, label, '打包', () => bundleProject(runRecord, label, bundleOpts));
   let browser: HeadlessBrowser | undefined;
@@ -110,7 +110,7 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
     collectTerrainUsage(browser);
     const b = browser;
     const compositions = await measureStage(records, label, '读组合', () =>
-      watchdog.包(() =>
+      watchdog.pack(() =>
         getCompositions(serveUrl, {
           inputProps: params.inputProps,
           puppeteerInstance: b,
@@ -121,7 +121,7 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
       ),
     );
     if (records) console.log(`会话就绪：${stageSummary(records.slice(startIndex))}`);
-    return await watchdog.包(() => fn({ serveUrl, browser: b, 参数: params, compositions }));
+    return await watchdog.pack(() => fn({ serveUrl, browser: b, params: params, compositions }));
   } finally {
     try {
       await waitTerrainUsageWrites();
@@ -136,7 +136,7 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
 export const measureRender = async (label: string, records: StageRecord[], t0: number, fn: (hooks: { logLevel: 'verbose'; onProgress: (p: { renderedFrames: number; renderedDoneIn: number | null }) => void }) => Promise<unknown>) => {
   const timer = frameEncodeTiming();
   const detail = new DetailCollector(label);
-  await detail.包(() =>
+  await detail.pack(() =>
     fn({
       logLevel: 'verbose',
       onProgress: (p) => {
@@ -159,13 +159,13 @@ const recordFrameEncode = (records: StageRecord[], label: string, t0: number, ti
  * 打包里这段的 Composition，核对和切片的输出窗一样：打包按成片档的输出帧率注册（engine/段/注册工厂.tsx），帧数 = 段长 × 帧率，
  * 这里用同一个算法（段产物.ts 的 段输出窗于）算应有的帧数，差一帧也不认。全部 = 整部作品的段（段要在清单里）
  */
-export const findComposition = (h: Pick<RenderSession, 'compositions'>, s: SegInfo, allSegments: readonly SegInfo[], id = s.键) => {
-  verifySegResourcePacks(workRoot(), s.键);
+export const findComposition = (h: Pick<RenderSession, 'compositions'>, s: SegInfo, allSegments: readonly SegInfo[], id = s.key) => {
+  verifySegResourcePacks(workRoot(), s.key);
   const c = h.compositions.find((x) => x.id === id);
   if (!c) throw new Error(`打包里没有 Composition ${id}（作品的 注册.tsx 按清单和 段.ts 的叠层登记，清单里有它吗？）`);
   const outputWindow = segOutputWindow(allSegments, s);
-  if (c.fps !== filmProfile().fps || c.durationInFrames !== outputWindow.帧数 || c.width !== s.段.宽 || c.height !== s.段.高) {
-    throw new Error(`${id} 的 Composition（${c.durationInFrames} 帧 ${c.fps}fps ${c.width}×${c.height}）和 段.ts、全片位置对不上（应是 ${outputWindow.帧数} 帧 ${filmProfile().fps}fps ${s.段.宽}×${s.段.高}）`);
+  if (c.fps !== filmProfile().fps || c.durationInFrames !== outputWindow.frameCount || c.width !== s.segment.width || c.height !== s.segment.height) {
+    throw new Error(`${id} 的 Composition（${c.durationInFrames} 帧 ${c.fps}fps ${c.width}×${c.height}）和 段.ts、全片位置对不上（应是 ${outputWindow.frameCount} 帧 ${filmProfile().fps}fps ${s.segment.width}×${s.segment.height}）`);
   }
   return c;
 };
@@ -183,22 +183,22 @@ export const missingLocalTerrain = (s: Pick<SegInfo, '目录'>, terrainDir = pat
  * 打开声音：renderStill 是关的、renderMedia 是开的。静帧照 renderStill（声音文件也不用下），逐帧校验照 renderMedia
  */
 export const renderFramesSamePage = (
-  h: Pick<RenderSession, 'serveUrl' | 'browser' | '参数'>,
+  h: Pick<RenderSession, 'serveUrl' | 'browser' | 'params'>,
   composition: RenderSession['compositions'][number],
   frames: readonly number[],
-  o: { withAudio: boolean; 环境: Record<string, string>; onFrame: (png: Buffer, frame: number) => void | Promise<void> },
+  o: { withAudio: boolean; env: Record<string, string>; onFrame: (png: Buffer, frame: number) => void | Promise<void> },
 ) =>
   renderFrames({
     serveUrl: h.serveUrl,
     composition,
     outputDir: null,
     frames: [...frames],
-    inputProps: h.参数.inputProps,
-    envVariables: o.环境,
+    inputProps: h.params.inputProps,
+    envVariables: o.env,
     puppeteerInstance: h.browser,
-    chromiumOptions: { gl: h.参数.gl },
+    chromiumOptions: { gl: h.params.gl },
     imageFormat: 'png',
-    scale: h.参数.scale,
+    scale: h.params.scale,
     concurrency: 1,
     muted: !o.withAudio,
     timeoutInMilliseconds: frameTimeoutMs,
@@ -214,15 +214,15 @@ export const stillFile = (outDir: string, segKey: string, frame: number, suffix 
  * 多帧默认同页连出（第一帧之后不用从头读地形）；逐帧 = 每帧一个新页面，等于旧做法。两边文件名一样，已有的文件都不覆盖。
  * 用户 10-31 定做连出。同一帧单出和连出已知的例外见 连出提醒（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。
  */
-export const renderStills = async (h: Pick<RenderSession, 'serveUrl' | 'browser' | '参数'>, composition: RenderSession['compositions'][number], segKey: string, frames: readonly number[], outDir: string, o: { frameByFrame?: boolean; 环境: Record<string, string>; 完成: (emitted: number) => void; 后缀?: string }) => {
+export const renderStills = async (h: Pick<RenderSession, 'serveUrl' | 'browser' | 'params'>, composition: RenderSession['compositions'][number], segKey: string, frames: readonly number[], outDir: string, o: { frameByFrame?: boolean; env: Record<string, string>; completed: (emitted: number) => void; suffix?: string }) => {
   if (frames.length > 1 && !o.frameByFrame) {
     let emitted = 0;
     await renderFramesSamePage(h, composition, frames, {
       withAudio: false,
-      环境: o.环境,
+      env: o.env,
       onFrame: (png, f) => {
-        fs.writeFileSync(stillFile(outDir, segKey, f, o.后缀), png, { flag: 'wx' });
-        o.完成(++emitted);
+        fs.writeFileSync(stillFile(outDir, segKey, f, o.suffix), png, { flag: 'wx' });
+        o.completed(++emitted);
       },
     });
     return;
@@ -231,19 +231,19 @@ export const renderStills = async (h: Pick<RenderSession, 'serveUrl' | 'browser'
     await renderStill({
       serveUrl: h.serveUrl,
       composition,
-      output: stillFile(outDir, segKey, f, o.后缀),
+      output: stillFile(outDir, segKey, f, o.suffix),
       frame: f,
-      inputProps: h.参数.inputProps,
-      envVariables: o.环境,
+      inputProps: h.params.inputProps,
+      envVariables: o.env,
       puppeteerInstance: h.browser,
-      chromiumOptions: { gl: h.参数.gl },
+      chromiumOptions: { gl: h.params.gl },
       imageFormat: 'png',
-      scale: h.参数.scale,
+      scale: h.params.scale,
       timeoutInMilliseconds: frameTimeoutMs,
       overwrite: false,
       logLevel: 'verbose',
     });
-    o.完成(i + 1);
+    o.completed(i + 1);
   }
 };
 
@@ -257,41 +257,41 @@ export const batchHint = (segKey: string, frames: readonly number[], frameByFram
 /** 光影：每份配置各出一遍这几帧，文件名带「-光影-<名>」（光影试看.ts）；望远：每块矩形各出一遍，文件名带「-望远-<名>」（望远.ts）。两样不同时给 */
 export const renderStillFrames = async (s: SegInfo, frames: number[], level: RenderLevel, outDir: string, runRecord?: RunRecord, o: { frameByFrame?: boolean; shading?: ShadingConfig[]; telescope?: TelescopeConfig[] } = {}) => {
   const toEmit = [...new Set(frames)];
-  const hint = batchHint(s.键, toEmit, o.frameByFrame);
+  const hint = batchHint(s.key, toEmit, o.frameByFrame);
   if (hint) runRecord?.log('警告', hint);
   if (o.shading && o.telescope) throw new Error('--shading 和 --tele 不能同时给');
   // 各出一遍的变体：页面环境变量和文件名后缀
-  const variants: { 环境: Record<string, string>; 后缀: string }[] | undefined =
-    o.shading?.map((c) => ({ 环境: { [shadingEnvName]: c.值 }, 后缀: `-光影-${c.名}` })) ?? o.telescope?.map((c) => ({ 环境: { [telescopeEnvName]: c.值 }, 后缀: `-望远-${c.名}` }));
-  await withSegResourcePack(workRoot(), s.键, () => openSession(level, async (h) => {
+  const variants: { env: Record<string, string>; suffix: string }[] | undefined =
+    o.shading?.map((c) => ({ env: { [shadingEnvName]: c.value }, suffix: `-光影-${c.name}` })) ?? o.telescope?.map((c) => ({ env: { [telescopeEnvName]: c.value }, suffix: `-望远-${c.name}` }));
+  await withSegResourcePack(workRoot(), s.key, () => openSession(level, async (h) => {
     const allSegments = await loadAllSegments();
     const composition = findComposition(h, s, allSegments);
     for (const f of toEmit) {
-      if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.键} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
+      if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.key} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
     }
     // 段里画的字幕（母版 = 成片切片，用户 11-05 定）静帧也画上，和成片这一帧一样
-    const subtitled = { ...h, 参数: segPictureParams(allSegments, [s], level)[0]! };
+    const subtitled = { ...h, params: segPictureParams(allSegments, [s], level)[0]! };
     await waitSolveCacheWrites();
-    const label = `still:${workName()}/${s.键}:${level}`;
+    const label = `still:${workName()}/${s.key}:${level}`;
     const queueStartMs = Date.now();
     await passRenderGate(async () => {
       const t0 = Date.now();
-      const records = runRecord?.阶段;
+      const records = runRecord?.stage;
       const gateWait = recordPhase(records, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
       const detail = new DetailCollector(label);
-      const env = { ...segRenderEnv(s.键, segTerrainNow(s, trialTerrain())), ...trialEnv() };
-      if (!variants) await detail.包(() => renderStills(subtitled, composition, s.键, toEmit, outDir, { frameByFrame: o.frameByFrame, 环境: env, 完成: (emitted) => detail.frameDone(emitted) }));
+      const env = { ...segRenderEnv(s.key, segTerrainNow(s, trialTerrain())), ...trialEnv() };
+      if (!variants) await detail.pack(() => renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: env, completed: (emitted) => detail.frameDone(emitted) }));
       else {
-        await detail.包(async () => {
+        await detail.pack(async () => {
           for (const [i, c] of variants.entries())
-            await renderStills(subtitled, composition, s.键, toEmit, outDir, { frameByFrame: o.frameByFrame, 环境: { ...env, ...c.环境 }, 后缀: c.后缀, 完成: (emitted) => detail.frameDone(i * toEmit.length + emitted) });
+            await renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: { ...env, ...c.env }, suffix: c.suffix, completed: (emitted) => detail.frameDone(i * toEmit.length + emitted) });
         });
       }
-      await recordMeasuredFrames(s.键, toEmit);
+      await recordMeasuredFrames(s.key, toEmit);
       const outputTime = recordPhase(records, label, '出帧', t0, (Date.now() - t0) / 1000);
       await detail.writeOut(records ?? []);
       console.log(`${stageSummary([gateWait, outputTime])}（${toEmit.length} 帧）`);
-    }, undefined, {}, {种:'still',作品:workName(),段:s.键,级别: level,帧数:toEmit.length,帧:toEmit.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
+    }, undefined, {}, {kind:'still',work:workName(),segment:s.key,level: level,frameCount:toEmit.length,frame:toEmit.join(',').slice(0,60),purpose:process.env.ANIM_PURPOSE??'核对'});
   }, runRecord, { shading: !!o.shading, telescope: !!o.telescope }));
-  return variants ? variants.flatMap((c) => toEmit.map((f) => stillFile(outDir, s.键, f, c.后缀))) : toEmit.map((f) => stillFile(outDir, s.键, f));
+  return variants ? variants.flatMap((c) => toEmit.map((f) => stillFile(outDir, s.key, f, c.suffix))) : toEmit.map((f) => stillFile(outDir, s.key, f));
 };

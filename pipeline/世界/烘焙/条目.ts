@@ -33,7 +33,7 @@ export class EntryTable {
   constructor(knowledge: BlockKnowledge) {
     this.knowledge = knowledge;
     this.entryAsAir[0] = 1;
-    this.knownBiomeNames = new Set(knowledge.群系名);
+    this.knownBiomeNames = new Set(knowledge.biomeNames);
   }
 
   internState(stateName: string) {

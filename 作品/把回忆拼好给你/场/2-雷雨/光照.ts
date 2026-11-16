@@ -31,7 +31,7 @@ export type LightTable = { 光: (i: number, j: number, k: number) => number; 挡
 /** 方块们的光：每一格的光级（天光、方块光取大） */
 export const computeLight = (blocks: readonly PlacedBlock[]): LightTable => {
   const blockingCells = new Uint8Array(width * depth * height);
-  for (const b of blocks) if (inRange(...b.位) && opaqueBlockRegex.test(b.状态)) blockingCells[voxelIndex(...b.位)] = 1;
+  for (const b of blocks) if (inRange(...b.位) && opaqueBlockRegex.test(b.state)) blockingCells[voxelIndex(...b.位)] = 1;
   const isBlocked = (i: number, j: number, k: number) => inRange(i, j, k) && blockingCells[voxelIndex(i, j, k)] === 1;
   const spread = (seeds: [number, number, number, number][]) => {
     const l = new Int8Array(width * depth * height);
@@ -62,7 +62,7 @@ export const computeLight = (blocks: readonly PlacedBlock[]): LightTable => {
     for (let j = bounds.j0; j <= bounds.j1; j++)
       for (let k = bounds.k1; k >= bounds.k0 && !isBlocked(i, j, k); k--) skySources.push([i, j, k, 15]);
   const skyRgb = spread(skySources);
-  const blockLight = spread(blocks.filter((b) => inRange(...b.位) && glowLevel[b.状态.replace(/\[.*$/, '')]).map((b) => [...b.位, glowLevel[b.状态.replace(/\[.*$/, '')]!] as [number, number, number, number]));
+  const blockLight = spread(blocks.filter((b) => inRange(...b.位) && glowLevel[b.state.replace(/\[.*$/, '')]).map((b) => [...b.位, glowLevel[b.state.replace(/\[.*$/, '')]!] as [number, number, number, number]));
   const lightAt = (i: number, j: number, k: number) => {
     if (!inRange(i, j, k)) return 15;
     if (isBlocked(i, j, k)) return 0;

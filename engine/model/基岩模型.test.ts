@@ -64,7 +64,7 @@ const makeModel = (pose: Record<string, BonePose> = {}, scale?: number) => {
     const a = m.geometry.getAttribute('position');
     return Array.from({ length: a.count }, (_, i) => toScene(new THREE.Vector3().fromBufferAttribute(a, i).applyMatrix4(m.matrixWorld)));
   };
-  return { 骨: boneMap, 原点: boneOrigin, 顶点: boneVertices };
+  return { bone: boneMap, origin: boneOrigin, 顶点: boneVertices };
 };
 const boundingBox = (points: number[][]) => [0, 1, 2].map((i) => [Math.min(...points.map((p) => p[i]!)), Math.max(...points.map((p) => p[i]!))]);
 
@@ -74,7 +74,7 @@ describe('基岩模型的坐标换算', () => {
     expect(bonePivot(bedrockModel, 'body', 1).map(roundDecimals)).toEqual([0, 0, 24]);
   });
   it('静止时骨骼原点（祖先没有自带转角的）就是 bonePivot', () => {
-    const { 原点: boneOrigin } = makeModel();
+    const { origin: boneOrigin } = makeModel();
     for (const boneName of ['body', 'head', 'RightArm', 'LeftArm']) expect(boneOrigin(boneName)).toEqual(bonePivot(bedrockModel, boneName).map(roundDecimals));
   });
   it('方盒落在场景里：身子居中、脚底在 z = 12/16 起，Right 骨骼在 +X（右手边），正面朝 +Y', () => {
@@ -91,12 +91,12 @@ describe('基岩模型的坐标换算', () => {
     const nose = boundingBox(posedModel.顶点('head').slice(-8));
     expect(nose[0]).toEqual([0.25, 0.375]);
     const moved = makeModel({ body: { pos: [1, 0, 0] } });
-    expect(moved.原点('body')[0]).toBeCloseTo(-1 / 16, 9);
-    expect(makeModel({ LeftArm: { scale: 0 } }).骨.has('LeftArm')).toBe(false);
-    expect(makeModel({}, 1).原点('RightArm')).toEqual([5, 0, 22]);
+    expect(moved.origin('body')[0]).toBeCloseTo(-1 / 16, 9);
+    expect(makeModel({ LeftArm: { scale: 0 } }).bone.has('LeftArm')).toBe(false);
+    expect(makeModel({}, 1).origin('RightArm')).toEqual([5, 0, 22]);
   });
   it('示例模型各方盒顶点的场景坐标、uv（金样）', async () => {
-    const { 骨: boneMap } = makeModel({ head: { rot: [10, -20, 5], pos: [0, 1, 0] }, RightArm: { rot: [-30, 0, 0], scale: [1, 1.2, 1] } });
+    const { bone: boneMap } = makeModel({ head: { rot: [10, -20, 5], pos: [0, 1, 0] }, RightArm: { rot: [-30, 0, 0], scale: [1, 1.2, 1] } });
     const jsonLines: string[] = [];
     for (const [boneName, g] of boneMap) {
       const m = g.children.find((c): c is THREE.Mesh => c instanceof THREE.Mesh);
@@ -104,7 +104,7 @@ describe('基岩模型的坐标换算', () => {
       const a = m.geometry.getAttribute('position');
       const uv = m.geometry.getAttribute('uv');
       const positions = Array.from({ length: a.count }, (_, i) => new THREE.Vector3().fromBufferAttribute(a, i).applyMatrix4(m.matrixWorld)).map((v) => [v.x, v.y, v.z].map(roundDecimals));
-      jsonLines.push(JSON.stringify({ 骨: boneName, 点: positions, uv: Array.from(uv.array, roundDecimals), 索引: Array.from(m.geometry.index!.array) }));
+      jsonLines.push(JSON.stringify({ bone: boneName, points: positions, uv: Array.from(uv.array, roundDecimals), index: Array.from(m.geometry.index!.array) }));
     }
     await expect(`[\n${jsonLines.join(',\n')}\n]\n`).toMatchFileSnapshot('./金样/基岩模型.json');
   });

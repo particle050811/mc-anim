@@ -22,22 +22,22 @@ const tailTableValue = (file: string, readColumn: (cols: string[]) => number | n
  * render 的耗时表行从拿锁后算，可以作回退。级别差一档每帧差很多，声明了级别就只认同级。
  */
 export const estimate = (taskDecl: TaskDecl, logRoot: string): number | null => {
-    const taskKind = taskDecl.种 ?? 'render', { 段: segmentKey, 级别: level } = taskDecl;
+    const taskKind = taskDecl.kind ?? 'render', { segment: segmentKey, level: level } = taskDecl;
     const matchesTag = (label = '') => label.startsWith(taskKind + ':') && (!segmentKey || label.includes('/' + segmentKey + ':')) && (!level || label.endsWith(':' + level));
     const dir = path.join(logRoot, '渲染明细');
     let samples: number[] = [];
     for (const name of listFiles(dir).sort().reverse()) {
         const d = readJson<{
-            标签: string;
-            小结: {
-                帧数: number;
-                首帧毫秒: number;
-                中位毫秒: number;
+            label: string;
+            summary: {
+                frameCount: number;
+                firstFrameMs: number;
+                medianMs: number;
             };
         }>(path.join(dir, name));
-        if (!d || !matchesTag(d.标签))
+        if (!d || !matchesTag(d.label))
             continue;
-        samples.push((d.小结.首帧毫秒 + Math.max(0, (taskDecl.帧数 ?? d.小结.帧数) - 1) * d.小结.中位毫秒) / 1000);
+        samples.push((d.summary.firstFrameMs + Math.max(0, (taskDecl.frameCount ?? d.summary.frameCount) - 1) * d.summary.medianMs) / 1000);
         if (samples.length === 5)
             break;
     }

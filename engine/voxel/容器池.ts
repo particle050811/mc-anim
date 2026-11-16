@@ -16,20 +16,20 @@ export const maxEmptyShells = 20000;
 export const maxKeptBytes = 128 * 1024 * 1024;
 export type VertexArray = Int16Array | Uint16Array | Uint8Array;
 // 档：按撑到过的字节数的 2 的幂分，第 k 档是 [2^k, 2^(k+1))
-type Pool = { 档: WebGLBuffer[][]; count: number; 字节: number };
+type Pool = { 档: WebGLBuffer[][]; count: number; bytes: number };
 const poolTable = new WeakMap<WebGL2RenderingContext, Pool>();
 const allocatedBytes = new WeakMap<WebGLBuffer, number>();
 const sizeTier = (bytesCount: number) => 31 - Math.clz32(bytesCount | 1);
 
 const getPool = (ctx: WebGL2RenderingContext) => {
   let pool = poolTable.get(ctx);
-  if (!pool) poolTable.set(ctx, (pool = { 档: [], count: 0, 字节: 0 }));
+  if (!pool) poolTable.set(ctx, (pool = { 档: [], count: 0, bytes: 0 }));
   return pool;
 };
 const popBucket = (pool: Pool, k: number) => {
   const shell = pool.档[k]!.pop()!;
   pool.count--;
-  pool.字节 -= allocatedBytes.get(shell) ?? 0;
+  pool.bytes -= allocatedBytes.get(shell) ?? 0;
   return shell;
 };
 // 撑到过的不超过 `字节` 的空壳：同档只看栈顶，不够小就往下一档找（下面各档的都比这次小），从大的档找起，小壳留给小数组
@@ -66,11 +66,11 @@ export const returnBuffer = (ctx: WebGL2RenderingContext, buffer: WebGLBuffer | 
   ctx.bufferData(ctx.ARRAY_BUFFER, 0, ctx.STATIC_DRAW);
   (pool.档[sizeTier(bytesCount)] ??= []).push(buffer);
   pool.count++;
-  pool.字节 += bytesCount;
+  pool.bytes += bytesCount;
   // 超了从撑得最大的删起：大壳占得多，又只有更大的数组才用得上
-  for (let k = pool.档.length - 1; k >= 0 && (pool.count > maxEmptyShells || pool.字节 > maxKeptBytes); k--) {
+  for (let k = pool.档.length - 1; k >= 0 && (pool.count > maxEmptyShells || pool.bytes > maxKeptBytes); k--) {
     const thisBucket = pool.档[k];
-    while (thisBucket?.length && (pool.count > maxEmptyShells || pool.字节 > maxKeptBytes)) ctx.deleteBuffer(popBucket(pool, k));
+    while (thisBucket?.length && (pool.count > maxEmptyShells || pool.bytes > maxKeptBytes)) ctx.deleteBuffer(popBucket(pool, k));
   }
 };
 

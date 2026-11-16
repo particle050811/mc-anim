@@ -29,7 +29,7 @@ export const isFrameworkSegDir = (segDir: string) => {
 export const soundUrlFile = '声音地址.生成.ts';
 
 /** 台词.toml 的一条里生成要用的字段 */
-export type LineRow = { id: string; 配音?: string; 开口?: number };
+export type LineRow = { id: string; voice?: string; mouthOpen?: number };
 
 /** 在 Node 里执行一个纯模块，拿默认导出；每次都是新打的一份 */
 export const freshExec = async (file: string, root: string): Promise<Record<string, unknown>> => {
@@ -68,24 +68,24 @@ const execSeg = async (segFile: string, root: string): Promise<SegmentDef> => {
 };
 
 /** 收集模式执行：要过数的 id 都记下来（表里没有的不报错） */
-export const collectExec = async (segFile: string, root: string): Promise<{ 段: SegmentDef; collected: Set<string> }> => {
+export const collectExec = async (segFile: string, root: string): Promise<{ segment: SegmentDef; collected: Set<string> }> => {
   const collected = startCollect();
   try {
-    return { 段: await execSeg(segFile, root), collected };
+    return { segment: await execSeg(segFile, root), collected };
   } finally {
     endCollect();
   }
 };
 
 /** cue 里引到的资产 id 和台词 id（按出现顺序去重） */
-export const cueRefs = (seg: Pick<SegmentDef, '声音'>) => {
+export const cueRefs = (seg: Pick<SegmentDef, 'sound'>) => {
   const assets = new Set<string>();
   const lineIds = new Set<string>();
-  for (const c of seg.声音 ?? []) {
-    if (c.台词 !== undefined) lineIds.add(c.台词);
-    else assets.add(c.资产);
+  for (const c of seg.sound ?? []) {
+    if (c.lines !== undefined) lineIds.add(c.lines);
+    else assets.add(c.asset);
   }
-  return { 资产: assets, 台词: lineIds };
+  return { asset: assets, lines: lineIds };
 };
 
 export type GenerateEnv = {
@@ -102,7 +102,7 @@ export const shortSha = (entry: LockEntry) => entry.sha256.slice(0, 12);
 
 /** 盘上声音表里这件的数，字节没换（sha 和锁对得上）才算 */
 const onDiskMeasure = (onDisk: SoundTable | undefined, id: string, entry: LockEntry): AudioInfo | undefined => {
-  const x = onDisk?.资产[id];
+  const x = onDisk?.asset[id];
   if (!x || x.sha !== shortSha(entry)) return undefined;
   const { sha: _, ...withoutSha } = x;
   return withoutSha;
@@ -113,33 +113,33 @@ const onDiskMeasure = (onDisk: SoundTable | undefined, id: string, entry: LockEn
  * 免得 ffmpeg 版本不同量出差 0.01 的数、改了生成的文件），最后才 环境.取数（缓存或现量）。
  */
 export const computeSoundTable = async (seg: SegmentDef, extraAssets: Iterable<string>, env: GenerateEnv, onDisk?: SoundTable): Promise<SoundTable> => {
-  const { 资产: assets, 台词: lineIds } = cueRefs(seg);
+  const { asset: assets, lines: lineIds } = cueRefs(seg);
   const lineById = new Map(env.lineTable.map((t) => [t.id, t]));
   const lineMeta: Record<string, LineTiming> = {};
   const toMeasure = new Set([...assets, ...extraAssets]);
   // 跨段的接上段：本段在它开口之前就有 接上段 的那几句
   const continuedIds = new Set<string>();
   const seenLines = new Set<string>();
-  for (const c of seg.声音 ?? []) {
-    if (c.台词 === undefined) continue;
-    if (c.接上段 && !seenLines.has(c.台词)) continuedIds.add(c.台词);
-    if (!c.接上段) seenLines.add(c.台词);
+  for (const c of seg.sound ?? []) {
+    if (c.lines === undefined) continue;
+    if (c.接上段 && !seenLines.has(c.lines)) continuedIds.add(c.lines);
+    if (!c.接上段) seenLines.add(c.lines);
   }
   let prevSegOpenSecById: Map<string, number> | undefined;
   if (continuedIds.size) {
     const prevSeg = await env.prevSeg?.();
     if (!prevSeg) throw new Error(`${[...continuedIds].join('、')} 标了 接上段，清单里没有上一段`);
-    const mouthOpenTable = openTable(env.lineTable.map((t) => ({ 角色: '', 文本: '', ...t })));
-    prevSegOpenSecById = new Map(lineHeads(prevSeg, mouthOpenTable, undefined, false).map((x) => [x.cue.台词, x.openSec - segDurSec(prevSeg)]));
+    const mouthOpenTable = openTable(env.lineTable.map((t) => ({ character: '', text: '', ...t })));
+    prevSegOpenSecById = new Map(lineHeads(prevSeg, mouthOpenTable, undefined, false).map((x) => [x.cue.lines, x.openSec - segDurSec(prevSeg)]));
   }
   for (const id of [...lineIds].sort()) {
     const t = lineById.get(id);
     if (!t) throw new Error(`台词「${id}」不在作品的 台词.toml 里`);
-    if (!t.配音) throw new Error(`台词「${id}」还没配音（台词.toml 没写 配音），放不了`);
-    toMeasure.add(t.配音);
+    if (!t.voice) throw new Error(`台词「${id}」还没配音（台词.toml 没写 配音），放不了`);
+    toMeasure.add(t.voice);
     const prevSegOpenSec = continuedIds.has(id) ? prevSegOpenSecById?.get(id) : undefined;
     if (continuedIds.has(id) && prevSegOpenSec === undefined) throw new Error(`台词「${id}」标了 接上段，清单里上一段没有它开口`);
-    lineMeta[id] = { 配音: t.配音, 开口: t.开口 ?? 0, 时长: 0, ...(prevSegOpenSec !== undefined ? { 上段开口秒: Math.round(prevSegOpenSec * 1e6) / 1e6 } : {}) };
+    lineMeta[id] = { voice: t.voice, mouthOpen: t.mouthOpen ?? 0, duration: 0, ...(prevSegOpenSec !== undefined ? { 上段开口秒: Math.round(prevSegOpenSec * 1e6) / 1e6 } : {}) };
   }
   const assetCounts: Record<string, TableAudioInfo> = {};
   for (const id of [...toMeasure].sort()) {
@@ -147,8 +147,8 @@ export const computeSoundTable = async (seg: SegmentDef, extraAssets: Iterable<s
     if (!entry) throw new Error(`资产锁里没有「${id}」：先在资产表登记、anim assets add 入库`);
     assetCounts[id] = { ...(knownAudioMeasure(entry) ?? onDiskMeasure(onDisk, id, entry) ?? env.getMeasure(id)), sha: shortSha(entry) };
   }
-  for (const t of Object.values(lineMeta)) t.时长 = assetCounts[t.配音]!.时长;
-  return { 资产: assetCounts, 台词: lineMeta };
+  for (const t of Object.values(lineMeta)) t.duration = assetCounts[t.voice]!.duration;
+  return { asset: assetCounts, lines: lineMeta };
 };
 
 const fileHeader = '// anim cues 生成，不要手改（段.ts 的声音改了就重跑 anim cues）。';
@@ -159,12 +159,12 @@ export const soundTableText = (soundTable: SoundTable) =>
 
 /** 本段要放的文件：资产 cue 的资产、台词的配音 */
 export const requiredFiles = (seg: SegmentDef, soundTable: SoundTable): string[] => {
-  const { 资产: assets, 台词: lineIds } = cueRefs(seg);
+  const { asset: assets, lines: lineIds } = cueRefs(seg);
   const s = new Set(assets);
   for (const id of lineIds) {
-    const t = soundTable.台词[id];
+    const t = soundTable.lines[id];
     if (!t) throw new Error(`声音表里没有台词「${id}」`);
-    s.add(t.配音);
+    s.add(t.voice);
   }
   return [...s].sort();
 };
@@ -192,7 +192,7 @@ export const soundUrlText = (assetIds: readonly string[], assetLock: AssetLock) 
   return lines.join('\n');
 };
 
-export type SingleSegResult = { 段: SegmentDef; 表: SoundTable; changed: string[] };
+export type SingleSegResult = { segment: SegmentDef; 表: SoundTable; changed: string[] };
 
 const writeIfChanged = (file: string, contentText: string): boolean => {
   if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === contentText) return false;
@@ -207,22 +207,22 @@ export const generateSeg = async (segFile: string, root: string, env: GenerateEn
   const changed: string[] = [];
   // 第一次生成时 段.ts import 的表还不存在：先放一张空的
   const isNew = !fs.existsSync(soundTablePath);
-  if (isNew && writeIfChanged(soundTablePath, soundTableText({ 资产: {}, 台词: {} }))) changed.push(soundTableFile);
+  if (isNew && writeIfChanged(soundTablePath, soundTableText({ asset: {}, lines: {} }))) changed.push(soundTableFile);
   const onDisk = isNew ? undefined : ((await freshExec(soundTablePath, root)).default as SoundTable);
   const collected = await collectExec(segFile, root);
   // 目录里已有声音表的（第 6、7 章迁成原生段时都写了，有的段一声也没有）照样生成；新建的才要 窗口段 或手写了 cue
-  if (isNew && !isFrameworkSeg(collected.段)) {
+  if (isNew && !isFrameworkSeg(collected.segment)) {
     fs.rmSync(soundTablePath);
     throw new Error(`${segFile} 不是段框架的段（默认导出不是 窗口段 做的），anim cues 不管它`);
   }
-  const soundTable = await computeSoundTable(collected.段, collected.collected, env, onDisk);
+  const soundTable = await computeSoundTable(collected.segment, collected.collected, env, onDisk);
   if (writeIfChanged(soundTablePath, soundTableText(soundTable)) && !changed.includes(soundTableFile)) changed.push(soundTableFile);
   const seg = await execSeg(segFile, root);
   // 正常执行的 cue 要放的文件都得在表里；段.ts 要是按声音的数分了支、用到收集时没碰到的声音，这里会缺
-  const missing = requiredFiles(seg, soundTable).filter((id) => !(id in soundTable.资产));
+  const missing = requiredFiles(seg, soundTable).filter((id) => !(id in soundTable.asset));
   if (missing.length) throw new Error(`${segFile}：正常执行用到了收集时没碰到的声音 ${missing.join('、')}（段.ts 按声音的数分了支？），再跑一次 anim cues`);
   if (writeIfChanged(path.join(segDir, soundUrlFile), soundUrlText(requiredFiles(seg, soundTable), env.assetLock))) changed.push(soundUrlFile);
-  return { 段: seg, 表: soundTable, changed };
+  return { segment: seg, 表: soundTable, changed };
 };
 
 /**
@@ -244,7 +244,7 @@ export const checkSeg = async (seg: SegmentDef, segDir: string, root: string, en
         getMeasure: (id) => {
           const x = env.getMeasure(id);
           if (x) return x;
-          const prevEntry = onDisk.资产[id];
+          const prevEntry = onDisk.asset[id];
           throw new Error(prevEntry ? `「${id}」的字节换了（锁里 sha ${shortSha(env.assetLock[id]!)}，声音表里 ${prevEntry.sha ?? '没记'}）` : `声音表里没有「${id}」`);
         },
       },
@@ -255,7 +255,7 @@ export const checkSeg = async (seg: SegmentDef, segDir: string, root: string, en
   }
   const issues: string[] = [];
   // 收集模式下 放() 要过的、最后没进 cue 的 id 允许留在表里：只比 cue 用到的那些
-  const onDiskSubset = { 资产: Object.fromEntries(Object.keys(expected.资产).map((k) => [k, onDisk.资产[k]])), 台词: onDisk.台词 };
+  const onDiskSubset = { asset: Object.fromEntries(Object.keys(expected.asset).map((k) => [k, onDisk.asset[k]])), lines: onDisk.lines };
   if (JSON.stringify(onDiskSubset) !== JSON.stringify(expected)) issues.push(`${soundTableFile} 和 段.ts 的 cue 对不上（加减了声音、改了台词表或锁里的数）：跑 anim cues`);
   if (fs.readFileSync(soundUrlPath, 'utf8') !== soundUrlText(requiredFiles(seg, expected), env.assetLock)) issues.push(`${soundUrlFile} 和 段.ts 的 cue 对不上：跑 anim cues`);
   return issues;

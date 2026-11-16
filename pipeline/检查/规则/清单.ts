@@ -16,32 +16,32 @@ export const checkManifest = async (c: CheckContext, report: CheckReport) => {
   const oldName = readOldNames(c, report);
   const parsedContent = await readContent(c);
   const manifestPath = c.workPath('清单.ts');
-  if ('错误' in parsedContent) return report.错(parsedContent.错误, manifestPath);
+  if ('errors' in parsedContent) return report.错(parsedContent.errors, manifestPath);
   const { segments } = parsedContent;
 
   const segKeys = new Set<string>();
   const segNames = new Map<string, string>();
   for (const s of segments) {
-    if (segKeys.has(s.键)) report.错(`段键 ${s.键} 在清单里出现了两次`, manifestPath);
-    segKeys.add(s.键);
-    if (!isSegKeyValid(s.键, s.章)) {
+    if (segKeys.has(s.key)) report.错(`段键 ${s.key} 在清单里出现了两次`, manifestPath);
+    segKeys.add(s.key);
+    if (!isSegKeyValid(s.key, s.章)) {
       report.错(
-        s.章 === '核对' ? `核对段的键要是 核对-<名>（汉字、字母、数字）：${s.键}` : `段键要是 ${s.章}-<段名>，段名只用汉字、字母、数字：${s.键}`,
+        s.章 === '核对' ? `核对段的键要是 核对-<名>（汉字、字母、数字）：${s.key}` : `段键要是 ${s.章}-<段名>，段名只用汉字、字母、数字：${s.key}`,
         manifestPath,
       );
       continue;
     }
     if (s.章 !== '核对') {
-      const segName = s.键.slice(String(s.章).length + 1);
-      if (segNames.has(segName)) report.错(`段名「${segName}」重复：${segNames.get(segName)} 和 ${s.键}（段名全片唯一）`, manifestPath);
-      segNames.set(segName, s.键);
-      for (const x of [...findOldNameClashes(oldName, s.键), ...findOldSegNameClashes(oldName, segName, s.键)]) {
-        report.错(`段键 ${s.键} 撞了旧名表第 ${x.行} 行的旧名「${x.oldName}」（${x.类别}${x.newKey ? ` → ${x.newKey}` : '，已删'}）：旧名永不复用`, manifestPath);
+      const segName = s.key.slice(String(s.章).length + 1);
+      if (segNames.has(segName)) report.错(`段名「${segName}」重复：${segNames.get(segName)} 和 ${s.key}（段名全片唯一）`, manifestPath);
+      segNames.set(segName, s.key);
+      for (const x of [...findOldNameClashes(oldName, s.key), ...findOldSegNameClashes(oldName, segName, s.key)]) {
+        report.错(`段键 ${s.key} 撞了旧名表第 ${x.行} 行的旧名「${x.oldName}」（${x.category}${x.newKey ? ` → ${x.newKey}` : '，已删'}）：旧名永不复用`, manifestPath);
       }
     }
-    if (s.错误) continue; // 加载 规则报
-    const scene = s.definition!.场;
-    if (s.章 === '核对' ? scene !== '核对' : !isSceneKeyValid(scene)) report.错(`${s.键} 的 场 写的是「${scene}」：${s.章 === '核对' ? '核对段写 核对' : '场键要是 <章>-<场名>'}`, s.段文件);
+    if (s.errors) continue; // 加载 规则报
+    const scene = s.definition!.scene;
+    if (s.章 === '核对' ? scene !== '核对' : !isSceneKeyValid(scene)) report.错(`${s.key} 的 场 写的是「${scene}」：${s.章 === '核对' ? '核对段写 核对' : '场键要是 <章>-<场名>'}`, s.segmentFile);
   }
 
   // 目录和清单一一对应
@@ -62,7 +62,7 @@ export const checkManifest = async (c: CheckContext, report: CheckReport) => {
   }
 
   // 场键：清单里用到的和 场/ 下的目录
-  const sceneKeys = new Set([...segments.flatMap((s) => (s.definition && s.definition.场 !== '核对' ? [s.definition.场] : [])), ...listExistingDirs(c, '场')]);
+  const sceneKeys = new Set([...segments.flatMap((s) => (s.definition && s.definition.scene !== '核对' ? [s.definition.scene] : [])), ...listExistingDirs(c, '场')]);
   for (const k of sceneKeys) {
     if (!isSceneKeyValid(k)) {
       if (c.exists(c.workPath(`场/${k}`))) report.错(`场目录名要是 <章>-<场名>：${k}`, c.workPath(`场/${k}`));
@@ -75,20 +75,20 @@ export const checkManifest = async (c: CheckContext, report: CheckReport) => {
   for (let i = 0; i < segments.length; i++) {
     const s = segments[i]!;
     if (!s.definition?.continuous) continue;
-    const prev = [...segments.slice(0, i)].reverse().find((x) => x.definition?.场 === s.definition!.场);
+    const prev = [...segments.slice(0, i)].reverse().find((x) => x.definition?.scene === s.definition!.scene);
     if (!prev || segments[i - 1] !== prev) {
-      report.错(`${s.键} 标了 连续，但清单里紧挨着的上一段${prev ? `（${segments[i - 1]!.键}）不是同一场的` : '不存在或不在同一场'}`, s.段文件);
+      report.错(`${s.key} 标了 连续，但清单里紧挨着的上一段${prev ? `（${segments[i - 1]!.key}）不是同一场的` : '不存在或不在同一场'}`, s.segmentFile);
       continue;
     }
     const a = prev.definition!.sceneWindow;
     const b = s.definition.sceneWindow;
     if (!a || !b) {
-      report.错(`${s.键} 标了 连续，它和上一段 ${prev.键} 都要写 场窗口`, s.段文件);
+      report.错(`${s.key} 标了 连续，它和上一段 ${prev.key} 都要写 场窗口`, s.segmentFile);
       continue;
     }
     // 场窗口两端都对齐到 1/段格 秒（窗口段.ts），差不到半格就是接上了
     if (Math.abs(b.startSec - a.endSec) >= 0.5 / segFps) {
-      report.错(`${s.键} 标了 连续：上一段 ${prev.键} 止于场时间线第 ${a.endSec} 秒，本段起于第 ${b.startSec} 秒，要正好接上`, s.段文件);
+      report.错(`${s.key} 标了 连续：上一段 ${prev.key} 止于场时间线第 ${a.endSec} 秒，本段起于第 ${b.startSec} 秒，要正好接上`, s.segmentFile);
     }
   }
 };

@@ -1,9 +1,9 @@
 {
+  "duration": 1.2,
+  "lib": "store",
+  "loudness": -17.4,
+  "peakDb": -0.6,
   "sha256": "19224d0101c0fbbf823d3caff9728612c8780b9e19df05d40f10b3cdfdc9521d",
-  "后缀": ".wav",
-  "响度": -17.4,
-  "大小": 57644,
-  "峰值": -0.6,
-  "库": "store",
-  "时长": 1.2
+  "size": 57644,
+  "suffix": ".wav"
 }

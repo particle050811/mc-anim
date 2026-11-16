@@ -23,10 +23,10 @@ const picture: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <ShakeBellPicture
-        帧={frame}
-        种子={f}
+        frame={frame}
+        seed={f}
         shading={shadingBySeg['2-摇铃']}
-        叠层={
+        overlay={
           <>
             <RuneLyric lines={lyrics.upperLines} 样式={{ ...runeLyricDefault, outlineColor: bellShakeTone(frame).outlineColor }} />
             <RuneLyric lines={lyrics.lowerLines} 样式={{ ...line15RuneStyle, outlineColor: bellShakeTone(frame).outlineColor }} />

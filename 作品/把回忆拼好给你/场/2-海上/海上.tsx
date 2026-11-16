@@ -27,7 +27,7 @@ import { SeaSurface } from './海面.tsx';
 import { SeaFloorBlocks, shouldDrawSeabed } from './海底.tsx';
 import { SunsetWave } from './浪.tsx';
 
-const fullscreen: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: pageSize.宽, height: pageSize.高, overflow: 'hidden' };
+const fullscreen: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: pageSize.width, height: pageSize.height, overflow: 'hidden' };
 
 /** 船和人、海面乘的色调（见 参数.ts 人船日落、海日落） */
 const personBoatTone = lerpTone(palette.夏日白天, palette[seaToneName], personBoatSunset).tint;
@@ -43,22 +43,22 @@ export const SeaShot: React.FC<{ songFrame: number }> = ({ songFrame: g }) => {
   const s = toSec(g);
   return (
     <div style={fullscreen}>
-      <SunsetSky 机={rig} 刻={gameTick(g)} 宽={pageSize.宽} 高={pageSize.高} />
+      <SunsetSky machine={rig} 刻={gameTick(g)} width={pageSize.width} height={pageSize.height} />
       <ToonCanvas
-        宽={pageSize.宽}
-        高={pageSize.高}
-        cameraRig={{ 种: '透视', ...rig }}
+        width={pageSize.width}
+        height={pageSize.height}
+        cameraRig={{ kind: '透视', ...rig }}
         tint={t.tint}
         outline={t.outline}
         shading={shadingBySeg[segKey] ?? null}
-        shadingScene={{ timeOfDay: '日落', sun: sunDirection(gameTick(g)), 海平面: 0 }}
+        shadingScene={{ timeOfDay: '日落', sun: sunDirection(gameTick(g)), seaLevel: 0 }}
       >
-        <SeaSurface 机={rig} 宽={pageSize.宽} 高={pageSize.高} 船={boat} 刻={s * 20} tint={seaTone} />
+        <SeaSurface machine={rig} width={pageSize.width} height={pageSize.height} 船={boat} 刻={s * 20} tint={seaTone} />
         <FlatShade tint={personBoatTone}>
           {shouldDrawSeabed() && <SeaFloorBlocks />}
           <VanillaBoat loc={boat.loc} yaw={boat.yaw} oar={boat.oar} />
           <Steve pose={ridingLimbs(stevePose(you.loc, you.yaw, { sec: s }))} />
-          <MagicalWineFox pose={{ ...standPose(liYing.loc), yaw: liYing.yaw }} stancePose="站" skeleton={magicalWineFoxBoatBones} 看={liYing.看} expression="微笑" 秒={s} />
+          <MagicalWineFox pose={{ ...standPose(liYing.loc), yaw: liYing.yaw }} stancePose="站" skeleton={magicalWineFoxBoatBones} 看={liYing.看} expression="微笑" sec={s} />
         </FlatShade>
       </ToonCanvas>
     </div>
@@ -71,8 +71,8 @@ const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const keptCells = (k: number) => {
   const s = crossfadeCell;
   const segments: string[] = [];
-  for (let y = 0; y * s < pageSize.高; y++)
-    for (let x = 0; x * s < pageSize.宽; x++) if (bayer[(y % 4) * 4 + (x % 4)]! >= k * 16) segments.push(`M${x * s} ${y * s}h${s}v${s}h${-s}Z`);
+  for (let y = 0; y * s < pageSize.height; y++)
+    for (let x = 0; x * s < pageSize.width; x++) if (bayer[(y % 4) * 4 + (x % 4)]! >= k * 16) segments.push(`M${x * s} ${y * s}h${s}v${s}h${-s}Z`);
   return `path('${segments.join('') || 'M0 0Z'}')`;
 };
 
@@ -84,10 +84,10 @@ const threshold = (i: number, j: number) => {
 const remainingClip = (k: number) => {
   const s = grainCell;
   const segments: string[] = [];
-  for (let y = 0; y * s < pageSize.高; y++) {
+  for (let y = 0; y * s < pageSize.height; y++) {
     let startIndex = -1;
-    for (let x = 0; x * s <= pageSize.宽; x++) {
-      const keep = x * s < pageSize.宽 && threshold(x, y) >= k;
+    for (let x = 0; x * s <= pageSize.width; x++) {
+      const keep = x * s < pageSize.width && threshold(x, y) >= k;
       if (keep && startIndex < 0) startIndex = x;
       else if (!keep && startIndex >= 0) {
         segments.push(`M${startIndex * s} ${y * s}h${(x - startIndex) * s}v${s}h${-(x - startIndex) * s}Z`);
@@ -100,7 +100,7 @@ const remainingClip = (k: number) => {
 
 /** 按亮度溶解的 SVG 滤镜：透明度 = (亮度 − 门槛) ÷ 边宽，夹在 0～1；门槛随 k 从 起 − 边宽 走到 止 */
 const brightnessFilter = (id: string, k: number) => {
-  const { 起: start, 止: end, edgeWidth } = brightnessDissolve;
+  const { start: start, end: end, edgeWidth } = brightnessDissolve;
   const t = start - edgeWidth + k * (end - start + edgeWidth);
   const s = 1 / edgeWidth;
   const colorMatrix = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0.2126 * s, 0.7152 * s, 0.0722 * s, 0, -t * s].map((v) => +v.toFixed(6)).join(' ');
@@ -152,9 +152,9 @@ export const SunsetRowingPicture: React.FC<SunsetRowingPictureProps> = ({ songFr
   const filterId = `ld${useId().replace(/[^A-Za-z0-9]/g, '')}`;
   const layerStyle = crossfadeLayerStyle(crossfadeStyle, k, filterId);
   const seaLayer = (
-    <FilmPost grade={withPost ? palette[seaToneName].grade : null} 种子={g}>
+    <FilmPost grade={withPost ? palette[seaToneName].grade : null} seed={g}>
       <SeaShot songFrame={g} />
-      {waveIn > 0 && <SunsetWave waveIn={waveIn} 宽={pageSize.宽} 高={pageSize.高} 样式={waveStyle} />}
+      {waveIn > 0 && <SunsetWave waveIn={waveIn} width={pageSize.width} height={pageSize.height} 样式={waveStyle} />}
     </FilmPost>
   );
   return (
@@ -163,7 +163,7 @@ export const SunsetRowingPicture: React.FC<SunsetRowingPictureProps> = ({ songFr
       {k > 0 && k < 1 && crossfadeStyle === '按亮度溶解' && brightnessFilter(filterId, k)}
       {k < 1 && eyeView && (
         <div style={{ ...fullscreen, ...layerStyle.眼 }}>
-          <FilmPost grade={withPost ? palette[eyeToneName].grade : null} 种子={g}>
+          <FilmPost grade={withPost ? palette[eyeToneName].grade : null} seed={g}>
             {eyeView(g)}
           </FilmPost>
         </div>

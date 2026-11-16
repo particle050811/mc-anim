@@ -7,11 +7,11 @@ import { hash2 } from '@engine/core/噪声.ts';
 import { randInt, mulberry32 } from '@engine/core/数学.ts';
 
 /** 一棵树：根在 (i, j)；高 = 橡树的树干高（樱花树的高按原版自己抽）；种子定这棵树的随机 */
-export type VanillaTree = { i: number; j: number; 高: number; 种子: number };
+export type VanillaTree = { i: number; j: number; height: number; seed: number };
 /** 橡树（原版 TreeFeatures.OAK：树干 4～6、两层 5×5 叶子去角随机、上两层 3×3 十字） */
 export const oakTree = (t: VanillaTree, z0: number, place: (b: PlacedBlock) => void) => {
-  const top = z0 + t.高;
-  for (let k = z0; k < top; k++) place({ 状态: 'minecraft:oak_log[axis=y]', 位: [t.i, t.j, k] });
+  const top = z0 + t.height;
+  for (let k = z0; k < top; k++) place({ state: 'minecraft:oak_log[axis=y]', 位: [t.i, t.j, k] });
   for (let dz = -3; dz <= 0; dz++) {
     const r = dz >= -1 ? 1 : 2;
     for (let dx = -r; dx <= r; dx++)
@@ -19,7 +19,7 @@ export const oakTree = (t: VanillaTree, z0: number, place: (b: PlacedBlock) => v
         if (dx === 0 && dy === 0 && dz < 0) continue;
         const corner = Math.abs(dx) === r && Math.abs(dy) === r;
         if (corner && (dz === 0 || hash2(t.i + dx, t.j + dy, 40 + dz) < 0.5)) continue;
-        place({ 状态: 'minecraft:oak_leaves', 位: [t.i + dx, t.j + dy, top + dz] });
+        place({ state: 'minecraft:oak_leaves', 位: [t.i + dx, t.j + dy, top + dz] });
       }
   }
 };
@@ -40,14 +40,14 @@ const cherryLeaves = 'minecraft:cherry_leaves';
  *   中间、往下一层半径 3（边角随机缺），往下两层半径 2；下面两层的外圈底下随机垂一两格叶子。
  */
 export const cherryTree = (t: VanillaTree, z0: number, place: (b: PlacedBlock) => void) => {
-  const r = mulberry32(t.种子 * 2654435761 + 97);
+  const r = mulberry32(t.seed * 2654435761 + 97);
   const treeHeight = 7 + randInt(r, 0, 1);
   const branchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -3));
   let secondBranchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -4));
   if (secondBranchStart >= branchStart) secondBranchStart++;
   const branchCount = randInt(r, 1, 3);
   const trunkHeight = branchCount === 3 ? treeHeight : branchCount === 2 ? Math.max(branchStart, secondBranchStart) + 1 : branchStart + 1;
-  for (let k = 0; k < trunkHeight; k++) place({ 状态: verticalLog, 位: [t.i, t.j, z0 + k] });
+  for (let k = 0; k < trunkHeight; k++) place({ state: verticalLog, 位: [t.i, t.j, z0 + k] });
   // 一根枝：从主干 起 那一格往 d 走，返回挂叶子的那一格
   const branch = (d: Dir2D, start: number, notAtTop: boolean): [number, number, number] => {
     const m = [t.i, t.j, z0 + start];
@@ -58,7 +58,7 @@ export const cherryTree = (t: VanillaTree, z0: number, place: (b: PlacedBlock) =
     for (let l = 0; l < (horizontalFirst ? 2 : 1); l++) {
       m[0] += d[0];
       m[1] += d[1];
-      place({ 状态: horizontalLog(d), 位: [m[0]!, m[1]!, m[2]!] });
+      place({ state: horizontalLog(d), 位: [m[0]!, m[1]!, m[2]!] });
     }
     const vertDir = tip[2]! > m[2]! ? 1 : -1;
     for (;;) {
@@ -70,7 +70,7 @@ export const cherryTree = (t: VanillaTree, z0: number, place: (b: PlacedBlock) =
         m[0] += d[0];
         m[1] += d[1];
       }
-      place({ 状态: vertical ? verticalLog : horizontalLog(d), 位: [m[0]!, m[1]!, m[2]!] });
+      place({ state: vertical ? verticalLog : horizontalLog(d), 位: [m[0]!, m[1]!, m[2]!] });
     }
   };
   const leafPoints: [number, number, number][] = [];
@@ -86,7 +86,7 @@ const cherryLeafBlob = (p: readonly [number, number, number], r: () => number, p
   const leaves = new Set<string>();
   const placeLeaves = (x: number, y: number, z: number) => {
     leaves.add(`${x},${y},${z}`);
-    place({ 状态: cherryLeaves, 位: [x, y, z] });
+    place({ state: cherryLeaves, 位: [x, y, z] });
   };
   const skipCell = (ax: number, ly: number, ay: number, ring: number) => {
     if (ly === -1 && (ax === ring || ay === ring) && r() < 0.25) return true;

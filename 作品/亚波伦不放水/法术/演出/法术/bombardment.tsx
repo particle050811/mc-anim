@@ -7,6 +7,6 @@ import type { SpellPerformanceProps } from '../接口.ts';
 import { FireballGroup } from '../零件/甲/火球片.tsx';
 import meta, { bombardmentShots } from './bombardment.元.ts';
 
-const bombardment: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => <FireballGroup projectiles={bombardmentShots(from, target, seed)} 秒={sec} scale={0.75} 种子={seed} />;
+const bombardment: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => <FireballGroup projectiles={bombardmentShots(from, target, seed)} sec={sec} scale={0.75} seed={seed} />;
 
 export default defineSpellPerformance(meta, bombardment);

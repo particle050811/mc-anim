@@ -13,9 +13,9 @@ import { NetherWand, netherWandDisplay } from '../../物品/下界魔杖.tsx';
 import { aspect, views, type View } from './视图.ts';
 
 // 受击：attacked 是整身的动作，顶掉 idle 播一遍（YSM 里受伤时主动画怎么让位没核实，这里当成整段换）
-const hurt = defineAct({ 主: (sec) => [{ 名: 'attacked', 秒: sec }] });
+const hurt = defineAct({ 主: (sec) => [{ name: 'attacked', sec: sec }] });
 // 前飞：悬停 1 秒后水平速度跳到 20（YSM wiki：飞行时 ground_speed 是 20），看头发的弹簧
-const flyForward = defineAct({ 主: () => [{ 名: 'fly' }], 环境: (sec) => ({ query: { ground_speed: sec >= 1 ? 20 : 0 } }), wandHoldPose: raisedPose.飞 });
+const flyForward = defineAct({ 主: () => [{ name: 'fly' }], env: (sec) => ({ query: { ground_speed: sec >= 1 ? 20 : 0 } }), wandHoldPose: raisedPose.飞 });
 const performances: Record<View['act'], YaBoLunAct> = { 站立: stand, 悬停: hover, 受击: hurt, 前飞: flyForward };
 
 const CameraRig: React.FC<{ v: View }> = ({ v }) => {
@@ -28,7 +28,7 @@ const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   cam.far = 256;
   const lift = v.lift ?? 0;
   // 手部特写：手心和画角色用同一份 pose、表演、秒 算（已经带离地）
-  const rightPalm = v.lookRightHand && rightHandCenter({ pose: { loc: [0, 0, lift], yaw: 180 }, 秒: v.秒, act: performances[v.act] });
+  const rightPalm = v.lookRightHand && rightHandCenter({ pose: { loc: [0, 0, lift], yaw: 180 }, sec: v.sec, act: performances[v.act] });
   const eye = rightPalm ? [rightPalm[0] + v.lookRightHand![0], rightPalm[1] + v.lookRightHand![1], rightPalm[2] + v.lookRightHand![2]] : [v.眼[0], v.眼[1], v.眼[2] + lift];
   const lookAt = rightPalm ?? [v.看[0], v.看[1], v.看[2] + lift];
   cam.position.copy(sceneToThree([eye[0]!, eye[1]!, eye[2]!]));
@@ -43,7 +43,7 @@ const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
         <color attach="background" args={['#5a5e66']} />
         <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -61,13 +61,13 @@ const picture: React.FC = () => {
               </ItemDisplay>
             </group>
           ) : (
-            <GirlYaBoLun pose={{ loc: [0, 0, v.lift ?? 0], yaw: 180 }} 秒={v.秒} act={performances[v.act]} variant={v.variant} holdWand={v.holdWand} />
+            <GirlYaBoLun pose={{ loc: [0, 0, v.lift ?? 0], yaw: 180 }} sec={v.sec} act={performances[v.act]} variant={v.variant} holdWand={v.holdWand} />
           )}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

@@ -21,8 +21,8 @@ describe('第 8 句的镜头（主会话 10-24 美术定稿：推近，N 取 14�
     expect(line8ShotCount % 4).toBe(0);
     expect(Number.isInteger(line8ShotGroundFromBottom * 16)).toBe(true);
     // 门那一格在画面正中；画面中心的高度换成成片像素是整的
-    expect(line8Shot.framing.中心[0]).toBe(0);
-    expect(Number.isInteger(line8Shot.framing.中心[1] * line8Shot.framing.pxPerCell)).toBe(true);
+    expect(line8Shot.framing.center[0]).toBe(0);
+    expect(Number.isInteger(line8Shot.framing.center[1] * line8Shot.framing.pxPerCell)).toBe(true);
   });
 
   it('天和屋顶（屋檐 z 3 往上）不到画面一半', () => {
@@ -60,7 +60,7 @@ describe('第 8 句哈气那一拍', () => {
   });
 
   it('时刻取自分镜：哈气在三稿 27.80，片子里是歌曲帧 1668（60 fps）', () => {
-    expect(mainCutEvents.hiss.秒).toBeCloseTo(27.8, 1);
-    expect(mainCutEvents.hiss.帧).toBe(1668);
+    expect(mainCutEvents.hiss.sec).toBeCloseTo(27.8, 1);
+    expect(mainCutEvents.hiss.frame).toBe(1668);
   });
 });

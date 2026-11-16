@@ -15,7 +15,7 @@ import type { PerspectiveRigParams } from '../core/机位.ts';
 export type Facing = '北' | '南' | '东' | '西';
 
 export type OrthoRigParams = {
-  种: '正交';
+  kind: '正交';
   /** 画面中心对准的点（场景坐标）；实际会吸附到像素网格，最多挪半个画布像素 */
   看: V3;
   /** 镜头朝哪边看 */
@@ -51,7 +51,7 @@ export type OrthoFraming = {
   位置: THREE.Vector3;
   lookPoint: THREE.Vector3;
   /** 视体半宽、半高（格） */
-  半宽: number;
+  halfWidth: number;
   halfHeight: number;
   near: number;
   farPlane: number;
@@ -83,7 +83,7 @@ export const computeOrthoFraming = (p: OrthoRigParams, pageWidth: number, pageHe
   return {
     位置: t.clone().addScaledVector(B, rigDistance),
     lookPoint: t,
-    半宽: (pageWidth * filmScale) / (2 * pxPerCell),
+    halfWidth: (pageWidth * filmScale) / (2 * pxPerCell),
     halfHeight: (pageHeight * filmScale) / (2 * pxPerCell),
     near: p.section === undefined ? 0.1 : Math.max(0.1, rigDistance - p.section),
     farPlane: rigDistance + (p.depth ?? 256),
@@ -99,7 +99,7 @@ export const setOrthoCamera = (cam: THREE.OrthographicCamera, q: OrthoFraming) =
   cam.position.copy(q.位置);
   cam.up.copy(worldUp);
   cam.lookAt(q.lookPoint);
-  Object.assign(cam, { left: -q.半宽, right: q.半宽, top: q.halfHeight, bottom: -q.halfHeight, near: q.near, far: q.farPlane, zoom: 1 });
+  Object.assign(cam, { left: -q.halfWidth, right: q.halfWidth, top: q.halfHeight, bottom: -q.halfHeight, near: q.near, far: q.farPlane, zoom: 1 });
   cam.updateProjectionMatrix();
   if (q.oblique) {
     const shear = new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, -q.oblique, -q.oblique * rigDistance, 0, 0, 1, 0, 0, 0, 0, 1);
@@ -123,11 +123,11 @@ export const setPerspCamera = (cam: THREE.PerspectiveCamera, p: PerspectiveRigPa
 };
 
 /** 按参数设当前相机（相机种类要对得上） */
-export const CameraRig: React.FC<{ 参数: CameraRigParams }> = ({ 参数: params }) => {
+export const CameraRig: React.FC<{ params: CameraRigParams }> = ({ params: params }) => {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const dpr = useThree((s) => s.viewport.dpr);
-  if (params.种 === '正交') {
+  if (params.kind === '正交') {
     if (!(camera as THREE.OrthographicCamera).isOrthographicCamera) throw new Error('正交像素机位要正交相机：ThreeCanvas 传 orthographic，或用 三渲二画布');
     setOrthoCamera(camera as THREE.OrthographicCamera, computeOrthoFraming(params, size.width, size.height, dpr));
   } else {
@@ -139,7 +139,7 @@ export const CameraRig: React.FC<{ 参数: CameraRigParams }> = ({ 参数: param
 /** 在画布外面另建一台和画布里一样的相机，给 2D 叠层用 库/界面/投影.ts 的 投影到页面 算头顶气泡这类的位置（场景坐标先过 Z朝上转three）。
  *  宽高、dpr 要和画布一样（三渲二画布 的 dpr 是 canvasDpr(1)），正交的吸附才对得上 */
 export const makeRigCamera = (p: CameraRigParams, width: number, height: number, dpr: number): THREE.OrthographicCamera | THREE.PerspectiveCamera => {
-  if (p.种 === '正交') {
+  if (p.kind === '正交') {
     const cam = new THREE.OrthographicCamera();
     setOrthoCamera(cam, computeOrthoFraming(p, width, height, dpr));
     return cam;
@@ -150,7 +150,7 @@ export const makeRigCamera = (p: CameraRigParams, width: number, height: number,
 };
 
 /** 新建一个和参数种类对得上的相机（给 ThreeCanvas 的 camera） */
-export const newCamera = (cameraKind: CameraRigParams['种']): THREE.OrthographicCamera | THREE.PerspectiveCamera => {
+export const newCamera = (cameraKind: CameraRigParams['kind']): THREE.OrthographicCamera | THREE.PerspectiveCamera => {
   const cam = cameraKind === '正交' ? new THREE.OrthographicCamera() : new THREE.PerspectiveCamera();
   (cam as typeof cam & ManualCapable).manual = true;
   return cam;

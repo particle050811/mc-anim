@@ -109,7 +109,7 @@ const drawSmoothWave = (ctx: CanvasRenderingContext2D, waveIn: number, W: number
   ctx.putImageData(img, 0, 0);
 };
 
-export const SunsetWave: React.FC<{ waveIn: number; 宽: number; 高: number; 样式?: WaveStyleName }> = ({ waveIn, 宽: width, 高: height, 样式: waveStyle = '像素' }) => {
+export const SunsetWave: React.FC<{ waveIn: number; width: number; height: number; 样式?: WaveStyleName }> = ({ waveIn, width: width, height: height, 样式: waveStyle = '像素' }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = width * filmScale;
   const H = height * filmScale;

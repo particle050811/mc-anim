@@ -51,7 +51,7 @@ const TerrainWithDistant: React.FC<TerrainProps> = (props) => {
   const terrain = useTwilightWithDistant();
   return terrain ? <TerrainView terrain={terrain} {...props} /> : null;
 };
-const TerrainView: React.FC<TerrainProps & { terrain: { 键: string; 来源: VoxelSource; heightRange: [number, number] } }> = ({
+const TerrainView: React.FC<TerrainProps & { terrain: { key: string; source: VoxelSource; heightRange: [number, number] } }> = ({
   terrain,
   camPos: cameraPos,
   landmarks: landmarks = [],
@@ -62,7 +62,7 @@ const TerrainView: React.FC<TerrainProps & { terrain: { 键: string; 来源: Vox
   shadowLightDir,
 }) => (
   <group>
-    <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cameraPos} pixel={splitPixels} far={farM} heightRange={terrain.heightRange} shadowLightDir={shadowLightDir} />
+    <VoxelWorld key={terrain.key} source={terrain.source} center={cameraPos} pixel={splitPixels} far={farM} heightRange={terrain.heightRange} shadowLightDir={shadowLightDir} />
     {landmarks.map((name) => (
       <LandmarkMesh key={name} name={name} t={t} clearPlants={clearPlants} />
     ))}
@@ -78,10 +78,10 @@ const useTwilightWithDistant = () => {
 };
 
 // boss 那几座的 戏.tsx 用同样的变换包自己的场景
-export const LandmarkPlacement: React.FC<{ 名: TwilightLandmarkName; children: React.ReactNode }> = ({ 名: name, children }) => {
+export const LandmarkPlacement: React.FC<{ name: TwilightLandmarkName; children: React.ReactNode }> = ({ name: name, children }) => {
   const frame = frameByName[name];
   return (
-    <group position={frame.原点} rotation={[0, 0, (frame.转 * Math.PI) / 180]}>
+    <group position={frame.origin} rotation={[0, 0, (frame.转 * Math.PI) / 180]}>
       {children}
     </group>
   );
@@ -89,13 +89,13 @@ export const LandmarkPlacement: React.FC<{ 名: TwilightLandmarkName; children: 
 const LandmarkMesh: React.FC<{ name: TwilightLandmarkName; t: number; clearPlants?: number[][] }> = ({ name: name, t, clearPlants }) => {
   if (name === '娜迦庭院')
     return (
-      <LandmarkPlacement 名={name}>
+      <LandmarkPlacement name={name}>
         <NagaCourtyard t={t} clearPlants={clearPlants} hideBlocks={landmarkHideOutsideCore.娜迦庭院} />
       </LandmarkPlacement>
     );
   if (name === '终焉高原城堡')
     return (
-      <LandmarkPlacement 名={name}>
+      <LandmarkPlacement name={name}>
         <FinalCastle hide={castleMeshHide} />
       </LandmarkPlacement>
     );

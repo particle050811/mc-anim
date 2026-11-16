@@ -20,8 +20,8 @@ const cameraRig: CamPose = { pos: toScene(39748, 92, -1176), tgt: toScene(39712,
 const Terrain: React.FC = () => {
   const t = useVersionedTerrain(pack, terrainVersion);
   if (!t) return null;
-  if (t.原点.some((v, i) => v !== originPos[i])) throw new Error(`${pack}/${terrainVersion} 的原点是 ${t.原点}，画面按 ${originPos} 算的`);
-  return <VoxelWorld 键={t.键} 来源={t.来源} 中心={cameraRig.pos} pixel={LevelParams.视频.pixel} far={2000} heightRange={t.heightRange} />;
+  if (t.origin.some((v, i) => v !== originPos[i])) throw new Error(`${pack}/${terrainVersion} 的原点是 ${t.origin}，画面按 ${originPos} 算的`);
+  return <VoxelWorld key={t.key} source={t.source} center={cameraRig.pos} pixel={LevelParams.视频.pixel} far={2000} heightRange={t.heightRange} />;
 };
 
 const picture: React.FC = () => {

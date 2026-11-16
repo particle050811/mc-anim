@@ -13,7 +13,7 @@ export default defineSpellMeta({
   // 这个法术的画面全在蓄力的 80 刻里（激光一直照着），照满的那一刻结算伤害、激光消失；所以这里的「出手」是开始照
   长秒: (guardChargeUpTicks + 1) / 20,
   hitSec: guardChargeUpTicks / 20,
-  时长: (unusedStart, unusedTarget, options) => ({ 长秒: (guardLightTick(options) + 1) / 20, hitSec: guardLightTick(options) / 20 }),
+  duration: (unusedStart, unusedTarget, options) => ({ 长秒: (guardLightTick(options) + 1) / 20, hitSec: guardLightTick(options) / 20 }),
   // PrismaBeamSpell 没有自己的声音（CastingSound、SpellResult 里都没放）
-  声音: [],
+  sound: [],
 });

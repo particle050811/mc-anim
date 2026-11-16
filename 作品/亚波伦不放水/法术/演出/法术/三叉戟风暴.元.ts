@@ -11,8 +11,8 @@ export default defineSpellMeta({
   id: 'trident_storm',
   长秒: (prongWarnTicks + 60 + prongStayTicks) / 20,
   // 施法声 TRIDENT_STORM_PRE；每根落下时 TRIDENT_STORM_EXPLODE（音量 2、音高 0.85～1.05），时刻随种子变，这里记在最早可能的那一刻
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.trident_storm_pre.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.trident_storm_explode.1', 秒: prongWarnTicks / 20, 音量: 2, 音高: 0.95 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.trident_storm_pre.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.trident_storm_explode.1', sec: prongWarnTicks / 20, 音量: 2, 音高: 0.95 },
   ],
 });

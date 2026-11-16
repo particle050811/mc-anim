@@ -46,18 +46,18 @@ import bigElectric3Png from 'asset:贴图/法术/goety/particle/big_electric_3';
 import { mulberry32 } from '@engine/core/数学.ts';
 
 const yellow = hexColor(0xffff55);
-const sparkParticleClass: ParticleClass = { 帧: [electric1Png,electric2Png,electric3Png,electric4Png,electric5Png,electric6Png,electric7Png,electric8Png,electric9Png,electric10Png,electric11Png,electric12Png,electric13Png,electric14Png,electric15Png,electric16Png].map(png), 选帧: '按年龄', 混合: '半透明', 摩擦: 0.96 };
-const bigSparkParticleClass: ParticleClass = { 帧: [bigElectric1Png, bigElectric2Png, bigElectric3Png].map(png), 选帧: '按年龄', 混合: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
-const burstParticleClass: ParticleClass = { 帧: [circleExplode1Png, circleExplode2Png, circleExplode3Png, circleExplode4Png, circleExplode5Png, circleExplode6Png, circleExplode7Png, circleExplode8Png].map(png), 选帧: '按年龄', 混合: '半透明', 色: yellow };
+const sparkParticleClass: ParticleClass = { frame: [electric1Png,electric2Png,electric3Png,electric4Png,electric5Png,electric6Png,electric7Png,electric8Png,electric9Png,electric10Png,electric11Png,electric12Png,electric13Png,electric14Png,electric15Png,electric16Png].map(png), 选帧: '按年龄', blend: '半透明', 摩擦: 0.96 };
+const bigSparkParticleClass: ParticleClass = { frame: [bigElectric1Png, bigElectric2Png, bigElectric3Png].map(png), 选帧: '按年龄', blend: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
+const burstParticleClass: ParticleClass = { frame: [circleExplode1Png, circleExplode2Png, circleExplode3Png, circleExplode4Png, circleExplode5Png, circleExplode6Png, circleExplode7Png, circleExplode8Png].map(png), 选帧: '按年龄', blend: '半透明', 色: yellow };
 
-const dash: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const dash: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const end = addVec(target, [0, 0, 0.9]);
   const dir = unitVec(sub(end, from));
   const chargeTicks = Math.min(20, Math.max(1, Math.ceil((vecLength(sub(end, from)) - 1.5) / 2.5)));
   const dashPos = (k: number): Vec3 => addVec(from, scaleVec(dir, 2.5 * Math.min(k, chargeTicks)));
   const r = mulberry32(seed * 7919 + 29);
-  const winds: WindBirth[] = Array.from({ length: 4 }, (_, i) => ({ 刻: 0, originAt: (k) => addVec(dashPos(k), [0, 0, -0.5]), 宽: 2, 高: (2 * r() - 1) * 0.5, 种子: seed * 1009 + i }));
+  const winds: WindBirth[] = Array.from({ length: 4 }, (_, i) => ({ 刻: 0, originAt: (k) => addVec(dashPos(k), [0, 0, -0.5]), width: 2, height: (2 * r() - 1) * 0.5, seed: seed * 1009 + i }));
   const bigSparks: ParticleBirth[] = [];
   const sparks: ParticleBirth[] = [];
   for (let t = 0; t <= chargeTicks; t++) {
@@ -74,9 +74,9 @@ const dash: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target,
   return (
     <>
       <WindParticles spawns={winds} 刻={tick} 色={yellow} />
-      <TexturedParticles 类={burstParticleClass} spawns={burst} 秒={sec} />
-      <TexturedParticles 类={bigSparkParticleClass} spawns={bigSparks} 秒={sec} />
-      <TexturedParticles 类={sparkParticleClass} spawns={sparks} 秒={sec} />
+      <TexturedParticles type={burstParticleClass} spawns={burst} sec={sec} />
+      <TexturedParticles type={bigSparkParticleClass} spawns={bigSparks} sec={sec} />
+      <TexturedParticles type={sparkParticleClass} spawns={sparks} sec={sec} />
     </>
   );
 };

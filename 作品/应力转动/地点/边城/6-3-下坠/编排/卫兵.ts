@@ -65,7 +65,7 @@ const patrolState = (physSec: number) => {
     remaining = patrol.speed * patrol.decelTime * (0.5 - decelFrac + decelFrac * decelFrac * decelFrac - (decelFrac * decelFrac * decelFrac * decelFrac) / 2);
   }
   const speed = physSec <= decelStart ? patrol.speed : physSec >= stopSec ? 0 : patrol.speed * (1 - smoothstep01((physSec - decelStart) / patrol.decelTime));
-  return { remaining: remaining, stride: Math.min(1, (speed / 20) * 4), 步: -4 * remaining };
+  return { remaining: remaining, stride: Math.min(1, (speed / 20) * 4), step: -4 * remaining };
 };
 // 第 i 个卫兵脚底相对 卫兵位置 的偏移（城的局部坐标）：只有巡逻的 5 号在动
 const guardOffset = (i: number, physSec: number): V3 => {
@@ -76,7 +76,7 @@ const guardOffset = (i: number, physSec: number): V3 => {
 export const guardFeet = (i: number, w = 0): V3 => add(add(borderTownPos, guardPositions[i]), guardOffset(i, w));
 export const guardNeck = (i: number, w = 0): V3 => add(guardFeet(i, w), [0, 0, GUARD_NECK]);
 // headPitch 是视线（望远镜视野、声音位置、6-3-5 起飞都按它）；画头仰 是画出来的头（举镜时比视线低 `SCOPE_SHOWN_LOWER`）
-export type GuardPose = { raiseSpyglass: number; headPitch: number; pictureHeadPitch: number; headYaw: number; bodyTurn: number; offset: V3; 步: number; stride: number };
+export type GuardPose = { raiseSpyglass: number; headPitch: number; pictureHeadPitch: number; headYaw: number; bodyTurn: number; offset: V3; step: number; stride: number };
 // 举好望远镜时画出来的头和镜筒比视线低几度（用户 10-18 定：放低，构图更和谐，不必对准李樱）。随举镜从 0 加到这么多，切进镜中以后镜头在他眼里、看不见他
 export const SCOPE_SHOWN_LOWER = 20;
 // 瞭望时的站姿（物理时间 w 的函数，一直在动）：身子朝向、头相对身子的左右、低头多少度（正 = 低头，同 卫兵.tsx）。
@@ -100,10 +100,10 @@ const lookoutPose = (i: number, physSec: number) => {
 export const guardPoseAt = (globalSec: number, i: number): GuardPose => {
   const physSec = physicalTime(globalSec);
   const offset = guardOffset(i, physSec);
-  const walk = i === patrol.i ? patrolState(physSec) : { 步: 0, stride: 0 };
+  const walk = i === patrol.i ? patrolState(physSec) : { step: 0, stride: 0 };
   const lookout = lookoutPose(i, physSec);
   const tt = physSec - physicalTime(cityDefense.notice) - hearDelay(i);
-  if (tt <= 0) return { raiseSpyglass: 0, headPitch: lookout.pitch, pictureHeadPitch: lookout.pitch, headYaw: lookout.头, bodyTurn: lookout.bodyYaw, offset: offset, 步: walk.步, stride: walk.stride };
+  if (tt <= 0) return { raiseSpyglass: 0, headPitch: lookout.pitch, pictureHeadPitch: lookout.pitch, headYaw: lookout.头, bodyTurn: lookout.bodyYaw, offset: offset, step: walk.step, stride: walk.stride };
   const aim = facingAngles(guardNeck(i, physSec), aimPoint(physSec));
   // 头先扭过去，身子稍晚起转（略冲过再回稳），头相对身子的角度不超过原版的 75°；时长都乘 `REACT`
   const headTotalYaw = lerp(lookout.bodyYaw + lookout.头, aim.转, smoothstep01(tt / (0.42 * REACT)));
@@ -112,7 +112,7 @@ export const guardPoseAt = (globalSec: number, i: number): GuardPose => {
   // 先抬头往身后的天上看（抬到 20°），再找到金光、对准
   const headPitch = lerp(lerp(lookout.pitch, -20, smoothstep01(tt / (0.35 * REACT))), -aim.pitch, smoothstep01((tt - 0.3 * REACT) / (0.45 * REACT)));
   const scopeRaise = smoothstep01((physSec - guardRaiseSec(i)) / raiseDuration);
-  return { raiseSpyglass: scopeRaise, headPitch, pictureHeadPitch: headPitch + SCOPE_SHOWN_LOWER * scopeRaise, headYaw: headYaw, bodyTurn: bodyYaw, offset: offset, 步: walk.步, stride: walk.stride };
+  return { raiseSpyglass: scopeRaise, headPitch, pictureHeadPitch: headPitch + SCOPE_SHOWN_LOWER * scopeRaise, headYaw: headYaw, bodyTurn: bodyYaw, offset: offset, step: walk.step, stride: walk.stride };
 };
 // 第 i 个卫兵的右眼（场景坐标）和视线方向（望远镜视野用）：头绕脖子转，右眼在头的转轴上方 3.375 像素、往前 4.5 像素、往右 1.5625 像素（同 卫兵.tsx 望远镜目镜端面的中心）
 export const guardEye = (i: number, globalSec: number) => {

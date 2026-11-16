@@ -17,4 +17,4 @@ export const placement = {
 } as const;
 
 /** 课表框的大小（课表的像素），课表.tsx 按字宽排出来的要和它一样（那边会查），镜头要按它对准 */
-export const timetableFrame = { 宽: 200, 高: 237 } as const;
+export const timetableFrame = { width: 200, height: 237 } as const;

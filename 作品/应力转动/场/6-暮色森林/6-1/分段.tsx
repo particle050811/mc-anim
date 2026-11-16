@@ -14,20 +14,20 @@ import { segments, frameCountOf, compositionId, CUT_STEPS_PER_SEC, type SegmentI
 const Naga: React.FC = () => <NagaBlockout {...official} />;
 const NagaDamage: React.FC = () => <NagaDamageLayer {...official} />;
 // 一镜到底的源时间就是它的画面时间 g，截表放到硬切 6-1-9b 那一刻（G_CUT）为止
-const Oner: React.FC = () => <OnerSegment 起={0} />;
+const Oner: React.FC = () => <OnerSegment start={0} />;
 const sourceComponents: Record<SegmentSource, React.FC> = { '6-1-1': EnterForest, '6-1-2': Naga, '6-1-3': TakeOff, 一镜到底: Oner };
 
 const Empty: React.FC = () => null; // 透明层里没有数字的截
 const piecesOf = (id: SegmentId, components: Partial<Record<SegmentSource, React.FC>>): (Clip & { picture: React.FC })[] =>
-  segments.find((s) => s.id === id)!.cuts.map((p) => ({ 段: p.源, picture: components[p.源] ?? Empty, 从: p.从, 到: p.到 }));
+  segments.find((s) => s.id === id)!.cuts.map((p) => ({ segment: p.源, picture: components[p.源] ?? Empty, 从: p.从, dest: p.dest }));
 
 const shots = segments.map((s) => {
   const pieces = piecesOf(s.id, sourceComponents);
-  const Comp: React.FC = () => <SegmentStitch cuts={pieces} 每秒={CUT_STEPS_PER_SEC} />;
+  const Comp: React.FC = () => <SegmentStitch cuts={pieces} perSec={CUT_STEPS_PER_SEC} />;
   return { id: compositionId(s.id), component: Comp, frames: frameCountOf(s.id) };
 });
 // 注册用：<Shot {...scene1Shot('6-1-2')} />
 export const scene1Shot = (id: SegmentId) => shots[segments.findIndex((s) => s.id === id)];
 
 const damagePieces = piecesOf('6-1-2', { '6-1-2': NagaDamage });
-export const NagaDamageSegment: React.FC = () => <SegmentStitch cuts={damagePieces} 每秒={CUT_STEPS_PER_SEC} />;
+export const NagaDamageSegment: React.FC = () => <SegmentStitch cuts={damagePieces} perSec={CUT_STEPS_PER_SEC} />;

@@ -10,9 +10,9 @@ export const isMac = process.platform === 'darwin';
 export const isWindows = process.platform === 'win32';
 
 export type ConfigSource = '环境变量' | 'anim.local.toml' | '默认';
-export type ConfigValue = { 值: string; 来源: ConfigSource; 变量: string; 键: string; 说明: string };
+export type ConfigValue = { value: string; source: ConfigSource; 变量: string; key: string; note: string };
 
-type ItemDef = { 变量: string; 说明: string; isPath: boolean; 默认: (resolved: Record<string, string>) => string };
+type ItemDef = { 变量: string; note: string; isPath: boolean; 默认: (resolved: Record<string, string>) => string };
 
 /** Prism Launcher 默认的数据目录（各平台安装器的默认位置） */
 const prismDataDefault = () => {
@@ -26,47 +26,47 @@ const personalRepo = (repoName: string) => path.join(os.homedir(), 'Developer', 
 
 // 顺序有意义：后面的默认值可以用前面已经取到的值
 const configItems = {
-  数据根: { 变量: 'ANIM_DATA', 说明: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', isPath: true, 默认: () => path.join(path.dirname(mainCheckout()), 'mc-anim-data') },
-  默认作品: { 变量: 'ANIM_WORK', 说明: '没给 --work、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', isPath: false, 默认: () => '' },
-  游戏: { 变量: 'ANIM_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）', isPath: true, 默认: (v) => path.join(v.数据根!, 'game') },
-  java_home: { 变量: 'ANIM_JAVA_HOME', 说明: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', isPath: true, 默认: () => '' },
-  prism: { 变量: 'ANIM_PRISM', 说明: 'Prism Launcher 程序（anim mcai 起游戏用）；空就从 PATH 找', isPath: false, 默认: () => '' },
-  prism数据: { 变量: 'ANIM_PRISM_DATA', 说明: 'Prism Launcher 的数据目录（原版 assets、库）', isPath: true, 默认: () => prismDataDefault() },
-  mc资源: { 变量: 'ANIM_MC_ASSETS', 说明: '原版资源目录（声音、语言文件的 objects/、indexes/）', isPath: true, 默认: (v) => path.join(v.prism数据!, 'assets') },
-  python: { 变量: 'ANIM_PYTHON', 说明: '跑 mcai 和取材脚本的 Python（3.10 以上）', isPath: false, 默认: () => (isWindows ? 'python' : 'python3') },
+  数据根: { 变量: 'ANIM_DATA', note: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', isPath: true, 默认: () => path.join(path.dirname(mainCheckout()), 'mc-anim-data') },
+  默认作品: { 变量: 'ANIM_WORK', note: '没给 --work、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', isPath: false, 默认: () => '' },
+  游戏: { 变量: 'ANIM_GAME', note: '游戏环境（取材服务端、Prism 实例、jar 缓存）', isPath: true, 默认: (v) => path.join(v.数据根!, 'game') },
+  java_home: { 变量: 'ANIM_JAVA_HOME', note: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', isPath: true, 默认: () => '' },
+  prism: { 变量: 'ANIM_PRISM', note: 'Prism Launcher 程序（anim mcai 起游戏用）；空就从 PATH 找', isPath: false, 默认: () => '' },
+  prism数据: { 变量: 'ANIM_PRISM_DATA', note: 'Prism Launcher 的数据目录（原版 assets、库）', isPath: true, 默认: () => prismDataDefault() },
+  mc资源: { 变量: 'ANIM_MC_ASSETS', note: '原版资源目录（声音、语言文件的 objects/、indexes/）', isPath: true, 默认: (v) => path.join(v.prism数据!, 'assets') },
+  python: { 变量: 'ANIM_PYTHON', note: '跑 mcai 和取材脚本的 Python（3.10 以上）', isPath: false, 默认: () => (isWindows ? 'python' : 'python3') },
   // 调模型的事归 image-flow（用户 10-31 定，docs/决策/0009）
-  image_flow: { 变量: 'ANIM_IMAGE_FLOW', 说明: 'image-flow 的命令行壳 imgflow.mjs（anim voice 合成用）', isPath: true, 默认: () => path.join(personalRepo('image-flow'), 'skills', 'image-flow', 'imgflow.mjs') },
-  对齐器: { 变量: 'ANIM_ALIGNER', 说明: 'Qwen3-ForcedAligner 的 uv 工程（.venv 和模型目录；anim voice lip 对齐字用）', isPath: true, 默认: () => personalRepo('qwen-aligner') },
+  image_flow: { 变量: 'ANIM_IMAGE_FLOW', note: 'image-flow 的命令行壳 imgflow.mjs（anim voice 合成用）', isPath: true, 默认: () => path.join(personalRepo('image-flow'), 'skills', 'image-flow', 'imgflow.mjs') },
+  对齐器: { 变量: 'ANIM_ALIGNER', note: 'Qwen3-ForcedAligner 的 uv 工程（.venv 和模型目录；anim voice lip 对齐字用）', isPath: true, 默认: () => personalRepo('qwen-aligner') },
   锁目录: {
     变量: 'ANIM_LOCK_DIR',
-    说明: '资源闸的锁目录',
+    note: '资源闸的锁目录',
     isPath: true,
     默认: (v) => path.join(v.数据根!, 'run', 'locks'),
   },
-  成片档: { 变量: 'ANIM_FILM_PROFILE', 说明: '成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧、码率上限 40 Mbps）或 1080p60（1.5 倍出 1920×1080、15 Mbps）；换档段全部重渲；见 pipeline/渲/设置.ts 的 成片档表', isPath: false, 默认: () => '4k60' },
+  成片档: { 变量: 'ANIM_FILM_PROFILE', note: '成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧、码率上限 40 Mbps）或 1080p60（1.5 倍出 1920×1080、15 Mbps）；换档段全部重渲；见 pipeline/渲/设置.ts 的 成片档表', isPath: false, 默认: () => '4k60' },
   // Windows 默认 vulkan：11-02 在 4060 笔记本上实测，ANGLE 默认的 D3D11 同一帧渲两遍有 45/86 帧不同，Vulkan 0/86、离 Mac 一样近，OpenGL 有大片黑斑
   // （数据根 archive/预览/1102-0601-跨机画面差异）。用户 11-13 定要别人在 Windows 上从 GitHub 拉下来就能渲出一样的，所以不让人自己去配
-  gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU，Windows 默认 vulkan；Docker 里没有 GPU 用 swangle）', isPath: false, 默认: () => (process.platform === 'win32' ? 'vulkan' : 'angle') },
+  gl: { 变量: 'ANIM_GL', note: '无头 Chrome 的 WebGL 后端（angle 走 GPU，Windows 默认 vulkan；Docker 里没有 GPU 用 swangle）', isPath: false, 默认: () => (process.platform === 'win32' ? 'vulkan' : 'angle') },
   // 下载源默认用国内镜像（用户 11-13「观众未必有代理」）；只有国外有的，下载失败时提示走代理
   浏览器镜像: {
     变量: 'ANIM_CHROME_MIRROR',
-    说明: '渲染用浏览器（Google 的 Chrome for Testing）的镜像根，默认 npmmirror；anim.local.toml 写 chrome_mirror = "" 就不走镜像、直接让 Remotion 从 Google 下',
+    note: '渲染用浏览器（Google 的 Chrome for Testing）的镜像根，默认 npmmirror；anim.local.toml 写 chrome_mirror = "" 就不走镜像、直接让 Remotion 从 Google 下',
     isPath: false,
     默认: () => 'https://registry.npmmirror.com/-/binary/chrome-for-testing',
   },
   github下载根: {
     变量: 'ANIM_GITHUB_MIRROR',
-    说明: 'anim assets pull 下 Release 附件用的地址前缀，默认 https://github.com；连不上 GitHub 又没代理时可以换成加速站前缀（附件都核 sha256，换了不怕被改）',
+    note: 'anim assets pull 下 Release 附件用的地址前缀，默认 https://github.com；连不上 GitHub 又没代理时可以换成加速站前缀（附件都核 sha256，换了不怕被改）',
     isPath: false,
     默认: () => 'https://github.com',
   },
-  ffmpeg: { 变量: 'ANIM_FFMPEG', 说明: 'ffmpeg 程序（默认从 PATH 找）', isPath: false, 默认: () => 'ffmpeg' },
-  ffprobe: { 变量: 'ANIM_FFPROBE', 说明: 'ffprobe 程序（默认从 PATH 找）', isPath: false, 默认: () => 'ffprobe' },
-  渲染内存下限: { 变量: 'ANIM_RENDER_FREE_MIN', 说明: '渲染放行要的空闲内存百分比（照旧资源闸 30%）', isPath: false, 默认: () => '30' },
-  主机: { 变量: 'ANIM_HOST', 说明: '本机名（写进锁和运行记录）', isPath: false, 默认: () => os.hostname() },
+  ffmpeg: { 变量: 'ANIM_FFMPEG', note: 'ffmpeg 程序（默认从 PATH 找）', isPath: false, 默认: () => 'ffmpeg' },
+  ffprobe: { 变量: 'ANIM_FFPROBE', note: 'ffprobe 程序（默认从 PATH 找）', isPath: false, 默认: () => 'ffprobe' },
+  渲染内存下限: { 变量: 'ANIM_RENDER_FREE_MIN', note: '渲染放行要的空闲内存百分比（照旧资源闸 30%）', isPath: false, 默认: () => '30' },
+  主机: { 变量: 'ANIM_HOST', note: '本机名（写进锁和运行记录）', isPath: false, 默认: () => os.hostname() },
   记忆: {
     变量: 'ANIM_MEMORY',
-    说明: 'agent-context 里本作品的记忆目录（规矩表出处 M/ 的根；anim check 查引用的记忆在不在，不在本机就跳过）',
+    note: 'agent-context 里本作品的记忆目录（规矩表出处 M/ 的根；anim check 查引用的记忆在不在，不在本机就跳过）',
     isPath: true,
     默认: () => path.join(os.homedir(), 'Developer', 'company', 'agent-context', 'memory', 'projects', 'stress-rotation-comic'),
   },
@@ -84,7 +84,7 @@ const localConfigPath = (): string | null => {
   return null;
 };
 
-let configCache: { 值: Record<string, ConfigValue>; localFile: string | null; workPaths: Record<string, string> } | undefined;
+let configCache: { value: Record<string, ConfigValue>; localFile: string | null; workPaths: Record<string, string> } | undefined;
 
 /** [works] 表：放在 作品/ 外的作品名 → 目录。键是作品名（中文要加引号），相对路径相对这个 toml */
 const workPathKey = 'works';
@@ -121,7 +121,7 @@ export const readConfig = (env: NodeJS.ProcessEnv = process.env, localFile: stri
       source = '默认';
     }
     resolved[configKey] = v;
-    values[configKey] = { 值: v, 来源: source, 变量: definition.变量, 键: tomlKey(definition.变量), 说明: definition.说明 };
+    values[configKey] = { value: v, source: source, 变量: definition.变量, key: tomlKey(definition.变量), note: definition.note };
   }
   const workPaths: Record<string, string> = {};
   const workConfig = localConfig[workPathKey];
@@ -132,12 +132,12 @@ export const readConfig = (env: NodeJS.ProcessEnv = process.env, localFile: stri
       workPaths[workName] = path.resolve(path.dirname(localFile!), dir);
     }
   }
-  return { 值: values, localFile, workPaths };
+  return { value: values, localFile, workPaths };
 };
 
 const cachedAllConfig = () => (configCache ??= readConfig());
 
-export const config = (configKey: ConfigKey): string => cachedAllConfig().值[configKey]!.值;
+export const config = (configKey: ConfigKey): string => cachedAllConfig().value[configKey]!.value;
 export const allConfig = () => cachedAllConfig();
 export const workPathTable = () => cachedAllConfig().workPaths;
 

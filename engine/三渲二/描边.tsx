@@ -13,7 +13,7 @@ export const Outline: React.FC<{ 开?: boolean; children: React.ReactNode }> = (
 
 export type OutlineParams = {
   /** 宽（成片像素，整数） */
-  宽: number;
+  width: number;
   /** 颜色（sRGB） */
   色: string;
 };
@@ -109,7 +109,7 @@ void main() {
 }`;
 
 /** 接管画布的渲染（useFrame 优先级 1）：先照常画，参数给了就再描边。一个画布只放一个 */
-export const OutlineRender: React.FC<{ 参数?: OutlineParams | false }> = ({ 参数: params }) => {
+export const OutlineRender: React.FC<{ params?: OutlineParams | false }> = ({ params: params }) => {
   const resource = useMemo(() => {
     const material = new THREE.ShaderMaterial({
       uniforms: { tMask: { value: null }, tDepth: { value: null }, radius: { value: 1 }, inkColor: { value: new THREE.Color() } },
@@ -124,7 +124,7 @@ export const OutlineRender: React.FC<{ 参数?: OutlineParams | false }> = ({ �
     quadMesh.frustumCulled = false;
     const scene = new THREE.Scene();
     scene.add(quadMesh);
-    return { material, 片: quadMesh, 场: scene, 机: new THREE.OrthographicCamera(), rt: null as THREE.WebGLRenderTarget | null, 尺寸: new THREE.Vector2(), clearColor: new THREE.Color() };
+    return { material, 片: quadMesh, scene: scene, machine: new THREE.OrthographicCamera(), rt: null as THREE.WebGLRenderTarget | null, 尺寸: new THREE.Vector2(), clearColor: new THREE.Color() };
   }, []);
   useEffect(
     () => () => {
@@ -160,11 +160,11 @@ export const OutlineRender: React.FC<{ 参数?: OutlineParams | false }> = ({ �
     const u = resource.material.uniforms;
     u.tMask!.value = resource.rt.texture;
     u.tDepth!.value = resource.rt.depthTexture;
-    u.radius!.value = Math.max(1, Math.round((params.宽 * viewport.dpr) / filmScale));
+    u.radius!.value = Math.max(1, Math.round((params.width * viewport.dpr) / filmScale));
     (u.inkColor!.value as THREE.Color).set(params.色);
     const autoClear = gl.autoClear;
     gl.autoClear = false;
-    gl.render(resource.场, resource.机);
+    gl.render(resource.scene, resource.machine);
     gl.autoClear = autoClear;
   }, 1);
   return null;

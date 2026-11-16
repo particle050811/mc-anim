@@ -12,7 +12,7 @@ export type DrawTextOptions = {
   /** 原版文字阴影（drawString 默认带；女仆气泡不带） */
   shadow?: boolean;
   /** 粗体（§l）：同一个字往右再画一遍，偏移 = shadow，步进也加这么多 */
-  粗?: boolean;
+  coarse?: boolean;
   /** 颜色里的不透明度，0～255 的整数（同原版 ARGB 的 A；聊天栏淡出用），不写 255 */
   opacity?: number;
 };
@@ -35,7 +35,7 @@ const parseColor = (color: string): [number, number, number] => {
 
 export type PixelFont = {
   /** 字形表的资产 id，报缺字时用 */
-  readonly 名: string;
+  readonly name: string;
   readonly hasGlyph: (ch: string) => boolean;
   /** 一行字的宽（界面像素，各字步进之和，同 Font.width） */
   readonly textWidth: (text: string | readonly TextRun[], bold?: boolean) => number;
@@ -104,8 +104,8 @@ export const makePixelFont = (fontTable: unknown, fontName: string): PixelFont =
         for (const ch of sp.text) {
           const g = glyphOf(ch);
           const shadowOffset = shadow ? g.shadow : 0;
-          for (const ox of options.粗 ? [0, g.shadow] : [0]) drawDotMatrix(ctx, g, origin, cx + shadowOffset + ox, y + shadowOffset, pixelScale);
-          cx += g.adv + (options.粗 ? g.shadow : 0);
+          for (const ox of options.coarse ? [0, g.shadow] : [0]) drawDotMatrix(ctx, g, origin, cx + shadowOffset + ox, y + shadowOffset, pixelScale);
+          cx += g.adv + (options.coarse ? g.shadow : 0);
         }
       }
       return cx - x;
@@ -113,5 +113,5 @@ export const makePixelFont = (fontTable: unknown, fontName: string): PixelFont =
     if (options.shadow) drawPass(true);
     return drawPass(false);
   };
-  return { 名: fontName, hasGlyph: (ch) => ch in glyphs, textWidth, wrapText, draw };
+  return { name: fontName, hasGlyph: (ch) => ch in glyphs, textWidth, wrapText, draw };
 };

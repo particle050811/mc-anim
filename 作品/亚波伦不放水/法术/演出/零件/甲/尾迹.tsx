@@ -70,15 +70,15 @@ export const Trail: React.FC<{
   /** 新的在前，场景坐标 */
   points: readonly Vec3[];
   /** TrailEffect 的 width（整条宽的一半是它的一半）、length（格） */
-  宽: number;
-  长: number;
-  图: Png;
+  width: number;
+  length: number;
+  image: Png;
   色?: RgbColor;
   opacity?: number;
   /** solid：alpha 不随进度淡 */
   实心?: boolean;
-  混合?: Blend;
-}> = ({ points, 宽: width, 长: length, 图: image, 色: color = [1, 1, 1], opacity = 1, 实心: solid = false, 混合: blend = '半透明' }) => {
+  blend?: Blend;
+}> = ({ points, width: width, length: length, image: image, 色: color = [1, 1, 1], opacity = 1, 实心: solid = false, blend: blend = '半透明' }) => {
   const cacheKey = JSON.stringify(points);
   const geo = useMemo(() => {
     // 沿点列走到 长 为止，最后一段截断

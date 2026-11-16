@@ -17,7 +17,7 @@ const makeBundle = (dirName = 'remotion-webpack-bundle-旧') => {
   for (const p of [path.join(bundleDir, 'bundle.js'), path.join(bundleDir, 'public'), bundleDir]) fs.utimesSync(p, oldTime / 1000, oldTime / 1000);
   return bundleDir;
 };
-const makePlan = (bundleDirs: ReclaimPlan['打包']): ReclaimPlan => ({ media: [], tempFiles: [], staging: [], 打包: bundleDirs, drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, 警告: [] });
+const makePlan = (bundleDirs: ReclaimPlan['打包']): ReclaimPlan => ({ media: [], tempFiles: [], staging: [], 打包: bundleDirs, drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] });
 const options = { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90 };
 
 test('超过 24 小时且空闲的才列入可删；新包、链接和无关目录不删', () => {
@@ -27,10 +27,10 @@ test('超过 24 小时且空闲的才列入可删；新包、链接和无关目�
   fs.symlinkSync(oldBundle, path.join(root, 'remotion-webpack-bundle-链接'), 'junction');
   const bundles = scanBundles(now, root, psText);
   expect(bundles).toHaveLength(2);
-  expect(bundles.find(x => x.路径 === oldBundle)?.理由).toEqual([]);
-  expect(bundles.find(x => x.路径 === newBundle)?.理由[0]?.类).toBe('近期');
+  expect(bundles.find(x => x.path === oldBundle)?.reason).toEqual([]);
+  expect(bundles.find(x => x.path === newBundle)?.reason[0]?.type).toBe('近期');
   expect(fs.existsSync(oldBundle)).toBe(true);
-  expect(bundleKeepReasons({ 路径: oldBundle, 改于: now - 24 * 3600_000 }, now, psText)[0]?.类).toBe('近期');
+  expect(bundleKeepReasons({ path: oldBundle, modifiedAt: now - 24 * 3600_000 }, now, psText)[0]?.type).toBe('近期');
 });
 
 test.each([
@@ -41,7 +41,7 @@ test.each([
   ['33 1 200 /repo/node_modules/.remotion/chrome-headless-shell/mac/chrome-headless-shell', '算不出'],
   ['33 1 200 /d/mc-anim-data/cache/浏览器/157.0.8080.0-remotion-v3/chrome-headless-shell-mac-arm64/chrome-headless-shell', '算不出'],
 ])('进程在用或无法判断时保守留着：%s', (ps, keepKind) => {
-  expect(bundleKeepReasons({ 路径: makeBundle(), 改于: oldTime }, now, ps)[0]?.类).toBe(keepKind);
+  expect(bundleKeepReasons({ path: makeBundle(), modifiedAt: oldTime }, now, ps)[0]?.type).toBe(keepKind);
 });
 
 test('执行时重读进程与新近时间；真删用删打包，public 链接的目标保留', async () => {
@@ -52,13 +52,13 @@ test('执行时重读进程与新近时间；真删用删打包，public 链接�
   fs.lutimesSync(path.join(bundleDir, 'public', 'terrain'), oldTime / 1000, oldTime / 1000);
   fs.utimesSync(path.join(bundleDir, 'public'), oldTime / 1000, oldTime / 1000);
   const p = makePlan(scanBundles(now, root, psText));
-  expect(p.打包[0]!.理由).toEqual([]);
+  expect(p.打包[0]!.reason).toEqual([]);
   const ps = vi.spyOn(orphanModule, '读进程').mockReturnValue(`33 1 200 chrome --serveUrl=${bundleDir}`);
-  expect((await runReclaim(p, options, now)).跳过).toHaveLength(1);
+  expect((await runReclaim(p, options, now)).skipped).toHaveLength(1);
   expect(fs.existsSync(bundleDir)).toBe(true);
   ps.mockReturnValue(psText);
   fs.utimesSync(bundleDir, now / 1000, now / 1000);
-  expect((await runReclaim(p, options, now)).跳过).toHaveLength(1);
+  expect((await runReclaim(p, options, now)).skipped).toHaveLength(1);
   fs.utimesSync(bundleDir, oldTime / 1000, oldTime / 1000);
   const r = await runReclaim(p, options, now);
   expect(r.deletedCount).toBe(1);

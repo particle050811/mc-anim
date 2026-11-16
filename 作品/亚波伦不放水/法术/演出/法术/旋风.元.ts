@@ -11,8 +11,8 @@ export default defineSpellMeta({
   长秒: (whirlwindDurTicks + whirlwindBandMaxTicks) / 20,
   hitSec: 0,
   // 施法音 wind，持续音 whirlwind
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.wind.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.whirlwind', 秒: 0 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.wind.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.whirlwind', sec: 0 },
   ],
 });

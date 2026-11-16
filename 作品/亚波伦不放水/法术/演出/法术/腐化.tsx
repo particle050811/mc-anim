@@ -21,17 +21,17 @@ const [glowPng, bodyPng, coreImg] = [beamGlowPng, beamMainPng, beamCorePng].map(
 const beamWidth = 0.2;
 const downOffset = -0.115;
 
-const Corrupt: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => {
+const Corrupt: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target }) => {
   const t = Math.floor(sec * 20);
-  const { 起: startPos, end, 长: length } = corruptBeam(from, target);
+  const { start: startPos, end, length: length } = corruptBeam(from, target);
   const pulse = 0.9 + 0.1 * Math.sin(t * 0.99) * Math.sin(t * 0.3) * Math.sin(t * 0.1);
   const scrollOffset = t * -0.02;
   const tip = addVec(startPos, scaleVec(unitVec(sub(end, startPos)), length / 10));
   return (
     <>
-      <SquareTubeFaces quads={squareTubeFace(startPos, tip, beamWidth * 1.75 * pulse, { alongAxis: 'v', lengthStart: 0.5, lengthEnd: 1, offset: downOffset, taper: true })} 图={glowPng} 混合="半透明" opacity={0.9} noDepthTest 序={1} />
-      <SquareTubeFaces quads={squareTubeFace(startPos, end, beamWidth, { alongAxis: 'v', lengthStart: scrollOffset, lengthEnd: scrollOffset + length * 1.5, offset: downOffset })} 图={bodyPng} 混合="半透明" opacity={0.7} repeat noDepthTest 序={2} />
-      <SquareTubeFaces quads={squareTubeFace(startPos, end, beamWidth * 0.7, { alongAxis: 'v', lengthStart: scrollOffset, lengthEnd: scrollOffset + length * 1.5, offset: downOffset })} 图={coreImg} 混合="半透明" repeat noDepthTest 序={3} />
+      <SquareTubeFaces quads={squareTubeFace(startPos, tip, beamWidth * 1.75 * pulse, { alongAxis: 'v', lengthStart: 0.5, lengthEnd: 1, offset: downOffset, taper: true })} image={glowPng} blend="半透明" opacity={0.9} noDepthTest 序={1} />
+      <SquareTubeFaces quads={squareTubeFace(startPos, end, beamWidth, { alongAxis: 'v', lengthStart: scrollOffset, lengthEnd: scrollOffset + length * 1.5, offset: downOffset })} image={bodyPng} blend="半透明" opacity={0.7} repeat noDepthTest 序={2} />
+      <SquareTubeFaces quads={squareTubeFace(startPos, end, beamWidth * 0.7, { alongAxis: 'v', lengthStart: scrollOffset, lengthEnd: scrollOffset + length * 1.5, offset: downOffset })} image={coreImg} blend="半透明" repeat noDepthTest 序={3} />
     </>
   );
 };

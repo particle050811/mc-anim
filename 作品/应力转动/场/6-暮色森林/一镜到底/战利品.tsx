@@ -30,20 +30,20 @@ import { smoothstep01 } from '@engine/core/数学.ts';
 // 远景原速，冒出到打碎在一帧以内，只看得到崩开的粒子，粒子不能埋在 boss 身子里，所以给 `chestCenterAlong`（a，米）摆在 boss 身前
 type ChestSpec = { bodyIndex?: number; chestCenterAlong?: number; items: DropName[]; seed: number };
 // 箱子：用哪种暮色木箱（暮色 jar 里各 boss 的 remove()，见 物品/箱子.tsx）；null = 没有箱子，掉落物在它死的那一刻掉在矛尖高度、原地不动，李樱飞过去时顺手收走（见 `pickupRange`）
-const lootTable: Record<route.BossName, { 远景: boolean; chestWood: TwilightChestWood | null; chests: ChestSpec[]; burstOverride?: Partial<BurstParams> }> = {
+const lootTable: Record<route.BossName, { farView: boolean; chestWood: TwilightChestWood | null; chests: ChestSpec[]; burstOverride?: Partial<BurstParams> }> = {
   // 游戏里巫妖是暮色橡木箱、林冠木箱随机二选一，挑暮色橡木（锁扣是单独的一块，近景看得清）
-  巫妖: { 远景: false, chestWood: '暮色橡木', chests: [{ bodyIndex: 0, items: ['金胸甲', '金剑', '末影珍珠', '末影珍珠', '骨头', '骨头', '骨头'], seed: 1 }] },
+  巫妖: { farView: false, chestWood: '暮色橡木', chests: [{ bodyIndex: 0, items: ['金胸甲', '金剑', '末影珍珠', '末影珍珠', '骨头', '骨头', '骨头'], seed: 1 }] },
   // 矛尖对准身子正中，身子半宽约 2 格
-  九头蛇: { 远景: true, chestWood: '红树木', chests: [{ chestCenterAlong: -2.2, items: ['炽热的血', '炽热的血', '炽热的血', '九头蛇肉排', '九头蛇肉排', '九头蛇肉排'], seed: 2 }] },
+  九头蛇: { farView: true, chestWood: '红树木', chests: [{ chestCenterAlong: -2.2, items: ['炽热的血', '炽热的血', '炽热的血', '九头蛇肉排', '九头蛇肉排', '九头蛇肉排'], seed: 2 }] },
   // 身子是 12.5 格见方的方块，矛尖在 -6.25 处碰到它迎着扫帚的那一面（直航以后由北偏东往南偏西穿，碰的是北偏东那一面）
-  暮初恶魂: { 远景: true, chestWood: '暗木', chests: [{ chestCenterAlong: -6.6, items: ['砷铅铁矿石', '砷铅铁矿石', '砷铅铁矿石', '砷铅铁矿石', '炽热之泪', '炽热之泪'], seed: 3 }] },
+  暮初恶魂: { farView: true, chestWood: '暗木', chests: [{ chestCenterAlong: -6.6, items: ['砷铅铁矿石', '砷铅铁矿石', '砷铅铁矿石', '砷铅铁矿石', '炽热之泪', '炽热之泪'], seed: 3 }] },
   // 碰撞箱 3.8 格宽，矛从上往下斜着扎进胸口
-  雪怪首领: { 远景: true, chestWood: '林冠木', chests: [{ chestCenterAlong: -1.4, items: ['雪怪首领毛皮', '雪怪首领毛皮', '雪怪首领毛皮', '冰霜炸弹', '冰霜炸弹', '冰霜炸弹'], seed: 4 }] },
-  冰雪女王: { 远景: false, chestWood: '暮色橡木', chests: [{ bodyIndex: 0, items: ['三发弓', '浮冰', '浮冰', '雪球', '雪球', '雪球'], seed: 5 }] },
+  雪怪首领: { farView: true, chestWood: '林冠木', chests: [{ chestCenterAlong: -1.4, items: ['雪怪首领毛皮', '雪怪首领毛皮', '雪怪首领毛皮', '冰霜炸弹', '冰霜炸弹', '冰霜炸弹'], seed: 4 }] },
+  冰雪女王: { farView: false, chestWood: '暮色橡木', chests: [{ bodyIndex: 0, items: ['三发弓', '浮冰', '浮冰', '雪球', '雪球', '雪球'], seed: 5 }] },
   // 两个巨人一前一后（相距 3.6 格，见 6-1-8b/编排.ts）。巨人不是 boss，不出箱子（用户 10-02）：矛尖碰到它、它死的那一刻，巨人镐/巨人剑掉在矛尖那个高度，
   // 原地不动（用户 10-07：改成玩家同一高度掉落、顺便拾取，不用给掉落物设定超高吸取速度）；李樱胸口飞到它跟前 1 米时开始收、过去半米收完
   巨人: {
-    远景: false,
+    farView: false,
     chestWood: null,
     burstOverride: { forwardSpeed: [0, 0], spreadSpeed: [0, 0], upSpeed: [0, 0] },
     chests: [
@@ -81,7 +81,7 @@ const pickupTiming = (centerAlong: number, breakAlong: number, speed: number): P
   return { suckStart: [reachT - pickupRange.start / speed, reachT - pickupRange.start / speed], suckEnd: [reachT + pickupRange.end / speed, reachT + pickupRange.end / speed] };
 };
 // 贴图 null = 没有箱子（t碎 = 死的那一刻，物品从 中心 掉出来）
-export type ChestState = { 名: route.BossName; 远景: boolean; 贴图: (typeof TWILIGHT_CHEST_TEX)[TwilightChestWood] | null; 中心: V3; facing: number; breakT: number; popOut: number; items: ReturnType<typeof burstItems>; seed: number };
+export type ChestState = { name: route.BossName; farView: boolean; 贴图: (typeof TWILIGHT_CHEST_TEX)[TwilightChestWood] | null; center: V3; facing: number; breakT: number; popOut: number; items: ReturnType<typeof burstItems>; seed: number };
 export const lootChests: ChestState[] = ORDER.flatMap((bossName) => {
   const pierce = route.pierceTable[bossName];
   const cfg = lootTable[bossName];
@@ -102,14 +102,14 @@ export const lootChests: ChestState[] = ORDER.flatMap((bossName) => {
     const breakT = breakAlong / pierce.V;
     const popT = popAlong / pierce.V;
     return {
-      名: bossName,
-      远景: cfg.远景,
+      name: bossName,
+      farView: cfg.farView,
       贴图: cfg.chestWood === null ? null : TWILIGHT_CHEST_TEX[cfg.chestWood],
-      中心: center,
+      center: center,
       facing: pierce.facing,
       breakT: breakT,
       popOut: breakT - popT,
-      items: burstItems(spec.items, center, [dir.x, dir.y, dir.z], { ...(cfg.远景 ? farSuck : nearSuck), ...cfg.burstOverride, ...(noChest ? pickupTiming(centerAlong, breakAlong, pierce.V) : {}) }, spec.seed),
+      items: burstItems(spec.items, center, [dir.x, dir.y, dir.z], { ...(cfg.farView ? farSuck : nearSuck), ...cfg.burstOverride, ...(noChest ? pickupTiming(centerAlong, breakAlong, pierce.V) : {}) }, spec.seed),
       seed: spec.seed,
     };
   });
@@ -120,15 +120,15 @@ export const LootLayer: React.FC<{ T: number; broom: THREE.Matrix4; camPos: numb
   const camDist = (p: number[]) => Math.hypot(p[0] - camPos[0], p[1] - camPos[1], p[2] - camPos[2]);
   const nodes: React.ReactNode[] = [];
   lootChests.forEach((chest, i) => {
-    const τ = physT - route.pierceTimes[chest.名] - chest.breakT;
+    const τ = physT - route.pierceTimes[chest.name] - chest.breakT;
     if (τ < -chest.popOut || τ > 2.2) return;
-    const chestScale = chest.远景 ? Math.min(farScale.chest, Math.max(1, camDist(chest.中心) / farScale.start)) : 1;
+    const chestScale = chest.farView ? Math.min(farScale.chest, Math.max(1, camDist(chest.center) / farScale.start)) : 1;
     // 箱子只按朝向转（立着），正面朝着冲过来的扫帚
-    if (chest.贴图 && τ < (chest.远景 ? 2.1 : 2.1 / closeupBreakClockScale.chest))
+    if (chest.贴图 && τ < (chest.farView ? 2.1 : 2.1 / closeupBreakClockScale.chest))
       nodes.push(
-        <group key={`箱${i}`} position={chest.中心} rotation={[0, 0, (chest.facing * Math.PI) / 180]}>
+        <group key={`箱${i}`} position={chest.center} rotation={[0, 0, (chest.facing * Math.PI) / 180]}>
           <group position={[0, 0, -halfChest]}>
-            <LootChestBurst secSinceBreak={τ} popLeadSec={chest.popOut} particleClockScale={chest.远景 ? 1 : closeupBreakClockScale.chest} scale={chestScale} seed={chest.seed} texture={chest.贴图} />
+            <LootChestBurst secSinceBreak={τ} popLeadSec={chest.popOut} particleClockScale={chest.farView ? 1 : closeupBreakClockScale.chest} scale={chestScale} seed={chest.seed} texture={chest.贴图} />
           </group>
         </group>,
       );
@@ -140,8 +140,8 @@ export const LootLayer: React.FC<{ T: number; broom: THREE.Matrix4; camPos: numb
           τ={τ}
           target={target}
           camPos={camPos}
-          scale={chest.远景 ? (p) => Math.min(farScale.item, Math.max(1, camDist(p) / farScale.start)) : undefined}
-          glow={chest.远景 ? 0.7 : 0.35}
+          scale={chest.farView ? (p) => Math.min(farScale.item, Math.max(1, camDist(p) / farScale.start)) : undefined}
+          glow={chest.farView ? 0.7 : 0.35}
         />,
       );
   });

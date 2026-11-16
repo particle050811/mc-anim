@@ -17,9 +17,9 @@ import trailParticlePng from 'asset:贴图/法术/goety/particle/trail';
 import { mulberry32 } from '@engine/core/数学.ts';
 
 const poisonQuillModel = getModel(poisonQuillModelData, 'PoisonQuillModel');
-export const trailParticleClass: ParticleClass = { 帧: [png(trailParticlePng)], 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', opacity: (age, lifetime) => 1 - Math.floor(age) / lifetime };
+export const trailParticleClass: ParticleClass = { frame: [png(trailParticlePng)], 选帧: '按年龄', 摩擦: 0.96, blend: '半透明', opacity: (age, lifetime) => 1 - Math.floor(age) / lifetime };
 
-const PoisonDart: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const PoisonDart: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = poisonDartPath(from, target, options?.highSpeed);
   const r = mulberry32(seed * 5 + 2);
@@ -35,12 +35,12 @@ const PoisonDart: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: t
         <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
           <group rotation={[0, degToRad(yaw - 90), 0]}>
             <group rotation={[0, 0, degToRad(pitch + 90)]}>
-              <ModelPart 模型={poisonQuillModel} 图={png(quillPng)} 画法="半透明" />
+              <ModelPart model={poisonQuillModel} image={png(quillPng)} 画法="半透明" />
             </group>
           </group>
         </MinecraftSpace>
       )}
-      <TexturedParticles 类={trailParticleClass} spawns={tail} 秒={sec} />
+      <TexturedParticles type={trailParticleClass} spawns={tail} sec={sec} />
     </>
   );
 };

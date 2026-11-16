@@ -5,18 +5,18 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 事件: events, 段: thisSegment } = useSeg(seg);
+  const { sec: sec, events: events, segment: thisSegment } = useSeg(seg);
   const afterglow = interpolate(sec, [events.distantBurst, events.distantBurst + 1.25], [0.6, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   return (
     <AbsoluteFill style={{ background: 'linear-gradient(#0b1030, #1d2450)' }}>
-      <svg width={thisSegment.宽} height={thisSegment.高}>
+      <svg width={thisSegment.width} height={thisSegment.height}>
         <defs>
           <radialGradient id="余光">
             <stop offset="0" stopColor="#ffb86b" stopOpacity={1} />
             <stop offset="1" stopColor="#ffb86b" stopOpacity={0} />
           </radialGradient>
         </defs>
-        <circle cx={thisSegment.宽 * 0.18} cy={thisSegment.高 * 0.7} r={thisSegment.高 * 0.35} fill="url(#余光)" opacity={afterglow} />
+        <circle cx={thisSegment.width * 0.18} cy={thisSegment.height * 0.7} r={thisSegment.height * 0.35} fill="url(#余光)" opacity={afterglow} />
       </svg>
     </AbsoluteFill>
   );

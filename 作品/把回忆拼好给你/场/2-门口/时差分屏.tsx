@@ -71,20 +71,20 @@ const cellsPerPage = (16 * splitScreenCount) / 2;
 /** 接入那几帧服务器那块画布往左宽出 成形.横，门口的地（地点/门口小木屋.tsx 铺到 x −16）不够宽，第一帧左沿露出地的断面（核查 10-24）。
  *  往左照同样的铺法补几列：草 4 排，最前一排往下两层泥土、两层石头 */
 const patchGround: readonly PlacedBlock[] = Array.from({ length: 4 }, (_, n) => -20 + n).flatMap((i) => [
-  ...[0, 1, 2, 3].map((j): PlacedBlock => ({ 状态: 'minecraft:grass_block', 位: [i, j, -1] })),
-  ...[-2, -3].map((k): PlacedBlock => ({ 状态: 'minecraft:dirt', 位: [i, 0, k] })),
-  ...[-4, -5].map((k): PlacedBlock => ({ 状态: 'minecraft:stone', 位: [i, 0, k] })),
+  ...[0, 1, 2, 3].map((j): PlacedBlock => ({ state: 'minecraft:grass_block', 位: [i, j, -1] })),
+  ...[-2, -3].map((k): PlacedBlock => ({ state: 'minecraft:dirt', 位: [i, 0, k] })),
+  ...[-4, -5].map((k): PlacedBlock => ({ state: 'minecraft:stone', 位: [i, 0, k] })),
 ]);
 
 /** 树苗那一格（树干那排，j = 1） */
 const treeRoot = [entrance.saplingPos[0], 1, 0] as const;
 
-const neutralGrade: Grade = { 饱和: 1, 对比: 1, multiply: '#ffffff', lift: '#000000', 暗角: 0, 颗粒: 0 };
+const neutralGrade: Grade = { 饱和: 1, comparison: 1, multiply: '#ffffff', lift: '#000000', 暗角: 0, 颗粒: 0 };
 const gradeOnly = (t: Grade): Grade => ({ ...t, 暗角: 0, 颗粒: 0 });
 
 export type TimeLagSplitProps = {
   /** 歌曲帧（分镜 的时间轴） */
-  帧: number;
+  frame: number;
   /** 描边开关（默认照 画风.ts），两屏一起管 */
   outline?: boolean;
   /** 整片后期开关（默认开） */
@@ -94,20 +94,20 @@ export type TimeLagSplitProps = {
   /** 段 2-时差 用：开头两屏从右边滑进来（接第 12 句末的横移）。核对段不给，画面照旧 */
   joining?: boolean;
   /** 整页那层颗粒的种子（整片后期），段里给歌曲帧；不给 = 当前帧 */
-  种子?: number;
+  seed?: number;
   /** 盖在两屏和分屏线上面、整页质感里面的东西（符文歌词），页面坐标 1280×720 */
-  叠层?: React.ReactNode;
+  overlay?: React.ReactNode;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只管服务器那半（门口，太阳照 参数.ts 的 白天光影场）；不给 = 不开 */
   shading?: ShadingOptions | null;
   /** 现实那半的光影；不给 = 不开 */
   realShading?: ShadingOptions | null;
 };
 
-export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline = defaultOutline.开, withPost = true, liYing: overrides, joining = false, 种子: seed, 叠层: overlay, shading, realShading }) => {
+export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ frame: frame, outline = defaultOutline.开, withPost = true, liYing: overrides, joining = false, seed: seed, overlay: overlay, shading, realShading }) => {
   const splitState = SplitState(frame);
   const offset = joining ? shapeOffsetAt(frame) : 0;
   const { serverWidth, realWidth, lineWidth, lineColor } = splitLayout;
-  const height = aspect.高;
+  const height = aspect.height;
   const liYing = { ...liYingPoses[splitState.poseChangeCount]!, ...overrides };
   const pos: V3 = [liYing.x, entrance.standRowY, 0];
   const originalDisplay = DISPLAY.generated.thirdperson_righthand;
@@ -127,7 +127,7 @@ export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline 
             stancePose={liYing.stancePose}
             看={liYing.看}
             blink={0}
-            秒={frame / fps}
+            sec={frame / fps}
             rightHand={flowerInHand}
             skeleton={liYing.skeleton}
           />
@@ -147,8 +147,8 @@ export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline 
     withGrade(
       serverTone.grade,
       <ForestDoorCanvas
-        宽={width}
-        高={height}
+        width={width}
+        height={height}
         framing={framing}
         outlineWidth={splitScreenCount}
         hasSign
@@ -158,8 +158,8 @@ export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline 
         growth={splitState.growth}
         shading={shading}
       >
-        <BlockAssembly blocks={treeBlocks} 原点={gridOrigin} 群系={biome} frontPlants />
-        {offset ? <BlockAssembly blocks={patchGround} 原点={gridOrigin} 群系={biome} /> : null}
+        <BlockAssembly blocks={treeBlocks} origin={gridOrigin} biome={biome} frontPlants />
+        {offset ? <BlockAssembly blocks={patchGround} origin={gridOrigin} biome={biome} /> : null}
         {outline ? <OutlineGroup>{wineFox}</OutlineGroup> : wineFox}
       </ForestDoorCanvas>,
     );
@@ -169,7 +169,7 @@ export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline 
         // 接入中：服务器那半画宽一截（多出来的在左边），整块跟着分屏线往右挪 偏；门的右边一直贴着分屏线
         <div style={{ position: 'absolute', left: 0, top: 0, width: serverWidth + offset, height: height, overflow: 'hidden' }}>
           <div style={{ position: 'absolute', left: offset - formShift.horizontalPx, top: 0, width: serverWidth + formShift.horizontalPx, height: height }}>
-            {serverCanvas(serverWidth + formShift.horizontalPx, { ...serverFraming, 中心: [serverFraming.中心[0] - formShift.horizontalPx / cellsPerPage / 2, serverFraming.中心[1]] })}
+            {serverCanvas(serverWidth + formShift.horizontalPx, { ...serverFraming, center: [serverFraming.center[0] - formShift.horizontalPx / cellsPerPage / 2, serverFraming.center[1]] })}
           </div>
         </div>
       ) : (
@@ -180,7 +180,7 @@ export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline 
       <div style={{ position: 'absolute', left: serverWidth + offset, top: 0, width: realWidth, height: height, overflow: 'hidden' }}>
         {withGrade(
           palette.现实.grade,
-          <RealCanvas 宽={realWidth} 高={height} framing={realFraming} outline={outline} outlineWidth={splitScreenCount} shading={realShading}>
+          <RealCanvas width={realWidth} height={height} framing={realFraming} outline={outline} outlineWidth={splitScreenCount} shading={realShading}>
             <RealDesk calendar={splitState.calendar} flyPages={splitState.flyPages} oblique={oblique} />
           </RealCanvas>,
         )}
@@ -190,7 +190,7 @@ export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline 
     </div>
   );
   return withPost ? (
-    <FilmPost grade={finishGrade} 种子={seed}>
+    <FilmPost grade={finishGrade} seed={seed}>
       {pageView}
     </FilmPost>
   ) : (

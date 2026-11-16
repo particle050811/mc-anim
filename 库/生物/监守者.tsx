@@ -51,7 +51,7 @@ export const WARDEN = {
   sonicBoomHitSec: 1.7, // `SonicBoom.TICKS_BEFORE_PLAYING_SOUND` = 34 刻：这一刻放声波、造成伤害
   heartbeatTicks: { calm: 40, angriest: 10 },
   // 钻出 / 挖地时脚下的方块碎屑（客户端 `clientDiggingParticles`）：每刻 30 个、持续到动画 4.5 秒、脚下 ±0.7 格方形内、初速度 0
-  emergeParticles: { perTick: 30, durationSec: 4.5, 半宽: 0.7 },
+  emergeParticles: { perTick: 30, durationSec: 4.5, halfWidth: 0.7 },
   // 钻出的进度（秒，按 钻出 动画逐帧算各部件方盒的最高 / 最低点得出，见 预览/监守者/监守者-钻出-剖面*.png）：
   // 开始时身子、腿整体往下沉 63 像素，全身埋在地下；0.52 秒手先伸出地面、0.6 触角、0.8 头顶、1.08 肩冒头；1.2～3.0 秒撑着地面停住；
   // 3.2 头整个出来、3.86 身子、4.7 腿全部出来；4.4～5.8 蹲着往前趴，6.0～6.64 站直。（3.4～6.0 秒双手撑地，手掌会插进地面 0.1～0.2 格，原版就是这样）
@@ -68,7 +68,7 @@ const HEART_PARTS = ['body']; // getHeartLayerModelParts
 const DEG = Math.fround(0.017453292);
 
 export type WardenProps = {
-  秒: number; // 游戏时间（秒）：驱动待机摆动、脉动斑纹、自动心跳；ageInTicks = 秒×20
+  sec: number; // 游戏时间（秒）：驱动待机摆动、脉动斑纹、自动心跳；ageInTicks = 秒×20
   钻出?: number; // 各关键帧动画已经播放的秒数；不给 = 不播。可以同时给几个（游戏里也是叠加的）
   吼叫?: number;
   嗅?: number;
@@ -79,7 +79,7 @@ export type WardenProps = {
   headYaw?: number; // 度（netHeadYaw，正 = 往实体自己的右手边转）
   headPitch?: number; // 度（headPitch，正 = 低头）
   tendril?: number; // tendrilAnimation 0～1：触角摆动 + 触角发光；不给 = 0
-  心跳?: number; // heartAnimation 0～1；不给就按 秒 和 心跳间隔 自动算（每次心跳从 1 降到 0，用 10 刻）
+  heartbeat?: number; // heartAnimation 0～1；不给就按 秒 和 心跳间隔 自动算（每次心跳从 1 降到 0，用 10 刻）
   heartbeatTicks?: number; // 刻，默认 40（不生气）
   // 光照：默认照原版实体的光照画本体（不受场景光影响）——贴图 × 方向明暗（顶 1、前后 0.74、左右 0.5、底 0.4）× 亮度，
   // 亮度默认 1 = 夜视（用户 10-02：古城里一律按夜视）。和实机对照过（预览/监守者/实机-*.png）。
@@ -99,7 +99,7 @@ export const wardenHeart = (sec: number, intervalTicks = WARDEN.heartbeatTicks.c
 };
 
 export const wardenPose = (props: WardenProps) => {
-  const age = props.秒 * 20;
+  const age = props.sec * 20;
   const pose = restPose(MODEL.root);
   const { head, body, left_arm, right_arm, left_leg, right_leg, left_tendril, right_tendril } = pose;
   head.rot[0] = Math.fround((props.headPitch ?? 0) * DEG);
@@ -147,9 +147,9 @@ export const wardenPose = (props: WardenProps) => {
 
 // 5 个发光层（顺序、贴图、alpha、部件照 WardenRenderer 的构造方法）
 export const wardenLayers = (props: WardenProps): EntityLayer[] => {
-  const age = props.秒 * 20;
+  const age = props.sec * 20;
   const k = props.opacity ?? 1;
-  const heart = props.心跳 ?? wardenHeart(props.秒, props.heartbeatTicks);
+  const heart = props.heartbeat ?? wardenHeart(props.sec, props.heartbeatTicks);
   return [
     { tex: TEX.bio, alpha: 1 * k, parts: BIO_PARTS },
     { tex: TEX.spots1, alpha: Math.max(0, mthCos(age * 0.045) * 0.25) * k, parts: SPOT_PARTS },

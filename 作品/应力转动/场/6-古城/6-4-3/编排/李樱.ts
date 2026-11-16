@@ -9,7 +9,7 @@ import { storySecAt } from './公用.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 
 // #210（Lootr 战利品箱，6-4-2 开的）：开头开着，听到「哄」松手、盖子落下
-export const openChest = (g: number): ChestOpening => ({ chestId: chestArchery.chestId, 开: -1, closeSec: geom.turnStart, 秒: storySecAt(g) });
+export const openChest = (g: number): ChestOpening => ({ chestId: chestArchery.chestId, 开: -1, closeSec: geom.turnStart, sec: storySecAt(g) });
 // 面朝南翻箱子，同 6-4-2 末帧
 export const rummageFacing = yawTo(0, -1);
 const FACE_CHEST = rummageFacing;

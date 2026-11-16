@@ -7,7 +7,7 @@ import { fps, legacyFrameSec } from '../../分镜/时间.ts';
 /** 远山：出生点 起 格以外地面慢慢抬起一道道缓坡（低频噪声，坡顶高到 高 格），远处的地平线有起伏，不是一条直线（用户 10-24「超平坦背景 合理吗？」；
  *  核查 10-24：原来平原起伏 ±2.4 格，从镜头那么高往远处看还是一条平线）。原版平原挨着别的群系，远处常有山坡；这几道坡按原版 12 区块的雾淡出。
  *  樱花林方向（从出生点看偏东 让林角 以内）不抬，坡在林子两边，不挡那一点粉。演绎，Agent 暂定 */
-export const farHills = { 起: 70, full: 150, 高: 14, scale: 52, offset: 0.2, forestYieldDeg: [8, 18] as const };
+export const farHills = { start: 70, full: 150, height: 14, scale: 52, offset: 0.2, forestYieldDeg: [8, 18] as const };
 
 /** 远林：远山坡上两片橡树林（树干 4～6 格，照原版 TreeFeatures.OAK），在雾里是一团团深绿，地平线不光秃。心 [x, y]、半径、树距（格），演绎，Agent 暂定 */
 export const farGroves = [
@@ -31,7 +31,7 @@ export const renderDistance = 192;
 const skyPull = 1 - (0.25 + (0.75 * renderDistance) / 16 / 32) ** 0.25;
 export const fogColor = '#' + baseFogColor.map((c, i) => Math.round(c + (skyRgb[i]! - c) * skyPull).toString(16).padStart(2, '0')).join('');
 /** 地形的雾（原版 FogRenderer.setupFog 的 FOG_TERRAIN，柱形）：起 = 距离 − clamp(距离 / 10, 4, 64)，止 = 距离；中间按 smoothstep 混雾色 */
-export const terrainFog = { 起: renderDistance - Math.min(64, Math.max(4, renderDistance / 10)), 止: renderDistance };
+export const terrainFog = { start: renderDistance - Math.min(64, Math.max(4, renderDistance / 10)), end: renderDistance };
 /** 天的雾（FOG_SKY，球形，起 0、止 = 渲染距离）：天幕在眼睛上方 16 格 */
 export const skyDomeHeight = 16;
 
@@ -44,7 +44,7 @@ export const nightSky = { horizon: '#141c33', topColor: '#04060e' };
  *  亮度照 ClientLevel.getStarBrightness（(1 − (cos(天球角·2π)·2 + 0.25))² × 0.5，夹 0～1），按 SRC_ALPHA、ONE 加到天上。
  *  演绎：原版一颗星 6～10 成片像素、夜里只加 0.25 的亮，手机 390 宽上不到一个像素，快进一夜时看不出满天星星在转（核查 10-24）；
  *  这里一颗画成 画格 × 画格 个天格（12 成片像素见方，手机上 2 像素），亮度按原版的 亮倍 倍加上去（夜里加 0.75）。撒在哪、怎么转、什么时候出来照原版 */
-export const starField = { 种子: 10842, starCount: 1500, 距离: 100, starCellPx: 2, brightnessMult: 3 };
+export const starField = { seed: 10842, starCount: 1500, 距离: 100, starCellPx: 2, brightnessMult: 3 };
 
 // ---------- 剖面（第 1 句尾到 2-第一晚：你挖坑的那一格） ----------
 
@@ -57,7 +57,7 @@ export const sectionOrigin = [pit.i + 0.5, pit.j, 0] as const;
  *  从镜头脚下往坑那边每 剥秒 撤一排，露出剖面（同样铺到 底，撤到一半时看得见下一排的切面）。坑左右 让草 列内不长草、不开花（不挡你）。
  *  后墙：坑后面那一排、草方块以下那几格压暗，从剖面看得出是个洞（原版平滑光照在一格宽的竖井里，后墙两边挨着实心方块，环境光遮蔽把它压到 0.6 左右、贴底的一格 0.4）；
  *  顶上那格草方块的顶面在地面上看得见，不压（它朝洞里那面 2-第一晚 另压）。演绎，Agent 暂定 */
-export const crossSection = { 半宽: 12, bottom: -8, stripRows: 11, stripHalfWidth: 10, grassClearDist: 1, backWallLight: 0.5 };
+export const crossSection = { halfWidth: 12, bottom: -8, stripRows: 11, stripHalfWidth: 10, grassClearDist: 1, backWallLight: 0.5 };
 
 // ---------- 机位（透视三渲二） ----------
 
@@ -96,4 +96,4 @@ export const arrived = { facing: -90, turnSec: legacyFrameSec(3), headDownSec: l
 /** 聊天栏缩放（一个界面像素几个成片像素）：原版 2560×1440 自动选的界面尺寸 6，同第 15 句的「Steve加入了游戏」：
  *  同一行聊天字跨镜头不能突然变大变小（主会话 10-24 美术定稿）。聊天宽也同第 15 句（界面/聊天栏宽.ts，110）。
  *  淡秒：「Steve加入了游戏」原版最后 20 刻淡掉，这里铺在剖开前这 1/3 秒里（24 fps 时 8 帧；编排.ts 聊天刻在） */
-export const chatOverlay = { 缩放: 6, fadeSec: legacyFrameSec(8) };
+export const chatOverlay = { scale: 6, fadeSec: legacyFrameSec(8) };

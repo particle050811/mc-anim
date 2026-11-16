@@ -7,7 +7,7 @@ import type { ManifestEntry } from '../../engine/段/清单条目.ts';
 import type { SegmentDef } from '../../engine/段/段定义.ts';
 import { splitFullName, workName, workRoot } from '../环境/作品.ts';
 
-export type SegInfo = ManifestEntry & { 编号: string | null; segmentName: string; 目录: string; 画面: string; 段文件: string; 段: SegmentDef };
+export type SegInfo = ManifestEntry & { serial: string | null; segmentName: string; 目录: string; 画面: string; segmentFile: string; segment: SegmentDef };
 
 const readSegFile = async (file: string): Promise<SegmentDef> => {
   const m = (await import(pathToFileURL(file).href)) as { default?: SegmentDef };
@@ -22,19 +22,19 @@ export const loadAllSegments = async (): Promise<SegInfo[]> => {
   const { manifest, segDir, segmentName, segmentCode } = (await import(pathToFileURL(path.join(workDir, '清单.ts')).href)) as WorkManifest;
   return Promise.all(
     manifest.map(async (t) => {
-      const absSegDir = path.join(workDir, ...segDir(t.键).split('/'));
+      const absSegDir = path.join(workDir, ...segDir(t.key).split('/'));
       const segFile = path.join(absSegDir, '段.ts');
-      return { ...t, 编号: segmentCode(t.键), segmentName: segmentName(t), 目录: absSegDir, 段文件: segFile, 画面: path.join(absSegDir, '画面.tsx'), 段: await readSegFile(segFile) };
+      return { ...t, serial: segmentCode(t.key), segmentName: segmentName(t), 目录: absSegDir, segmentFile: segFile, 画面: path.join(absSegDir, '画面.tsx'), segment: await readSegFile(segFile) };
     }),
   );
 };
 
 const isOtherWork = (selector: string) => {
-  const selectorWork = splitFullName(selector).作品;
+  const selectorWork = splitFullName(selector).work;
   return selectorWork !== undefined && selectorWork.normalize('NFC').toLowerCase() !== workName().toLowerCase();
 };
 
-const exactMatch = (s: SegInfo, selectorKey: string) => [s.键, s.segmentName, s.编号, s.段.场, String(s.章)].includes(selectorKey);
+const exactMatch = (s: SegInfo, selectorKey: string) => [s.key, s.segmentName, s.serial, s.segment.scene, String(s.章)].includes(selectorKey);
 
 const inChapterRange = (s: SegInfo, rangeKey: string) => {
   const rangeMatch = /^(\d+)-(\d+)$/.exec(rangeKey);
@@ -47,7 +47,7 @@ const inChapterRange = (s: SegInfo, rangeKey: string) => {
  */
 export const matchSelector = (segments: readonly SegInfo[], selector: string): SegInfo[] => {
   if (isOtherWork(selector)) return [];
-  const segKey = splitFullName(selector).键;
+  const segKey = splitFullName(selector).key;
   const exactMatches = segments.filter((s) => exactMatch(s, segKey));
   return exactMatches.length ? exactMatches : segments.filter((s) => inChapterRange(s, segKey));
 };
@@ -58,7 +58,7 @@ export const selectSegs = async (selectors: readonly string[]): Promise<SegInfo[
   if (otherWorks.length) throw new Error(`${otherWorks.join('、')} 不是现在选的作品「${workName()}」的段（一次只处理一部作品，换作品用 --work）`);
   const perSelector = selectors.map((x) => matchSelector(allSegments, x));
   const unmatched = selectors.filter((_, i) => !perSelector[i]!.length);
-  if (unmatched.length) throw new Error(`选择器没对上任何段：${unmatched.join('、')}（能用段键、段名、编号、场键、章或 6-7 这样的章范围；清单里有：${allSegments.map((s) => s.键).join('、')}）`);
+  if (unmatched.length) throw new Error(`选择器没对上任何段：${unmatched.join('、')}（能用段键、段名、编号、场键、章或 6-7 这样的章范围；清单里有：${allSegments.map((s) => s.key).join('、')}）`);
   const wanted = new Set(perSelector.flat());
   return allSegments.filter((s) => wanted.has(s));
 };

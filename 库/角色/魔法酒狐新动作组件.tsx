@@ -222,7 +222,7 @@ export type MagicalWineFoxExProps = {
   /** 头对准场景里这一点（格），按这个姿势真实的身体倾斜算；给了就不看 看 */
   lookAt?: V3;
   blink?: number | 'auto';
-  秒?: number;
+  sec?: number;
   rightHand?: HeldItem;
   leftHand?: HeldItem;
   /** 最后叠上的骨骼姿势，按骨骼整条替换 */
@@ -234,9 +234,9 @@ export type MagicalWineFoxExProps = {
 
 /** 整张姿势表（组件内部用的同一张，外面要算挂点、对位时也能拿） */
 export const magicalWineFoxExBones = (p: MagicalWineFoxExProps): Record<string, BonePose> => {
-  const { stancePose = '站', hat = true, backStaff = true, 秒: sec } = p;
+  const { stancePose = '站', hat = true, backStaff = true, sec: sec } = p;
   const bottomPosture = basePose(stancePose);
-  const motion = magicalWineFoxExMotion({ stancePose, expression: p.expression, 看: p.看, blink: p.blink ?? 'auto', 秒: sec, holding: !!p.rightHand });
+  const motion = magicalWineFoxExMotion({ stancePose, expression: p.expression, 看: p.看, blink: p.blink ?? 'auto', sec: sec, holding: !!p.rightHand });
   const boneTable: Record<string, BonePose> = {
     ...magicalWineFoxHidden,
     ...(bottomPosture === '坐' ? magicalWineFoxSitBones : {}),
@@ -271,7 +271,7 @@ export const MagicalWineFoxEx: React.FC<MagicalWineFoxExProps> = (p) => {
         pose={p.pose}
         stancePose={basePose(stancePose)}
         skeleton={boneTable}
-        秒={p.秒}
+        sec={p.sec}
         blink={p.blink}
         hat={hat}
         backStaff={backStaff}

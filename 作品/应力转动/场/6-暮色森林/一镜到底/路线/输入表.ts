@@ -72,7 +72,7 @@ export const takeoffPitch = deg(Math.asin(D0[2]));
 
 // ---------- 穿刺线 ----------
 // 身（近景的几处才有）：穿刺线上每个 boss 的身体中心 心、矛尖碰到它身体的位置 触（米，同 a）。战利品箱、boss 死时变半透明按它
-export type Pierce = { 名: string; V: number; facing: number; tip: (along: number) => V3; 前: number; 后: number; impactPos: number; 出: number; bodies?: { 心: number; touch: number }[] };
+export type Pierce = { name: string; V: number; facing: number; tip: (along: number) => V3; 前: number; 后: number; impactPos: number; 出: number; bodies?: { 心: number; touch: number }[] };
 export const pierceTable = {
   巫妖: lichChoreo.pierceLine as Pierce,
   九头蛇: hydraChoreo.pierceLine as Pierce,

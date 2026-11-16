@@ -68,7 +68,7 @@ const spriteOf = (frac: number, r4: number) => 7 - Math.floor((clamp(Math.floor(
 
 // ---------- (a) 直吹风道 ----------
 export type DirectBlowParams = {
-  种子: number;
+  seed: number;
   storyTime: number; // 剧情秒
   outlet: V3; // 出风口那一面的中心（d = 0）
   windDir: V3; // 风向（不必是单位向量）
@@ -80,10 +80,10 @@ export type DirectBlowParams = {
   // 6-4-3 风矢给 [0, 0.15]（游戏 0.5 格宽按 0.3 格风扇缩，挪到出风口前，见 镜头/6-4-3/编排.ts）
   spawnDist?: [number, number];
   expansion?: number; // 横向偏移随 d 放大：× (1 + 扩张 × d/最大距离)，游戏是 0（直筒）
-  大小?: number; // 粒子大小倍数
+  size?: number; // 粒子大小倍数
   opacity?: number; // 乘在 0.25 上（淡入淡出）
-  起?: number; // 剧情秒：只在 [起, 止] 里出生；之前出生的照样飞完
-  止?: number;
+  start?: number; // 剧情秒：只在 [起, 止] 里出生；之前出生的照样飞完
+  end?: number;
   normal?: V3; // 横向基的参考方向（只影响随机偏移落在哪，不影响样子）
   // 快放：整条风道照原版逐刻推，但一刻只占 1/(20×快放) 剧情秒，任一瞬间的样子和原版一样、只是动得快。不给 = 1。
   // 6-4-3 风矢用（剧情设定：应力转动之力把风吹到原版的几百倍快），见 镜头/6-4-3/几何.ts 的 `windFastForward`
@@ -94,7 +94,7 @@ export type DirectBlowParams = {
 };
 
 export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
-  const { 种子: seed, storyTime: sec, outlet: outlet, density: density = airFlowConsts.defaultDensity, spread: scatter = airFlowConsts.jitter, expansion: expansion = 0, 大小: sizeScale = 1, opacity: opacity = 1, fastForward: fastForward = 1 } = opts;
+  const { seed: seed, storyTime: sec, outlet: outlet, density: density = airFlowConsts.defaultDensity, spread: scatter = airFlowConsts.jitter, expansion: expansion = 0, size: sizeScale = 1, opacity: opacity = 1, fastForward: fastForward = 1 } = opts;
   if (density <= 0 || opacity <= 0) return [];
   const rpmAt = typeof opts.rotSpeedRpm === 'function' ? opts.rotSpeedRpm : () => opts.rotSpeedRpm as number;
   const maxDistAt = opts.maxDist === undefined ? (t: number) => ductLength(rpmAt(t)) : typeof opts.maxDist === 'function' ? opts.maxDist : () => opts.maxDist as number;
@@ -113,7 +113,7 @@ export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
     const age = tau - birthTick;
     if (age < 0 || age >= lifespan) continue;
     const tb = birthTick / storyTicksPerSec;
-    if ((opts.起 !== undefined && tb < opts.起) || (opts.止 !== undefined && tb > opts.止)) continue;
+    if ((opts.start !== undefined && tb < opts.start) || (opts.end !== undefined && tb > opts.end)) continue;
     if (rpmAt(tb) === 0) continue;
     const [nearDist, farDist] = opts.spawnDist ?? [-airFlowConsts.jitter, airFlowConsts.jitter];
     let dist = nearDist + slotRand(seed, k, 1) * (farDist - nearDist);
@@ -158,11 +158,11 @@ export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
 
 // 散花风道：6-4-3a、7-1-5、7-4-1 弓前风扇虚影吹出的风道，细的芯 + 往外散开的一大团花，横截面按风扇边长缩。
 // 用户 10-18 定：都照 6-4-3a「哄」那一帧（原来只在那 0.05 秒加的一团）的散花样子，末端越往外越稀
-export const scatterDuct = (opts: Omit<DirectBlowParams, 'density' | 'spread' | 'expansion' | '大小' | 'fadeThin'> & { sideLength: number }): AirFlowParticle[] => {
+export const scatterDuct = (opts: Omit<DirectBlowParams, 'density' | 'spread' | 'expansion' | 'size' | 'fadeThin'> & { sideLength: number }): AirFlowParticle[] => {
   const { sideLength: side, ...rest } = opts;
   return [
-    ...directBlowDuct({ ...rest, density: 15, spread: 0.45 * side, expansion: 0.6, 大小: 0.65, fadeThin: 0.3 }),
-    ...directBlowDuct({ ...rest, 种子: rest.种子 + 1, density: 40, spread: 0.9 * side, expansion: 1.6, 大小: 0.75, fadeThin: 0.3 }),
+    ...directBlowDuct({ ...rest, density: 15, spread: 0.45 * side, expansion: 0.6, size: 0.65, fadeThin: 0.3 }),
+    ...directBlowDuct({ ...rest, seed: rest.seed + 1, density: 40, spread: 0.9 * side, expansion: 1.6, size: 0.75, fadeThin: 0.3 }),
   ];
 };
 

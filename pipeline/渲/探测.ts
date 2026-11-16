@@ -5,7 +5,7 @@ import { runCapture } from '../环境/子进程.ts';
 export const videoInfo = (file: string) => {
   const out = runCapture([config('ffprobe'), '-v', 'error', '-count_packets', '-select_streams', 'v:0', '-show_entries', 'stream=nb_read_packets,width,height', '-of', 'json', file]);
   const s = JSON.parse(out).streams[0] as { nb_read_packets: string; width: number; height: number };
-  return { 帧数: Number(s.nb_read_packets), 宽: s.width, 高: s.height };
+  return { frameCount: Number(s.nb_read_packets), width: s.width, height: s.height };
 };
 
 export const hasAudioTrack = (file: string) =>

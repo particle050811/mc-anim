@@ -33,7 +33,7 @@ import { videoInfo } from '../渲/探测.ts';
 export { segmentProducts, type SegArtifact } from '../渲/段产物.ts';
 
 /** 这段的当前画面、声音指纹（删旧时都不算旧） */
-const currentFingerprints = (r: SegArtifact) => [r.画面指纹.指纹, r.声音指纹.指纹];
+const currentFingerprints = (r: SegArtifact) => [r.pictureFingerprint.fingerprint, r.soundFingerprint.fingerprint];
 
 /** 先写临时名、成了再改名；先记「刚用过」再改名：别的进程的删旧在闸外，只靠它挡着 */
 const writeTo = async (file: string, segKey: string, fingerprint: string, renderFn: (tmp: string) => Promise<unknown>) => {
@@ -56,57 +56,57 @@ const writeTo = async (file: string, segKey: string, fingerprint: string, render
 export const renderSegments = async (allSegments: readonly SegInfo[], selected: readonly SegInfo[], level: RenderLevel, opts: { rerender?: boolean; runRecord: RunRecord }): Promise<SegArtifact[]> => {
   const segments = selected.filter((s) => {
     const pack = missingLocalTerrain(s);
-    if (pack) console.log(`跳过 ${s.键}：本机没有区段包 ${pack}（anim world bake 烘出来才能渲）`);
+    if (pack) console.log(`跳过 ${s.key}：本机没有区段包 ${pack}（anim world bake 烘出来才能渲）`);
     return !pack;
   });
   const totalLabel = `批:${workName()}:${level}`;
   // 先补字节再算指纹：空数据根时指纹的「缺字节」项要按补完的算，不然产物落在错的指纹下、下次认不出
-  await measureStage(opts.runRecord.阶段, totalLabel, '准备', async () => fillBytesAndReport(workRoot(), dataRoot()));
-  const outputs = await measureStage(opts.runRecord.阶段, totalLabel, '算指纹', () => segmentProducts(allSegments, segments, level));
-  const toRender = outputs.filter((r) => opts.rerender || !fs.existsSync(r.画面) || !fs.existsSync(r.声音));
+  await measureStage(opts.runRecord.stage, totalLabel, '准备', async () => fillBytesAndReport(workRoot(), dataRoot()));
+  const outputs = await measureStage(opts.runRecord.stage, totalLabel, '算指纹', () => segmentProducts(allSegments, segments, level));
+  const toRender = outputs.filter((r) => opts.rerender || !fs.existsSync(r.画面) || !fs.existsSync(r.sound));
   const cachedOutputs = outputs.filter((r) => !toRender.includes(r));
   for (const r of cachedOutputs) {
-    console.log(`✓ ${r.段.键}：已是最新（画面 ${r.画面指纹.指纹.slice(0, 16)}、声音 ${r.声音指纹.指纹.slice(0, 16)}）`);
-    for (const fp of currentFingerprints(r)) markUsed(masterDir(r.段.键), fp);
+    console.log(`✓ ${r.segment.key}：已是最新（画面 ${r.pictureFingerprint.fingerprint.slice(0, 16)}、声音 ${r.soundFingerprint.fingerprint.slice(0, 16)}）`);
+    for (const fp of currentFingerprints(r)) markUsed(masterDir(r.segment.key), fp);
   }
   // 命中的也清旧；有要删的才过闸
-  const toClean = cachedOutputs.filter((r) => hasOldToDelete('母版', r.段.键, level, currentFingerprints(r)));
-  if (toClean.length) await measureStage(opts.runRecord.阶段, totalLabel, '清旧', () => passRenderGate(async () => {
-    for (const r of toClean) deleteOld('母版', r.段.键, level, currentFingerprints(r), { runRecord: opts.runRecord });
-  }, undefined, {}, { 种: '清命中的旧', 不开渲染: true }));
+  const toClean = cachedOutputs.filter((r) => hasOldToDelete('母版', r.segment.key, level, currentFingerprints(r)));
+  if (toClean.length) await measureStage(opts.runRecord.stage, totalLabel, '清旧', () => passRenderGate(async () => {
+    for (const r of toClean) deleteOld('母版', r.segment.key, level, currentFingerprints(r), { runRecord: opts.runRecord });
+  }, undefined, {}, { kind: '清命中的旧', noRender: true }));
   if (!toRender.length) return outputs;
 
-  const estimates = toRender.map((r) => estimateTiming(renderLabel(r.段.键, level)));
+  const estimates = toRender.map((r) => estimateTiming(renderLabel(r.segment.key, level)));
   const knownEstimates = estimates.filter((x): x is number => x !== null);
   console.log(
-    `== 要渲 ${toRender.length} 段：${toRender.map((r) => r.段.键).join('、')}` +
+    `== 要渲 ${toRender.length} 段：${toRender.map((r) => r.segment.key).join('、')}` +
       (knownEstimates.length ? `；按耗时表预计约 ${Math.round(knownEstimates.reduce((a, b) => a + b, 0))} 秒${knownEstimates.length < toRender.length ? `（另 ${toRender.length - knownEstimates.length} 段没有记录）` : ''}` : '；耗时表里还没有这些段的记录'),
   );
   // 材质包按段选的一组一个打包（资产锁.ts）；不按段选的只有一组
-  await perGroupWithResourcePacks(workRoot(), toRender, (r) => r.段.键, (group) => openSession(level, async (h) => {
+  await perGroupWithResourcePacks(workRoot(), toRender, (r) => r.segment.key, (group) => openSession(level, async (h) => {
     for (const r of group) {
-      const segKey = r.段.键;
-      const composition = findComposition(h, r.段, allSegments);
+      const segKey = r.segment.key;
+      const composition = findComposition(h, r.segment, allSegments);
       const label = renderLabel(segKey, level);
-      await measureStage(opts.runRecord.阶段, label, '等求解缓存', waitSolveCacheWrites);
-      const env = segRenderEnv(segKey, r.画面指纹.项.地形);
+      await measureStage(opts.runRecord.stage, label, '等求解缓存', waitSolveCacheWrites);
+      const env = segRenderEnv(segKey, r.pictureFingerprint.items.terrain);
       const queueStartMs = Date.now();
       const detail = await passRenderGate(async () => {
         const t0 = Date.now();
-        recordPhase(opts.runRecord.阶段, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
+        recordPhase(opts.runRecord.stage, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
         let code = 1;
-        const holder: { 明细?: DetailCollector } = {};
+        const holder: { detail?: DetailCollector } = {};
         try {
           // 声音和画面同一遍出：缺哪样都整遍重渲，wav 先写临时名，画面成了再改名
-          if (opts.rerender || !fs.existsSync(r.画面) || !fs.existsSync(r.声音)) {
+          if (opts.rerender || !fs.existsSync(r.画面) || !fs.existsSync(r.sound)) {
             console.log(`== 渲 ${segKey} 画面、声音`);
-            const p = r.参数;
-            startWholeMeasure(segKey, r.画面指纹.指纹);
-            const soundTempFile = r.声音.replace(/(\.\w+)$/, `.渲染中-${process.pid}$1`);
+            const p = r.params;
+            startWholeMeasure(segKey, r.pictureFingerprint.fingerprint);
+            const soundTempFile = r.sound.replace(/(\.\w+)$/, `.渲染中-${process.pid}$1`);
             const cleanupSound = registerTempFile(soundTempFile);
             try {
-              await writeTo(r.画面, segKey, r.画面指纹.指纹, async (tmp) => {
-                holder.明细 = await measureRender(label, opts.runRecord.阶段, t0, (hooks) => renderMedia({
+              await writeTo(r.画面, segKey, r.pictureFingerprint.fingerprint, async (tmp) => {
+                holder.detail = await measureRender(label, opts.runRecord.stage, t0, (hooks) => renderMedia({
                   separateAudioTo: soundTempFile,
                   audioCodec: p.audioCodec,
                   serveUrl: h.serveUrl,
@@ -133,35 +133,35 @@ export const renderSegments = async (allSegments: readonly SegInfo[], selected: 
                   ...hooks,
                 }));
                 const frameCountStartMs = Date.now();
-                const frameCount = videoInfo(tmp).帧数;
-                recordPhase(opts.runRecord.阶段, label, '查帧数', frameCountStartMs, (Date.now() - frameCountStartMs) / 1000);
+                const frameCount = videoInfo(tmp).frameCount;
+                recordPhase(opts.runRecord.stage, label, '查帧数', frameCountStartMs, (Date.now() - frameCountStartMs) / 1000);
                 if (frameCount !== r.outputFrames) throw new Error(`${segKey} 渲出来 ${frameCount} 帧，按全片位置应该是 ${r.outputFrames} 帧`);
-                fs.renameSync(soundTempFile, r.声音);
+                fs.renameSync(soundTempFile, r.sound);
               });
             } finally {
               fs.rmSync(soundTempFile, { force: true });
               cleanupSound();
             }
-            writeFingerprint(r.画面指纹);
+            writeFingerprint(r.pictureFingerprint);
             await recordMeasuredFrames(segKey, Array.from({ length: r.outputFrames }, (_, i) => i));
           }
           code = 0;
-          holder.明细?.stopTimer();
+          holder.detail?.stopTimer();
         } finally {
           const elapsedSec = (Date.now() - t0) / 1000;
           recordTiming(label, t0, elapsedSec, code, `anim film ${segKey}`);
-          if (code === 0) console.log(`   ${segKey}：${elapsedSec.toFixed(0)} 秒 → ${r.画面}、${path.basename(r.声音)}`);
+          if (code === 0) console.log(`   ${segKey}：${elapsedSec.toFixed(0)} 秒 → ${r.画面}、${path.basename(r.sound)}`);
         }
         // 段签在闸里当场派生（要解一遍切片；不计进耗时表）：之后 verify、认指纹 不用再解
         const segStampStartMs = Date.now();
-        const segStamp = await deriveSegStamp(r, { 派生: '渲染', 计时: { 收: opts.runRecord.阶段, 标签: label } });
-        if (segStamp.自查?.结论 === '漂移') opts.runRecord.log('警告', driftHint(segKey, segStamp.自查));
-        recordPhase(opts.runRecord.阶段, label, '段签', segStampStartMs, (Date.now() - segStampStartMs) / 1000);
+        const segStamp = await deriveSegStamp(r, { derive: '渲染', 计时: { 收: opts.runRecord.stage, label: label } });
+        if (segStamp.自查?.verdict === '漂移') opts.runRecord.log('警告', driftHint(segKey, segStamp.自查));
+        recordPhase(opts.runRecord.stage, label, '段签', segStampStartMs, (Date.now() - segStampStartMs) / 1000);
         deleteOld('母版', segKey, level, currentFingerprints(r), { runRecord: opts.runRecord });
-        return holder.明细;
-      }, undefined, {}, { 种: 'render', 作品: workName(), 段: segKey, 级别: level, 帧数: r.outputFrames, 项数: toRender.length, 可让路: toRender.length > 1, 用途: process.env.ANIM_PURPOSE ?? '产出' });
-      await detail?.writeOut(opts.runRecord.阶段, { 指纹: r.画面指纹.指纹.slice(0, 16) });
-      opts.runRecord.产物.push(r.画面, r.声音);
+        return holder.detail;
+      }, undefined, {}, { kind: 'render', work: workName(), segment: segKey, level: level, frameCount: r.outputFrames, itemCount: toRender.length, canYield: toRender.length > 1, purpose: process.env.ANIM_PURPOSE ?? '产出' });
+      await detail?.writeOut(opts.runRecord.stage, { fingerprint: r.pictureFingerprint.fingerprint.slice(0, 16) });
+      opts.runRecord.artifacts.push(r.画面, r.sound);
     }
   }, opts.runRecord));
   return outputs;

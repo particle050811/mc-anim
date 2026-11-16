@@ -106,7 +106,7 @@ export const cuboidMesh = (boxes: Cuboid[]) => {
     const def = blockTable[blockNames[blockIdx]];
     tiles.set([def.X, def.Y, def.topTexIndex, def.bottom], i * 4);
     alt.set(def.variants, i * 4);
-    swap[i] = def.换;
+    swap[i] = def.replaced;
   });
   mesh.instanceMatrix.needsUpdate = true;
   geo.setAttribute('aTiles', new THREE.InstancedBufferAttribute(tiles, 4));

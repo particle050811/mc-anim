@@ -6,8 +6,8 @@ export default defineSpellMeta({
   长秒: 0.75, // 冲击波环速度 1，15 刻放完；大火最晚在第 0 刻出生，寿命 8 刻
   hitSec: 0,
   // FireBlastSpell.SpellResult：原版 GENERIC_EXPLODE 音量 2，加 hell_blast_impact 音量 2
-  声音: [
-    { 资产: '音效/entity.generic.explode.1', 秒: 0, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.hell_blast_impact.1', 秒: 0, 音量: 2 },
+  sound: [
+    { asset: '音效/entity.generic.explode.1', sec: 0, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.hell_blast_impact.1', sec: 0, 音量: 2 },
   ],
 });

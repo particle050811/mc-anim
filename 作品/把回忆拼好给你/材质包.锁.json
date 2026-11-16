@@ -1,1425 +1,1425 @@
 {
-  "包": [
+  "pack": [
     {
       "id": "材质包/faithful-64x-1201",
       "sha256": "d9f323a2fddbd9ed14a5d58ed0d750ac6a504832262ed4f01991e77ec005c138"
     }
   ],
-  "分辨率": 64,
-  "覆盖": {
+  "resolution": 64,
+  "overrides": {
     "贴图/场景/关键帧/方块表": {
       "sha256": "78374c25a77f080a8e87064bdc5aa539879b50d9501385b48697e05f85bee8e2",
-      "大小": 2182603,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2182603,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/天空/sun": {
       "sha256": "b3514b3a9b84f70091d3bbc0c4e335149334e723b70c1e163f8335f97f598b34",
-      "大小": 3576,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3576,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/月相": {
       "sha256": "1f729892961239cd531ea6aecc9a47929cec812b4155417947d674b885983f38",
-      "大小": 17620,
-      "库": "store",
-      "后缀": ".png"
+      "size": 17620,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/樱花林/cherry_leaves": {
       "sha256": "c89ed161b87a92c832efd0b87c39989ced006c9cc3615fd8e82234a44092dcd1",
-      "大小": 2758,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2758,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/樱花林/cherry_log": {
       "sha256": "26ed33ded3acd1107ccff71c4a134326603ed5aa93ce96caade6cfa385bad9c4",
-      "大小": 1568,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1568,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/樱花林/cherry_log_top": {
       "sha256": "235c1af8c9f0740becc418889a1994e33ce654c3a237fa6928a00413d3373e1d",
-      "大小": 1571,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1571,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/樱花林/grass_block_top": {
       "sha256": "85ab5906d88a8538848b46b1ab659bd3a93b4f309e3663776282932e55a6bc64",
-      "大小": 3358,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3358,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/樱花林/pink_petals": {
       "sha256": "0c36f8134bb33f08dc2f1e8d18c4303fe17016c6507c54f44decef66488fdb9e",
-      "大小": 1378,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1378,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/樱花林远山/grass_block_side": {
       "sha256": "eaa1b67c413a63b8fe83819a00a2de5773515de85f4797a2523afd77d92ac48a",
-      "大小": 2528,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2528,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/樱花林远山/grass_block_side_overlay": {
       "sha256": "65510a74649520ae93b1be39b442c8d07ec38631ed8b6cdd6752e0f9dddca0b0",
-      "大小": 712,
-      "库": "store",
-      "后缀": ".png"
+      "size": 712,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/场景/边城/水面": {
       "sha256": "a4177e3a438e6295b3e5e1cd9aa7b949479d3d661a9c8ec4b6831e5ca8451586",
-      "大小": 30986,
-      "库": "store",
-      "后缀": ".png"
+      "size": 30986,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/方块/泥土": {
       "sha256": "ae3b16dc8936844041ebf41422826ac6b9269c0e9a70b44ad78c7158b7ad5c21",
-      "大小": 2312,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2312,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/书/书与笔": {
       "sha256": "01aa737a50cc6813307b2590ba09f1d02184905025b61a433538075e24bfdd24",
-      "大小": 1474,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1474,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/书/书界面": {
       "sha256": "3d17629d4a365de4c3c1ce4be841425fda237c089398c67de2e82ec844d8ac09",
-      "大小": 47947,
-      "库": "store",
-      "后缀": ".png"
+      "size": 47947,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/书/成书": {
       "sha256": "0635167bfac314a5e8ea7922ebe1621bc16481c94763dfec4d4a7f7e4599b96a",
-      "大小": 847,
-      "库": "store",
-      "后缀": ".png"
+      "size": 847,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/书/羽毛": {
       "sha256": "371da9f85d893df89cbd2d0c7cfbcd59f7ab3556114a8cb69a86b1211c18228f",
-      "大小": 841,
-      "库": "store",
-      "后缀": ".png"
+      "size": 841,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/喷溅药水/bottle": {
       "sha256": "b19c17e410deb812a2299684641db42109e568a13735502c44bb8f89d13352e6",
-      "大小": 655,
-      "库": "store",
-      "后缀": ".png"
+      "size": 655,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/喷溅药水/overlay": {
       "sha256": "3a90312c31b244b433e5cf56f861b6798a552bdfcab68dbaeabac788de377ace",
-      "大小": 580,
-      "库": "store",
-      "后缀": ".png"
+      "size": 580,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/床/红": {
       "sha256": "dbf4b30dd7677550b26242ae4c61f3cc8ddbfb5da9c42dc502c661de447e23b9",
-      "大小": 9355,
-      "库": "store",
-      "后缀": ".png"
+      "size": 9355,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/弓/弓": {
       "sha256": "98d2e83022a0c5c32ff3b900a4ef8bc215f9e080b5d54a0888f016e1c8c350c5",
-      "大小": 634,
-      "库": "store",
-      "后缀": ".png"
+      "size": 634,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/弓/弓拉0": {
       "sha256": "8cc58ff879ed93ab2e73dd8da8a0f901ad5a0aca4039bcc4c0420f5c31a5f367",
-      "大小": 919,
-      "库": "store",
-      "后缀": ".png"
+      "size": 919,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/弓/弓拉1": {
       "sha256": "e6ab21f5736269042252ae8c97c25522694611d79fa67b936fd028ec85111c70",
-      "大小": 909,
-      "库": "store",
-      "后缀": ".png"
+      "size": 909,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/弓/弓拉2": {
       "sha256": "3ee8240e39d96b0c697fa8baae454424242d2a611d7bf24bea848d8412931c1d",
-      "大小": 849,
-      "库": "store",
-      "后缀": ".png"
+      "size": 849,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/巨人剑": {
       "sha256": "9eb2a24ee85c95b18845570e6b159dd701612cf13f3cf2828aaa8e7b4b73d128",
-      "大小": 865,
-      "库": "store",
-      "后缀": ".png"
+      "size": 865,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/巨人镐": {
       "sha256": "01a2dd587120fd9637f248cdb1f01f3ca2fa82bcb8f7cecb86495407391fbcee",
-      "大小": 689,
-      "库": "store",
-      "后缀": ".png"
+      "size": 689,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/末影珍珠": {
       "sha256": "b5d8db25b09223d594ca8f99643e66985e36d6fde2bda0d5428e4b253bbbaec9",
-      "大小": 1026,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1026,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/浮冰": {
       "sha256": "7b52772e515e629501f92f636d7d5008497f3e83ed2daecaa50de8a63478f7d8",
-      "大小": 1276,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1276,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/金剑": {
       "sha256": "4eb96abb1b36de98263a0c52c290dc554cd2e34248f62c9aaf822636316b9533",
-      "大小": 845,
-      "库": "store",
-      "后缀": ".png"
+      "size": 845,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/金胸甲": {
       "sha256": "d39f28395dfc78fd32a7993c29e2a493a64c6fa67ee3fbddda4a1bc496642b53",
-      "大小": 686,
-      "库": "store",
-      "后缀": ".png"
+      "size": 686,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/雪球": {
       "sha256": "d9004a2ffb6caed8829ea8c39af809bbe91d4ccd402dd34f01581d33f9d9ee82",
-      "大小": 1129,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1129,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/掉落物/骨头": {
       "sha256": "8e8b4d08d6fcbe6c981895863ab4b4cf1f2b8f76340e69dd743279df28babb1e",
-      "大小": 808,
-      "库": "store",
-      "后缀": ".png"
+      "size": 808,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/杂项物品/钻石护腿": {
       "sha256": "50b171666926210bee028325d4cdc569abc921710be981395cccf7fd7f8fa87a",
-      "大小": 500,
-      "库": "store",
-      "后缀": ".png"
+      "size": 500,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/杂项物品/铁剑": {
       "sha256": "28eec453175f0be0ca01668e1b17fb9ed4b021899c988a7e41e9146c6fa8e559",
-      "大小": 804,
-      "库": "store",
-      "后缀": ".png"
+      "size": 804,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/杂项物品/附魔光效": {
       "sha256": "128ffdb415ac2fe1777767a241c9f7ae57825c15b5cbe6b67b2e73f3023c192e",
-      "大小": 35441,
-      "库": "store",
-      "后缀": ".png"
+      "size": 35441,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/樱花树苗": {
       "sha256": "0cc39a43a20405b7bc2b8885f98aa836ad2cf346bed8490f0bad6e2392602a35",
-      "大小": 2004,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2004,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/橡木告示牌": {
       "sha256": "9296d5a484f3b0cf5a43da9864d5d816ef8e3df89cfbe75b5fbe5c3b5b341865",
-      "大小": 4957,
-      "库": "store",
-      "后缀": ".png"
+      "size": 4957,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/橡木告示牌图标": {
       "sha256": "c4f6e391171fa44ace08e00a2df28fcccc7d411050054d1a7649ab999cc6acb1",
-      "大小": 3348,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3348,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/橡木门": {
       "sha256": "7c89bbc3ed2edd5bb6137f484bc475d9e6cd9f922b7997e78446ec2f1053b8ea",
-      "大小": 438,
-      "库": "store",
-      "后缀": ".png"
+      "size": 438,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/烟花火箭": {
       "sha256": "6acbdd72baeb3c83296c2a5dd937eb49c7bd92f98b23a5302f72bedd62e86c6a",
-      "大小": 541,
-      "库": "store",
-      "后缀": ".png"
+      "size": 541,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/祭坛材料/煤炭": {
       "sha256": "a7195e7c0948a674ebbb927870ce8c15a3e227fca28d7f8e7b3cc58a794f8962",
-      "大小": 1360,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1360,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/祭坛材料/红石": {
       "sha256": "1e3ba1c802b18b378f6c77eef469954e2bcf66e2cf09bf2f2ab9c5d59f602fb3",
-      "大小": 1046,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1046,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/祭坛材料/金锭": {
       "sha256": "53730a9d8e0f92d46f642f9d2ca32093a4efddeb4fc731da2deccb3d507b471c",
-      "大小": 746,
-      "库": "store",
-      "后缀": ".png"
+      "size": 746,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/祭坛材料/铁锭": {
       "sha256": "50ccb57d9d078851ce3b15dbc8bedf5f4b113041c79c92017d297437b79ed5b3",
-      "大小": 639,
-      "库": "store",
-      "后缀": ".png"
+      "size": 639,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/祭坛材料/青金石": {
       "sha256": "4c66b593b1c2c37fd67808be82fb282b1992d6866eaa94b35fadf93e39d267d0",
-      "大小": 1234,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1234,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/箭": {
       "sha256": "5b7fdf75785611f7f4902348db8c0503d233b82e74d4ef2538c0e17fa8f35ad6",
-      "大小": 861,
-      "库": "store",
-      "后缀": ".png"
+      "size": 861,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/箱子": {
       "sha256": "cf68be3e67f1dd40653ac7a6b9d8af09b015db119db1e3a00ab2003a17b1d8fe",
-      "大小": 9265,
-      "库": "store",
-      "后缀": ".png"
+      "size": 9265,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/black_wool": {
       "sha256": "d485cac5a76bd2a4c83cb555f8d6d15a15faa718b2d443ffcdb7f1565d835d52",
-      "大小": 2581,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2581,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/blue_wool": {
       "sha256": "de70a8e00bb993bddbfb10a137fb745643bd337d12f7de86cb7679d2d0f5c8e5",
-      "大小": 3181,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3181,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/brown_wool": {
       "sha256": "912eeea2ad605d22d5d6e69f49c98355dd91031f54898e32205553fd5dd53d5a",
-      "大小": 3099,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3099,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/cyan_wool": {
       "sha256": "8e19b1c71c1015c19176040a3d93c6159d11ea4b89b3ae694c64a234d33ae392",
-      "大小": 3289,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3289,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/gray_wool": {
       "sha256": "03905d6938c50a0afe0892536f485e1b6f49e3218a7ec946fe929d2f85aa0d8e",
-      "大小": 2871,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2871,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/green_wool": {
       "sha256": "a48ef07d34396b67780539e0733db4550e232ba17ca3ff9eb5947f0c0f62d71a",
-      "大小": 3228,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3228,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/light_blue_wool": {
       "sha256": "cebe9ea88b93d9a8b110630e72851ceb28b9697565d6e49dfebbd457d350651c",
-      "大小": 2787,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2787,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/light_gray_wool": {
       "sha256": "ba1505a171d164e2f44307fbc58c5c1bf256e2e4d159ee15e990ed523fcd5142",
-      "大小": 2967,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2967,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/lime_wool": {
       "sha256": "3b86f7acfc7d33f632cef166b9bb82d5149836acdcc40ee32e66cb7c19deccef",
-      "大小": 3255,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3255,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/magenta_wool": {
       "sha256": "3b2d92b312f7d10fef422b21756b9973cd06faaa27bd01645870e83c35fb2f95",
-      "大小": 2770,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2770,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/orange_wool": {
       "sha256": "e92ac4e8c7b5e60bba393b7e61aa4b7f4269111417d66f7a14691bf6eec246f4",
-      "大小": 2857,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2857,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/pink_wool": {
       "sha256": "99bc62d3720c17f59208e6599c509f8bab789f5fb413363e66436fb13dfe3369",
-      "大小": 2835,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2835,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/purple_wool": {
       "sha256": "de85882a1aed770e40374a2252dcd003bbf682d7aac97f6cffc9b5c07c6658d2",
-      "大小": 2971,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2971,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/red_wool": {
       "sha256": "62c2811664b027036c71231c013ff9cf35cb2f04bb7802bcb34519d91e6736d4",
-      "大小": 3309,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3309,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/white_wool": {
       "sha256": "891d2539971e75c2c67f503e32451f321b3b9d5fbdc2cfc8b7072beceba5265a",
-      "大小": 2520,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2520,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/羊毛/yellow_wool": {
       "sha256": "6900c12d78712ee7f51861ee428d58ad3896001b457b8e3b21fc8ea34fee7f89",
-      "大小": 2749,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2749,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/船/樱花木": {
       "sha256": "597230f87fea2bebdde9dd7ad504f1a91b0edfeed728b86f78a16ed473995009",
-      "大小": 15710,
-      "库": "store",
-      "后缀": ".png"
+      "size": 15710,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/荧光物品展示框/木框": {
       "sha256": "409fda9301f6c2b4534fde9e1be3d10d758c70299e2f53f4d102075bab178d13",
-      "大小": 1764,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1764,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/荧光物品展示框/背板": {
       "sha256": "bf90f8ce2cf32c7e6d5d1e29b542215c6ffe662cf9d0ff3cb0ebe3365693686b",
-      "大小": 1540,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1540,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/蛋糕": {
       "sha256": "5ee647c6509280fe50e9a723ea3affc3c06a597035802f75f4385220171455b6",
-      "大小": 1692,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1692,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/蛋糕方块/cake_bottom": {
       "sha256": "388ff82366e7071597761a0f7bf5882f56385e129b4ef1cbbdc96302508e4f32",
-      "大小": 1561,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1561,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/蛋糕方块/cake_side": {
       "sha256": "108c67ec90707c28d2d80b3d388112e79d09870c004dae869a7d5c2ff8205720",
-      "大小": 871,
-      "库": "store",
-      "后缀": ".png"
+      "size": 871,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/蛋糕方块/cake_top": {
       "sha256": "c56b3e24051b2ea849da0fd4ed958104fb7daedd6789c652fbe8fa515256e99d",
-      "大小": 1254,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1254,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/钻石": {
       "sha256": "af62f23fced0dcee0f256fbb0647ba5140e0a8fd411b5ec1d549e75478f5884a",
-      "大小": 1030,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1030,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/铁链": {
       "sha256": "548849736470f856b73a490726f332531ab2a9f184acd6f8156deea950030efb",
-      "大小": 415,
-      "库": "store",
-      "后缀": ".png"
+      "size": 415,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/物品/面包": {
       "sha256": "52404753b70dde831cc5375ff443ef3ec09e5e1151e343e97fb85735f0892388",
-      "大小": 935,
-      "库": "store",
-      "后缀": ".png"
+      "size": 935,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/信标光柱": {
       "sha256": "654e1f6cf79251a6b20524ef7820eaab5cdb6fab2d0afac28a367ae81c4ecec2",
-      "大小": 760,
-      "库": "store",
-      "后缀": ".png"
+      "size": 760,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/尖啸声波": {
       "sha256": "beb90d6f4ddf7c4c62903eb11582770404ef40ea9b2f38d8557fcf7a52c9d018",
-      "大小": 278,
-      "库": "store",
-      "后缀": ".png"
+      "size": 278,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/幽匿感测体/sculk_sensor_tendril_active": {
       "sha256": "6e3d4c3d9e26039df2355cfb788ccb60d8e4aa66f015360abaac0cd15e2835c3",
-      "大小": 4724,
-      "库": "store",
-      "后缀": ".png"
+      "size": 4724,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/幽匿感测体/sculk_sensor_tendril_inactive": {
       "sha256": "b172b113520cc64c0ec8b8b84f6f786ec4bd08c8e86a8dcd3b5d1b960365dd37",
-      "大小": 4093,
-      "库": "store",
-      "后缀": ".png"
+      "size": 4093,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/振动粒子": {
       "sha256": "28abb3dcb312371814b739c9f418fe767e1fc146fddb00c363e70536b6f1bb4f",
-      "大小": 1128,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1128,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块碎屑": {
       "sha256": "ecfbe89b2bc7423208227e9bc19ff7d32dec9b1a636ab6464cac2a8174625888",
-      "大小": 3425,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3425,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/0": {
       "sha256": "cc35e5b688e4a94ee9287f67b0a13e82d66373a39adda292bb5c429ca79c8bd2",
-      "大小": 160,
-      "库": "store",
-      "后缀": ".png"
+      "size": 160,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/1": {
       "sha256": "be664c05d283f3c4951ade88355f4f23121498329c0850f7f5c23755bdd6114e",
-      "大小": 210,
-      "库": "store",
-      "后缀": ".png"
+      "size": 210,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/2": {
       "sha256": "f7dd77c8e52bcaa15fc8c589864dd9cdedeefc892cd0cdb2f391f8ce7c250cf7",
-      "大小": 297,
-      "库": "store",
-      "后缀": ".png"
+      "size": 297,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/3": {
       "sha256": "9619677ab7691cbac9778f97dcbf7b631022d86cbfa6368713a5793cdcb8c99e",
-      "大小": 352,
-      "库": "store",
-      "后缀": ".png"
+      "size": 352,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/4": {
       "sha256": "ad9d9c8ebf30da91cd65f3e592e4f635e0167be81cc24ed27a3aa07ada104a37",
-      "大小": 408,
-      "库": "store",
-      "后缀": ".png"
+      "size": 408,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/5": {
       "sha256": "a63d62b8fc925189be7615f0afd173f34c80a52c484d52ca786009c3ae51d5ce",
-      "大小": 504,
-      "库": "store",
-      "后缀": ".png"
+      "size": 504,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/6": {
       "sha256": "14acf407a7e04d285256acf4a1b8b5b215e226b0e0d8aca746b3eb86fa58b86e",
-      "大小": 594,
-      "库": "store",
-      "后缀": ".png"
+      "size": 594,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/7": {
       "sha256": "d838c8f366aa644385040c3eed3dea8061c88e706061de07b5adbfec39a76d23",
-      "大小": 727,
-      "库": "store",
-      "后缀": ".png"
+      "size": 727,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/8": {
       "sha256": "aa9f4b6c0c38da19260af4f87e5f1f24ac9839ca9e29c90e999dcbeb8f851b1e",
-      "大小": 878,
-      "库": "store",
-      "后缀": ".png"
+      "size": 878,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/方块裂纹/9": {
       "sha256": "30bae305652b7a3f668622ee066fc088d55a05d6f9b2d2d36d63ca48e145d3c5",
-      "大小": 911,
-      "库": "store",
-      "后缀": ".png"
+      "size": 911,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/末地传送门": {
       "sha256": "ecf4b0638c613b7ca67c96cbbfdda82aa00a4aeca6f85557aca5241314a09f86",
-      "大小": 45084,
-      "库": "store",
-      "后缀": ".png"
+      "size": 45084,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/flame": {
       "sha256": "e81088cef54f9744d87682671a51fefc57bd7b887ece393115815584399a840b",
-      "大小": 302,
-      "库": "store",
-      "后缀": ".png"
+      "size": 302,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/glow": {
       "sha256": "fec7c01e87a61f23e0be1d8399d1643b989f3d49691d8e108e62d61db96c249b",
-      "大小": 296,
-      "库": "store",
-      "后缀": ".png"
+      "size": 296,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_a": {
       "sha256": "1110ea6bef732ff604a010a94d0ed2b35a34535cc672edff8b922d1651a924bf",
-      "大小": 2797,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2797,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_b": {
       "sha256": "d7b9d3c454917cb68b88ff8bd4c6491d5bdfd8d9e02237ffef0c809a6e39b3f0",
-      "大小": 2793,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2793,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_c": {
       "sha256": "dc088d5f17fafcb260434a87132fbd39c00a88eb6eac4173efc141055484da6b",
-      "大小": 138,
-      "库": "store",
-      "后缀": ".png"
+      "size": 138,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_d": {
       "sha256": "f21b6764b32c6d44443310cfbbb9cdd39e07371b97bb6e2fc937790c1b35bf81",
-      "大小": 2784,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2784,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_e": {
       "sha256": "437993f784d1f74af547cb6e1626460dc275793c171dadf944465bb78303fda1",
-      "大小": 141,
-      "库": "store",
-      "后缀": ".png"
+      "size": 141,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_f": {
       "sha256": "b8cde93b3182fa5d07bb35cad6715aa88846bcc55cb84c8de31ddf0290f45e1a",
-      "大小": 141,
-      "库": "store",
-      "后缀": ".png"
+      "size": 141,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_g": {
       "sha256": "48328a2de9bdc4947fb1e5913c23695cd13d54aa65ae5e312cbf69b41982dfca",
-      "大小": 147,
-      "库": "store",
-      "后缀": ".png"
+      "size": 147,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_h": {
       "sha256": "b7796b786156ea8100b430ac3d28fb9aa82b4a3779b35de7a0f207de5b91b2c7",
-      "大小": 144,
-      "库": "store",
-      "后缀": ".png"
+      "size": 144,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_i": {
       "sha256": "e9693fa207a986bf83671e89ab85648f87fab7de0dc7b6be0b8a83acb8b40392",
-      "大小": 137,
-      "库": "store",
-      "后缀": ".png"
+      "size": 137,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_j": {
       "sha256": "613f06a4f4c4ecf849bf85229969346ebeb765e1dcf847d1055d7658dc754b68",
-      "大小": 137,
-      "库": "store",
-      "后缀": ".png"
+      "size": 137,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_k": {
       "sha256": "e1650c654bc0da62dd8b2ba1fbb907200ce32ddbae0c83fa9ee519257601dfce",
-      "大小": 151,
-      "库": "store",
-      "后缀": ".png"
+      "size": 151,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_l": {
       "sha256": "2fc71cdeafead6fb9bd65aabf6220c0d1f7a1880a04dad8f1e9210adfc7ed7c1",
-      "大小": 148,
-      "库": "store",
-      "后缀": ".png"
+      "size": 148,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_m": {
       "sha256": "5967d44200e325aedef57c5200edab2c7ba508d93508c2e6387de2249f0ce944",
-      "大小": 138,
-      "库": "store",
-      "后缀": ".png"
+      "size": 138,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_n": {
       "sha256": "d386ac51260ee45eae4f52a26a1285cdf3664f3b249b5edcd0381d2e297f029d",
-      "大小": 2816,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2816,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_o": {
       "sha256": "44e274bd22e5c0bcdc43fef878d45ca03f1b104d736408851f79dab89abd006c",
-      "大小": 2816,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2816,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_p": {
       "sha256": "37d9d6aa4ca210a9569d86ae1e3efdee9a79f9209c71be2abe637d3864c10ed3",
-      "大小": 156,
-      "库": "store",
-      "后缀": ".png"
+      "size": 156,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_q": {
       "sha256": "40914b22a4bfba50f2c7e1f95ef01431e721f134e181385f826719831fafe969",
-      "大小": 158,
-      "库": "store",
-      "后缀": ".png"
+      "size": 158,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_r": {
       "sha256": "b2c30b415aec65f5cbd100033e127bc6b04f0ddcf132b9cce99c612d372210a7",
-      "大小": 145,
-      "库": "store",
-      "后缀": ".png"
+      "size": 145,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_s": {
       "sha256": "5fb8701e259e32812685037bd286e5b84961dd3018c5e9a1171770cfd092a9b9",
-      "大小": 143,
-      "库": "store",
-      "后缀": ".png"
+      "size": 143,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_t": {
       "sha256": "74a35d1b879b194bd4006641015b3f262a174d385d1ed7bfe144cc978a1a9ea6",
-      "大小": 152,
-      "库": "store",
-      "后缀": ".png"
+      "size": 152,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_u": {
       "sha256": "fd9fb22df0c577c9d464f93e93808e4b268f09e2ffcb4019226349902b4e8589",
-      "大小": 147,
-      "库": "store",
-      "后缀": ".png"
+      "size": 147,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_v": {
       "sha256": "1c15e63a564adeaaae25885778cb384d678ad0eec9705d6512d982b92e7dbef7",
-      "大小": 144,
-      "库": "store",
-      "后缀": ".png"
+      "size": 144,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_w": {
       "sha256": "ba8f34f6e53da7c491e0f0d82ab5dd0c4ec1416d41a258223c60734b2d1d9432",
-      "大小": 140,
-      "库": "store",
-      "后缀": ".png"
+      "size": 140,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_x": {
       "sha256": "760d74d253efb214a36ccbe4d835c3a96bb72b4172e4770e8c56aa6fd11d5c6b",
-      "大小": 2812,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2812,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_y": {
       "sha256": "2348712ba5b5e2cca5f932fb8a65f60024511cd0a82609ef9facecbd95f2fcf5",
-      "大小": 140,
-      "库": "store",
-      "后缀": ".png"
+      "size": 140,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sga_z": {
       "sha256": "956b1ce8751cd5633a2507816f87f82c0768a8ceb6816b2f5b05c6ab50607c5c",
-      "大小": 164,
-      "库": "store",
-      "后缀": ".png"
+      "size": 164,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_0": {
       "sha256": "d92aabd35dc3cdcb925781912ed00f07eb66dd86e8698f0e60731ff7a331e435",
-      "大小": 519,
-      "库": "store",
-      "后缀": ".png"
+      "size": 519,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_1": {
       "sha256": "216c58e7b7b7c98f88eefa99aff2fb14134aab80ca44ed6e08312cf0f8b283b0",
-      "大小": 569,
-      "库": "store",
-      "后缀": ".png"
+      "size": 569,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_10": {
       "sha256": "c044cdbd5375c37fcc1e7986cfc5001f55cb5f1fdce548939cb421aab3b5e3f1",
-      "大小": 1242,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1242,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_11": {
       "sha256": "9a103bd68a71506cf4f4879fe74b4038492a5827e0251206961cbb688bd2af33",
-      "大小": 855,
-      "库": "store",
-      "后缀": ".png"
+      "size": 855,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_12": {
       "sha256": "4701afb363642be75c148caa584f163097ee5d0be7ae53628de8e7c26f7e9b76",
-      "大小": 740,
-      "库": "store",
-      "后缀": ".png"
+      "size": 740,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_13": {
       "sha256": "5d999fd6ce46f7e706bb01a2c4cb58546610574aeaf65b2316d1f999b566886b",
-      "大小": 991,
-      "库": "store",
-      "后缀": ".png"
+      "size": 991,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_14": {
       "sha256": "7f21e89ff01f7f282b4fdf6ca8ecbf26e00c21e41c17b06c57f47325ff21ca98",
-      "大小": 553,
-      "库": "store",
-      "后缀": ".png"
+      "size": 553,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_15": {
       "sha256": "160c1527a51c018b0c28ade428af4933f8203eaf6929c74e03a8f109db9b57b9",
-      "大小": 384,
-      "库": "store",
-      "后缀": ".png"
+      "size": 384,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_2": {
       "sha256": "db69a762bad8ab7bf03baae58e65ebc1a9bcd27b7d15850d86560e1bad86020b",
-      "大小": 513,
-      "库": "store",
-      "后缀": ".png"
+      "size": 513,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_3": {
       "sha256": "dc1dae57a1ab4afbed461543ceafefc043f0bb90953d0f4a793ae6802b7cbb94",
-      "大小": 479,
-      "库": "store",
-      "后缀": ".png"
+      "size": 479,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_4": {
       "sha256": "58f7668f2c187be55f40f0427481de35d80954614fb7aca1e7258276ad2b3049",
-      "大小": 470,
-      "库": "store",
-      "后缀": ".png"
+      "size": 470,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_5": {
       "sha256": "4d578b5b595cb24509a3f1967b8709a9a7bccb82502121c2b6e886cfe43b62a8",
-      "大小": 339,
-      "库": "store",
-      "后缀": ".png"
+      "size": 339,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_6": {
       "sha256": "6ac37b5879d929b8ffd58863828665a23838b754f4a35c29e687bee9f88fbfca",
-      "大小": 266,
-      "库": "store",
-      "后缀": ".png"
+      "size": 266,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_7": {
       "sha256": "76f752760ca408cb9a63ccd6356129bc75fb93a601dfbd8530e05b7eeea25609",
-      "大小": 191,
-      "库": "store",
-      "后缀": ".png"
+      "size": 191,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_8": {
       "sha256": "f13a6e7010d3a466a7e84ddc6ca5a22ddcfe8eb25fc3fde8489cca1972bd57c0",
-      "大小": 572,
-      "库": "store",
-      "后缀": ".png"
+      "size": 572,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/杂项粒子/sonic_boom_9": {
       "sha256": "c3483c4d3513f29e861a24a55b173fe92854015b958c90bf169a260d53775be3",
-      "大小": 1041,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1041,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/爱心粒子": {
       "sha256": "fc0074e01e14c6c5b41fe63c207c3b4298107fed56d8d28ab8aee07abd8f0f34",
-      "大小": 380,
-      "库": "store",
-      "后缀": ".png"
+      "size": 380,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/critical_hit": {
       "sha256": "8d85e51257772ab63b214a4012bb61bc4b1eb77728f7cb5b63b0a5717e38bd4e",
-      "大小": 239,
-      "库": "store",
-      "后缀": ".png"
+      "size": 239,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/drip_hang": {
       "sha256": "82422ba5ed12b9ab613cdf7119605ed9f8187abfabf80511e393af1d05ac1d68",
-      "大小": 148,
-      "库": "store",
-      "后缀": ".png"
+      "size": 148,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_0": {
       "sha256": "f2119767452e6e1df37aa31401d64fbe808965adee9595f53a80e62134b6e5be",
-      "大小": 287,
-      "库": "store",
-      "后缀": ".png"
+      "size": 287,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_1": {
       "sha256": "d74b5b882b006f2e9946b38c96b78b8d911b4cc1b1e0498ee9bd1abc30ee7c20",
-      "大小": 329,
-      "库": "store",
-      "后缀": ".png"
+      "size": 329,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_10": {
       "sha256": "7f80cf43f9a9aab0d9a5503acf3485ef793792607aae3f5c319034a22033a047",
-      "大小": 815,
-      "库": "store",
-      "后缀": ".png"
+      "size": 815,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_11": {
       "sha256": "b5b6a6ae1769c1facfa28899b668d3244854f3c2109430383b17fc83e72b76bd",
-      "大小": 841,
-      "库": "store",
-      "后缀": ".png"
+      "size": 841,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_12": {
       "sha256": "70106d8a4e6c7739ceee6448a1602816cbc33a66045838c85d582abe94ba4c4d",
-      "大小": 907,
-      "库": "store",
-      "后缀": ".png"
+      "size": 907,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_13": {
       "sha256": "5dd535d61c2c8ed06a98b975b56f41f2f0374b59392a4359da6430477146b8e3",
-      "大小": 929,
-      "库": "store",
-      "后缀": ".png"
+      "size": 929,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_14": {
       "sha256": "474e81c61ae6a49addfa5426ff4d6409de408c355baa6f62f5c6de0f8bfee02a",
-      "大小": 659,
-      "库": "store",
-      "后缀": ".png"
+      "size": 659,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_15": {
       "sha256": "8fcca0497f7a082cbd5d1478db8d196d638bb6a2396bc10e311447a84a91558f",
-      "大小": 687,
-      "库": "store",
-      "后缀": ".png"
+      "size": 687,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_2": {
       "sha256": "729119a07975522bab603909a5ae064d13036031484abfe5425a266261ded81f",
-      "大小": 376,
-      "库": "store",
-      "后缀": ".png"
+      "size": 376,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_3": {
       "sha256": "73963a81685ce64bce1b3bc7d084ef118a95dd7ba2384a4846c20b5dc18ac0fb",
-      "大小": 421,
-      "库": "store",
-      "后缀": ".png"
+      "size": 421,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_4": {
       "sha256": "a971204276eec2044efb3a843fb8d9c029099fbb44f110910c0ebdc92b36bd1f",
-      "大小": 468,
-      "库": "store",
-      "后缀": ".png"
+      "size": 468,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_5": {
       "sha256": "565bb0520dbf4f33b0d4fcb238050a34754217c9b7f81881bd11b87931f294f9",
-      "大小": 506,
-      "库": "store",
-      "后缀": ".png"
+      "size": 506,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_6": {
       "sha256": "616691bce97191ce82d152baff7c8692893ef9d020120f93d28d0eb085f372b4",
-      "大小": 599,
-      "库": "store",
-      "后缀": ".png"
+      "size": 599,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_7": {
       "sha256": "7896cd12234da52eb37db146ed9fc76801c6420a53f5bed971d39ab867bb5de5",
-      "大小": 654,
-      "库": "store",
-      "后缀": ".png"
+      "size": 654,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_8": {
       "sha256": "8903fade1c65e37b7a36a2d8b7e53b1bd9b5b43630126f85e5198b4b9c93755a",
-      "大小": 718,
-      "库": "store",
-      "后缀": ".png"
+      "size": 718,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/explosion_9": {
       "sha256": "f1c7c7a6b586cf897d0c500d97adcafaef0085e1c4b8da92740a6885e17f02aa",
-      "大小": 787,
-      "库": "store",
-      "后缀": ".png"
+      "size": 787,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_0": {
       "sha256": "3f48a884334e17470e9c0b3b79bfe4fcdb10748103eca2482a339b097b15e61a",
-      "大小": 96,
-      "库": "store",
-      "后缀": ".png"
+      "size": 96,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_1": {
       "sha256": "3d7ac3895a0e0e9f341bb9a54d4585d6eb10beff766f7f4f73321d7608bef348",
-      "大小": 123,
-      "库": "store",
-      "后缀": ".png"
+      "size": 123,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_2": {
       "sha256": "9342cfecd8962bd2ef61c8dfab2c24c2d9d639da564fc4eff51ff655b45483a3",
-      "大小": 150,
-      "库": "store",
-      "后缀": ".png"
+      "size": 150,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_3": {
       "sha256": "b314c14aace0732a6f7c3dc37158934aaac8d1fbb5a1c2ec5d3941100dc9ddb4",
-      "大小": 190,
-      "库": "store",
-      "后缀": ".png"
+      "size": 190,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_4": {
       "sha256": "b4eb7e2d9d50186aaad24af87ffe07a5d4c7888347d5fedbfa5197fc72bab66e",
-      "大小": 224,
-      "库": "store",
-      "后缀": ".png"
+      "size": 224,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_5": {
       "sha256": "5f9e8a169156b2a463aaf86d2deb780a8542923fafaa8238a622ca17d4955d57",
-      "大小": 246,
-      "库": "store",
-      "后缀": ".png"
+      "size": 246,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_6": {
       "sha256": "f43262d759ef6e3c7a72b7eed5652562988bc4a0f65e03320395839503ce8e04",
-      "大小": 334,
-      "库": "store",
-      "后缀": ".png"
+      "size": 334,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/generic_7": {
       "sha256": "2dae6ad8a32199b205276f7295f0062bd5d9306fb810484d9d552fc8c564415c",
-      "大小": 382,
-      "库": "store",
-      "后缀": ".png"
+      "size": 382,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_0": {
       "sha256": "02be59e963ff97f90f20fdac1be2c5e05d14dc39f1d25b73933f87b8dc5f7a57",
-      "大小": 120,
-      "库": "store",
-      "后缀": ".png"
+      "size": 120,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_1": {
       "sha256": "e7c603c645edcba75704c177195d8e4bfbb64fb3e529686f4e7baf4dada13595",
-      "大小": 149,
-      "库": "store",
-      "后缀": ".png"
+      "size": 149,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_2": {
       "sha256": "45cc968df9fbf19ec09c40595f1616c43f665318479f187cd370029152709164",
-      "大小": 142,
-      "库": "store",
-      "后缀": ".png"
+      "size": 142,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_3": {
       "sha256": "460bcbfb1e3b9d6d9d90589edef4ec2e2eba8b32c43c292ff9ffd9dc97527732",
-      "大小": 171,
-      "库": "store",
-      "后缀": ".png"
+      "size": 171,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_4": {
       "sha256": "b5acbb46f3aced610ae18fd82a874d05b24bc9b56798c8fafe3d305fb3c9c864",
-      "大小": 144,
-      "库": "store",
-      "后缀": ".png"
+      "size": 144,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_5": {
       "sha256": "823d111be2683c5cebf32f34bff7b4e1d6c2895303c5269b4d98d27cf3d86fda",
-      "大小": 206,
-      "库": "store",
-      "后缀": ".png"
+      "size": 206,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_6": {
       "sha256": "2399445cced0bbd24aa5d1ecdeaeea30c17e620b1967da80d5407b677d3ec5ed",
-      "大小": 149,
-      "库": "store",
-      "后缀": ".png"
+      "size": 149,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/glitter_7": {
       "sha256": "464d7c8e7c8e1a7ef7286a89ec29c83b1778229ea13845aa313a9b19b4278b40",
-      "大小": 239,
-      "库": "store",
-      "后缀": ".png"
+      "size": 239,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/splash_0": {
       "sha256": "9f03dd53370fc5da66d2f889de060ed45eaa7cb34eb1468a397291c62587f8bd",
-      "大小": 167,
-      "库": "store",
-      "后缀": ".png"
+      "size": 167,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/splash_1": {
       "sha256": "1ed89e3253b6337efb4970df10a522e20f9c17fcc89aea2776230a5ddd43a8e2",
-      "大小": 123,
-      "库": "store",
-      "后缀": ".png"
+      "size": 123,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/splash_2": {
       "sha256": "d91efa59c8e2829d588ac57432b3d9099c2f242236acd3e0df07e9316b09573a",
-      "大小": 107,
-      "库": "store",
-      "后缀": ".png"
+      "size": 107,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/粒子/splash_3": {
       "sha256": "fd15324325328c5ceb59e3bc13980f4ebb89c5f6fac02f105b8c39307ee9cfa0",
-      "大小": 121,
-      "库": "store",
-      "后缀": ".png"
+      "size": 121,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/经验球": {
       "sha256": "b864b23987189807c37929a8a1f05a2e907b439e11ca115b9633f026146c7d7b",
-      "大小": 6497,
-      "库": "store",
-      "后缀": ".png"
+      "size": 6497,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_0": {
       "sha256": "c16446363cfdf87495586e4af5a6b032ecbe500006cff682618789c09f1df3f9",
-      "大小": 136,
-      "库": "store",
-      "后缀": ".png"
+      "size": 136,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_1": {
       "sha256": "4a0d07927199d6f5caf5dbd1e1dd000608fdbd73414d8492bbd8c8ea68f0ab3b",
-      "大小": 154,
-      "库": "store",
-      "后缀": ".png"
+      "size": 154,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_2": {
       "sha256": "829c2319887bdbcf3e58e11a90670996cdbff9409597ddf9b5717f6fddc6e956",
-      "大小": 202,
-      "库": "store",
-      "后缀": ".png"
+      "size": 202,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_3": {
       "sha256": "d9f6b60446a3a4bb97a4672860df8510b0c0b755ac2296bd7f3c8eeabb2901b1",
-      "大小": 227,
-      "库": "store",
-      "后缀": ".png"
+      "size": 227,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_4": {
       "sha256": "207584a3e4c83abac7801e4d6626b86c8d917fa8e139ffff7d13a28126751a98",
-      "大小": 236,
-      "库": "store",
-      "后缀": ".png"
+      "size": 236,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_5": {
       "sha256": "24e148ffc7a041b7f48a7ab14bc7d4a863bfa42ee774162ac21e8d7522369c39",
-      "大小": 249,
-      "库": "store",
-      "后缀": ".png"
+      "size": 249,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_6": {
       "sha256": "70d53a2e424f768ec4db4a89feaed0fdd4b82f06c11d3f7ce614dc6b52098ccb",
-      "大小": 241,
-      "库": "store",
-      "后缀": ".png"
+      "size": 241,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/effect_7": {
       "sha256": "4bd987bf88bff29745a295a5c1b0e07c17f9a11a00b08dd001f38c360ade50ba",
-      "大小": 197,
-      "库": "store",
-      "后缀": ".png"
+      "size": 197,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_0": {
       "sha256": "d591831b1aad6b7bbaa55bf8d954e38026066bec590ae7033e36122b05c24f14",
-      "大小": 118,
-      "库": "store",
-      "后缀": ".png"
+      "size": 118,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_1": {
       "sha256": "60d7853982eff47d6b99607735688c65dba22dc17af31c55101fad1cfb3adbb2",
-      "大小": 125,
-      "库": "store",
-      "后缀": ".png"
+      "size": 125,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_2": {
       "sha256": "a6d3648e6d1fcff8e2789bf2c5da6339ad7e37d922d3a5be623031560b598ee5",
-      "大小": 164,
-      "库": "store",
-      "后缀": ".png"
+      "size": 164,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_3": {
       "sha256": "2610038fdf3f33954fffd19ad25df36f89b2b0e03c6c14f1e1075e19f0f3cb6c",
-      "大小": 188,
-      "库": "store",
-      "后缀": ".png"
+      "size": 188,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_4": {
       "sha256": "ef7cae4a6e2f8fc17bada393bddf0483d192667619531ce554b4b7e585f0c873",
-      "大小": 199,
-      "库": "store",
-      "后缀": ".png"
+      "size": 199,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_5": {
       "sha256": "2127a3918f2ec3e5080c359eaaa96816e787cb7c3e26f2a7757117cfb6f105be",
-      "大小": 214,
-      "库": "store",
-      "后缀": ".png"
+      "size": 214,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_6": {
       "sha256": "489a7a826553f7e8660b16410ba84186b7e917ff1e3ee3f3f6d23313deaa5004",
-      "大小": 230,
-      "库": "store",
-      "后缀": ".png"
+      "size": 230,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/特效/药水粒子/spell_7": {
       "sha256": "70a3fadfc284ccfa1cdeebd439d60a39caefd5b1dc4bcc9ccb592299e8775490",
-      "大小": 241,
-      "库": "store",
-      "后缀": ".png"
+      "size": 241,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/环境/太阳": {
       "sha256": "b3514b3a9b84f70091d3bbc0c4e335149334e723b70c1e163f8335f97f598b34",
-      "大小": 3576,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3576,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/环境/月相": {
       "sha256": "1f729892961239cd531ea6aecc9a47929cec812b4155417947d674b885983f38",
-      "大小": 17620,
-      "库": "store",
-      "后缀": ".png"
+      "size": 17620,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/环境/末地天空": {
       "sha256": "f540001619a2d411bb279dd267274ab7fcfbd21b10bf3ac55af6f889a241e069",
-      "大小": 54169,
-      "库": "store",
-      "后缀": ".png"
+      "size": 54169,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/环境/雨": {
       "sha256": "73095f70d3665109d2a3dbbf9bb68e7081a4104692424fa909a8c0495f65de9d",
-      "大小": 5415,
-      "库": "store",
-      "后缀": ".png"
+      "size": 5415,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/界面/世界选择": {
       "sha256": "083bf19940b46f24bac897996f6df28b1493b14f8d550c810fcc8bb642cb3e41",
-      "大小": 5671,
-      "库": "store",
-      "后缀": ".png"
+      "size": 5671,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/界面/选项背景": {
       "sha256": "93f3fe3e86cefc0d6c26781929b0c3cf02bea00be5b0e4acafb21028fa138e1c",
-      "大小": 2313,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2313,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_0": {
       "sha256": "3694f478fdb96b9346566cdfdf9ec0a53a49830b202fb033a8afabaaa340839f",
-      "大小": 167,
-      "库": "store",
-      "后缀": ".png"
+      "size": 167,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_1": {
       "sha256": "4f94af1b04f5c9bc556b058364b4b7171b4ad0fef90b1805c97ed799bd7c12fb",
-      "大小": 175,
-      "库": "store",
-      "后缀": ".png"
+      "size": 175,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_10": {
       "sha256": "2a95178380b8407368c10ff6d607278e0e48d7e02d7800141c7f3d621dcb16af",
-      "大小": 173,
-      "库": "store",
-      "后缀": ".png"
+      "size": 173,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_11": {
       "sha256": "16d62d809f7e970b23c8ee766317929080d814526b57eb579dcc3320095a5271",
-      "大小": 175,
-      "库": "store",
-      "后缀": ".png"
+      "size": 175,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_2": {
       "sha256": "7db509566e51bb21cbe2691ef9da2eea12f03154dbe59ae1abff7eb692f1597a",
-      "大小": 178,
-      "库": "store",
-      "后缀": ".png"
+      "size": 178,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_3": {
       "sha256": "2a1415069cdd58295ee85dc63b956a9076cbdfd2671f31f1ac7b7795f8f270f9",
-      "大小": 172,
-      "库": "store",
-      "后缀": ".png"
+      "size": 172,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_4": {
       "sha256": "7e75c2fd38180c2b5da7c4430b39b463bf475eb0f935c686805dddbc635a6e6c",
-      "大小": 174,
-      "库": "store",
-      "后缀": ".png"
+      "size": 174,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_5": {
       "sha256": "b2fb2bea1fe9d9c10f2aca2b97e34f85e817d75c1cedab8683225c2bae5302fa",
-      "大小": 177,
-      "库": "store",
-      "后缀": ".png"
+      "size": 177,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_6": {
       "sha256": "581dcb1238f8a130fed10da8dbac8546106d8763a66711b88674fc46ddffdc4d",
-      "大小": 178,
-      "库": "store",
-      "后缀": ".png"
+      "size": 178,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_7": {
       "sha256": "37e17db7e72584d5cad87118cad424eb14e527cc1f40ab67f67ffeb75a0f7e2f",
-      "大小": 177,
-      "库": "store",
-      "后缀": ".png"
+      "size": 177,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_8": {
       "sha256": "823c69536e2c33e36d0d6606bde176800c5f4b6786bfb2bef30ccfde310f1b83",
-      "大小": 178,
-      "库": "store",
-      "后缀": ".png"
+      "size": 178,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/樱花/cherry_9": {
       "sha256": "e50f746fcf627cf32ec9351a7db319e7ced94ceb5c45ca2e66062780355c7da8",
-      "大小": 176,
-      "库": "store",
-      "后缀": ".png"
+      "size": 176,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/0": {
       "sha256": "4cf77e5053684a0601b04f811dfaa3e69507dbae01260dab2832fd0e5d44f628",
-      "大小": 136,
-      "库": "store",
-      "后缀": ".png"
+      "size": 136,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/1": {
       "sha256": "bdaa7264d4ac1a730a7e779ac4a99bf0759f7083a36820bce0961076e002b015",
-      "大小": 155,
-      "库": "store",
-      "后缀": ".png"
+      "size": 155,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/2": {
       "sha256": "e9c8ab2c359aa506663bd57d3a90e9a995f14da79248570acb8e57c4a42b54f3",
-      "大小": 151,
-      "库": "store",
-      "后缀": ".png"
+      "size": 151,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/3": {
       "sha256": "fcf67d4257925c6ccc0130bb9ae51531bb254b25239374547d2f0314c8e06c91",
-      "大小": 161,
-      "库": "store",
-      "后缀": ".png"
+      "size": 161,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/4": {
       "sha256": "1e6a6e174587c3ed8cc0bbb5911cb2615f0d266a96bccae42ddf33f42df3626e",
-      "大小": 224,
-      "库": "store",
-      "后缀": ".png"
+      "size": 224,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/5": {
       "sha256": "d10b3fd7486b662be0a87549ada8a82da98a4c11f015ef2f8d2adb7285993172",
-      "大小": 204,
-      "库": "store",
-      "后缀": ".png"
+      "size": 204,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/6": {
       "sha256": "b12f15ae27e886eaff33f0ed215829cba590fae5d48376446b1a1f5066d6ed5a",
-      "大小": 270,
-      "库": "store",
-      "后缀": ".png"
+      "size": 270,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/火花/7": {
       "sha256": "870bd9889eec0cf950c4e51b497dbe071638ddb6c28573b12f811bdd6b5482f7",
-      "大小": 202,
-      "库": "store",
-      "后缀": ".png"
+      "size": 202,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/粒子/闪光": {
       "sha256": "621b52f3bf4bc474920cea889d68ce8a10f70306964bf97e86c7f75947f013d1",
-      "大小": 7557,
-      "库": "store",
-      "后缀": ".png"
+      "size": 7557,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/僵尸": {
       "sha256": "bd64666cc64f8aaf2ea6e3a5d5afe50d7531282d140a2bb58e9a7cf5af63fb85",
-      "大小": 7907,
-      "库": "store",
-      "后缀": ".png"
+      "size": 7907,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/冰雪女王冰盾": {
       "sha256": "7b52772e515e629501f92f636d7d5008497f3e83ed2daecaa50de8a63478f7d8",
-      "大小": 1276,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1276,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/巨人/史蒂夫": {
       "sha256": "74e14055605d64ec25a43abe22adf0d66aab279bd9df8cfa0b630133b7af2b91",
-      "大小": 8341,
-      "库": "store",
-      "后缀": ".png"
+      "size": 8341,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/巨人/石剑": {
       "sha256": "9eb2a24ee85c95b18845570e6b159dd701612cf13f3cf2828aaa8e7b4b73d128",
-      "大小": 865,
-      "库": "store",
-      "后缀": ".png"
+      "size": 865,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/巨人/石镐": {
       "sha256": "01a2dd587120fd9637f248cdb1f01f3ca2fa82bcb8f7cecb86495407391fbcee",
-      "大小": 689,
-      "库": "store",
-      "后缀": ".png"
+      "size": 689,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/巨人/铁甲1": {
       "sha256": "ba12a17dba098cfbce66acd51a2a2c713d44cda0684ea518a1ee52d42fbaceab",
-      "大小": 3596,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3596,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/巨人/铁甲2": {
       "sha256": "a6d41dd7be8e07efd7bf610862f461f6c18cccfa74de5645bacdcd264ec3ec84",
-      "大小": 1585,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1585,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/恼鬼/恼鬼": {
       "sha256": "cf079556cbe0c1eb5dee47915eab8e2202cb0ceb4e467e731edee5aed3ee48fe",
-      "大小": 2477,
-      "库": "store",
-      "后缀": ".png"
+      "size": 2477,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/恼鬼/蓄力": {
       "sha256": "7f98a08b2bdb616371a7f1db16438a44b8d9fd076e62c66f6ec4e17ef1943f37",
-      "大小": 3487,
-      "库": "store",
-      "后缀": ".png"
+      "size": 3487,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/监守者/心脏": {
       "sha256": "d4feb09b1c8461ef655bdd46e72ec70b0ecbd65188293f31b0414504a4b708f5",
-      "大小": 1874,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1874,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/监守者/本体": {
       "sha256": "2c5a092391a617b7319906a6a8d7967dce0eaefe3413ae0de1fcc1d761a68cee",
-      "大小": 24131,
-      "库": "store",
-      "后缀": ".png"
+      "size": 24131,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/监守者/生物发光": {
       "sha256": "bd8afd933685928510c13af3a898e762f96e582d88e2433972d2a47cf6ee72ef",
-      "大小": 4991,
-      "库": "store",
-      "后缀": ".png"
+      "size": 4991,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/监守者/脉动斑纹1": {
       "sha256": "a49e0f3b5e0f644928dce7990529976f25d87663572e23e9ba88cfa4ea545023",
-      "大小": 1965,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1965,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/监守者/脉动斑纹2": {
       "sha256": "d5c632c126ad1603b7b7a9a16bb8f949e34eb83fb1bfb7fea720221cee2fcd76",
-      "大小": 1907,
-      "库": "store",
-      "后缀": ".png"
+      "size": 1907,
+      "lib": "store",
+      "suffix": ".png"
     },
     "贴图/角色/苦力怕": {
       "sha256": "f2e384b962a56bf9ba9e5b1ca6d8588d84bc4e7e5c8c8e7b61a3510b52d39c38",
-      "大小": 14972,
-      "库": "store",
-      "后缀": ".png"
+      "size": 14972,
+      "lib": "store",
+      "suffix": ".png"
     }
   },
-  "报告": {
-    "许可": {
+  "report": {
+    "license": {
       "材质包/faithful-64x-1201": "LicenseRef-Faithful-License-4（公开）"
     },
-    "分辨率": {
-      "规则": "指定 64x（材质包.toml 的 分辨率 或 ANIM_PACKS_TRY）：不按画风整除，最多 4 倍（64x）",
-      "方块图集格": 64
+    "resolution": {
+      "policy": "指定 64x（材质包.toml 的 分辨率 或 ANIM_PACKS_TRY）：不按画风整除，最多 4 倍（64x）",
+      "blockAtlasCell": 64
     },
-    "方块图集": {
-      "换": 840,
-      "共": 2478,
-      "包里没有": 1638,
-      "不合": 0
+    "blockAtlas": {
+      "replaced": 840,
+      "total": 2478,
+      "notInPack": 1638,
+      "mismatched": 0
     },
-    "单张": {
-      "共": 233,
-      "换": 227,
-      "包里没有": 6,
-      "包里没有但同组放大": [
+    "singleTextures": {
+      "total": 233,
+      "replaced": 227,
+      "notInPack": 6,
+      "missingUpscaledInGroup": [
         "贴图/物品/杂项物品/附魔光效",
         "贴图/环境/末地天空",
         "贴图/特效/末地传送门"
       ],
-      "不合": []
+      "mismatched": []
     },
-    "缩放": {
+    "scale": {
       "包 4 倍 → 出 4 倍（原样）": 1044,
       "包 4 倍 → 出 4 倍（原样（动画 32 帧→32 帧））": 1,
       "包 4 倍 → 出 4 倍（原样（动画 16 帧→16 帧））": 2,
@@ -1427,11 +1427,11 @@
       "包 4 倍 → 出 4 倍（原样（动画 4 帧→4 帧））": 1,
       "包 2 倍 → 出 4 倍（2倍放）": 18
     },
-    "各包贡献": {
+    "perPackContribution": {
       "faithful-64x-1201": 1067
     },
-    "群系色": null,
-    "警告": [
+    "biomeColor": null,
+    "warnings": [
       "faithful-64x-1201：OptiFine/ctm 896 个文件不支持（如 assets/minecraft/optifine/ctm/bookshelf/0.png、assets/minecraft/optifine/ctm/bookshelf/1.png）",
       "faithful-64x-1201：OptiFine/textures 1 个文件不支持（如 assets/minecraft/optifine/textures/icons.png）"
     ]

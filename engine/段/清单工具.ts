@@ -6,12 +6,12 @@ export const manifestTools = (manifest: readonly ManifestEntry[]) => {
   /** 段目录（相对作品根）：核对段在 核对/<名>，其余在 段/<段键> */
   const segDir = (segKey: string) => (segKey.startsWith('核对-') ? `核对/${segKey.slice('核对-'.length)}` : `段/${segKey}`);
   /** 段名 = 段键去掉「<章>-」 */
-  const segmentName = (entry: ManifestEntry) => entry.键.slice(String(entry.章).length + 1);
+  const segmentName = (entry: ManifestEntry) => entry.key.slice(String(entry.章).length + 1);
   /** 编号：章内按清单顺序的两位序号；核对段没有 */
   const segmentCode = (segKey: string): string | null => {
-    const entry = manifest.find((t) => t.键 === segKey);
+    const entry = manifest.find((t) => t.key === segKey);
     if (!entry || entry.章 === '核对') return null;
-    const chapterIndex = manifest.filter((t) => t.章 === entry.章).findIndex((t) => t.键 === segKey) + 1;
+    const chapterIndex = manifest.filter((t) => t.章 === entry.章).findIndex((t) => t.key === segKey) + 1;
     return `${entry.章}-${String(chapterIndex).padStart(2, '0')}`;
   };
   return { segDir, segmentName, segmentCode };

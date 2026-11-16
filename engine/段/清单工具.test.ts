@@ -3,10 +3,10 @@ import { manifestTools } from './清单工具.ts';
 
 describe('清单工具：作品 清单.ts 尾部的通用部分', () => {
   const manifest = [
-    { 键: '核对-冒烟', 章: '核对' as const },
-    { 键: '6-进入森林', 章: 6, 集: 1 },
-    { 键: '6-斩娜迦', 章: 6 },
-    { 键: '7-黑暗降临', 章: 7 },
+    { key: '核对-冒烟', 章: '核对' as const },
+    { key: '6-进入森林', 章: 6, 集: 1 },
+    { key: '6-斩娜迦', 章: 6 },
+    { key: '7-黑暗降临', 章: 7 },
   ];
   const { segDir, segmentName, segmentCode } = manifestTools(manifest);
   it('段目录、段名、编号', () => {

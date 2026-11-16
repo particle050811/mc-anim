@@ -6,26 +6,26 @@
 import type { EyeContactVersion } from '../../场/2-隐世之境/对视参数.ts';
 
 export type View = {
-  名: string;
+  name: string;
   版: EyeContactVersion;
   /** 整片后期，不给 = 开（定稿） */
   withPost?: boolean;
   /** 换掉封面那行大字的布局（比较用） */
-  bigText?: { 缩放: number; left: number; 下: number };
+  bigText?: { scale: number; left: number; 下: number };
   /** false = 不挂气泡、不画聊天（片里这一帧的样子），不给 = 挂 */
-  字?: boolean;
+  char?: boolean;
   /** 盖上 B 站封面的安全区（4:3 取中间、底边 20%、右下角时长角标），自己看构图用 */
   safeArea?: boolean;
 };
 
 export const views: readonly View[] = [
-  { 名: '成片画幅（后期开）', 版: '片' },
-  { 名: '成片画幅-整片后期关', 版: '片', withPost: false },
-  { 名: 'B站封面', 版: 'B站封面' },
-  { 名: '抖音竖版封面', 版: '竖版' },
-  { 名: 'B站封面-安全区', 版: 'B站封面', safeArea: true },
+  { name: '成片画幅（后期开）', 版: '片' },
+  { name: '成片画幅-整片后期关', 版: '片', withPost: false },
+  { name: 'B站封面', 版: 'B站封面' },
+  { name: '抖音竖版封面', 版: '竖版' },
+  { name: 'B站封面-安全区', 版: 'B站封面', safeArea: true },
   // 黄字 14 倍（字高 112，03-封面说的 110 上下）放左下：从 4:3 左沿起也伸进右下角时长角标那块，黑条压住她下巴和花（定稿 8 倍，对视参数.ts 的 封面大字）
-  { 名: 'B站封面-大字14倍', 版: 'B站封面', bigText: { 缩放: 14, left: 120, 下: 426 }, safeArea: true },
-  { 名: '成片画幅-片里这一帧（不挂气泡、没有聊天行；歌词在段里另叠，这里不画）', 版: '片', 字: false },
-  { 名: 'B站封面-片里这一帧（不挂气泡、没有聊天行、不放大字）', 版: 'B站封面', 字: false },
+  { name: 'B站封面-大字14倍', 版: 'B站封面', bigText: { scale: 14, left: 120, 下: 426 }, safeArea: true },
+  { name: '成片画幅-片里这一帧（不挂气泡、没有聊天行；歌词在段里另叠，这里不画）', 版: '片', char: false },
+  { name: 'B站封面-片里这一帧（不挂气泡、没有聊天行、不放大字）', 版: 'B站封面', char: false },
 ];

@@ -86,7 +86,7 @@ const installTempMods = (serverDir: string, jars: readonly string[]) => {
 export type ServerOptions = {
   目录: string;
   /** 世界目录（里面有 level.dat） */
-  存档: string;
+  save: string;
   /** 建新世界（anim world new）才给：存档还没有 level.dat，由服务端第一次启动时建 */
   allowNewWorld?: boolean;
   /** Forge / NeoForge 版本（libraries 里有几个时挑哪个） */
@@ -112,7 +112,7 @@ export class Server {
   private waiters = new Set<Waiter>();
   /** 上一条命令发出以后的日志（等日志先在这里找） */
   private recent: string[] = [];
-  private 退出码: number | null | undefined = undefined;
+  private exitCode: number | null | undefined = undefined;
   private exited: Promise<void>;
   private copied: string[];
   private 错: Error | null = null;
@@ -143,7 +143,7 @@ export class Server {
     this.p.stderr!.on('data', onData);
     this.exited = new Promise((resolve) =>
       this.p.on('close', (code) => {
-        this.退出码 = code;
+        this.exitCode = code;
         fs.rmSync(pidFile(o.目录), { force: true });
         for (const w of this.waiters) w.deliver(null);
         this.waiters.clear();
@@ -165,8 +165,8 @@ export class Server {
   }
 
   /** 开服并等到就绪（日志出现 Done (）；起不来就抛错（服务端已停） */
-  static async 起(o: ServerOptions): Promise<Server> {
-    if (!o.allowNewWorld && !fs.existsSync(path.join(o.存档, 'level.dat'))) throw new Error(`${o.存档} 不是世界（没有 level.dat）；不让服务端悄悄建一个新世界`);
+  static async start(o: ServerOptions): Promise<Server> {
+    if (!o.allowNewWorld && !fs.existsSync(path.join(o.save, 'level.dat'))) throw new Error(`${o.save} 不是世界（没有 level.dat）；不让服务端悄悄建一个新世界`);
     const eula = path.join(o.目录, 'eula.txt');
     if (!fs.existsSync(eula) || !/^\s*eula\s*=\s*true\s*$/m.test(fs.readFileSync(eula, 'utf8'))) throw new Error(`${eula} 没写 eula=true：要人读过 Minecraft EULA 后自己改，anim 不替人同意`);
     const oldPid = fs.existsSync(pidFile(o.目录)) ? Number(fs.readFileSync(pidFile(o.目录), 'utf8')) : 0;
@@ -180,19 +180,19 @@ export class Server {
       ...(o.genThreads ? [`-Dmax.bg.threads=${o.genThreads}`] : []),
       ...startArgs(o.目录, o.loaderVersion),
       // 存档就在服务端目录下时不给 --universe：Forge 的 Main 见到 universe 等于服务端目录会报「Invalid world directory…the same directory as your universe」不起服
-      ...(fs.realpathSync(path.dirname(path.resolve(o.存档))) === fs.realpathSync(o.目录) ? [] : ['--universe', path.dirname(path.resolve(o.存档))]),
+      ...(fs.realpathSync(path.dirname(path.resolve(o.save))) === fs.realpathSync(o.目录) ? [] : ['--universe', path.dirname(path.resolve(o.save))]),
       '--world',
-      path.basename(o.存档),
+      path.basename(o.save),
       '--port',
       String(port),
     ];
     const copied = installTempMods(o.目录, o.tempMods ?? []);
     const s = new Server(o, port, params, copied);
-    s.提示(`开服：${o.目录}，世界 ${o.存档}，端口 ${port}${copied.length ? `，临时模组 ${copied.join('、')}` : ''}`);
-    const isReady = await s.等('Done (', o.readyTimeoutSec ?? 600, { quiet: true });
+    s.提示(`开服：${o.目录}，世界 ${o.save}，端口 ${port}${copied.length ? `，临时模组 ${copied.join('、')}` : ''}`);
+    const isReady = await s.waits('Done (', o.readyTimeoutSec ?? 600, { quiet: true });
     if (!isReady) {
       await s.停();
-      throw s.错 ?? new Error(`服务端没起来${s.退出码 !== undefined ? `（退出码 ${s.退出码}）` : `（${o.readyTimeoutSec ?? 600} 秒没就绪）`}，看 ${path.join(o.目录, 'logs', 'latest.log')}`);
+      throw s.错 ?? new Error(`服务端没起来${s.exitCode !== undefined ? `（退出码 ${s.exitCode}）` : `（${o.readyTimeoutSec ?? 600} 秒没就绪）`}，看 ${path.join(o.目录, 'logs', 'latest.log')}`);
     }
     s.提示('服务端就绪');
     return s;
@@ -221,7 +221,7 @@ export class Server {
     return this.p.pid;
   }
   get running() {
-    return this.退出码 === undefined;
+    return this.exitCode === undefined;
   }
   get error() {
     return this.错;
@@ -240,7 +240,7 @@ export class Server {
   }
 
   /** 等日志出现一句话（先在上一条命令以后的日志里找）；超时、服务端退出、出错返回 null。超时秒 Infinity = 一直等 */
-  等(pattern: string | RegExp | ((line: string) => boolean), timeoutSec: number, o: { quiet?: boolean; onlyNew?: boolean } = {}): Promise<string | null> {
+  waits(pattern: string | RegExp | ((line: string) => boolean), timeoutSec: number, o: { quiet?: boolean; onlyNew?: boolean } = {}): Promise<string | null> {
     const f = typeof pattern === 'function' ? pattern : typeof pattern === 'string' ? (l: string) => l.includes(pattern) : (l: string) => pattern.test(l);
     if (!o.onlyNew) {
       const recentMatch = this.recent.find(f);
@@ -263,7 +263,7 @@ export class Server {
       } catch {
         // 管道已经断了
       }
-      const stuck = this.等(STOP_ERROR_LINE, STOP_TIMEOUT_SEC, { onlyNew: true });
+      const stuck = this.waits(STOP_ERROR_LINE, STOP_TIMEOUT_SEC, { onlyNew: true });
       await Promise.race([this.exited, stuck]);
       if (this.running) {
         this.提示('服务端没有自己退出，强杀');
@@ -279,6 +279,6 @@ export class Server {
       for (const f of prevHandlers) process.on(sig, f);
     }
     this.oldSignals.clear();
-    return this.退出码;
+    return this.exitCode;
   }
 }

@@ -4,4 +4,4 @@ import { defineSeg } from '@engine/段/段定义.ts';
 import { realNetherPack } from '../../地点/真下界位置.ts';
 import { aspect, plans } from './视图.ts';
 
-export default defineSeg({ 场: '核对', 秒: plans.length, 宽: aspect.宽, 高: aspect.高, 地形: [realNetherPack] });
+export default defineSeg({ scene: '核对', sec: plans.length, width: aspect.width, height: aspect.height, terrain: [realNetherPack] });

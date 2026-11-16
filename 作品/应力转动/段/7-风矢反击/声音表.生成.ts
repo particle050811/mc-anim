@@ -3,49 +3,49 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/7-黄叛-受死": {
-      "时长": 1.007,
-      "峰值": -4.7,
-      "响度": -18,
+      "duration": 1.007,
+      "peakDb": -4.7,
+      "loudness": -18,
       "sha": "ac93750e337f"
     },
     "音效/block.deepslate.fall.2": {
-      "时长": 0.913375,
-      "峰值": -7.1,
-      "响度": -31,
+      "duration": 0.913375,
+      "peakDb": -7.1,
+      "loudness": -31,
       "sha": "11895f18bea0"
     },
     "音效/entity.arrow.hit.2": {
-      "时长": 0.75,
-      "峰值": -0.1,
-      "响度": -26.2,
+      "duration": 0.75,
+      "peakDb": -0.1,
+      "loudness": -26.2,
       "sha": "fa7acce9893c"
     },
     "音效/entity.arrow.shoot": {
-      "时长": 0.455102,
-      "峰值": -0.1,
-      "响度": -21.4,
+      "duration": 0.455102,
+      "peakDb": -0.1,
+      "loudness": -21.4,
       "sha": "9492b5233938"
     },
     "音效/entity.warden.hurt.2": {
-      "时长": 2.534958,
-      "峰值": -1.3,
-      "响度": -17.4,
+      "duration": 2.534958,
+      "peakDb": -1.3,
+      "loudness": -17.4,
       "sha": "3626ff733503"
     },
     "音效/item.elytra.flying": {
-      "时长": 10.220333,
-      "峰值": -12.3,
-      "响度": -24.9,
+      "duration": 10.220333,
+      "peakDb": -12.3,
+      "loudness": -24.9,
       "sha": "0f51f0fd6647"
     }
   },
-  "台词": {
+  "lines": {
     "7-黄叛-受死": {
-      "配音": "配音/7-黄叛-受死",
-      "开口": 0.03,
-      "时长": 1.007
+      "voice": "配音/7-黄叛-受死",
+      "mouthOpen": 0.03,
+      "duration": 1.007
     }
   }
 };

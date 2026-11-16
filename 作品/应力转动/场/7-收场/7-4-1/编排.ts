@@ -19,7 +19,7 @@ const add = (a: V3, b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const clauses = ['我是一名机技境法师，', '现在有一个五万血的怪物想抓我，', '但我丝毫不慌，', '因为它的脚步没我的魔力化马来得快。'];
 export const lineStartSec = 0.5;
 export const clauseStartSecs = [0, 1.83, 4.42, 5.5]; // 各分句起音，从开口算
-export const lines = [{ id: '7-4-1-刘心忠-风筝', 角色: '刘心忠', 文: clauses.join(''), startSec: lineStartSec }];
+export const lines = [{ id: '7-4-1-刘心忠-风筝', character: '刘心忠', 文: clauses.join(''), startSec: lineStartSec }];
 
 // ---------- 镜头：段内起秒、取剧情时间轴上从哪一刻开始 ----------
 // 成片第 n 圈（0 起，从 戏.ts 的 firstLap 算）它拐过西北角（进西环道）那一刻；各镜都从这一刻前一点开始，到这一圈最后一下挨打以后

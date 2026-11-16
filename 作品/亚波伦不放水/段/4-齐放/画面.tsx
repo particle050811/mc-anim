@@ -60,7 +60,7 @@ const linspace = (startSec: number, end: number, n: number) => Array.from({ leng
 /** 跟拍：从 起 到 止 每 步 秒放一个关键机位（她一下冲 0.3～0.55 秒、峰值 24～29 格/秒，关键隔得稀样条就跟不上） */
 const follow = (startSec: number, end: number, cameraRig: (s: number) => [V3, V3, number], stepSec = 0.1): SplineKey[] =>
   linspace(startSec, end, Math.max(1, Math.ceil((end - startSec) / stepSec - 1e-9))).map((s) => keyframe(s, ...cameraRig(s)));
-const makeShot = (name: string, startSec: number, keyframes: readonly SplineKey[]): Shot => ({ 名: name, 起: startSec, cameraRig: (_u, shotSec): Cam => rigSpline(keyframes, startSec + shotSec) });
+const makeShot = (name: string, startSec: number, keyframes: readonly SplineKey[]): Shot => ({ name: name, start: startSec, cameraRig: (_u, shotSec): Cam => rigSpline(keyframes, startSec + shotSec) });
 
 // ── 第一人称：眼睛跟着他（挨打往后让、被结界拽回），视线慢 0.1 秒跟着她（玩家拿鼠标追着她）；原版视角 70 度 ──
 /** 原版默认 fov 70（竖直）的焦距，同第 5 幕 */
@@ -104,14 +104,14 @@ const shotTable: readonly Shot[] = [
     const right = dirBetween(yaBoLunAt(0), S);
     return [addVec(addVec(addVec(centerPos, perpendicular(right), lerp(22, 20, u)), right, lerp(-1, 1, u)), atHeight(lerp(-1.5, -0.8, u))), addVec(centerPos, atHeight(lerp(0.8, 0.4, u))), 20];
   }, 0.25)),
-  { 名: '第一人称', 起: cameraStart.firstPerson, cameraRig: (_u, shotSec) => firstPersonRig(cameraStart.firstPerson + shotSec) },
+  { name: '第一人称', start: cameraStart.firstPerson, cameraRig: (_u, shotSec) => firstPersonRig(cameraStart.firstPerson + shotSec) },
 ];
 const totemTable = totemParticleTable(S, 1, { ground: S[2] });
 
 /** 按镜头清场（Agent 取的）：第一人称镜头就在他眼睛里，打到他身上的那一刻就不画了（他身上炸开的、长出来的会把镜头整个糊住），
  *  当刻就到的（闪电、音爆这种）只留 0.2 秒 */
-const withEnd = (cast: Launch, endSec: number): Launch => ({ ...cast, 止: Math.min(cast.止 ?? Infinity, endSec) });
-const firstPersonTable = castTable.map((cast, i) => withEnd(cast, castHits[i] ?? cast.秒 + 0.2));
+const withEnd = (cast: Launch, endSec: number): Launch => ({ ...cast, end: Math.min(cast.end ?? Infinity, endSec) });
+const firstPersonTable = castTable.map((cast, i) => withEnd(cast, castHits[i] ?? cast.sec + 0.2));
 const throwsByShot: Record<string, readonly Launch[]> = { 侧: castTable, 第一人称: firstPersonTable };
 
 const SceneFirstPersonHand: React.FC<{ actSec: number }> = ({ actSec }) => {
@@ -120,7 +120,7 @@ const SceneFirstPersonHand: React.FC<{ actSec: number }> = ({ actSec }) => {
   const { tiltDeg, dirDeg: yawDeg } = hurtTilt(actSec);
   const handRot = new THREE.Quaternion().setFromAxisAngle(hurtAxis(yawDeg), rad(tiltDeg));
   return (
-    <FirstPersonCanvas width={aspect.宽} height={aspect.高} view={viewAngles(eye, firstPersonLook(actSec))}>
+    <FirstPersonCanvas width={aspect.width} height={aspect.height} view={viewAngles(eye, firstPersonLook(actSec))}>
       {/* 原版 renderItemInHand 画手之前也调一遍 bobHurt：手跟着视角一起歪 */}
       <group quaternion={handRot}>
         <FirstPersonHand held={<Valettein glintSec={actSec} />} display={valetteinDisplay[defaultAppearance].firstperson_righthand} swing={handState.swing} equip={handState.equip} />
@@ -130,11 +130,11 @@ const SceneFirstPersonHand: React.FC<{ actSec: number }> = ({ actSec }) => {
 };
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 段: thisSegment } = useSeg(seg);
+  const { sec: sec, segment: thisSegment } = useSeg(seg);
   const t = actStart + sec;
   const yaBoLunState = perform.在(t);
-  const { shot, cameraRig } = pickShot(shotTable, sec, thisSegment.秒);
-  const isFirstPerson = shot.名 === '第一人称';
+  const { shot, cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
+  const isFirstPerson = shot.name === '第一人称';
   return (
     <TerraceCanvas
       ritualStructure
@@ -144,25 +144,25 @@ export default definePicture(seg, soundUrl, () => {
           {isFirstPerson && (
             <AbsoluteFill>
               <SceneFirstPersonHand actSec={sec} />
-              <ItemActivate 宽={aspect.宽} 高={aspect.高} s={uiScale} 秒={t - totemSec} offset={ringOffset} items={ringLayers} />
+              <ItemActivate width={aspect.width} height={aspect.height} s={uiScale} sec={t - totemSec} offset={ringOffset} items={ringLayers} />
             </AbsoluteFill>
           )}
-          <BattleUi 宽={aspect.宽} 高={aspect.高} s={uiScale} healthBar={{ healthRatio: 1 }} />
+          <BattleUi width={aspect.width} height={aspect.height} s={uiScale} healthBar={{ healthRatio: 1 }} />
         </>
       }
     >
       <nearFadeContext.Provider value={isFirstPerson ? [1.5, 3.5] : [1, 3]}>
         {/* 仪式做完后留在台地上的结构和四角灵魂火，同第 2 幕；仪式的钟走编排的钟（第 2 幕慢放过，比片秒慢），火和第 2 幕末接上 */}
         <group position={altar}>
-          <RestRitualPerformance 秒={t + timeline.事件.yaBoLunAppears.秒 - timeline.事件.placeRing.秒} plan={summonPlans.短} />
+          <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeRing.sec} plan={summonPlans.短} />
         </group>
         <GirlYaBoLun {...yaBoLunState.props} holdWand />
         <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={wheelParams(t)} cellsPerPixel={cellsPerPixel} />
-        <RevelationCagePerformance 秒={t - throwSec} settings={cageSetup} />
-        <CastLaunches 表={throwsByShot[shot.名]!} 秒={t} sceneCtx={sceneCtx} />
-        <TotemParticles 表={totemTable} 秒={t - totemSec} />
+        <RevelationCagePerformance sec={t - throwSec} settings={cageSetup} />
+        <CastLaunches 表={throwsByShot[shot.name]!} sec={t} sceneCtx={sceneCtx} />
+        <TotemParticles 表={totemTable} sec={t - totemSec} />
         {/* 第一人称镜头就在他眼睛里，不画他自己 */}
-        {!isFirstPerson && <ReactingSteve 状态={steveStateAt(t)} />}
+        {!isFirstPerson && <ReactingSteve state={steveStateAt(t)} />}
       </nearFadeContext.Provider>
     </TerraceCanvas>
   );

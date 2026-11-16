@@ -2,74 +2,74 @@
 # 许可不许再分发的 可见性 私有（字节只在数据根 私有/）。许可原文 11-02 查，出处写在 说明 里。
 # 字段和取值见 assets/README.md。
 
-[["资产"]]
+[["asset"]]
 id = "材质包/bare-bones"
-"类别" = "材质包"
-"来源" = "手工:下载 https://cdn.modrinth.com/data/rox3U8B6/versions/s3lwqPHV/Bare%20Bones%201.20.zip（Modrinth bare-bones 1.1.7，sha1 31d55c22f6f26529ff6ba810dba48873862ae358）"
-"许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "发布"
-"说明" = "RobotPantaloons 的 Bare Bones，16x，仿官方宣传片的扁平风。https://modrinth.com/resourcepack/bare-bones：「Do not reupload any instance of the Bare Bones texture pack.」商用要找作者授权（business.robotpantaloons@gmail.com）"
+"category" = "材质包"
+"source" = "手工:下载 https://cdn.modrinth.com/data/rox3U8B6/versions/s3lwqPHV/Bare%20Bones%201.20.zip（Modrinth bare-bones 1.1.7，sha1 31d55c22f6f26529ff6ba810dba48873862ae358）"
+"license" = "LicenseRef-All-Rights-Reserved"
+"visibility" = "发布"
+"note" = "RobotPantaloons 的 Bare Bones，16x，仿官方宣传片的扁平风。https://modrinth.com/resourcepack/bare-bones：「Do not reupload any instance of the Bare Bones texture pack.」商用要找作者授权（business.robotpantaloons@gmail.com）"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/faithful-32x"
-"类别" = "材质包"
-"来源" = "手工:下载 https://cdn.modrinth.com/data/w0TnApzs/versions/VgTWEXF2/Faithful%2032x%20-%201.20.1.zip（Modrinth faithful-32x 1.20.1-june-2026，sha1 7084d82b48844f7c1b625e157463c4d7b87a82d3）"
-"许可" = "LicenseRef-Faithful-License-4"
-"可见性" = "公开"
-"说明" = "Faithful 32x，原版放大加细节。https://faithfulpack.net/license（v4）：可做变现视频、可修改再分发，要醒目署名并附许可链接；不许放付费墙、NFT、训练 AI"
+"category" = "材质包"
+"source" = "手工:下载 https://cdn.modrinth.com/data/w0TnApzs/versions/VgTWEXF2/Faithful%2032x%20-%201.20.1.zip（Modrinth faithful-32x 1.20.1-june-2026，sha1 7084d82b48844f7c1b625e157463c4d7b87a82d3）"
+"license" = "LicenseRef-Faithful-License-4"
+"visibility" = "公开"
+"note" = "Faithful 32x，原版放大加细节。https://faithfulpack.net/license（v4）：可做变现视频、可修改再分发，要醒目署名并附许可链接；不许放付费墙、NFT、训练 AI"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/faithful-64x"
-"类别" = "材质包"
-"来源" = "手工:下载 https://cdn.modrinth.com/data/r4GILswZ/versions/YOjutORB/Faithful%2064x%20-%20Beta%209.zip（Modrinth faithful-64x Beta 9，1.20.1，sha1 6dd076b2a74b7b9a0141339be48ef9c72c559516）"
-"许可" = "LicenseRef-Faithful-License-4"
-"可见性" = "公开"
-"说明" = "Faithful 64x，Faithful 32x 再细一倍，还是测试版（缺玩家皮肤和一些方块）。用户 11-02 要「顺便兼容一下可能以后出现的 64x」拿它试；本作品 像素N 6 只能缩到 32x 上屏（pipeline/取材/材质包.ts 放大上限）。许可同 Faithful 32x：https://faithfulpack.net/license（v4）"
+"category" = "材质包"
+"source" = "手工:下载 https://cdn.modrinth.com/data/r4GILswZ/versions/YOjutORB/Faithful%2064x%20-%20Beta%209.zip（Modrinth faithful-64x Beta 9，1.20.1，sha1 6dd076b2a74b7b9a0141339be48ef9c72c559516）"
+"license" = "LicenseRef-Faithful-License-4"
+"visibility" = "公开"
+"note" = "Faithful 64x，Faithful 32x 再细一倍，还是测试版（缺玩家皮肤和一些方块）。用户 11-02 要「顺便兼容一下可能以后出现的 64x」拿它试；本作品 像素N 6 只能缩到 32x 上屏（pipeline/取材/材质包.ts 放大上限）。许可同 Faithful 32x：https://faithfulpack.net/license（v4）"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/pixel-perfection-legacy"
-"类别" = "材质包"
-"来源" = "手工:下载 https://cdn.modrinth.com/data/6w3F4SEu/versions/8HUXdaIC/Pixel%20Perfection%20Legacy%2013.21.3.zip（Modrinth pixel-perfection-legacy 13.21.3，sha1 35592cf5406f8006d37f42351add0cb0a18736ec）"
-"许可" = "CC-BY-SA-4.0"
-"可见性" = "公开"
-"说明" = "NovaWostra 续作的 XSSheep Pixel Perfection，16x。Modrinth 标 CC-BY-4.0、链接指向 BY-SA 4.0，原作是 BY-SA，保守按 CC-BY-SA-4.0：可商用、可再分发，要署名、改过的同协议"
+"category" = "材质包"
+"source" = "手工:下载 https://cdn.modrinth.com/data/6w3F4SEu/versions/8HUXdaIC/Pixel%20Perfection%20Legacy%2013.21.3.zip（Modrinth pixel-perfection-legacy 13.21.3，sha1 35592cf5406f8006d37f42351add0cb0a18736ec）"
+"license" = "CC-BY-SA-4.0"
+"visibility" = "公开"
+"note" = "NovaWostra 续作的 XSSheep Pixel Perfection，16x。Modrinth 标 CC-BY-4.0、链接指向 BY-SA 4.0，原作是 BY-SA，保守按 CC-BY-SA-4.0：可商用、可再分发，要署名、改过的同协议"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/vanilla-tweaks-试样"
-"类别" = "材质包"
-"来源" = "手工:vanillatweaks.net 1.20 资源包拼装（11-02 选 CherryPicking、CircleLogTops、SmoothDirt、UniversalLushGrass、CircularSunandMoon、ClearerWater、BushyLeaves、CleanGlass、UnobtrusiveRain、VariatedGrass；r569351）"
-"许可" = "LicenseRef-VanillaTweaks-Terms"
-"可见性" = "发布"
-"说明" = "Vanilla Tweaks 挑选式小改。https://vanillatweaks.net/terms/：可在项目里用、改、分享，要 credits.txt 署名，不许收费；没写视频商用，再分发原样拼装包不明，先按私有"
+"category" = "材质包"
+"source" = "手工:vanillatweaks.net 1.20 资源包拼装（11-02 选 CherryPicking、CircleLogTops、SmoothDirt、UniversalLushGrass、CircularSunandMoon、ClearerWater、BushyLeaves、CleanGlass、UnobtrusiveRain、VariatedGrass；r569351）"
+"license" = "LicenseRef-VanillaTweaks-Terms"
+"visibility" = "发布"
+"note" = "Vanilla Tweaks 挑选式小改。https://vanillatweaks.net/terms/：可在项目里用、改、分享，要 credits.txt 署名，不许收费；没写视频商用，再分发原样拼装包不明，先按私有"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/sphax-32x"
-"类别" = "材质包"
-"来源" = "手工:下载 https://bdcraft.net/downloads/purebdcraft-minecraft/（PureBDcraft 32x MC120，11-05 用户授权代点 Accept Terms of Use 后下载，文件名「PureBDcraft  32x MC120.zip」）"
-"许可" = "LicenseRef-BDcraft-EULA"
-"可见性" = "发布"
-"说明" = "Sphax PureBDcraft 32x，漫画卡通风整套重画。https://bdcraft.net/eula/：可做视频（含变现），简介署名 BDcraft.net 并附链接；不许再分发。11-05 拿来和 Faithful 32x 比整体画风，没选用"
+"category" = "材质包"
+"source" = "手工:下载 https://bdcraft.net/downloads/purebdcraft-minecraft/（PureBDcraft 32x MC120，11-05 用户授权代点 Accept Terms of Use 后下载，文件名「PureBDcraft  32x MC120.zip」）"
+"license" = "LicenseRef-BDcraft-EULA"
+"visibility" = "发布"
+"note" = "Sphax PureBDcraft 32x，漫画卡通风整套重画。https://bdcraft.net/eula/：可做视频（含变现），简介署名 BDcraft.net 并附链接；不许再分发。11-05 拿来和 Faithful 32x 比整体画风，没选用"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/faithful-64x-1201"
-"类别" = "材质包"
-"来源" = "手工:下载 https://codeload.github.com/Faithful-Resource-Pack/Faithful-64x-Java/zip/2cf5b25ee70de67423e68aa0ec452a5aafb0fd9c（官方仓库 Faithful-64x-Java 的 1.20.1 分支 11-06 的头，文件名 Faithful-64x-Java-1.20.1-2cf5b25ee70d.zip，sha1 bd28ba363b65d8458f4868aa44f95d3ee694a83a）"
-"许可" = "LicenseRef-Faithful-License-4"
-"可见性" = "公开"
-"说明" = "Faithful 64x，官方 1.20.1 分支（Modrinth 上 1.20.1 只有 23 年的 Beta 9，见 材质包/faithful-64x；分支一直在回移新贴图，比 Beta 9 全：多了实体、粒子、界面）。用户 11-06 要看 64x 真上屏，拿它试（试验开关 ANIM_PACKS_TRY，pipeline/取材/材质包.ts）。许可同 Faithful 32x：https://faithfulpack.net/license（v4，包里带 LICENSE.txt）"
+"category" = "材质包"
+"source" = "手工:下载 https://codeload.github.com/Faithful-Resource-Pack/Faithful-64x-Java/zip/2cf5b25ee70de67423e68aa0ec452a5aafb0fd9c（官方仓库 Faithful-64x-Java 的 1.20.1 分支 11-06 的头，文件名 Faithful-64x-Java-1.20.1-2cf5b25ee70d.zip，sha1 bd28ba363b65d8458f4868aa44f95d3ee694a83a）"
+"license" = "LicenseRef-Faithful-License-4"
+"visibility" = "公开"
+"note" = "Faithful 64x，官方 1.20.1 分支（Modrinth 上 1.20.1 只有 23 年的 Beta 9，见 材质包/faithful-64x；分支一直在回移新贴图，比 Beta 9 全：多了实体、粒子、界面）。用户 11-06 要看 64x 真上屏，拿它试（试验开关 ANIM_PACKS_TRY，pipeline/取材/材质包.ts）。许可同 Faithful 32x：https://faithfulpack.net/license（v4，包里带 LICENSE.txt）"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/faithful-hd-x128"
-"类别" = "材质包"
-"来源" = "手工:下载 https://www.curseforge.com/api/v1/mods/545009/files/5842068/download（CurseForge Faithful HD x128 0.8 for 1.20.1，文件名 iFaithfulx128_1.20.1.zip，sha1 835c995963608a78f2a097570612e5fd8f9eddae）"
-"许可" = "LicenseRef-Faithful-License-3"
-"可见性" = "发布"
-"说明" = "isaiah 的 Faithful HD x128（不是 Faithful 官方，官方最高 64x），照 Faithful x32 的风格、拿 waifu2x 把原版放大当底稿描线重画，是他 x512 包缩出来的。只有方块 654、物品 386 张，实体、粒子没有。CurseForge 许可页挂的是 Faithful License v3：不许变现、要署名并带原样许可文件，保守按私有。用户 11-06 要看 128x 真上屏拿它试"
+"category" = "材质包"
+"source" = "手工:下载 https://www.curseforge.com/api/v1/mods/545009/files/5842068/download（CurseForge Faithful HD x128 0.8 for 1.20.1，文件名 iFaithfulx128_1.20.1.zip，sha1 835c995963608a78f2a097570612e5fd8f9eddae）"
+"license" = "LicenseRef-Faithful-License-3"
+"visibility" = "发布"
+"note" = "isaiah 的 Faithful HD x128（不是 Faithful 官方，官方最高 64x），照 Faithful x32 的风格、拿 waifu2x 把原版放大当底稿描线重画，是他 x512 包缩出来的。只有方块 654、物品 386 张，实体、粒子没有。CurseForge 许可页挂的是 Faithful License v3：不许变现、要署名并带原样许可文件，保守按私有。用户 11-06 要看 128x 真上屏拿它试"
 
-[["资产"]]
+[["asset"]]
 id = "材质包/faithful-hd-x512"
-"类别" = "材质包"
-"来源" = "手工:下载 https://www.curseforge.com/api/v1/mods/358302/files/5884098/download（CurseForge Faithful HD [x512] 0.15 for 1.20.1，文件名 FaithfulHDx512_1.20.zip，sha1 8d887e7be8d840185d202054d17478b9ae4910b1）"
-"许可" = "LicenseRef-Public-Domain"
-"可见性" = "公开"
-"说明" = "isaiah 的 Faithful HD x512，同 材质包/faithful-hd-x128 一套画（x128 是它缩的），大多 512、少数 256。1.20.1 找不到 Faithful 系的 256x，用户 11-06 要看 256x 就拿它按预乘透明度盒子平均缩到 256x 上屏。CurseForge 许可页写「This work is dedicated to the public domain.」"
+"category" = "材质包"
+"source" = "手工:下载 https://www.curseforge.com/api/v1/mods/358302/files/5884098/download（CurseForge Faithful HD [x512] 0.15 for 1.20.1，文件名 FaithfulHDx512_1.20.zip，sha1 8d887e7be8d840185d202054d17478b9ae4910b1）"
+"license" = "LicenseRef-Public-Domain"
+"visibility" = "公开"
+"note" = "isaiah 的 Faithful HD x512，同 材质包/faithful-hd-x128 一套画（x128 是它缩的），大多 512、少数 256。1.20.1 找不到 Faithful 系的 256x，用户 11-06 要看 256x 就拿它按预乘透明度盒子平均缩到 256x 上屏。CurseForge 许可页写「This work is dedicated to the public domain.」"

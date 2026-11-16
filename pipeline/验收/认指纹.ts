@@ -38,26 +38,26 @@ export const pickFrames = (frameCount: number, n = DEFAULT_SAMPLE_COUNT): number
  */
 export const stillCannotProve = (oldItem: FingerprintItem, newItem: FingerprintItem): string[] => {
   const blockers: string[] = [];
-  if (stableJson(oldItem.渲染设置) !== stableJson(newItem.渲染设置)) {
-    const keys = [...new Set([...Object.keys(oldItem.渲染设置 ?? {}), ...Object.keys(newItem.渲染设置)])].filter((k) => stableJson(oldItem.渲染设置?.[k]) !== stableJson(newItem.渲染设置[k]));
+  if (stableJson(oldItem.renderSettings) !== stableJson(newItem.renderSettings)) {
+    const keys = [...new Set([...Object.keys(oldItem.renderSettings ?? {}), ...Object.keys(newItem.renderSettings)])].filter((k) => stableJson(oldItem.renderSettings?.[k]) !== stableJson(newItem.renderSettings[k]));
     blockers.push(`渲染设置变了（${keys.join('、')}）：编码参数、尺寸、帧数这些静帧看不出`);
   }
-  if (stableJson(oldItem.私有配乐 ?? {}) !== stableJson(newItem.私有配乐 ?? {})) blockers.push('私有配乐变了：只影响声音，静帧证明不了');
+  if (stableJson(oldItem.privateMusic ?? {}) !== stableJson(newItem.privateMusic ?? {})) blockers.push('私有配乐变了：只影响声音，静帧证明不了');
   const ogg = 'pipeline/资产/ogg解码.cjs';
-  if (oldItem.打包规则?.[ogg] !== newItem.打包规则?.[ogg]) blockers.push(`打包规则 ${ogg} 变了：只影响声音，静帧证明不了`);
+  if (oldItem.bundleRules?.[ogg] !== newItem.bundleRules?.[ogg]) blockers.push(`打包规则 ${ogg} 变了：只影响声音，静帧证明不了`);
   if (newItem.缺字节?.length) blockers.push(`新指纹里记了缺字节 ${newItem.缺字节.length} 件（打进的是占位，先 anim assets seed / pull）`);
   return blockers;
 };
 
 /** 记录：这个指纹的 .指纹.json（stale 比差异用的那份，含算法、明细）；母版、声音：旧切片和配的 wav */
-export type OldVersion = { 指纹: string; 项: FingerprintItem; segFingerprintRecord: SegFingerprint; segStamp: SegStamp; 母版: string; 声音: string; 声音指纹: string };
+export type OldVersion = { fingerprint: string; items: FingerprintItem; segFingerprintRecord: SegFingerprint; segStamp: SegStamp; master: string; sound: string; soundFingerprint: string };
 
 /** 新指纹这边已经有东西了（渲过、认过）：不是过期的段，不用认。认到一半断掉的（段签有 沿用、切片还没改名过来）不算，可以重认 */
-export const hasNewFingerprint = (segKey: string, newSeg: { 画面: string; 声音: string; 画面指纹: { 指纹: string } }, work = workName()): string | null => {
-  if (fs.existsSync(newSeg.画面) && fs.existsSync(newSeg.声音)) return '切片在';
-  const segStamp = readSegStamp(segKey, newSeg.画面指纹.指纹, work);
-  if (segStamp && !segStamp.沿用) return '渲过（有段签），切片不在：要用时重渲';
-  if (!segStamp && fs.existsSync(fingerprintFile(segKey, newSeg.画面指纹.指纹, masterDir(segKey, work)))) return '渲过（有 .指纹.json），切片不在：要用时重渲';
+export const hasNewFingerprint = (segKey: string, newSeg: { 画面: string; sound: string; pictureFingerprint: { fingerprint: string } }, work = workName()): string | null => {
+  if (fs.existsSync(newSeg.画面) && fs.existsSync(newSeg.sound)) return '切片在';
+  const segStamp = readSegStamp(segKey, newSeg.pictureFingerprint.fingerprint, work);
+  if (segStamp && !segStamp.reuse) return '渲过（有段签），切片不在：要用时重渲';
+  if (!segStamp && fs.existsSync(fingerprintFile(segKey, newSeg.pictureFingerprint.fingerprint, masterDir(segKey, work)))) return '渲过（有 .指纹.json），切片不在：要用时重渲';
   return null;
 };
 
@@ -66,12 +66,12 @@ export const hasNewFingerprint = (segKey: string, newSeg: { 画面: string; 声�
  * 切片和配的 wav 都在、切片帧数和这段现在的输出帧数一样。段签缺了、不是这一对派生的，过放行闸当场补。
  * 都不行返回 null 和每份为什么不行（最多几条）
  */
-export const findOldVersion = async (segKey: string, newFingerprint: SegFingerprint, o: { 帧数: number; waitGate: () => Promise<void>; 作品?: string; pickFingerprint?: string; includeCurrent?: boolean }): Promise<{ oldVersion: OldVersion | null; unused: string[] }> => {
-  const work = o.作品 ?? workName();
+export const findOldVersion = async (segKey: string, newFingerprint: SegFingerprint, o: { frameCount: number; waitGate: () => Promise<void>; work?: string; pickFingerprint?: string; includeCurrent?: boolean }): Promise<{ oldVersion: OldVersion | null; unused: string[] }> => {
+  const work = o.work ?? workName();
   const unused: string[] = [];
-  for (const h of fingerprintHistory(segKey, masterDir(segKey, work)).filter((h) => (o.pickFingerprint ? h.指纹 === o.pickFingerprint : o.includeCurrent || h.指纹 !== newFingerprint.指纹) && sameTier(h, newFingerprint))) {
-    const shortFpName = h.指纹.slice(0, 16);
-    const master = segPicturePath(segKey, h.指纹, work);
+  for (const h of fingerprintHistory(segKey, masterDir(segKey, work)).filter((h) => (o.pickFingerprint ? h.fingerprint === o.pickFingerprint : o.includeCurrent || h.fingerprint !== newFingerprint.fingerprint) && sameTier(h, newFingerprint))) {
+    const shortFpName = h.fingerprint.slice(0, 16);
+    const master = segPicturePath(segKey, h.fingerprint, work);
     if (!fs.existsSync(master)) continue;
     const soundFingerprint = pairedSoundFingerprint(h);
     if (!soundFingerprint) {
@@ -83,18 +83,18 @@ export const findOldVersion = async (segKey: string, newFingerprint: SegFingerpr
       unused.push(`${shortFpName}：切片在，配的声音 ${soundFingerprint.slice(0, 16)}.wav 不在`);
       continue;
     }
-    const frameCount = videoInfo(master).帧数;
-    if (frameCount !== o.帧数) {
-      unused.push(`${shortFpName}：切片 ${frameCount} 帧，段现在 ${o.帧数} 帧`);
+    const frameCount = videoInfo(master).frameCount;
+    if (frameCount !== o.frameCount) {
+      unused.push(`${shortFpName}：切片 ${frameCount} 帧，段现在 ${o.frameCount} 帧`);
       continue;
     }
-    let segStamp = readSegStamp(segKey, h.指纹, work);
+    let segStamp = readSegStamp(segKey, h.fingerprint, work);
     if (!segStampComplete(segStamp) || !(await matchesSlice(segStamp, master, soundFile))) {
       await o.waitGate();
       console.log(`== 补段签 ${segKey}（${shortFpName}）`);
-      segStamp = (await makeSegStamp(master, soundFile, { segKey: segKey, 指纹: h.指纹, 声音指纹: soundFingerprint, 级别: (h.项.渲染设置.inputProps as { 级别?: string } | undefined)?.级别 ?? null, 派生: '补', 作品: work })).segStamp;
+      segStamp = (await makeSegStamp(master, soundFile, { segKey: segKey, fingerprint: h.fingerprint, soundFingerprint: soundFingerprint, level: (h.items.renderSettings.inputProps as { level?: string } | undefined)?.level ?? null, derive: '补', work: work })).segStamp;
     }
-    return { oldVersion: { 指纹: h.指纹, 项: h.项, segFingerprintRecord: h, segStamp, 母版: master, 声音: soundFile, 声音指纹: soundFingerprint }, unused };
+    return { oldVersion: { fingerprint: h.fingerprint, items: h.items, segFingerprintRecord: h, segStamp, master: master, sound: soundFile, soundFingerprint: soundFingerprint }, unused };
   }
   return { oldVersion: null, unused };
 };
@@ -114,22 +114,22 @@ export const frameToYuv = async (frameBytes: Buffer, width: number, height: numb
   return y;
 };
 
-export type FrameCompare = { 帧: number; 结论: '一样' | '噪声内' | '不同'; 看一眼?: true; 说明?: string };
+export type FrameCompare = { frame: number; verdict: '一样' | '噪声内' | '不同'; 看一眼?: true; note?: string };
 
 /** 一帧：yuv 逐字节一样是一样；不然两边换 RGB 比块平均差，verify 的变了门槛（16×16、64×64、8×8 任一条）超了是不同，看一眼档也算噪声内 */
-export const compareFrame = (frame: number, newYuv: Buffer, oldYuv: Buffer, width: number, height: number, threshold: Pick<Threshold, '块8门槛' | '块16门槛' | '块64门槛' | '看一眼门槛'>): FrameCompare => {
-  if (newYuv.equals(oldYuv)) return { 帧: frame, 结论: '一样' };
+export const compareFrame = (frame: number, newYuv: Buffer, oldYuv: Buffer, width: number, height: number, threshold: Pick<Threshold, 'block8Threshold' | 'block16Threshold' | 'block64Threshold' | 'glanceThreshold'>): FrameCompare => {
+  if (newYuv.equals(oldYuv)) return { frame: frame, verdict: '一样' };
   const d = computeBlockDiff(yuvToRgb(newYuv, width, height), yuvToRgb(oldYuv, width, height), width, height);
   const verdict = judgeBlockDiff(d, threshold);
-  return { 帧: frame, 结论: verdict === '变了' ? '不同' : '噪声内', ...(verdict === '看一眼' ? { 看一眼: true as const } : {}), 说明: blockDiffNote(d, threshold) };
+  return { frame: frame, verdict: verdict === '变了' ? '不同' : '噪声内', ...(verdict === '看一眼' ? { 看一眼: true as const } : {}), note: blockDiffNote(d, threshold) };
 };
 
 /** 旧切片的这几帧（升序），yuv420p 原样 */
 export const readOldFrames = async (oldVersion: OldVersion, frames: readonly number[]): Promise<Map<number, Buffer>> => {
   const frameBuffers = new Map<number, Buffer>();
-  const { 宽: width, 高: height } = oldVersion.segStamp.签名;
-  for await (const y of frameStream(oldVersion.母版, frames, width, height, { 格式: 'yuv420p' })) frameBuffers.set(frames[frameBuffers.size]!, Buffer.from(y));
-  if (frameBuffers.size !== frames.length) throw new Error(`${oldVersion.母版} 只解出 ${frameBuffers.size}/${frames.length} 帧`);
+  const { width: width, height: height } = oldVersion.segStamp.signature;
+  for await (const y of frameStream(oldVersion.master, frames, width, height, { 格式: 'yuv420p' })) frameBuffers.set(frames[frameBuffers.size]!, Buffer.from(y));
+  if (frameBuffers.size !== frames.length) throw new Error(`${oldVersion.master} 只解出 ${frameBuffers.size}/${frames.length} 帧`);
   return frameBuffers;
 };
 
@@ -153,7 +153,7 @@ export const cloneFile = (fromPath: string, destPath: string): '克隆' | '硬�
   }
 };
 
-export type RegisterInfo = { 理由: string; 帧: number[]; 提交: string; 级别: string | null; now?: Date };
+export type RegisterInfo = { reason: string; frame: number[]; commit: string; level: string | null; now?: Date };
 
 /** 克隆到临时名，返回临时名和怎么复制的；目标已经在就抛 */
 const cloneToTemp = (fromPath: string, destPath: string) => {
@@ -168,36 +168,36 @@ const cloneToTemp = (fromPath: string, destPath: string) => {
  * 中途断了：切片没改名过来，stale 看到的是「渲过、切片不在」，重跑 认指纹 会接着认。
  * 不删旧指纹的任何东西（主检出的 anim film、cache gc 照常按钉清；克隆的块不跟着删）
  */
-export const registerReuse = (segKey: string, oldVersion: OldVersion, newFingerprints: { 画面指纹: SegFingerprint; 声音指纹: SegFingerprint }, info: RegisterInfo, work = workName()): { segStamp: SegStamp; 母版: string; 声音: string; copyHow: string } => {
+export const registerReuse = (segKey: string, oldVersion: OldVersion, newFingerprints: { pictureFingerprint: SegFingerprint; soundFingerprint: SegFingerprint }, info: RegisterInfo, work = workName()): { segStamp: SegStamp; master: string; sound: string; copyHow: string } => {
   const atIso = (info.now ?? new Date()).toISOString();
-  const fingerprint = newFingerprints.画面指纹.指纹;
+  const fingerprint = newFingerprints.pictureFingerprint.fingerprint;
   const stampDir = segStampDir(segKey, fingerprint, work);
   fs.mkdirSync(stampDir, { recursive: true });
   const picturePath = segPicturePath(segKey, fingerprint, work);
-  const soundPath = segSoundPath(segKey, newFingerprints.声音指纹.指纹, work);
-  const masterClone = cloneToTemp(oldVersion.母版, picturePath);
+  const soundPath = segSoundPath(segKey, newFingerprints.soundFingerprint.fingerprint, work);
+  const masterClone = cloneToTemp(oldVersion.master, picturePath);
   // 声音指纹没变（只改了画面代码）时 wav 本来就在，不用克隆
-  const soundClone = fs.existsSync(soundPath) ? null : cloneToTemp(oldVersion.声音, soundPath);
+  const soundClone = fs.existsSync(soundPath) ? null : cloneToTemp(oldVersion.sound, soundPath);
   try {
-    let soundRecord: SegStamp['声音'] = null;
-    if (oldVersion.segStamp.声音) {
+    let soundRecord: SegStamp['sound'] = null;
+    if (oldVersion.segStamp.sound) {
       const destPath = path.join(stampDir, soundFileName);
       fs.rmSync(destPath, { force: true });
-      cloneFile(segStampFile(oldVersion.segStamp, oldVersion.segStamp.声音.文件), destPath);
-      soundRecord = { ...oldVersion.segStamp.声音, 文件: soundFileName };
+      cloneFile(segStampFile(oldVersion.segStamp, oldVersion.segStamp.sound.file), destPath);
+      soundRecord = { ...oldVersion.segStamp.sound, file: soundFileName };
     }
-    const reuse: ReuseRecord = { 自: oldVersion.指纹, 原渲: oldVersion.segStamp.沿用?.原渲 ?? oldVersion.指纹, 理由: info.理由, 帧: [...info.帧], 比法: compareMethod, 于: atIso, 提交: info.提交 };
-    const soundSource = soundClone ? { ...oldVersion.segStamp.声音源!, 改于: fs.statSync(soundClone.tempPath).mtimeMs } : { ...oldVersion.segStamp.声音源!, 改于: fs.statSync(soundPath).mtimeMs };
-    const segStamp: SegStamp = { ...oldVersion.segStamp, 版本: 3, 作品: work, 段: segKey, 指纹: fingerprint, 声音指纹: newFingerprints.声音指纹.指纹, 级别: info.级别, 母版: { ...oldVersion.segStamp.母版, 改于: fs.statSync(masterClone.tempPath).mtimeMs }, 声音源: soundSource, 声音: soundRecord, 沿用: reuse };
-    fs.appendFileSync(path.join(stampDir, historyFileName), JSON.stringify({ 记于: atIso, 沿用: true, 自: oldVersion.指纹, 原渲: reuse.原渲, 字节sha: segStamp.母版.字节sha, 帧: reuse.帧, 理由: info.理由, 怎么复制: masterClone.copyHow }) + '\n', 'utf8');
+    const reuse: ReuseRecord = { reusedFrom: oldVersion.fingerprint, origRender: oldVersion.segStamp.reuse?.origRender ?? oldVersion.fingerprint, reason: info.reason, frame: [...info.frame], compareMethod: compareMethod, at: atIso, commit: info.commit };
+    const soundSource = soundClone ? { ...oldVersion.segStamp.soundSource!, modifiedAt: fs.statSync(soundClone.tempPath).mtimeMs } : { ...oldVersion.segStamp.soundSource!, modifiedAt: fs.statSync(soundPath).mtimeMs };
+    const segStamp: SegStamp = { ...oldVersion.segStamp, version: 3, work: work, segment: segKey, fingerprint: fingerprint, soundFingerprint: newFingerprints.soundFingerprint.fingerprint, level: info.level, master: { ...oldVersion.segStamp.master, modifiedAt: fs.statSync(masterClone.tempPath).mtimeMs }, soundSource: soundSource, sound: soundRecord, reuse: reuse };
+    fs.appendFileSync(path.join(stampDir, historyFileName), JSON.stringify({ recordedAt: atIso, reuse: true, reusedFrom: oldVersion.fingerprint, origRender: reuse.origRender, byteSha: segStamp.master.byteSha, frame: reuse.frame, reason: info.reason, copyMethod: masterClone.copyHow }) + '\n', 'utf8');
     atomicWrite(path.join(stampDir, stampFileName), JSON.stringify(segStamp, null, 1) + '\n');
-    writeFingerprint(newFingerprints.画面指纹, masterDir(segKey, work));
-    writeFingerprint(newFingerprints.声音指纹, masterDir(segKey, work));
+    writeFingerprint(newFingerprints.pictureFingerprint, masterDir(segKey, work));
+    writeFingerprint(newFingerprints.soundFingerprint, masterDir(segKey, work));
     if (soundClone) fs.renameSync(soundClone.tempPath, soundPath);
     fs.renameSync(masterClone.tempPath, picturePath);
     markUsed(masterDir(segKey, work), fingerprint);
-    markUsed(masterDir(segKey, work), newFingerprints.声音指纹.指纹);
-    return { segStamp, 母版: picturePath, 声音: soundPath, copyHow: masterClone.copyHow };
+    markUsed(masterDir(segKey, work), newFingerprints.soundFingerprint.fingerprint);
+    return { segStamp, master: picturePath, sound: soundPath, copyHow: masterClone.copyHow };
   } finally {
     fs.rmSync(masterClone.tempPath, { force: true });
     if (soundClone) fs.rmSync(soundClone.tempPath, { force: true });

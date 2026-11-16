@@ -6,7 +6,7 @@ const e={lockDir:dir,localHost:os.hostname(),readMemory:()=>null,readPressure:()
 const run=async()=>{
   if(gateName==='渲染')return passRenderGate(async()=>{},()=>{},e);
   if(gateName==='放行')return passGate(async()=>{},()=>{},e);
-  const gate=openGateBatch({项数:2},e);
-  try{await gate.runTask({},async()=>{});}finally{gate.结束();}
+  const gate=openGateBatch({itemCount:2},e);
+  try{await gate.runTask({},async()=>{});}finally{gate.endedAt();}
 };
 if(callStyle==='顶层')await run();else void run();

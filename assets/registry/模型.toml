@@ -1,252 +1,252 @@
 # 资产表：基岩版格式的实体、物品模型（json；贴图在 贴图.toml）。人写；导入和资产锁由 assets/tools/导入旧项目.py 生成。
 # 字段和取值见 assets/README.md。
 
-[["资产"]]
+[["asset"]]
 id = "模型/场景/基地工坊"
-"类别" = "模型"
-"来源" = "提取:基地工坊@6fbb910c367d+56b71336d2b4"
-"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/场景/基地工坊.模型.json"
+"category" = "模型"
+"source" = "提取:基地工坊@6fbb910c367d+56b71336d2b4"
+"license" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/场景/基地工坊.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/动力压路机"
-"类别" = "模型"
-"来源" = "提取:动力压路机@6fbb910c367d"
-"许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/动力压路机.模型.json"
+"category" = "模型"
+"source" = "提取:动力压路机@6fbb910c367d"
+"license" = "LicenseRef-All-Rights-Reserved"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/动力压路机.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/动力钻头"
-"类别" = "模型"
-"来源" = "提取:动力钻头@6fbb910c367d+56b71336d2b4"
-"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/动力钻头.模型.json"
+"category" = "模型"
+"source" = "提取:动力钻头@6fbb910c367d+56b71336d2b4"
+"license" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/动力钻头.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/匠师之杖"
-"类别" = "模型"
-"来源" = "提取:匠师之杖@54b5aaa52887"
-"许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/匠师之杖.模型.json"
+"category" = "模型"
+"source" = "提取:匠师之杖@54b5aaa52887"
+"license" = "LicenseRef-All-Rights-Reserved"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/匠师之杖.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/扫帚"
-"类别" = "模型"
-"来源" = "提取:扫帚@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/扫帚.模型.json"
+"category" = "模型"
+"source" = "提取:扫帚@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/扫帚.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/望远镜"
-"类别" = "模型"
-"来源" = "提取:望远镜@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/望远镜.模型.json"
+"category" = "模型"
+"source" = "提取:望远镜@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/望远镜.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/火把"
-"类别" = "模型"
-"来源" = "提取:火把@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/火把.模型.json"
+"category" = "模型"
+"source" = "提取:火把@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/火把.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/粉碎轮"
-"类别" = "模型"
-"来源" = "提取:粉碎轮@6fbb910c367d+56b71336d2b4"
-"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/粉碎轮.模型.json"
-"说明" = "正式段没用到，只有旧项目「粉碎轮平铺」这个非正式 Composition 用"
+"category" = "模型"
+"source" = "提取:粉碎轮@6fbb910c367d+56b71336d2b4"
+"license" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/粉碎轮.模型.json"
+"note" = "正式段没用到，只有旧项目「粉碎轮平铺」这个非正式 Composition 用"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/重锤"
-"类别" = "模型"
-"来源" = "手工:网上资源包「二创 3D重锤」转载"
-"许可" = "LicenseRef-Origin-Unverified"
-"可见性" = "公开"
-"旧路径" = "参考模型库/src/模型/物品/重锤.模型.json"
-"说明" = "来源不明，网上资源包「二创 3D重锤」转载，如原作者要求即撤下"
+"category" = "模型"
+"source" = "手工:网上资源包「二创 3D重锤」转载"
+"license" = "LicenseRef-Origin-Unverified"
+"visibility" = "公开"
+"oldPath" = "参考模型库/src/模型/物品/重锤.模型.json"
+"note" = "来源不明，网上资源包「二创 3D重锤」转载，如原作者要求即撤下"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/鼓风机"
-"类别" = "模型"
-"来源" = "提取:鼓风机@6fbb910c367d+56b71336d2b4"
-"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/物品/鼓风机.模型.json"
+"category" = "模型"
+"source" = "提取:鼓风机@6fbb910c367d+56b71336d2b4"
+"license" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/物品/鼓风机.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/特效/幽匿尖啸体"
-"类别" = "模型"
-"来源" = "提取:幽匿尖啸体@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/特效/幽匿尖啸体.模型.json"
+"category" = "模型"
+"source" = "提取:幽匿尖啸体@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/特效/幽匿尖啸体.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/特效/幽匿感测体"
-"类别" = "模型"
-"来源" = "提取:幽匿感测体@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/特效/幽匿感测体.模型.json"
+"category" = "模型"
+"source" = "提取:幽匿感测体@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/特效/幽匿感测体.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/特效/护盾术"
-"类别" = "模型"
-"来源" = "提取:护盾术@54b5aaa52887+e2e940fe7ca0"
-"许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/特效/护盾术.模型.json"
+"category" = "模型"
+"source" = "提取:护盾术@54b5aaa52887+e2e940fe7ca0"
+"license" = "LicenseRef-All-Rights-Reserved"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/特效/护盾术.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/特效/苦力怕头"
-"类别" = "模型"
-"来源" = "提取:苦力怕头@54b5aaa52887+e2e940fe7ca0"
-"许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/特效/苦力怕头.模型.json"
+"category" = "模型"
+"source" = "提取:苦力怕头@54b5aaa52887+e2e940fe7ca0"
+"license" = "LicenseRef-All-Rights-Reserved"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/特效/苦力怕头.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/界面/方块图标"
-"类别" = "模型"
-"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
-"许可" = "LGPL-2.1-only AND CC-BY-NC-SA-4.0 AND MIT AND CC-BY-NC-SA-3.0 AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/界面/方块图标.模型.json"
+"category" = "模型"
+"source" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"license" = "LGPL-2.1-only AND CC-BY-NC-SA-4.0 AND MIT AND CC-BY-NC-SA-3.0 AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/界面/方块图标.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/乌鸦"
-"类别" = "模型"
-"来源" = "提取:乌鸦@0bdc89263616+e2e940fe7ca0"
-"许可" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/乌鸦.模型.json"
-"说明" = "暮色森林的乌鸦；正式段没用到，只有不进成片的 Composition 用"
+"category" = "模型"
+"source" = "提取:乌鸦@0bdc89263616+e2e940fe7ca0"
+"license" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/乌鸦.模型.json"
+"note" = "暮色森林的乌鸦；正式段没用到，只有不进成片的 Composition 用"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/九头蛇"
-"类别" = "模型"
-"来源" = "提取:九头蛇@0bdc89263616+e2e940fe7ca0"
-"许可" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/九头蛇.模型.json"
+"category" = "模型"
+"source" = "提取:九头蛇@0bdc89263616+e2e940fe7ca0"
+"license" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/九头蛇.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/九胡"
-"类别" = "模型"
-"来源" = "提取:九胡模型@25b5e902b96f"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/九胡.模型.json"
+"category" = "模型"
+"source" = "提取:九胡模型@25b5e902b96f"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/九胡.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/冰雪女王"
-"类别" = "模型"
-"来源" = "提取:冰雪女王@0bdc89263616+56b71336d2b4+e2e940fe7ca0"
-"许可" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/冰雪女王.模型.json"
+"category" = "模型"
+"source" = "提取:冰雪女王@0bdc89263616+56b71336d2b4+e2e940fe7ca0"
+"license" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/冰雪女王.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/巨人"
-"类别" = "模型"
-"来源" = "提取:巨人@56b71336d2b4+e2e940fe7ca0"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/巨人.模型.json"
+"category" = "模型"
+"source" = "提取:巨人@56b71336d2b4+e2e940fe7ca0"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/巨人.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/巫妖"
-"类别" = "模型"
-"来源" = "提取:巫妖@0bdc89263616+e2e940fe7ca0"
-"许可" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/巫妖.模型.json"
+"category" = "模型"
+"source" = "提取:巫妖@0bdc89263616+e2e940fe7ca0"
+"license" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/巫妖.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/幽灵马"
-"类别" = "模型"
-"来源" = "提取:幽灵马@54b5aaa52887+56b71336d2b4+e2e940fe7ca0"
-"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/幽灵马.模型.json"
+"category" = "模型"
+"source" = "提取:幽灵马@54b5aaa52887+56b71336d2b4+e2e940fe7ca0"
+"license" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/幽灵马.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/恼鬼"
-"类别" = "模型"
-"来源" = "提取:恼鬼@56b71336d2b4+e2e940fe7ca0"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/恼鬼.模型.json"
+"category" = "模型"
+"source" = "提取:恼鬼@56b71336d2b4+e2e940fe7ca0"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/恼鬼.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/苦力怕"
-"类别" = "模型"
-"来源" = "提取:苦力怕@56b71336d2b4+e2e940fe7ca0"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "原版 CreeperModel.createBodyLayer（膨胀 0）：头 8×8×8、身 8×12×4、四条腿 4×6×4，贴图 64×32"
+"category" = "模型"
+"source" = "提取:苦力怕@56b71336d2b4+e2e940fe7ca0"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "原版 CreeperModel.createBodyLayer（膨胀 0）：头 8×8×8、身 8×12×4、四条腿 4×6×4，贴图 64×32"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/暮初恶魂"
-"类别" = "模型"
-"来源" = "提取:暮初恶魂@0bdc89263616+e2e940fe7ca0"
-"许可" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/暮初恶魂.模型.json"
+"category" = "模型"
+"source" = "提取:暮初恶魂@0bdc89263616+e2e940fe7ca0"
+"license" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/暮初恶魂.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/监守者"
-"类别" = "模型"
-"来源" = "提取:监守者@56b71336d2b4+e2e940fe7ca0"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/监守者.模型.json"
+"category" = "模型"
+"source" = "提取:监守者@56b71336d2b4+e2e940fe7ca0"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/监守者.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/雪怪首领"
-"类别" = "模型"
-"来源" = "提取:雪怪首领@0bdc89263616+e2e940fe7ca0"
-"许可" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"旧路径" = "参考模型库/src/模型/角色/雪怪首领.模型.json"
+"category" = "模型"
+"source" = "提取:雪怪首领@0bdc89263616+e2e940fe7ca0"
+"license" = "CC-BY-NC-SA-4.0 AND LGPL-2.1-only AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"oldPath" = "参考模型库/src/模型/角色/雪怪首领.模型.json"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/魔法酒狐"
-"类别" = "模型"
-"来源" = "提取:魔法酒狐模型@8c341567e57a"
-"许可" = "CC-BY-NC-SA-4.0"
-"可见性" = "提取"
+"category" = "模型"
+"source" = "提取:魔法酒狐模型@8c341567e57a"
+"license" = "CC-BY-NC-SA-4.0"
+"visibility" = "提取"
 
-[["资产"]]
+[["asset"]]
 id = "模型/角色/僵尸"
-"类别" = "模型"
-"来源" = "提取:僵尸@56b71336d2b4+e2e940fe7ca0"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "原版 ZombieRenderer 的 ModelLayers.ZOMBIE：HumanoidModel.createMesh（膨胀 0、y 偏移 0）：头 8×8×8、帽子层（膨胀 0.5）、身 8×12×4、四肢 4×12×4（左臂、左腿镜像），贴图 64×64"
+"category" = "模型"
+"source" = "提取:僵尸@56b71336d2b4+e2e940fe7ca0"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "原版 ZombieRenderer 的 ModelLayers.ZOMBIE：HumanoidModel.createMesh（膨胀 0、y 偏移 0）：头 8×8×8、帽子层（膨胀 0.5）、身 8×12×4、四肢 4×12×4（左臂、左腿镜像），贴图 64×64"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/船"
-"类别" = "模型"
-"来源" = "提取:樱花木船@56b71336d2b4+e2e940fe7ca0"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "原版 BoatModel.createBodyModel（1.20.1）：船底、船头、船尾、两舷、两支桨和 water_patch，贴图 128×64；木船都用这一个模型（竹筏另有 RaftModel）"
+"category" = "模型"
+"source" = "提取:樱花木船@56b71336d2b4+e2e940fe7ca0"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "原版 BoatModel.createBodyModel（1.20.1）：船底、船头、船尾、两舷、两支桨和 water_patch，贴图 128×64；木船都用这一个模型（竹筏另有 RaftModel）"
 
-[["资产"]]
+[["asset"]]
 id = "模型/物品/蛋糕方块"
-"类别" = "模型"
-"来源" = "提取:蛋糕方块@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
-"说明" = "client jar 的 block/cake.json（放在地上、没吃过的整块蛋糕：一个 14×8×14 像素的方盒），方块模型.tsx 的面片格式；贴图不用一起导出的图集，用 贴图/物品/蛋糕方块/*（材质包能换）。库/物品/蛋糕方块.tsx 拿在手里"
+"category" = "模型"
+"source" = "提取:蛋糕方块@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "client jar 的 block/cake.json（放在地上、没吃过的整块蛋糕：一个 14×8×14 像素的方盒），方块模型.tsx 的面片格式；贴图不用一起导出的图集，用 贴图/物品/蛋糕方块/*（材质包能换）。库/物品/蛋糕方块.tsx 拿在手里"

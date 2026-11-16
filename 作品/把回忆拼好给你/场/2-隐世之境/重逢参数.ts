@@ -48,7 +48,7 @@ export const pushShot = { origSpeedEndFov: 30, finalFov: 35.5, 看: [8.209, -11.
  *  封面的 16 放这句是 800 页面像素宽、152 高，帽顶以上放不下还得推近。12 倍一个字 48 页面像素高，和底部歌词差不多大，手机 390 宽上 15 像素。
  *  啵秒：从 1 倍按整数一级级跳到 缩放 用几秒（24 fps 时 3 帧；库/界面/女仆气泡.tsx 的 弹出，演绎，同 a21afd9）。
  *  锚对齐：锚点对齐到几个成片像素。气泡跟着推镜每帧挪 1～5 页面像素，按 缩放 对齐会一跳 6 页面像素、一顿一顿的，透视镜头里也没有贴图像素格要对，取整页面像素 */
-export const lineBubble = { 字: coverLine, 缩放: 12, popSec: legacyFrameSec(3), anchorAlign: 2 };
+export const lineBubble = { char: coverLine, scale: 12, popSec: legacyFrameSec(3), anchorAlign: 2 };
 
 /** 她笑（第15句笑 起）：照第 8 句 28.23「回头冲你得意地一歪头」（场/2-门口/第8句参数.ts 的 得意看、得意歪：微笑、闭眼、往你那边歪 14°），
  *  场之间不互相 import，数抄过来。头还是看着你（布景.tsx 的 她看你），只在上面加歪；抬：在看着你的俯仰上再抬几度（正 = 抬头）。

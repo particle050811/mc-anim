@@ -79,7 +79,7 @@ export const stateString = (blockId: string, properties?: Record<string, string>
 
 // ---------- 一个区域 ----------
 type ChunkSegment = { runCounts: Uint16Array; runStarts: Uint32Array; states: Uint16Array; bottoms: Int16Array; biomes: Uint8Array };
-export type ReadRegionResult = { 区块: (readonly [number, number])[]; columnSeg: ColumnSegmentRegion };
+export type ReadRegionResult = { chunks: (readonly [number, number])[]; columnSeg: ColumnSegmentRegion };
 
 /** 读一个区域文件成列段；一个生成完的区块都没有返回 null。只要：只解这些区块（下标 cz·32 + cx，查询小范围用） */
 export const readRegion = (file: string, rx: number, rz: number, seed: string, wanted?: ReadonlySet<number>): ReadRegionResult | null => {
@@ -130,7 +130,7 @@ export const readRegion = (file: string, rx: number, rz: number, seed: string, w
       const ids = (bs.palette as Compound[]).map((p) => intern(stateList, stateIds, stateString(p.Name as string, p.Properties as Record<string, string> | undefined)));
       if (ids.length === 1) blk.fill(ids[0]!, sy * 256, sy * 256 + 4096);
       else {
-        unpackCompact((bs.data as LongArray).长, Math.max(4, bitsFor(ids.length)), 4096, tmp);
+        unpackCompact((bs.data as LongArray).length, Math.max(4, bitsFor(ids.length)), 4096, tmp);
         for (let k = 0; k < 4096; k++) blk[sy * 256 + k] = ids[tmp[k]!]!;
       }
       const bm = section.biomes as Compound;
@@ -138,7 +138,7 @@ export const readRegion = (file: string, rx: number, rz: number, seed: string, w
       const b0 = (sy >> 2) * 16;
       if (bids.length === 1) bio.fill(bids[0]!, b0, b0 + 64);
       else {
-        unpackCompact((bm.data as LongArray).长, bitsFor(bids.length), 64, tmp);
+        unpackCompact((bm.data as LongArray).length, bitsFor(bids.length), 64, tmp);
         for (let k = 0; k < 64; k++) bio[b0 + k] = bids[tmp[k]!]!;
       }
     }
@@ -192,7 +192,7 @@ export const readRegion = (file: string, rx: number, rz: number, seed: string, w
       offset += runEnd - runStart;
     }
   return {
-    区块: [...chunks.keys()].map((k) => [rx * 32 + (k & 31), rz * 32 + (k >> 5)] as const),
-    columnSeg: { rx, rz, yBottom: yBottom, yTop: yBottom + height - 1, stateTable: stateList, biomeTable: biomeList, 种子: seed, 段数: runCounts, 状态: states, bottom: bottoms, 群系: biomes },
+    chunks: [...chunks.keys()].map((k) => [rx * 32 + (k & 31), rz * 32 + (k >> 5)] as const),
+    columnSeg: { rx, rz, yBottom: yBottom, yTop: yBottom + height - 1, stateTable: stateList, biomeTable: biomeList, seed: seed, 段数: runCounts, state: states, bottom: bottoms, biome: biomes },
   };
 };

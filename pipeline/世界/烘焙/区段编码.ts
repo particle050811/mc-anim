@@ -9,7 +9,7 @@ export const sideOf = (d: Pick<SectionData, 'runCounts'>) => {
   return side;
 };
 // 模型表的布局（u16 下标）：p1、p2、p3 各 128 × 3 级，跳 64 × 3 级，整列 9 × 3 级
-export const tableLayout = { p1: 0, p2: 384, p3: 768, 跳: 1152, 列: 1344, 总: 1371 } as const;
+export const tableLayout = { p1: 0, p2: 384, p3: 768, 跳: 1152, 列: 1344, grandTotal: 1371 } as const;
 export const levelOf = (L: number) => (L === 0 ? 0 : L <= 2 ? 1 : 2);
 
 export interface BitSink {

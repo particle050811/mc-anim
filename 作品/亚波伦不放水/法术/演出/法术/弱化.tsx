@@ -18,7 +18,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const pink = hexColor(0xff55ff);
 const radiusCells = 7;
 
-const weaken: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+const weaken: React.FC<SpellPerformanceProps> = ({ sec: sec, from, seed: seed }) => {
   const footZ = from[2] - 0.5;
   const r = mulberry32(seed * 7919 + 3);
   const blockParticles: ParticleBirth[] = [];
@@ -35,13 +35,13 @@ const weaken: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed 
       const radius = defaultRadius(rr);
       const lifetime = Math.floor(8 / (rr() * 0.8 + 0.2));
       const pos: Vec3 = [bx + i, by + k, footZ];
-      blockParticles.push({ 刻: 0, 位: pos, 速: speedVec, 寿命: lifetime, radius: radius, 种子: 1, 色: color });
+      blockParticles.push({ 刻: 0, 位: pos, 速: speedVec, 寿命: lifetime, radius: radius, seed: 1, 色: color });
     }
   }
   return (
     <>
-      <ShockwaveRing 位={[from[0], from[1], footZ + 0.25]} 刻={sec * 20} 大小={radiusCells} 色={pink} 速={1} />
-      <TexturedParticles 类={blockClass} spawns={blockParticles} 秒={sec} />
+      <ShockwaveRing 位={[from[0], from[1], footZ + 0.25]} 刻={sec * 20} size={radiusCells} 色={pink} 速={1} />
+      <TexturedParticles type={blockClass} spawns={blockParticles} sec={sec} />
     </>
   );
 };

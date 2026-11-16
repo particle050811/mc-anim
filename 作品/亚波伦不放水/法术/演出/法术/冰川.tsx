@@ -24,7 +24,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const iceChunkModel = getModel(iceChunkModelData, 'IceChunkModel');
 const ringColor = hexColor(0xfffeff);
 
-const Glacier: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const Glacier: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const isLengthening = tick < iceBlockGrowTicks;
   const f = isLengthening ? Math.floor(tick) / 10 : 2;
@@ -35,7 +35,7 @@ const Glacier: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
   const smokeSpawns: ParticleSpawn[] = Array.from({ length: 60 }, (_, i): ParticleSpawn => {
     const angle = r() * Math.PI * 2;
     const speed = 0.2 + r() * 0.3;
-    return { 种: 'poof', 刻: iceBlockHitTick, p: [target[0], target[1], target[2] + 0.2], v: [Math.cos(angle) * speed, Math.sin(angle) * speed, 0.05], 种子: seed * 3000 + i };
+    return { kind: 'poof', 刻: iceBlockHitTick, p: [target[0], target[1], target[2] + 0.2], v: [Math.cos(angle) * speed, Math.sin(angle) * speed, 0.05], seed: seed * 3000 + i };
   });
   return (
     <>
@@ -44,15 +44,15 @@ const Glacier: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
           <group rotation={[0, degToRad(90), 0]}>
             <group scale={[-f, -f, f]}>
               <group position={[0, -1.45, 0]}>
-                <ModelPart 模型={iceChunkModel} 图={png(isLengthening ? iceChunkSpawnPng : iceChunkPng)} 画法={isLengthening ? '发光' : '镂空'} partPoses={isLengthening ? { chunk: { rot: [0, tick * 0.6, 0] } } : undefined} />
+                <ModelPart model={iceChunkModel} image={png(isLengthening ? iceChunkSpawnPng : iceChunkPng)} 画法={isLengthening ? '发光' : '镂空'} partPoses={isLengthening ? { chunk: { rot: [0, tick * 0.6, 0] } } : undefined} />
               </group>
             </group>
           </group>
         </MinecraftSpace>
       )}
-      <BlockDebris spawns={scatterDebris(slamPos, 256, [1, 1, 1], 1, iceBlockHitTick, seed * 23)} 秒={sec} 图={png(packedIcePng)} ground={target[2]} />
-      <RingBurst 位={target} spawnTick={iceBlockHitTick} 秒={sec} 大小={5} 颜色={ringColor} accel={1} />
-      <VanillaParticles spawns={smokeSpawns} 秒={sec} />
+      <BlockDebris spawns={scatterDebris(slamPos, 256, [1, 1, 1], 1, iceBlockHitTick, seed * 23)} sec={sec} image={png(packedIcePng)} ground={target[2]} />
+      <RingBurst 位={target} spawnTick={iceBlockHitTick} sec={sec} size={5} 颜色={ringColor} accel={1} />
+      <VanillaParticles spawns={smokeSpawns} sec={sec} />
     </>
   );
 };

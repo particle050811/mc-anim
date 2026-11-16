@@ -1,18 +1,18 @@
-// 由 anim voice 生成（校验 51087d6b1e3b），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-RoadRoller（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 8927d29d659e），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-RoadRoller（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-RoadRoller",
-  "角色": "李樱",
-  "念": "ロードローラーだッ！",
-  "配音": "配音/6-李樱-RoadRoller",
-  "成品sha": "a5b0f8578d40",
-  "开口": 0,
+  "character": "李樱",
+  "spoken": "ロードローラーだッ！",
+  "voice": "配音/6-李樱-RoadRoller",
+  "finishedSha": "a5b0f8578d40",
+  "mouthOpen": 0,
   "有声长": 2.72,
-  "时长": 2.72,
+  "duration": 2.72,
   "文件秒数": 2.72,
   "手修": true,
-  "字": [
+  "char": [
     ["ロー",0.87,1.27],
     ["ド",1.28,1.45],
     ["ロー",1.46,1.77],

@@ -53,7 +53,7 @@ describe('缓存名', () => {
 
   it('缺字节占位插件：锁和要换的入口不进缓存名，数据根进', async () => {
     const cacheNameOf = async (p: unknown) => JSON.stringify(await stableCacheName(async () => ({ plugins: [p] }) as never)({} as never));
-    const nameWithLock = await cacheNameOf(new missingBytePlaceholderPlugin({ a: { sha256: '1', 大小: 1, 库: 'store', 后缀: '' } }, '/根', new Map([['/x', { 名: 'x', ids: ['a'] }]])));
+    const nameWithLock = await cacheNameOf(new missingBytePlaceholderPlugin({ a: { sha256: '1', size: 1, lib: 'store', suffix: '' } }, '/根', new Map([['/x', { name: 'x', ids: ['a'] }]])));
     expect(await cacheNameOf(new missingBytePlaceholderPlugin({}, '/根'))).toBe(nameWithLock);
     expect(await cacheNameOf(new missingBytePlaceholderPlugin({}, '/别的根'))).not.toBe(nameWithLock);
   });
@@ -81,7 +81,7 @@ describe('同一个持久缓存目录', () => {
     await new Promise<void>((ok, reject) => compiler.close((e) => (e ? reject(e) : ok())));
     if (stats.hasErrors()) throw new Error(stats.toString('errors-only'));
     const compiled = (stats.toJson({ modules: true }).modules ?? []).filter((m) => m.built).map((m) => m.name ?? '');
-    return { 产物: fs.readFileSync(path.join(tempDir, dirName, 'main.js'), 'utf8'), compiled };
+    return { artifacts: fs.readFileSync(path.join(tempDir, dirName, 'main.js'), 'utf8'), compiled };
   };
   const value = (bundleOutput: string) => {
     const m = { exports: {} as { default: [{ 值: number }, string, Record<string, string>] } };
@@ -93,7 +93,7 @@ describe('同一个持久缓存目录', () => {
     writeSolveFile(1);
     writeSingleLock(bytesLockEntry('一.json', '{"值":1}'));
     const firstBuild = await bundleOut('出一');
-    const [firstItem, unchangedModule, solverFirst] = value(firstBuild.产物);
+    const [firstItem, unchangedModule, solverFirst] = value(firstBuild.artifacts);
     expect(firstItem).toEqual({ 值: 1 });
     expect(unchangedModule).toBe('不变的模块');
     expect(Object.keys(solverFirst)).toEqual(['测试求解']);
@@ -102,7 +102,7 @@ describe('同一个持久缓存目录', () => {
     writeSingleLock(bytesLockEntry('二.json', '{"值":2}'));
     writeSolveFile(2);
     const secondPack = await bundleOut('出二');
-    const [secondItem, , solverSecond] = value(secondPack.产物);
+    const [secondItem, , solverSecond] = value(secondPack.artifacts);
     expect(secondItem).toEqual({ 值: 2 });
     expect(solverSecond.测试求解).not.toBe(solverFirst.测试求解);
     // 缓存确实在用：没变的模块这次没重编

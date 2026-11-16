@@ -23,7 +23,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const blastFungusModel = getModel(blastFungusModelData, 'BlastFungusModel');
 
-const Blossom: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const Blossom: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = blossomPath(from, target, options?.highSpeed);
   const r = mulberry32(seed * 47 + 1);
@@ -41,19 +41,19 @@ const Blossom: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
           <group position={[0, 0.625, 0]} scale={[1.5, 1.5, 1.5]}>
             <group rotation={[0, -degToRad((Math.atan2(vz, vx) * 180) / Math.PI + 90), 0]}>
               <group rotation={[-degToRad((Math.atan2(Math.hypot(vx, vz), vy) * 180) / Math.PI - 90), 0, 0]}>
-                <ModelPart 模型={blastFungusModel} 图={png(blossomBallPng)} 画法="镂空" />
+                <ModelPart model={blastFungusModel} image={png(blossomBallPng)} 画法="镂空" />
               </group>
             </group>
           </group>
         </MinecraftSpace>
       )}
-      <TexturedParticles 类={dragonBreathClass} spawns={breath} 秒={sec} />
+      <TexturedParticles type={dragonBreathClass} spawns={breath} sec={sec} />
       {thornAge >= 0 &&
         frame < 8 &&
         thornPositions.map((p, i) => {
           const height = 4 + (mulberry32(seed * 59 + i)() - 0.5);
           const riseOffset = (Math.sin(Math.min(thornAge / (thornLifeTicks * 0.4), 1) * Math.PI * 0.5) - 1) * height;
-          const beamProps = { 起: [p[0], p[1], p[2] + riseOffset] as Vec3, end: [p[0], p[1], p[2] + riseOffset + height] as Vec3, 图: png(blossomThornPng), 半宽: 0.34375 * height * 0.5, planeCount: 1, vStart: 1, vEnd: 0, 混合: '镂空' as const };
+          const beamProps = { start: [p[0], p[1], p[2] + riseOffset] as Vec3, end: [p[0], p[1], p[2] + riseOffset + height] as Vec3, image: png(blossomThornPng), halfWidth: 0.34375 * height * 0.5, planeCount: 1, vStart: 1, vEnd: 0, blend: '镂空' as const };
           return (
             <React.Fragment key={i}>
               <Beam {...beamProps} u={[(frame + 0.5) / 8, frame / 8]} />

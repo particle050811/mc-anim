@@ -17,14 +17,14 @@ export const sortSpells = (spells: readonly Spell[], sortMode: SortMode): Spell[
 /** 聚晶图标.ts 的键：命名空间:注册名_focus */
 export const focusKey = (spell: Pick<Spell, 'registryName' | '来源'>) => `${spell.来源 === '本体' ? 'goety' : 'goety_revelation'}:${spell.registryName}_focus`;
 
-export type WheelItem = { 法: Spell; 键: string; ring: number; 格: number; /** 进不进齐放（不进的在「全部」档里压暗） */ inReveal: boolean };
+export type WheelItem = { 法: Spell; key: string; ring: number; cell: number; /** 进不进齐放（不进的在「全部」档里压暗） */ inReveal: boolean };
 
 export type ArrangeOptions = { 放?: SpellFilter; sortMode?: SortMode; splitMode?: SplitMode; ringCount?: number; ringShape?: RingShape };
 
 /** 选、排、分圈一次做完：每圈格数和每个法术落在哪一格 */
-export const arrangeWheel = (options: ArrangeOptions = {}): { cellsPerRing: number[]; 项: WheelItem[] } => {
+export const arrangeWheel = (options: ArrangeOptions = {}): { cellsPerRing: number[]; items: WheelItem[] } => {
   const spells = sortSpells(pickSpells(options.放 ?? '有画面'), options.sortMode ?? '学派');
   const cellsPerRing = splitRings(spells.length, { ringCount: options.ringCount, splitMode: options.splitMode, ringShape: options.ringShape });
   const slotPos = placeCells(cellsPerRing);
-  return { cellsPerRing, 项: spells.map((spell, i) => ({ 法: spell, 键: focusKey(spell), ...slotPos[i]!, inReveal: spell.类 === '有画面' })) };
+  return { cellsPerRing, items: spells.map((spell, i) => ({ 法: spell, key: focusKey(spell), ...slotPos[i]!, inReveal: spell.类 === '有画面' })) };
 };

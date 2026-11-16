@@ -8,21 +8,21 @@ import { standPose } from '@库/角色/骨架.tsx';
 import type { YouState, LiYingState } from './编排.ts';
 import * as params from './参数.ts';
 
-export const LiYing: React.FC<{ liYingState: LiYingState; 秒: number }> = ({ liYingState, 秒: sec }) => (
+export const LiYing: React.FC<{ liYingState: LiYingState; sec: number }> = ({ liYingState, sec: sec }) => (
   <TexturePixelAlign 锚={liYingState.loc}>
     <MagicalWineFoxEx
       pose={{ ...standPose([...liYingState.loc]), yaw: liYingState.yaw }}
       stancePose={liYingState.stancePose}
       expression={liYingState.expression}
       看={liYingState.看}
-      秒={sec}
+      sec={sec}
       blink="auto"
       skeleton={liYingState.skeleton ?? (liYingState.casting ? { RightArm: { rot: params.castArm.rightArm }, LeftArm: { rot: params.castArm.leftArm } } : undefined)}
     />
   </TexturePixelAlign>
 );
 
-export const You: React.FC<{ youState: YouState; 秒: number }> = ({ youState, 秒: sec }) => {
+export const You: React.FC<{ youState: YouState; sec: number }> = ({ youState, sec: sec }) => {
   const p = stevePose(youState.loc, youState.yaw, { headYaw: youState.headYaw, headPitch: youState.headPitch, sec: sec });
   const { legPitch, legSpread, armPitch } = params.youSit;
   return (

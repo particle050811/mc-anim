@@ -20,7 +20,7 @@ export const bedroomTop = 8;
 export const groundAboveBottom = 0.25;
 /** 画面中心对着的 x：左边露出过道里开着的门板（x −1.5～−0.5），右边到后墙的窗（x 3.5～4.5） */
 export const centerX = 1.5;
-export const bedroomFraming: SideFraming = { 中心: [centerX, 1440 / 2 / cellPx(bedroomRes) - groundAboveBottom], pxPerCell: cellPx(bedroomRes) };
+export const bedroomFraming: SideFraming = { center: [centerX, 1440 / 2 / cellPx(bedroomRes) - groundAboveBottom], pxPerCell: cellPx(bedroomRes) };
 
 /** 开头从第 11 句末（下线后那块深蓝底、褪色的方形图标、聊天栏黄字「Steve退出了游戏」，段 2-截图下线）化进卧室用几秒（24 fps 时 10 帧）：
  *  核查 10-24「2-空床 开头从第 11 句接过来太硬」，原来一刀切进屋里。两边夜里的调子一样，只化画面。Agent 暂定 */
@@ -117,4 +117,4 @@ export const moonPositions: readonly (readonly [number, number, number])[] = [
 /** 从坐床沿到月落月亮走了几成：进度 = t^幂，越走越快（同 窗光档们 一档比一档换得快）；1.2 时 窗光二 那一帧正好到第二档 */
 export const moonPathPow = 1.2;
 /** 月落到天亮转头，太阳从东南边地平线附近升到第五档南窗那一束的方向（指向太阳），光跟着淡进来；门那一束光影层画不了（只有一个太阳），不画 */
-export const sunrise: { 起: readonly [number, number, number]; 止: readonly [number, number, number] } = { 起: [0.6, -1, 0.3], 止: [0.35, -1, 0.8] };
+export const sunrise: { start: readonly [number, number, number]; end: readonly [number, number, number] } = { start: [0.6, -1, 0.3], end: [0.35, -1, 0.8] };

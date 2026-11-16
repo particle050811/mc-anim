@@ -23,8 +23,8 @@ import { smoothstep01, lerp } from '@engine/core/数学.ts';
 const D2R = Math.PI / 180;
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 
-const T0 = segTable['6-3-1'].起;
-const segmentSec = segTable['6-3-1'].止 - T0;
+const T0 = segTable['6-3-1'].start;
+const segmentSec = segTable['6-3-1'].end - T0;
 // 全局秒 → 段内秒数
 const toSegSec = (globalSec: number) => globalSec - T0;
 
@@ -48,9 +48,9 @@ export const cues631 = {
 };
 // 三句台词的开口（段内秒；口型按 1 帧/秒读，所以 帧 = 秒）
 const lines = [
-  { id: '6-3-1-李樱-又回到这里', 帧: cues631.liYingLine[0] },
-  { id: '6-3-1-九胡-边城脚下', 帧: cues631.jiuhuLine[0] },
-  { id: '6-3-1-九胡-怎么下去', 帧: cues631.jiuhuAsk[0] },
+  { id: '6-3-1-李樱-又回到这里', frame: cues631.liYingLine[0] },
+  { id: '6-3-1-九胡-边城脚下', frame: cues631.jiuhuLine[0] },
+  { id: '6-3-1-九胡-怎么下去', frame: cues631.jiuhuAsk[0] },
 ];
 
 // ---------- 扫帚、骑乘的基准（6-2-6 末帧 = 6-3-2 首帧） ----------

@@ -1,18 +1,18 @@
-// 由 anim voice 生成（校验 0eb47005d9df），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-什么也没有（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 650bd2a599a1），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-什么也没有（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-九胡-什么也没有",
-  "角色": "九胡",
-  "念": "呐呐，狗修金Sama，为什么这里什么也没有啊？",
-  "配音": "配音/6-九胡-什么也没有",
-  "成品sha": "605c7bbfcc56",
-  "开口": 0.03,
+  "character": "九胡",
+  "spoken": "呐呐，狗修金Sama，为什么这里什么也没有啊？",
+  "voice": "配音/6-九胡-什么也没有",
+  "finishedSha": "605c7bbfcc56",
+  "mouthOpen": 0.03,
   "有声长": 3.658,
-  "时长": 3.838,
+  "duration": 3.838,
   "文件秒数": 3.838,
   "手修": true,
-  "字": [
+  "char": [
     ["呐",0.03,0.25],
     ["呐",0.28,0.46],
     ["狗",0.8,1],

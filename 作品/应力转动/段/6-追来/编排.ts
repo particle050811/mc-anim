@@ -33,8 +33,8 @@ const huangLandSec = huangRoute.landSec - τ(0);
 export const hurryLineSec = lineTable['6-4-6-刘心忠-怕了我们'].有声长;
 export const strangeLineStart = shriekSec + 0.9;
 export const lines = {
-  fearUs: { id: '6-4-6-刘心忠-怕了我们', 秒: 0.6 },
-  structureStrange: { id: '6-4-6-黄叛-结构奇怪', 秒: strangeLineStart },
+  fearUs: { id: '6-4-6-刘心忠-怕了我们', sec: 0.6 },
+  structureStrange: { id: '6-4-6-黄叛-结构奇怪', sec: strangeLineStart },
 } as const satisfies Record<string, LineAt>;
 
 // ---------- 二人 ----------

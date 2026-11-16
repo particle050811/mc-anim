@@ -3,7 +3,7 @@ import { G4 } from '../../古城4x.tsx';
 import type { BlockPos } from './换算.ts';
 import { archery } from './射箭.ts';
 export const arena = {
-  范围: [-907, 214, -842, 246] as [number, number, number, number], // 游戏 x0, z0, x1, z1：四面羊毛墙里面那块
+  bounds: [-907, 214, -842, 246] as [number, number, number, number], // 游戏 x0, z0, x1, z1：四面羊毛墙里面那块
   floorFeetY: -51, // 幽匿块铺的地面（脚下方块 y −52）
   centerPlatform: [-882, 222, -870, 237] as [number, number, number, number], // 场子中间一座高台（#244 在台顶 y −44），7-1 绕着它跑、黄叛跳上去射
   northWall: { z: [207, 213] as [number, number], woolLaneZ: [[208, 209], [211, 212]] as [number, number][], wallTopFeetY: -45, woolSpanX: [-904, -864] as [number, number], gateX: [-876, -874] as [number, number] },

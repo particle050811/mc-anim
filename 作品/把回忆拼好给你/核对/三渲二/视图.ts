@@ -6,7 +6,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { ToneName } from '../../色板.ts';
 
 export type View = {
-  名: string;
+  name: string;
   cameraRig: '侧面' | '透视' | '一楼机位';
   /** 侧面的顶面像素（见 engine/三渲二/机位.tsx），不给用 画风.ts 的 正交顶面 */
   topDepth?: number;
@@ -33,19 +33,19 @@ export const firstFloorRig = { 眼: [11.5, -12.5, 1.6825] as V3, 看: [11.5, -10
 const grades: ToneName[] = ['雨后暖阳', '日落', '雷雨', '夜', '末地', '归隐之地', '褪色', '现实'];
 
 export const views: readonly View[] = [
-  { 名: '侧面-平涂', cameraRig: '侧面' },
-  { 名: '侧面-平涂-描边6', cameraRig: '侧面', outlineWidth: 6 },
-  { 名: '侧面-平涂-描边3', cameraRig: '侧面', outlineWidth: 3 },
-  { 名: '侧面-平涂-描边6-后期', cameraRig: '侧面', outlineWidth: 6, withPost: true },
-  { 名: '侧面-平涂-后期', cameraRig: '侧面', withPost: true },
-  { 名: '侧面-纯侧面-描边6', cameraRig: '侧面', topDepth: 0, outlineWidth: 6 },
-  { 名: '侧面-原样受光', cameraRig: '侧面', 原样: true },
-  { 名: '透视-平涂', cameraRig: '透视' },
-  { 名: '透视-平涂-描边6', cameraRig: '透视', outlineWidth: 6 },
-  { 名: '透视-平涂-描边6-后期', cameraRig: '透视', outlineWidth: 6, withPost: true },
-  { 名: '透视-平涂-后期', cameraRig: '透视', withPost: true },
-  { 名: '一楼机位-左平涂-右游戏截图', cameraRig: '一楼机位' },
-  ...grades.map((tone): View => ({ 名: `侧面-${tone}-描边6-后期`, cameraRig: '侧面', outlineWidth: 6, withPost: true, tone, lampGlow: tone === '夜' || tone === '雷雨' })),
-  { 名: '侧面-平涂-留AO', cameraRig: '侧面', AO: true },
-  { 名: '侧面-平涂-描边6-她放大到4像素', cameraRig: '侧面', outlineWidth: 6, herTexturePixel: 4 },
+  { name: '侧面-平涂', cameraRig: '侧面' },
+  { name: '侧面-平涂-描边6', cameraRig: '侧面', outlineWidth: 6 },
+  { name: '侧面-平涂-描边3', cameraRig: '侧面', outlineWidth: 3 },
+  { name: '侧面-平涂-描边6-后期', cameraRig: '侧面', outlineWidth: 6, withPost: true },
+  { name: '侧面-平涂-后期', cameraRig: '侧面', withPost: true },
+  { name: '侧面-纯侧面-描边6', cameraRig: '侧面', topDepth: 0, outlineWidth: 6 },
+  { name: '侧面-原样受光', cameraRig: '侧面', 原样: true },
+  { name: '透视-平涂', cameraRig: '透视' },
+  { name: '透视-平涂-描边6', cameraRig: '透视', outlineWidth: 6 },
+  { name: '透视-平涂-描边6-后期', cameraRig: '透视', outlineWidth: 6, withPost: true },
+  { name: '透视-平涂-后期', cameraRig: '透视', withPost: true },
+  { name: '一楼机位-左平涂-右游戏截图', cameraRig: '一楼机位' },
+  ...grades.map((tone): View => ({ name: `侧面-${tone}-描边6-后期`, cameraRig: '侧面', outlineWidth: 6, withPost: true, tone, lampGlow: tone === '夜' || tone === '雷雨' })),
+  { name: '侧面-平涂-留AO', cameraRig: '侧面', AO: true },
+  { name: '侧面-平涂-描边6-她放大到4像素', cameraRig: '侧面', outlineWidth: 6, herTexturePixel: 4 },
 ];

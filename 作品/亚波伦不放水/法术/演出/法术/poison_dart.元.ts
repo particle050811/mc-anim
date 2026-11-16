@@ -14,10 +14,10 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 export default defineSpellMeta({
   id: 'poison_dart',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // PoisonDartSpell：POISON_QUILL_VINE_SHOOT；命中 POISON_QUILL_IMPACT
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.poison_quill_vine_shoot.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.poison_quill_impact.1', 秒: 0, fromHit: true },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.poison_quill_vine_shoot.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.poison_quill_impact.1', sec: 0, fromHit: true },
   ],
 });

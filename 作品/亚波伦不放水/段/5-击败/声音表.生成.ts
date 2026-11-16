@@ -3,62 +3,62 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/亚波伦/決戦の刻": {
-      "时长": 215.693061,
-      "峰值": 0.6,
-      "响度": -11,
+      "duration": 215.693061,
+      "peakDb": 0.6,
+      "loudness": -11,
       "sha": "210a1de4eb5a"
     },
     "音效/ambient.nether_wastes.mood.1": {
-      "时长": 8.809,
-      "峰值": -11.8,
-      "响度": -28.5,
+      "duration": 8.809,
+      "peakDb": -11.8,
+      "loudness": -28.5,
       "sha": "cc110e397b92"
     },
     "音效/ambient.nether_wastes.mood.2": {
-      "时长": 18,
-      "峰值": -13.3,
-      "响度": -30.6,
+      "duration": 18,
+      "peakDb": -13.3,
+      "loudness": -30.6,
       "sha": "8441f44ac00c"
     },
     "音效/block.beacon.deactivate": {
-      "时长": 3.500958,
-      "峰值": -8.2,
-      "响度": -23.3,
+      "duration": 3.500958,
+      "peakDb": -8.2,
+      "loudness": -23.3,
       "sha": "27acd3575b79"
     },
     "音效/entity.generic.small_fall": {
-      "时长": 0.25,
-      "峰值": 0.3,
-      "响度": -70,
+      "duration": 0.25,
+      "peakDb": 0.3,
+      "loudness": -70,
       "sha": "f6c607669ba7"
     },
     "音效/entity.player.death.1": {
-      "时长": 0.5,
-      "峰值": 1,
-      "响度": -20,
+      "duration": 0.5,
+      "peakDb": 1,
+      "loudness": -20,
       "sha": "5e190650c27c"
     },
     "音效/ui.button.click": {
-      "时长": 0.279637,
-      "峰值": 0.4,
-      "响度": -70,
+      "duration": 0.279637,
+      "peakDb": 0.4,
+      "loudness": -70,
       "sha": "f69421ba0522"
     },
     "音效/诡厄巫法/goety.cast_spell.2": {
-      "时长": 1.101859,
-      "峰值": -8,
-      "响度": -27,
+      "duration": 1.101859,
+      "peakDb": -8,
+      "loudness": -27,
       "sha": "e824c6f59409"
     },
     "音效/诡厄巫法/goety.heavy_woosh.2": {
-      "时长": 1.669456,
-      "峰值": -0.9,
-      "响度": -16.2,
+      "duration": 1.669456,
+      "peakDb": -0.9,
+      "loudness": -16.2,
       "sha": "659943d6ed2c"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

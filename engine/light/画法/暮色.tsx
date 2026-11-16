@@ -17,13 +17,13 @@ const twilightPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight,
   const castShadow = e.shadow !== false;
   const cloud = e.cloud;
   // TwilightClouds 的云天色、日光、天光是 暮色光照.tsx 里没导出的函数现算的，只能整个用它：海平面 0、默认天气，不加云、不让开
-  if (cloud.种类 === 'photon' && (cloud.海平面 !== 0 || cloud.weather || cloud.加?.length || cloud.clearRect || cloud.aroundCamera || cloud.exposure !== undefined)) {
+  if (cloud.种类 === 'photon' && (cloud.seaLevel !== 0 || cloud.weather || cloud.加?.length || cloud.clearRect || cloud.aroundCamera || cloud.exposure !== undefined)) {
     throw new Error('暮色画法的 Photon 云只能是 TwilightClouds 那套（海平面 0、默认天气、不加不让）；要调参数得先让 暮色光照.tsx 导出云的天色函数');
   }
   const lightColor = lighting.isMoonLight ? moonLightColor : (twilightDusk?.keyLight ?? TWILIGHT.light);
   return (
     <>
-      {e.heightFog && <HeightFogLayer 参数={e.heightFog} />}
+      {e.heightFog && <HeightFogLayer params={e.heightFog} />}
       <DirFogLayer opts={twilightDusk && { sunDir: lighting.sun, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength }} />
       <SelfLightLayer k={mix.selfLight} />
       <color attach="background" args={[fogColor]} />
@@ -37,12 +37,12 @@ const twilightPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight,
             lightDir={lighting.lightDir}
             normalize={false}
             色={lightColor}
-            强={mix.direct * lighting.directMult}
+            strength={mix.direct * lighting.directMult}
             shadowFar={(e.shadow && e.shadow.far) || shadowFarFor(fogFarEnd(e.fog))}
             splitDist={Math.max(300, 2 * eyeHeight)}
           />
         ) : (
-          <ParallelMainLight lightDir={lighting.lightDir} 色={lightColor} 强={mix.direct * lighting.directMult} cameraPos={cameraPos} />
+          <ParallelMainLight lightDir={lighting.lightDir} 色={lightColor} strength={mix.direct * lighting.directMult} cameraPos={cameraPos} />
         )}
         <hemisphereLight args={[twilightDusk?.skyLight ?? TWILIGHT.skyLight, twilightDusk?.groundLight ?? TWILIGHT.groundLight, mix.skylight * lighting.skyLightMult]} position={[0, 0, 1]} />
         <ambientLight intensity={mix.ambient * lighting.skyLightMult} />

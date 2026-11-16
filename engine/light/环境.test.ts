@@ -22,7 +22,7 @@ import {
 import { overworld, twilightForest, nether } from './维度.ts';
 
 const elevationOf = (d: number[]) => (Math.asin(d[2]! / Math.hypot(...d)) * 180) / Math.PI;
-const overworldBase = (overrides: Partial<EnvDescription> = {}): EnvDescription => ({ 维度: overworld, 画法: '主世界', gameTime: 6000, lightSpec: { tier: '主世界' }, fog: { 种类: '无' }, cloud: { 种类: '无' }, ...overrides });
+const overworldBase = (overrides: Partial<EnvDescription> = {}): EnvDescription => ({ dimension: overworld, 画法: '主世界', gameTime: 6000, lightSpec: { tier: '主世界' }, fog: { 种类: '无' }, cloud: { 种类: '无' }, ...overrides });
 
 describe('时刻 → 天体（1.20.1 DimensionType.timeOfDay）', () => {
   it('正午、午夜、日出、日落的天角', () => {
@@ -116,7 +116,7 @@ describe('天光、星星、晚霞、雨（ClientLevel、DimensionSpecialEffects
 describe('灯光系数', () => {
   it('美术光向、晴天：光向原样（同一个数组），两个倍数正好是 1', () => {
     const sun: [number, number, number] = [0.78, -0.33, 0.53];
-    const k = LightCoeffs(defineEnvironment({ 维度: twilightForest, 画法: '暮色', sun: sun, lightSpec: { tier: '暮色' }, fog: { 种类: '无' }, cloud: { 种类: '无' } }));
+    const k = LightCoeffs(defineEnvironment({ dimension: twilightForest, 画法: '暮色', sun: sun, lightSpec: { tier: '暮色' }, fog: { 种类: '无' }, cloud: { 种类: '无' } }));
     expect(k.lightDir).toBe(sun);
     expect(k.sun).toBe(sun);
     expect(k.directMult).toBe(1);
@@ -142,7 +142,7 @@ describe('灯光系数', () => {
     expect(newMoonLight.directMult).toBe(0);
   });
   it('固定时刻的维度按固定时刻算（暮色森林 13000：太阳刚落到西边地平线下）', () => {
-    const k = LightCoeffs({ 维度: twilightForest, 画法: '暮色', lightSpec: { tier: '暮色' }, fog: { 种类: '无' }, cloud: { 种类: '无' } });
+    const k = LightCoeffs({ dimension: twilightForest, 画法: '暮色', lightSpec: { tier: '暮色' }, fog: { 种类: '无' }, cloud: { 种类: '无' } });
     expect(k.sun[0]).toBeLessThan(-0.99);
     expect(elevationOf(k.sun)).toBeCloseTo(-3.5, 0);
   });
@@ -150,7 +150,7 @@ describe('灯光系数', () => {
 
 describe('定义环境：写错了加载时就报', () => {
   it('维度时间固定还写时刻', () => {
-    expect(() => defineEnvironment({ ...overworldBase(), 维度: nether })).toThrow(/固定在 18000/);
+    expect(() => defineEnvironment({ ...overworldBase(), dimension: nether })).toThrow(/固定在 18000/);
   });
   it('时刻、太阳只写一个，也不能都不写', () => {
     expect(() => defineEnvironment(overworldBase({ sun: [0, 0, 1] }))).toThrow(/只写一个/);
@@ -174,11 +174,11 @@ describe('关键帧：时刻、天气随帧变', () => {
   const envTrack = defineEnvTrack({
     base: overworldBase({ gameTime: 1000 }),
     keyframes: [
-      { 帧: 0, 时刻: 11000 },
-      { 帧: 10, 雨: 0, easing: '平滑' },
-      { 帧: 20, 雨: 1 },
-      { 帧: 48, 时刻: 13000, easing: '阶跃' },
-      { 帧: 60, 时刻: 14000 },
+      { frame: 0, 时刻: 11000 },
+      { frame: 10, 雨: 0, easing: '平滑' },
+      { frame: 20, 雨: 1 },
+      { frame: 48, 时刻: 13000, easing: '阶跃' },
+      { frame: 60, 时刻: 14000 },
     ],
   });
   it('各项各自插值，头尾之外保持', () => {
@@ -197,16 +197,16 @@ describe('关键帧：时刻、天气随帧变', () => {
     const e = envAtFrame(envTrack, 20);
     expect(e.gameTime).toBeCloseTo(11000 + (2000 * 20) / 48, 9);
     expect(e.weather).toEqual({ 雨: 1, 雷: 0 });
-    expect(e.维度).toBe(overworld);
+    expect(e.dimension).toBe(overworld);
     const description = overworldBase();
     expect(envAtFrame(description, 5)).toBe(description);
   });
   it('写错的关键帧', () => {
     const base = overworldBase();
-    expect(() => defineEnvTrack({ base, keyframes: [{ 帧: 5, 雨: 1 }, { 帧: 5, 雨: 0 }] })).toThrow(/从小到大/);
-    expect(() => defineEnvTrack({ base, keyframes: [{ 帧: 0 }] })).toThrow(/至少写一项/);
-    expect(() => defineEnvTrack({ base: overworldBase({ gameTime: undefined, sun: [0, 0, 1] }), keyframes: [{ 帧: 0, 时刻: 1000 }] })).toThrow(/美术光向/);
-    expect(() => defineEnvTrack({ base, keyframes: [{ 帧: 1.5, 雨: 1 }] })).toThrow(/非负整数/);
+    expect(() => defineEnvTrack({ base, keyframes: [{ frame: 5, 雨: 1 }, { frame: 5, 雨: 0 }] })).toThrow(/从小到大/);
+    expect(() => defineEnvTrack({ base, keyframes: [{ frame: 0 }] })).toThrow(/至少写一项/);
+    expect(() => defineEnvTrack({ base: overworldBase({ gameTime: undefined, sun: [0, 0, 1] }), keyframes: [{ frame: 0, 时刻: 1000 }] })).toThrow(/美术光向/);
+    expect(() => defineEnvTrack({ base, keyframes: [{ frame: 1.5, 雨: 1 }] })).toThrow(/非负整数/);
   });
   it('按游戏流速：每秒 20 刻', () => {
     expect(tickByFrame(1000, 24, 24)).toBe(1020);

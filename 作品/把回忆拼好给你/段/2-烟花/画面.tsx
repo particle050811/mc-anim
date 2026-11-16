@@ -23,8 +23,8 @@ const picture: React.FC = () => {
   const f = useSnappedFrame();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <FilmPost grade={palette.夜.grade} 种子={startFrame + f} grainYield={signFaceRects(startFrame + f)}>
-        <DoorNightCanvas 帧={startFrame + f} prevFrame={f >= 1 ? startFrame + f - 1 : undefined} shading={shadingBySeg['2-烟花']} />
+      <FilmPost grade={palette.夜.grade} seed={startFrame + f} grainYield={signFaceRects(startFrame + f)}>
+        <DoorNightCanvas frame={startFrame + f} prevFrame={f >= 1 ? startFrame + f - 1 : undefined} shading={shadingBySeg['2-烟花']} />
         <RuneLyric lines={lyricLines} 样式={lyricStyle} />
       </FilmPost>
     </AbsoluteFill>

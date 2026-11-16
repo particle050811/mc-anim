@@ -14,16 +14,16 @@ import type { SongMoment } from '../../engine/段/歌网格.ts';
 type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
 /** 联合类型各支的键合起来，一个键一项；少写、多写、写错都编译不过 */
 export type KeyTable<T> = { readonly [K in keyof UnionToIntersection<T>]-?: true };
-const timeKeyTable: KeyTable<BaseMoment | SongMoment> = { 秒: true, 帧: true, after: true, addSec: true, addFrames: true, beat: true, measure: true, 句: true, 点: true };
+const timeKeyTable: KeyTable<BaseMoment | SongMoment> = { sec: true, frame: true, after: true, addSec: true, addFrames: true, beat: true, measure: true, 句: true, points: true };
 /** 分镜.ts 的段窗用 键，串段定义用 名 */
-export const segKeyField = '键';
-const segWindowKeyTable = { ...({ 名: true, 起: true, 止: true, 依据: true } satisfies KeyTable<SeriesSegDef>), [segKeyField]: true };
-const frameCountEndKeyTable: KeyTable<Exclude<WindowEnd, BaseMoment | string>> = { 帧数: true };
-export const basisKey = '依据' satisfies keyof EventDef & keyof SeriesSegDef;
+export const segKeyField = 'key';
+const segWindowKeyTable = { ...({ name: true, start: true, end: true, basis: true } satisfies KeyTable<SeriesSegDef>), [segKeyField]: true };
+const frameCountEndKeyTable: KeyTable<Exclude<WindowEnd, BaseMoment | string>> = { frameCount: true };
+export const basisKey = 'basis' satisfies keyof EventDef & keyof SeriesSegDef;
 export const atKey = '在' satisfies keyof EventDef;
-const segNameKey: keyof SeriesSegDef = '名';
-export const startKey = '起' satisfies keyof SeriesSegDef;
-export const endKey = '止' satisfies keyof SeriesSegDef;
+const segNameKey: keyof SeriesSegDef = 'name';
+export const startKey = 'start' satisfies keyof SeriesSegDef;
+export const endKey = 'end' satisfies keyof SeriesSegDef;
 export const timeKeys = new Set(Object.keys(timeKeyTable));
 export const segWindowKeys = new Set(Object.keys(segWindowKeyTable));
 const frameCountEndKey = new Set(Object.keys(frameCountEndKeyTable));
@@ -69,27 +69,27 @@ const absorbTrailingSpace = (sourceText: string, startIndex: number, end: number
   let b = end;
   while (sourceText[b] === ' ' || sourceText[b] === '\t') b++;
   const atLineEnd = b === sourceText.length || sourceText[b] === '\n';
-  if (!atLineEnd) return { 起: startIndex, 止: end };
-  return a === 0 || sourceText[a - 1] === '\n' ? { 起: a, 止: Math.min(b + 1, sourceText.length) } : { 起: a, 止: b };
+  if (!atLineEnd) return { start: startIndex, end: end };
+  return a === 0 || sourceText[a - 1] === '\n' ? { start: a, end: Math.min(b + 1, sourceText.length) } : { start: a, end: b };
 };
 
 export const stripBasis = (sourceText: string): string => {
   if (!sourceText.includes(basisKey)) return sourceText;
   const sf = ts.createSourceFile('模块.js', sourceText, ts.ScriptTarget.Latest, false, ts.ScriptKind.JS);
-  const edits: { 起: number; 止: number; 新: string }[] = [];
+  const edits: { start: number; end: number; 新: string }[] = [];
   const visit = (n: ts.Node) => {
     if (ts.isObjectLiteralExpression(n) && isTimeEntry(n)) {
       const kept = n.properties.filter((p) => keyName(p) !== basisKey).map((p) => p.getText(sf));
-      edits.push({ 起: n.getStart(sf), 止: n.getEnd(), 新: `{ ${kept.join(', ')} }` });
+      edits.push({ start: n.getStart(sf), end: n.getEnd(), 新: `{ ${kept.join(', ')} }` });
       return;
     }
     ts.forEachChild(n, visit);
   };
   visit(sf);
   if (!edits.length) return sourceText;
-  for (const [startIndex, end] of commentRanges(sf)) if (!edits.some((r) => startIndex >= r.起 && end <= r.止)) edits.push({ ...absorbTrailingSpace(sourceText, startIndex, end), 新: '' });
-  edits.sort((a, b) => b.起 - a.起);
+  for (const [startIndex, end] of commentRanges(sf)) if (!edits.some((r) => startIndex >= r.start && end <= r.end)) edits.push({ ...absorbTrailingSpace(sourceText, startIndex, end), 新: '' });
+  edits.sort((a, b) => b.start - a.start);
   let out = sourceText;
-  for (const r of edits) out = out.slice(0, r.起) + r.新 + out.slice(r.止);
+  for (const r of edits) out = out.slice(0, r.start) + r.新 + out.slice(r.end);
   return out;
 };

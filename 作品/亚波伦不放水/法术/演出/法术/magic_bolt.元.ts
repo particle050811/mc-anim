@@ -18,7 +18,7 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'magic_bolt',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // MagicBoltSpell：CAST_SPELL
-  声音: [{ 资产: '音效/诡厄巫法/goety.cast_spell.1', 秒: 0 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.cast_spell.1', sec: 0 }],
 });

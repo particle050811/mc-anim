@@ -33,7 +33,7 @@ export type SignPixelTextProps = {
 export const SignPixelText: React.FC<SignPixelTextProps> = ({ lines, 色: color = '#000000', glow = false, outline }) => {
   const drawOutline = glow && (outline ?? color.toLowerCase() === '#000000');
   const cacheKey = lines.join('\n');
-  const { material, 宽: width, 高: height } = useMemo(() => {
+  const { material, width: width, height: height } = useMemo(() => {
     const lines = cacheKey.split('\n');
     if (lines.length > 4) throw new Error(`告示牌最多四行：${lines.length} 行`);
     // 画布按四行、最宽 90 个字像素建（告示牌尺寸.字面），字面中心就是画布中心
@@ -54,7 +54,7 @@ export const SignPixelText: React.FC<SignPixelTextProps> = ({ lines, 色: color 
     tex.generateMipmaps = false;
     tex.colorSpace = THREE.SRGBColorSpace;
     const m = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, depthWrite: false });
-    return { material: m, 宽: W * signSize.glyphPx, 高: H * signSize.glyphPx };
+    return { material: m, width: W * signSize.glyphPx, height: H * signSize.glyphPx };
   }, [cacheKey, color, drawOutline]);
   useEffect(
     () => () => {

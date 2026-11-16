@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 4b53ce3dbf46），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-黄叛-又出现了（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 37665a05fbb6），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-黄叛-又出现了（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-黄叛-又出现了",
-  "角色": "黄叛",
-  "念": "上次抢劫我们城市的家伙又来了，我们快追！",
-  "配音": "配音/6-黄叛-又出现了",
-  "成品sha": "3e49dd7324dd",
-  "开口": 0.03,
+  "character": "黄叛",
+  "spoken": "上次抢劫我们城市的家伙又来了，我们快追！",
+  "voice": "配音/6-黄叛-又出现了",
+  "finishedSha": "3e49dd7324dd",
+  "mouthOpen": 0.03,
   "有声长": 3.039,
-  "时长": 3.219,
+  "duration": 3.219,
   "文件秒数": 3.219,
-  "字": [
+  "char": [
     ["上",0,0.32],
     ["次",0.32,0.4],
     ["抢",0.4,0.64],

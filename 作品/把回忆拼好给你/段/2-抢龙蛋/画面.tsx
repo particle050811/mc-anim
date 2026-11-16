@@ -26,8 +26,8 @@ const picture: React.FC = () => {
           f={f}
           overlay={
             waveIn < 2 ? (
-              <FilmPost grade={palette[seaToneName].grade} 种子={toSongFrame(f)}>
-                <SunsetWave waveIn={waveIn} 宽={aspect.宽} 高={aspect.高} 样式={waveStyle} />
+              <FilmPost grade={palette[seaToneName].grade} seed={toSongFrame(f)}>
+                <SunsetWave waveIn={waveIn} width={aspect.width} height={aspect.height} 样式={waveStyle} />
               </FilmPost>
             ) : undefined
           }

@@ -18,7 +18,7 @@ import steamMissile3Png from 'asset:贴图/法术/goety/entity/projectiles/soul_
 const soulBoltModel = getModel(soulBoltModelData, 'SoulBoltModel');
 const projectileFrames = [steamMissile1Png, steamMissile2Png, steamMissile3Png].map(png);
 
-const Steam: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const Steam: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   return (
     <>
@@ -29,7 +29,7 @@ const Steam: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target
         return (
           <MinecraftSpace key={i} 位={trajectoryPos(projectile.trajectory, t)}>
             <group scale={[-1.25, -1.25, 1.25]}>
-              <ModelPart 模型={soulBoltModel} 图={projectileFrames[Math.floor(t) % 3]!} 画法="加色" opacity={0.5} partPoses={{ bolt: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
+              <ModelPart model={soulBoltModel} image={projectileFrames[Math.floor(t) % 3]!} 画法="加色" opacity={0.5} partPoses={{ bolt: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
             </group>
           </MinecraftSpace>
         );

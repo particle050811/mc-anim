@@ -42,5 +42,5 @@ export const BaseIslandTerrain: React.FC<{ camPos: number[] }> = ({ camPos: camP
     if (packOrigin.some((v, i) => Math.abs(v - expectedOrigin[i]) > 1e-6)) cancelRender(new Error(`基地小岛：区段包 ${overworldPack} 的原点变了（${packOrigin} ≠ ${expectedOrigin}），改 主世界116.ts 的 overworldOrigin`));
   }, [terrain]);
   if (!terrain) return null;
-  return <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={camPos} pixel={LevelParams.视频.pixel} far={overworldWindowView.farM} heightRange={terrain.heightRange} />;
+  return <VoxelWorld key={terrain.key} source={terrain.source} center={camPos} pixel={LevelParams.视频.pixel} far={overworldWindowView.farM} heightRange={terrain.heightRange} />;
 };

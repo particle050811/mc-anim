@@ -19,10 +19,10 @@ export const yourRightArm = { reachBell: { lift: 25, rollDeg: -48 }, swayAmp: 10
 
 /** 铃：挂在告示牌牌面右上角的钉子上（牌面 x −3.5～−2.5、z 0.58～1.08，字面在 y 1.458），垂在牌面右边那一截前面，不挡牌上的两行字。
  *  大小 0.5 格（一个铃的贴图像素 = 方块的一半，同原版物品展示框里的物品）；挂点在牌面顶上 0.05 格，铃心在挂点下 0.35 格 */
-export const bell = { hangPoint: [-2.5, 1.43, 1.13] as [number, number, number], hangLength: 0.35, 大小: 0.5 };
+export const bell = { hangPoint: [-2.5, 1.43, 1.13] as [number, number, number], hangLength: 0.35, size: 0.5 };
 
 /** 摇铃后铃绕挂点摆：振幅（度）、周期（秒）、衰减（每秒乘多少） */
 export const bellSwing = { amplitude: 28, periodSec: 0.32, damping: 0.08 };
 
 /** 调子：上线时还是第 12～14 句她那边的褪色（插到夏日白天 1/3），樱花风卷起来以后颜色跟着回来，盖满时到夏日白天 */
-export const colorBackRange = { 起: 1 / 3, 止: 1 };
+export const colorBackRange = { start: 1 / 3, end: 1 };

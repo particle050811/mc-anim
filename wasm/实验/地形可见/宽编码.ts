@@ -68,7 +68,7 @@ const initTree = (palette: Uint16Array, m: SectionModel) => {
 };
 /** 格子（色板已按出现先后排好）→ 一个区段的字节，头和色板同格式 3（nz、k底、色板项数、色板），后面是编码流 */
 export const compressWidth = (g: CellGrid, L: number, sectionModel: SectionModel): Uint8Array => {
-  const width = g.宽 ?? sectionSide, palette = Uint16Array.from(g.palette), P = palette.length / 2;
+  const width = g.width ?? sectionSide, palette = Uint16Array.from(g.palette), P = palette.length / 2;
   const ps = new Uint16Array(1371), probs = sectionModel.init.slice(), { tree, n } = initTree(palette, sectionModel), rc = new RangeEncoder(4096);
   walkModelWidth({ bit(p, i, b, s = 0) {
     const lit = p !== ps;
@@ -83,7 +83,7 @@ export const compressWidth = (g: CellGrid, L: number, sectionModel: SectionModel
 };
 /** 色板按出现先后重排（列从小到大、列内从上往下）、丢掉没用到的，同 公共.ts 的 成区段 */
 export const arrangePalette = (g: CellGrid): CellGrid => {
-  const width = g.宽 ?? sectionSide, { nz, cm } = g, newIds = new Int32Array(g.palette.length / 2).fill(-1), palette = [g.palette[0]!, g.palette[1]!], colorIndex = new Uint16Array(cm.length);
+  const width = g.width ?? sectionSide, { nz, cm } = g, newIds = new Int32Array(g.palette.length / 2).fill(-1), palette = [g.palette[0]!, g.palette[1]!], colorIndex = new Uint16Array(cm.length);
   newIds[0] = 0;
   for (let c = 0; c < width * width; c++) for (let k = nz - 1; k >= 0; k--) {
     const p = cm[c * nz + k]!;
@@ -114,5 +114,5 @@ export const combineQuad = (quad: CellGrid[], stoneState: number, stateFull: Uin
   }
   const full = new Uint8Array(palette.length / 2);
   for (let p = 1; p < full.length; p++) full[p] = stateFull[palette[2 * p]!]!;
-  return { id: { L: quad[0]!.id.L, i: quad[0]!.id.i >> 1, j: quad[0]!.id.j >> 1 }, kBottom: kb, nz, cm, palette, fullMask: full, stone: 1, 宽: bigCount };
+  return { id: { L: quad[0]!.id.L, i: quad[0]!.id.i >> 1, j: quad[0]!.id.j >> 1 }, kBottom: kb, nz, cm, palette, fullMask: full, stone: 1, width: bigCount };
 };

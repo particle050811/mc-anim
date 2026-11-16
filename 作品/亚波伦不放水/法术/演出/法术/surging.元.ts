@@ -23,10 +23,10 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'surging',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // SurgingSpell：每颗 SHOCK_CAST；命中 THUNDERBOLT
-  声音: [
-    ...Array.from({ length: surgeCount }, (_, k) => ({ 资产: `音效/诡厄巫法/goety.shock_cast.${k + 1}`, 秒: (k * surgeGapTicks) / 20 })),
-    ...Array.from({ length: surgeCount }, (_, k) => ({ 资产: `音效/诡厄巫法/goety.thunderbolt.${k + 1}`, 秒: (k * surgeGapTicks) / 20, fromHit: true })),
+  sound: [
+    ...Array.from({ length: surgeCount }, (_, k) => ({ asset: `音效/诡厄巫法/goety.shock_cast.${k + 1}`, sec: (k * surgeGapTicks) / 20 })),
+    ...Array.from({ length: surgeCount }, (_, k) => ({ asset: `音效/诡厄巫法/goety.thunderbolt.${k + 1}`, sec: (k * surgeGapTicks) / 20, fromHit: true })),
   ],
 });

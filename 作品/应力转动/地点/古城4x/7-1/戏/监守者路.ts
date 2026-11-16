@@ -100,5 +100,5 @@ export const shieldState = (t: number) => {
   const dir: V3 = [1, 0, 0];
   const breakT = timeline.shieldBreakT;
   if (t > breakT + 0.3) return undefined;
-  return { at: shieldPos(eye, dir), dir, 秒: t - timeline.shieldT, opacity: t < breakT ? 1 : 1 - (t - breakT) / 0.3 };
+  return { at: shieldPos(eye, dir), dir, sec: t - timeline.shieldT, opacity: t < breakT ? 1 : 1 - (t - breakT) / 0.3 };
 };

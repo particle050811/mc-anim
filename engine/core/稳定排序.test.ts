@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { opaqueOrder, orderInGroup, sortMaterials, placeBehind, refreshBoundingSphere, restoreDeclOrder, transparentOrder } from './稳定排序.ts';
 
-const makeItem = (name: string, overrides: Partial<{ groupOrder: number; renderOrder: number; materialVariant: number; z: number }> = {}) => ({ 名: name, groupOrder: 0, renderOrder: 0, materialVariant: 0, z: 0.5, ...overrides });
-const namesOf = (xs: { 名: string }[]) => xs.map((x) => x.名).join('');
+const makeItem = (name: string, overrides: Partial<{ groupOrder: number; renderOrder: number; materialVariant: number; z: number }> = {}) => ({ name: name, groupOrder: 0, renderOrder: 0, materialVariant: 0, z: 0.5, ...overrides });
+const namesOf = (xs: { name: string }[]) => xs.map((x) => x.name).join('');
 
 describe('稳定排序', () => {
   it('不透明由近到远，透明由远到近，组和 renderOrder 优先', () => {

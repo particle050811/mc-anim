@@ -15,7 +15,7 @@ export const solveFingerprints = async (workRoot: string): Promise<Record<string
   const items = await Promise.all(
     Object.entries(await readSolveEntries(workRoot)).map(async ([solverName, entry]) => {
       try {
-        return [[solverName, (await computeMerkle([relativeToCodeRoot(path.join(workRoot, entry))])).根[0]!.slice(0, 16)] as const];
+        return [[solverName, (await computeMerkle([relativeToCodeRoot(path.join(workRoot, entry))])).root[0]!.slice(0, 16)] as const];
       } catch {
         return [];
       }

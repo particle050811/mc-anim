@@ -109,10 +109,10 @@ export const magicalWineFoxTail = (sec: number, stancePose: '坐' | '站' = '坐
  * 表情：不给就照姿势表（坐姿表里是微笑）。秒：驱动尾巴和自动眨眼，不给就是静止姿势（尾巴不摆、不自动眨眼）。
  * 眨眼：'auto' 照游戏曲线按 秒 眨，给数字就是手写的闭眼程度 0～1
  */
-export const magicalWineFoxMotion = (o: { stancePose: '坐' | '站'; expression?: MagicalWineFoxExpression; blink: number | 'auto'; 秒?: number }): SkeletonTable => {
-  const eyeClose = o.blink !== 'auto' ? o.blink : o.秒 === undefined ? undefined : magicalWineFoxBlink(o.秒);
+export const magicalWineFoxMotion = (o: { stancePose: '坐' | '站'; expression?: MagicalWineFoxExpression; blink: number | 'auto'; sec?: number }): SkeletonTable => {
+  const eyeClose = o.blink !== 'auto' ? o.blink : o.sec === undefined ? undefined : magicalWineFoxBlink(o.sec);
   return mergeSkeleton(
-    o.秒 === undefined ? {} : magicalWineFoxTail(o.秒, o.stancePose),
+    o.sec === undefined ? {} : magicalWineFoxTail(o.sec, o.stancePose),
     o.expression === undefined ? {} : magicalWineFoxFace(o.expression),
     eyeClose === undefined ? {} : magicalWineFoxBlinkBones(eyeClose),
   );

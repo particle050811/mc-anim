@@ -9,10 +9,10 @@ export const frameWindow = { 起帧: toSongFrame(24.4), 止帧: toSongFrame(29.5
 const frameCount = frameWindow.止帧 - frameWindow.起帧;
 
 export default defineSeg({
-  场: '核对',
-  秒: frameCount / fps,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
-  声音: [{ 秒: 0, 长秒: frameCount / fps, 入点秒: frameWindow.起帧 / fps, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: 0.5 }],
+  scene: '核对',
+  sec: frameCount / fps,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
+  sound: [{ sec: 0, 长秒: frameCount / fps, 入点秒: frameWindow.起帧 / fps, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: 0.5 }],
 });

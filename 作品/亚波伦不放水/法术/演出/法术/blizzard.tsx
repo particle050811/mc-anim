@@ -12,14 +12,14 @@ import meta, { blizzardShots } from './blizzard.元.ts';
 import iceSpikePng from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
 import { mulberry32 } from '@engine/core/数学.ts';
 
-const Blizzard: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const Blizzard: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const projectiles = blizzardShots(target, seed);
   const r = mulberry32(seed * 89 + 3);
   const snow = projectiles.filter((projectile) => sec * 20 >= projectile.launchTick + projectile.flightTick).map((projectile) => snowflake(r, projectile.launchTick + projectile.flightTick, projectile.trajectory(projectile.flightTick), [0, 0, 0.5]));
   return (
     <>
-      <ArrowRainGroup projectiles={projectiles} 秒={sec} 图={png(iceSpikePng)} fogColor={[1, 1, 1]} 种子={seed} />
-      <TexturedParticles 类={{ ...snowflakeClass, ground: target[2] }} spawns={snow} 秒={sec} />
+      <ArrowRainGroup projectiles={projectiles} sec={sec} image={png(iceSpikePng)} fogColor={[1, 1, 1]} seed={seed} />
+      <TexturedParticles type={{ ...snowflakeClass, ground: target[2] }} spawns={snow} sec={sec} />
     </>
   );
 };

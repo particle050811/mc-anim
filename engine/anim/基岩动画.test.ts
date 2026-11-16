@@ -54,7 +54,7 @@ describe('解析', () => {
     expect(A.跳变!.skeleton.a!.position![1]!.前).toEqual([1, 1, 1]);
     expect(A.跳变!.skeleton.a!.position![1]!.后).toEqual([5, 5, 5]);
     expect(A.曲线!.循环).toBe('hold');
-    expect(A.缓动!.skeleton.a!.position![1]!.easing).toEqual({ 名: 'easeInQuad', 参数: undefined });
+    expect(A.缓动!.skeleton.a!.position![1]!.easing).toEqual({ name: 'easeInQuad', params: undefined });
   });
 
   it('长度：写了照写的；TLM 没写取倒数第二个关键帧，通用取最后一个；只有 0 秒帧是无限长', () => {
@@ -95,10 +95,10 @@ describe('取样（TLM 口径）', () => {
   });
 
   it('once 和 TLM 的 hold 到头都停；通用的 hold 停在末帧', () => {
-    expect(animTime(A.跳变!, 1.2, 'TLM')).toEqual({ 时: 1, stopped: true });
+    expect(animTime(A.跳变!, 1.2, 'TLM')).toEqual({ timestamp: 1, stopped: true });
     expect(sampleAnim(A.跳变!, 1.2, TLM).skeleton).toEqual({});
     expect(animTime(A.曲线!, 5, 'TLM').stopped).toBe(true);
-    expect(animTime(A.曲线!, 5, '通用')).toEqual({ 时: 3, stopped: false });
+    expect(animTime(A.曲线!, 5, '通用')).toEqual({ timestamp: 3, stopped: false });
   });
 });
 
@@ -134,14 +134,14 @@ describe('取样（通用口径）', () => {
 describe('逐步推进', () => {
   it('时间线：开头执行一次，每次绕回 0 再执行', () => {
     const variables: Record<string, number | string> = {};
-    const playState = playTo(A.时间线!, 1.2, 0.1, { 环境: { 变量: variables } });
-    expect(playState.时).toBeCloseTo(0.2, 9);
+    const playState = playTo(A.时间线!, 1.2, 0.1, { env: { 变量: variables } });
+    expect(playState.timestamp).toBeCloseTo(0.2, 9);
     expect(variables.n).toBe(3); // 0、0.5、1.0
     expect(variables.m).toBe(7);
   });
 
   it('anim_time_update 改动画时间的走法', () => {
-    expect(playTo(A.快放!, 1, 0.25).时).toBeCloseTo(2, 12);
+    expect(playTo(A.快放!, 1, 0.25).timestamp).toBeCloseTo(2, 12);
   });
 });
 
@@ -180,6 +180,6 @@ describe('口径的 Molang 精度', () => {
     expect(profilePrecision('TLM')).toBe('float');
     expect(sampleSkeleton(parseAnimationFile(animFile, 'TLM').a!, 0, { 口径: 'TLM' }).b!.pos![0]).toBe(f(f(f(0.1) + f(0.2)) + 0));
     expect(sampleSkeleton(parseAnimationFile(animFile).a!, 0).b!.pos![0]).toBe(0.1 + 0.2);
-    expect(sampleSkeleton(parseAnimationFile(animFile).a!, 0, { 环境: { precision: 'float' } }).b!.pos![0]).toBe(f(f(0.1) + f(0.2)));
+    expect(sampleSkeleton(parseAnimationFile(animFile).a!, 0, { env: { precision: 'float' } }).b!.pos![0]).toBe(f(f(0.1) + f(0.2)));
   });
 });

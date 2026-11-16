@@ -14,9 +14,9 @@ export const HydraScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) => 
   const parts = hydraParts({ heads }, t + 30);
   const headW = (i: number) => choreo.hydraToLocal([parts[i].pos[0], parts[i].pos[1], parts[i].pos[2] + HYDRA.partLift]);
   const body = choreo.hydraToLocal([0, 3.2, 2.4]);
-  const show = t > choreo.visibleWindow.起 && t < choreo.visibleWindow.止;
+  const show = t > choreo.visibleWindow.start && t < choreo.visibleWindow.end;
   return (
-    <LandmarkPlacement 名="九头蛇巢穴">
+    <LandmarkPlacement name="九头蛇巢穴">
       {show && (
         <>
           {t < choreo.DEATH.gone && (

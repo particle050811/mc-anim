@@ -30,7 +30,7 @@ const lordStudyInfo = lordStudyRaw as unknown as BlockMeshInfo;
 
 // 屋子在城里的摆放：网格原点（外框西北角、地板顶面）在城局部坐标的哪一点
 export const guardRoom = {
-  原点: [-21, 195, 0.5] as V3,
+  origin: [-21, 195, 0.5] as V3,
   // 屋里的东西（网格本地坐标；格 (x, y) 占 [x, x+1]×[y−1, y]，y 往南是负的）
   deskTopZ: 1, // 上半砖书桌的顶面
   desk: [6, -4, 7, -2] as [number, number, number, number], // 书桌 [x0, y0, x1, y1]
@@ -42,7 +42,7 @@ export const guardRoom = {
   roomBounds: [1, -5, 0, 8, -1, 4] as number[], // 屋里的空间 [x0, y0, z0, x1, y1, z1]
 };
 export const lordStudy = {
-  原点: [-5, -10, 6.5] as V3,
+  origin: [-5, -10, 6.5] as V3,
   deskTopZ: 1,
   desk: [4, -3, 7, -1] as [number, number, number, number],
   chair: [5.5, -3.5, 0.5] as V3,
@@ -52,7 +52,7 @@ export const lordStudy = {
   roomBounds: [1, -8, 0, 10, -1, 6] as number[],
 };
 // 网格本地坐标 → 城的局部坐标
-export const toTownPoint = (room: { 原点: V3 }, p: number[]): V3 => [room.原点[0] + p[0], room.原点[1] + p[1], room.原点[2] + p[2]];
+export const toTownPoint = (room: { origin: V3 }, p: number[]): V3 => [room.origin[0] + p[0], room.origin[1] + p[1], room.origin[2] + p[2]];
 
 export const GuardRoomMesh: React.FC = () => <BlockMesh info={guardRoomInfo} bin={guardRoomBin} atlas={guardRoomAtlas} />;
 export const LordStudyMesh: React.FC = () => <BlockMesh info={lordStudyInfo} bin={lordStudyBin} atlas={lordStudyAtlas} />;

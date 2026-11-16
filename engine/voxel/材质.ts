@@ -166,7 +166,7 @@ const quadIndexFor = (quads: number) => {
 };
 
 // 一组面 → 网格（全部朝向都在里面，每帧用 挑朝向 只画朝着镜头的几组）。原点：体素块原点（世界坐标，米）；格：一格几米；盒子：范围（场景坐标）
-export type VoxelMesh = THREE.Mesh & { userData: { 段: number[]; upload: () => void } };
+export type VoxelMesh = THREE.Mesh & { userData: { segment: number[]; upload: () => void } };
 // 第一次被哪个视锥碰到才传顶点：three 对碰到的物体紧接着 objects.update，那时属性要已经有容器
 function uploadWhenHit(this: VoxelMesh, frustum: THREE.Frustum) {
   const hit = frustum.intersectsObject(this);
@@ -192,7 +192,7 @@ export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, mat
   const radius = Math.hypot(box[3] - box[0], box[4] - box[1], box[5] - box[2]) / 2;
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(center[0] * k, center[1] * k, center[2] * k), radius * k);
   const mesh = new THREE.Mesh(geo as unknown as THREE.BufferGeometry, [voxelMaterial(materialClass)]) as unknown as VoxelMesh;
-  mesh.userData.段 = group.段;
+  mesh.userData.segment = group.segment;
   // 传完不留数组的引用：CPU 这边那份归 世界.tsx 的 `kept` 管，被它挤掉就该放
   let toUpload: [THREE.GLBufferAttribute, VertexArray][] | null = [[pos, group.pos], [uv, group.uv], [tex, group.tex], [col, group.col]];
   mesh.userData.upload = () => {
@@ -223,7 +223,7 @@ export const releaseVoxelMeshes = (ctx: WebGL2RenderingContext, meshes: VoxelMes
 
 // 只画看得见的几组朝向（看得见[g]：第 g 组朝着镜头）：连续几组并成一段一次绘制。只给了前 7 组（`背光朝向`）时，裙边四组跟着各自朝向走
 export const pickDirs = (mesh: VoxelMesh, visible: boolean[]) => {
-  const groupStarts = mesh.userData.段;
+  const groupStarts = mesh.userData.segment;
   const geo = mesh.geometry;
   geo.clearGroups();
   let start = -1;

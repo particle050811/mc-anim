@@ -16,12 +16,12 @@ export type MolangValue = number | string;
 type MolangNode =
   | { k: '数'; v: number }
   | { k: '串'; v: string }
-  | { k: '名'; 名: string }
-  | { k: '调'; 名: string; callParams: MolangNode[] }
+  | { k: '名'; name: string }
+  | { k: '调'; name: string; callParams: MolangNode[] }
   | { k: '一元'; op: '-' | '!'; a: MolangNode }
   | { k: '二元'; op: string; a: MolangNode; b: MolangNode }
   | { k: '条件'; c: MolangNode; a: MolangNode; b?: MolangNode }
-  | { k: '赋值'; 名: string; v: MolangNode }
+  | { k: '赋值'; name: string; v: MolangNode }
   | { k: '返回'; v: MolangNode }
   | { k: '块'; 句: MolangNode[] };
 
@@ -142,13 +142,13 @@ const parse = (sourceText: string): MolangNode => {
         else break;
       }
       consume(')');
-      return { k: '调', 名: name, callParams };
+      return { k: '调', name: name, callParams };
     }
     if (isSymbol('=')) {
       p++;
-      return { k: '赋值', 名: name, v: parseExpression(0) };
+      return { k: '赋值', name: name, v: parseExpression(0) };
     }
-    return { k: '名', 名: name };
+    return { k: '名', name: name };
   };
 
   const parseExpression = (minPrec: number): MolangNode => {
@@ -245,9 +245,9 @@ const isConstTree = (n: MolangNode): boolean => {
     case '串':
       return true;
     case '名':
-      return n.名 === 'math.pi';
+      return n.name === 'math.pi';
     case '调':
-      return n.名.startsWith('math.') && pureMath.has(n.名.slice(5)) && n.callParams.every(isConstTree);
+      return n.name.startsWith('math.') && pureMath.has(n.name.slice(5)) && n.callParams.every(isConstTree);
     case '一元':
       return isConstTree(n.a);
     case '二元':
@@ -303,27 +303,27 @@ const evalNode = (n: MolangNode, env: MolangEnv, tempVars: Record<string, Molang
     case '串':
       return n.v;
     case '名': {
-      const v = lookupName(n.名, env, tempVars);
+      const v = lookupName(n.name, env, tempVars);
       if (v === undefined) {
-        env.unresolved?.add(n.名);
+        env.unresolved?.add(n.name);
         return 0;
       }
       return evalValue(v);
     }
     case '调': {
       const rawArgs = n.callParams.map((a) => evalNode(a, env, tempVars));
-      const original = env.functions?.[n.名];
+      const original = env.functions?.[n.name];
       if (original) return evalValue(original(rawArgs));
       const numParams = rawArgs.map(toNumber);
-      if (n.名.startsWith('math.')) {
-        const f = mathFuncs[n.名.slice(5)];
+      if (n.name.startsWith('math.')) {
+        const f = mathFuncs[n.name.slice(5)];
         if (f) return r(f(numParams, env));
       } else {
-        const f = n.名.startsWith('q.') ? env.query?.[n.名.slice(2)] : env.external?.[n.名];
+        const f = n.name.startsWith('q.') ? env.query?.[n.name.slice(2)] : env.external?.[n.name];
         if (typeof f === 'function') return r(f(...numParams));
         if (typeof f === 'number') return r(f);
       }
-      env.unresolved?.add(n.名);
+      env.unresolved?.add(n.name);
       return 0;
     }
     case '一元': {
@@ -335,7 +335,7 @@ const evalNode = (n: MolangNode, env: MolangEnv, tempVars: Record<string, Molang
       if (n.op === '||') return truthy(evalNode(n.a, env, tempVars)) || truthy(evalNode(n.b, env, tempVars)) ? 1 : 0;
       if (n.op === '??') {
         // 左边是没定义的名字才取右边
-        if (n.a.k === '名' && lookupName(n.a.名, env, tempVars) === undefined) return evalNode(n.b, env, tempVars);
+        if (n.a.k === '名' && lookupName(n.a.name, env, tempVars) === undefined) return evalNode(n.b, env, tempVars);
         return evalNode(n.a, env, tempVars);
       }
       const a = evalNode(n.a, env, tempVars);
@@ -359,11 +359,11 @@ const evalNode = (n: MolangNode, env: MolangEnv, tempVars: Record<string, Molang
       return truthy(evalNode(n.c, env, tempVars)) ? evalNode(n.a, env, tempVars) : n.b ? evalNode(n.b, env, tempVars) : 0;
     case '赋值': {
       const v = evalNode(n.v, env, tempVars);
-      if (n.名.startsWith('v.')) {
-        if (!env.变量) throw new Error(`Molang：给 ${n.名} 赋值要传变量表`);
-        env.变量[n.名.slice(2)] = v;
-      } else if (n.名.startsWith('t.')) tempVars[n.名.slice(2)] = v;
-      else throw new Error(`Molang：只能给 v.、t. 赋值：${n.名}`);
+      if (n.name.startsWith('v.')) {
+        if (!env.变量) throw new Error(`Molang：给 ${n.name} 赋值要传变量表`);
+        env.变量[n.name.slice(2)] = v;
+      } else if (n.name.startsWith('t.')) tempVars[n.name.slice(2)] = v;
+      else throw new Error(`Molang：只能给 v.、t. 赋值：${n.name}`);
       return v;
     }
     case '返回':

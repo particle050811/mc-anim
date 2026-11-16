@@ -26,17 +26,17 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const petalTextures: readonly Png[] = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11].map((u) => png(u));
 
-type Petal = { 生: number; 角: number; baseRadius: number; 档: number; 图: number; 转: number; flip: boolean; sideOffset: number; 速: number };
+type Petal = { 生: number; angle: number; baseRadius: number; 档: number; image: number; 转: number; flip: boolean; sideOffset: number; 速: number };
 
 const makeWindFlow = (p: SakuraWindParams, t: SakuraWindMoment): Petal[] => {
-  const r = mulberry32(p.种子);
+  const r = mulberry32(p.seed);
   const { 数: count, tiers } = p.windFlow;
   return Array.from({ length: count }, () => {
     // 越往后生得越密（u^0.6），后生的花瓣大（离镜头近）
     const u = r() ** 0.6;
-    const birthSec = t.起 + (t.full - t.起) * u;
+    const birthSec = t.start + (t.full - t.start) * u;
     const tier = tiers[Math.min(tiers.length - 1, Math.floor((u * 0.7 + r() * 0.3) * tiers.length))]!;
-    return { 生: birthSec, 角: r() * Math.PI * 2, baseRadius: r() * 24, 档: tier, 图: Math.floor(r() * 12), 转: Math.floor(r() * 4), flip: r() < 0.5, sideOffset: r() * 2 - 1, 速: 0.7 + r() * 0.6 };
+    return { 生: birthSec, angle: r() * Math.PI * 2, baseRadius: r() * 24, 档: tier, image: Math.floor(r() * 12), 转: Math.floor(r() * 4), flip: r() < 0.5, sideOffset: r() * 2 - 1, 速: 0.7 + r() * 0.6 };
   });
 };
 
@@ -77,7 +77,7 @@ const paintWall = (ctx: CanvasRenderingContext2D, wallPetals: readonly WallPetal
     const { x, y } = wallPetalAt(q, sec, windTime, p, W, H, center);
     const side = q.档 * 3;
     if (x < -side || x > W || y < -side || y > H) continue;
-    drawPetal(ctx, petalTextures[q.图]!, x, y, q.档, q.转, q.flip);
+    drawPetal(ctx, petalTextures[q.image]!, x, y, q.档, q.转, q.flip);
   }
 };
 
@@ -87,14 +87,14 @@ const paintWall = (ctx: CanvasRenderingContext2D, wallPetals: readonly WallPetal
  * 散心：满 以后花瓣从这里往外吹散（页面坐标，默认画面中心），转场后那一镜要先看清的地方（第 15 句：推开的门里她的背影）
  */
 export const SakuraWind: React.FC<{
-  秒: number;
+  sec: number;
   windTime: SakuraWindMoment;
   源: { x: number; y: number };
   scatterCenter?: { x: number; y: number };
-  参数?: SakuraWindParams;
-  宽?: number;
-  高?: number;
-}> = ({ 秒: sec, windTime, 源: sourcePos, scatterCenter, 参数: p = sakuraWindDefaults, 宽: width = 1280, 高: height = 720 }) => {
+  params?: SakuraWindParams;
+  width?: number;
+  height?: number;
+}> = ({ sec: sec, windTime, 源: sourcePos, scatterCenter, params: p = sakuraWindDefaults, width: width = 1280, height: height = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = width * filmScale;
   const H = height * filmScale;
@@ -102,8 +102,8 @@ export const SakuraWind: React.FC<{
     const ctx = ref.current?.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, W, H);
-    if (sec < windTime.起) return;
-    const cacheKey = `${p.种子}|${windTime.起}|${windTime.full}|${width}x${height}`;
+    if (sec < windTime.start) return;
+    const cacheKey = `${p.seed}|${windTime.start}|${windTime.full}|${width}x${height}`;
     let cacheEntry = sakuraCache.get(cacheKey);
     if (!cacheEntry) sakuraCache.set(cacheKey, (cacheEntry = { petals: makeWindFlow(p, windTime), wallPetals: makeWindWall(p, W, H) }));
     const f = p.windFlow;
@@ -115,7 +115,7 @@ export const SakuraWind: React.FC<{
       if (sec < b.生) continue;
       const age = sec - b.生;
       const radius = (b.baseRadius + f.outwardCurl * b.速 * age ** 0.8) * filmScale;
-      const angle = b.角 + Math.PI * 2 * f.rotSpeed * age * (b.sideOffset < 0 ? -1 : 1) * (0.6 + 0.4 * Math.abs(b.sideOffset));
+      const angle = b.angle + Math.PI * 2 * f.rotSpeed * age * (b.sideOffset < 0 ? -1 : 1) * (0.6 + 0.4 * Math.abs(b.sideOffset));
       let x = sourcePos.x * filmScale + Math.cos(angle) * radius + f.driftRight * age * b.速 * filmScale;
       let y = sourcePos.y * filmScale + Math.sin(angle) * radius * f.spreadAmount * 2 - f.floatUp * age * filmScale;
       if (afterFull > 0) {
@@ -127,7 +127,7 @@ export const SakuraWind: React.FC<{
       }
       const side = b.档 * 3;
       if (x < -side || x > W || y < -side || y > H) continue;
-      drawPetal(ctx, petalTextures[b.图]!, x, y, b.档, b.转, b.flip);
+      drawPetal(ctx, petalTextures[b.image]!, x, y, b.档, b.转, b.flip);
     }
     paintWall(ctx, cacheEntry.wallPetals, sec, windTime, p, W, H, center);
   });

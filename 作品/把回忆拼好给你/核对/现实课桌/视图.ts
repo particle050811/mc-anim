@@ -3,7 +3,7 @@
 import type { LitCell } from '../../现实/课表数据.ts';
 import type { FlyingPage } from '../../现实/日历.ts';
 
-export type View = { 名: string; calendar: number; flyPages?: FlyingPage[]; litCells?: readonly LitCell[] };
+export type View = { name: string; calendar: number; flyPages?: FlyingPage[]; litCells?: readonly LitCell[] };
 
 const brightTwoCells = (brightness: number): LitCell[] => [
   { 周: '周一', 节: '第1节', brightness: 1 },
@@ -11,19 +11,19 @@ const brightTwoCells = (brightness: number): LitCell[] => [
 ];
 
 export const views: readonly View[] = [
-  { 名: '日历 100', calendar: 100 },
-  { 名: '日历 50', calendar: 50 },
-  { 名: '日历 1', calendar: 1 },
-  { 名: '课表亮两格（周一第 1、2 节）', calendar: 100, litCells: brightTwoCells(1) },
+  { name: '日历 100', calendar: 100 },
+  { name: '日历 50', calendar: 50 },
+  { name: '日历 1', calendar: 1 },
+  { name: '课表亮两格（周一第 1、2 节）', calendar: 100, litCells: brightTwoCells(1) },
   {
-    名: '自检：风吹到一半，空中四张',
+    name: '自检：风吹到一半，空中四张',
     calendar: 50,
     flyPages: [
-      { 数: 54, age: 0.8, 种: 0.2 },
-      { 数: 53, age: 0.55, 种: 0.7 },
-      { 数: 52, age: 0.3, 种: 0.4 },
-      { 数: 51, age: 0.08, 种: 0.9 },
+      { 数: 54, age: 0.8, kind: 0.2 },
+      { 数: 53, age: 0.55, kind: 0.7 },
+      { 数: 52, age: 0.3, kind: 0.4 },
+      { 数: 51, age: 0.08, kind: 0.9 },
     ],
   },
-  { 名: '自检：第 2 节亮到一半', calendar: 100, litCells: brightTwoCells(0.5) },
+  { name: '自检：第 2 节亮到一半', calendar: 100, litCells: brightTwoCells(0.5) },
 ];

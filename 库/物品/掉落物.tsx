@@ -27,24 +27,24 @@ import giantPickaxePng from 'asset:贴图/物品/掉落物/巨人镐';
 import giantSwordPng from 'asset:贴图/物品/掉落物/巨人剑';
 import broomPng from 'asset:贴图/物品/掉落物/扫帚';
 
-type ItemDef = { tex: string; 大小: number; 方块?: boolean };
+type ItemDef = { tex: string; size: number; 方块?: boolean };
 const itemTable = {
-  炽热的血: { tex: bloodTex, 大小: 0.5 },
-  雪怪首领毛皮: { tex: furTex, 大小: 0.5 },
-  九头蛇肉排: { tex: hydraChopPng, 大小: 0.5 },
-  砷铅铁矿石: { tex: carminitePng, 大小: 0.5 },
-  炽热之泪: { tex: fieryTearsPng, 大小: 0.5 },
-  冰霜炸弹: { tex: iceBombPng, 大小: 0.5 },
-  三发弓: { tex: tripleBowPng, 大小: 0.5 },
-  末影珍珠: { tex: enderPearlPng, 大小: 0.5 },
-  骨头: { tex: bonePng, 大小: 0.5 },
-  金胸甲: { tex: goldChestplatePng, 大小: 0.5 },
-  金剑: { tex: goldSwordPng, 大小: 0.5 },
-  雪球: { tex: snowballPng, 大小: 0.5 },
-  浮冰: { tex: packedIcePng, 大小: 0.25, 方块: true },
-  巨人镐: { tex: giantPickaxePng, 大小: 2.5 },
-  巨人剑: { tex: giantSwordPng, 大小: 2.5 },
-  扫帚: { tex: broomPng, 大小: 0.5 },
+  炽热的血: { tex: bloodTex, size: 0.5 },
+  雪怪首领毛皮: { tex: furTex, size: 0.5 },
+  九头蛇肉排: { tex: hydraChopPng, size: 0.5 },
+  砷铅铁矿石: { tex: carminitePng, size: 0.5 },
+  炽热之泪: { tex: fieryTearsPng, size: 0.5 },
+  冰霜炸弹: { tex: iceBombPng, size: 0.5 },
+  三发弓: { tex: tripleBowPng, size: 0.5 },
+  末影珍珠: { tex: enderPearlPng, size: 0.5 },
+  骨头: { tex: bonePng, size: 0.5 },
+  金胸甲: { tex: goldChestplatePng, size: 0.5 },
+  金剑: { tex: goldSwordPng, size: 0.5 },
+  雪球: { tex: snowballPng, size: 0.5 },
+  浮冰: { tex: packedIcePng, size: 0.25, 方块: true },
+  巨人镐: { tex: giantPickaxePng, size: 2.5 },
+  巨人剑: { tex: giantSwordPng, size: 2.5 },
+  扫帚: { tex: broomPng, size: 0.5 },
 } satisfies Record<string, ItemDef>;
 export type DropName = keyof typeof itemTable;
 const layersCache = new Map<string, { tex: ReturnType<typeof png> }[]>();
@@ -68,9 +68,9 @@ const BlockItem: React.FC<{ name: DropName; size: number; glow: number }> = ({ n
 // 掉在地上那么大的一件（拾取前的物品实体）。亮：自发光打底（暗处、远处看得清一点）
 export const DropItem: React.FC<{ name: DropName; glow?: number }> = ({ name: name, glow: glow = 0.3 }) => {
   const it: ItemDef = itemTable[name];
-  if (it.方块) return <BlockItem name={name} size={it.大小} glow={glow} />;
+  if (it.方块) return <BlockItem name={name} size={it.size} glow={glow} />;
   return (
-    <group scale={it.大小}>
+    <group scale={it.size}>
       <ItemSprite layers={layersOf(name)} emissive={glow} />
     </group>
   );

@@ -15,9 +15,9 @@ describe('按时取值：一格一个值的老数据按秒读', () => {
     expect(pickTier(valueTable, 0.4 * 5)).toBe(40);
     expect(pickTier(valueTable, -1)).toBe(0);
     expect(pickTier(valueTable, 7)).toBe(40);
-    expect(pickTier(valueTable, 3, { 值: -1 })).toBe(-1);
-    expect(pickTier(valueTable, -0.5, { 值: -1 })).toBe(-1);
-    expect(pickTier(valueTable, 2.9, { 值: -1 })).toBe(40);
+    expect(pickTier(valueTable, 3, { value: -1 })).toBe(-1);
+    expect(pickTier(valueTable, -0.5, { value: -1 })).toBe(-1);
+    expect(pickTier(valueTable, 2.9, { value: -1 })).toBe(40);
   });
   it('空表报错', () => {
     expect(() => interpTable([], 0)).toThrow();

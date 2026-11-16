@@ -9,16 +9,16 @@ const sub = (a: readonly number[], b: readonly number[]) => [a[0]! - b[0]!, a[1]
 
 describe('指杖机位', () => {
   const cases = [
-    { 心: [1, 2, 3], d: normalize([-0.5, -0.6, -0.7]), θ: 35, azimuthDeg: 100, 距: 2.6, lens: 22, discCenterPicture: [0.51, 0.56] as const },
-    { 心: [0, 0, 5], d: normalize([0.3, -0.8, -0.5]), θ: 55, azimuthDeg: 250, 距: 4, lens: 18, discCenterPicture: [0.6, 0.6] as const },
-    { 心: [-2, 1, 4], d: normalize([0.1, 0.2, -0.97]), θ: 70, azimuthDeg: 20, 距: 3, lens: 28, discCenterPicture: [0.5, 0.5] as const },
-    { 心: [0, 0, 0], d: [0, 1, 0], θ: 0, azimuthDeg: 0, 距: 5, lens: 22, discCenterPicture: [0.3, 0.7] as const },
+    { 心: [1, 2, 3], d: normalize([-0.5, -0.6, -0.7]), θ: 35, azimuthDeg: 100, dist: 2.6, lens: 22, discCenterPicture: [0.51, 0.56] as const },
+    { 心: [0, 0, 5], d: normalize([0.3, -0.8, -0.5]), θ: 55, azimuthDeg: 250, dist: 4, lens: 18, discCenterPicture: [0.6, 0.6] as const },
+    { 心: [-2, 1, 4], d: normalize([0.1, 0.2, -0.97]), θ: 70, azimuthDeg: 20, dist: 3, lens: 28, discCenterPicture: [0.5, 0.5] as const },
+    { 心: [0, 0, 0], d: [0, 1, 0], θ: 0, azimuthDeg: 0, dist: 5, lens: 22, discCenterPicture: [0.3, 0.7] as const },
   ];
   it.each(cases)('θ $θ：镜头到盘心的距离、和杖的夹角是给的数，镜头在盘的正面一侧，盘心落在给的画面位置', (caseParams) => {
     const cameraRig = staffRig({ ...caseParams, aspectRatio });
     const toCamera = sub(cameraRig.pos, caseParams.心);
-    expect(Math.hypot(...toCamera)).toBeCloseTo(caseParams.距, 9);
-    expect((Math.acos(dot(toCamera, caseParams.d) / caseParams.距) * 180) / Math.PI).toBeCloseTo(caseParams.θ, 6);
+    expect(Math.hypot(...toCamera)).toBeCloseTo(caseParams.dist, 9);
+    expect((Math.acos(dot(toCamera, caseParams.d) / caseParams.dist) * 180) / Math.PI).toBeCloseTo(caseParams.θ, 6);
     if (caseParams.θ < 90) expect(dot(toCamera, caseParams.d)).toBeGreaterThan(0);
     const project = projectToScreen(cameraRig, aspectRatio, caseParams.心);
     expect(project.x).toBeCloseTo(caseParams.discCenterPicture[0], 9);
@@ -30,13 +30,13 @@ describe('指杖机位', () => {
     const d = [0, -1, 0];
     const { u, v } = plateBasis(d);
     expect(u).toEqual([0, 0, 1]);
-    const offsetAt = (azimuthDeg: number) => sub(staffRig({ 心: [0, 0, 0], d, θ: 90, azimuthDeg, 距: 1, lens: 22, discCenterPicture: [0.5, 0.5], aspectRatio }).pos, [0, 0, 0]);
+    const offsetAt = (azimuthDeg: number) => sub(staffRig({ 心: [0, 0, 0], d, θ: 90, azimuthDeg, dist: 1, lens: 22, discCenterPicture: [0.5, 0.5], aspectRatio }).pos, [0, 0, 0]);
     expect(dot(offsetAt(0), u)).toBeCloseTo(1, 9);
     expect(dot(offsetAt(90), v)).toBeCloseTo(1, 9);
   });
 
   it('镜头几乎竖直往上看、盘心又要偏到画面一边：不滚转摆不出来，报错', () => {
-    expect(() => staffRig({ 心: [0, 0, 5], d: [0, 0, -1], θ: 0, azimuthDeg: 0, 距: 3, lens: 22, discCenterPicture: [0.9, 0.5], aspectRatio })).toThrow(/竖直/);
+    expect(() => staffRig({ 心: [0, 0, 5], d: [0, 0, -1], θ: 0, azimuthDeg: 0, dist: 3, lens: 22, discCenterPicture: [0.9, 0.5], aspectRatio })).toThrow(/竖直/);
   });
 });
 
@@ -58,7 +58,7 @@ describe('投影、仰角、椭圆轴', () => {
       return [2 * Math.cos(t) * c - Math.sin(t) * s, 2 * Math.cos(t) * s + Math.sin(t) * c] as const;
     });
     const ellipseAxis = ellipseAxes(outline);
-    expect(ellipseAxis.长).toBeCloseTo(4, 3);
+    expect(ellipseAxis.length).toBeCloseTo(4, 3);
     expect(ellipseAxis.minor).toBeCloseTo(2, 3);
     expect(Math.abs(ellipseAxis.longDir[0] * c + ellipseAxis.longDir[1] * s)).toBeCloseTo(1, 4);
   });
@@ -70,7 +70,7 @@ describe('画面自检', () => {
   const aimCenter = [0, -1.5, 0.5];
   const yaBoLunGeom = { staffTail: [0, -0.5, 1.5], face: [0, -0.1, 1.6], faceDir: normalize([0, -1, -1]), bodyDir: [0, -1, 0], bodyPoints: [[0, 0, 2], [0, 0, 0]] };
   const selfCheckAt = (θ: number, azimuthDeg: number, distance = 30, lens = 100) =>
-    pictureSelfCheck({ cameraRig: staffRig({ 心: aimCenter, d, θ, azimuthDeg, 距: distance, lens, discCenterPicture: [0.5, 0.5], aspectRatio }), aspectRatio, 心: aimCenter, d, radius: 1, ...yaBoLunGeom });
+    pictureSelfCheck({ cameraRig: staffRig({ 心: aimCenter, d, θ, azimuthDeg, dist: distance, lens, discCenterPicture: [0.5, 0.5], aspectRatio }), aspectRatio, 心: aimCenter, d, radius: 1, ...yaBoLunGeom });
 
   it('θ = 0：盘是正圆，她的脸隔着盘，镜头在正面一侧、在她下方仰拍 45 度', () => {
     const probe = selfCheckAt(0, 0);

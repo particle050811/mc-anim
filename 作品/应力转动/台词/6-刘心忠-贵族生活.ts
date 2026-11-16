@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 ac2ee7ef8fff），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-刘心忠-贵族生活（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 27c4704fc1c6），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-刘心忠-贵族生活（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-刘心忠-贵族生活",
-  "角色": "刘心忠",
-  "念": "管他的，只要拿下这个家伙，就能回环卫城过贵族生活了！",
-  "配音": "配音/6-刘心忠-贵族生活",
-  "成品sha": "fe84daa1d74b",
-  "开口": 0.03,
+  "character": "刘心忠",
+  "spoken": "管他的，只要拿下这个家伙，就能回环卫城过贵族生活了！",
+  "voice": "配音/6-刘心忠-贵族生活",
+  "finishedSha": "fe84daa1d74b",
+  "mouthOpen": 0.03,
   "有声长": 4.463,
-  "时长": 4.643,
+  "duration": 4.643,
   "文件秒数": 4.643,
-  "字": [
+  "char": [
     ["管",0,0.16],
     ["他",0.24,0.48],
     ["的",0.48,0.64],

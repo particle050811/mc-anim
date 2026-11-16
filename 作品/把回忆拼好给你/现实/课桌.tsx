@@ -17,7 +17,7 @@ export const deskBrightness = { deskBellyBack: 0.4, deskBellyBottom: 0.55 } as c
 
 const deskBlocks = (): PlacedBlock[] => {
   const out: PlacedBlock[] = [];
-  const placeBlock = (blockState: string, i: number, j: number, k: number, brightness?: number) => out.push({ 状态: blockState, 位: [i, j, k], brightness });
+  const placeBlock = (blockState: string, i: number, j: number, k: number, brightness?: number) => out.push({ state: blockState, 位: [i, j, k], brightness });
   const { depth, left, right, deskBellyDepth, deskBellyBottom, wallTop } = desk;
   for (let i = left; i < right; i++) {
     for (let k = 0; k < wallTop; k++) placeBlock('minecraft:white_concrete_powder', i, depth, k);

@@ -18,11 +18,11 @@ import { WindowLight } from './窗光.tsx';
 
 /** 屋外（结尾横移出屋时）：亮 = 后窗那块天色淡掉多少（0～1）；色调 = 林子的平涂色调；天色、刻、群系 同门口（场/2-门口/参数.ts，段里给）；
  *  生长、林偏、天每格 见 地点/林间背景.tsx 和 段/2-空床/编排.ts */
-export type BedroomOutside = { bright: number; tint: string; skyColors: SkyColors; 刻: number; 群系: string; growth: number; forestOffset: number; skyPerCell: number };
+export type BedroomOutside = { bright: number; tint: string; skyColors: SkyColors; 刻: number; biome: string; growth: number; forestOffset: number; skyPerCell: number };
 
 export type BedroomCanvasProps = {
-  宽?: number;
-  高?: number;
+  width?: number;
+  height?: number;
   /** 默认 参数.ts 的 卧室取景（N = 26）；结尾横移时段里传挪过的 */
   framing?: SideFraming;
   topDepth?: number;
@@ -69,25 +69,25 @@ const SouthWall: React.FC = () => (
   </ShadowOnly>
 );
 
-export const BedroomCanvas: React.FC<BedroomCanvasProps> = ({ 宽: width = 1280, 高: height = 720, framing = bedroomFraming, topDepth = bedroomTop, tone: t, 天: sky, 光: windowLights, outsideLit = false, outside, shading, shadingScene, outsideShading, children }) => {
+export const BedroomCanvas: React.FC<BedroomCanvasProps> = ({ width: width = 1280, height: height = 720, framing = bedroomFraming, topDepth = bedroomTop, tone: t, 天: sky, 光: windowLights, outsideLit = false, outside, shading, shadingScene, outsideShading, children }) => {
   const project = sideProjection(framing, width, height, topDepth);
   const glowRegions = outsideLit ? (outside ? [...doorOutsideZone, outsideZone] : doorOutsideZone) : undefined;
   // 天的渐变照 天每格 的像素大小算（地面线同近景），不照卧室 N = 26：那样一屏只有渐变底下那一截，整片是地平色
-  const skyFraming: SideFraming | undefined = outside && { 中心: [0, ((project(0, 0).y - height / 2) * 2) / outside.skyPerCell], pxPerCell: outside.skyPerCell };
+  const skyFraming: SideFraming | undefined = outside && { center: [0, ((project(0, 0).y - height / 2) * 2) / outside.skyPerCell], pxPerCell: outside.skyPerCell };
   return (
     <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden' }}>
       {outside && skyFraming && (
         <shadingScope.Provider value={outsideShading ?? {}}>
-          <SideSectionSky framing={skyFraming} 宽={width} 高={height} 色={outside.skyColors} 刻={outside.刻} />
+          <SideSectionSky framing={skyFraming} width={width} height={height} 色={outside.skyColors} 刻={outside.刻} />
           <ForestBackdrop
-            宽={width}
-            高={height}
+            width={width}
+            height={height}
             framing={framing}
             topDepth={topDepth}
             tint={outside.tint}
             fogColor={outside.skyColors.horizon}
             growth={outside.growth}
-            群系={outside.群系}
+            biome={outside.biome}
             alignment={{ nearRow: 1, forestOffset: outside.forestOffset }}
           />
           <div
@@ -96,13 +96,13 @@ export const BedroomCanvas: React.FC<BedroomCanvasProps> = ({ 宽: width = 1280,
         </shadingScope.Provider>
       )}
       <ToonCanvas
-        宽={width}
-        高={height}
+        width={width}
+        height={height}
         cameraRig={sideRig(framing, topDepth)}
         天={outside ? undefined : (sky ?? t.天)}
         tint={t.tint}
         glowRegions={glowRegions}
-        outline={defaultOutline.开 ? { 宽: (bedroomRes * defaultOutline.宽) / pixelCount, 色: t.outlineColor } : false}
+        outline={defaultOutline.开 ? { width: (bedroomRes * defaultOutline.width) / pixelCount, 色: t.outlineColor } : false}
         shading={shading}
         shadingScene={shadingScene}
         style={outside ? { position: 'absolute', left: 0, top: 0, width: width, height: height } : undefined}

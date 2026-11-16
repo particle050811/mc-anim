@@ -24,7 +24,7 @@ export const isInTwilightLandmark = (x: number, y: number) => landmarkRanges.som
 // 地物顶（世界 z）：(x, y) 所在那格和四周 8 格里最高的（镜头不钻树、编排排高度都按它，宁高勿低）
 export const twilightFeatureTop = (x: number, y: number) => {
   let top = featureTopCell(x, y);
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) top = Math.max(top, featureTopCell(x + dx * coarse.格, y + dy * coarse.格));
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) top = Math.max(top, featureTopCell(x + dx * coarse.cell, y + dy * coarse.cell));
   return top;
 };
 // 巡航高度（用户 10-07：离脚下树冠 60 米上下）：树冠取方圆 `半径` 米里各格（粗高度图一格 16 米、取格里最高的）的中位，即林海的树冠面；
@@ -32,7 +32,7 @@ export const twilightFeatureTop = (x: number, y: number) => {
 export const cruiseClearanceM = 60;
 export const canopySurface = (x: number, y: number, radiusM = 250) => {
   const tops: number[] = [];
-  for (let dy = -radiusM; dy <= radiusM; dy += coarse.格) for (let dx = -radiusM; dx <= radiusM; dx += coarse.格) if (dx * dx + dy * dy <= radiusM * radiusM) tops.push(featureTopCell(x + dx, y + dy));
+  for (let dy = -radiusM; dy <= radiusM; dy += coarse.cell) for (let dx = -radiusM; dx <= radiusM; dx += coarse.cell) if (dx * dx + dy * dy <= radiusM * radiusM) tops.push(featureTopCell(x + dx, y + dy));
   tops.sort((a, b) => a - b);
   return tops[Math.floor(tops.length / 2)];
 };

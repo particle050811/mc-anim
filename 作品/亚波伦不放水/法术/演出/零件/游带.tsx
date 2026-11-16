@@ -34,7 +34,7 @@ export const gatherLifetime = (rand: number) => Math.round(rand * 3) + 5;
  * 头 = 从 + 全程 × 缓(年龄比)；条长 = 全程 × 0.5 × (1 − 缓(|年龄比 − 0.5| × 2))，中途最长（半程），两头缩成 0；贴图 u 也跟着从 0 宽放到整张再收回。
  * 粒子表 PARTICLE_SHEET_LIT：不混合、alpha < 0.1 丢掉、满亮度。
  */
-export const GatherStream: React.FC<{ 从: Vec3; 到: Vec3; age: number; 寿命: number; 色: RgbColor }> = ({ 从: from, 到: to, age, 寿命: lifetime, 色: color }) => {
+export const GatherStream: React.FC<{ 从: Vec3; dest: Vec3; age: number; 寿命: number; 色: RgbColor }> = ({ 从: from, dest: to, age, 寿命: lifetime, 色: color }) => {
   if (age < 0 || age > lifetime + 1) return null;
   const t = Math.min(age, lifetime) / lifetime;
   const fullSpan = sub(to, from);
@@ -47,7 +47,7 @@ export const GatherStream: React.FC<{ 从: Vec3; 到: Vec3; age: number; 寿命:
   return (
     <>
       {perpendicular(fullSpan).map((side, i) => (
-        <Band key={i} points={[streamHead, tail]} halfWidthDir={scaleVec(side, 0.03)} 图={gatherStreamPng} uValues={[0, u1]} 混合="镂空" 色={color} />
+        <Band key={i} points={[streamHead, tail]} halfWidthDir={scaleVec(side, 0.03)} image={gatherStreamPng} uValues={[0, u1]} blend="镂空" 色={color} />
       ))}
     </>
   );
@@ -58,7 +58,7 @@ export const GatherStream: React.FC<{ 从: Vec3; 到: Vec3; age: number; 寿命:
  * 游戏每刻开头记下当时位置，画的时候从「上一刻到这一刻之间」往回取 段数 段：第 i 个点 = 位置在 年龄 − 1 − i 刻处（两刻之间线性插值）。
  * 贴图 particle/trail，u 从头 0 到尾 1，v 从上 0 到下 1；entityTranslucent、亮度 240。
  */
-export const WindBand: React.FC<{ 位置: (k: number) => Vec3; age: number; 段数: number; 高: number; 色: RgbColor; opacity: number }> = ({ 位置: positionAt, age, 段数: segCount, 高: height, 色: color, opacity }) => {
+export const WindBand: React.FC<{ 位置: (k: number) => Vec3; age: number; 段数: number; height: number; 色: RgbColor; opacity: number }> = ({ 位置: positionAt, age, 段数: segCount, height: height, 色: color, opacity }) => {
   if (age < 0 || opacity <= 0 || height <= 0) return null;
   const posAt = (a: number): Vec3 => {
     const c = Math.max(0, a);
@@ -68,5 +68,5 @@ export const WindBand: React.FC<{ 位置: (k: number) => Vec3; age: number; 段�
   const points = Array.from({ length: segCount + 1 }, (_, i) => posAt(age - 1 - i));
   // 还没走出去（各点重合）时游戏里也是一条看不见的零长带
   if (vecLength(sub(points[0]!, points[segCount]!)) < 1e-4) return null;
-  return <Band points={points} halfWidthDir={[0, 0, height / 2]} 图={windBandPng} 混合="半透明" 色={color} opacity={opacity} />;
+  return <Band points={points} halfWidthDir={[0, 0, height / 2]} image={windBandPng} blend="半透明" 色={color} opacity={opacity} />;
 };

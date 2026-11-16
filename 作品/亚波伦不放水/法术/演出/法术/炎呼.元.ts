@@ -11,8 +11,8 @@ export default defineSpellMeta({
   长秒: (fireBreathDurTicks + fireBreathParticleLifeTicks) / 20,
   hitSec: 0, // 每刻对视线前方一段锥形里的生物结算
   // FireBreathSpell：CastingSound = FIRE_BREATH_START，loopSound = FIRE_BREATH 循环着响（这里只在开头各放一次，循环由段里定）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.fire_breath_start', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.fire_breath', 秒: 0 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.fire_breath_start', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.fire_breath', sec: 0 },
   ],
 });

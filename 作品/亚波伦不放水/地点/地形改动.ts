@@ -5,6 +5,6 @@ import type { LandmarkCutout, FlattenArea } from '@engine/voxel/导入地形.ts'
 import { realNetherPack } from './真下界位置.ts';
 
 /** 黑曜石底占的那一层地面（祭坛，场/1-台地/布局.ts）：画仪式结构的段要把导入地形的这 49 格挖掉，不挖的话下界岩和黑曜石共面，镜头一动就整片闪 */
-export const altarBottomCut = { 框: [{ from: [895, 49, -303], to: [901, 49, -297] }] as LandmarkCutout[], keySuffix: ':挖祭坛底' };
+export const altarBottomCut = { box: [{ from: [895, 49, -303], to: [901, 49, -297] }] as LandmarkCutout[], keySuffix: ':挖祭坛底' };
 
-export const terrainEdits: { 名: string; 包: string; digBoxes: LandmarkCutout[]; flattenAreas: FlattenArea[] }[] = [{ 名: '祭坛底', 包: realNetherPack, digBoxes: altarBottomCut.框, flattenAreas: [] }];
+export const terrainEdits: { name: string; pack: string; digBoxes: LandmarkCutout[]; flattenAreas: FlattenArea[] }[] = [{ name: '祭坛底', pack: realNetherPack, digBoxes: altarBottomCut.box, flattenAreas: [] }];

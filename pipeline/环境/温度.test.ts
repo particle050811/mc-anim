@@ -40,8 +40,8 @@ afterEach(() => {
 
 it('源码 sha 命名缓存；首次编译、以后复用，参数数组不开 shell', async () => {
   const { readTemperature, readTempParallel } = await import('./温度.ts');
-  expect(readTemperature()).toEqual({ 芯片最高温: 82.5, 发热等级: 0 });
-  expect(await readTempParallel()).toEqual({ 芯片最高温: 82.5, 发热等级: 0 });
+  expect(readTemperature()).toEqual({ chipMaxTemp: 82.5, thermalLevel: 0 });
+  expect(await readTempParallel()).toEqual({ chipMaxTemp: 82.5, thermalLevel: 0 });
   const sha = createHash('sha256').update('探针源码').digest('hex');
   const files = fs.readdirSync(path.join(dir, 'data', 'cache', 'temperature'));
   expect(files).toEqual([`die-${process.arch}-${sha}`]);
@@ -55,7 +55,7 @@ it('源码 sha 命名缓存；首次编译、以后复用，参数数组不开 s
     if (cmd === 'swiftc') expect(opts).toHaveProperty('killSignal', 'SIGINT');
   }
   vi.resetModules();
-  expect((await import('./温度.ts')).readTemperature().芯片最高温).toBe(82.5);
+  expect((await import('./温度.ts')).readTemperature().chipMaxTemp).toBe(82.5);
   expect(execMock.mock.calls.filter(([cmd]) => cmd === 'swiftc')).toHaveLength(1);
   fs.appendFileSync(path.join(dir, 'pipeline', '环境', '温度.swift'), '改版');
   vi.resetModules();
@@ -66,8 +66,8 @@ it('源码 sha 命名缓存；首次编译、以后复用，参数数组不开 s
 it('编不出来不重编、不留半成品，仍独立读取发热等级', async () => {
   failCompile();
   const { readTemperature, readTempParallel } = await import('./温度.ts');
-  expect(readTemperature()).toEqual({ 芯片最高温: null, 发热等级: 2 });
-  expect(await readTempParallel()).toEqual({ 芯片最高温: null, 发热等级: 2 });
+  expect(readTemperature()).toEqual({ chipMaxTemp: null, thermalLevel: 2 });
+  expect(await readTempParallel()).toEqual({ chipMaxTemp: null, thermalLevel: 2 });
   expect(execMock.mock.calls.filter(([cmd]) => cmd === 'swiftc')).toHaveLength(1);
   expect(fs.readdirSync(path.join(dir, 'data', 'cache', 'temperature'))).toEqual([`${path.basename(artifactPath())}.失败`]);
 });
@@ -75,20 +75,20 @@ it('编不出来不重编、不留半成品，仍独立读取发热等级', asyn
 it('编译失败后放好产物，同进程立即读到芯温且不重算路径', async () => {
   failCompile();
   const { readTemperature, readTempParallel } = await import('./温度.ts');
-  expect(readTemperature().芯片最高温).toBeNull();
+  expect(readTemperature().chipMaxTemp).toBeNull();
   fs.writeFileSync(artifactPath(), '另一进程编好的产物');
   fs.rmSync(path.join(dir, 'pipeline', '环境', '温度.swift'));
-  expect(readTemperature()).toEqual({ 芯片最高温: 70.3, 发热等级: 2 });
-  expect(await readTempParallel()).toEqual({ 芯片最高温: 70.3, 发热等级: 2 });
+  expect(readTemperature()).toEqual({ chipMaxTemp: 70.3, thermalLevel: 2 });
+  expect(await readTempParallel()).toEqual({ chipMaxTemp: 70.3, thermalLevel: 2 });
   expect(execMock.mock.calls.filter(([cmd]) => cmd === 'swiftc')).toHaveLength(1);
 });
 
 it('失败标记未满 1 小时，新进程也不调 swiftc，超过 1 小时再试', async () => {
   failCompile();
-  expect((await import('./温度.ts')).readTemperature().芯片最高温).toBeNull();
+  expect((await import('./温度.ts')).readTemperature().chipMaxTemp).toBeNull();
   expect(fs.existsSync(`${artifactPath()}.失败`)).toBe(true);
   vi.resetModules();
-  expect(await (await import('./温度.ts')).readTempParallel()).toEqual({ 芯片最高温: null, 发热等级: 2 });
+  expect(await (await import('./温度.ts')).readTempParallel()).toEqual({ chipMaxTemp: null, thermalLevel: 2 });
   expect(execMock.mock.calls.filter(([cmd]) => cmd === 'swiftc')).toHaveLength(1);
   const staleDate = new Date(Date.now() - 3600_001);
   fs.utimesSync(`${artifactPath()}.失败`, staleDate, staleDate);
@@ -97,7 +97,7 @@ it('失败标记未满 1 小时，新进程也不调 swiftc，超过 1 小时再
     if (cmd === 'swiftc') { fs.writeFileSync(args!.at(-1)!, '探针产物'); return ''; }
     return cmd === 'notifyutil' ? 'com.apple.system.thermalpressurelevel 0' : '70.3';
   });
-  expect((await import('./温度.ts')).readTemperature()).toEqual({ 芯片最高温: 70.3, 发热等级: 0 });
+  expect((await import('./温度.ts')).readTemperature()).toEqual({ chipMaxTemp: 70.3, thermalLevel: 0 });
   expect(execMock.mock.calls.filter(([cmd]) => cmd === 'swiftc')).toHaveLength(2);
 });
 
@@ -106,7 +106,7 @@ it('冷却期间产物出现，新进程也忽略失败标记并直接读取', a
   (await import('./温度.ts')).readTemperature();
   fs.writeFileSync(artifactPath(), '另一进程编好的产物');
   vi.resetModules();
-  expect(await (await import('./温度.ts')).readTempParallel()).toEqual({ 芯片最高温: 70.3, 发热等级: 2 });
+  expect(await (await import('./温度.ts')).readTempParallel()).toEqual({ chipMaxTemp: 70.3, thermalLevel: 2 });
   expect(fs.existsSync(`${artifactPath()}.失败`)).toBe(true);
   expect(execMock.mock.calls.filter(([cmd]) => cmd === 'swiftc')).toHaveLength(1);
 });
@@ -115,7 +115,7 @@ it.each(['', 'null', 'NaN', 'Infinity', '-1', '150', '0'])('坏读数 %s 是 nul
   const { readTemperature, readTempParallel } = await import('./温度.ts');
   readTemperature();
   execMock.mockReturnValue(value);
-  const expected = { 芯片最高温: null, 发热等级: value === '0' ? 0 : null };
+  const expected = { chipMaxTemp: null, thermalLevel: value === '0' ? 0 : null };
   expect(readTemperature()).toEqual(expected);
   expect(await readTempParallel()).toEqual(expected);
 });
@@ -124,15 +124,15 @@ it('读取超时、权限不足都退化为 null', async () => {
   const { readTemperature, readTempParallel } = await import('./温度.ts');
   readTemperature();
   execMock.mockImplementation(() => { throw new Error('读不到'); });
-  expect(readTemperature()).toEqual({ 芯片最高温: null, 发热等级: null });
-  expect(await readTempParallel()).toEqual({ 芯片最高温: null, 发热等级: null });
+  expect(readTemperature()).toEqual({ chipMaxTemp: null, thermalLevel: null });
+  expect(await readTempParallel()).toEqual({ chipMaxTemp: null, thermalLevel: null });
 });
 
 it.each(['win32', 'linux'])('%s 不读文件、不起子进程', async osPlatform => {
   Object.defineProperty(process, 'platform', { value: osPlatform });
   const { readTemperature, readTempParallel } = await import('./温度.ts');
-  expect(readTemperature()).toEqual({ 芯片最高温: null, 发热等级: null });
-  expect(await readTempParallel()).toEqual({ 芯片最高温: null, 发热等级: null });
+  expect(readTemperature()).toEqual({ chipMaxTemp: null, thermalLevel: null });
+  expect(await readTempParallel()).toEqual({ chipMaxTemp: null, thermalLevel: null });
   expect(execMock).not.toHaveBeenCalled();
   expect(fs.existsSync(path.join(dir, 'data'))).toBe(false);
 });

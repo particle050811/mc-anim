@@ -25,7 +25,7 @@ import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import * as choreo from './编排.ts';
 import { rad } from '@engine/core/数学.ts';
 // 九胡坐稳、搂住李樱的腰就开口（用户 10-17：出发时给九胡一句，场与场之间不冷场）；帧 写段内秒（mouthAt 每秒给 1）
-export const lineCues = [{ id: '6-2-4-九胡-导航', 帧: choreo.beats.seated + 4 / 24 }];
+export const lineCues = [{ id: '6-2-4-九胡-导航', frame: choreo.beats.seated + 4 / 24 }];
 
 export const SetOff: React.FC = () => {
   const t = useCurrentSec();

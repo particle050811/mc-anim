@@ -15,7 +15,7 @@ import meta, { iceSpikePath } from './ice_spike.元.ts';
 import iceSpikePng from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
 import { mulberry32 } from '@engine/core/数学.ts';
 
-const iceSpike: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const iceSpike: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = iceSpikePath(from, target, options?.highSpeed);
   const r = mulberry32(seed * 3 + 1);
@@ -26,8 +26,8 @@ const iceSpike: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: tar
   if (tick >= arriveTick) snow.push(snowflake(r, arriveTick, trajectory(arriveTick), [0, 0, 0.5]));
   return (
     <>
-      {tick < arriveTick && <ArrowShape 位={trajectoryPos(trajectory, tick)} dir={trajectoryDir(trajectory, tick)} 图={png(iceSpikePng)} />}
-      <TexturedParticles 类={{ ...snowflakeClass, ground: target[2] }} spawns={snow} 秒={sec} />
+      {tick < arriveTick && <ArrowShape 位={trajectoryPos(trajectory, tick)} dir={trajectoryDir(trajectory, tick)} image={png(iceSpikePng)} />}
+      <TexturedParticles type={{ ...snowflakeClass, ground: target[2] }} spawns={snow} sec={sec} />
     </>
   );
 };

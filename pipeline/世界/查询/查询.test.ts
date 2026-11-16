@@ -22,10 +22,10 @@ describe('存档方块源', () => {
 
   it('列从上往下盖满整列、顶是最高的非空气方块', () => {
     const c = blockSource.列(3, 3)!;
-    expect(c.段[0]!.topY).toBe(79);
-    expect(c.段.at(-1)!.bottom).toBe(0);
-    expect(segmentAt(c, 61)!.状态).toBe('minecraft:oak_log[axis=y]');
-    expect(blockSource.topBlockAt(3, 3)).toEqual({ y: 61, 状态: 'minecraft:oak_log[axis=y]', 群系: 'minecraft:plains' });
+    expect(c.segment[0]!.topY).toBe(79);
+    expect(c.segment.at(-1)!.bottom).toBe(0);
+    expect(segmentAt(c, 61)!.state).toBe('minecraft:oak_log[axis=y]');
+    expect(blockSource.topBlockAt(3, 3)).toEqual({ y: 61, state: 'minecraft:oak_log[axis=y]', biome: 'minecraft:plains' });
     expect(blockSource.topBlockAt(10, 3)!.y).toBe(50);
     expect(blockSource.列(40, 3)).toBeNull();
   });
@@ -39,23 +39,23 @@ describe('存档方块源', () => {
     expect(g.minY).toBe(50);
     expect(g.maxY).toBe(61);
     const img = decode(g.png);
-    expect([img.width, img.height]).toEqual([g.宽, g.高]);
+    expect([img.width, img.height]).toEqual([g.width, g.height]);
   });
 });
 
 describe('出图的比例和网格', () => {
   it('小范围放大、大范围隔格取', () => {
-    expect(ratioFor(100)).toEqual({ pixel: 10, 步: 1 });
-    expect(ratioFor(5000)).toEqual({ pixel: 1, 步: 3 });
+    expect(ratioFor(100)).toEqual({ pixel: 10, step: 1 });
+    expect(ratioFor(5000)).toEqual({ pixel: 1, step: 3 });
     expect(gridSpacing(10)).toBe(8);
     expect(gridSpacing(0.5)).toBe(128);
   });
   it('坐标图留出刻度边', () => {
-    const t = new CoordChart({ 列: 10, 行: 5, pixel: 2, 步: 1, horizStart: 0, vertStart: 0, vertDir: 1, horizontalLabel: 'x', verticalLabel: 'z' });
-    t.格(0, 0, [255, 0, 0]);
-    t.网格();
-    const o = ((t.上 + 1) * t.canvas.宽 + t.left + 1) * 3; // 第 0 行、第 0 列压着网格线，取格里另一个像素
+    const t = new CoordChart({ 列: 10, 行: 5, pixel: 2, step: 1, horizStart: 0, vertStart: 0, vertDir: 1, horizontalLabel: 'x', verticalLabel: 'z' });
+    t.cell(0, 0, [255, 0, 0]);
+    t.grid();
+    const o = ((t.上 + 1) * t.canvas.width + t.left + 1) * 3; // 第 0 行、第 0 列压着网格线，取格里另一个像素
     expect([...t.canvas.pixels.subarray(o, o + 3)]).toEqual([255, 0, 0]);
-    expect(t.canvas.宽).toBe(t.left + 20 + 8);
+    expect(t.canvas.width).toBe(t.left + 20 + 8);
   });
 });

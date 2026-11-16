@@ -59,7 +59,7 @@ export const toWorld = (p: number[]): V3 => towerFrame.toWorld(p);
 const impactA = aAtY(NORTH_FACE); // -11.39：矛尖碰到北墙外表面（正南穿时是 -11，斜 15° 长 1/cos15°）
 const exitA = aAtY(EXIT_Y);
 export const pierceLine = {
-  名: '巫妖',
+  name: '巫妖',
   V,
   facing: ((((towerFrame.facing(BROOM_YAW) + 180) % 360) + 360) % 360) - 180, // 世界朝向 -105（方位 105°）
   tip: (a: number) => toWorld(tipLocal(a)),
@@ -90,7 +90,7 @@ export const T_DEATH = T_TOUCH + T_TOPPLE * deathToFlatRatio;
 // 一镜到底的时钟在这几个时刻之间放慢（路线.ts 读）：撞墙那一下刚过全速放慢，巫妖化烟以后开始恢复
 // 起、止 的毫秒零头是对着配乐拉回来的：时钟改按真时刻算、6-1-3 放平改真值以后（用户 11-16 定 1/24 秒的格一处不留），照原样放慢穿刺在画面上晚半秒多；
 // 调 起（放慢 100 倍，差 1 毫秒画面上差 0.1 秒）让六次穿刺在配乐里的位置和改之前用户看过的一样（一镜到底/路线/时钟.ts）
-export const slowMo = { 起: T_IMPACT + 0.0034429, 止: T_DEATH + 0.0040576 };
+export const slowMo = { start: T_IMPACT + 0.0034429, end: T_DEATH + 0.0040576 };
 export const fxSpeed = 28;
 // 药水炸开的粒子、巫妖死时的白烟按更快的时钟走（碎得更猛、散得更快），镜头钻过去之前就散干净了
 export const potionFxSpeed = 55;
@@ -120,7 +120,7 @@ export const holeSectionBounds = holeSections.slice(0, -1).map((_, i) => holeSec
 const DEB = { speed: 0.6 * V, spread: 34, spin: 70, gravity: 16 };
 // 矛管：矛尖连钻头虚影扫过的那一管方块当场崩成原版破坏粒子，不整块飞（用户 10-02；模型/特效/方块飞溅.tsx）；点的时刻相对各自那次撞击（北墙、南墙、副楼出口）。常量对象：哪些格子在管里只算一次
 const tubeFor = (impactTime: number): SpearTube => ({
-  点: Array.from({ length: 31 }, (_, k) => {
+  points: Array.from({ length: 31 }, (_, k) => {
     const dist = k - 14;
     return [...tipLocal(dist), dist / V - impactTime];
   }),
@@ -270,5 +270,5 @@ export const leftArm = (t: number) => {
 
 // 权杖：巫妖拿在手里，跟着它一起化成白烟，不脱手、九胡也不接（用户 10-07 去掉了九胡拿权杖）
 // 一镜到底读：这一处要把哪些部件画出来、什么时候开始画（贯穿前后多少秒内）
-export const visibleWindow = { 起: -40, 止: 30 };
+export const visibleWindow = { start: -40, end: 30 };
 export { TIP_LOCAL };

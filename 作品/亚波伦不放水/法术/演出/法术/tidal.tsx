@@ -30,7 +30,7 @@ const overlayPngs = [tidalOverlay0Png, tidalOverlay1Png, tidalOverlay2Png, tidal
 const waterColor = hexColor(0x3f76e4);
 const brightWaterColor = waterColor.map((c) => Math.min(1, c + 0.5)) as unknown as readonly [number, number, number];
 
-const TidalSurge: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const TidalSurge: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const { trajectory, stopTick } = tidalPath(from, target);
   const { yaw } = facingAngle(unitVec(sub(target, tidalStart(from, target))));
@@ -55,13 +55,13 @@ const TidalSurge: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: t
         <MinecraftSpace 位={trajectoryPos(trajectory, Math.min(tick, stopTick))}>
           <group position={[0, 1.5, 0]} rotation={[0, -degToRad(yaw + 180), 0]}>
             <group position={[0, -0.1 - (1 - f * 0.5), -0.5]} scale={[(0.2 + f) * 0.9, -1, 1]}>
-              <ModelPart 模型={tidalSurgeModel} 图={waveFrames[frame]!} 画法="半透明" 色={waterColor} partPoses={partPoses} />
-              <ModelPart 模型={tidalSurgeModel} 图={overlayPngs[frame]!} 画法="半透明" 色={brightWaterColor} partPoses={partPoses} />
+              <ModelPart model={tidalSurgeModel} image={waveFrames[frame]!} 画法="半透明" 色={waterColor} partPoses={partPoses} />
+              <ModelPart model={tidalSurgeModel} image={overlayPngs[frame]!} 画法="半透明" 色={brightWaterColor} partPoses={partPoses} />
             </group>
           </group>
         </MinecraftSpace>
       )}
-      <VanillaParticles spawns={splashes} 秒={sec} />
+      <VanillaParticles spawns={splashes} sec={sec} />
     </>
   );
 };

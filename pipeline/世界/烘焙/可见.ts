@@ -17,21 +17,21 @@ const sectionCells = windowEdge - 2;
 /** 保真范围：游戏 x0, z0, x1, z1（两端都含）。渲染时会挖开、整平导入地形的地方，碰到的区段整块原样保留（世界声明 [[烘焙.保真]]） */
 export type PreserveBox = [number, number, number, number];
 /** 世界声明给的变换设置；填充 是换进去的整格方块（默认 minecraft:stone，下界没有石头要另写） */
-export type VisibleSettings = { fillBlock: string; 保真: PreserveBox[] };
+export type VisibleSettings = { fillBlock: string; faithful: PreserveBox[] };
 /** 记进 包.json 的 可见：包按它做过变换。保真 排好序，名字不记（改名字不该变包版本） */
-export type VisibleRecord = { 填充: string; 保真: PreserveBox[] };
-export const toRecord = (s: VisibleSettings): VisibleRecord => ({ 填充: s.fillBlock, 保真: [...s.保真].sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || a[3] - b[3]) });
+export type VisibleRecord = { fill: string; faithful: PreserveBox[] };
+export const toRecord = (s: VisibleSettings): VisibleRecord => ({ fill: s.fillBlock, faithful: [...s.faithful].sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || a[3] - b[3]) });
 /** 记录 a 是不是盖住了 b 的全部保真盒（同填充） */
-export const recordCovers = (a: VisibleRecord, b: VisibleRecord) => a.填充 === b.填充 && b.保真.every((x) => a.保真.some((y) => y.join() === x.join()));
+export const recordCovers = (a: VisibleRecord, b: VisibleRecord) => a.fill === b.fill && b.faithful.every((x) => a.faithful.some((y) => y.join() === x.join()));
 
 /** 可改的区段格子：色板可以加项；满[p] = 色板第 p 项是不是整格；石 = 填充方块的色板号。宽：窗口每边几列，不写是 windowEdge（测试拼别的宽度时用） */
-export type CellGrid = { id: { L: number; i: number; j: number }; kBottom: number; nz: number; cm: Uint16Array; palette: number[]; fullMask: Uint8Array; stone: number; 宽?: number };
+export type CellGrid = { id: { L: number; i: number; j: number }; kBottom: number; nz: number; cm: Uint16Array; palette: number[]; fullMask: Uint8Array; stone: number; width?: number };
 
 /** 状态号 → 整格（满）、挡面掩码（罩：1 整格、2 树叶、4 水这一层，网格.ts 只拿它剔核心边的面） */
-export const stateTable = (voxelLib: VoxelLib, info: Pick<PackageInfo, '状态' | '群系'>) => {
-  const value = voxelLib.sectionPack.buildPackTables(info).值, { full, leaf, layer } = voxelLib.blockTable.blockProps;
-  const fullMask = Uint8Array.from(info.状态, (_, s) => full[value[s]!]!);
-  const occlusion = Uint8Array.from(info.状态, (_, s) => { const v = value[s]!; return full[v]! | (leaf[v]! << 1) | (layer[v] === 3 ? 4 : 0); });
+export const stateTable = (voxelLib: VoxelLib, info: Pick<PackageInfo, 'state' | 'biome'>) => {
+  const value = voxelLib.sectionPack.buildPackTables(info).value, { full, leaf, layer } = voxelLib.blockTable.blockProps;
+  const fullMask = Uint8Array.from(info.state, (_, s) => full[value[s]!]!);
+  const occlusion = Uint8Array.from(info.state, (_, s) => { const v = value[s]!; return full[v]! | (leaf[v]! << 1) | (layer[v] === 3 ? 4 : 0); });
   return { fullMask, occlusion };
 };
 
@@ -47,12 +47,12 @@ export const toGrid = (d: SectionData, stateFullMask: Uint8Array, fillId: number
 export const copyGrid = (g: CellGrid): CellGrid => ({ ...g, cm: g.cm.slice() });
 
 /** 格子 → SectionData（色板重排见 区段编码.ts 的 fromColumnMajor） */
-export const makeSection = (g: CellGrid): SectionData => fromColumnMajor(g.id, g.kBottom, g.nz, g.cm, g.palette, (g.宽 ?? windowEdge) ** 2);
+export const makeSection = (g: CellGrid): SectionData => fromColumnMajor(g.id, g.kBottom, g.nz, g.cm, g.palette, (g.width ?? windowEdge) ** 2);
 
 /** 埋格换石：整格、六个邻格也都整格的换成填充方块。只动第 2～63 列（第 1、64 列是核心的边，网格给它们出裙边；第 0、65 列是邻圈），
  *  同一格在两个区段里的两份抄本始终一样。邻格都按没换之前判，换完仍是整格，先后无关。返回换了几格 */
 export const replaceBuriedWithStone = (g: CellGrid): number => {
-  const { nz, cm, fullMask, stone } = g, edge = g.宽 ?? windowEdge, rowStride = edge * nz, changed: number[] = [];
+  const { nz, cm, fullMask, stone } = g, edge = g.width ?? windowEdge, rowStride = edge * nz, changed: number[] = [];
   for (let y = 2; y <= edge - 3; y++) for (let x = 2; x <= edge - 3; x++) {
     const base = (y * edge + x) * nz;
     for (let k = 0; k < nz - 1; k++) {
@@ -69,7 +69,7 @@ export const replaceBuriedWithStone = (g: CellGrid): number => {
 /** 和露天连通的非整格（空气、水、树叶、花草、半砖……）：六邻连通，不设最小口径（1 格的口也算通）。
  *  种子：最上一层的非整格；离窗口边不到 种子圈 列的非整格（窗口外不知道，当连通） */
 export const openAirConnected = (g: CellGrid, seedRing: number): Uint8Array => {
-  const { nz, cm, fullMask } = g, edge = g.宽 ?? windowEdge, colCount = edge * edge, rowStride = edge * nz, openMask = new Uint8Array(cm.length), stack = new Int32Array(cm.length);
+  const { nz, cm, fullMask } = g, edge = g.width ?? windowEdge, colCount = edge * edge, rowStride = edge * nz, openMask = new Uint8Array(cm.length), stack = new Int32Array(cm.length);
   let n = 0;
   const enqueue = (at: number) => { if (!openMask[at] && !fullMask[cm[at]!]) { openMask[at] = 1; stack[n++] = at; } };
   if (nz) for (let c = 0; c < colCount; c++) {
@@ -100,7 +100,7 @@ export const fillSealedCavity = (g: CellGrid): Int32Array => {
 /** 邻圈（第 0、65 列）：本段从不出它们的面，网格只拿它的挡面掩码剔核心边的面。所以六面被埋的整格换填充方块（窗口外当整格；露在外面的那层不换，
  *  和旁边核心边那一列长得像，编码上下文更准），挡面掩码是 0 的非空气（归空[p] = 1：花草、火把这类）换成空气。返回换了几格 */
 export const normalizeNeighborRing = (g: CellGrid, toAir: Uint8Array): number => {
-  const { nz, cm, fullMask, stone } = g, edge = g.宽 ?? windowEdge, rowStride = edge * nz, changed: number[] = [];
+  const { nz, cm, fullMask, stone } = g, edge = g.width ?? windowEdge, rowStride = edge * nz, changed: number[] = [];
   for (let c = 0; c < edge * edge; c++) {
     const x = c % edge, y = (c - x) / edge;
     if (x > 0 && y > 0 && x < edge - 1 && y < edge - 1) continue;
@@ -120,7 +120,7 @@ export const normalizeNeighborRing = (g: CellGrid, toAir: Uint8Array): number =>
  *  有邻 = [+x, −x, +y, −y] 那一侧同一级的区段在不在包里，不在的那一侧（包的边）不动。
  *  可挡(x, y, k, 侧)：邻段换粗一级画时，这块裙边朝着的那一格整个被粗格挡住（见 可见环境.父格挡）；不给 = 都挡（测试用）。返回换掉的格（下标） */
 export const replaceCoreEdgeWithStone = (g: CellGrid, hasNeighbor: readonly boolean[], canBlock?: (x: number, y: number, k: number, side: number) => boolean): Int32Array => {
-  const { nz, cm, fullMask, stone } = g, edge = g.宽 ?? windowEdge, rowStride = edge * nz, changed: number[] = [];
+  const { nz, cm, fullMask, stone } = g, edge = g.width ?? windowEdge, rowStride = edge * nz, changed: number[] = [];
   for (let y = 1; y < edge - 1; y++) for (let x = 1; x < edge - 1; x++) {
     if (x > 1 && x < edge - 2 && y > 1 && y < edge - 2) continue;
     const sideFlags = [x === edge - 2, x === 1, y === edge - 2, y === 1];
@@ -157,7 +157,7 @@ export class VisibleEnv {
   readonly occlusion: Uint8Array;
   readonly fillId: number;
   readonly record: VisibleRecord;
-  private 保真 = new Set<string>();
+  private faithful = new Set<string>();
   private parentCache = new Map<string, ParentSection | null>();
   private source: SectionSource;
 
@@ -166,25 +166,25 @@ export class VisibleEnv {
     if (voxelLib.sectionPack.paddedSectionCols !== windowEdge) throw new Error(`可见.ts 的窗口边 ${windowEdge} 和 engine 的区段 ${voxelLib.sectionPack.paddedSectionCols} 列对不上`);
     const info = source.info;
     ({ fullMask: this.fullMask, occlusion: this.occlusion } = stateTable(voxelLib, info));
-    this.fillId = info.状态.indexOf(settings.fillBlock);
+    this.fillId = info.state.indexOf(settings.fillBlock);
     if (this.fillId < 0) throw new Error(`包的状态表里没有填充方块 ${settings.fillBlock}（世界声明 [烘焙] 填充 换一种这个维度有的整格方块）`);
     if (!this.fullMask[this.fillId]) throw new Error(`填充方块 ${settings.fillBlock} 不是整格不透明`);
     this.record = toRecord(settings);
     // 保真盒碰到的区段（各级，四周多留 2 格）：游戏 (x, z) → 第 0 级的格 (x − ox, oz − 1 − z)，同 导入地形.ts 的 toSceneBox
-    const [ox, , oz] = info.原点;
-    for (const [x0, z0, x1, z1] of this.record.保真) {
+    const [ox, , oz] = info.origin;
+    for (const [x0, z0, x1, z1] of this.record.faithful) {
       const a0 = x0 - ox, a1 = x1 - ox, b0 = oz - 1 - z1, b1 = oz - 1 - z0;
-      for (let L = 0; L <= voxelLib.区段.coarsestLevel; L++) {
+      for (let L = 0; L <= voxelLib.sections.coarsestLevel; L++) {
         const s = 2 ** L, w = sectionCells * s;
         for (let j = Math.floor((b0 - 2 * s) / w); j <= Math.floor((b1 + 2 * s) / w); j++)
-          for (let i = Math.floor((a0 - 2 * s) / w); i <= Math.floor((a1 + 2 * s) / w); i++) this.保真.add(`${L}/${i}/${j}`);
+          for (let i = Math.floor((a0 - 2 * s) / w); i <= Math.floor((a1 + 2 * s) / w); i++) this.faithful.add(`${L}/${i}/${j}`);
       }
     }
   }
 
   hasSection = (L: number, i: number, j: number) => this.source.has(L, i, j);
-  inPreserve = (L: number, i: number, j: number) => this.保真.has(`${L}/${i}/${j}`);
-  get preservedSectionCount() { return [...this.保真].filter((k) => { const [L, i, j] = k.split('/').map(Number); return this.source.has(L!, i!, j!); }).length; }
+  inPreserve = (L: number, i: number, j: number) => this.faithful.has(`${L}/${i}/${j}`);
+  get preservedSectionCount() { return [...this.faithful].filter((k) => { const [L, i, j] = k.split('/').map(Number); return this.source.has(L!, i!, j!); }).length; }
 
   /** 从源包取一个区段（原样） */
   取 = (L: number, i: number, j: number): SectionData | null => this.source.取(L, i, j);

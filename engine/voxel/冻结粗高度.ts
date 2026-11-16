@@ -4,21 +4,21 @@
 // 重新生成：anim world freeze --write（pipeline/世界/冻结.ts），从登记的那版区段包拷。渲染时导入地形取到 包.json 后和这里比指纹，对不上只报警。
 import { coarseHeightFingerprint, decodeCoarseHeight, type PackageInfo, type CoarseHeightMap } from './区段包.ts';
 
-export type FrozenCoarseHeightFile = { 说明: string; 包: string; 版本: string; 指纹: string; 维度: string; 原点: [number, number, number]; 粗高度: PackageInfo['粗高度'] };
+export type FrozenCoarseHeightFile = { note: string; pack: string; version: string; fingerprint: string; dimension: string; origin: [number, number, number]; coarseHeight: PackageInfo['coarseHeight'] };
 
 // 本页面里用过的冻结文件（包名 → 文件），导入地形时拿来比指纹
 const used = new Map<string, FrozenCoarseHeightFile>();
 const decoded = new Map<string, CoarseHeightMap>();
 
 const remember = (file: FrozenCoarseHeightFile) => {
-  used.set(file.包, file);
+  used.set(file.pack, file);
   return file;
 };
 // 包的原点 [ox, oy, oz]（游戏坐标，见 区段包.ts 文件头）
-export const frozenOrigin = (file: FrozenCoarseHeightFile) => remember(file).原点;
+export const frozenOrigin = (file: FrozenCoarseHeightFile) => remember(file).origin;
 export const frozenCoarse = (file: FrozenCoarseHeightFile): CoarseHeightMap => {
-  let coarse = decoded.get(file.包);
-  if (!coarse) decoded.set(file.包, (coarse = decodeCoarseHeight(remember(file))));
+  let coarse = decoded.get(file.pack);
+  if (!coarse) decoded.set(file.pack, (coarse = decodeCoarseHeight(remember(file))));
   return coarse;
 };
 
@@ -27,6 +27,6 @@ export const checkFrozenCoarse = (packName: string, runtime: CoarseHeightMap) =>
   const file = used.get(packName);
   if (!file) return;
   const fingerprint = coarseHeightFingerprint(runtime);
-  if (fingerprint !== file.指纹)
-    console.warn(`冻结粗高度：区段包 ${packName} 的粗高度（指纹 ${fingerprint}）和冻结的那份（${file.版本}，指纹 ${file.指纹}）不一样，编排还按冻结的排；要跟上新地形，重新生成 assets/冻结粗高度/ 下那份（工具待迁移，见本文件头）再核对航线`);
+  if (fingerprint !== file.fingerprint)
+    console.warn(`冻结粗高度：区段包 ${packName} 的粗高度（指纹 ${fingerprint}）和冻结的那份（${file.version}，指纹 ${file.fingerprint}）不一样，编排还按冻结的排；要跟上新地形，重新生成 assets/冻结粗高度/ 下那份（工具待迁移，见本文件头）再核对航线`);
 };

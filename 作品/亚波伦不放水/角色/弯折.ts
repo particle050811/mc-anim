@@ -101,14 +101,14 @@ export type BendParams = {
   /** 铰链的 z（像素）：比它更靠折的内侧的料两节各让到角平分面，外侧的张口补弧面 */
   hingeZ: number;
   /** 弧度，正 = 下半节往 +z 折 */
-  角: number;
+  angle: number;
   /** 弧面每多少弧度分一段（默认 15 度）；段数取偶数，至少 2 */
   每段?: number;
 };
 
 /** 上半节、转过去的下半节、外侧的桥，都在部件坐标里（下半节已经转好，直接和上半节放一起画） */
 export const bend = (triangles: readonly Triangle[], bendParams: BendParams): { 上: Triangle[]; 下: Triangle[]; bridge: Triangle[] } => {
-  const { cut, hingeZ, 角: bendAngle } = bendParams;
+  const { cut, hingeZ, angle: bendAngle } = bendParams;
   if (bendAngle === 0) return { 上: [...triangles], 下: [], bridge: [] };
   const cutPlane = { ny: 1, nz: 0, d: cut };
   const [halfCos, halfSin] = [Math.cos(bendAngle / 2), Math.sin(bendAngle / 2)];

@@ -2,23 +2,23 @@
 // 聊天栏：满亮（0、100）、淡出中（185、195）、消失（200）；爱心：刚出生（0、0.25）、升到一半（5、10）、快消失（15）；两样合看。
 // 爱心在占位机位下有几颗飘出画面上沿，另加两张退远的（远景）看全 7 颗。
 export type View = {
-  名: string;
-  宽: number;
-  高: number;
+  name: string;
+  width: number;
+  height: number;
   chatTick?: number;
   heartTick?: number;
-  远景?: true;
+  farView?: true;
 };
 
 const widthPx = 1280;
 const height = 720;
 
 export const views: readonly View[] = [
-  ...[0, 100, 185, 195, 200].map((tick) => ({ 名: `聊天栏 第 ${tick} 刻`, 宽: widthPx, 高: height, chatTick: tick })),
-  ...[0, 0.25, 5, 10, 15].map((tick) => ({ 名: `爱心 第 ${tick} 刻`, 宽: widthPx, 高: height, heartTick: tick })),
-  { 名: '合看 第 5 刻', 宽: widthPx, 高: height, chatTick: 5, heartTick: 5 },
-  ...[5, 15].map((tick) => ({ 名: `爱心 远景 第 ${tick} 刻`, 宽: widthPx, 高: height, heartTick: tick, 远景: true as const })),
+  ...[0, 100, 185, 195, 200].map((tick) => ({ name: `聊天栏 第 ${tick} 刻`, width: widthPx, height: height, chatTick: tick })),
+  ...[0, 0.25, 5, 10, 15].map((tick) => ({ name: `爱心 第 ${tick} 刻`, width: widthPx, height: height, heartTick: tick })),
+  { name: '合看 第 5 刻', width: widthPx, height: height, chatTick: 5, heartTick: 5 },
+  ...[5, 15].map((tick) => ({ name: `爱心 远景 第 ${tick} 刻`, width: widthPx, height: height, heartTick: tick, farView: true as const })),
 ];
 
-export const pageWidth = Math.max(...views.map((v) => v.宽));
-export const pageHeight = Math.max(...views.map((v) => v.高));
+export const pageWidth = Math.max(...views.map((v) => v.width));
+export const pageHeight = Math.max(...views.map((v) => v.height));

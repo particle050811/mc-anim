@@ -13,8 +13,8 @@ export default defineSpellMeta({
   id: 'biomine',
   长秒: (bioMineLatestTick + acidPoolTicks + 10) / 20,
   // BioMineSpell：每颗一声 BIOMINE_SPAWN；BioMine.trigger：BIOMINE_TRIGGER（音量 1.4），各颗时刻随种子变，这里记在寿命到的那一刻
-  声音: [
-    ...[1, 2, 3, 1].map((n) => ({ 资产: `音效/诡厄巫法/goety.biomine_spawn.${n}`, 秒: 0 })),
-    { 资产: '音效/诡厄巫法/goety.biomine_trigger.1', 秒: bioMineLifeTicks / 20, 音量: 1.4 },
+  sound: [
+    ...[1, 2, 3, 1].map((n) => ({ asset: `音效/诡厄巫法/goety.biomine_spawn.${n}`, sec: 0 })),
+    { asset: '音效/诡厄巫法/goety.biomine_trigger.1', sec: bioMineLifeTicks / 20, 音量: 1.4 },
   ],
 });

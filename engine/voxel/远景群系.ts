@@ -138,7 +138,7 @@ export const defaultBiome = defineBiome(grassBlock, dirt, 0.03, [[oak, 1]]); // 
 // 冻洋（0.0）暖区以外都结冰；深冻洋（0.5）永远不结冰（游戏里只有冰山，这里不做）；冻河（0.0、没有修正）整片结冰；别的群系照温度（雪原、冰刺之地里的水也冻）。
 // 粗格子里冰和水不透明度一样（1）、又在同一层，Mipper 按位序挑东南角那一块，所以看格子东南角那一块方块冻没冻。导入的粗级补水面时也照这条（lib/体素/主世界地形.ts）
 const frozenModBiomes = new Set(['minecraft:frozen_ocean', 'minecraft:deep_frozen_ocean']);
-export const biomeTemperature = (W: DistantGrid, biome: string) => W.biomeTemperature[W.群系名.indexOf(biome)] ?? 0.8;
+export const biomeTemperature = (W: DistantGrid, biome: string) => W.biomeTemperature[W.biomeNames.indexOf(biome)] ?? 0.8;
 export const waterFreezes = (W: DistantGrid, biome: string, x: number, z: number) => biomeTemperature(W, biome) < 0.15 && (!frozenModBiomes.has(biome) || isFrozenZone(x, z));
 // 积雪：照 地形.mjs 的 积雪（Biome.getHeightAdjustedTemperature 不算噪声那一项）：y > 80 每高一格降 0.00125，低于 0.15 积雪
 export const snowCoverAt = (temperature: number, y: number) => temperature - Math.max(0, y - 80) * 0.00125 < 0.15;

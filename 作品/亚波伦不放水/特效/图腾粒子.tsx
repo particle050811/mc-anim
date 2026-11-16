@@ -14,11 +14,11 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 export const totemEmitTicks = 30;
 
-type TotemParticle = { spawnTick: number; 路: V3[]; halfSize: number; lifeTicks: number; 色: [number, number, number] };
+type TotemParticle = { spawnTick: number; lane: V3[]; halfSize: number; lifeTicks: number; 色: [number, number, number] };
 
 /** 一次图腾触发的全部粒子。脚底：人的脚底中心；宽、高：碰撞箱（玩家 0.6、1.8）；地面：粒子落到这个高度停住，不给 = 不停 */
-export const totemParticleTable = (feet: V3, seed: number, options: { 宽?: number; 高?: number; ground?: number } = {}): TotemParticle[] => {
-  const { 宽: width = 0.6, 高: height = 1.8, ground } = options;
+export const totemParticleTable = (feet: V3, seed: number, options: { width?: number; height?: number; ground?: number } = {}): TotemParticle[] => {
+  const { width: width = 0.6, height: height = 1.8, ground } = options;
   const rand = mulberry32(seed * 48271 + 35);
   const particles: TotemParticle[] = [];
   for (let emitTick = 0; emitTick < totemEmitTicks; emitTick++) {
@@ -33,14 +33,14 @@ export const totemParticleTable = (feet: V3, seed: number, options: { 宽?: numb
       // 游戏 y 朝上 → 场景 z
       const p: V3 = [feet[0] + (width * d0) / 4, feet[1] + (width * d2) / 4, feet[2] + height * (0.5 + d1 / 4)];
       const trail = particlePath(p, [d0, d2, d1 + 0.2], lifeTicks, new ParticlePhysics(1.25, 0.6, ground));
-      particles.push({ spawnTick: emitTick, 路: trail, halfSize, lifeTicks, 色: color });
+      particles.push({ spawnTick: emitTick, lane: trail, halfSize, lifeTicks, 色: color });
     }
   }
   return particles;
 };
 
 /** 距触发 秒 秒时的粒子（秒 < 0 不画）。表 用 图腾粒子表 算一次，别每帧重算 */
-export const TotemParticles: React.FC<{ 表: readonly TotemParticle[]; 秒: number }> = ({ 表: particleTable, 秒: sec }) => {
+export const TotemParticles: React.FC<{ 表: readonly TotemParticle[]; sec: number }> = ({ 表: particleTable, sec: sec }) => {
   const items = useMemo(() => {
     const tick = sec * 20;
     const out: Particle[] = [];
@@ -52,7 +52,7 @@ export const TotemParticles: React.FC<{ 表: readonly TotemParticle[]; 秒: numb
       if (age >= particle.lifeTicks) continue;
       const frame = Math.min(7, Math.floor((age * 7) / particle.lifeTicks));
       out.push({
-        p: interpPathPos(particle.路, τ),
+        p: interpPathPos(particle.lane, τ),
         half: particle.halfSize,
         uv: vanillaParticleAtlas.uv[`glitter_${7 - frame}`]!,
         color: particle.色,

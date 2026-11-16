@@ -19,7 +19,7 @@ import type { RainStreak } from './雨.tsx';
 import { clamp01, easeOutQuad, lerp, lerpV } from '@engine/core/数学.ts';
 
 type EventName = keyof typeof mainCutEvents;
-export const eventFrame = (eventName: EventName) => mainCutEvents[eventName].帧;
+export const eventFrame = (eventName: EventName) => mainCutEvents[eventName].frame;
 /** 这个镜头的头尾（歌曲帧，[起, 止)）：2-雷雨 的起到 2-拨开阴霾 的止 */
 export const shotStartFrame = segmentWindow('2-雷雨').起帧;
 export const shotEndFrame = segmentWindow('2-拨开阴霾').止帧;
@@ -35,13 +35,13 @@ export const ease = (t: number) => {
 const progress = (frame: number, startFrame: number, durSec: number) => (frame < startFrame ? 0 : clamp01(((frame - startFrame) / fps + oneFrameSec) / durSec));
 
 // ---------- 镜头 ----------
-export type CameraRig = { 种: '透视'; 眼: V3; 看: V3; fov: number; farPlane: number };
+export type CameraRig = { kind: '透视'; 眼: V3; 看: V3; fov: number; farPlane: number };
 /** 第 6 句从 全 推到 近（缓起缓停，雷照缺口 那一帧推到，停到这句完），第 7 句从 近 退到 仰（退镜秒 里缓起缓停），之后停住 */
 export const CameraRig = (frame: number): CameraRig => {
   const { 全: wide, 近: near, 仰: lowAngle } = params.cameraRigs;
   const standUp = eventFrame('liYingStandsUp');
   const [a, b, t] = frame < standUp ? [wide, near, ease((frame - shotStartFrame) / (eventFrame('lightningRevealsBreach') - shotStartFrame))] : [near, lowAngle, ease((frame - standUp) / (params.pullBackSec * fps))];
-  return { 种: '透视', 眼: lerpV(a.眼, b.眼, t), 看: lerpV(a.看, b.看, t), fov: lerp(a.fov, b.fov, t), farPlane: 1200 };
+  return { kind: '透视', 眼: lerpV(a.眼, b.眼, t), 看: lerpV(a.看, b.看, t), fov: lerp(a.fov, b.fov, t), farPlane: 1200 };
 };
 
 // ---------- 闪电 ----------
@@ -178,14 +178,14 @@ export const shadingSceneAt = (frame: number): ShadingSceneParams => {
   const r = holeRadius(frame) * rainCloud.holeRatio;
   const cloudCharge = clamp01((frame - eventFrame('beamHitsCloud')) / (eventFrame('cloudBreaks') - eventFrame('beamHitsCloud'))) ** rainCloud.cloudCharge.exponent;
   const flicker = frame < eventFrame('cloudBreaks') ? 1 + rainCloud.cloudCharge.pulseAmp * Math.sin((2 * Math.PI * rainCloud.cloudCharge.跳 * (frame - eventFrame('beamHitsCloud'))) / fps) : 1;
-  const flashBrightness = impactBrightness(frame) * lerp(rainCloud.cloudCharge.起, rainCloud.cloudCharge.到, cloudCharge) * flicker;
+  const flashBrightness = impactBrightness(frame) * lerp(rainCloud.cloudCharge.start, rainCloud.cloudCharge.dest, cloudCharge) * flicker;
   return {
     sun: rainCloud.sun,
-    海平面: rainCloud.海平面,
-    cloudLayers: rainCloud.层,
+    seaLevel: rainCloud.seaLevel,
+    cloudLayers: rainCloud.layers,
     cloud: {
       ...(r > 0 ? { hole: [center[0], center[1], r, rainCloud.softEdge] as const } : {}),
-      ...(flashBrightness > 0 ? { brightness: { 心: center, radius: params.impactCloud.radius * rainCloud.brightRatio * lerp(1, rainCloud.cloudCharge.radiusMul, cloudCharge), 强: flashBrightness * rainCloud.brightnessMult, 色: params.lightPillar.色 } } : {}),
+      ...(flashBrightness > 0 ? { brightness: { 心: center, radius: params.impactCloud.radius * rainCloud.brightRatio * lerp(1, rainCloud.cloudCharge.radiusMul, cloudCharge), strength: flashBrightness * rainCloud.brightnessMult, 色: params.lightPillar.色 } } : {}),
       exposureMult: lerp(rainCloud.rainExposure, 1, clearing(frame)) * (isFlashing(frame) ? rainCloud.flashExposure : 1),
     },
   };
@@ -199,7 +199,7 @@ export const glowRegionsAt = (frame: number): number[][] => {
   const out: number[][] = [];
   const [x, y, z] = params.standPos.liYingPos;
   if (frame >= eventFrame('magicCircleUp')) {
-    const { 半宽: halfWidth, 高: height } = params.herBrightZone;
+    const { halfWidth: halfWidth, height: height } = params.herBrightZone;
     out.push([x - halfWidth, y - halfWidth, z - 0.05, x + halfWidth, y + halfWidth, z + height]);
   }
   const r = sunRadius(frame);
@@ -229,7 +229,7 @@ export const surface = () => {
     const m = new Map<string, number>();
     const surroundings = SurroundBlocks();
     for (const b of [...crater().remainingBlocks, ...surroundings.plains, ...surroundings.cherryGrove] as PlacedBlock[]) {
-      if ((blastResist[b.状态.replace(/\[.*$/, '')] ?? 0) === 0 && !/grass_block|dirt|stone|log|leaves/.test(b.状态)) continue;
+      if ((blastResist[b.state.replace(/\[.*$/, '')] ?? 0) === 0 && !/grass_block|dirt|stone|log|leaves/.test(b.state)) continue;
       const k = `${b.位[0]},${b.位[1]}`;
       m.set(k, Math.max(m.get(k) ?? -Infinity, b.位[2] + 1));
     }
@@ -253,7 +253,7 @@ export const perspectiveRainPlanes = (eye: V3): RainStreak[] => {
       if (d > r || d < 0.01) continue;
       const bottom = Math.max(groundMap.get(`${i},${j}`) ?? -Infinity, eye[2] - r);
       if (!Number.isFinite(bottom)) continue;
-      out.push({ i, j, 中心: [x, y], 半宽: [(-dy / d) * 0.5, (dx / d) * 0.5], bottom, topY: eye[2] + r, alpha: (1 - (d * d) / (r * r)) * 0.5 + 0.5 });
+      out.push({ i, j, center: [x, y], halfWidth: [(-dy / d) * 0.5, (dx / d) * 0.5], bottom, topY: eye[2] + r, alpha: (1 - (d * d) / (r * r)) * 0.5 + 0.5 });
     }
   return out;
 };

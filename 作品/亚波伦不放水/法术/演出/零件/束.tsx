@@ -20,10 +20,10 @@ const quadMesh = (positions: number[], uv: number[]) => {
 };
 
 export type BeamProps = FaceMaterialOptions & {
-  起: Vec3;
+  start: Vec3;
   end: Vec3;
-  图: Png | null;
-  半宽: number;
+  image: Png | null;
+  halfWidth: number;
   /** 绕轴线摆几片，默认 2（十字）；每片隔 180° ÷ 片数 */
   planeCount?: number;
   /** 整束绕轴线转的弧度（守卫者激光那种慢转） */
@@ -35,7 +35,7 @@ export type BeamProps = FaceMaterialOptions & {
   u?: readonly [number, number];
 };
 
-export const Beam: React.FC<BeamProps> = ({ 起: startPos, end, 图: image, 半宽: halfWidth, planeCount = 2, angleRad = 0, vStart = 0, vEnd = 1, u = [0, 1], ...materialOpts }) => {
+export const Beam: React.FC<BeamProps> = ({ start: startPos, end, image: image, halfWidth: halfWidth, planeCount = 2, angleRad = 0, vStart = 0, vEnd = 1, u = [0, 1], ...materialOpts }) => {
   const geo = useMemo(() => {
     const a = toVec3(startPos);
     const b = toVec3(end);
@@ -61,12 +61,12 @@ export type BandProps = FaceMaterialOptions & {
   points: readonly Vec3[];
   /** 每个点往两边各伸多少（向量，场景坐标）：一个 = 全程一样，数组 = 逐点 */
   halfWidthDir: Vec3 | readonly Vec3[];
-  图: Png | null;
+  image: Png | null;
   /** 各点的贴图 u（沿带子方向）；不给 = 从 0 到 1 均分。v 横跨带宽（0 在 −半宽向 那边） */
   uValues?: readonly number[];
 };
 
-export const Band: React.FC<BandProps> = ({ points, halfWidthDir, 图: image, uValues, ...materialOpts }) => {
+export const Band: React.FC<BandProps> = ({ points, halfWidthDir, image: image, uValues, ...materialOpts }) => {
   const cacheKey = JSON.stringify([points, halfWidthDir, uValues]);
   const geo = useMemo(() => {
     if (points.length < 2) return null;

@@ -191,7 +191,7 @@ export const FlatShade: React.FC<FlatPaintParams & { children: React.ReactNode }
   const ref = useRef<THREE.Group>(null);
   const u = useMemo(newUniformSet, []);
   // 记录：原材质 → 记录；原：派生材质 → 原材质；网格：上一帧换过的网格
-  const flatTable = useMemo(() => ({ records: new Map<THREE.Material, PaintRecord>(), 原: new Map<THREE.Material, THREE.Material>(), 网格: new Set<THREE.Mesh>(), 帧: 0 }), []);
+  const flatTable = useMemo(() => ({ records: new Map<THREE.Material, PaintRecord>(), 原: new Map<THREE.Material, THREE.Material>(), grid: new Set<THREE.Mesh>(), frame: 0 }), []);
   const restore = (mesh: THREE.Mesh) => {
     const f = (m: THREE.Material) => flatTable.原.get(m) ?? m;
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(f) : f(mesh.material);
@@ -210,9 +210,9 @@ export const FlatShade: React.FC<FlatPaintParams & { children: React.ReactNode }
   };
   useEffect(
     () => () => {
-      for (const mesh of flatTable.网格) restore(mesh);
+      for (const mesh of flatTable.grid) restore(mesh);
       for (const r of [...flatTable.records.values()]) dropRecord(r, false);
-      flatTable.网格.clear();
+      flatTable.grid.clear();
     },
     [flatTable],
   );
@@ -223,12 +223,12 @@ export const FlatShade: React.FC<FlatPaintParams & { children: React.ReactNode }
     if (originalMaterial.userData.平涂 || !canFlatShade(originalMaterial as MarkedMaterial)) return m;
     let r = flatTable.records.get(originalMaterial);
     if (!r) {
-      const record: PaintRecord = { 原: originalMaterial, variants: new Map(), lastUsedFrame: flatTable.帧, onOriginalDispose: () => dropRecord(record, false), onDerive: (e) => dropRecord(record, true, e.target) };
+      const record: PaintRecord = { 原: originalMaterial, variants: new Map(), lastUsedFrame: flatTable.frame, onOriginalDispose: () => dropRecord(record, false), onDerive: (e) => dropRecord(record, true, e.target) };
       originalMaterial.addEventListener('dispose', record.onOriginalDispose);
       flatTable.records.set(originalMaterial, record);
       r = record;
     }
-    r.lastUsedFrame = flatTable.帧;
+    r.lastUsedFrame = flatTable.frame;
     const useFlat = useFlatColor && originalMaterial.vertexColors && isLit(originalMaterial as MarkedMaterial);
     let d = r.variants.get(useFlat);
     if (!d) {
@@ -243,7 +243,7 @@ export const FlatShade: React.FC<FlatPaintParams & { children: React.ReactNode }
     const g = ref.current;
     if (!g) return;
     updateUniformSet(u, params, g);
-    flatTable.帧++;
+    flatTable.frame++;
     const thisFrame = new Set<THREE.Mesh>();
     g.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -253,9 +253,9 @@ export const FlatShade: React.FC<FlatPaintParams & { children: React.ReactNode }
       mesh.material = Array.isArray(mesh.material) ? mesh.material.map((m) => toFlatMaterial(m, useFlatColor)) : toFlatMaterial(mesh.material, useFlatColor);
       thisFrame.add(mesh);
     });
-    for (const mesh of flatTable.网格) if (!thisFrame.has(mesh)) restore(mesh);
-    flatTable.网格 = thisFrame;
-    for (const r of [...flatTable.records.values()]) if (r.lastUsedFrame !== flatTable.帧) dropRecord(r, false);
+    for (const mesh of flatTable.grid) if (!thisFrame.has(mesh)) restore(mesh);
+    flatTable.grid = thisFrame;
+    for (const r of [...flatTable.records.values()]) if (r.lastUsedFrame !== flatTable.frame) dropRecord(r, false);
   });
   return <group ref={ref}>{children}</group>;
 };

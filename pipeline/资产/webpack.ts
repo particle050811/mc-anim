@@ -32,8 +32,8 @@ export class AssetResolvePlugin {
     compiler.hooks.normalModuleFactory.tap('anim-资产', (nmf) => {
       nmf.hooks.beforeResolve.tap('anim-资产', (data) => {
         if (!data.request.startsWith('asset:')) return;
-        const { entry, 文件: file } = resolveAsset(data.request.slice('asset:'.length), assetLock);
-        data.request = `${file}?${queryKey}=${entry.后缀 || '.无后缀'}`;
+        const { entry, file: file } = resolveAsset(data.request.slice('asset:'.length), assetLock);
+        data.request = `${file}?${queryKey}=${entry.suffix || '.无后缀'}`;
       });
     });
   }

@@ -10,7 +10,7 @@ import { type V3 } from '../../engine/model/parts.tsx';
 import { DropItem, type DropName } from '../物品/掉落物.tsx';
 import { mulberry32 } from '../../engine/core/数学.ts';
 
-export type PickupItem = { 名: DropName; p0: V3; v0: V3; spinAxis: V3; spinSpeed: number; suckStart: number; suckEnd: number };
+export type PickupItem = { name: DropName; p0: V3; v0: V3; spinAxis: V3; spinSpeed: number; suckStart: number; suckEnd: number };
 export type BurstParams = {
   forwardSpeed: [number, number]; // 沿冲击方向的速度范围（米/秒）
   spreadSpeed: [number, number]; // 往四周（垂直于冲击方向）的速度范围
@@ -39,7 +39,7 @@ export const burstItems = (names: DropName[], center: V3, forward: V3, params: B
     const p0: V3 = [center[0] + (rand() - 0.5) * 0.3, center[1] + (rand() - 0.5) * 0.3, center[2] + (rand() - 0.5) * 0.3];
     const suckStart = params.suckStart[0] + (params.suckStart[1] - params.suckStart[0]) * rand();
     const suckEnd = params.suckEnd[0] + (params.suckEnd[1] - params.suckEnd[0]) * rand();
-    return { 名: name, p0, v0, spinAxis: [rand() - 0.5, rand() - 0.5, rand() - 0.5], spinSpeed: 25 + 45 * rand(), suckStart: suckStart, suckEnd: suckEnd };
+    return { name: name, p0, v0, spinAxis: [rand() - 0.5, rand() - 0.5, rand() - 0.5], spinSpeed: 25 + 45 * rand(), suckStart: suckStart, suckEnd: suckEnd };
   });
 };
 
@@ -77,7 +77,7 @@ export const ItemPickup: React.FC<{ items: PickupItem[]; τ: number; target: V3;
       const scale = st.s * (scaleAt ? scaleAt(st.p) : 1);
       return (
         <group key={i} position={st.p} quaternion={faceCamera(st.p, cameraPos, sway)} scale={scale}>
-          <DropItem name={k.名} glow={glow} />
+          <DropItem name={k.name} glow={glow} />
         </group>
       );
     })}

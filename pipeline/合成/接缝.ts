@@ -18,20 +18,20 @@ export const frameAudio = (file: string, frame: number, samplesPerFrame: number)
 export type SeamVerdict = '首帧重复' | '正常';
 
 /** 接缝一头：那一帧的 160×90 灰度和那一帧的声音（单声道 float） */
-export type SeamSide = { grayFrame: () => Buffer; 声音: (samplesPerFrame: number) => Float32Array };
-export const masterSide = (file: string, frame: number): SeamSide => ({ grayFrame: () => grayFrame(file, frame), 声音: (n) => frameAudio(file, frame, n) });
+export type SeamSide = { grayFrame: () => Buffer; sound: (samplesPerFrame: number) => Float32Array };
+export const masterSide = (file: string, frame: number): SeamSide => ({ grayFrame: () => grayFrame(file, frame), sound: (n) => frameAudio(file, frame, n) });
 
-export const judgeSeam = (frontSide: SeamSide | { 文件: string; 帧: number }, backEnd: SeamSide | { 文件: string; 帧: number }, samplesPerFrame: number): SeamVerdict => {
-  const front = '文件' in frontSide ? masterSide(frontSide.文件, frontSide.帧) : frontSide;
-  const backSide = '文件' in backEnd ? masterSide(backEnd.文件, backEnd.帧) : backEnd;
+export const judgeSeam = (frontSide: SeamSide | { file: string; frame: number }, backEnd: SeamSide | { file: string; frame: number }, samplesPerFrame: number): SeamVerdict => {
+  const front = 'file' in frontSide ? masterSide(frontSide.file, frontSide.frame) : frontSide;
+  const backSide = 'file' in backEnd ? masterSide(backEnd.file, backEnd.frame) : backEnd;
   const a = front.grayFrame();
   const b = backSide.grayFrame();
   if (!a.length || a.length !== b.length) return '正常';
   let d = 0;
   for (let i = 0; i < a.length; i++) d += Math.abs(a[i]! - b[i]!);
   if (d / a.length > 2.0) return '正常';
-  const x = front.声音(samplesPerFrame);
-  const y = backSide.声音(samplesPerFrame);
+  const x = front.sound(samplesPerFrame);
+  const y = backSide.sound(samplesPerFrame);
   const n = Math.min(x.length, y.length);
   let xx = 0, yy = 0, xy = 0;
   for (let i = 0; i < n; i++) (xx += x[i]! * x[i]!), (yy += y[i]! * y[i]!), (xy += x[i]! * y[i]!);

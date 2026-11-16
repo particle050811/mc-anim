@@ -17,7 +17,7 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'razor_wind',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // RazorWindSpell：WIND 音量 2、音高 1.5
-  声音: [{ 资产: '音效/诡厄巫法/goety.wind.1', 秒: 0, 音量: 2, 音高: 1.5 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.wind.1', sec: 0, 音量: 2, 音高: 1.5 }],
 });

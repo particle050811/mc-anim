@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 8a872f5feb3e），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-古城寻宝（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 8df133284028），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-古城寻宝（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-古城寻宝",
-  "角色": "李樱",
-  "念": "走吧九胡，我们现在去古城寻宝！",
-  "配音": "配音/6-李樱-古城寻宝",
-  "成品sha": "74898b9eed3d",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "走吧九胡，我们现在去古城寻宝！",
+  "voice": "配音/6-李樱-古城寻宝",
+  "finishedSha": "74898b9eed3d",
+  "mouthOpen": 0.03,
   "有声长": 2.195,
-  "时长": 2.375,
+  "duration": 2.375,
   "文件秒数": 2.375,
-  "字": [
+  "char": [
     ["走",0.08,0.24],
     ["吧",0.24,0.32],
     ["九",0.32,0.48],

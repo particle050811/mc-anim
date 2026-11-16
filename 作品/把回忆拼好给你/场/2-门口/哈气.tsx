@@ -62,5 +62,5 @@ export const PuffCharacter: React.FC<HissRoleProps> = ({ standPos: standOverride
 export const PuffBubble: React.FC<{ framing: DoorFraming; liYingX?: number }> = ({ framing, liYingX = hissStandPos.liYingX }) => {
   const N = framing.pxPerCell / 16;
   const anchor = sideProjection(framing, 1280, 720, orthoTop)(liYingX, bubbleAnchorHeight(), standY);
-  return <MaidBubble 锚={anchor} 缩放={N} 文字={hissBubbleText} 字体={pixelFont} anchorAlign={N} />;
+  return <MaidBubble 锚={anchor} scale={N} 文字={hissBubbleText} 字体={pixelFont} anchorAlign={N} />;
 };

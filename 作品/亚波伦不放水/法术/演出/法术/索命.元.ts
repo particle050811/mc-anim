@@ -11,8 +11,8 @@ export default defineSpellMeta({
   长秒: killingWindBandMaxTicks / 20,
   hitSec: 0, // 蓄满 60 刻后放出来当刻结算
   // KillingSpell.SpellResult：THUNDERBOLT 和原版 LIGHTNING_BOLT_IMPACT，都是音量 3、音高 0.75
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.thunderbolt.1', 秒: 0, 音量: 3, 音高: 0.75 },
-    { 资产: '音效/entity.lightning_bolt.impact.1', 秒: 0, 音量: 3, 音高: 0.75 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.thunderbolt.1', sec: 0, 音量: 3, 音高: 0.75 },
+    { asset: '音效/entity.lightning_bolt.impact.1', sec: 0, 音量: 3, 音高: 0.75 },
   ],
 });

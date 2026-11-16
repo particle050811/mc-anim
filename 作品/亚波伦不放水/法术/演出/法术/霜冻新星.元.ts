@@ -6,5 +6,5 @@ export default defineSpellMeta({
   长秒: 2.2, // FROST_NOVA 寿命 4～44 刻，最久的那颗将近 2.2 秒
   hitSec: 0,
   // FrostNovaSpell.SpellResult：ice_chunk_hit 音量 1、音高 0.5
-  声音: [{ 资产: '音效/诡厄巫法/goety.ice_chunk_hit', 秒: 0, 音量: 1, 音高: 0.5 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.ice_chunk_hit', sec: 0, 音量: 1, 音高: 0.5 }],
 });

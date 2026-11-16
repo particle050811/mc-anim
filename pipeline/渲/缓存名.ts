@@ -18,7 +18,7 @@ const attachToJson = (o: object, json: () => unknown) => Object.defineProperty(o
 /** 给一个插件实例挂上算缓存名用的 JSON；不认识的插件不动 */
 export const stripCacheContent = (plugin: unknown) => {
   if (plugin instanceof AssetResolvePlugin) attachToJson(plugin, () => ({ plugin: 'anim-资产解析' }));
-  else if (plugin instanceof MissingBytePlaceholderPlugin) attachToJson(plugin, () => ({ plugin: 'anim-缺字节占位', 根: plugin.根 }));
+  else if (plugin instanceof MissingBytePlaceholderPlugin) attachToJson(plugin, () => ({ plugin: 'anim-缺字节占位', root: plugin.root }));
   else if (plugin instanceof webpack.DefinePlugin) {
     const definitions = plugin.definitions as Record<string, unknown>;
     if (!runtimeDefines.some((k) => k in definitions)) return;

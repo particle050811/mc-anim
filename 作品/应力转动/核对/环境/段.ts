@@ -2,4 +2,4 @@
 import { defineSeg } from '@engine/段/段定义.ts';
 import { viewFps, views, pageWidth, pageHeight } from './视图.ts';
 
-export default defineSeg({ 场: '核对', 秒: views.length / viewFps, 宽: pageWidth, 高: pageHeight, 地形: [] });
+export default defineSeg({ scene: '核对', sec: views.length / viewFps, width: pageWidth, height: pageHeight, terrain: [] });

@@ -40,25 +40,25 @@ const Ground: React.FC = () => (
 const stillSec = 0.4;
 
 const Content: React.FC<{ v: View }> = ({ v }) => {
-  if (v.pictureMode.类 === '陈列') {
+  if (v.pictureMode.type === '陈列') {
     return (
       <>
         {offerings.map((offering, i) => (
-          <group key={offering.名} position={[((i % 6) - 2.5) * 1.5, 0, i < 6 ? 2.4 : 0.8]} scale={2}>
-            <Offering 名={offering.名} 秒={0} />
+          <group key={offering.name} position={[((i % 6) - 2.5) * 1.5, 0, i < 6 ? 2.4 : 0.8]} scale={2}>
+            <Offering name={offering.name} sec={0} />
           </group>
         ))}
       </>
     );
   }
-  if (v.pictureMode.类 === '结构') {
+  if (v.pictureMode.type === '结构') {
     return (
       <>
         <Ground />
-        <RestRitualStructure 秒={stillSec} />
+        <RestRitualStructure sec={stillSec} />
         {offerings.map((offering, i) => (
-          <group key={offering.名} position={offeringPos(i)}>
-            <Offering 名={offering.名} 秒={stillSec} />
+          <group key={offering.name} position={offeringPos(i)}>
+            <Offering name={offering.name} sec={stillSec} />
           </group>
         ))}
       </>
@@ -67,8 +67,8 @@ const Content: React.FC<{ v: View }> = ({ v }) => {
   return (
     <>
       <Ground />
-      <RestRitualPerformance 秒={v.pictureMode.秒} plan={v.pictureMode.plan}>
-        <GirlYaBoLun pose={{ loc: [...appearPos], yaw: 180 }} 秒={v.pictureMode.秒 - v.pictureMode.plan.appear} />
+      <RestRitualPerformance sec={v.pictureMode.sec} plan={v.pictureMode.plan}>
+        <GirlYaBoLun pose={{ loc: [...appearPos], yaw: 180 }} sec={v.pictureMode.sec - v.pictureMode.plan.appear} />
       </RestRitualPerformance>
     </>
   );
@@ -76,10 +76,10 @@ const Content: React.FC<{ v: View }> = ({ v }) => {
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
-  const s = v.pictureMode.类 === '演出' ? summonStateAt(v.pictureMode.秒, v.pictureMode.plan) : undefined;
+  const s = v.pictureMode.type === '演出' ? summonStateAt(v.pictureMode.sec, v.pictureMode.plan) : undefined;
   return (
     <AbsoluteFill style={{ background: background }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: false }}>
         <color attach="background" args={[background]} />
         <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -89,11 +89,11 @@ const picture: React.FC = () => {
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
-        {s && v.pictureMode.类 === '演出' && (
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
+        {s && v.pictureMode.type === '演出' && (
           <div style={{ fontSize: 16 }}>
-            第 {v.pictureMode.秒.toFixed(2)} 秒（共 {v.pictureMode.plan.总秒} 秒）　阶段 {s.阶段}　祭品 {s.offeringAlpha.toFixed(2)}　相当于游戏过渡第 {transitionProgressTick(v.pictureMode.秒, v.pictureMode.plan).toFixed(0)} 刻　法阵半边 {s.circleHalf.toFixed(2)}
+            第 {v.pictureMode.sec.toFixed(2)} 秒（共 {v.pictureMode.plan.totalSec} 秒）　阶段 {s.stage}　祭品 {s.offeringAlpha.toFixed(2)}　相当于游戏过渡第 {transitionProgressTick(v.pictureMode.sec, v.pictureMode.plan).toFixed(0)} 刻　法阵半边 {s.circleHalf.toFixed(2)}
           </div>
         )}
       </div>

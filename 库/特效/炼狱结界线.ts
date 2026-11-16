@@ -8,7 +8,7 @@
 // 所以每条线撑出来的宽度随朝向变，转起来忽粗忽细。照抄。
 
 export type Vec3 = [number, number, number];
-export type CageSegment = { 起: Vec3; 止: Vec3; normal: Vec3 };
+export type CageSegment = { start: Vec3; end: Vec3; normal: Vec3 };
 
 const f32 = Math.fround;
 
@@ -43,7 +43,7 @@ export const cageSegmentTable = (edgeScale = 1): CageSegment[] => {
   const { circumRadius: l, centerDist: ri } = cagePentagon;
   const addSegment = (m: Matrix, x: number, y: number, x2: number, y2: number) => {
     // matrix4f.translate(0,0,depth) 后顶点写 (x, y, 0)：等于 m·(x, y, depth)；法线只过旋转
-    segments.push({ 起: transformPoint(m, [x, y, ri]), 止: transformPoint(m, [x2, y2, ri]), normal: transformPoint(m, [x2 - x, 1, y2 - y]) });
+    segments.push({ start: transformPoint(m, [x, y, ri]), end: transformPoint(m, [x2, y2, ri]), normal: transformPoint(m, [x2 - x, 1, y2 - y]) });
   };
   // renderRegularPolygon5：PI 写的是 3.1415925f，循环变量是 float 累加，照 float 算圈数
   const wholePentagon = (m: Matrix) => {
@@ -121,7 +121,7 @@ export const cageEdgeTable = (): { 顶点: Vec3[]; edges: [number, number][] } =
   const seenEdges = new Set<string>();
   const edges: [number, number][] = [];
   for (const s of cageSegmentTable(1)) {
-    const [a, b] = [vertexKey(s.起), vertexKey(s.止)];
+    const [a, b] = [vertexKey(s.start), vertexKey(s.end)];
     const k = a < b ? `${a}-${b}` : `${b}-${a}`;
     if (!seenEdges.has(k)) {
       seenEdges.add(k);

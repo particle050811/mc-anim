@@ -16,9 +16,9 @@ describe('清单工具 和两部作品 清单.ts 尾部逐键一样', () => {
     it(caseName, () => {
       const rebuilt = manifestTools(m.manifest);
       for (const t of m.manifest) {
-        expect(rebuilt.segDir(t.键)).toBe(m.segDir(t.键));
+        expect(rebuilt.segDir(t.key)).toBe(m.segDir(t.key));
         expect(rebuilt.segmentName(t)).toBe(m.segmentName(t));
-        expect(rebuilt.segmentCode(t.键)).toBe(m.segmentCode(t.键));
+        expect(rebuilt.segmentCode(t.key)).toBe(m.segmentCode(t.key));
       }
     });
   }
@@ -30,7 +30,7 @@ describe('时间线 + 歌网格 和 分镜.ts 的 resolveMoment、arrangeSegs �
     const times: SongMoment[] = [
       ...Array.from({ length: 131 }, (_, n) => ({ beat: n })),
       ...Array.from({ length: 33 }, (_, k) => ({ measure: k })),
-      ...sentences.flatMap((s) => (['起', '止', '开口', ...(s.leadIn !== undefined ? ['前导' as const] : [])] as const).map((linePoint) => ({ 句: s.序, 点: linePoint }))),
+      ...sentences.flatMap((s) => (['起', '止', '开口', ...(s.leadIn !== undefined ? ['前导' as const] : [])] as const).map((linePoint) => ({ 句: s.序, points: linePoint }))),
     ];
     for (const t of times) {
       const legacyTime = storyboard.resolveMoment(t, {});
@@ -39,18 +39,18 @@ describe('时间线 + 歌网格 和 分镜.ts 的 resolveMoment、arrangeSegs �
     }
   });
   it('排段：同一串定义得出同样的窗口', () => {
-    const defTable = { 驯服: { 在: { measure: 25 }, 依据: '' }, 右键: { 在: { after: '驯服', addSec: -1 / 20 }, 依据: '' } };
+    const defTable = { 驯服: { 在: { measure: 25 }, basis: '' }, 右键: { 在: { after: '驯服', addSec: -1 / 20 }, basis: '' } };
     const sequence = {
-      名: '试',
-      时长: originalDurSec,
+      name: '试',
+      duration: originalDurSec,
       segments: [
-        { 键: '甲', 起: { 句: 8, 点: '起' as const }, 止: { after: '右键', addSec: 0 }, 依据: '' },
-        { 键: '乙', 止: { 帧数: 30 }, 依据: '' },
-        { 键: '丙', 止: '放完' as const, 依据: '' },
+        { key: '甲', start: { 句: 8, points: '起' as const }, end: { after: '右键', addSec: 0 }, basis: '' },
+        { key: '乙', end: { frameCount: 30 }, basis: '' },
+        { key: '丙', end: '放完' as const, basis: '' },
       ],
     };
     const legacyScheduled = storyboard.arrangeSegs(sequence, defTable);
-    const scheduled = arrangeSegs({ 名: sequence.名, 时长: sequence.时长, segments: sequence.segments.map(({ 键: segKey, ...x }) => ({ 名: segKey, ...x })) }, defTable, axis);
-    expect(scheduled.map(({ 名: segName, ...w }) => ({ 键: segName, ...w }))).toEqual(legacyScheduled);
+    const scheduled = arrangeSegs({ name: sequence.name, duration: sequence.duration, segments: sequence.segments.map(({ key: segKey, ...x }) => ({ name: segKey, ...x })) }, defTable, axis);
+    expect(scheduled.map(({ name: segName, ...w }) => ({ key: segName, ...w }))).toEqual(legacyScheduled);
   });
 });

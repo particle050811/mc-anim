@@ -21,6 +21,6 @@ export const getSpellPerformance = (id: string): SpellPerformanceEntry => {
 /** 放一发法术：秒 是出手后的秒，[0, 这一发的长秒) 之外不画。放在场景坐标（Z 朝上）的 group 里 */
 export const SpellPerformance: React.FC<SpellPerformanceProps & { id: string }> = ({ id, ...props }) => {
   const { meta, spellPerformance } = getSpellPerformance(id);
-  if (props.秒 < 0 || props.秒 >= spellDuration(meta, props.from, props.目标, props.options).长秒) return null;
+  if (props.sec < 0 || props.sec >= spellDuration(meta, props.from, props.target, props.options).长秒) return null;
   return React.createElement(spellPerformance, props);
 };

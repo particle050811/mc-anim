@@ -1,0 +1,13 @@
+# 格式：冻结粗高度　位置：assets/冻结粗高度/<包>.json
+# 读写：pipeline/世界/冻结.ts、engine/voxel/冻结粗高度.ts　分类：Git　现有 2 个文件（2 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+包	pack
+原点	origin
+指纹	fingerprint
+格	cell
+版本	version
+粗高度	coarseHeight
+维度	dimension
+说明	note
+高	height

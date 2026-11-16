@@ -4,14 +4,14 @@
 // 写要标签类型，所以写入用带类型的 写标签；测试造结构文件、以后写回 .mca 用。
 import { gunzipSync, inflateSync } from 'node:zlib';
 
-export type LongArray = { 长: Buffer };
+export type LongArray = { length: Buffer };
 export type NbtValue = number | bigint | string | Buffer | Int32Array | LongArray | NbtValue[] | Compound;
 export type Compound = { [k: string]: NbtValue };
 
 /** 读一份未压缩的 NBT，返回根复合标签（根名丢掉；要根名用 读NBT带名） */
-export const readNbt = (buf: Buffer): Compound => readNbtNamed(buf).值;
+export const readNbt = (buf: Buffer): Compound => readNbtNamed(buf).value;
 
-export const readNbtNamed = (buf: Buffer): { 名: string; 值: Compound } => {
+export const readNbtNamed = (buf: Buffer): { name: string; value: Compound } => {
   let pos = 0;
   const readString = () => {
     const len = buf.readUInt16BE(pos);
@@ -71,7 +71,7 @@ export const readNbtNamed = (buf: Buffer): { 名: string; 值: Compound } => {
       case 12: {
         const count = buf.readInt32BE(pos);
         pos += 4 + 8 * count;
-        return { 长: buf.subarray(pos - 8 * count, pos) };
+        return { length: buf.subarray(pos - 8 * count, pos) };
       }
     }
     throw new Error(`没见过的 NBT 标签 ${t}（偏移 ${pos - 1}）`);
@@ -79,7 +79,7 @@ export const readNbtNamed = (buf: Buffer): { 名: string; 值: Compound } => {
   const t = buf.readInt8(pos++);
   if (t !== 10) throw new Error(`NBT 根不是复合标签（是 ${t}）`);
   const name = readString();
-  return { 名: name, 值: readValue(t) as Compound };
+  return { name: name, value: readValue(t) as Compound };
 };
 
 /** 按开头的魔数自动解 gzip（1f 8b）、zlib（78 xx），否则当未压缩 */

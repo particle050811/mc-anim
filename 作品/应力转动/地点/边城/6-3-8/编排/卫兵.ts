@@ -82,7 +82,7 @@ const guardStanding = (t: number, i: number): GuardPose => {
 // 走道上原版疾跑 5.6 米/秒，起步 0.25 秒加到全速（离内沿两三米，要落进 4 米宽的池子不能冲快）。跳下去、落水、上岸见 编排/落水.ts，上了路 20 米/秒。
 // 跑的时候不举镜、抬头看路，披风往后扬（原版 CapeLayer 最多扬 75°）
 const sprintSpeed = 5.6;
-const walkwayRampSec = exception('起停', 0.25, { 段: '6-二人登场', 原因: '卫兵走道起步；用户 10-21 定按看过的版本，RAMP_SEC 的原话是针对古城说的' });
+const walkwayRampSec = exception('起停', 0.25, { segment: '6-二人登场', cause: '卫兵走道起步；用户 10-21 定按看过的版本，RAMP_SEC 的原话是针对古城说的' });
 const capeAt = (speed: number) => Math.min(75, (40 * speed) / sprintSpeed);
 const guardStartSec = (i: number) => cues.setOff + 0.3 * jitter01(i, 11) + 0.02 * i + (leaners.includes(i) ? 0.45 : 0); // 蹲着探身的先站起来
 const hoppers = [0, 2, 3, 4, 5, 6, 7, 8]; // 在内沿上一跳；1 号跑到沿上直接迈出去

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { codeRoot } from './路径.ts';
 import { config, workPathTable } from './配置.ts';
 
-export type Work = { 名: string; 根: string };
+export type Work = { name: string; root: string };
 
 /** 选不出作品（没指定、有好几部，或名字不对）：cli/路由.ts 只打这一行提示，不打调用栈 */
 export class WorkSelectError extends Error {}
@@ -55,26 +55,26 @@ const isInside = (dir: string, root: string) => {
 };
 
 export type WorkSelectOptions = {
-  参数?: string;
+  params?: string;
   cwd?: string;
   默认?: string;
   们?: Map<string, string>;
 };
 
 /** 按 --work > 当前目录 > 默认作品 > 只有一部 选；名字不分大小写 */
-export const pickWork = ({ 参数: params, cwd = process.cwd(), 默认: defaultWork = '', 们: workRoots = listWorks() }: WorkSelectOptions = {}): Work => {
+export const pickWork = ({ params: params, cwd = process.cwd(), 默认: defaultWork = '', 们: workRoots = listWorks() }: WorkSelectOptions = {}): Work => {
   const names = [...workRoots.keys()];
   const findWork = (name: string, source: string): Work => {
     const matchedName = names.find((k) => k.toLowerCase() === canonicalName(name).toLowerCase());
     if (!matchedName) throw new WorkSelectError(`没有作品「${name}」（${source}）；有：${names.join('、') || '（一部都没有）'}`);
-    return { 名: matchedName, 根: workRoots.get(matchedName)! };
+    return { name: matchedName, root: workRoots.get(matchedName)! };
   };
   if (params) return findWork(params, '--work');
   // 最深的那个（外部作品可能在另一部作品目录里面）
   const matched = names.filter((k) => isInside(cwd, workRoots.get(k)!)).sort((a, b) => workRoots.get(b)!.length - workRoots.get(a)!.length)[0];
-  if (matched) return { 名: matched, 根: workRoots.get(matched)! };
+  if (matched) return { name: matched, root: workRoots.get(matched)! };
   if (defaultWork) return findWork(defaultWork, 'anim.local.toml 的 work 或 ANIM_WORK');
-  if (names.length === 1) return { 名: names[0]!, 根: workRoots.get(names[0]!)! };
+  if (names.length === 1) return { name: names[0]!, root: workRoots.get(names[0]!)! };
   throw new WorkSelectError(
     names.length
       ? `有 ${names.length} 部作品（${names.join('、')}），用 --work <名> 指定，或在作品目录里跑，或在 anim.local.toml 写 work = "<名>"`
@@ -94,13 +94,13 @@ export const setSpecifiedWork = (name: string | undefined) => {
 /** --work 给的名字（没给是 undefined）：anim cache gc 没给就处理全部作品 */
 export const getSpecifiedWork = () => explicitWork;
 
-export const currentWork = (): Work => (current ??= pickWork({ 参数: explicitWork, 默认: config('默认作品') }));
+export const currentWork = (): Work => (current ??= pickWork({ params: explicitWork, 默认: config('默认作品') }));
 /** 作品根：作品的 index.ts、注册.tsx、清单.ts 所在的目录，打包入口和 webpack改写(作品根) 都从它取 */
-export const workRoot = () => currentWork().根;
-export const workName = () => currentWork().名;
+export const workRoot = () => currentWork().root;
+export const workName = () => currentWork().name;
 
 /** 从参数里取出 --work <名> / --work=<名>，返回剩下的参数 */
-export const parseWorkArg = (args: readonly string[]): { 作品?: string; rest: string[] } => {
+export const parseWorkArg = (args: readonly string[]): { work?: string; rest: string[] } => {
   const rest: string[] = [];
   let work: string | undefined;
   for (let i = 0; i < args.length; i++) {
@@ -115,11 +115,11 @@ export const parseWorkArg = (args: readonly string[]): { 作品?: string; rest: 
     } else if (a.startsWith('--work=')) work = a.slice('--work='.length);
     else rest.push(a);
   }
-  return { 作品: work, rest };
+  return { work: work, rest };
 };
 
 /** 段全名「作品/段键」拆开；只有段键时 作品 为空 */
-export const splitFullName = (selector: string): { 作品?: string; 键: string } => {
+export const splitFullName = (selector: string): { work?: string; key: string } => {
   const i = selector.indexOf('/');
-  return i < 0 ? { 键: selector } : { 作品: selector.slice(0, i), 键: selector.slice(i + 1) };
+  return i < 0 ? { key: selector } : { work: selector.slice(0, i), key: selector.slice(i + 1) };
 };

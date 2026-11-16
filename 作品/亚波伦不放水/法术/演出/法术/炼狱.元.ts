@@ -13,10 +13,10 @@ export default defineSpellMeta({
   长秒: revelationFlySec + revelationCoverSec + revelationShrinkSec,
   hitSec: revelationFlySec, // 结界罩住史蒂夫
   // RevelationSpell：apostle_prepare_spell；结界收缩时 BEACON_DEACTIVATE；每次伤害 FIRE_AMBIENT（音量 2～3、音高 0.3～1.0）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.apostle_prepare_spell.1', 秒: 0 },
-    { 资产: '音效/block.beacon.deactivate', 秒: revelationFlySec + revelationCoverSec },
-    { 资产: '音效/block.fire.ambient', 秒: revelationFlySec + revelationCoverSec + 0.4, 音量: 2, 音高: 0.5 },
-    { 资产: '音效/block.fire.ambient', 秒: revelationFlySec + revelationCoverSec + 1.2, 音量: 3, 音高: 0.3 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.apostle_prepare_spell.1', sec: 0 },
+    { asset: '音效/block.beacon.deactivate', sec: revelationFlySec + revelationCoverSec },
+    { asset: '音效/block.fire.ambient', sec: revelationFlySec + revelationCoverSec + 0.4, 音量: 2, 音高: 0.5 },
+    { asset: '音效/block.fire.ambient', sec: revelationFlySec + revelationCoverSec + 1.2, 音量: 3, 音高: 0.3 },
   ],
 });

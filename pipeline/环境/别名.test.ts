@@ -33,8 +33,8 @@ describe('别名', () => {
   it('esbuild（指纹、检查用的依赖闭包）认得别名，不把它当 npm 包放过去', async () => {
     const d = makeExternalFile();
     try {
-      const { 明细: detail } = await computeMerkle([path.relative(root, path.join(d, '甲.ts')).split(path.sep).join('/')]);
-      expect(Object.keys(detail.模块)).toContain(targetFile);
+      const { detail: detail } = await computeMerkle([path.relative(root, path.join(d, '甲.ts')).split(path.sep).join('/')]);
+      expect(Object.keys(detail.modules)).toContain(targetFile);
     } finally {
       fs.rmSync(d, { recursive: true });
     }

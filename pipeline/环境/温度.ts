@@ -5,10 +5,10 @@ import { execFile, execFileSync } from 'node:child_process';
 import { dataPath } from './配置.ts';
 import { codeRoot } from './路径.ts';
 
-export type TempReading = { 芯片最高温: number | null; 发热等级: number | null };
-export const noTempReading = (): TempReading => ({ 芯片最高温: null, 发热等级: null });
+export type TempReading = { chipMaxTemp: number | null; thermalLevel: number | null };
+export const noTempReading = (): TempReading => ({ chipMaxTemp: null, thermalLevel: null });
 const thermalKey = 'com.apple.system.thermalpressurelevel';
-let tool: { 源: string; 文件: string } | null | undefined;
+let tool: { 源: string; file: string } | null | undefined;
 let triedCompile = false;
 // Agent 选的初值：编译失败后冷却 1 小时，避免每条命令都启动 swiftc、最多阻塞 20 秒。
 const failCooldownMs = 3600_000;
@@ -20,10 +20,10 @@ const thermalTool = (): string | null => {
       tool = null;
       const sourcePath = path.join(codeRoot(), 'pipeline', '环境', '温度.swift');
       const sha = createHash('sha256').update(fs.readFileSync(sourcePath)).digest('hex');
-      tool = { 源: sourcePath, 文件: dataPath('cache', 'temperature', `die-${process.arch}-${sha}`) };
+      tool = { 源: sourcePath, file: dataPath('cache', 'temperature', `die-${process.arch}-${sha}`) };
     }
     if (!tool) return null;
-    const { 源: sourcePath, 文件: file } = tool;
+    const { 源: sourcePath, file: file } = tool;
     // 本进程失败后，其他进程仍可能编好；只抑制重复编译，不把缺读数记死。
     if (fs.existsSync(file)) return file;
     if (triedCompile) return null;
@@ -39,7 +39,7 @@ const thermalTool = (): string | null => {
     return file;
   } catch {
     if (tool && triedCompile) {
-      try { fs.writeFileSync(`${tool.文件}.失败`, ''); } catch { /* 缓存不可写也不能挡住调度 */ }
+      try { fs.writeFileSync(`${tool.file}.失败`, ''); } catch { /* 缓存不可写也不能挡住调度 */ }
     }
     return null;
   } finally {
@@ -49,7 +49,7 @@ const thermalTool = (): string | null => {
 
 const combineReadings = (chipTempText: string, thermalText: string): TempReading => {
   const t = Number(chipTempText.trim()), level = /(?:^|\s)([0-4])\s*$/.exec(thermalText);
-  return { 芯片最高温: Number.isFinite(t) && t > 0 && t < 150 ? Number(t.toFixed(1)) : null, 发热等级: level ? Number(level[1]) : null };
+  return { chipMaxTemp: Number.isFinite(t) && t > 0 && t < 150 ? Number(t.toFixed(1)) : null, thermalLevel: level ? Number(level[1]) : null };
 };
 const execText = (cmd: string, args: string[]): string => {
   try { return execFileSync(cmd, args, { encoding: 'utf8', timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }); }

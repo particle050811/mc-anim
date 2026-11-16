@@ -62,8 +62,8 @@ describe('平台', () => {
 
   it('只差大小写的文件和目录（Mac 上造不出来，查纯函数）', () => {
     expect(caseConflict(['a/Readme.md', 'a/readme.md', 'b/X/1.ts', 'b/x/2.ts', 'c/1.ts', 'c/2.ts'])).toEqual([
-      { 文件: 'a/readme.md', existing: 'a/Readme.md', isFile: true },
-      { 文件: 'b/x/2.ts', existing: 'b/X', isFile: false },
+      { file: 'a/readme.md', existing: 'a/Readme.md', isFile: true },
+      { file: 'b/x/2.ts', existing: 'b/X', isFile: false },
     ]);
     expect(caseConflict(['作品/应力转动/段/6-斩娜迦/段.ts', '作品/应力转动/段/6-斩娜迦/画面.tsx'])).toEqual([]);
   });

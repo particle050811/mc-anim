@@ -85,7 +85,7 @@ const windowCell = [5, 1] as const;
 /** 屋子的方块；照片墙 = 开着照片墙（后墙那支 (3, 1, 1) 的火把挪走，照片墙.tsx 的合照格在那儿） */
 const buildHouseBlocks = (withPhotoWall = false): PlacedBlock[] => {
   const out: PlacedBlock[] = [];
-  const placeBlock = (blockState: string, i: number, j: number, k: number, bright?: number) => out.push({ 状态: blockState, 位: [i, j, k], brightness: bright });
+  const placeBlock = (blockState: string, i: number, j: number, k: number, bright?: number) => out.push({ state: blockState, 位: [i, j, k], brightness: bright });
   const { westWall: W, eastWall: E, backWall: N } = cabin;
   // 地面：草方块铺 4 排（比屋子深一排；斜投影里往里每排画面上升 顶面 ÷ N 格，铺多了草地顶面会盖住半屏天），屋下墙脚圆石、中间橡木地板；
   // 最前一排往下两层泥土、再往下石头
@@ -149,8 +149,8 @@ const houseCells = new Set(houseBlocks.map((x) => x.位.join(',')));
 // 门板：门那格的模型用 facing=south（门板贴在格的北边、正面朝南，合页在右边）。合页定在门洞外沿 x = −0.5：
 //   关着左右翻过来放在门洞（合页到左边），开着原样放在左边一格（合页在右边，贴着墙）
 const doorBlocks: PlacedBlock[] = [
-  { 状态: 'minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]', 位: [0, 0, 0] },
-  { 状态: 'minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]', 位: [0, 0, 1] },
+  { state: 'minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]', 位: [0, 0, 0] },
+  { state: 'minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]', 位: [0, 0, 1] },
 ];
 
 const treeBlockCache = new Map<boolean, PlacedBlock[]>();
@@ -159,7 +159,7 @@ const treeBlocks = (grown: boolean) => {
   if (!b) {
     b = cherryTreeBlocks(grown, treeRoot);
     const collider = b.find((x) => houseCells.has(x.位.join(',')) || x.位.join(',') === `${entrance.signboardPos[0]},1,0`);
-    if (collider) throw new Error(`樱花树（${grown ? '长成' : '树苗'}）的 ${collider.状态} 撞上了屋子、花草或告示牌的格 ${collider.位.join(',')}`);
+    if (collider) throw new Error(`樱花树（${grown ? '长成' : '树苗'}）的 ${collider.state} 撞上了屋子、花草或告示牌的格 ${collider.位.join(',')}`);
     treeBlockCache.set(grown, b);
   }
   return b;
@@ -177,7 +177,7 @@ export type EntranceCabinProps = {
   hasSign?: boolean;
   /** 告示牌上的字：放在字面中心、Z 朝上的 group 里（x 右、z 上，单位格，见 告示牌尺寸） */
   signText?: React.ReactNode;
-  群系?: string;
+  biome?: string;
   /** 照片墙（照片方案 10-24，地点/照片墙.tsx）：给了就撤掉箱子、挪走后墙那支火把，画这些荧光框；不给 = 箱子照旧 */
   photoWall?: readonly PhotoWallCell[];
   /** 照片墙一格几个地图像素：镜头 N 是 4 的倍数给 64，N = 10 给 32（默认，特效/地图画.ts） */
@@ -185,16 +185,16 @@ export type EntranceCabinProps = {
 };
 
 /** Z 朝上的场景内容（不带灯、机位）；放进三渲二画布（它自己套好 rotation [−π/2, 0, 0] 的 group 和平涂） */
-export const EntranceCabin: React.FC<EntranceCabinProps> = ({ doorOpen = false, chestOpen = 0, treeProgress, hasSign: hasSign = false, signText, 群系: biome = 'minecraft:plains', photoWall: photoWall, photoWallEdge }) => {
+export const EntranceCabin: React.FC<EntranceCabinProps> = ({ doorOpen = false, chestOpen = 0, treeProgress, hasSign: hasSign = false, signText, biome: biome = 'minecraft:plains', photoWall: photoWall, photoWallEdge }) => {
   const tree = treeProgress === undefined ? null : treeBlocks(isTreeGrown(treeProgress));
   return (
     <group>
-      <BlockAssembly blocks={photoWall ? photoWallHouse : houseBlocks} 原点={gridOrigin} 群系={biome} frontPlants />
+      <BlockAssembly blocks={photoWall ? photoWallHouse : houseBlocks} origin={gridOrigin} biome={biome} frontPlants />
       <group position={[doorOpen ? entrance.门.openDoorPanel.x0 + 0.5 : 0, 0, 0]} scale={[doorOpen ? 1 : -1, 1, 1]}>
-        <BlockAssembly blocks={doorBlocks} 原点={gridOrigin} />
+        <BlockAssembly blocks={doorBlocks} origin={gridOrigin} />
       </group>
       {photoWall ? <PhotoWall cells={photoWall} sideLength={photoWallEdge} /> : <Chest 贴图={toVanillaCoords(VANILLA_CHEST_TEX, [64, 64])} openness={chestOpen} p={entrance.chest} facing="south" />}
-      {tree && <BlockAssembly blocks={tree} 原点={gridOrigin} 群系={biome} frontPlants />}
+      {tree && <BlockAssembly blocks={tree} origin={gridOrigin} biome={biome} frontPlants />}
       {hasSign && <Signboard 位={entrance.signboardPos}>{signText}</Signboard>}
     </group>
   );

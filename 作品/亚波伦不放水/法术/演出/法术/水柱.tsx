@@ -41,7 +41,7 @@ const waterDragPath = (startPoint: Vec3, seed: number, ground: number): Vec3[] =
   return trail;
 };
 
-const WaterTrail: React.FC<{ 路: Vec3[]; age: number }> = ({ 路: trail, age }) => {
+const WaterTrail: React.FC<{ lane: Vec3[]; age: number }> = ({ lane: trail, age }) => {
   // 游戏画上一刻到这一刻之间：年龄 a 时头在 路(a − 1)
   const a = age - 1;
   if (a <= 0 || a >= trail.length - 1) return null;
@@ -66,13 +66,13 @@ const WaterTrail: React.FC<{ 路: Vec3[]; age: number }> = ({ 路: trail, age })
   return (
     <>
       {perpendicular(sub(points[0]!, points[points.length - 1]!)).map((side, i) => (
-        <Band key={i} points={points} halfWidthDir={scaleVec(side, 0.03)} 图={waterTrailImg} uValues={progresses} 混合="镂空" />
+        <Band key={i} points={points} halfWidthDir={scaleVec(side, 0.03)} image={waterTrailImg} uValues={progresses} blend="镂空" />
       ))}
     </>
   );
 };
 
-const WaterJet: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const WaterJet: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const landing = waterLandPoint(target);
   const fullLength = vecLength(sub(landing, from));
@@ -82,12 +82,12 @@ const WaterJet: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: tar
     <>
       {tick < waterPillarDurTicks && (
         <>
-          <SquareTubeFaces quads={squareTubeFace(from, landing, 0.04, { alongAxis: 'u', lengthStart: -tick * 0.4, lengthEnd: fullLength / 1.28 - tick * 0.4 })} 图={innerImg} 混合="半透明" repeat noDepthTest 序={1} />
-          <SquareTubeFaces quads={squareTubeFace(from, landing, 0.05, { alongAxis: 'u', lengthStart: -tick * 0.08, lengthEnd: fullLength / 12.8 - tick * 0.08 })} 图={outerPng} 混合="半透明" repeat noDepthTest 序={2} />
+          <SquareTubeFaces quads={squareTubeFace(from, landing, 0.04, { alongAxis: 'u', lengthStart: -tick * 0.4, lengthEnd: fullLength / 1.28 - tick * 0.4 })} image={innerImg} blend="半透明" repeat noDepthTest 序={1} />
+          <SquareTubeFaces quads={squareTubeFace(from, landing, 0.05, { alongAxis: 'u', lengthStart: -tick * 0.08, lengthEnd: fullLength / 12.8 - tick * 0.08 })} image={outerPng} blend="半透明" repeat noDepthTest 序={2} />
         </>
       )}
       {drops.map((n) => (
-        <WaterTrail key={n} 路={waterDragPath(landing, seed * 7919 + n, target[2])} age={tick - n} />
+        <WaterTrail key={n} lane={waterDragPath(landing, seed * 7919 + n, target[2])} age={tick - n} />
       ))}
     </>
   );

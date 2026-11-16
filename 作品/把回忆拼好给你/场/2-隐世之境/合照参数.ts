@@ -49,7 +49,7 @@ export const leanBubble = false;
  *  照游戏大小挂（Agent 暂定）：锚点照原版脚底 + 女仆气泡锚高；一个气泡像素 0.025 格（库/界面/女仆气泡.tsx 的 气泡像素格，那个文件带贴图，纯数据这里不引）
  *  = 0.4 个贴图像素 = 12.8 成片像素，取偶数 12
  *  （同 2-重逢 的 台词气泡.缩放，切过去气泡一样大）。挂在窗上、她的帽子上面，右下角挨着你的头顶；咔哒那张新合照里没有它 */
-export const lineBubbleHandedOver = { 缩放: Math.floor((groupPhotoShot.N * 16 * 0.025) / 2) * 2 };
+export const lineBubbleHandedOver = { scale: Math.floor((groupPhotoShot.N * 16 * 0.025) / 2) * 2 };
 
 /** 窗景（小样，片里不开，核对-合照 有一张）：东窗里补一层从窗口往东平视的樱花林、远山和天——另一张透视画布垫在正交画布底下，
  *  正交画布不画天、不画窗外，窗玻璃里透出底下那张。核查 10-24：硬切前 2-重逢 透过这扇窗看得见樱花树，切到侧面窗里只剩一块浅蓝；
@@ -69,7 +69,7 @@ export const groupPhotoShadingScene: ShadingSceneParams = { timeOfDay: '白天',
 /** 新合照套成拍立得的样子（合照.tsx 的 合照拍立得，片里没露）：照抄第 11 句（1-一如既往）的 拍立得样式（场/1-隐世之境一楼/参数.ts，场之间不互相 import），
  *  同一种斜放、白边、投影、纸纹，以后片尾或别处要露这张照片就用它 */
 export const line11PolaroidStyle = {
-  缩放: 0.64,
+  scale: 0.64,
   tiltDeg: -3,
   whiteFlashSec: legacyFrameSec(5),
   shrinkSec: legacyFrameSec(20),

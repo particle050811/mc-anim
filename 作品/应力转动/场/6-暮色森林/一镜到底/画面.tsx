@@ -162,7 +162,7 @@ const stowBroom = (physT: number) => {
     // 原版实体收起时掉落物生成在实体原点（扫帚杆中心往下 `stickZ`），自己不带速度：两人冲出去，它留在身后一点，再追上去被吸进李樱身体里。
     // 放在杆中心、带着冲劲的话整段都藏在两人中间被九胡尾巴挡住
     const P0 = route.broom(route.G_LAND).位置;
-    broomItems = [{ 名: '扫帚', p0: [P0[0], P0[1], P0[2] - RIDE.stickZ + 0.25], v0: [0, 0, 0], spinAxis: [0.2, -0.1, 0.3], spinSpeed: 20, suckStart: 0, suckEnd: dismount.absorbSec }];
+    broomItems = [{ name: '扫帚', p0: [P0[0], P0[1], P0[2] - RIDE.stickZ + 0.25], v0: [0, 0, 0], spinAxis: [0.2, -0.1, 0.3], spinSpeed: 20, suckStart: 0, suckEnd: dismount.absorbSec }];
   }
   // 吸到李樱胸口（他在前座）
   const broom = route.broom(route.secAt(physT));
@@ -176,7 +176,7 @@ const stowBroom = (physT: number) => {
 const nagaDrawDist = (fogFar: number, far: TwilightFarView | undefined) => (far ? Math.max(4000, fogFar + 500) : 4000);
 // 这些地标离镜头多远以内才画（米）：雾最远 22 公里，新世界整片不到 13 公里，基本都画
 const isNear = (landmark: TwilightLandmarkName, camPos: number[], maxDist = 16000) => {
-  const origin = twilightLandmark(landmark).原点;
+  const origin = twilightLandmark(landmark).origin;
   return Math.hypot(origin[0] - camPos[0], origin[1] - camPos[1]) < maxDist;
 };
 
@@ -256,7 +256,7 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; level?: RenderLevel; sc
 
 // 一镜到底的一截：段内第 sec 秒 = 画面时间 `起` + sec。整条一镜到底是 6-1-4至9 的一截（6-1/段界.ts）。
 // 声音（配乐接着 6-1-3 往下放、原版音效）照 6-穿塔斩首领 段.ts 的 cue 放（11-06 迁成原生段，决策 0015），这里只画画面
-export const OnerSegment: React.FC<{ 起: number }> = ({ 起: start }) => {
+export const OnerSegment: React.FC<{ start: number }> = ({ start: start }) => {
   const sec = useCurrentSec();
   return (
     <AbsoluteFill>

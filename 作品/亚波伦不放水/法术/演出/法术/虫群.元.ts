@@ -11,5 +11,5 @@ export default defineSpellMeta({
   长秒: (swarmDurTicks + swarmParticleLifeTicks) / 20,
   hitSec: 0, // 每刻对视线前方一段锥形里的生物结算
   // SwarmSpell.SpellResult：每刻响 INSECT_SWARM（2 个变体轮着排），音量、音高都是 随机 × 0.5（这里取 0.25、0.5）
-  声音: Array.from({ length: swarmDurTicks }, (_, n) => ({ 资产: `音效/诡厄巫法/goety.insect_swarm.${(n % 2) + 1}`, 秒: n / 20, 音量: 0.25, 音高: 0.5 })),
+  sound: Array.from({ length: swarmDurTicks }, (_, n) => ({ asset: `音效/诡厄巫法/goety.insect_swarm.${(n % 2) + 1}`, sec: n / 20, 音量: 0.25, 音高: 0.5 })),
 });

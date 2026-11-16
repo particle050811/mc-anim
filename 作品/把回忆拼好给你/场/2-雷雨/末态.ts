@@ -2,4 +2,4 @@
 // 雨停了，洞接着开大（2-门口/第8句云.ts 的 第8句光影场）。纯数据。
 import { rainCloud } from './参数.ts';
 
-export const endRainCloud = { 海平面: rainCloud.海平面, 层: rainCloud.层, holeRatio: rainCloud.holeRatio, softEdge: rainCloud.softEdge } as const;
+export const endRainCloud = { seaLevel: rainCloud.seaLevel, layers: rainCloud.layers, holeRatio: rainCloud.holeRatio, softEdge: rainCloud.softEdge } as const;

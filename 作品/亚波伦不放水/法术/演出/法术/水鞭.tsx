@@ -32,7 +32,7 @@ const whipAnim: AnimDef = {
   },
 };
 
-const waterWhip: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => {
+const waterWhip: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target }) => {
   const tick = sec * 20;
   if (tick >= whipLifeTicks) return null;
   // 瞄史蒂夫胸口；游戏的 xRot 往下看为正
@@ -47,7 +47,7 @@ const waterWhip: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
         <group scale={[-1, -1, 1]}>
           <group scale={[1, 1, whipRange / 4]}>
             <group position={[0, -1.501, 0]}>
-              <ModelPart 模型={gulfTentacleModel} 图={image} partPoses={{ ...pose, tentacle: { ...root, rot: [rootRot[0] + pitch, rootRot[1], rootRot[2]] } }} />
+              <ModelPart model={gulfTentacleModel} image={image} partPoses={{ ...pose, tentacle: { ...root, rot: [rootRot[0] + pitch, rootRot[1], rootRot[2]] } }} />
             </group>
           </group>
         </group>

@@ -17,10 +17,10 @@ import circleExplode8Png from 'asset:贴图/法术/goety/particle/circle_explode
 const animFrames = [circleExplode1Png, circleExplode2Png, circleExplode3Png, circleExplode4Png, circleExplode5Png, circleExplode6Png, circleExplode7Png, circleExplode8Png].map(png);
 
 /** 出生刻 和 秒 × 20 同一个钟；加速 = 选项里的 speed（0 时 30 刻放完，1 时 15 刻） */
-export const RingBurst: React.FC<{ 位: Vec3; spawnTick: number; 秒: number; 大小: number; 颜色: RgbColor; accel?: number }> = ({ 位: pos, spawnTick, 秒: sec, 大小: size, 颜色: ringColor, accel = 0 }) => {
+export const RingBurst: React.FC<{ 位: Vec3; spawnTick: number; sec: number; size: number; 颜色: RgbColor; accel?: number }> = ({ 位: pos, spawnTick, sec: sec, size: size, 颜色: ringColor, accel = 0 }) => {
   const ageTick = Math.floor(sec * 20 - spawnTick);
   if (ageTick < 0) return null;
   const age = ageTick * (accel + 1);
   if (age >= 30) return null;
-  return <GroundDecal 位={pos} 图={animFrames[Math.min(7, Math.floor((age * 8) / 30))]!} radius={size} 色={ringColor} lift={0.05} />;
+  return <GroundDecal 位={pos} image={animFrames[Math.min(7, Math.floor((age * 8) / 30))]!} radius={size} 色={ringColor} lift={0.05} />;
 };

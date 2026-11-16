@@ -106,7 +106,7 @@ const fx = (): FxParams => {
   const imp = timeline.impactTime();
   FX = {
     impact: imp,
-    中心: choreo.shaftCellCenter(),
+    center: choreo.shaftCellCenter(),
     groundZ: choreo.groundZ,
     caveCeilingZ: choreo.caveCeilingZ,
     ancientCityFloorZ: choreo.ancientCityFloorZ,
@@ -129,7 +129,7 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
   const after = physSec >= imp;
   // 6-3-1、6-3-2（T < 0）：机位、两人姿势、李樱手里的指南针换成 6-3-1/编排.ts、6-3-2/扫帚上.ts 的。
   // 正好落在 6-3-1 止上的那一刻算 6-3-2（段表是累加出来的秒，1e-9 是浮点余量）
-  const preLeap = globalSec < timeline.segTable['6-3-1'].止 - 1e-9 ? backToTown(globalSec) : globalSec < 0 ? onBroomState(globalSec) : null;
+  const preLeap = globalSec < timeline.segTable['6-3-1'].end - 1e-9 ? backToTown(globalSec) : globalSec < 0 ? onBroomState(globalSec) : null;
   const cam = preLeap?.cam ?? choreo.camPose(globalSec);
   const under = cam.pos[2] < choreo.groundZ - 0.5;
   // 已看过的顺序画面在入井后保留了入井前最后一帧的大气后期和云影。
@@ -140,9 +140,9 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
     let last: ReturnType<typeof choreo.camPose> | undefined;
     let lastIdx = 0;
     // 拼段跳过了 6-3-6 的第 0 帧；这里只求相机参数，不预渲任何历史帧。正好落在帧上的这一刻也算（1e-9 是浮点余量）
-    const doneFrames = (globalSec - span.起) * renderFps + 1e-9;
+    const doneFrames = (globalSec - span.start) * renderFps + 1e-9;
     for (let k = 1; k <= doneFrames; k++) {
-      const c = choreo.camPose(span.起 + k / renderFps);
+      const c = choreo.camPose(span.start + k / renderFps);
       if (c.pos[2] >= choreo.groundZ - 0.5) {
         last = c;
         lastIdx = k;
@@ -175,10 +175,10 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
       </group>
     ) : undefined;
   // 撞击的闪光：撞击那一刻往后 1/48 秒最亮，前后 1/12 秒淡完
-  const t6 = timeline.segTable['6-3-6'].起;
+  const t6 = timeline.segTable['6-3-6'].start;
   const flash = segment === '6-3-6' ? Math.max(0, 1 - Math.abs(globalSec - t6 - timeline.impactSegSec - 1 / 48) / (1 / 12)) * 0.55 : 0;
   // 金光：锤头、光尾（沿走过的路往回取点，平移到锤头上）
-  const glowLevel = exception('不加自制特效', choreo.goldGlow(physSec), { 段: ['6-飞越主世界俯冲边城', '6-城墙瞭望', '6-举锤砸穿'], 原因: '剧情要的锤头金色光尾和撞击金光' });
+  const glowLevel = exception('不加自制特效', choreo.goldGlow(physSec), { segment: ['6-飞越主世界俯冲边城', '6-城墙瞭望', '6-举锤砸穿'], cause: '剧情要的锤头金色光尾和撞击金光' });
   const head = choreo.maceHeadPos(ly);
   const off = [head[0] - ly.hip[0], head[1] - ly.hip[1], head[2] - ly.hip[2]];
   // 光尾往回取 0.3 秒，长度封顶 45 米（快时按速度缩）；钻进地里后只留 0.12 秒（再长会从井口一路拖到镜头身上）。用户 10-10 嫌太长，减半
@@ -217,24 +217,24 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
         <ScreenAo atmosphereCamera={under ? atmosphereReference?.camera : undefined} />
         <OverworldSky active={!under} />
         {/* 入井后旧顺序画面的水面停在最后有天空的帧；显式接住这个时刻，不能随跳帧历史停在别处，也不能被天空卸载复位。 */}
-        {under && atmosphereReference && <OverworldWaterSky 秒={atmosphereReference.waterSec} />}
+        {under && atmosphereReference && <OverworldWaterSky sec={atmosphereReference.waterSec} />}
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {cam.pos[2] < choreo.caveCeilingZ ? <GuchengLight /> : <Lights camPos={cam.pos} dome={!under} />}
           {/* 地形：坑和竖井那一圈在导入的地形里一直是挖开的（地形.ts），砸穿以前城的地面盖在上面 */}
-          {!under && <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />}
+          {!under && <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit?.holeRect} />
           </group>
           {nearTown && <SlabFloor holeRect={pit?.holeRect} />}
-          {after && dist(fxParams.中心) < 400 && (
+          {after && dist(fxParams.center) < 400 && (
             <>
-              <group position={[fxParams.中心[0], fxParams.中心[1], 0]}>
+              <group position={[fxParams.center[0], fxParams.center[1], 0]}>
                 <ShaftWalls />
                 {/* 还没被锤底碰到的格子照原样填着，碰到哪层碎哪层（填块.tsx） */}
                 <ShaftFill w={physSec} />
               </group>
               {/* 古城里砸地的震波（方块真挪走、裂纹）跟着古城画，见 竖井.tsx 的 `AncientCity` */}
-              {cam.pos[2] < choreo.groundZ + 30 && <AncientCity center={fxParams.中心} slamSec={physSec - fxParams.landSec} />}
+              {cam.pos[2] < choreo.groundZ + 30 && <AncientCity center={fxParams.center} slamSec={physSec - fxParams.landSec} />}
             </>
           )}
           {/* 扫帚（李樱跃出以后九胡驾着它停在原地）、九胡（一直坐在扫帚上） */}
@@ -257,16 +257,16 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
               const pose = choreo.guardPoseAt(globalSec, i);
               return (
                 <group key={i} position={[borderTownPos[0] + guardPos[0] + pose.offset[0], borderTownPos[1] + guardPos[1] + pose.offset[1], borderTownPos[2] + guardPos[2] + pose.offset[2]]} rotation={[0, 0, rad(180 + pose.bodyTurn)]}>
-                  <Guard sec={physSec + i * 0.7} glintSec={physSec} headPitch={pose.pictureHeadPitch} headYaw={pose.headYaw} raiseSpyglass={pose.raiseSpyglass} skinIndex={i} limbSwing={pose.步} stride={pose.stride} />
+                  <Guard sec={physSec + i * 0.7} glintSec={physSec} headPitch={pose.pictureHeadPitch} headYaw={pose.headYaw} raiseSpyglass={pose.raiseSpyglass} skinIndex={i} limbSwing={pose.step} stride={pose.stride} />
                 </group>
               );
             })}
           {after && (
             <>
               <BlockDebris P={fxParams} w={physSec} />
-              <GoldGlowBurst t={physSec - imp} at={[fxParams.中心[0], fxParams.中心[1], choreo.groundZ]} cam={cam.pos} afterglow={afterglow} />
+              <GoldGlowBurst t={physSec - imp} at={[fxParams.center[0], fxParams.center[1], choreo.groundZ]} cam={cam.pos} afterglow={afterglow} />
               {/* 落进古城那一下也炸一次小一号的金光（用户 10-18 嫌这下特效小） */}
-              <GoldGlowBurst t={physSec - fxParams.landSec} at={[fxParams.中心[0], fxParams.中心[1], choreo.ancientCityFloorZ]} cam={cam.pos} scale={landBurstScale} />
+              <GoldGlowBurst t={physSec - fxParams.landSec} at={[fxParams.center[0], fxParams.center[1], choreo.ancientCityFloorZ]} cam={cam.pos} scale={landBurstScale} />
             </>
           )}
         </group>
@@ -279,5 +279,5 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
 
 export const FallSegment: React.FC<{ segment: timeline.SegmentName }> = ({ segment: segment }) => {
   const sec = useCurrentSec();
-  return <FallScene T={timeline.segTable[segment].起 + sec} segment={segment} />;
+  return <FallScene T={timeline.segTable[segment].start + sec} segment={segment} />;
 };

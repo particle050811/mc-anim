@@ -14,7 +14,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const holdTick = (feastRounds - 1) * feastGapTicks + 1;
 
-const FangFeast: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const FangFeast: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const facingAngle = gameHorizAngleRad(from, target);
   const debris: DebrisBirth[] = [];
@@ -24,16 +24,16 @@ const FangFeast: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
   for (let round = 0; round < feastRounds; round++) {
     const r = mulberry32(seed * 53 + round);
     const n = 10 + Math.floor(r() * 35);
-    for (let i = 0; i < n; i++) smokeSpawns.push({ 种: 'poof', 刻: round * feastGapTicks, p: [from[0], from[1], from[2]], 种子: seed * 1000 + round * 50 + i });
+    for (let i = 0; i < n; i++) smokeSpawns.push({ kind: 'poof', 刻: round * feastGapTicks, p: [from[0], from[1], from[2]], seed: seed * 1000 + round * 50 + i });
   }
   return (
     <>
       {Array.from({ length: feastRounds }, (_, round) => (
         <Fang key={round} 位={target} facingAngle={facingAngle} warmup={1} 刻={tick - round * feastGapTicks} />
       ))}
-      <CritStar spawns={Array.from({ length: feastRounds }, (_, round) => fangCritSpawns(target, 1, tick - round * feastGapTicks, seed * 100 + round).map((strike) => ({ ...strike, 刻: strike.刻 + round * feastGapTicks }))).flat()} 秒={sec} />
-      <BlockDebris spawns={debris} 秒={sec} ground={target[2]} />
-      <VanillaParticles spawns={smokeSpawns} 秒={sec} />
+      <CritStar spawns={Array.from({ length: feastRounds }, (_, round) => fangCritSpawns(target, 1, tick - round * feastGapTicks, seed * 100 + round).map((strike) => ({ ...strike, 刻: strike.刻 + round * feastGapTicks }))).flat()} sec={sec} />
+      <BlockDebris spawns={debris} sec={sec} ground={target[2]} />
+      <VanillaParticles spawns={smokeSpawns} sec={sec} />
     </>
   );
 };

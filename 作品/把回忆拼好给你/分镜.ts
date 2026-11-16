@@ -44,13 +44,13 @@ const seriesMainCutEvents = [lyrics, openingScene, sentence2, sentence3, sentenc
 const mergedEvents = { ...lyrics.events, ...openingScene.events, ...sentence2.events, ...sentence3.events, ...sentence4.events, ...sentence5.events, ...sentences6to7.events, ...sentence8.events, ...sentences9to11.events, ...sentence12.events, ...sentences13to14.events, ...sentence15.events, ...sentence15Tail.events, ...outro.events };
 export type MainCutEventName = keyof typeof mergedEvents;
 /** 全部正片事件，按歌上的秒排（同一刻的照上面各串的先后，歌词.ts 那几个在前） */
-export const mainCutEvents: Readonly<Record<MainCutEventName, SongEvent>> = Object.fromEntries(Object.entries(mergedEvents).sort(([, a], [, b]) => a.秒 - b.秒)) as Record<MainCutEventName, SongEvent>;
+export const mainCutEvents: Readonly<Record<MainCutEventName, SongEvent>> = Object.fromEntries(Object.entries(mergedEvents).sort(([, a], [, b]) => a.sec - b.sec)) as Record<MainCutEventName, SongEvent>;
 /** 各串文件自己的事件表（测试查每份都按时间排、名字不重） */
 export const mainCutEventsBySeries: readonly Readonly<Record<string, SongEvent>>[] = seriesMainCutEvents;
 
 export type SegmentWindow = SegmentWindowType;
 export const SegmentWindow = (segKey: string): SegmentWindowType => {
-  const w = seriesList.flat().find((x) => x.键 === segKey);
+  const w = seriesList.flat().find((x) => x.key === segKey);
   if (!w) throw new Error(`分镜里没有段 ${segKey} 的窗口`);
   return w;
 };

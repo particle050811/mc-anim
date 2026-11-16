@@ -61,7 +61,7 @@ export type LiYingState = {
   skeleton: BoneTable;
   blink: number | 'auto';
   /** 不给 = 不呼吸、尾巴不摆（屏住气哈） */
-  秒?: number;
+  sec?: number;
 };
 
 /** 段内帧 f 离 挂照片 几秒（之前是负的） */
@@ -86,11 +86,11 @@ export const LiYingState = (f: number): LiYingState => {
       handPose = lerpBonePose(params.holdPhotoHand, params.hangPhotoHand, pushProgress(f));
       gaze = lookLerp(params.lookInHand, params.lookFrame, (distSinceHang(f) + params.hangReachSec + oneFrameSec) / params.turnHeadSec);
     }
-    return { loc, yaw: 180, stancePose: '站', expression: '微笑', 看: gaze, skeleton: handPose, blink: 'auto', 秒: sec };
+    return { loc, yaw: 180, stancePose: '站', expression: '微笑', 看: gaze, skeleton: handPose, blink: 'auto', sec: sec };
   }
   if (f < events.hiss) {
     // 看见苦力怕：头往画面左边转过去（1/12 秒，24 fps 时两帧），吓一跳
-    return { loc, yaw: 180, stancePose: '站', expression: '惊讶', 看: lookLerp(params.lookAtYou, params.lookAtCreeper, ((f - events.liYingSpotsCreeper) / fps + oneFrameSec) / legacyFrameSec(2)), skeleton: params.emptyHand, blink: 0, 秒: sec };
+    return { loc, yaw: 180, stancePose: '站', expression: '惊讶', 看: lookLerp(params.lookAtYou, params.lookAtCreeper, ((f - events.liYingSpotsCreeper) / fps + oneFrameSec) / legacyFrameSec(2)), skeleton: params.emptyHand, blink: 0, sec: sec };
   }
   if (f < events.creeperFlees) {
     return { loc, yaw: sentence8.hissFacing.liYingYaw, stancePose: '哈气', expression: '哈气', 看: sentence8.puffLook, skeleton: { ...sentence8.puffPaws, ...sentence8.hissTail }, blink: 0 };
@@ -98,17 +98,17 @@ export const LiYingState = (f: number): LiYingState => {
   // 回头冲你得意地一歪头：转身朝镜头，头转向你、歪过去（1/8 秒歪到位，24 fps 时三帧），闭眼笑
   const tilt = params.proudTilt * clamp01(((f - events.creeperFlees) / fps + oneFrameSec) / legacyFrameSec(3));
   const [pitch, yaw] = params.proudLook;
-  return { loc, yaw: 180, stancePose: '站', expression: '微笑', skeleton: { Head: { rot: [-pitch, -yaw, tilt] } }, blink: 1, 秒: sec };
+  return { loc, yaw: 180, stancePose: '站', expression: '微笑', skeleton: { Head: { rot: [-pitch, -yaw, tilt] } }, blink: 1, sec: sec };
 };
 
 /** 不在框里的那张光柱破云（照片墙.tsx 的 地图画片）：挂照片 之前在她手里，挂照片 前 挂伸秒 起从手里的位置、大小挪进空框，前一帧已经和框里那张一样，
  *  挂照片 那一帧（咔哒一声）换成框里那张（这里给 null），画面不跳。角的 x、z 吸到整成片像素（贴图像素的边落在整像素上） */
-export const photoState = (f: number): { 角: V3; side: number } | null => {
+export const photoState = (f: number): { angle: V3; side: number } | null => {
   if (f >= events.hangPhoto) return null;
   const t = pushProgress(f);
   const snap = (v: number) => Math.round(v * framing.pxPerCell) / framing.pxPerCell;
   const corner = lerpV(params.photoHoldAngle, params.photoFrameAngle, t);
-  return { 角: [snap(corner[0]), corner[1], snap(corner[2])], side: lerp(params.photoHoldEdge, 1, t) };
+  return { angle: [snap(corner[0]), corner[1], snap(corner[2])], side: lerp(params.photoHoldEdge, 1, t) };
 };
 
 // ---------- 苦力怕 ----------
@@ -142,8 +142,8 @@ export const creeperPose = (f: number): CreeperPose => {
 export const youState = (_f: number) => ({ x: sentence8.hissStandPos.你, yaw: sentence8.hissFacing.你, headYaw: sentence8.youHead, scale: sentence8.steveScale });
 
 // ---------- 气泡 ----------
-export const bubbleState = (f: number): { 字: string; x: number } | null => {
+export const bubbleState = (f: number): { char: string; x: number } | null => {
   if (f < events.hiss) return null;
-  if (f < events.creeperFlees) return { 字: sentence8.hissBubbleText, x: sentence8.hissStandPos.liYingX };
-  return { 字: params.proudBubbleText, x: sentence8.hissStandPos.liYingX };
+  if (f < events.creeperFlees) return { char: sentence8.hissBubbleText, x: sentence8.hissStandPos.liYingX };
+  return { char: params.proudBubbleText, x: sentence8.hissStandPos.liYingX };
 };

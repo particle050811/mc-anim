@@ -10,7 +10,7 @@ import { textureNames } from '@engine/voxel/真实方块表.ts';
 import texUri from 'asset:贴图/场景/关键帧/方块表';
 
 /** 半边（格，以原点为中心）、平均水深、起伏（格）、往下填到多深 */
-const seabed = { 半边: 80, depth: 12, 起伏: 3, bottom: 18 } as const;
+const seabed = { halfSide: 80, depth: 12, 起伏: 3, bottom: 18 } as const;
 const biome = 'minecraft:ocean';
 
 let seabedImg: ReturnType<typeof png> | null = null;
@@ -56,8 +56,8 @@ const makeSeabedSwing = (): SeabedLayout => {
   const grass = new Map<string, [number, number, number][]>();
   const addTo = (m: Map<string, [number, number, number][]>, k: string, v: [number, number, number]) => (m.get(k) ?? m.set(k, []).get(k)!).push(v);
   const n = simplex2(23);
-  for (let x = -seabed.半边; x < seabed.半边; x++)
-    for (let y = -seabed.半边; y < seabed.半边; y++) {
+  for (let x = -seabed.halfSide; x < seabed.halfSide; x++)
+    for (let y = -seabed.halfSide; y < seabed.halfSide; y++) {
       const depth = Math.round(seabed.depth + seabed.起伏 * n(x / 24, y / 24));
       const s = seabedFor(biome, 0, depth);
       if (!s) continue;
@@ -77,7 +77,7 @@ const makeSeabedSwing = (): SeabedLayout => {
   return { 实: solid, grass };
 };
 
-const batchGroup = ({ geometry, 名: textureName, positions, 镂空: cutout }: { geometry: THREE.BufferGeometry; 名: string; positions: [number, number, number][]; 镂空?: boolean }) => {
+const batchGroup = ({ geometry, name: textureName, positions, 镂空: cutout }: { geometry: THREE.BufferGeometry; name: string; positions: [number, number, number][]; 镂空?: boolean }) => {
   const mesh = useMemo(() => {
     const material = new THREE.MeshLambertMaterial({ map: loadTexture(textureName), alphaTest: cutout ? 0.5 : 0, side: cutout ? THREE.DoubleSide : THREE.FrontSide });
     const m = new THREE.InstancedMesh(geometry, material, positions.length);
@@ -100,8 +100,8 @@ export const SeaFloorBlocks: React.FC = () => {
   const { 实: solid, grass } = seabedSwing;
   return (
     <group>
-      {[...solid].map(([blockName, positions]) => <Batch key={blockName} geometry={blockGeometry} 名={blockName} positions={positions} />)}
-      {[...grass].map(([grassName, positions]) => <Batch key={grassName} geometry={crossGeometry} 名={grassName} positions={positions} 镂空 />)}
+      {[...solid].map(([blockName, positions]) => <Batch key={blockName} geometry={blockGeometry} name={blockName} positions={positions} />)}
+      {[...grass].map(([grassName, positions]) => <Batch key={grassName} geometry={crossGeometry} name={grassName} positions={positions} 镂空 />)}
     </group>
   );
 };

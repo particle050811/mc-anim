@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 b873514e54db），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-怎么下去（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 f0c8276b1202），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-怎么下去（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-九胡-怎么下去",
-  "角色": "九胡",
-  "念": "狗修金打算怎么下去呢？",
-  "配音": "配音/6-九胡-怎么下去",
-  "成品sha": "10737455d3c6",
-  "开口": 0.03,
+  "character": "九胡",
+  "spoken": "狗修金打算怎么下去呢？",
+  "voice": "配音/6-九胡-怎么下去",
+  "finishedSha": "10737455d3c6",
+  "mouthOpen": 0.03,
   "有声长": 1.631,
-  "时长": 1.811,
+  "duration": 1.811,
   "文件秒数": 1.812,
-  "字": [
+  "char": [
     ["狗",0,0.16],
     ["修",0.16,0.32],
     ["金",0.32,0.48],

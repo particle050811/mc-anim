@@ -18,7 +18,7 @@ import type { Cam } from '@engine/core/机位.ts';
 // ---------- 接 6-4-8 ----------
 // 本段 0 秒 = 6-4-8 末帧；二人的喘气、晃动接着 6-4-8 的秒走
 const sec648 = (t: number) => K648.lastSec + t;
-export const gameSec0 = K648.warden(K648.lastSec).秒;
+export const gameSec0 = K648.warden(K648.lastSec).sec;
 export const WARDEN_AT = K648.WARDEN_AT;
 export const WARDEN_YAW = K648.WARDEN_YAW;
 
@@ -192,7 +192,7 @@ export const roarAnimAt = (t: number) => {
 export const wardenAt = (t: number) => {
   const h = handoffAt(t);
   return {
-    秒: gameClock(t),
+    sec: gameClock(t),
     tendril: tendrilAt(t),
     headYaw: K648.wardenHeadYawTo(liuPoseAt(t).loc) * (1 - h),
     headPitch: 12 - 4 * h,

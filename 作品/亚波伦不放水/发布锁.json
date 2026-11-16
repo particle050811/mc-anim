@@ -1,12 +1,12 @@
 {
-  "仓库": "particle050811/mc-anim",
-  "标签": "assets-v1",
-  "附件": [
+  "repo": "particle050811/mc-anim",
+  "label": "assets-v1",
+  "attachments": [
     {
-      "名": "bytes-5b7d3befc127.tar",
+      "name": "bytes-5b7d3befc127.tar",
       "sha256": "eb36206681ab7ec089c417975655fd0d5536babf0f3813d655135255ca2e3bcb",
-      "大小": 25047552,
-      "字节": [
+      "size": 25047552,
+      "bytes": [
         "001ac70316ce3082a60e022cb55227c08aba7724021b0a8d0fcbee55d2f95aac",
         "00b93ec06782eea0ee13cd8335defbdfe8d5191840d752511f4ecdfc8b698b21",
         "0104a39b949e2d63b8905673f004f46af90d5b24075db0508f25a8a34225dce5",
@@ -684,7 +684,7 @@
         "ff551f92f5d951f4cff53397178620683063ff6190d5b7ff5c7c1981b3e6adde",
         "ffaaf6638246534e8bc5efac4f21f49b3cdd9510de83c1e87f1ec3893e9107ad"
       ],
-      "私有库字节": [
+      "privateLibBytes": [
         "0eef27a05f2978f3b023e79671eb5eb42697ba7588c11f1e6169fc6ec04fe37f",
         "15a29c8e13d84ac770a0ee27536a06d5e55e2d6dd4cf251bc312a47907d91052",
         "19dfbce41b9baf8df4a9776a10225ca33e4293cb6b40ca1e38da5ac2e94c18e3",
@@ -716,12 +716,12 @@
       ]
     },
     {
-      "名": "terrain-052c14aea78a.tar",
-      "sha256": "54df5809ce0a0298242a07c0bf69796e419e8d37df66506e53356e23a7f78e60",
-      "大小": 18522112,
-      "地形": {
-        "包": "下界-无结构-1110",
-        "版本": "052c14aea78a"
+      "name": "terrain-ee02641c105d.tar",
+      "sha256": "dac4e5f40f89f7fd466f48b7dcdf995ac2367e4a4643b3ee409a4272e1052526",
+      "size": 18522112,
+      "terrain": {
+        "pack": "下界-无结构-1110",
+        "version": "ee02641c105d"
       }
     }
   ]

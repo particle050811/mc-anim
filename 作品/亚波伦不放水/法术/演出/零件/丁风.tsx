@@ -12,9 +12,9 @@ export interface WindBirth {
   刻: number;
   /** 主人在绝对刻 k 末的位置（场景坐标） */
   originAt: (absTick: number) => Vec3;
-  宽: number;
-  高: number;
-  种子: number;
+  width: number;
+  height: number;
+  seed: number;
   寿命?: number;
 }
 
@@ -28,17 +28,17 @@ export const WindParticles: React.FC<{ spawns: readonly WindBirth[]; 刻: number
   <>
     {spawns.map((spawn, i) => {
       const age = tick - spawn.刻;
-      const r = mulberry32(spawn.种子 * 2654435761 + 97);
+      const r = mulberry32(spawn.seed * 2654435761 + 97);
       const lifetime = spawn.寿命 ?? 20 + Math.floor(r() * 20);
       const initAngleDeg = r() * 360;
       const rotSpeed = (10 + r() * 10) * (Math.floor(r() * 3) - 1);
       if (age < 0 || age >= lifetime) return null;
       const positionAt = (k: number): Vec3 => {
         const ownerPos = spawn.originAt(spawn.刻 + k);
-        const offset = orbitOffset(spawn.宽, spawn.高, initAngleDeg + rotSpeed * k);
+        const offset = orbitOffset(spawn.width, spawn.height, initAngleDeg + rotSpeed * k);
         return [ownerPos[0] + offset[0], ownerPos[1] + offset[1], ownerPos[2] + offset[2]];
       };
-      return <WindBand key={i} 位置={positionAt} age={age} 段数={4} 高={0.5} 色={color} opacity={1 - Math.floor(age) / lifetime} />;
+      return <WindBand key={i} 位置={positionAt} age={age} 段数={4} height={0.5} 色={color} opacity={1 - Math.floor(age) / lifetime} />;
     })}
   </>
 );

@@ -15,7 +15,7 @@ const envName = 'REMOTION_ANIM_LIGHTING';
 const readOptions = (): ShadingOptions | null | undefined => {
   const v = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[envName];
   if (!v) return undefined;
-  const o = JSON.parse(v) as Partial<ShadingOptions> & { 名?: string };
+  const o = JSON.parse(v) as Partial<ShadingOptions> & { name?: string };
   if (!o.preset || (o.preset as string) === '关') return null;
   return o as ShadingOptions;
 };

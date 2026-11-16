@@ -28,7 +28,7 @@ const { openDoneTick } = await import('../../界面/分圈.ts');
 const { toWorldSec, toClipSec, slowRateAt } = await import('./开盘拍.ts');
 const { appearPos, baseCells, soulFireCells } = await import('../../特效/安息仪式时序.ts');
 const timeline = (await import('./时间线.ts')).default;
-const events = timeline.事件;
+const events = timeline.events;
 /** 第 4 幕开头（编排的钟）：片上的 开盘完 减去慢放多出来的那段 = 幕末 */
 const act4Start = (await import('./齐放拍.ts')).actStart;
 const stepSec = 1 / 240;
@@ -46,7 +46,7 @@ describe('第 1、2 幕编排', () => {
     expect(yaBoLun[2]).toBeCloseTo(altarPoint[2] + hoverHeight, 9);
     // 第 2 幕的钟走世界秒，比片秒短；第 4 幕的钟减掉慢放多出来的，开头正好是 幕末
     expect(act4Start).toBeCloseTo(actEnd, 9);
-    expect(afterAppear(events.wheelOpenDone.秒)).toBeGreaterThan(actEnd);
+    expect(afterAppear(events.wheelOpenDone.sec)).toBeGreaterThan(actEnd);
     for (const t of [actEnd, actEnd + 0.3]) expect(Math.hypot(...yaBoLunPos(t).map((x, i) => x - yaBoLun[i]!))).toBeLessThan(1e-9);
     const steve = stevePos(act4Start);
     for (const t of [actEnd, actEnd - 0.1]) expect(Math.hypot(...stevePos(t).map((x, i) => x - steve[i]!))).toBeLessThan(1e-9);
@@ -55,7 +55,7 @@ describe('第 1、2 幕编排', () => {
     expect(steve[1] - altarPoint[1]).toBeCloseTo(trappedLocal[1], 6);
     expect(steveRightHand(act4Start)).toBe('剑');
     expect(openingTimeline.at(-1)!.pose).toBe('指向');
-    expect(openingTimeline.at(-1)!.到!).toBeLessThan(actEnd);
+    expect(openingTimeline.at(-1)!.dest!).toBeLessThan(actEnd);
     expect(act2End.disc.刻).toBeGreaterThanOrEqual(openDoneTick(3));
     // 末了站直了（眼高 1.62），第 4 幕的 眼高 照这个
     expect(steveEye(actEnd)[2] - steve[2]).toBeCloseTo(1.62, 2);
@@ -63,8 +63,8 @@ describe('第 1、2 幕编排', () => {
   });
 
   it('断曜流光冲刺照游戏：平地上一刻 3.6 格、视线不往上 10.8 格、仰 2～2.5 度 15.8 格；两次冲正好停在下一次的起点和受困位', () => {
-    const flatSprint = (elevationDeg: number) => calcDash({ 起: [0, 0, 0], dir: [1, 0], elevationDeg, groundHeight: () => 0 });
-    expect(flatSprint(0).点[1]![0]).toBeCloseTo(3.6, 9);
+    const flatSprint = (elevationDeg: number) => calcDash({ start: [0, 0, 0], dir: [1, 0], elevationDeg, groundHeight: () => 0 });
+    expect(flatSprint(0).points[1]![0]).toBeCloseTo(3.6, 9);
     expect(flatSprint(0).farDist).toBeCloseTo(3.6 + (3.6 * 0.91) / (1 - 0.6 * 0.91), 1);
     expect(flatSprint(groundElevMax - 0.01).landTick).toBe(1);
     expect(flatSprint(groundElevMax + 0.01).landTick).toBe(2);
@@ -72,7 +72,7 @@ describe('第 1、2 幕编排', () => {
     expect(openingTimes.firstDash.landTick).toBe(3);
     expect(openingTimes.secondDash.landTick).toBe(1);
     expect(openingTimes.secondElevationDeg).toBeLessThanOrEqual(groundElevMax);
-    const secondDashEnd = openingTimes.secondDash.点.at(-1)!;
+    const secondDashEnd = openingTimes.secondDash.points.at(-1)!;
     expect(Math.hypot(secondDashEnd[0] - trappedLocal[0], secondDashEnd[1] - trappedLocal[1])).toBeLessThan(0.01);
   });
 
@@ -105,9 +105,9 @@ describe('第 1、2 幕编排', () => {
 
   it('快的那几下峰值不低于 20 格/秒（世界秒；慢放那段另列片上看着多快），列成表', () => {
     const reportLines = actionTable.map((action) => {
-      const posAt = action.谁 === '史蒂夫' ? stevePos : yaBoLunPos;
+      const posAt = action.who === '史蒂夫' ? stevePos : yaBoLunPos;
       let [peak, peakTime] = [0, 0];
-      for (let t = action.起 + stepSec; t < action.止 - stepSec; t += stepSec)
+      for (let t = action.start + stepSec; t < action.end - stepSec; t += stepSec)
         if (Math.abs(t - teleportTick) > stepSec) {
           const v = speedAt(posAt, t);
           if (v > peak) [peak, peakTime] = [v, t];
@@ -115,8 +115,8 @@ describe('第 1、2 幕编排', () => {
       const clipSec = toClipSec(peakTime - actStart);
       return { ...action, 峰: peak, clipSpeed: peak * slowRateAt(clipSec) };
     });
-    console.log(['第 2 幕每一下的峰值速度（格/秒）：', ...reportLines.map((r) => `  ${r.谁} ${r.名}（编排 ${r.起.toFixed(2)}～${r.止.toFixed(2)}）：${r.峰.toFixed(1)}${r.slowMo ? `，片上 ${r.clipSpeed.toFixed(1)}` : ''}`)].join('\n'));
-    for (const r of reportLines) expect(r.峰, `${r.谁} ${r.名}`).toBeGreaterThanOrEqual(20);
+    console.log(['第 2 幕每一下的峰值速度（格/秒）：', ...reportLines.map((r) => `  ${r.who} ${r.name}（编排 ${r.start.toFixed(2)}～${r.end.toFixed(2)}）：${r.峰.toFixed(1)}${r.slowMo ? `，片上 ${r.clipSpeed.toFixed(1)}` : ''}`)].join('\n'));
+    for (const r of reportLines) expect(r.峰, `${r.who} ${r.name}`).toBeGreaterThanOrEqual(20);
   });
 
   it('第 2 幕里他不穿基座、灵魂火和地面，她不钻进地里', () => {
@@ -138,7 +138,7 @@ describe('第 1、2 幕编排', () => {
   });
 
   it('慢放：世界秒、片秒互逆，世界钟一阶连续、单调', () => {
-    for (let s = 0; s < events.wheelOpenDone.秒 - events.summonDone.秒; s += 0.01) {
+    for (let s = 0; s < events.wheelOpenDone.sec - events.summonDone.sec; s += 0.01) {
       expect(toClipSec(toWorldSec(s))).toBeCloseTo(s, 6);
       expect(toWorldSec(s + 0.001) - toWorldSec(s)).toBeGreaterThan(0);
       expect(Math.abs((toWorldSec(s + 0.002) - toWorldSec(s + 0.001)) - (toWorldSec(s + 0.001) - toWorldSec(s)))).toBeLessThan(1e-5);
@@ -146,7 +146,7 @@ describe('第 1、2 幕编排', () => {
   });
 
   it('两人站着不动的时间加起来不超过两幕总长的 20%', () => {
-    const [startSec, end] = [afterAppear(events.开始.秒), actEnd];
+    const [startSec, end] = [afterAppear(events.开始.sec), actEnd];
     const stepSec = 1 / 60;
     let [steveStill, yaBoLunSteps] = [0, 0];
     for (let t = startSec; t < end; t += stepSec) {
@@ -162,10 +162,10 @@ describe('第 1、2 幕编排', () => {
 describe('2-03 绕拍（用户 11-11「我要环绕 180 度」）', async () => {
   const { orbitBeat, orbitAzimuth, orbitRel, orbitRig } = await import('../../段/2-开盘/绕拍.ts');
   const { projectToScreen } = await import('../../界面/指杖机位.ts');
-  const times = Array.from({ length: Math.floor((orbitBeat.止 - orbitBeat.起) * 60) + 1 }, (_, i) => orbitBeat.起 + i / 60);
+  const times = Array.from({ length: Math.floor((orbitBeat.end - orbitBeat.start) * 60) + 1 }, (_, i) => orbitBeat.start + i / 60);
 
   it('世界里绕 180 度，相对她也转了 150 度以上（八版跟着她转身只差 10 度）', () => {
-    expect(orbitAzimuth(orbitBeat.止) - orbitAzimuth(orbitBeat.起)).toBeCloseTo(180, 6);
+    expect(orbitAzimuth(orbitBeat.end) - orbitAzimuth(orbitBeat.start)).toBeCloseTo(180, 6);
     // 相对角逐帧累加（跨 ±180 不跳）
     let totalDeg = 0;
     for (let i = 1; i < times.length; i++) {

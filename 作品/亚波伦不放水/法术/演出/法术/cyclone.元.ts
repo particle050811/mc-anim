@@ -16,10 +16,10 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 export default defineSpellMeta({
   id: 'cyclone',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // Cyclone.tick：每 40 刻一声 FLIGHT（音量 0.5、音高 0.5），这里记头两声
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.flight', 秒: 0, 音量: 0.5, 音高: 0.5 },
-    { 资产: '音效/诡厄巫法/goety.flight', 秒: 2, 音量: 0.5, 音高: 0.5 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.flight', sec: 0, 音量: 0.5, 音高: 0.5 },
+    { asset: '音效/诡厄巫法/goety.flight', sec: 2, 音量: 0.5, 音高: 0.5 },
   ],
 });

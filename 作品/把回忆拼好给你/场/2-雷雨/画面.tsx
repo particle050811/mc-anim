@@ -56,7 +56,7 @@ import {
   circleSpin,
 } from './编排.ts';
 
-const width = aspect.宽, height = aspect.高;
+const width = aspect.width, height = aspect.height;
 const hexToRgb = (hex: string): RGB => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as unknown as RGB;
 
 // ---------- 四周的地：自己建网格（补原版柱形雾）；屋子和坑离镜头不到五十格、雾够不着，不补 ----------
@@ -73,7 +73,7 @@ const groundMaterial = (c: MatKind) => {
   return groundMaterials[c];
 };
 const buildMeshes = (blocks: readonly PlacedBlock[], biome: string, name: string): THREE.Mesh[] => {
-  const buffers = assembleBuffers(blocks, { 原点: gridOrigin, 群系: biome });
+  const buffers = assembleBuffers(blocks, { origin: gridOrigin, biome: biome });
   if (buffers.半透明.idx.length || buffers.发光.idx.length) throw new Error('四周的地里不该有半透明、发光的方块');
   const out: THREE.Mesh[] = [];
   for (const c of ['实心', '镂空'] as const) {
@@ -118,7 +118,7 @@ const houseMeshes = () => {
   if (!houseMeshCache) {
     const remainingBlocks = crater().remainingBlocks;
     const lightTable = computeLight(remainingBlocks);
-    houseMeshCache = assemblyMeshes(remainingBlocks, { 原点: gridOrigin, 群系: params.biome });
+    houseMeshCache = assemblyMeshes(remainingBlocks, { origin: gridOrigin, biome: params.biome });
     for (const m of houseMeshCache) {
       const g = m.geometry;
       const pos = g.getAttribute('position') as THREE.BufferAttribute;
@@ -155,7 +155,7 @@ const hitColor = hexToRgb(params.lightPillar.色);
 const beamBottom: V3 = [params.standPos.liYingPos[0], params.standPos.liYingPos[1], params.standPos.liYingPos[2] + MAGICAL_WINE_FOX.headTop + params.lightPillar.headGap];
 
 /** 画云 = 画原版方块云（光影开了云时云在光影层画，这里不画） */
-const Scene: React.FC<{ 帧: number; 眼: V3; cloudColor: RGB; drawClouds: boolean }> = ({ 帧: frame, 眼: eye, cloudColor, drawClouds }) => {
+const Scene: React.FC<{ frame: number; 眼: V3; cloudColor: RGB; drawClouds: boolean }> = ({ frame: frame, 眼: eye, cloudColor, drawClouds }) => {
   const sec = songSec(frame);
   const center = holeCenter();
   const remain = useCallback((c: CloudCell) => cloudRemain(c, frame), [frame]);
@@ -168,11 +168,11 @@ const Scene: React.FC<{ 帧: number; 眼: V3; cloudColor: RGB; drawClouds: boole
       <Surroundings />
       <House />
       <DroppedItemGroup 们={fallingItems} 刻={dropTick(frame)} />
-      <LiYing liYingState={LiYingState(frame)} 秒={sec} />
-      <You youState={YouState(frame)} 秒={sec} />
-      <MagicCircle 心={[center[0], center[1], 0]} 转={circleSpin(frame)} 大小={circleSizeNow} />
-      <GroundGlow 心={[center[0], center[1], 0.01]} 大小={circleSizeNow} />
-      <LightPillar bottom={beamBottom} topY={beamTop(frame, beamBottom[2])} alpha={beamOpacity(frame)} 帧={frame} />
+      <LiYing liYingState={LiYingState(frame)} sec={sec} />
+      <You youState={YouState(frame)} sec={sec} />
+      <MagicCircle 心={[center[0], center[1], 0]} 转={circleSpin(frame)} size={circleSizeNow} />
+      <GroundGlow 心={[center[0], center[1], 0.01]} size={circleSizeNow} />
+      <LightPillar bottom={beamBottom} topY={beamTop(frame, beamBottom[2])} alpha={beamOpacity(frame)} frame={frame} />
       {drawClouds && <VanillaBlockCloud offset={params.cloudOffset} extent={params.cloudExtent} bottomHeight={params.cloudBottomHeight} materials={getCloudMaterials()} remain={remain} drift={cloudDrift(frame)} 色={cloudColor} strike={strike} />}
       <Rain 片们={rainPlanes} 刻={frameToTick(frame)} 色={isFlashing(frame) ? params.rainColor.flash : params.rainColor.normal} rainAmount={rainAmount(frame)} />
     </>
@@ -185,14 +185,14 @@ const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, 
 
 export type StormPictureProps = {
   /** 歌曲帧 */
-  帧: number;
+  frame: number;
   /** 不画歌词 */
   clean?: boolean;
   /** 整片后期（照片底片关：贴进第 8 句以后跟着那一句的后期走） */
   withPost?: boolean;
 };
 
-export const StormPicture: React.FC<StormPictureProps> = ({ 帧: frame, clean = false, withPost = true }) => {
+export const StormPicture: React.FC<StormPictureProps> = ({ frame: frame, clean = false, withPost = true }) => {
   const rig = CameraRig(frame);
   const colors = weatherColors(frame);
   const tone = frameGrade(frame);
@@ -202,18 +202,18 @@ export const StormPicture: React.FC<StormPictureProps> = ({ 帧: frame, clean = 
   setFogColor(colors.fog);
   return (
     <AbsoluteFill style={{ backgroundColor: '#000' }}>
-      <FilmPost grade={withPost ? tone.postTone.grade : null} 种子={frame}>
+      <FilmPost grade={withPost ? tone.postTone.grade : null} seed={frame}>
         <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, overflow: 'hidden' }}>
-          {!photonCloud && <PerspectiveSky cameraRig={rig} 宽={width} 高={height} 天={colors.天} fog={colors.fog} clearSky={colors.clearSky} clearFog={colors.clearFog} clearAt={clearSkyAt(frame)} />}
-          <ToonCanvas 宽={width} 高={height} cameraRig={rig} tint={tone.tint} glowRegions={glowRegionsAt(frame)} shadingScene={shadingSceneAt(frame)} style={{ position: 'absolute', left: 0, top: 0 }}>
-            <Scene 帧={frame} 眼={rig.眼} cloudColor={colors.cloudColor} drawClouds={!photonCloud} />
+          {!photonCloud && <PerspectiveSky cameraRig={rig} width={width} height={height} 天={colors.天} fog={colors.fog} clearSky={colors.clearSky} clearFog={colors.clearFog} clearAt={clearSkyAt(frame)} />}
+          <ToonCanvas width={width} height={height} cameraRig={rig} tint={tone.tint} glowRegions={glowRegionsAt(frame)} shadingScene={shadingSceneAt(frame)} style={{ position: 'absolute', left: 0, top: 0 }}>
+            <Scene frame={frame} 眼={rig.眼} cloudColor={colors.cloudColor} drawClouds={!photonCloud} />
           </ToonCanvas>
         </div>
       </FilmPost>
-      {!clean && <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.postTone.outlineColor }} 帧={frame} />}
+      {!clean && <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.postTone.outlineColor }} frame={frame} />}
     </AbsoluteFill>
   );
 };
 
 /** 第 8 句照片墙的第四张照片「光柱破云」的底片：照片-光柱破云 那一帧，不带歌词 */
-export const BeamBreakCloudPicture: React.FC<{ withPost?: boolean }> = ({ withPost = false }) => <StormPicture 帧={eventFrame('photoBeamBreaksCloud')} clean withPost={withPost} />;
+export const BeamBreakCloudPicture: React.FC<{ withPost?: boolean }> = ({ withPost = false }) => <StormPicture frame={eventFrame('photoBeamBreaksCloud')} clean withPost={withPost} />;

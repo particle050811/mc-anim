@@ -33,10 +33,10 @@ export const serverFraming = halfScreenFraming(splitLayout.serverWidth * 2, serv
 
 /** 现实那半的镜头（不动）：横着正中对 x = 0（x −80～80 个贴图像素）；竖着桌子前沿（y = 0、z = 0）对到服务器那半的地面线（两屏共用一条横线，像一个画面切成两半）。
  *  课表（左三分之二）、日历（右三分之一）的位置在 现实/课桌布局.ts 的 摆放 */
-export const realFraming = { 中心: [0, serverFraming.中心[1]] as const, pxPerCell };
+export const realFraming = { center: [0, serverFraming.center[1]] as const, pxPerCell };
 
 /** 风吹日历的窗：第 100 拍起风（100 那页飞走），第 104 拍最后一页飞走、停在 1（现实/日历.ts）。按那一拍的帧取秒：头一页和头一棵樱花树同一帧 */
-export const calendarWindow: BlowWindow = { 起: mainCutEvents.windBlowsCalendar.帧 / fps, 止: mainCutEvents.calendarAtOne.帧 / fps };
+export const calendarWindow: BlowWindow = { start: mainCutEvents.windBlowsCalendar.frame / fps, end: mainCutEvents.calendarAtOne.frame / fps };
 
 /** 身后樱花林冒到哪（0～1，地点/樱花林.ts 的 冒出）：吹走的页数 ÷ 99，和日历一个节奏越走越快，最后一页飞走（日历到一）是 1、长满。用户 10-25 定「和日历越掉越快一个节奏」 */
 export const forestGrowth = (calendar: number) => (fullPages - calendar) / (fullPages - 1);
@@ -44,7 +44,7 @@ export const forestGrowth = (calendar: number) => (fullPages - calendar) / (full
 /** 门口那棵树苗（第 9 句她种下的）长成整棵的那一帧：日历停在 1、身后林子长满的同一拍。原版树苗长成树是一刻之内的事，前一帧树苗、这一帧整棵。
  *  主会话 10-25 原想让它第一个长：长成的整棵树冠 9 格宽、5 格高，压在左屏（10 格宽）上半截，身后的坡只剩树冠底下一窄条，
  *  后面一棵棵冒出来的树几乎全被挡住、手机上看不出「树在变多」；所以林子先在它身后冒满，它最后一个长成（她蹲在树苗旁等到这一拍）。Agent 暂定，交主会话定 */
-export const doorGrowFrame = mainCutEvents.calendarAtOne.帧;
+export const doorGrowFrame = mainCutEvents.calendarAtOne.frame;
 
 // ---------- 她 ----------
 /** 她画大几倍（绕脚底）：N = 8 时她蹲着只有 1.2 格高，缩到手机竖屏宽（390 像素）约 23 像素，蹲姿、朝向、花都认不出（主会话 10-24 美术定稿要认得出）。
@@ -56,10 +56,10 @@ export const flowerScale = 2.5;
 /** 她换姿势的几拍（她的姿势们 的下标从 0 起）：坐在门口望着路 → 生长二 蹲到树旁举着花，蹲到这一句完。
  *  原来每长一截换一个（0.43 秒一个），用户 10-24 看粗剪说「画面转太快就删」「一个动作至少 1 秒」：
  *  只换一次，坐 1.5 秒、蹲 1.9 秒（原来日历到一 还站到告示牌旁，只留 0.6 秒，删了；第 14 句左屏从照片墙前起，用不着她先站到牌子旁）。Agent 暂定 */
-export const poseSwapFrames: readonly number[] = [mainCutEvents.growthStep2.帧];
+export const poseSwapFrames: readonly number[] = [mainCutEvents.growthStep2.frame];
 
 /** 服务器那半往褪色插的四拍：第 101～104 拍（三稿的拍点，生长二 到 日历到一） */
-const fadeFrames = [mainCutEvents.growthStep2, mainCutEvents.growthStep3, mainCutEvents.growthStep4, mainCutEvents.calendarAtOne].map((e) => e.帧);
+const fadeFrames = [mainCutEvents.growthStep2, mainCutEvents.growthStep3, mainCutEvents.growthStep4, mainCutEvents.calendarAtOne].map((e) => e.frame);
 /** 服务器那半的调子从 夏日白天 往 褪色 插多少（色板.ts）。主会话 10-24 美术定稿：现实冷，服务器保持夏天的暖。
  *  三稿「你下线后她那边褪色」只留一点：起风时 0，往后每拍多 0.05，停在 1 时 0.2 */
 export const fadeLevel = (frame: number) => 0.05 * fadeFrames.filter((f) => f <= frame).length;
@@ -110,6 +110,6 @@ export const formShift = { horizontalPx: 588 } as const;
 
 /** 歌曲帧 帧 时两屏还差多少到位（页面像素，往右为正，取到半个页面像素）；分屏成形到位 以后是 0 */
 export const shapeOffsetAt = (frame: number): number => {
-  const t = Math.min(1, Math.max(0, (frame - mainCutEvents.splitScreenStart.帧) / (mainCutEvents.splitScreenSettled.帧 - mainCutEvents.splitScreenStart.帧)));
+  const t = Math.min(1, Math.max(0, (frame - mainCutEvents.splitScreenStart.frame) / (mainCutEvents.splitScreenSettled.frame - mainCutEvents.splitScreenStart.frame)));
   return Math.round(formShift.horizontalPx * (1 - t) ** 2 * filmScale) / filmScale;
 };

@@ -131,7 +131,7 @@ const drawPetal = (ctx: CanvasRenderingContext2D, k: number, tierWidth: number, 
 const snap = (pageLen: number) => Math.round((pageLen * filmScale) / 2) * 2;
 
 /** 取：这一块画哪些（分屏时现实那边只画碎纸；一片压在分屏线上时两块各画一半） */
-export const PaperLayer: React.FC<{ 秒: number; left?: number; 宽?: number; 高?: number; 取?: (q: PaperPiece) => boolean }> = ({ 秒: sec, left = 0, 宽: width = 1280, 高: height = 720, 取: pick }) => {
+export const PaperLayer: React.FC<{ sec: number; left?: number; width?: number; height?: number; 取?: (q: PaperPiece) => boolean }> = ({ sec: sec, left = 0, width: width = 1280, height: height = 720, 取: pick }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = width * filmScale;
   const H = height * filmScale;
@@ -145,13 +145,13 @@ export const PaperLayer: React.FC<{ 秒: number; left?: number; 宽?: number; �
       const paperSize = pieceFrame(q);
       const x0 = snap(s.x - left);
       const y0 = snap(s.y);
-      if (x0 + paperSize.宽 * filmScale <= 0 || x0 >= W || y0 + paperSize.高 * filmScale <= 0 || y0 >= H) continue;
-      if (q.种 === '瓣') drawPetal(ctx, q.图, q.档, s.转, q.flip, x0, y0, false);
+      if (x0 + paperSize.width * filmScale <= 0 || x0 >= W || y0 + paperSize.height * filmScale <= 0 || y0 >= H) continue;
+      if (q.kind === '瓣') drawPetal(ctx, q.image, q.档, s.转, q.flip, x0, y0, false);
       else if (s.档 < tierCount - 1) drawShredPaper(ctx, q, s.档, s.flipCos, x0, y0);
       else {
         // 樱花瓣的形状画在碎纸外框正中
         const halfSize = (1.5 * q.档) / filmScale;
-        drawPetal(ctx, q.petal, q.档, s.转, q.flip, snap(s.x - left + paperSize.宽 / 2 - halfSize), snap(s.y + paperSize.高 / 2 - halfSize), s.档 < tierCount);
+        drawPetal(ctx, q.petal, q.档, s.转, q.flip, snap(s.x - left + paperSize.width / 2 - halfSize), snap(s.y + paperSize.height / 2 - halfSize), s.档 < tierCount);
       }
     }
   });

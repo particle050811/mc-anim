@@ -17,9 +17,9 @@ import { useViewIndex } from '@engine/段/时间.tsx';
 
 const pose = { ...standPose([0, 0, 0]), yaw: 180 };
 
-const HalfPanel: React.FC<{ v: View; 标题: string; children: React.ReactNode }> = ({ v, 标题: title, children }) => (
-  <div style={{ position: 'relative', width: aspect.宽 / 2, height: aspect.高 }}>
-    <ThreeCanvas width={aspect.宽 / 2} height={aspect.高} gl={{ antialias: true }}>
+const HalfPanel: React.FC<{ v: View; title: string; children: React.ReactNode }> = ({ v, title: title, children }) => (
+  <div style={{ position: 'relative', width: aspect.width / 2, height: aspect.height }}>
+    <ThreeCanvas width={aspect.width / 2} height={aspect.height} gl={{ antialias: true }}>
       <color attach="background" args={['#5a5e66']} />
       <FirstPersonRig 眼={v.眼} 看={v.看} fov={v.fov} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -38,31 +38,31 @@ const HalfPanel: React.FC<{ v: View; 标题: string; children: React.ReactNode }
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
-  const variables = tailSteadyVars(MagicalWineFoxPlayer.animationFiles!, v.秒);
+  const variables = tailSteadyVars(MagicalWineFoxPlayer.animationFiles!, v.sec);
   return (
     <AbsoluteFill style={{ background: '#5a5e66', flexDirection: 'row' }}>
       {v.useController ? (
         <>
-          <HalfPanel v={v} 标题="GeckoLib 控制器：sit → idle，过渡 10 刻">
-            <MagicalWineFoxPlayer pose={pose} 秒={v.秒} 环境={{ 变量: variables }} layers={controllerLayers(geckoLibSitToStand)} />
+          <HalfPanel v={v} title="GeckoLib 控制器：sit → idle，过渡 10 刻">
+            <MagicalWineFoxPlayer pose={pose} sec={v.sec} env={{ 变量: variables }} layers={controllerLayers(geckoLibSitToStand)} />
           </HalfPanel>
-          <HalfPanel v={v} 标题="基岩版控制器：sit → idle，blend_transition 0.5 秒">
-            <MagicalWineFoxPlayer pose={pose} 秒={v.秒} 环境={{ 变量: variables }} layers={controllerLayers(bedrockSitToStand)} />
+          <HalfPanel v={v} title="基岩版控制器：sit → idle，blend_transition 0.5 秒">
+            <MagicalWineFoxPlayer pose={pose} sec={v.sec} env={{ 变量: variables }} layers={controllerLayers(bedrockSitToStand)} />
           </HalfPanel>
         </>
       ) : (
         <>
-          <HalfPanel v={v} 标题="手抄版（库/角色/魔法酒狐.tsx）">
-            <MagicalWineFox pose={pose} 秒={v.秒} />
+          <HalfPanel v={v} title="手抄版（库/角色/魔法酒狐.tsx）">
+            <MagicalWineFox pose={pose} sec={v.sec} />
           </HalfPanel>
-          <HalfPanel v={v} 标题="播放器版（定义生物 + 原版动画文件）">
-            <MagicalWineFoxPlayer pose={pose} 秒={v.秒} 环境={{ 变量: variables }} />
+          <HalfPanel v={v} title="播放器版（定义生物 + 原版动画文件）">
+            <MagicalWineFoxPlayer pose={pose} sec={v.sec} env={{ 变量: variables }} />
           </HalfPanel>
         </>
       )}
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

@@ -10,29 +10,29 @@ const baseTexByBiome = { 平原: solidPng(10), 沙漠: solidPng(20) };
 const professionLayer = { 无业: transparentPng(), 图书管理员: { w: 2, h: 1, px: new Uint8Array([0, 0, 0, 0, 99, 0, 0, 255]) } };
 
 const villager = defineCreature({
-  名: '假村民',
-  模型: testModel,
-  variant: { 群系: ['平原', '沙漠'], profession: ['无业', '图书管理员'] },
-  贴图: (v) => [baseTexByBiome[v.群系], professionLayer[v.profession]],
-  动画: {
-    文件: { animations: { 待机: { loop: true, animation_length: 2, bones: { body: { rotation: { '0': [0, 0, 0], '2': [10, 0, 0] } } } } } },
-    defaultLayers: [{ 名: '待机' }],
+  name: '假村民',
+  model: testModel,
+  variant: { biome: ['平原', '沙漠'], profession: ['无业', '图书管理员'] },
+  贴图: (v) => [baseTexByBiome[v.biome], professionLayer[v.profession]],
+  animation: {
+    file: { animations: { 待机: { loop: true, animation_length: 2, bones: { body: { rotation: { '0': [0, 0, 0], '2': [10, 0, 0] } } } } } },
+    defaultLayers: [{ name: '待机' }],
   },
 });
 
 describe('定义生物', () => {
   it('变体补默认值、不认识的值报错', () => {
-    expect(villager.pickVariant()).toEqual({ 群系: '平原', profession: '无业' });
-    expect(villager.pickVariant({ profession: '图书管理员' })).toEqual({ 群系: '平原', profession: '图书管理员' });
+    expect(villager.pickVariant()).toEqual({ biome: '平原', profession: '无业' });
+    expect(villager.pickVariant({ profession: '图书管理员' })).toEqual({ biome: '平原', profession: '图书管理员' });
     // @ts-expect-error 类型上就不让写错
-    expect(() => villager.pickVariant({ 群系: '雪原' })).toThrow(/没有 雪原/);
+    expect(() => villager.pickVariant({ biome: '雪原' })).toThrow(/没有 雪原/);
   });
 
   it('按变体从下到上合成贴图，同一组合同一个模型对象', () => {
-    const m = villager.getModel({ 群系: '沙漠', profession: '图书管理员' });
+    const m = villager.getModel({ biome: '沙漠', profession: '图书管理员' });
     expect([...m.texture.px]).toEqual([20, 0, 0, 255, 99, 0, 0, 255]);
     expect(m.bones).toBe(testModel.bones);
-    expect(villager.getModel({ 群系: '沙漠', profession: '图书管理员' })).toBe(m);
+    expect(villager.getModel({ biome: '沙漠', profession: '图书管理员' })).toBe(m);
     expect(villager.getModel()).not.toBe(m);
   });
 
@@ -51,6 +51,6 @@ describe('定义生物', () => {
   });
 
   it('模型不是基岩几何时报错', () => {
-    expect(() => defineCreature({ 名: '坏的', 模型: {}, 贴图: solidPng(1) })).toThrow(/缺 bones/);
+    expect(() => defineCreature({ name: '坏的', model: {}, 贴图: solidPng(1) })).toThrow(/缺 bones/);
   });
 });

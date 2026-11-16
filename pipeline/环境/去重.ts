@@ -7,22 +7,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { runCapture } from './子进程.ts';
 
-export type DedupFile = { 路径: string; 大小: number; 改于: number };
-export type LedgerEntry = { 大小: number; 改于: number; ino: number; sha: string; 克隆自?: string };
-export type DedupLedger = { 版本: 1; 文件: Record<string, LedgerEntry> };
+export type DedupFile = { path: string; size: number; modifiedAt: number };
+export type LedgerEntry = { size: number; modifiedAt: number; ino: number; sha: string; clonedFrom?: string };
+export type DedupLedger = { version: 1; file: Record<string, LedgerEntry> };
 /** 一组内容相同的文件：待克隆 的各 inode 换成 源 的克隆后能省 省 字节（一个 inode 的所有名字都换掉才腾得出空间） */
-export type DedupGroup = { sha: string; 大小: number; 源: string; toClone: string[]; 省: number; alreadyShared: string[] };
+export type DedupGroup = { sha: string; size: number; 源: string; toClone: string[]; 省: number; alreadyShared: string[] };
 
 export const canClone = () => process.platform === 'darwin';
 
 export const readLedger = (file: string): DedupLedger => {
   try {
     const j = JSON.parse(fs.readFileSync(file, 'utf8')) as DedupLedger;
-    if (j.版本 === 1 && j.文件 && typeof j.文件 === 'object') return j;
+    if (j.version === 1 && j.file && typeof j.file === 'object') return j;
   } catch {
     // 没有或坏了就从头算
   }
-  return { 版本: 1, 文件: {} };
+  return { version: 1, file: {} };
 };
 
 export const writeLedger = (file: string, ledger: DedupLedger) => {
@@ -39,7 +39,7 @@ export const fileSha = async (p: string): Promise<string> => {
 };
 
 /** 账本里的这一条还是不是这个文件（大小、修改时间、inode 都没变） */
-const ledgerMatches = (e: LedgerEntry | undefined, st: fs.Stats): e is LedgerEntry => !!e && e.大小 === st.size && e.改于 === st.mtimeMs && e.ino === st.ino;
+const ledgerMatches = (e: LedgerEntry | undefined, st: fs.Stats): e is LedgerEntry => !!e && e.size === st.size && e.modifiedAt === st.mtimeMs && e.ino === st.ino;
 
 /**
  * 找内容相同的组：同大小的才算 sha（账本里对得上的不重算，算出来的写回 账，调用方决定存不存）。
@@ -47,7 +47,7 @@ const ledgerMatches = (e: LedgerEntry | undefined, st: fs.Stats): e is LedgerEnt
  * 别的 inode 的名字全在这批里的才换成源的克隆（有计划外的硬链接就腾不出空间，不动），之前克隆过源的跳过。
  */
 export type FindDupOptions = {
-  进度?: (s: string) => void;
+  progress?: (s: string) => void;
   /** 只看不删时：这次计划里要删掉的名字数（按 inode），从硬链接数里扣掉，估的是删完以后的样子 */
   extraDeletes?: ReadonlyMap<string, number>;
   /** 账本里没有的先查这里再算（只看不删时账本不写，sha 记在这里，下次不重算） */
@@ -55,23 +55,23 @@ export type FindDupOptions = {
 };
 
 export const findDuplicates = async (dedupFiles: readonly DedupFile[], ledger: DedupLedger, fileKey: (p: string) => string, o: FindDupOptions = {}): Promise<DedupGroup[]> => {
-  const onProgress = o.进度 ?? (() => {});
+  const onProgress = o.progress ?? (() => {});
   const bySize = new Map<number, DedupFile[]>();
-  for (const f of dedupFiles) if (f.大小 > 0) bySize.set(f.大小, [...(bySize.get(f.大小) ?? []), f]);
+  for (const f of dedupFiles) if (f.size > 0) bySize.set(f.size, [...(bySize.get(f.size) ?? []), f]);
   const candidates = [...bySize.values()].filter((g) => g.length > 1).flat();
-  const bytesToHash = candidates.reduce((n, f) => n + f.大小, 0);
+  const bytesToHash = candidates.reduce((n, f) => n + f.size, 0);
   if (candidates.length) onProgress(`同大小的 ${candidates.length} 个文件（${(bytesToHash / 1e9).toFixed(1)} GB）比内容`);
   type FileItem = { f: DedupFile; st: fs.Stats; inode: string };
   const bySha = new Map<string, FileItem[]>();
   const computedShas = new Map<string, string>(); // 硬链接只算一次
   for (const f of candidates) {
-    const st = fs.statSync(f.路径);
+    const st = fs.statSync(f.path);
     const inode = `${st.dev}-${st.ino}`;
-    const k = fileKey(f.路径);
-    let e = ledger.文件[k];
+    const k = fileKey(f.path);
+    let e = ledger.file[k];
     if (!ledgerMatches(e, st)) {
-      e = { 大小: st.size, 改于: st.mtimeMs, ino: st.ino, sha: computedShas.get(inode) ?? (await (o.shaCache ? o.shaCache.hash(f.路径, st) : fileSha(f.路径))) };
-      ledger.文件[k] = e;
+      e = { size: st.size, modifiedAt: st.mtimeMs, ino: st.ino, sha: computedShas.get(inode) ?? (await (o.shaCache ? o.shaCache.hash(f.path, st) : fileSha(f.path))) };
+      ledger.file[k] = e;
     }
     computedShas.set(inode, e.sha);
     bySha.set(e.sha, [...(bySha.get(e.sha) ?? []), { f, st, inode }]);
@@ -81,24 +81,24 @@ export const findDuplicates = async (dedupFiles: readonly DedupFile[], ledger: D
     const byInode = new Map<string, FileItem[]>();
     for (const x of g) byInode.set(x.inode, [...(byInode.get(x.inode) ?? []), x]);
     if (byInode.size < 2) continue;
-    const refCount = (xs: FileItem[]) => xs.reduce((n, x) => n + g.filter((y) => ledger.文件[fileKey(y.f.路径)]?.克隆自 === fileKey(x.f.路径)).length, 0);
-    const sorted = [...byInode.values()].sort((a, b) => refCount(b) - refCount(a) || b.length - a.length || a[0]!.f.改于 - b[0]!.f.改于 || a[0]!.f.路径.localeCompare(b[0]!.f.路径));
+    const refCount = (xs: FileItem[]) => xs.reduce((n, x) => n + g.filter((y) => ledger.file[fileKey(y.f.path)]?.clonedFrom === fileKey(x.f.path)).length, 0);
+    const sorted = [...byInode.values()].sort((a, b) => refCount(b) - refCount(a) || b.length - a.length || a[0]!.f.modifiedAt - b[0]!.f.modifiedAt || a[0]!.f.path.localeCompare(b[0]!.f.path));
     const sourceGroup = sorted[0]!;
-    const sourcePath = sourceGroup[0]!.f.路径;
-    const sourceKeys = new Set(sourceGroup.map((x) => fileKey(x.f.路径)));
+    const sourcePath = sourceGroup[0]!.f.path;
+    const sourceKeys = new Set(sourceGroup.map((x) => fileKey(x.f.path)));
     const toClone: string[] = [];
     const alreadyShared: string[] = [];
     let savedBytes = 0;
     for (const xs of sorted.slice(1)) {
-      if (xs.every((x) => sourceKeys.has(ledger.文件[fileKey(x.f.路径)]?.克隆自 ?? ''))) {
-        alreadyShared.push(...xs.map((x) => x.f.路径));
+      if (xs.every((x) => sourceKeys.has(ledger.file[fileKey(x.f.path)]?.clonedFrom ?? ''))) {
+        alreadyShared.push(...xs.map((x) => x.f.path));
         continue;
       }
       if (xs.length < xs[0]!.st.nlink - (o.extraDeletes?.get(xs[0]!.inode) ?? 0)) continue;
-      toClone.push(...xs.map((x) => x.f.路径));
-      savedBytes += xs[0]!.f.大小;
+      toClone.push(...xs.map((x) => x.f.path));
+      savedBytes += xs[0]!.f.size;
     }
-    if (toClone.length || alreadyShared.length) dupGroups.push({ sha, 大小: sourceGroup[0]!.f.大小, 源: sourcePath, toClone, 省: savedBytes, alreadyShared });
+    if (toClone.length || alreadyShared.length) dupGroups.push({ sha, size: sourceGroup[0]!.f.size, 源: sourcePath, toClone, 省: savedBytes, alreadyShared });
   }
   return dupGroups.sort((a, b) => b.省 - a.省);
 };
@@ -129,7 +129,7 @@ export const executeDedup = (groups: readonly DedupGroup[], ledger: DedupLedger,
     for (const p of g.toClone) {
       try {
         const st = cloneReplace(g.源, p);
-        ledger.文件[fileKey(p)] = { 大小: st.size, 改于: st.mtimeMs, ino: st.ino, sha: g.sha, 克隆自: fileKey(g.源) };
+        ledger.file[fileKey(p)] = { size: st.size, modifiedAt: st.mtimeMs, ino: st.ino, sha: g.sha, clonedFrom: fileKey(g.源) };
         r.cloneCount++;
       } catch (e) {
         allOk = false;

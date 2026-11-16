@@ -46,7 +46,7 @@ export const heightAt = (x: number, y: number) => {
   const [px, py] = [x + 0.5, y + 0.5];
   const d = flatAreaDist(px, py);
   if (d <= 0) return 0;
-  const { 种子: seed, slopeLength, 起伏: undulation, scale, 细: fineWeight } = farHills;
+  const { seed: seed, slopeLength, 起伏: undulation, scale, 细: fineWeight } = farHills;
   const n = (1 - fineWeight) * valueNoise(px, py, scale[0], seed) + fineWeight * valueNoise(px, py, scale[1], seed + 1);
   return Math.round(smoothstep(clamp01(d / slopeLength)) * (undulation[0] + undulation[1] * d) * n);
 };
@@ -130,7 +130,7 @@ const inFan = (px: number, py: number, radius: number) => {
 /** 坡上的樱花树：按 树格 的格子撒，每格 有树 的机会、格里随机挪；只在扇形里、出平地框 4 格以外（不挨着樱花林那一圈的树干）。
  *  树根在那一列的草上；埋进坡里的叶子不放（原版树叶不替换实心方块） */
 export const buildSlopeTrees = () => {
-  const { 种子: seed, treeReach, treeSpacing: treeCell, treeChance } = farHills;
+  const { seed: seed, treeReach, treeSpacing: treeCell, treeChance } = farHills;
   const [x0, y0, x1, y1] = terrainRange;
   const logs: CellPos[] = [];
   const leaves: CellPos[] = [];
@@ -152,7 +152,7 @@ export const buildSlopeTrees = () => {
 
 /** 坡上的粉红色花簇 [x, y, 高, 转几个 90°]：扇形里、离西门 花簇到 格以内、出平地框的列，每列 花簇密度 的机会 */
 export const buildSlopeFlowers = () => {
-  const { 种子: seed, flowerReach, flowerDensity } = farHills;
+  const { seed: seed, flowerReach, flowerDensity } = farHills;
   const [x0, y0, x1, y1] = terrainRange;
   const flowers: [number, number, number, number][] = [];
   for (let y = y0; y < y1; y++)

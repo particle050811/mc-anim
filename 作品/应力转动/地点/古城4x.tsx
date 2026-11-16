@@ -168,14 +168,14 @@ const meshBinFiles = assetDir({ './古城4x-东1.网格.bin': ancientCity4xEast1
 const atlasFiles = assetDir({ './古城4x-东1.网格.png': ancientCity4xEast1AtlasPng, './古城4x-东1北1.网格.png': ancientCity4xEast1North1AtlasPng, './古城4x-东1北2.网格.png': ancientCity4xEast1North2AtlasPng, './古城4x-东1北3.网格.png': ancientCity4xEast1North3AtlasPng, './古城4x-东1南1.网格.png': ancientCity4xEast1South1AtlasPng, './古城4x-东1南2.网格.png': ancientCity4xEast1South2AtlasPng, './古城4x-东2.网格.png': ancientCity4xEast2AtlasPng, './古城4x-东2北1.网格.png': ancientCity4xEast2North1AtlasPng, './古城4x-东2北2.网格.png': ancientCity4xEast2North2AtlasPng, './古城4x-东2北3.网格.png': ancientCity4xEast2North3AtlasPng, './古城4x-东2南1.网格.png': ancientCity4xEast2South1AtlasPng, './古城4x-东2南2.网格.png': ancientCity4xEast2South2AtlasPng, './古城4x-东3.网格.png': ancientCity4xEast3AtlasPng, './古城4x-东3北1.网格.png': ancientCity4xEast3North1AtlasPng, './古城4x-东3北2.网格.png': ancientCity4xEast3North2AtlasPng, './古城4x-东3南1.网格.png': ancientCity4xEast3South1AtlasPng, './古城4x-中.网格.png': ancientCity4xCenterAtlasPng, './古城4x-中顶.网格.png': ancientCity4xCenterTopAtlasPng, './古城4x-北1.网格.png': ancientCity4xNorth1AtlasPng, './古城4x-北2.网格.png': ancientCity4xNorth2AtlasPng, './古城4x-北3.网格.png': ancientCity4xNorth3AtlasPng, './古城4x-南1.网格.png': ancientCity4xSouth1AtlasPng, './古城4x-南2.网格.png': ancientCity4xSouth2AtlasPng, './古城4x-南3.网格.png': ancientCity4xSouth3AtlasPng, './古城4x-西1.网格.png': ancientCity4xWest1AtlasPng, './古城4x-西1北1.网格.png': ancientCity4xWest1North1AtlasPng, './古城4x-西1北2.网格.png': ancientCity4xWest1North2AtlasPng, './古城4x-西1北3.网格.png': ancientCity4xWest1North3AtlasPng, './古城4x-西1南1.网格.png': ancientCity4xWest1South1AtlasPng, './古城4x-西1南2.网格.png': ancientCity4xWest1South2AtlasPng, './古城4x-西1南3.网格.png': ancientCity4xWest1South3AtlasPng, './古城4x-西2.网格.png': ancientCity4xWest2AtlasPng, './古城4x-西2北1.网格.png': ancientCity4xWest2North1AtlasPng, './古城4x-西2北2.网格.png': ancientCity4xWest2North2AtlasPng, './古城4x-西2北3.网格.png': ancientCity4xWest2North3AtlasPng, './古城4x-西2南1.网格.png': ancientCity4xWest2South1AtlasPng, './古城4x-西2南2.网格.png': ancientCity4xWest2South2AtlasPng, './古城4x-西2南3.网格.png': ancientCity4xWest2South3AtlasPng, './古城4x-西3.网格.png': ancientCity4xWest3AtlasPng, './古城4x-西3北1.网格.png': ancientCity4xWest3North1AtlasPng, './古城4x-西3北2.网格.png': ancientCity4xWest3North2AtlasPng, './古城4x-西3北3.网格.png': ancientCity4xWest3North3AtlasPng, './古城4x-西3南1.网格.png': ancientCity4xWest3South1AtlasPng, './古城4x-西3南2.网格.png': ancientCity4xWest3South2AtlasPng, './古城4x-西4.网格.png': ancientCity4xWest4AtlasPng });
 const url = (m: string | { default: string }) => (typeof m === 'string' ? m : m.default);
 
-type MeshPart = { 名: string; info: BlockMeshInfo; bin: string; atlas: string; x: [number, number]; z: [number, number]; y: [number, number] };
+type MeshPart = { name: string; info: BlockMeshInfo; bin: string; atlas: string; x: [number, number]; z: [number, number]; y: [number, number] };
 const BLOCKS: Record<string, MeshPart> = Object.fromEntries(
   meshJsonFiles.keys().map((k) => {
     const partName = k.slice('./古城4x-'.length, -'.网格.json'.length);
     const info = meshJsonFiles(k) as unknown as BlockMeshInfo;
     return [
       partName,
-      { 名: partName, info, bin: url(meshBinFiles(`./古城4x-${partName}.网格.bin`)), atlas: url(atlasFiles(`./古城4x-${partName}.网格.png`)),
+      { name: partName, info, bin: url(meshBinFiles(`./古城4x-${partName}.网格.bin`)), atlas: url(atlasFiles(`./古城4x-${partName}.网格.png`)),
         x: [info.from[0], info.to[0]], z: [info.from[2], info.to[2]], y: [info.from[1], info.to[1]] },
     ];
   }),
@@ -187,10 +187,10 @@ export const G4 = (x: number, y: number, z: number): V3 => fromGame([x - ORIGIN[
 export const toGame4 = ([x, y, z]: number[]): V3 => [x + ORIGIN[0], z + ORIGIN[1], ORIGIN[2] - y];
 
 // 游戏 (x, z) 在哪一块（不在任何一块里返回 undefined）；补洞的块（中顶）和 中 平面上重叠，只认含城地面 y -50 的块
-export const partAt = (x: number, z: number) => Object.values(BLOCKS).find((b) => x >= b.x[0] && x <= b.x[1] + 1 && z >= b.z[0] && z <= b.z[1] + 1 && b.y[0] <= -50 && b.y[1] >= -50)?.名;
+export const partAt = (x: number, z: number) => Object.values(BLOCKS).find((b) => x >= b.x[0] && x <= b.x[1] + 1 && z >= b.z[0] && z <= b.z[1] + 1 && b.y[0] <= -50 && b.y[1] >= -50)?.name;
 // 游戏 (x, z) 周围 r 格（正方形）碰到的块
 export const partsAround = (x: number, z: number, r: number) =>
-  Object.values(BLOCKS).filter((b) => b.x[0] <= x + r && b.x[1] + 1 >= x - r && b.z[0] <= z + r && b.z[1] + 1 >= z - r).map((b) => b.名);
+  Object.values(BLOCKS).filter((b) => b.x[0] <= x + r && b.x[1] + 1 >= x - r && b.z[0] <= z + r && b.z[1] + 1 >= z - r).map((b) => b.name);
 // 视距、雾：全片通用的满视距（lib/视距.ts）。雾色照 1.20.1 FogRenderer：
 // - setupColor 雾色（清屏色同它）：群系雾色 deep_dark 0xC0D8FF × 白天亮度系数（白天 1）；32 区块时不混天色；地下按镜头高度压暗（(y+64)/32 再平方）；
 //   夜视再把最大分量拉回 1（项目按夜视画，见 古城.tsx），压暗就被抵掉，结果就是 #C0D8FF。身上有黑暗时不提亮，见 模型/特效/黑暗效果.tsx。
@@ -199,7 +199,7 @@ export const FOG_4X = { color: '#c0d8ff', ...VIEW_FOG };
 
 // 各块的包围盒（three.js 坐标：画布里场景组绕 X 转 −90°，场景 (x, y, z) → three (x, z, −y)，即 three = (游戏 x + 720, 游戏 y + 50, 游戏 z − 240)）
 const TILE_BOXES = Object.values(BLOCKS).map((b) => ({
-  名: b.名,
+  name: b.name,
   box: new THREE.Box3(new THREE.Vector3(b.x[0] - ORIGIN[0], b.y[0] - ORIGIN[1], b.z[0] - ORIGIN[2]), new THREE.Vector3(b.x[1] + 1 - ORIGIN[0], b.y[1] + 1 - ORIGIN[1], b.z[1] + 1 - ORIGIN[2])),
 }));
 const frustum = new THREE.Frustum();
@@ -213,7 +213,7 @@ export const tilesInView = (camera: THREE.PerspectiveCamera): string[] => {
   frustum.setFromProjectionMatrix(viewProj.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
   camera.far = far;
   camera.updateProjectionMatrix();
-  return TILE_BOXES.filter((t) => frustum.intersectsBox(t.box)).map((t) => t.名);
+  return TILE_BOXES.filter((t) => frustum.intersectsBox(t.box)).map((t) => t.name);
 };
 
 // 某种方块在各块里的位置（方块底面中心，场景坐标）

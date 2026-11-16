@@ -6,5 +6,5 @@ export default defineSpellMeta({
   长秒: 2, // SPELL_SQUARE 寿命 8～40 刻，最久那颗到 2 秒
   hitSec: 0,
   // WeakeningSpell.SpellResult：weaken_cast 音量 2（4 个变体取第 1 个）；受害者身上的 weaken_curse 这里没有受害者
-  声音: [{ 资产: '音效/诡厄巫法/goety.weaken_cast.1', 秒: 0, 音量: 2 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.weaken_cast.1', sec: 0, 音量: 2 }],
 });

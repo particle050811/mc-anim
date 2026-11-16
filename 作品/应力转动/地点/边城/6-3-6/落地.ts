@@ -13,7 +13,7 @@ import type { FigurePose } from '@库/角色/骨架.tsx';
 export const touchdownSec = 1 / 3;
 const settleSec = 35 / 24;
 // 打击停顿：规矩的单位是帧（1/24 秒）
-const stopEnd = exception('打击停顿', 2, { 段: '6-举锤砸穿', 原因: '锤砸地；用户 10-21 定按看过的版本' }) / 24;
+const stopEnd = exception('打击停顿', 2, { segment: '6-举锤砸穿', cause: '锤砸地；用户 10-21 定按看过的版本' }) / 24;
 // 翻角（度）：155 头朝下 → 360 站直；着地那一刻冲过 6°（身子顺势往前栽一下），再回
 const flipKeys: Key[] = [[0, 155], [stopEnd, 155], [touchdownSec, 366], [0.5, 360]];
 export const flipAngle = (s: number) => sampleLag(flipKeys, s);

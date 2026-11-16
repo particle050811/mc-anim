@@ -5,4 +5,4 @@ import { png } from '@engine/model/贴图.ts';
 import type { PhotoImage } from './照片图.ts';
 import line11GroupPhotoPng from 'asset:贴图/照片/第11句合照-三版';
 
-export const groupPhoto: PhotoImage = { 名: '合照', 图: png(line11GroupPhotoPng) };
+export const groupPhoto: PhotoImage = { name: '合照', image: png(line11GroupPhotoPng) };

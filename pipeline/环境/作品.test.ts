@@ -34,7 +34,7 @@ describe('作品们', () => {
     fs.writeFileSync(toml, 'work = "甲"\n\n[works]\n"私有丙" = "外面/私有丙"\n');
     const r = readConfig({}, toml);
     expect(r.workPaths).toEqual({ 私有丙: outsideDir });
-    expect(r.值.默认作品!.值).toBe('甲');
+    expect(r.value.默认作品!.value).toBe('甲');
   });
 });
 
@@ -45,25 +45,25 @@ describe('选作品', () => {
     ['丙', outsideDir],
   ]);
   it('--work > 当前目录 > 默认作品', () => {
-    expect(pickWork({ 参数: '乙', cwd: firstWork, 默认: '丙', 们: workRoots }).名).toBe('乙');
-    expect(pickWork({ cwd: path.join(firstWork, '段'), 默认: '丙', 们: workRoots }).名).toBe('甲');
-    expect(pickWork({ cwd: outsideDir, 默认: '甲', 们: workRoots }).名).toBe('丙');
-    expect(pickWork({ cwd: tempDir, 默认: '丙', 们: workRoots }).名).toBe('丙');
+    expect(pickWork({ params: '乙', cwd: firstWork, 默认: '丙', 们: workRoots }).name).toBe('乙');
+    expect(pickWork({ cwd: path.join(firstWork, '段'), 默认: '丙', 们: workRoots }).name).toBe('甲');
+    expect(pickWork({ cwd: outsideDir, 默认: '甲', 们: workRoots }).name).toBe('丙');
+    expect(pickWork({ cwd: tempDir, 默认: '丙', 们: workRoots }).name).toBe('丙');
   });
   it('只有一部就用它；多部又定不了就报错并列出名字', () => {
-    expect(pickWork({ cwd: tempDir, 们: new Map([['甲', firstWork]]) }).名).toBe('甲');
+    expect(pickWork({ cwd: tempDir, 们: new Map([['甲', firstWork]]) }).name).toBe('甲');
     expect(() => pickWork({ cwd: tempDir, 们: workRoots })).toThrow(/甲、乙、丙/);
-    expect(() => pickWork({ 参数: '戊', 们: workRoots })).toThrow(/没有作品「戊」/);
+    expect(() => pickWork({ params: '戊', 们: workRoots })).toThrow(/没有作品「戊」/);
   });
   it('--work 从参数里取走，-- 之后的不动', () => {
-    expect(parseWorkArg(['render', '--work', '甲', '7-甲'])).toEqual({ 作品: '甲', rest: ['render', '7-甲'] });
-    expect(parseWorkArg(['--work=乙', 'stale'])).toEqual({ 作品: '乙', rest: ['stale'] });
+    expect(parseWorkArg(['render', '--work', '甲', '7-甲'])).toEqual({ work: '甲', rest: ['render', '7-甲'] });
+    expect(parseWorkArg(['--work=乙', 'stale'])).toEqual({ work: '乙', rest: ['stale'] });
     expect(parseWorkArg(['studio', '--', '--work', 'x'])).toEqual({ rest: ['studio', '--', '--work', 'x'] });
     expect(() => parseWorkArg(['--work'])).toThrow(/后面要跟作品名/);
   });
   it('段全名 作品/段键', () => {
-    expect(splitFullName('乙/7-甲')).toEqual({ 作品: '乙', 键: '7-甲' });
-    expect(splitFullName('7-甲')).toEqual({ 键: '7-甲' });
+    expect(splitFullName('乙/7-甲')).toEqual({ work: '乙', key: '7-甲' });
+    expect(splitFullName('7-甲')).toEqual({ key: '7-甲' });
   });
 });
 

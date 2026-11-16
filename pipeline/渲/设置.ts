@@ -1,6 +1,6 @@
 // 渲染参数（全部显式传给 Remotion，并整份进指纹）。每段渲出来就是成片的一截（用户 11-05 定「母版 = 成片切片」）：
 // 叠层、字幕画在段里，Remotion 直接按成片参数压（x264 medium CRF 18 + 码率上限、BT.709），成片只接不重压；段的声音和画面同一遍出（段产物.ts 打开 muted、separateAudioTo 出 wav）。
-// 视频级 PNG 帧、截图按成片档放大；预览级 JPEG、不放大、inputProps 级别=预览。并发 1（用户 10-06 定）。
+// 视频级 PNG 帧、截图按成片档放大；预览级 JPEG、不放大、inputProps level=预览。并发 1（用户 10-06 定）。
 import { config } from '../环境/配置.ts';
 import { normalizeSettings, type SegSubtitle, type RenderLevel } from '../../engine/段/设置值.ts';
 
@@ -12,14 +12,14 @@ import { normalizeSettings, type SegSubtitle, type RenderLevel } from '../../eng
  * 1080p 1.5 倍（11-05 以前是 2 倍出 2560×1440，那些母版、认可参考都是 1440 的），4k 3 倍；换档母版全部重渲。
  */
 export const filmTierTable = {
-  '4k60': { renderMultiplier: 3, 宽: 3840, 高: 2160, fps: 60, maxBitrate: '40M', bufferSize: '80M' },
-  '1080p60': { renderMultiplier: 1.5, 宽: 1920, 高: 1080, fps: 60, maxBitrate: '15M', bufferSize: '30M' },
+  '4k60': { renderMultiplier: 3, width: 3840, height: 2160, fps: 60, maxBitrate: '40M', bufferSize: '80M' },
+  '1080p60': { renderMultiplier: 1.5, width: 1920, height: 1080, fps: 60, maxBitrate: '15M', bufferSize: '30M' },
 } as const;
 export type FilmTierName = keyof typeof filmTierTable;
 export const filmProfile = () => {
   const name = config('成片档');
   if (!(name in filmTierTable)) throw new Error(`成片档 ${name} 不认识，只能是 ${Object.keys(filmTierTable).join('、')}（ANIM_FILM_PROFILE）`);
-  return { 名: name as FilmTierName, ...filmTierTable[name as FilmTierName] };
+  return { name: name as FilmTierName, ...filmTierTable[name as FilmTierName] };
 };
 /** 母版、叠层的宽高（视频级 = 页面 1280×720 × 渲染倍数；预览级不放大） */
 export const masterSize = (level: RenderLevel): [number, number] => {
@@ -35,7 +35,7 @@ const glBackend = () => config('gl') as 'angle' | 'swangle' | 'egl' | 'swiftshad
 export const renderParams = (level: RenderLevel, subtitles: readonly SegSubtitle[] = []) => {
   const filmTier = filmProfile();
   return {
-    inputProps: normalizeSettings({ 级别: level, 输出fps: filmTier.fps, 字幕: subtitles }),
+    inputProps: normalizeSettings({ level: level, outputFps: filmTier.fps, subtitles: subtitles }),
     codec: 'h264' as const,
     crf: 18,
     x264Preset: 'medium' as const,

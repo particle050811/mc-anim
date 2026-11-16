@@ -3,44 +3,44 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/block.chest.close.3": {
-      "时长": 0.623667,
-      "峰值": 0,
-      "响度": -18.4,
+      "duration": 0.623667,
+      "peakDb": 0,
+      "loudness": -18.4,
       "sha": "b54ef7661015"
     },
     "音效/block.chest.open": {
-      "时长": 0.515208,
-      "峰值": -0.7,
-      "响度": -14.1,
+      "duration": 0.515208,
+      "peakDb": -0.7,
+      "loudness": -14.1,
       "sha": "6b9b0c3672b4"
     },
     "音效/block.wool.place.1": {
-      "时长": 0.203469,
-      "峰值": -6.9,
-      "响度": -70,
+      "duration": 0.203469,
+      "peakDb": -6.9,
+      "loudness": -70,
       "sha": "8a716f2a3cbf"
     },
     "音效/block.wool.place.4": {
-      "时长": 0.203469,
-      "峰值": -11,
-      "响度": -70,
+      "duration": 0.203469,
+      "peakDb": -11,
+      "loudness": -70,
       "sha": "09d5879722c5"
     },
     "音效/block.wool.step.2": {
-      "时长": 0.203469,
-      "峰值": -13.8,
-      "响度": -70,
+      "duration": 0.203469,
+      "peakDb": -13.8,
+      "loudness": -70,
       "sha": "139fc234e51f"
     },
     "音效/block.wool.step.3": {
-      "时长": 0.203469,
-      "峰值": -12.8,
-      "响度": -70,
+      "duration": 0.203469,
+      "peakDb": -12.8,
+      "loudness": -70,
       "sha": "ac49293ab32a"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

@@ -3,68 +3,68 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/block.stone.step.2": {
-      "时长": 0.484376,
-      "峰值": -7,
-      "响度": -33.9,
+      "duration": 0.484376,
+      "peakDb": -7,
+      "loudness": -33.9,
       "sha": "2cfbf8787436"
     },
     "音效/block.stone.step.5": {
-      "时长": 0.562517,
-      "峰值": -9.1,
-      "响度": -31.3,
+      "duration": 0.562517,
+      "peakDb": -9.1,
+      "loudness": -31.3,
       "sha": "67b1e50426b2"
     },
     "音效/block.wood.step.1": {
-      "时长": 0.492208,
-      "峰值": -6.5,
-      "响度": -27.5,
+      "duration": 0.492208,
+      "peakDb": -6.5,
+      "loudness": -27.5,
       "sha": "9f6425b71baa"
     },
     "音效/block.wood.step.3": {
-      "时长": 0.562521,
-      "峰值": -5.6,
-      "响度": -30.6,
+      "duration": 0.562521,
+      "peakDb": -5.6,
+      "loudness": -30.6,
       "sha": "dc6f1450bd37"
     },
     "音效/block.wood.step.5": {
-      "时长": 0.689958,
-      "峰值": -6.4,
-      "响度": -28.4,
+      "duration": 0.689958,
+      "peakDb": -6.4,
+      "loudness": -28.4,
       "sha": "f950e9c56383"
     },
     "音效/entity.villager.work_cartographer.1": {
-      "时长": 0.716395,
-      "峰值": -19.3,
-      "响度": -33,
+      "duration": 0.716395,
+      "peakDb": -19.3,
+      "loudness": -33,
       "sha": "9c04646035a3"
     },
     "音效/entity.villager.work_cartographer.2": {
-      "时长": 0.624989,
-      "峰值": -17.9,
-      "响度": -31.3,
+      "duration": 0.624989,
+      "peakDb": -17.9,
+      "loudness": -31.3,
       "sha": "2d08fc179561"
     },
     "音效/entity.villager.work_cartographer.3": {
-      "时长": 0.75,
-      "峰值": -16.1,
-      "响度": -29.3,
+      "duration": 0.75,
+      "peakDb": -16.1,
+      "loudness": -29.3,
       "sha": "b033cd33b977"
     },
     "音效/item.book.page_turn.3": {
-      "时长": 0.537483,
-      "峰值": -15.6,
-      "响度": -36.3,
+      "duration": 0.537483,
+      "peakDb": -15.6,
+      "loudness": -36.3,
       "sha": "4715e14e54c5"
     },
     "音效/item.book.put.1": {
-      "时长": 0.306984,
-      "峰值": -15.4,
-      "响度": -70,
+      "duration": 0.306984,
+      "peakDb": -15.4,
+      "loudness": -70,
       "sha": "c91d829d8e7b"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

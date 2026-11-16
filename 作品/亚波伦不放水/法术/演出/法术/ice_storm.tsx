@@ -26,7 +26,7 @@ const glassBox = boxModel('glass', 0);
 const coreBox = boxModel('cube', 32);
 const tiltQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(Math.SQRT1_2, 0, Math.SQRT1_2), Math.PI / 3);
 
-const IceStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const IceStorm: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const trajectory = iceStormPath(from, target, options?.highSpeed);
   const endTick = iceStormEndTick(from, target, options?.highSpeed);
@@ -49,13 +49,13 @@ const IceStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: tar
         <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
           <group scale={[s, s, s]} rotation={selfRotation}>
             <group position={[0, 0.25, 0]} quaternion={tiltQuat}>
-              <ModelPart 模型={glassBox} 图={image} 画法="半透明" opacity={0.25} />
+              <ModelPart model={glassBox} image={image} 画法="半透明" opacity={0.25} />
               <group scale={[0.875, 0.875, 0.875]} quaternion={tiltQuat}>
                 <group rotation={selfRotation}>
-                  <ModelPart 模型={glassBox} 图={image} 画法="半透明" opacity={0.5} />
+                  <ModelPart model={glassBox} image={image} 画法="半透明" opacity={0.5} />
                   <group scale={[0.875, 0.875, 0.875]} quaternion={tiltQuat}>
                     <group rotation={selfRotation}>
-                      <ModelPart 模型={coreBox} 图={image} 画法="半透明" opacity={0.75} />
+                      <ModelPart model={coreBox} image={image} 画法="半透明" opacity={0.75} />
                     </group>
                   </group>
                 </group>
@@ -64,7 +64,7 @@ const IceStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: tar
           </group>
         </MinecraftSpace>
       )}
-      <TexturedParticles 类={{ ...snowflakeClass, ground: target[2] }} spawns={snow} 秒={sec} />
+      <TexturedParticles type={{ ...snowflakeClass, ground: target[2] }} spawns={snow} sec={sec} />
     </>
   );
 };

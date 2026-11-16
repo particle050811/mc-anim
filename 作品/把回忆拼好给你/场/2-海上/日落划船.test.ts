@@ -33,33 +33,33 @@ import { endRig, finalDist, finalSpeed, eyeBall } from '../2-祭坛/末态.ts';
 
 // 第 4 句 2 行歌词在 2560×1440 上占 y 77～329（界面/符文排版.ts，字点 7），换成页面像素
 const lyricBottomPx = 329 / 2;
-const seaFrames = Array.from({ length: segWindow.止帧 - events.horizon.帧 }, (_, i) => events.horizon.帧 + i);
+const seaFrames = Array.from({ length: segWindow.止帧 - events.horizon.frame }, (_, i) => events.horizon.frame + i);
 
 describe('第 4 句的窗口和事件', () => {
   it('窗口是第 4 句起到第 5 句起，事件都在窗口里、按顺序', () => {
     expect(segWindow.起帧).toBe(Math.round(lineAt(4).起 * fps));
     expect(segWindow.止帧).toBe(Math.round(lineAt(5).起 * fps));
-    expect(segClock('2-日落划船').帧数).toBe(segWindow.止帧 - segWindow.起帧);
-    const order = [events.line4VocalIn, events.eyeToSun, events.horizon, events.oarDips, events.pullBackDone, events.photoSunsetRowing, events.waveRises].map((e) => e.帧);
+    expect(segClock('2-日落划船').frameCount).toBe(segWindow.止帧 - segWindow.起帧);
+    const order = [events.line4VocalIn, events.eyeToSun, events.horizon, events.oarDips, events.pullBackDone, events.photoSunsetRowing, events.waveRises].map((e) => e.frame);
     for (let i = 1; i < order.length; i++) expect(order[i]!).toBeGreaterThan(order[i - 1]!);
     expect(order[0]).toBeGreaterThanOrEqual(segWindow.起帧);
     expect(order.at(-1)!).toBeLessThan(segWindow.止帧);
-    expect(photoFrame).toBe(mainCutEvents.photoSunsetRowing.帧);
+    expect(photoFrame).toBe(mainCutEvents.photoSunsetRowing.frame);
   });
   it('干净的镜头都不短于 0.5 秒：眼睛特写、海；浪从起到盖满至少 0.5 秒；拉远 0.8 秒以上，拉完停稳 0.8 秒以上才起浪（核查 10-24：原来只停 11 帧）', () => {
-    expect((events.eyeToSun.帧 - segWindow.起帧) / fps).toBeGreaterThan(0.5);
-    expect((events.waveRises.帧 - events.horizon.帧) / fps).toBeGreaterThan(0.5);
-    expect((segWindow.止帧 - events.waveRises.帧) / fps).toBeGreaterThan(0.5);
-    expect((events.pullBackDone.帧 - events.horizon.帧) / fps).toBeGreaterThanOrEqual(0.8);
-    expect((events.waveRises.帧 - events.pullBackDone.帧) / fps).toBeGreaterThanOrEqual(0.8);
+    expect((events.eyeToSun.frame - segWindow.起帧) / fps).toBeGreaterThan(0.5);
+    expect((events.waveRises.frame - events.horizon.frame) / fps).toBeGreaterThan(0.5);
+    expect((segWindow.止帧 - events.waveRises.frame) / fps).toBeGreaterThan(0.5);
+    expect((events.pullBackDone.frame - events.horizon.frame) / fps).toBeGreaterThanOrEqual(0.8);
+    expect((events.waveRises.frame - events.pullBackDone.frame) / fps).toBeGreaterThanOrEqual(0.8);
   });
   it('叠化、浪：起止对', () => {
-    expect(crossfade(events.eyeToSun.帧)).toBe(0);
-    expect(crossfade(events.horizon.帧)).toBe(1);
-    expect(surgeIn(events.waveRises.帧)).toBe(0);
+    expect(crossfade(events.eyeToSun.frame)).toBe(0);
+    expect(crossfade(events.horizon.frame)).toBe(1);
+    expect(surgeIn(events.waveRises.frame)).toBe(0);
     expect(surgeIn(segWindow.止帧 - 1)).toBeLessThan(1);
     expect(surgeIn(segWindow.止帧)).toBe(1);
-    expect(pullBack(events.pullBackDone.帧)).toBe(1);
+    expect(pullBack(events.pullBackDone.frame)).toBe(1);
     expect(pullBack(photoFrame)).toBe(1);
   });
 });
@@ -71,10 +71,10 @@ describe('原版木船', () => {
     for (let n = 1; n <= 30; n++) {
       v = v * 0.9 + 0.04;
       travelled += v;
-      expect(rowingStroke(n).速度).toBeCloseTo(v, 9);
-      expect(rowingStroke(n).路).toBeCloseTo(travelled, 9);
+      expect(rowingStroke(n).speed).toBeCloseTo(v, 9);
+      expect(rowingStroke(n).lane).toBeCloseTo(travelled, 9);
     }
-    expect(rowingStroke(1e4).速度).toBeCloseTo(boatParams.maxSpeed, 6);
+    expect(rowingStroke(1e4).speed).toBeCloseTo(boatParams.maxSpeed, 6);
   });
   it('桨不划时是原版静止的角度，划的时候在原版夹的范围里', () => {
     const rest = oarPose(null);
@@ -88,14 +88,14 @@ describe('原版木船', () => {
   it('第二桨的水声落在「桨入水」，海上镜头里的桨声都在海平线和浪起之间、隔 0.8 秒', () => {
     const oarSecs = oarSoundSecs();
     expect(oarSecs.length).toBeGreaterThanOrEqual(2);
-    expect(oarSecs[0]).toBeCloseTo(mainCutEvents.oarDips.秒, 6);
+    expect(oarSecs[0]).toBeCloseTo(mainCutEvents.oarDips.sec, 6);
     for (let i = 1; i < oarSecs.length; i++) expect(oarSecs[i]! - oarSecs[i - 1]!).toBeCloseTo(0.8, 6);
-    expect(rowStartSec + 2 / 20 + 0.8).toBeCloseTo(mainCutEvents.oarDips.秒, 6);
+    expect(rowStartSec + 2 / 20 + 0.8).toBeCloseTo(mainCutEvents.oarDips.sec, 6);
   });
   it('海平线那一刻船在原点、往南偏西走；你在前、她在后，她侧坐朝东偏南', () => {
-    expect(BoatState(events.horizon.帧).loc[0]).toBeCloseTo(0, 9);
-    expect(BoatState(events.horizon.帧).loc[1]).toBeCloseTo(0, 9);
-    const arrivalPos = BoatState(events.pullBackDone.帧).loc;
+    expect(BoatState(events.horizon.frame).loc[0]).toBeCloseTo(0, 9);
+    expect(BoatState(events.horizon.frame).loc[1]).toBeCloseTo(0, 9);
+    const arrivalPos = BoatState(events.pullBackDone.frame).loc;
     expect(arrivalPos[1]).toBeLessThan(0);
     expect(arrivalPos[0]).toBeLessThan(0);
     expect(Math.abs(arrivalPos[0])).toBeLessThan(Math.abs(arrivalPos[1]));
@@ -108,7 +108,7 @@ describe('原版木船', () => {
 
 describe('海上的镜头', () => {
   it('海平线那一刻太阳中心高 太阳高 度，往下落（原版速度）', () => {
-    expect(sunElevation(gameTick(events.horizon.帧))).toBeCloseTo(sunHeight, 6);
+    expect(sunElevation(gameTick(events.horizon.frame))).toBeCloseTo(sunHeight, 6);
     expect(sunElevation(gameTick(segWindow.止帧))).toBeLessThan(sunHeight);
     expect(sunElevation(gameTick(segWindow.止帧))).toBeGreaterThan(sunHeight - 1);
   });
@@ -151,7 +151,7 @@ describe('海上的镜头', () => {
       const toCamera = [eye[0]! - person.loc[0]!, eye[1]! - person.loc[1]!];
       return (Math.acos((dir[0]! * toCamera[0]! + dir[1]! * toCamera[1]!) / Math.hypot(toCamera[0]!, toCamera[1]!)) * 180) / Math.PI;
     };
-    for (const g of [events.pullBackDone.帧, photoFrame, events.waveRises.帧]) {
+    for (const g of [events.pullBackDone.frame, photoFrame, events.waveRises.frame]) {
       const eye = seaCameraRig(g).眼;
       expect(angleBetween(youPos(g), eye), `歌曲帧 ${g}`).toBeLessThan(80);
       expect(angleBetween(herPos(g), eye), `歌曲帧 ${g}`).toBeLessThan(30);
@@ -183,7 +183,7 @@ describe('匹配剪辑', () => {
     expect(L(segWindow.起帧)).toBeLessThan(L(joinFrame));
   });
   it('叠化的时候（眼化日到海平线）画里只有太阳、光路和海：船身和你们俩的头都在画框右边、下边外头（一次一个看点）', () => {
-    for (let g = events.eyeToSun.帧; g <= events.horizon.帧; g++) {
+    for (let g = events.eyeToSun.frame; g <= events.horizon.frame; g++) {
       const rig = seaCameraRig(g);
       const b = BoatState(g);
       // 船身：船本地 长 ±0.9、宽 ±0.65，高到船帮；头：你（玩家模型 15/16）实体脚底往上 1.4～1.9 格、她 0.6～1.4 格，±0.25 格见方。
@@ -200,22 +200,22 @@ describe('匹配剪辑', () => {
     }
   });
   it('眼化日那一刻右眼眼珠落在太阳上、一样高', () => {
-    const g = events.eyeToSun.帧;
+    const g = events.eyeToSun.frame;
     const rig = eyeCameraRig(g);
     const sun = sunScreen(seaCameraRig(g), gameTick(g))!;
     const eyeballPoint = projectPoint(rig, eyeBall.rightEye)!;
     expect(eyeballPoint[0]).toBeCloseTo(sun.x, 3);
     expect(eyeballPoint[1]).toBeCloseTo(sun.y, 3);
-    const eyeTop = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] + eyeBall.高 / 2])!;
-    const bottomProj = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] - eyeBall.高 / 2])!;
+    const eyeTop = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] + eyeBall.height / 2])!;
+    const bottomProj = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] - eyeBall.height / 2])!;
     expect(bottomProj[1] - eyeTop[1]).toBeCloseTo(sun.side, 1);
   });
   it('眼睛特写一路往里推（眼珠越来越大）', () => {
     let prev = 0;
-    for (let g = segWindow.起帧; g <= events.eyeToSun.帧; g++) {
+    for (let g = segWindow.起帧; g <= events.eyeToSun.frame; g++) {
       const rig = eyeCameraRig(g);
-      const eyeTop = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] + eyeBall.高 / 2])!;
-      const bottomProj = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] - eyeBall.高 / 2])!;
+      const eyeTop = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] + eyeBall.height / 2])!;
+      const bottomProj = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] - eyeBall.height / 2])!;
       expect(bottomProj[1] - eyeTop[1]).toBeGreaterThanOrEqual(prev - 1e-9);
       prev = bottomProj[1] - eyeTop[1];
     }
@@ -225,7 +225,7 @@ describe('匹配剪辑', () => {
 describe('光路、远档（Agent 加的，原版没有）', () => {
   const sunHalfDeg = (Math.atan(7.5 / 100) * 180) / Math.PI;
   /** 光路离太阳方位最远能到多少度：最宽处半宽 ×（抖 + 一截最长的半长） */
-  const maxOffset = sunHalfDeg * (lightPath.宽 + lightPath.spread * lightPath.near) * (lightPath.jitter + 0.55);
+  const maxOffset = sunHalfDeg * (lightPath.width + lightPath.spread * lightPath.near) * (lightPath.jitter + 0.55);
   it('只在海平线以下、太阳正下方那一条里；近过 近 就没有了；同一处同一刻每次一样', () => {
     for (let tick = 0; tick < 200; tick += 7)
       for (let azimuthDiff = -40; azimuthDiff <= 40; azimuthDiff += 0.5) {
@@ -241,7 +241,7 @@ describe('光路、远档（Agent 加的，原版没有）', () => {
   });
   it('贴着海平线那一道连成一片、和太阳差不多宽；一行一行隔开；光路在闪（隔几刻有的截换了位置）', () => {
     expect(lightPathColor(0.2, 0, 0)).not.toBeNull();
-    expect(lightPathColor(0.2, sunHalfDeg * lightPath.宽 * 1.01, 0)).toBeNull();
+    expect(lightPathColor(0.2, sunHalfDeg * lightPath.width * 1.01, 0)).toBeNull();
     // 往下一行一行：同一刻同一方位，有亮的行也有空的行
     const column = Array.from({ length: 200 }, (_, i) => lightPath.startDist + (i * (lightPath.near - lightPath.startDist)) / 200).map((depthBelow) =>
       Array.from({ length: 41 }, (_, j) => lightPathColor(depthBelow, -maxOffset + (j * 2 * maxOffset) / 40, 10)).some((c) => c !== null),
@@ -266,7 +266,7 @@ describe('光路、远档（Agent 加的，原版没有）', () => {
   it('整帧的图：海平线以上一块都不盖（天归 天.tsx），太阳底下贴着海平线有光路', () => {
     const rig = seaCameraRig(photoFrame);
     const tileSize = 4;
-    const { 字节: bytes, 列: cols, 行: rows } = seaPattern(rig, gameTick(photoFrame), 1280, 720, tileSize);
+    const { bytes: bytes, 列: cols, 行: rows } = seaPattern(rig, gameTick(photoFrame), 1280, 720, tileSize);
     const horizonY = seaHorizonY(rig);
     for (let j = 0; j < rows; j++)
       if ((j + 0.5) * tileSize < horizonY - 1) for (let i = 0; i < cols; i++) expect(bytes[(j * cols + i) * 4 + 3]).toBe(0);

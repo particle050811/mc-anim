@@ -24,7 +24,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const gold = hexColor(0xffaa00);
 const halfHeight = 0.15;
 
-const Surge: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const Surge: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   return (
     <>
@@ -38,7 +38,7 @@ const Surge: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target
             <React.Fragment key={i}>
               <SphereBurst 位={pos} 刻={t - projectile.flightTick} 色={gold} 尺寸={0.5} 速={1} />
               {Array.from({ length: 8 }, (_, k) => (
-                <ElectricArc key={k} 起={pos} end={[pos[0] + r() * 2 - 1, pos[1] + r() * 2 - 1, pos[2] + r() * 2 - 1]} settings={arcPresets.shock} 刻={t - projectile.flightTick} lifeTicks={8} 色={gold} opacity={0.8} 种子={seed * 23 + i * 8 + k} />
+                <ElectricArc key={k} start={pos} end={[pos[0] + r() * 2 - 1, pos[1] + r() * 2 - 1, pos[2] + r() * 2 - 1]} settings={arcPresets.shock} 刻={t - projectile.flightTick} lifeTicks={8} 色={gold} opacity={0.8} seed={seed * 23 + i * 8 + k} />
               ))}
             </React.Fragment>
           );
@@ -58,9 +58,9 @@ const Surge: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target
         return (
           <React.Fragment key={i}>
             {[0, 1, 2].map((k) => (
-              <Trail key={k} points={Array.from({ length: Math.min(12, Math.floor(t) + 1) }, (_, j) => spiral(j * 0.5, (k * 2 * Math.PI) / 3))} 宽={0.05} 长={1.75} 图={png(pointedTrailPng)} 色={gold} 实心 混合="镂空" />
+              <Trail key={k} points={Array.from({ length: Math.min(12, Math.floor(t) + 1) }, (_, j) => spiral(j * 0.5, (k * 2 * Math.PI) / 3))} width={0.05} length={1.75} image={png(pointedTrailPng)} 色={gold} 实心 blend="镂空" />
             ))}
-            <Quad 图={png(scatterBoltPng)} 位={[p[0], p[1], p[2] + halfHeight]} 半宽={beamWidth / 2} uv={[u, 0, u + 1 / 16, 1]} 混合="半透明" />
+            <Quad image={png(scatterBoltPng)} 位={[p[0], p[1], p[2] + halfHeight]} halfWidth={beamWidth / 2} uv={[u, 0, u + 1 / 16, 1]} blend="半透明" />
           </React.Fragment>
         );
       })}

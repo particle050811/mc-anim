@@ -30,7 +30,7 @@ export const structNonAscii = (p: string): string | null => {
 /** 只差大小写（含 NFC 归一）的路径：目录也算，a/X/1 和 a/x/2 在 Windows、Mac 上落在同一个目录里 */
 export const caseConflict = (paths: readonly string[]) => {
   const lowerNames = new Map<string, string>();
-  const r: { 文件: string; existing: string; isFile: boolean }[] = [];
+  const r: { file: string; existing: string; isFile: boolean }[] = [];
   for (const p of paths) {
     const pathSegs = p.split('/');
     for (let i = 1; i <= pathSegs.length; i++) {
@@ -39,7 +39,7 @@ export const caseConflict = (paths: readonly string[]) => {
       const existing = lowerNames.get(k);
       if (existing === undefined) lowerNames.set(k, originalPath);
       else if (existing !== originalPath) {
-        r.push({ 文件: p, existing, isFile: i === pathSegs.length });
+        r.push({ file: p, existing, isFile: i === pathSegs.length });
         break;
       }
     }
@@ -88,7 +88,7 @@ const spawnProblem = (n: ts.CallExpression, bindings: Map<string, string>): stri
 };
 
 export const checkPlatform = async (c: CheckContext, report: CheckReport) => {
-  for (const p of c.文件()) {
+  for (const p of c.file()) {
     for (const pathSegmentName of p.split('/')) {
       const pathProblem = nameProblem(pathSegmentName);
       if (pathProblem) report.错(`路径里的「${pathSegmentName}」${pathProblem}`, p);
@@ -96,9 +96,9 @@ export const checkPlatform = async (c: CheckContext, report: CheckReport) => {
     const nonAsciiPart = structNonAscii(p);
     if (nonAsciiPart) report.错(`结构层路径要用英文 ASCII：「${nonAsciiPart}」（场、段、资产这类实体名才用中文）`, p);
   }
-  for (const x of caseConflict(c.文件())) report.错(`和 ${x.existing} 只差大小写，Windows 和 Mac 上是同一个${x.isFile ? '文件' : '目录'}`, x.文件);
+  for (const x of caseConflict(c.file())) report.错(`和 ${x.existing} 只差大小写，Windows 和 Mac 上是同一个${x.isFile ? '文件' : '目录'}`, x.file);
 
-  for (const p of c.文件()) {
+  for (const p of c.file()) {
     if (codeExtRegex.test(p) && !/\.d\.[cm]?ts$/.test(p)) {
       const sourceText = c.读(p);
       if (!/shell|child_process|cross-spawn/.test(sourceText)) continue;

@@ -7,6 +7,6 @@ import type { SpellPerformanceProps } from '../接口.ts';
 import { VoidShockGroup } from '../零件/甲/虚空震画.tsx';
 import meta, { starfallShocks } from './stellar.元.ts';
 
-const Starfall: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => <VoidShockGroup shocks={starfallShocks(from, seed)} 目标={target} 秒={sec} 种子={seed} />;
+const Starfall: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => <VoidShockGroup shocks={starfallShocks(from, seed)} target={target} sec={sec} seed={seed} />;
 
 export default defineSpellPerformance(meta, Starfall);

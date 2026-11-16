@@ -32,7 +32,7 @@ const Spike: React.FC<{ 位: Vec3; facingAngle: number; warmup: number; 刻: num
         <group scale={[-f1, -f1, f1]}>
           <group position={[0, -0.626, 0]}>
             <group scale={[0.5, 0.5, 0.5]}>
-              <ModelPart 模型={spikeModel} 图={image} partPoses={partPoses} />
+              <ModelPart model={spikeModel} image={image} partPoses={partPoses} />
             </group>
           </group>
         </group>
@@ -41,7 +41,7 @@ const Spike: React.FC<{ 位: Vec3; facingAngle: number; warmup: number; 刻: num
   );
 };
 
-const Spikes: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => (
+const Spikes: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target }) => (
   <>
     {spikeRow(from, target).map((spike, i) => (
       <Spike key={i} {...spike} 刻={sec * 20} />

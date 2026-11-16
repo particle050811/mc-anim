@@ -17,23 +17,23 @@ afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-const makeTask = (taskName: string, lowPriority = false) => ({ 任务: taskName, 起: Date.now(), 心跳: Date.now(), 主机: os.hostname(), 发起: readCaller({}, [], dir, false), 声明: { 种: 'render', ...(lowPriority ? { 低优先: true } : {}) } });
+const makeTask = (taskName: string, lowPriority = false) => ({ task: taskName, start: Date.now(), heartbeat: Date.now(), host: os.hostname(), initiator: readCaller({}, [], dir, false), decl: { kind: 'render', ...(lowPriority ? { lowPriority: true } : {}) } });
 
 it('低优先的票排在全部普通票后面（后领的普通票也在它前面），暂缓票之前；回队尾各回各档', () => {
   const queue = path.join(dir, '渲染.排队');
   const lowPriorityTicket = claimTicket(queue, os.hostname(), makeTask('低', true), Date.now());
   const normal = claimTicket(queue, os.hostname(), makeTask('普'), Date.now());
-  expect(lowPriorityTicket.名.startsWith('8')).toBe(true);
+  expect(lowPriorityTicket.name.startsWith('8')).toBe(true);
   expect(isLowPriorityTicket(lowPriorityTicket)).toBe(true);
   expect(isLowPriorityTicket(normal)).toBe(false);
-  expect(listTickets(queue).map((t) => t.内容?.任务)).toEqual(['普', '低']);
+  expect(listTickets(queue).map((t) => t.content?.task)).toEqual(['普', '低']);
   const lowSecond = claimTicket(queue, os.hostname(), makeTask('低二', true), Date.now());
   const lowRequeued = requeueTail(lowPriorityTicket);
   expect(isLowPriorityTicket(lowRequeued)).toBe(true);
-  expect(lowRequeued.时间).toBeGreaterThan(lowSecond.时间);
+  expect(lowRequeued.time).toBeGreaterThan(lowSecond.time);
   const normalRequeued = requeueTail(normal);
   expect(isLowPriorityTicket(normalRequeued)).toBe(false);
-  expect(listTickets(queue).map((t) => t.内容?.任务)).toEqual(['普', '低二', '低']);
+  expect(listTickets(queue).map((t) => t.content?.task)).toEqual(['普', '低二', '低']);
 });
 
 it('低优先的批：有普通票在等，项间马上让开（不等满 120 秒）；只有别的低优先票在等时照 120 秒的老规矩', async () => {
@@ -42,10 +42,10 @@ it('低优先的批：有普通票在等，项间马上让开（不等满 120 �
   const hostSlug = os.hostname().replace(/[^A-Za-z0-9._-]/g, '_');
   const runWaiting = async (waitingTicket: string) => {
     process.env.ANIM_PRIORITY = 'low';
-    const gate = openGateBatch({ 项数: 2 }, e);
+    const gate = openGateBatch({ itemCount: 2 }, e);
     let ticket = '';
     await gate.runTask({}, async () => {
-      ticket = JSON.parse(fs.readFileSync(path.join(dir, '渲染.lock.信息.json'), 'utf8')).票;
+      ticket = JSON.parse(fs.readFileSync(path.join(dir, '渲染.lock.信息.json'), 'utf8')).ticket;
     });
     expect(ticket.startsWith('8')).toBe(true);
     const file = path.join(dir, '渲染.排队', waitingTicket);
@@ -55,7 +55,7 @@ it('低优先的批：有普通票在等，项间马上让开（不等满 120 �
     });
     const stillHeld = fs.existsSync(path.join(dir, '渲染.lock'));
     fs.rmSync(file);
-    gate.结束();
+    gate.endedAt();
     return stillHeld;
   };
   expect(await runWaiting(`${String(Date.now() + 1).padStart(15, '0')}-${hostSlug}-${process.ppid}`)).toBe(false);
@@ -63,6 +63,6 @@ it('低优先的批：有普通票在等，项间马上让开（不等满 120 �
 });
 
 it('--low-priority 是全局参数，-- 之后的不算', () => {
-  expect(takeLowPriorityArgs(['render', '--low-priority', '2-合照'])).toEqual({ 低优先: true, rest: ['render', '2-合照'] });
-  expect(takeLowPriorityArgs(['mcai', '--', '--low-priority'])).toEqual({ 低优先: false, rest: ['mcai', '--', '--low-priority'] });
+  expect(takeLowPriorityArgs(['render', '--low-priority', '2-合照'])).toEqual({ lowPriority: true, rest: ['render', '2-合照'] });
+  expect(takeLowPriorityArgs(['mcai', '--', '--low-priority'])).toEqual({ lowPriority: false, rest: ['mcai', '--', '--low-priority'] });
 });

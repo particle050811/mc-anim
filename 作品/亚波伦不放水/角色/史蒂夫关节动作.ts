@@ -104,7 +104,7 @@ export type JointActionInput = {
   跳?: AirSnapshot;
   /** 挣扎强度 0～1、时钟（秒） */
   struggleAmount?: number;
-  秒: number;
+  sec: number;
   /** 挨打后仰的包络 0～1（后仰的角度本身已经加在 pose.pitch 上） */
   backLean?: number;
   /** 两只手拿没拿东西；右手拿的是不是剑 */
@@ -198,7 +198,7 @@ export const addJointAction = (pose: StevePose, input: JointActionInput): JointP
 
   // 挣扎：两肘轮流往回拽
   if (struggleAmount > 0) {
-    const tug = Math.sin(input.秒 * Math.PI * 2 * params.struggle.frequency);
+    const tug = Math.sin(input.sec * Math.PI * 2 * params.struggle.frequency);
     elbowR += struggleAmount * (params.struggle.elbow[0] + params.struggle.elbow[1] * tug);
     elbowL += struggleAmount * (params.struggle.elbow[0] - params.struggle.elbow[1] * tug);
   }

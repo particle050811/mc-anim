@@ -111,8 +111,8 @@ export const openSectionSource = (voxelLib: VoxelLib, dir: string, fillBlock = '
     return format === 1 ? decodeFormat1Section(raw) : format === 2 ? decodeSectionFormat2(raw, id) : decodeSectionFormat3(raw, id, model!);
   };
   const oldBytes = (L: number, i: number, j: number) => { const o = oldAt.get(`${L}/${i}/${j}`); return o ? o.t.index[2 * o.slot + 1]! : 0; };
-  const fillState = info.状态.indexOf(fillBlock);
-  const cells = voxelLib.区段.sectionCells, side = voxelLib.sectionPack.paddedSectionCols, ratio = cells / legacyCells;
+  const fillState = info.state.indexOf(fillBlock);
+  const cells = voxelLib.sections.sectionCells, side = voxelLib.sectionPack.paddedSectionCols, ratio = cells / legacyCells;
   if (ratio !== 2) throw new Error(`旧格式只会拼成边长 ${2 * legacyCells} 的区段，现在是 ${cells}`);
 
   const merge = (L: number, I: number, J: number): SectionData | null => {

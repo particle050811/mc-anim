@@ -176,7 +176,7 @@ const newFullscreen = (fragmentShader: string, uniforms: Record<string, THREE.IU
   quadMesh.frustumCulled = false;
   const scene = new THREE.Scene();
   scene.add(quadMesh);
-  return { material, 片: quadMesh, 场: scene };
+  return { material, 片: quadMesh, scene: scene };
 };
 
 // 水面反射的云：镜头位置、朝向不变，往上抬到看 −5°～65° 仰角，横向比镜头宽一些（反射方向的方位角和视线差不多）。
@@ -208,7 +208,7 @@ const drawReflectCloud = (gl: THREE.WebGLRenderer, r: Resource, cam: THREE.Persp
   m.far = cam.far;
   m.updateProjectionMatrix();
   m.updateMatrixWorld(true);
-  drawCloudLayer({ gl, camera: m, depthTexture: r.reflectCloudDepth.texture, mainPicture: r.reflectCloudSky.texture, 宽: pw, 高: ph, 目标: r.reflectCloud, config: cloud, 场: options.cloudScene ?? {}, 海平面: cloud.海平面 ?? 0, 秒: sec, sunBox: null, 槽: '水面反射' });
+  drawCloudLayer({ gl, camera: m, depthTexture: r.reflectCloudDepth.texture, mainPicture: r.reflectCloudSky.texture, width: pw, height: ph, target: r.reflectCloud, config: cloud, scene: options.cloudScene ?? {}, seaLevel: cloud.seaLevel ?? 0, sec: sec, sunBox: null, 槽: '水面反射' });
   r.u.gyCloudMap.value = r.reflectCloud.texture;
   r.u.gyCloudVP.value.multiplyMatrices(m.projectionMatrix, m.matrixWorldInverse);
   r.u.gyCloudOn.value = 1;
@@ -305,7 +305,7 @@ const buildResources = () => {
   const { gyRtMask: _, ...rayPassUniforms } = rayResources.u;
   const aaPatch = newFullscreen(aaPatchFrag, { ...rayPassUniforms, gySun: u.gySun, ...maskTextures });
   Object.assign(aaPatch.material, { depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
-  return { u, rayResources, mrtTarget, centerMap, 中心: center, antiAlias, aaSplit, aaPatch, shadowMap, shadowCam, 主: mainTarget, depthTarget, cloudTarget, logDepth, underwater, copyUnderwater, reflectCloud, reflectCloudDepth, reflectCloudSky, reflectCloudCam, 层: pingPongLayers, particleSource, brightPass, downscale, blurPass, 合: composite, screenCam: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), clearColor: new THREE.Color(), crossSection: new THREE.Plane(), sunMap: buildSunMap() };
+  return { u, rayResources, mrtTarget, centerMap, center: center, antiAlias, aaSplit, aaPatch, shadowMap, shadowCam, 主: mainTarget, depthTarget, cloudTarget, logDepth, underwater, copyUnderwater, reflectCloud, reflectCloudDepth, reflectCloudSky, reflectCloudCam, layers: pingPongLayers, particleSource, brightPass, downscale, blurPass, 合: composite, screenCam: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), clearColor: new THREE.Color(), crossSection: new THREE.Plane(), sunMap: buildSunMap() };
 };
 
 /** 太阳本体（原版 8×8，材质包高清的 8k×8k）进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；边 = 本体几个贴图像素；
@@ -326,7 +326,7 @@ const buildSunMap = () => {
   sunImage.minFilter = sunImage.magFilter = THREE.NearestFilter;
   sunImage.needsUpdate = true;
   const haloIdx = ((startOffset - 1) * t.w + 16 * k) * 4;
-  return { 图: sunImage, side, halo: new THREE.Color(t.px[haloIdx]! / 255, t.px[haloIdx + 1]! / 255, t.px[haloIdx + 2]! / 255) };
+  return { image: sunImage, side, halo: new THREE.Color(t.px[haloIdx]! / 255, t.px[haloIdx + 1]! / 255, t.px[haloIdx + 2]! / 255) };
 };
 
 const release = (r: Resource) => {
@@ -334,7 +334,7 @@ const release = (r: Resource) => {
   r.mrtTarget.dispose();
   r.centerMap.dispose();
   r.antiAlias.dispose();
-  for (const x of [r.中心, r.aaSplit, r.aaPatch]) {
+  for (const x of [r.center, r.aaSplit, r.aaPatch]) {
     x.material.dispose();
     x.片.geometry.dispose();
   }
@@ -345,8 +345,8 @@ const release = (r: Resource) => {
   r.depthTarget.dispose();
   r.particleSource.dispose();
   r.cloudTarget.dispose();
-  r.sunMap.图.dispose();
-  for (const [a, b] of r.层) {
+  r.sunMap.image.dispose();
+  for (const [a, b] of r.layers) {
     a.dispose();
     b.dispose();
   }
@@ -522,13 +522,13 @@ const drawMask = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Cam
   for (const [m, c] of origColorWrite) m.colorWrite = c;
   restores.forEach((f) => f());
   gl.setRenderTarget(r.centerMap);
-  gl.render(r.中心.场, r.screenCam);
+  gl.render(r.center.scene, r.screenCam);
   gl.setRenderTarget(r.antiAlias);
   gl.clear(true, true, false);
   const autoClear = gl.autoClear;
   gl.autoClear = false;
-  gl.render(r.aaSplit.场, r.screenCam);
-  gl.render(r.aaPatch.场, r.screenCam);
+  gl.render(r.aaSplit.scene, r.screenCam);
+  gl.render(r.aaPatch.scene, r.screenCam);
   gl.autoClear = autoClear;
   r.rayResources.u.gyRtMask.value = r.antiAlias.texture;
 };
@@ -574,9 +574,9 @@ const setFillLights = (u: ShadingUniforms, lights: readonly FillLight[], camera:
     u.gyFillSh.value[i] = b.fillShadowOnly ? 1 : 0;
     const c = u.gyFillCol.value[i];
     if (b.色 === '受光减影子') {
-      c.copy(u.gySunCol.value).sub(u.gyShadeCol.value).multiplyScalar(b.强);
+      c.copy(u.gySunCol.value).sub(u.gyShadeCol.value).multiplyScalar(b.strength);
       c.setRGB(Math.max(c.r, 0), Math.max(c.g, 0), Math.max(c.b, 0));
-    } else srgbMul(c, b.色, b.强);
+    } else srgbMul(c, b.色, b.strength);
   });
 };
 
@@ -649,7 +649,7 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
   useEffect(() => {
     if (!cloudKey || !options.cloud) return;
     const renderHandle = delayRender('云的着色器');
-    precompileClouds(gl, options.cloud, options.cloud.海平面 ?? 0).then(() => continueRender(renderHandle), (e) => cancelRender(e));
+    precompileClouds(gl, options.cloud, options.cloud.seaLevel ?? 0).then(() => continueRender(renderHandle), (e) => cancelRender(e));
   }, [gl, cloudKey]);
   useFrame(({ gl, scene, camera }) => {
     // 世界矩阵 three 在 gl.render 里才更新，下面摆影子机、摆粒子光先要用：不先更新就拿上一次画的（刚挂上的网格还是单位阵），
@@ -672,7 +672,7 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
     u.gyFaceK.value = timeLight.faceShadeK;
     u.gyGlowK.value = timeLight.glowStrength;
     u.gyLampR.value = timeLight.lampLight.radius;
-    srgbMul(u.gyLampCol.value, timeLight.lampLight.色, timeLight.lampLight.强 * baseBrightness);
+    srgbMul(u.gyLampCol.value, timeLight.lampLight.色, timeLight.lampLight.strength * baseBrightness);
     u.gyPixel.value = shadingParams.pixelShadow ? 1 : 0;
     const shadowSize = shadingParams.shadowMapSize ?? DEFAULT_SHADOW_MAP_SIZE;
     if (r.shadowMap.width !== shadowSize) r.shadowMap.setSize(shadowSize, shadowSize);
@@ -710,10 +710,10 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
     const topZenith = options.zenith;
     srgbMul(u.gyZenCol.value, topZenith?.色 ?? '#000000');
     u.gyZenK.value = topZenith ? topZenith.stretch : 0;
-    u.gyZenH.value = Math.sin(((topZenith?.高 ?? 38) * Math.PI) / 180);
+    u.gyZenH.value = Math.sin(((topZenith?.height ?? 38) * Math.PI) / 180);
     const particles = timeLight.particleGlow > 0 || options.particleLit ? collectParticles(scene) : [];
     u.gyFlashN.value = 0;
-    if (options.particleLit && timeLight.particleLight.强 > 0) setParticleLights(u, particles, timeLight.particleLight.radius, timeLight.particleLight.强 * baseBrightness);
+    if (options.particleLit && timeLight.particleLight.strength > 0) setParticleLights(u, particles, timeLight.particleLight.radius, timeLight.particleLight.strength * baseBrightness);
     setFillLights(u, options.fillLights ?? [], camera);
 
     const savedBackground = scene.background;
@@ -790,7 +790,7 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
       const cam = camera as THREE.PerspectiveCamera;
       Object.assign(r.copyUnderwater.material.uniforms, { tColor: { value: r.主.texture }, tDepth: { value: r.主.depthTexture }, cNear: { value: cam.near }, cFar: { value: cam.far } });
       gl.setRenderTarget(r.underwater);
-      gl.render(r.copyUnderwater.场, r.screenCam);
+      gl.render(r.copyUnderwater.scene, r.screenCam);
       u.gyUnder.value = r.underwater.texture;
       u.gyRes.value.set(w, h);
       const lineSprites: THREE.Object3D[] = [];
@@ -831,13 +831,13 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
     }
     const autoClear = gl.autoClear;
     gl.autoClear = false;
-    const renderPass = (x: { 场: THREE.Scene }, renderTarget: THREE.WebGLRenderTarget | null) => {
+    const renderPass = (x: { scene: THREE.Scene }, renderTarget: THREE.WebGLRenderTarget | null) => {
       gl.setRenderTarget(renderTarget);
-      gl.render(x.场, r.screenCam);
+      gl.render(x.scene, r.screenCam);
     };
     let textureSource: THREE.Texture = r.主.texture;
     let sw = w, sh = h;
-    r.层.forEach(([a, b], i) => {
+    r.layers.forEach(([a, b], i) => {
       const lw = Math.max(1, Math.round(w / 2 ** (i + 1))), lh = Math.max(1, Math.round(h / 2 ** (i + 1)));
       setSize(a, lw, lh);
       setSize(b, lw, lh);
@@ -884,13 +884,13 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
         camera: perspCamera,
         depthTexture: r.depthTarget.texture,
         mainPicture: r.主.texture,
-        宽: w,
-        高: h,
-        目标: r.cloudTarget,
+        width: w,
+        height: h,
+        target: r.cloudTarget,
         config: options.cloud,
-        场: options.cloudScene ?? {},
-        海平面: options.cloud.海平面 ?? 0,
-        秒: sec,
+        scene: options.cloudScene ?? {},
+        seaLevel: options.cloud.seaLevel ?? 0,
+        sec: sec,
         sunBox: cu.sunOn!.value ? [m.x, m.y, n * b, n * b] : null,
       });
       gl.autoClear = false;
@@ -907,12 +907,12 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
       (cu.uCamPos!.value as THREE.Vector3).setFromMatrixPosition(camera.matrixWorld);
     }
     cu.tColor!.value = r.主.texture;
-    r.层.forEach(([a], i) => (cu[`tB${i}`]!.value = a.texture));
-    cu.bloom!.value = timeLight.bloom.强;
-    const bloomWidth = timeLight.bloom.宽 ?? 0;
+    r.layers.forEach(([a], i) => (cu[`tB${i}`]!.value = a.texture));
+    cu.bloom!.value = timeLight.bloom.strength;
+    const bloomWidth = timeLight.bloom.width ?? 0;
     cu.bw!.value = narrowWeights.map((a, i) => a + (wideWeights[i]! - a) * bloomWidth);
     cu.sat!.value = shadingParams.grade.saturation;
-    cu.con!.value = shadingParams.grade.对比;
+    cu.con!.value = shadingParams.grade.comparison;
     srgbMul(cu.darkTint!.value as THREE.Color, shadingParams.grade.darkColor);
     srgbMul(cu.lightTint!.value as THREE.Color, shadingParams.grade.brightColor);
     cu.split!.value = shadingParams.grade.colorSplit;
@@ -925,16 +925,16 @@ export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) =
     gl.setClearColor(r.clearColor, clearTransparency);
     gl.setRenderTarget(null);
     gl.clear(true, true, true);
-    gl.render(r.合.场, r.screenCam);
+    gl.render(r.合.scene, r.screenCam);
     gl.autoClear = autoClear;
   }, 1);
   if (options.天 !== 'Photon平滑' || !options.sun) return null;
-  return <PhotonSky sun={[...options.sun] as [number, number, number]} far={skyFar} 算法={options.skyAlgo ?? 'GPU'} />;
+  return <PhotonSky sun={[...options.sun] as [number, number, number]} far={skyFar} algorithm={options.skyAlgo ?? 'GPU'} />;
 };
 
 /** 原版方形太阳在画布上的位置：同 2D 天（作品/把回忆拼好给你/场/2-海上/编排.ts 的 太阳屏幕），本体边长 = 上下沿（沿太阳走的方向各偏半边）投影的距离，
  *  一个贴图像素（高清贴图按高清像素）取整成几个画布像素，左下角取整；屏幕上横平竖直 */
-const setSun = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, sun: ShadingOptions['sun'], w: number, h: number, sunImageSet: { 图: THREE.Texture; side: number; halo: THREE.Color }) => {
+const setSun = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, sun: ShadingOptions['sun'], w: number, h: number, sunImageSet: { image: THREE.Texture; side: number; halo: THREE.Color }) => {
   cu.sunOn!.value = 0;
   if (!sun) return;
   const d = new THREE.Vector3(...sun).normalize();
@@ -956,7 +956,7 @@ const setSun = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, sun: S
   (cu.sunMin!.value as THREE.Vector2).set(x0, h - y0Top - side * n);
   cu.sunN!.value = n;
   cu.sunBody!.value = side;
-  cu.tSun!.value = sunImageSet.图;
+  cu.tSun!.value = sunImageSet.image;
   (cu.haloCol!.value as THREE.Color).copy(sunImageSet.halo);
   cu.sunOn!.value = 1;
 };

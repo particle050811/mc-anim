@@ -39,9 +39,9 @@ const picture: React.FC = () => {
   const framing = endFraming(f);
   return (
     <>
-      <FilmPost grade={isColorBack ? tone.grade : grayGrade} 种子={startFrame + f}>
+      <FilmPost grade={isColorBack ? tone.grade : grayGrade} seed={startFrame + f}>
         <SelectWorld
-          状态={{
+          state={{
             framing,
             pointAt: 0,
             selected: false,

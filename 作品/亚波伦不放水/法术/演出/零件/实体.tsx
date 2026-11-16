@@ -108,7 +108,7 @@ const modelMaterial = (image: Png, drawMode: ModelDrawMode, color: RgbColor, opa
   return m;
 };
 
-const PartNode: React.FC<{ part: EntityPart; 模型: EntityModelData; partPoses?: Record<string, PartPose>; material: THREE.Material; onlyParts?: readonly string[] }> = ({ part, 模型: model, partPoses, material, onlyParts }) => {
+const PartNode: React.FC<{ part: EntityPart; model: EntityModelData; partPoses?: Record<string, PartPose>; material: THREE.Material; onlyParts?: readonly string[] }> = ({ part, model: model, partPoses, material, onlyParts }) => {
   const pose = partPoses?.[part.name];
   if (pose?.hide) return null;
   const off = pose?.offset ?? part.pose.offset;
@@ -118,7 +118,7 @@ const PartNode: React.FC<{ part: EntityPart; 模型: EntityModelData; partPoses?
     <group position={off as [number, number, number]} rotation={[rot[0]!, rot[1]!, rot[2]!, 'ZYX']} {...(pose?.scale ? { scale: pose.scale as [number, number, number] } : {})}>
       {part.cubes.length > 0 && (!onlyParts || onlyParts.includes(part.name)) && <mesh geometry={ownPartGeometry(part, model.texSize)} material={material} frustumCulled={false} />}
       {part.children.map((child, i) => (
-        <PartNode key={i} part={child} 模型={model} partPoses={partPoses} material={material} onlyParts={onlyParts} />
+        <PartNode key={i} part={child} model={model} partPoses={partPoses} material={material} onlyParts={onlyParts} />
       ))}
     </group>
   );
@@ -130,20 +130,20 @@ const PartNode: React.FC<{ part: EntityPart; 模型: EntityModelData; partPoses?
  * 只画 = 只画这几个部件自己的方盒（发光层只盖一部分部件时用）
  */
 export const ModelPart: React.FC<{
-  模型: EntityModelData;
-  图: Png;
+  model: EntityModelData;
+  image: Png;
   画法?: ModelDrawMode;
   partPoses?: Record<string, PartPose>;
   色?: RgbColor;
   opacity?: number;
   brightness?: number;
   onlyParts?: readonly string[];
-}> = ({ 模型: model, 图: image, 画法: drawMode = '镂空', partPoses, 色: color = [1, 1, 1], opacity = 1, brightness = 1, onlyParts }) => {
+}> = ({ model: model, image: image, 画法: drawMode = '镂空', partPoses, 色: color = [1, 1, 1], opacity = 1, brightness = 1, onlyParts }) => {
   const material = modelMaterial(image, drawMode, color, opacity, brightness, useContext(nearFadeContext));
   const scale = useMemo(() => [1 / 16, 1 / 16, 1 / 16] as const, []);
   return (
     <group scale={scale as unknown as [number, number, number]}>
-      <PartNode part={model.root} 模型={model} partPoses={partPoses} material={material} onlyParts={onlyParts} />
+      <PartNode part={model.root} model={model} partPoses={partPoses} material={material} onlyParts={onlyParts} />
     </group>
   );
 };

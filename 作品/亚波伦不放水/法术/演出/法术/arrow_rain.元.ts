@@ -14,7 +14,7 @@ const duration = (unusedStart: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'arrow_rain',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // ArrowRainSpell：每支一声 ARROW_SHOOT（音量 2），这里每 5 刻记一声
-  声音: Array.from({ length: arrowRainCount / 5 }, (_, k) => ({ 资产: '音效/entity.arrow.shoot', 秒: (k * 5) / 20, 音量: 2 })),
+  sound: Array.from({ length: arrowRainCount / 5 }, (_, k) => ({ asset: '音效/entity.arrow.shoot', sec: (k * 5) / 20, 音量: 2 })),
 });

@@ -3,61 +3,61 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/6-李樱-出征暮色": {
-      "时长": 1.53,
-      "峰值": -4.5,
-      "响度": -18,
+      "duration": 1.53,
+      "peakDb": -4.5,
+      "loudness": -18,
       "sha": "9813a7c592a6"
     },
     "音效/block.grass.step.1": {
-      "时长": 0.5,
-      "峰值": -23.9,
-      "响度": -38.6,
+      "duration": 0.5,
+      "peakDb": -23.9,
+      "loudness": -38.6,
       "sha": "2959b1742d6f"
     },
     "音效/block.grass.step.4": {
-      "时长": 0.53127,
-      "峰值": -21.9,
-      "响度": -38.1,
+      "duration": 0.53127,
+      "peakDb": -21.9,
+      "loudness": -38.1,
       "sha": "ba77cb905a84"
     },
     "音效/block.portal.travel": {
-      "时长": 9.5,
-      "峰值": -0.7,
-      "响度": -13,
+      "duration": 9.5,
+      "peakDb": -0.7,
+      "loudness": -13,
       "sha": "2a78858744fa"
     },
     "音效/entity.generic.splash.1": {
-      "时长": 1.652562,
-      "峰值": -2,
-      "响度": -26.2,
+      "duration": 1.652562,
+      "peakDb": -2,
+      "loudness": -26.2,
       "sha": "a53b581f8654"
     },
     "音效/entity.lightning_bolt.impact.1": {
-      "时长": 2.5,
-      "峰值": -0.3,
-      "响度": -12.6,
+      "duration": 2.5,
+      "peakDb": -0.3,
+      "loudness": -12.6,
       "sha": "ec6fe52205a8"
     },
     "音效/entity.lightning_bolt.thunder.2": {
-      "时长": 7.25,
-      "峰值": -0.4,
-      "响度": -22.4,
+      "duration": 7.25,
+      "peakDb": -0.4,
+      "loudness": -22.4,
       "sha": "c6618caf8747"
     },
     "音效/entity.player.splash.2": {
-      "时长": 3.867188,
-      "峰值": -1.4,
-      "响度": -32,
+      "duration": 3.867188,
+      "peakDb": -1.4,
+      "loudness": -32,
       "sha": "6c968a1702ad"
     }
   },
-  "台词": {
+  "lines": {
     "6-李樱-出征暮色": {
-      "配音": "配音/6-李樱-出征暮色",
-      "开口": 0,
-      "时长": 1.53
+      "voice": "配音/6-李樱-出征暮色",
+      "mouthOpen": 0,
+      "duration": 1.53
     }
   }
 };

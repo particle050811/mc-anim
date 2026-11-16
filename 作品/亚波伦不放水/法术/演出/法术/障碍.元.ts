@@ -21,9 +21,9 @@ export default defineSpellMeta({
   id: 'barricade',
   长秒: wallTotalTicks / 20,
   // TotemicWall.finalizeSpawn：WALL_SPAWN（音量 2）、WALL_ERUPT，11 根各响一遍，这里各记一声；到寿命时 WALL_DISAPPEAR（音量 2）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.wall_spawn.1', 秒: 0, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.wall_erupt.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.wall_disappear', 秒: wallLifeTicks / 20, 音量: 2 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.wall_spawn.1', sec: 0, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.wall_erupt.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.wall_disappear', sec: wallLifeTicks / 20, 音量: 2 },
   ],
 });

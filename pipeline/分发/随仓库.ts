@@ -26,10 +26,10 @@ const fileSha = (f: string) => crypto.createHash('sha256').update(fs.readFileSyn
 const shaNamePattern = /^[0-9a-f]{64}$/;
 
 /** 随仓库.toml：段 = [段键或章, …]（章写成字符串，如 "2"；「全部」是清单里的每一段） */
-export const readRepoManifest = (text: string): { 段: string[] } => {
-  const doc = parse(text) as { 段?: unknown };
-  if (!Array.isArray(doc.段) || !doc.段.length || doc.段.some((x) => typeof x !== 'string' || !x)) throw new Error(`${repoTableName} 要写 "段" = ["<段键或章>", …]（章也写成字符串）`);
-  return { 段: doc.段 as string[] };
+export const readRepoManifest = (text: string): { segment: string[] } => {
+  const doc = parse(text) as { segment?: unknown };
+  if (!Array.isArray(doc.segment) || !doc.segment.length || doc.segment.some((x) => typeof x !== 'string' || !x)) throw new Error(`${repoTableName} 要写 "segment" = ["<段键或章>", …]（章也写成字符串）`);
+  return { segment: doc.segment as string[] };
 };
 
 export type BundledItem = { entry: LockEntry; ids: string[] };
@@ -41,7 +41,7 @@ export type BundleSet = {
   /** 字节在 私有/ 库、可见性不是私有的（旧私有改公开、按 cue 现取的配乐）：sha256 → 条目和 id；只挂 Release 发 */
   privateLibItems: Map<string, BundledItem>;
   /** 这些段声明的地形包（随仓库不带，挂 Release 的才发，见 发布.ts） */
-  地形: string[];
+  terrain: string[];
   /** 选中的段键 */
   segKeys: string[];
   issues: string[];
@@ -49,16 +49,16 @@ export type BundleSet = {
 
 /** 按 随仓库.toml 的段现算要随仓库发的资产（用 anim check 的依赖图和纯模块执行结果） */
 export const computeRepoBundle = async (c: CheckContext, selectors: string[]): Promise<BundleSet> => {
-  const bundleSet: BundleSet = { files: new Map(), privateFiles: [], privateLibItems: new Map(), segKeys: [], 地形: [], issues: [] };
+  const bundleSet: BundleSet = { files: new Map(), privateFiles: [], privateLibItems: new Map(), segKeys: [], terrain: [], issues: [] };
   const parsedContent = await readContent(c);
-  if ('错误' in parsedContent) {
-    bundleSet.issues.push(parsedContent.错误);
+  if ('errors' in parsedContent) {
+    bundleSet.issues.push(parsedContent.errors);
     return bundleSet;
   }
   const depGraph = await c.depGraph();
-  if (depGraph.错误.length) bundleSet.issues.push(`依赖图不全（打包失败 ${depGraph.错误.length} 处），随仓库的集合算不全，先修好 anim check 的 结构`);
+  if (depGraph.errors.length) bundleSet.issues.push(`依赖图不全（打包失败 ${depGraph.errors.length} 处），随仓库的集合算不全，先修好 anim check 的 结构`);
   // 「全部」= 清单里的每一段（用户 11-13 定全部公开，以后加章不用再改表）
-  const matchesSeg = (s: { 键: string; 章: number | '核对' }, x: string) => x === '全部' || x === s.键 || x === String(s.章);
+  const matchesSeg = (s: { key: string; 章: number | '核对' }, x: string) => x === '全部' || x === s.key || x === String(s.章);
   for (const x of selectors) if (!parsedContent.segments.some((s) => matchesSeg(s, x))) bundleSet.issues.push(`${repoTableName} 的「${x}」没对上清单里的段（只认段键、章或「全部」）`);
   const lockPair = c.assetLocks();
   const workRoot = c.absPath(c.workDir);
@@ -83,31 +83,31 @@ export const computeRepoBundle = async (c: CheckContext, selectors: string[]): P
   /** id → 用到它的段的锁（材质包按段选时同一个 id 在不同段可以是不同的字节） */
   const usedBy = new Map<string, Set<AssetLock>>();
   const addUse = (id: string, l: AssetLock) => usedBy.set(id, (usedBy.get(id) ?? new Set()).add(l));
-  const voiceById = new Map((readLineTable(c) ?? []).map((t) => [t.id, t.配音]));
+  const voiceById = new Map((readLineTable(c) ?? []).map((t) => [t.id, t.voice]));
   let hasLine = false;
   for (const s of parsedContent.segments.filter((s) => selectors.some((x) => matchesSeg(s, x)))) {
-    bundleSet.segKeys.push(s.键);
+    bundleSet.segKeys.push(s.key);
     if (!s.definition) {
-      bundleSet.issues.push(`${s.键}：${s.错误 ?? '段.ts 读不出来'}`);
+      bundleSet.issues.push(`${s.key}：${s.errors ?? '段.ts 读不出来'}`);
       continue;
     }
-    const l = segmentLock(s.键);
+    const l = segmentLock(s.key);
     if (!l) continue;
-    for (const terrainName of s.definition.地形) if (!bundleSet.地形.includes(terrainName)) bundleSet.地形.push(terrainName);
-    const entries = [`${s.目录}/画面.tsx`, s.段文件, 'engine/段/设置.ts', c.workPath('index.ts'), ...(s.definition.叠层 ?? []).map((l) => `${s.目录}/${l.entry}`)];
-    for (const f of closure(depGraph, entries.filter((p) => depGraph.edges.has(p)))) for (const id of depGraph.资产.get(f) ?? []) addUse(id, l);
-    for (const cue of s.definition.声音 ?? []) {
-      if (cue.资产 !== undefined) addUse(cue.资产, l);
+    for (const terrainName of s.definition.terrain) if (!bundleSet.terrain.includes(terrainName)) bundleSet.terrain.push(terrainName);
+    const entries = [`${s.目录}/画面.tsx`, s.segmentFile, 'engine/段/设置.ts', c.workPath('index.ts'), ...(s.definition.overlay ?? []).map((l) => `${s.目录}/${l.entry}`)];
+    for (const f of closure(depGraph, entries.filter((p) => depGraph.edges.has(p)))) for (const id of depGraph.asset.get(f) ?? []) addUse(id, l);
+    for (const cue of s.definition.sound ?? []) {
+      if (cue.asset !== undefined) addUse(cue.asset, l);
       else {
         hasLine = true;
-        const id = voiceById.get(cue.台词);
+        const id = voiceById.get(cue.lines);
         if (id) addUse(id, l);
       }
     }
   }
   // 不经 cue 引用、直接按 id 读的：有台词时字幕卡的像素字
   if (hasLine && assetLock[pixelFontAsset]) addUse(pixelFontAsset, assetLock);
-  bundleSet.地形.sort();
+  bundleSet.terrain.sort();
   for (const id of [...usedBy.keys()].sort()) {
     for (const l of usedBy.get(id)!) {
       const entry = l[id];
@@ -115,11 +115,11 @@ export const computeRepoBundle = async (c: CheckContext, selectors: string[]): P
         bundleSet.issues.push(`「${id}」不在资产锁里`);
         break;
       }
-      if (entries.get(id)?.可见性 === '私有') {
+      if (entries.get(id)?.visibility === '私有') {
         if (!bundleSet.privateFiles.includes(id)) bundleSet.privateFiles.push(id);
         continue;
       }
-      const shaMap = entry.库 === '私有' ? bundleSet.privateLibItems : bundleSet.files;
+      const shaMap = entry.lib === '私有' ? bundleSet.privateLibItems : bundleSet.files;
       const existing = shaMap.get(entry.sha256);
       if (!existing) shaMap.set(entry.sha256, { entry, ids: [id] });
       else if (!existing.ids.includes(id)) existing.ids.push(id);
@@ -144,18 +144,18 @@ const existingBytes = (dir: string): Map<string, string> => {
 /** 字节/ 里一件该在的相对路径 */
 export const bytesRelPath = (sha: string) => `${sha.slice(0, 2)}/${sha}`;
 
-export type CompareResult = { added: string[]; 改: string[]; removed: string[]; fileCount: number; 大小: number };
+export type CompareResult = { added: string[]; changed: string[]; removed: string[]; fileCount: number; size: number };
 
 /** 字节/ 和集合比：缺的（添）、内容和文件名对不上的（改）、多余或放错位置的（删），都是相对 字节/ 的正斜杠路径 */
 export const compareBytes = (bundleSet: BundleSet, workRoot: string): CompareResult => {
   const dir = bytesDir(workRoot);
   const existing = existingBytes(dir);
-  const r: CompareResult = { added: [], 改: [], removed: [], fileCount: bundleSet.files.size, 大小: 0 };
+  const r: CompareResult = { added: [], changed: [], removed: [], fileCount: bundleSet.files.size, size: 0 };
   for (const [sha, { entry }] of bundleSet.files) {
-    r.大小 += entry.大小;
+    r.size += entry.size;
     const rel = bytesRelPath(sha);
     if (!existing.has(rel)) r.added.push(rel);
-    else if (fileSha(existing.get(rel)!) !== sha) r.改.push(rel);
+    else if (fileSha(existing.get(rel)!) !== sha) r.changed.push(rel);
   }
   for (const rel of existing.keys()) {
     const m = /^([0-9a-f]{2})\/([0-9a-f]{64})$/.exec(rel);
@@ -173,8 +173,8 @@ export const writeRepoBundle = (bundleSet: BundleSet, workRoot: string, dataRoot
   const r = compareBytes(bundleSet, workRoot);
   if (checkOnly) return r;
   const missingSources: string[] = [];
-  const toCopy: { 源: string; 目标: string }[] = [];
-  for (const rel of [...r.added, ...r.改]) {
+  const toCopy: { 源: string; target: string }[] = [];
+  for (const rel of [...r.added, ...r.changed]) {
     const sha = rel.split('/')[1]!;
     const { entry, ids } = bundleSet.files.get(sha)!;
     const sourcePath = bytesPath(entry, dataRoot);
@@ -184,10 +184,10 @@ export const writeRepoBundle = (bundleSet: BundleSet, workRoot: string, dataRoot
     }
     const actualSha = fileSha(sourcePath);
     if (actualSha !== sha) throw new Error(`数据根里 ${ids.join('、')} 的字节 ${sourcePath} sha256 是 ${actualSha.slice(0, 12)}，资产锁记的是 ${sha.slice(0, 12)}（anim check --deep 查一遍数据根）`);
-    toCopy.push({ 源: sourcePath, 目标: path.join(dir, ...rel.split('/')) });
+    toCopy.push({ 源: sourcePath, target: path.join(dir, ...rel.split('/')) });
   }
   if (missingSources.length) throw new Error(`数据根里缺这些资产的字节，拷不进 字节/：\n  ${missingSources.join('\n  ')}`);
-  for (const { 源: sourcePath, 目标: targetPath } of toCopy) {
+  for (const { 源: sourcePath, target: targetPath } of toCopy) {
     fs.mkdirSync(path.dirname(targetPath), { recursive: true });
     const tmp = `${targetPath}.写入中-${process.pid}`;
     try {
@@ -205,7 +205,7 @@ export const writeRepoBundle = (bundleSet: BundleSet, workRoot: string, dataRoot
   return r;
 };
 
-export type FillBytesResult = { copied: number; 共: number };
+export type FillBytesResult = { copied: number; total: number };
 
 /**
  * 把 <作品根>/字节/ 里数据根 store/ 还没有的补进去：先核文件内容的 sha256 和文件名一致，不一致就报错（字节/ 被改坏或换行被改了）。
@@ -213,7 +213,7 @@ export type FillBytesResult = { copied: number; 共: number };
  */
 export const fillBytes = (workRoot: string, dataRoot: string): FillBytesResult => {
   const dir = bytesDir(workRoot);
-  const r: FillBytesResult = { copied: 0, 共: 0 };
+  const r: FillBytesResult = { copied: 0, total: 0 };
   const parts = [...existingBytes(dir)];
   for (const [rel, sourcePath] of parts) {
     const [hashPrefix, digest, ...extraSegments] = rel.split('/');
@@ -221,7 +221,7 @@ export const fillBytes = (workRoot: string, dataRoot: string): FillBytesResult =
   }
   for (const [rel, sourcePath] of parts) {
     const [hashPrefix, digest] = rel.split('/') as [string, string];
-    r.共++;
+    r.total++;
     const targetPath = path.join(dataRoot, 'store', hashPrefix, digest);
     if (fs.existsSync(targetPath)) continue;
     const actualSha = fileSha(sourcePath);
@@ -249,6 +249,6 @@ export const fillBytes = (workRoot: string, dataRoot: string): FillBytesResult =
 export const fillBytesAndReport = (workRoot: string, dataRoot: string) => {
   const r = fillBytes(workRoot, dataRoot);
   hintMissingRelease(workRoot, dataRoot);
-  if (r.copied) console.log(`从 ${path.relative(process.cwd(), bytesDir(workRoot)) || bytesDir(workRoot)} 补了 ${r.copied} 件字节进 ${path.join(dataRoot, 'store')}（共 ${r.共} 件，其余已有）`);
+  if (r.copied) console.log(`从 ${path.relative(process.cwd(), bytesDir(workRoot)) || bytesDir(workRoot)} 补了 ${r.copied} 件字节进 ${path.join(dataRoot, 'store')}（共 ${r.total} 件，其余已有）`);
   return r;
 };

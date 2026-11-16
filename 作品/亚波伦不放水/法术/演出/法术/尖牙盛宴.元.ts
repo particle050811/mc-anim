@@ -12,8 +12,8 @@ export default defineSpellMeta({
   长秒: ((feastRounds - 1) * feastGapTicks + 2 + 22 + 12) / 20,
   hitSec: (feastBiteTick(0) + 8) / 20,
   // 起手 CastingSound = EVOKER_PREPARE_ATTACK；每颗牙开咬 EVOKER_FANGS_ATTACK
-  声音: [
-    { 资产: '音效/entity.evoker.prepare_attack.1', 秒: 0 },
-    ...Array.from({ length: feastRounds }, (_, k) => ({ 资产: '音效/entity.evoker_fangs.attack', 秒: feastBiteTick(k) / 20, 音高: 0.95 })),
+  sound: [
+    { asset: '音效/entity.evoker.prepare_attack.1', sec: 0 },
+    ...Array.from({ length: feastRounds }, (_, k) => ({ asset: '音效/entity.evoker_fangs.attack', sec: feastBiteTick(k) / 20, 音高: 0.95 })),
   ],
 });

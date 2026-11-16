@@ -8,7 +8,7 @@ import type { SpellPerformanceProps } from '../接口.ts';
 import { Fang, fangCritSpawns, CritStar } from '../零件/尖牙.tsx';
 import meta, { biteRow } from './撕咬.元.ts';
 
-const Bite: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const Bite: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const teeth = biteRow(from, target);
   return (
@@ -16,7 +16,7 @@ const Bite: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target,
       {teeth.map((fang, i) => (
         <Fang key={i} {...fang} 刻={tick} />
       ))}
-      <CritStar spawns={teeth.flatMap((fang, i) => fangCritSpawns(fang.位, fang.warmup, tick, seed * 100 + i))} 秒={sec} />
+      <CritStar spawns={teeth.flatMap((fang, i) => fangCritSpawns(fang.位, fang.warmup, tick, seed * 100 + i))} sec={sec} />
     </>
   );
 };

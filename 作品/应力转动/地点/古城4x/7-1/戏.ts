@@ -45,7 +45,7 @@ export { wardenMaxHp, wardenHits, wardenHpAt, type WardenHit };
   near('监守者低头（°）', end649.监守者.headPitch, start71.监守者.headPitch, 0.1);
   near('监守者吼叫（秒）', end649.监守者.吼叫, start71.监守者.吼叫, 1e-6);
   near('监守者触角（7-1 不画亮）', end649.监守者.tendril, 0, 0.01);
-  near('游戏秒', end649.监守者.秒, start71.监守者.秒, 1e-6);
+  near('游戏秒', end649.监守者.sec, start71.监守者.sec, 1e-6);
   for (const [who, pose] of [['刘', start71.刘], ['黄', start71.黄.pose]] as const) {
     const end = end649.pursuers[who];
     nearPos(who, end.loc, pose.loc);

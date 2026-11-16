@@ -18,7 +18,7 @@ const drawable = voxelStructure.调色板.map((s) => voxelFromState(s) > 0);
 const blocks: PlacedBlock[] = [];
 for (let o = 0; o < voxelStructure.方块.length; o += 4) {
   const [x, y, z, p] = [voxelStructure.方块[o]!, voxelStructure.方块[o + 1]!, voxelStructure.方块[o + 2]!, voxelStructure.方块[o + 3]!];
-  if (drawable[p]) blocks.push({ 状态: voxelStructure.调色板[p]!, 位: [x, -z - 1, y] });
+  if (drawable[p]) blocks.push({ state: voxelStructure.调色板[p]!, 位: [x, -z - 1, y] });
 }
 const notDrawn = voxelStructure.调色板.filter((_, i) => !drawable[i]);
 
@@ -42,17 +42,17 @@ const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#9cc4ee' }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
         <color attach="background" args={['#9cc4ee']} />
         <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.6 * Math.PI} />
           <directionalLight position={[60, -120, 160]} intensity={0.55 * Math.PI} />
-          <BlockAssembly blocks={blocks} 群系="minecraft:plains" />
+          <BlockAssembly blocks={blocks} biome="minecraft:plains" />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
+        <div>{v.name}</div>
         <div style={{ fontSize: 16 }}>{`${blocks.length} 格；方块表里查不到、没画的状态 ${notDrawn.length} 种`}</div>
       </div>
     </AbsoluteFill>

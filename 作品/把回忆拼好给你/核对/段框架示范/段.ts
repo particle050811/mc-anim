@@ -5,14 +5,14 @@ import timeline from './时间线.ts';
 import soundTable from './声音表.生成.ts';
 
 export default windowSeg(timeline, {
-  起: 'opening',
-  止: 'wrapUp',
+  start: 'opening',
+  end: 'wrapUp',
   soundTable,
-  声音: ({ 放: play, 事件: events }) => [
+  sound: ({ 放: play, events: events }) => [
     play('音效/把回忆拼好给你/entity.firework_rocket.launch', events.launch, -14),
     play('音效/把回忆拼好给你/entity.firework_rocket.large_blast', events.burst, -8),
-    play('音效/把回忆拼好给你/entity.firework_rocket.twinkle', events.crackle, { 峰值: -18, 名: '火星' }),
+    play('音效/把回忆拼好给你/entity.firework_rocket.twinkle', events.crackle, { peakDb: -18, name: '火星' }),
     // 私有配乐：不打进包，按 id 现取，数据根里没有就是静音
-    play('配乐/把回忆拼好给你-无男声DJ', 0, { 入点秒: 31.26, 增益: 0.5, 名: '原声', fadeOutSec: 0.5 }),
+    play('配乐/把回忆拼好给你-无男声DJ', 0, { 入点秒: 31.26, 增益: 0.5, name: '原声', fadeOutSec: 0.5 }),
   ],
 });

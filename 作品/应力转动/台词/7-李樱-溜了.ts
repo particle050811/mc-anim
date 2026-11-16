@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 95abe7c8b04a），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-李樱-溜了（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 00a6c36238c4），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-李樱-溜了（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "7-李樱-溜了",
-  "角色": "李樱",
-  "念": "溜了溜了。",
-  "配音": "配音/7-李樱-溜了",
-  "成品sha": "cfeb568789c0",
-  "开口": 0,
+  "character": "李樱",
+  "spoken": "溜了溜了。",
+  "voice": "配音/7-李樱-溜了",
+  "finishedSha": "cfeb568789c0",
+  "mouthOpen": 0,
   "有声长": 0.931,
-  "时长": 1.081,
+  "duration": 1.081,
   "文件秒数": 1.081,
-  "字": [
+  "char": [
     ["溜",0.08,0.4],
     ["了",0.4,0.48],
     ["溜",0.48,0.64],

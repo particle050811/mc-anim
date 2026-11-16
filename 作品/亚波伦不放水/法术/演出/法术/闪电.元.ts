@@ -9,8 +9,8 @@ export default defineSpellMeta({
   长秒: lightningMaxTicks / 20,
   hitSec: 0, // 闪电实体生成的当刻就劈
   // LightningBolt.tick 头一刻：雷声（游戏音量 10000，是为了传得远，这里不写）和劈中声（音量 2）
-  声音: [
-    { 资产: '音效/entity.lightning_bolt.thunder.1', 秒: 0 },
-    { 资产: '音效/entity.lightning_bolt.impact.1', 秒: 0, 音量: 2 },
+  sound: [
+    { asset: '音效/entity.lightning_bolt.thunder.1', sec: 0 },
+    { asset: '音效/entity.lightning_bolt.impact.1', sec: 0, 音量: 2 },
   ],
 });

@@ -13,7 +13,7 @@ import meta from './冲击波.元.ts';
 
 const cyan = hexColor(0x2ab2cf);
 
-const ShockWave: React.FC<SpellPerformanceProps> = ({ 秒: sec, from }) => {
+const ShockWave: React.FC<SpellPerformanceProps> = ({ sec: sec, from }) => {
   const tick = sec * 20;
   return (
     <>

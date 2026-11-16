@@ -1,0 +1,11 @@
+# 格式：阈值　位置：verify/阈值.toml
+# 读写：pipeline/验收/比较.ts　分类：Git　现有 1 个文件（1 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+响度容差LU	loudnessTolLu
+块16门槛	block16Threshold
+块64门槛	block64Threshold
+块8门槛	block8Threshold
+块均值容差	blockMeanTol
+看一眼门槛	glanceThreshold
+起音容差帧	onsetTolFrames

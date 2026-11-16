@@ -4,7 +4,7 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { drawVanillaWheel, type VanillaWheelParams, type CanvasPos } from './径向轮盘画.ts';
 
-export const WheelCanvas: React.FC<{ 宽: number; 高: number; s: number; draw: (canvasPos: CanvasPos) => void; style?: React.CSSProperties }> = ({ 宽: width, 高: height, s, draw, style }) => {
+export const WheelCanvas: React.FC<{ width: number; height: number; s: number; draw: (canvasPos: CanvasPos) => void; style?: React.CSSProperties }> = ({ width: width, height: height, s, draw, style }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
   const w = Math.max(1, Math.round(width * dpr));
@@ -19,4 +19,4 @@ export const WheelCanvas: React.FC<{ 宽: number; 高: number; s: number; draw: 
 };
 
 /** 原版一圈的径向轮盘（Goety 的 GenericRadialMenu），参数见 原版轮盘参数 */
-export const RadialWheel: React.FC<VanillaWheelParams & { 宽: number; 高: number; s: number }> = ({ 宽: width, 高: height, s, ...ringParams }) => <WheelCanvas 宽={width} 高={height} s={s} draw={(canvasPos) => drawVanillaWheel(canvasPos, ringParams)} />;
+export const RadialWheel: React.FC<VanillaWheelParams & { width: number; height: number; s: number }> = ({ width: width, height: height, s, ...ringParams }) => <WheelCanvas width={width} height={height} s={s} draw={(canvasPos) => drawVanillaWheel(canvasPos, ringParams)} />;

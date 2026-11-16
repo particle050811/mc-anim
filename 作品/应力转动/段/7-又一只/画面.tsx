@@ -43,22 +43,22 @@ export const AnotherOnePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, c
   const shot = choreo.shotIndex(sec);
   const horse = choreo.horseState(sec);
   return (
-    <AncientCity4xCanvas 段="7-4-2" cam={cam ?? choreo.camera(sec)} width={width} height={height} hide={HIDE} chestOpening={choreo.chestOpenAt(sec)} wool={woolBlocks}>
+    <AncientCity4xCanvas segment="7-4-2" cam={cam ?? choreo.camera(sec)} width={width} height={height} hide={HIDE} chestOpening={choreo.chestOpenAt(sec)} wool={woolBlocks}>
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-        <SpectralSteed 秒={shot === 1 ? choreo.T12(sec) : sec} walkCycle={horse.walkCycle} headYaw={horse.headYaw} headPitch={horse.headPitch} rearAmount={horse.rear?.horse} hasRider />
+        <SpectralSteed sec={shot === 1 ? choreo.T12(sec) : sec} walkCycle={horse.walkCycle} headYaw={horse.headYaw} headPitch={horse.headPitch} rearAmount={horse.rear?.horse} hasRider />
       </group>
       <LiuXinzhong pose={choreo.liuXinzhongPose(sec)} />
       <HuangPan pose={choreo.huangPanPose(sec)} />
       {shot === 1 ? (
-        <VanillaParticles spawns={islandParticles} 秒={choreo.T12(sec)} />
+        <VanillaParticles spawns={islandParticles} sec={choreo.T12(sec)} />
       ) : (
         <>
-          <VanillaParticles spawns={horseParticles} 秒={sec} />
+          <VanillaParticles spawns={horseParticles} sec={sec} />
           {choreo.sensors.map((b, i) => (
-            <SculkSensor key={i} p={choreo.blockBottomCenter(b)} 秒={choreo.sensorClock(sec)} secSinceActive={sec - choreo.activateSecs[i]} seed={i + 1} />
+            <SculkSensor key={i} p={choreo.blockBottomCenter(b)} sec={choreo.sensorClock(sec)} secSinceActive={sec - choreo.activateSecs[i]} seed={i + 1} />
           ))}
           {choreo.vibrations.map((v, i) => (
-            <VibrationSignal key={i} from={v.from} to={v.to} sec={sec - v.t} 帧={i * 3} />
+            <VibrationSignal key={i} from={v.from} to={v.to} sec={sec - v.t} frame={i * 3} />
           ))}
           {choreo.wardens.map((w, i) => {
             const emergeSec = choreo.emergeSecAt(w, sec);

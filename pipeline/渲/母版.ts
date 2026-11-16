@@ -33,10 +33,10 @@ export const atomicWrite = (file: string, text: string) => {
   fs.renameSync(tmp, file);
 };
 
-export const writeFingerprint = (fp: SegFingerprint, dir = masterDir(fp.段)) => atomicWrite(fingerprintFile(fp.段, fp.指纹, dir), JSON.stringify({ ...fp, 算于: new Date().toISOString() }, null, 2) + '\n');
+export const writeFingerprint = (fp: SegFingerprint, dir = masterDir(fp.segment)) => atomicWrite(fingerprintFile(fp.segment, fp.fingerprint, dir), JSON.stringify({ ...fp, computedAt: new Date().toISOString() }, null, 2) + '\n');
 
 /** 这段之前渲过的指纹（新的在前），anim stale 拿最近一份比差异 */
-export const fingerprintHistory = (segKey: string, dir = masterDir(segKey)): (SegFingerprint & { 算于?: string })[] => {
+export const fingerprintHistory = (segKey: string, dir = masterDir(segKey)): (SegFingerprint & { computedAt?: string })[] => {
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir)

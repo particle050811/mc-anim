@@ -11,13 +11,13 @@ import { openAirConnected } from '../../../pipeline/世界/烘焙/可见.ts';
 
 const [packName, outFile] = process.argv.slice(2) as [string, string];
 const env = await load(), pack = openPack(env, terrainRoot(), packName);
-const coarse = env.库.sectionPack.decodeCoarseHeight(pack.info);
+const coarse = env.lib.sectionPack.decodeCoarseHeight(pack.info);
 const coarseHeightDiff = (s: SectionItem) => {
   let lo = Infinity, hi = -Infinity;
-  const c0 = (s.id.i * 32 - coarse.x0) / coarse.格, r0 = (s.id.j * 32 - coarse.y0) / coarse.格;
+  const c0 = (s.id.i * 32 - coarse.x0) / coarse.cell, r0 = (s.id.j * 32 - coarse.y0) / coarse.cell;
   for (let r = r0 - 1; r <= r0 + 2; r++) for (let c = c0 - 1; c <= c0 + 2; c++) {
     if (r < 0 || c < 0 || r >= coarse.ny || c >= coarse.nx) continue;
-    const h = coarse.高[r * coarse.nx + c]!;
+    const h = coarse.height[r * coarse.nx + c]!;
     if (h === -32768) continue;
     lo = Math.min(lo, h); hi = Math.max(hi, h);
   }
@@ -59,7 +59,7 @@ const keySet = new Set(chosen.keys());
 for (const { 行: r } of chosen.values()) for (let L = 1; L <= 3; L++) { const k = sectionKey({ L, i: r.s.id.i >> L, j: r.s.id.j >> L }); if (pack.lookup.has(k)) keySet.add(k); }
 fs.writeFileSync(outFile, [...keySet].join('\n') + '\n');
 // 区段 (0, i, j) 的游戏坐标：x = 32i + ox 起 32 格，z 到 oz − 32j 为止的 32 格（区段包.ts 文件头）
-const [ox, oy, oz] = pack.info.原点;
+const [ox, oy, oz] = pack.info.origin;
 console.log(['区段', '入选原因', '高差', '顶下露天', '矮口露天', '侧连', '游戏x', '游戏z', '最低存到y'].join('\t'));
 for (const [k, { 行: r, reasons }] of [...chosen].sort((a, b) => b[1].行.顶下露天 - a[1].行.顶下露天))
   console.log([k, reasons.join('+'), r.高差, r.顶下露天, r.矮口露天, r.侧连, `${r.s.id.i * 32 + ox}～${r.s.id.i * 32 + ox + 31}`, `${oz - r.s.id.j * 32 - 32}～${oz - r.s.id.j * 32 - 1}`, pack.decodeSection(r.s).kBottom + oy].join('\t'));

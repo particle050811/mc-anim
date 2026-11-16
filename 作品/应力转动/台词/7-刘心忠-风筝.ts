@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 c940a5880d38），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-风筝（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 309c6d37957c），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-风筝（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "7-刘心忠-风筝",
-  "角色": "刘心忠",
-  "念": "我是一名机技境法师，现在有一个五万血的怪物想抓我，但我丝毫不慌，因为它的脚步没我的魔力化马来得快。",
-  "配音": "配音/7-刘心忠-风筝",
-  "成品sha": "f8fc02cd4727",
-  "开口": 0.03,
+  "character": "刘心忠",
+  "spoken": "我是一名机技境法师，现在有一个五万血的怪物想抓我，但我丝毫不慌，因为它的脚步没我的魔力化马来得快。",
+  "voice": "配音/7-刘心忠-风筝",
+  "finishedSha": "f8fc02cd4727",
+  "mouthOpen": 0.03,
   "有声长": 8.086,
-  "时长": 8.266,
+  "duration": 8.266,
   "文件秒数": 8.266,
-  "字": [
+  "char": [
     ["我",0,0.16],
     ["是",0.16,0.24],
     ["一",0.24,0.32],

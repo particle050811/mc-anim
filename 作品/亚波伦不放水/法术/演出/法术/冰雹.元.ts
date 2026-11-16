@@ -11,8 +11,8 @@ export default defineSpellMeta({
   长秒: 7, // 云 80 刻 + 最后一批雪尘落到地上、散掉
   hitSec: hailActiveTick / 20, // 激活后每刻对云下的目标结算
   // 施法音 frost_prepare_spell；受伤音 PLAYER_HURT_FREEZE 每次伤害响，这里只放第一次
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.frost_prepare_spell.1', 秒: 0 },
-    { 资产: '音效/entity.player.hurt_freeze.1', 秒: hailActiveTick / 20 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.frost_prepare_spell.1', sec: 0 },
+    { asset: '音效/entity.player.hurt_freeze.1', sec: hailActiveTick / 20 },
   ],
 });

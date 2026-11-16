@@ -31,14 +31,14 @@ const keepOnly = ([x0, y0, z0, x1, y1, z1]: Box): Box[] => {
 };
 
 // hide 数组要各帧同一个（换了会重建网格），放模块级：藏掉所有门扇的一份、每扇只留自己的一份
-const hiddenWingBoxes: Box[] = Object.values(mainHallDoors).flatMap((m) => m.leaves.map((s) => s.盒));
-const keepOnlyMap = new Map<Box, Box[]>(Object.values(mainHallDoors).flatMap((m) => m.leaves.map((s) => [s.盒, keepOnly(s.盒)] as const)));
+const hiddenWingBoxes: Box[] = Object.values(mainHallDoors).flatMap((m) => m.leaves.map((s) => s.boxes));
+const keepOnlyMap = new Map<Box, Box[]>(Object.values(mainHallDoors).flatMap((m) => m.leaves.map((s) => [s.boxes, keepOnly(s.boxes)] as const)));
 
 export type GrassTone = '归隐之地' | '原样';
 const pickBin = (color: GrassTone) => (color === '原样' ? houseBin : retreatBin);
 
 /** 一扇门：开 0 关着、1 开到底（原版的开门位置），中间按角度线性转 */
-const DoorWingView: React.FC<{ leaf: Leaf; 开: number; 色: GrassTone }> = ({ leaf: { 盒: box, axis, openAngle }, 开: openAmount, 色: color }) => (
+const DoorWingView: React.FC<{ leaf: Leaf; 开: number; 色: GrassTone }> = ({ leaf: { boxes: box, axis, openAngle }, 开: openAmount, 色: color }) => (
   <group position={[axis[0], axis[1], 0]} rotation={[0, 0, (openAngle * openAmount * Math.PI) / 180]}>
     <group position={[-axis[0], -axis[1], 0]}>
       <BlockMesh info={houseInfo} bin={pickBin(color)} atlas={houseAtlas} hide={keepOnlyMap.get(box)} />

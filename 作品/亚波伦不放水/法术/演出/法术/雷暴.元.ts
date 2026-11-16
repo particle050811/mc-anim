@@ -37,7 +37,7 @@ export default defineSpellMeta({
   长秒: (stormEndTick + stormWarnTicks + 15) / 20,
   hitSec: (stormStartTick + stormWarnTicks) / 20,
   // 每处落雷放一次 thunder_strike_fast（按种子 1 的落点排，只排前 12 处免得声音糊成一片）
-  声音: strikePoints(1)
+  sound: strikePoints(1)
     .slice(0, 12)
-    .map((p) => ({ 资产: '音效/诡厄巫法/goety.thunder_strike_fast.1', 秒: (p.生 + stormWarnTicks) / 20, 音量: 0.6 })),
+    .map((p) => ({ asset: '音效/诡厄巫法/goety.thunder_strike_fast.1', sec: (p.生 + stormWarnTicks) / 20, 音量: 0.6 })),
 });

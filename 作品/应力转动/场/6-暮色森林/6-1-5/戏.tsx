@@ -74,9 +74,9 @@ export const LichScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPo
   const lich = choreo.lichState(t);
   const bursts = choreo.debrisBursts(t);
   return (
-    <LandmarkPlacement 名="巫妖怪塔">
+    <LandmarkPlacement name="巫妖怪塔">
       <LichTower hide={choreo.hideFor(t)} />
-      {t > choreo.visibleWindow.起 && t < choreo.visibleWindow.止 && (
+      {t > choreo.visibleWindow.start && t < choreo.visibleWindow.end && (
         <>
           <Wind t={t} opacity={choreo.fan(t).opacity} />
           {/* 巫妖：侧着身子对着来向站，反应不过来、一动不动；矛尖一碰到就变红、变半透明（战利品箱冒在它身上），朝矛的方向倒下，随即化成白烟 */}
@@ -84,7 +84,7 @@ export const LichScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPo
             <group position={lich.pos}>
               <DeathTopple fallDir={choreo.forwardDir} u={lich.fall} knockbackOffset={lich.knockbackOffset}>
                 <group rotation={[0, 0, (choreo.LICH_YAW * Math.PI) / 180]}>
-                  <Lich 秒={choreo.lichClock(t)} shieldCount={choreo.shieldCount(t)} hurt={lich.hurt} opacity={lich.opacity} />
+                  <Lich sec={choreo.lichClock(t)} shieldCount={choreo.shieldCount(t)} hurt={lich.hurt} opacity={lich.opacity} />
                 </group>
               </DeathTopple>
             </group>

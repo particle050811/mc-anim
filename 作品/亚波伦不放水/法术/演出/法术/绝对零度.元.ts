@@ -37,8 +37,8 @@ export default defineSpellMeta({
   长秒: (absZeroReleaseTicks + 60) / 20,
   hitSec: 1,
   // CastingSound frost_prepare_spell；每颗矛 ICE_SPIKE_CAST 音量 2，这里每 5 刻记一声
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.frost_prepare_spell.1', 秒: 0 },
-    ...Array.from({ length: absZeroReleaseTicks / 5 }, (_, k) => ({ 资产: '音效/诡厄巫法/goety.ice_spike_cast', 秒: (k * 5) / 20, 音量: 2 })),
+  sound: [
+    { asset: '音效/诡厄巫法/goety.frost_prepare_spell.1', sec: 0 },
+    ...Array.from({ length: absZeroReleaseTicks / 5 }, (_, k) => ({ asset: '音效/诡厄巫法/goety.ice_spike_cast', sec: (k * 5) / 20, 音量: 2 })),
   ],
 });

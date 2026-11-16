@@ -16,6 +16,6 @@ export const shaftLayout = {
   groundDepth: 185, // = 135 − (−50)；古城.地面深
   rockDepthBlocks: 141,
   airPocket: { y: [53, 58] as [number, number], depth: [76, 82] as [number, number] }, // 竖井那一列岩层里唯一的一段空气（砸穿时有 6 格不出碎块）
-  落点: GUCHENG4X.landingPos, // 6-3-6 落地处（场景），6-4-1 从这里起跳
+  placement: GUCHENG4X.landingPos, // 6-3-6 落地处（场景），6-4-1 从这里起跳
   legacy: { ceilingDepth: 78, groundDepth: 123 },
 };

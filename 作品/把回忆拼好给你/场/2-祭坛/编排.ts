@@ -13,13 +13,13 @@ export const segKey = '2-祭坛召唤';
 export const segWindow = segmentWindow(segKey);
 /** 各事件的歌曲帧 */
 export const events = {
-  tapAltar: mainCutEvents.activateAltar.帧,
-  appear: mainCutEvents.liYingAppears.帧,
-  handOffFrame: mainCutEvents.offerCake.帧,
-  photo: mainCutEvents.photoAltarCake.帧,
-  pushInEye: mainCutEvents.pushToEye.帧,
+  tapAltar: mainCutEvents.activateAltar.frame,
+  appear: mainCutEvents.liYingAppears.frame,
+  handOffFrame: mainCutEvents.offerCake.frame,
+  photo: mainCutEvents.photoAltarCake.frame,
+  pushInEye: mainCutEvents.pushToEye.frame,
   /** 切近景：「光」那一拍（光柱跨过这一刀接着亮） */
-  cutFrame: mainCutEvents.altarCloseUp.帧,
+  cutFrame: mainCutEvents.altarCloseUp.frame,
 } as const;
 /** 最后一帧（接第 4 句眼睛特写的那一帧） */
 export const lastFrame = segWindow.止帧 - 1;
@@ -32,14 +32,14 @@ const smoothstep = (t: number) => t * t * (3 - 2 * t);
 // ---------- 柱顶材料 ----------
 /** 一样材料这一帧：物 = 浮在柱顶（中心位置、绕竖轴转角 度）；亮 = 刚合成那一下整个变白；光 = 化成的光点在往圈心飞（拖着两颗更小的） */
 export type FloatState =
-  | { 名: string; kind: '物' | '亮'; p: Vec3; 转: number }
-  | { 名: string; kind: '光'; p: Vec3; trail: Vec3[] };
+  | { name: string; kind: '物' | '亮'; p: Vec3; 转: number }
+  | { name: string; kind: '光'; p: Vec3; trail: Vec3[] };
 
 /** 柱顶物品中心（显示变换之前的那一点）和转角：TileEntityAltarRenderer 的 毫秒 = (现在 + 方块坐标) mod 3600 */
 export const pillarTopPos = (m: (typeof params.pillarTopMaterials)[number], g: number): { p: Vec3; 转: number } => {
   const periodMs = params.floatItem.periodSec * 1000;
   const cycleMs = (((toSec(g) * 1000 + m.phaseFrac * periodMs) % periodMs) + periodMs) % periodMs;
-  const z = params.pillarTopHeight + params.floatItem.高 + params.floatItem.floatAmp * Math.sin((cycleMs / (periodMs / 2)) * Math.PI);
+  const z = params.pillarTopHeight + params.floatItem.height + params.floatItem.floatAmp * Math.sin((cycleMs / (periodMs / 2)) * Math.PI);
   return { p: [m.pillarPos[0], m.pillarPos[1], z], 转: cycleMs / 10 };
 };
 
@@ -58,12 +58,12 @@ export const floatStates = (g: number): FloatState[] =>
   params.pillarTopMaterials.flatMap((m): FloatState[] => {
     const { p, 转: rotationDeg } = pillarTopPos(m, g);
     const k = (g - events.tapAltar) / fps;
-    if (k < 0) return [{ 名: m.名, kind: '物', p, 转: rotationDeg }];
-    if (k < params.lightMelt.brightSec) return [{ 名: m.名, kind: '亮', p, 转: rotationDeg }];
+    if (k < 0) return [{ name: m.name, kind: '物', p, 转: rotationDeg }];
+    if (k < params.lightMelt.brightSec) return [{ name: m.name, kind: '亮', p, 转: rotationDeg }];
     // 变白完那一刻已经飞了一帧
     const t = (k - params.lightMelt.brightSec + oneFrameSec) / flySec;
     if (t >= 1) return [];
-    return [{ 名: m.名, kind: '光', p: lightDotPos(p, t), trail: [lightDotPos(p, t - 0.1), lightDotPos(p, t - 0.2)] }];
+    return [{ name: m.name, kind: '光', p: lightDotPos(p, t), trail: [lightDotPos(p, t - 0.1), lightDotPos(p, t - 0.2)] }];
   });
 
 // ---------- 她 ----------
@@ -104,7 +104,7 @@ export const youEyePos: Vec3 = [params.you.feet[0], params.you.feet[1], params.y
 // ---------- 光 ----------
 /** 祭坛亮：这一帧亮着的几圈 [半径, 强度]：点祭坛起三圈全亮，她现身以后 退秒 里一档一档灭（最外圈先灭） */
 export const altarLight = (g: number): [number, number][] => {
-  const { radiusList, 强: altarStrengths, fadeSec } = params.lightParams.altarLight;
+  const { radiusList, strength: altarStrengths, fadeSec } = params.lightParams.altarLight;
   if (g < events.tapAltar) return [];
   const fadeTime = (g - events.appear) / fps;
   const offCount = fadeTime < 0 ? 0 : Math.floor((fadeTime / fadeSec) * radiusList.length) + 1;
@@ -112,7 +112,7 @@ export const altarLight = (g: number): [number, number][] => {
 };
 /** 光柱：这一帧的几层 [宽, 强度]（她现身前 起前秒 亮起，现身起留 留秒，再 退秒 里从外往里一层一层灭） */
 export const lightPillar = (g: number): [number, number][] => {
-  const { 宽: beamWidths, 强: beamStrengths, startBeforeSec, holdSec, fadeSec } = params.lightParams.lightPillar;
+  const { width: beamWidths, strength: beamStrengths, startBeforeSec, holdSec, fadeSec } = params.lightParams.lightPillar;
   const k = (g - events.appear) / fps;
   if (k < -startBeforeSec) return [];
   const fadeTime = k - holdSec;
@@ -131,15 +131,15 @@ const unitVec = (a: readonly number[]): Vec3 => {
 };
 
 /** 一个关键机位：歌曲帧、眼、看点、竖直视角 */
-export type CameraKeyframe = { 帧: number; 眼: Vec3; 看: Vec3; fov: number };
+export type CameraKeyframe = { frame: number; 眼: Vec3; 看: Vec3; fov: number };
 /** 近景的关键机位：光（切进来那一帧）、递蛋糕、推眼睛、末帧（末态.ts 的 末机） */
 export const keyRigs = (): CameraKeyframe[] => {
   const { near } = params.shot;
   return [
-    { 帧: events.cutFrame, ...near.光 },
-    { 帧: events.handOffFrame, ...near.handOff },
-    { 帧: events.pushInEye, ...near.pushIn },
-    { 帧: lastFrame, 眼: endRig.眼, 看: endRig.看, fov: endRig.fov },
+    { frame: events.cutFrame, ...near.光 },
+    { frame: events.handOffFrame, ...near.handOff },
+    { frame: events.pushInEye, ...near.pushIn },
+    { frame: lastFrame, 眼: endRig.眼, 看: endRig.看, fov: endRig.fov },
   ];
 };
 
@@ -172,7 +172,7 @@ const slopeRates = (t: readonly number[], y: readonly number[], keepMonotone: bo
  *  末率：离心距离的对数在最后一个关键机位上每秒变多少（第 4 句接着这个速度推）；方向、看点、视角在最后一个关键机位停稳 */
 const interpShot = (keys: readonly CameraKeyframe[], g: number, endRate: number): CameraRig => {
   const aimCenter = eyeBall.rightEye;
-  const t = keys.map((k) => toSec(k.帧));
+  const t = keys.map((k) => toSec(k.frame));
   const distances = keys.map((k) => Math.log(vecLength(sub(k.眼, aimCenter))));
   const keyDirs = keys.map((k) => unitVec(sub(k.眼, aimCenter)));
   const x = Math.min(Math.max(toSec(g), t[0]!), t[t.length - 1]!);

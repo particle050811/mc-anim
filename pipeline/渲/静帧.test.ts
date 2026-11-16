@@ -19,11 +19,11 @@ vi.mock('./渲染器.ts', async (actual) => ({
 const { renderStills, renderFramesSamePage, stillFile, batchHint } = await import('./渲.ts');
 
 const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-静帧-'));
-const h = { serveUrl: '/包', browser: {}, 参数: { inputProps: {}, gl: 'angle', scale: 2 } } as never;
+const h = { serveUrl: '/包', browser: {}, params: { inputProps: {}, gl: 'angle', scale: 2 } } as never;
 const composition = { id: '甲' } as never;
 const renderWithProgress = (frames: number[], frameByFrame?: boolean) => {
   const progressSteps: number[] = [];
-  return renderStills(h, composition, '甲', frames, outDir, { frameByFrame, 环境: { 段标记: '甲' }, 完成: (n) => progressSteps.push(n) }).then(() => progressSteps);
+  return renderStills(h, composition, '甲', frames, outDir, { frameByFrame, env: { 段标记: '甲' }, completed: (n) => progressSteps.push(n) }).then(() => progressSteps);
 };
 
 afterAll(() => fs.rmSync(outDir, { recursive: true, force: true }));
@@ -65,7 +65,7 @@ describe('静帧', () => {
     expect(batchHint('甲', [0, 85], true)).toBeNull();
   });
   it('逐帧校验走的同页出帧可以开声音（照 renderMedia）', async () => {
-    await renderFramesSamePage(h, composition, [1], { withAudio: true, 环境: {}, onFrame: () => {} });
+    await renderFramesSamePage(h, composition, [1], { withAudio: true, env: {}, onFrame: () => {} });
     expect(fake.multiFrameCalls[0]).toMatchObject({ muted: false, frames: [1] });
   });
 });

@@ -101,11 +101,11 @@ export const fineMaterials = (): Record<MaterialClass, THREE.Material> =>
 export const bloomClasses: ReadonlySet<MaterialClass> = new Set(['光', '宝石']);
 
 /** 一圈柔光带（加色）：片上离圆心 半径 处最亮，往两边按高斯落下去（宽 = 标准差），单位同片的坐标 */
-export const haloMaterial = (bands: readonly { radius: number; 宽: number; 色: string; 强: number }[]): THREE.ShaderMaterial => {
+export const haloMaterial = (bands: readonly { radius: number; width: number; 色: string; strength: number }[]): THREE.ShaderMaterial => {
   const shaderItem = bands
     .map((b) => {
       const c = new THREE.Color(b.色);
-      return `col += ${v3([c.r * b.强, c.g * b.强, c.b * b.强])} * exp(-pow((d - ${b.radius.toFixed(4)}) / ${b.宽.toFixed(4)}, 2.0));`;
+      return `col += ${v3([c.r * b.strength, c.g * b.strength, c.b * b.strength])} * exp(-pow((d - ${b.radius.toFixed(4)}) / ${b.width.toFixed(4)}, 2.0));`;
     })
     .join('\n  ');
   return new THREE.ShaderMaterial({

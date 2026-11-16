@@ -124,7 +124,7 @@ const chase = (globalSec: number): Cam => {
     viewDir = rotateAbout(dir, right, θ);
   }
   const lens = sample(LENS, globalSec);
-  const wideLens = lens > WIDE_LENS ? Math.exp(lerp(Math.log(lens), Math.log(WIDE_LENS), wideWeight(state.速度))) : lens;
+  const wideLens = lens > WIDE_LENS ? Math.exp(lerp(Math.log(lens), Math.log(WIDE_LENS), wideWeight(state.speed))) : lens;
   camPos = camPos.map((v, i) => riderPt[i] + (v - riderPt[i]) * (wideLens / lens));
   return { pos: camPos, tgt: [camPos[0] + viewDir[0] * 100, camPos[1] + viewDir[1] * 100, camPos[2] + viewDir[2] * 100], lens: wideLens };
 };

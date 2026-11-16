@@ -46,14 +46,14 @@ export const chestOpenness = (sec: number, openSec: number, closeSec = Infinity)
 export const chestLidAngle = (openness: number) => (1 - (1 - Math.min(1, Math.max(0, openness))) ** 3) * (Math.PI / 2);
 
 // 一段里开关一只箱子，都按这一段自己的钟（秒）：开 = 右键开箱、盖子开始抬；关 = 关界面、盖子开始合，不给 = 一直开着；秒 = 这一帧
-export type Toggle = { 开: number; closeSec?: number; 秒: number };
+export type Toggle = { 开: number; closeSec?: number; sec: number };
 // 这一帧的开度和开过没有：开过从盖子开始抬（秒 > 开）起算，关上也不换回
-export const chestState = ({ 开: openSec, closeSec, 秒: sec }: Toggle) => ({ openness: chestOpenness(sec, openSec, closeSec), opened: sec > openSec });
+export const chestState = ({ 开: openSec, closeSec, sec: sec }: Toggle) => ({ openness: chestOpenness(sec, openSec, closeSec), opened: sec > openSec });
 
 // 开关箱声：原版 ChestBlockEntity.playSound（Lootr 沿用）block.chest.open / close，volume 0.5、pitch 0.9 + r × 0.1，在开关那一刻、箱子中心响。
 // rand 先取音高、再取挑文件（各段的随机数串照这个顺序排过，不能换）
 export const chestSound = (action: '开' | '关', rand: () => number) => ({
-  事件: action === '开' ? 'block.chest.open' : 'block.chest.close',
+  events: action === '开' ? 'block.chest.open' : 'block.chest.close',
   音量: 0.5,
   音高: 0.9 + rand() * 0.1,
   选: rand(),

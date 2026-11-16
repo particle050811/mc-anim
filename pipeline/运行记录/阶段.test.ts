@@ -17,8 +17,8 @@ describe('分阶段计时', () => {
     recordPhase(records, 'still:作/段:视频', '等闸', Date.UTC(2026, 9, 30, 1, 2, 3), 1.234, stageFile);
     recordPhase(records, 'still:作/段:视频', '出帧', Date.UTC(2026, 9, 30, 1, 2, 4), 5, stageFile);
     expect(records).toEqual([
-      { 标签: 'still:作/段:视频', 阶段: '等闸', 开始: '2026-10-30T01:02:03Z', 秒: 1.23 },
-      { 标签: 'still:作/段:视频', 阶段: '出帧', 开始: '2026-10-30T01:02:04Z', 秒: 5 },
+      { label: 'still:作/段:视频', stage: '等闸', startedAt: '2026-10-30T01:02:03Z', sec: 1.23 },
+      { label: 'still:作/段:视频', stage: '出帧', startedAt: '2026-10-30T01:02:04Z', sec: 5 },
     ]);
     const rows = fs.readFileSync(stageFile, 'utf8').trim().split('\n').map((l) => l.split('\t'));
     expect(rows[0]).toEqual(['开始（UTC）', '标签', '阶段', '秒', '主机', 'pid']);
@@ -34,8 +34,8 @@ describe('分阶段计时', () => {
     const timer = stageTiming(records, '成片:作:名', tsvFile);
     timer('取母版');
     timer('拼声音');
-    expect(records.map((r) => r.阶段)).toEqual(['取母版', '拼声音']);
-    expect(records.every((r) => r.秒 >= 0 && r.标签 === '成片:作:名')).toBe(true);
+    expect(records.map((r) => r.stage)).toEqual(['取母版', '拼声音']);
+    expect(records.every((r) => r.sec >= 0 && r.label === '成片:作:名')).toBe(true);
   });
 
   it('量阶段：fn 抛错也记，错照常抛出', async () => {
@@ -43,7 +43,7 @@ describe('分阶段计时', () => {
     const records: StageRecord[] = [];
     expect(await measureStage(records, '会话', '打包', async () => 7, stageFile)).toBe(7);
     await expect(measureStage(records, '会话', '开浏览器', async () => { throw new Error('开不了'); }, stageFile)).rejects.toThrow('开不了');
-    expect(records.map((r) => r.阶段)).toEqual(['打包', '开浏览器']);
+    expect(records.map((r) => r.stage)).toEqual(['打包', '开浏览器']);
     expect(stageSummary(records)).toMatch(/^打包 \d+\.\d 秒、开浏览器 \d+\.\d 秒$/);
   });
 

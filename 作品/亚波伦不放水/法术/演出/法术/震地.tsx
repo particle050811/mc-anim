@@ -28,13 +28,13 @@ const bounceHeight = (initSpeed: number, age: number): number | null => {
   return prev + (y - prev) * (age - Math.floor(age));
 };
 
-const GroundQuake: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const GroundQuake: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const horizontalDist = Math.hypot(target[0] - from[0], target[1] - from[1]) || 1;
   const forward = [(target[0] - from[0]) / horizontalDist, (target[1] - from[1]) / horizontalDist];
   // tremor 的侧向是 (cos yHeadRot, sin yHeadRot)：面朝方向的左手边
   const perpendicular = [-forward[1], forward[0]];
-  const material = faceMaterial(defaultGroundBlockPng, { 混合: '镂空' });
+  const material = faceMaterial(defaultGroundBlockPng, { blend: '镂空' });
   const groundBlocks: React.ReactNode[] = [];
   for (let i = 0; i <= quakeRange; i++) {
     sideOffsets.forEach((sideOffset, colIndex) => {

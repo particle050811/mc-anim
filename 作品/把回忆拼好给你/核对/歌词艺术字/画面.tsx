@@ -24,7 +24,7 @@ const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1))
 
 /** 门口那一帧（核对-门口哈气 的定稿帧） */
 const doorBottom: React.FC = () => (
-  <DoorCanvas doorOpen chestOpen={1} tone={line8Tone} {...fullScreenShot} 叠层={<PuffBubble framing={fullScreenShot.framing} />}>
+  <DoorCanvas doorOpen chestOpen={1} tone={line8Tone} {...fullScreenShot} overlay={<PuffBubble framing={fullScreenShot.framing} />}>
     <PuffCharacter />
   </DoorCanvas>
 );
@@ -36,21 +36,21 @@ const fixedBottoms: Record<Exclude<BottomBackdrop, '分屏' | '归隐'>, { tone:
   对视: { tone: palette.归隐之地, render: () => <EyeContactPicture 版="片" withPost={false} /> },
 };
 
-const lyricsLayer = (frame: number, outlineColor: string) => <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor } satisfies RuneLyricStyle} 帧={frame} />;
+const lyricsLayer = (frame: number, outlineColor: string) => <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor } satisfies RuneLyricStyle} frame={frame} />;
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   if (v.bottomBackdrop === '分屏') {
     // 同 2-时差：描边色取服务器那半的调子
-    const splitState = SplitState(v.帧);
-    return <TimeLagSplit 帧={v.帧} 种子={v.帧} 叠层={lyricsLayer(v.帧, lerpTone(palette.夏日白天, palette.褪色, splitState.fade).outlineColor)} />;
+    const splitState = SplitState(v.frame);
+    return <TimeLagSplit frame={v.frame} seed={v.frame} overlay={lyricsLayer(v.frame, lerpTone(palette.夏日白天, palette.褪色, splitState.fade).outlineColor)} />;
   }
-  if (v.bottomBackdrop === '归隐') return <RetreatPicture 帧={v.帧} 种子={v.帧} 叠层={lyricsLayer(v.帧, leftToneAt(v.帧).outlineColor)} />;
+  if (v.bottomBackdrop === '归隐') return <RetreatPicture frame={v.frame} seed={v.frame} overlay={lyricsLayer(v.frame, leftToneAt(v.frame).outlineColor)} />;
   const bottomBackdrop = fixedBottoms[v.bottomBackdrop];
   return (
-    <FilmPost grade={bottomBackdrop.tone.grade} 种子={v.帧}>
+    <FilmPost grade={bottomBackdrop.tone.grade} seed={v.frame}>
       <bottomBackdrop.render />
-      {lyricsLayer(v.帧, bottomBackdrop.tone.outlineColor)}
+      {lyricsLayer(v.frame, bottomBackdrop.tone.outlineColor)}
     </FilmPost>
   );
 };

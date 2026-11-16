@@ -183,7 +183,7 @@ ${unpackMask}
 
 const faceId = (m: THREE.Material) => (m.side === THREE.DoubleSide ? 2 : m.side === THREE.BackSide ? 1 : 0);
 
-type MeshSeg = { mesh: THREE.Mesh; m: THREE.Material; 起: number; 数: number };
+type MeshSeg = { mesh: THREE.Mesh; m: THREE.Material; start: number; 数: number };
 
 /** 网格的几何能不能拿来求交：CPU 顶点数组还在、不是图集平铺 */
 const lookupGeometry = (mesh: THREE.Mesh) => {
@@ -207,19 +207,19 @@ const buildSegments = (mesh: THREE.Mesh, segments: MeshSeg[]) => {
     for (const gr of g.groups) {
       const m = mesh.material[gr.materialIndex ?? 0];
       const a = Math.max(d0, gr.start), b = Math.min(d1, gr.start + gr.count);
-      if (isOccluder(m) && b > a) segments.push({ mesh, m, 起: a, 数: Math.floor((b - a) / 3) * 3 });
+      if (isOccluder(m) && b > a) segments.push({ mesh, m, start: a, 数: Math.floor((b - a) / 3) * 3 });
     }
-  } else if (isOccluder(mesh.material) && d1 > d0) segments.push({ mesh, m: mesh.material, 起: d0, 数: Math.floor((d1 - d0) / 3) * 3 });
+  } else if (isOccluder(mesh.material) && d1 > d0) segments.push({ mesh, m: mesh.material, start: d0, 数: Math.floor((d1 - d0) / 3) * 3 });
 };
 
 export type RayResources = ReturnType<typeof newRayResources>;
-export const newRayResources = () => ({ u: newRayUniforms(), geometry: null as THREE.BufferGeometry | null, 键: '', triCount: 0 });
+export const newRayResources = () => ({ u: newRayUniforms(), geometry: null as THREE.BufferGeometry | null, key: '', triCount: 0 });
 
 /** 这一帧挡光输入的指纹：网格、几何（连属性版本）、世界矩阵、实例矩阵、材质里求交用到的值。和上一次建 BVH 时一样就沿用（同样的输入建出同样的树，
  *  结果和重建一字不差，乱序出帧照样一样；屋后远景那片地二十多万个三角形每帧重建要 200 多毫秒）。有骨骼动画的网格不沿用 */
 const inputKey = (segments: readonly MeshSeg[]) => {
   const keyParts: string[] = [];
-  for (const { mesh, m, 起: startIndex, 数: indexCount } of segments) {
+  for (const { mesh, m, start: startIndex, 数: indexCount } of segments) {
     if ((mesh as THREE.SkinnedMesh).isSkinnedMesh || (mesh as THREE.Mesh).morphTargetInfluences?.length) return null;
     const g = mesh.geometry;
     const attrVersions = Object.values(g.attributes).map((a) => (a as THREE.BufferAttribute).version ?? 0).join(',');
@@ -252,7 +252,7 @@ export const setRayShadow = (r: RayResources, meshes: readonly THREE.Mesh[], cro
     buildSegments(mesh, segments);
   }
   const cacheKey = inputKey(segments);
-  if (cacheKey !== null && cacheKey === r.键) {
+  if (cacheKey !== null && cacheKey === r.key) {
     setSectionPlane(r, crossSection);
     return r.triCount;
   }
@@ -281,7 +281,7 @@ export const setRayShadow = (r: RayResources, meshes: readonly THREE.Mesh[], cro
   };
   let triCount = 0;
   for (const s of segments) triCount += (s.数 / 3) * ((s.mesh as THREE.InstancedMesh).isInstancedMesh ? (s.mesh as THREE.InstancedMesh).count : 1);
-  r.键 = '';
+  r.key = '';
   if (!triCount) return 0;
   const pos = new Float32Array(triCount * 9);
   const attr = new Float32Array(triCount * 12);
@@ -308,7 +308,7 @@ export const setRayShadow = (r: RayResources, meshes: readonly THREE.Mesh[], cro
       if (instanced) matrix.multiply((instanced.getMatrixAt(k, instanceMatrix), instanceMatrix));
       // 镜像的矩阵把绕向翻过来（three 画的时候跟着翻正反面），换到世界时调换两个顶点，绕向照旧表示正面
       const mirrored = matrix.determinant() < 0;
-      for (let t = s.起; t < s.起 + s.数; t += 3) {
+      for (let t = s.start; t < s.start + s.数; t += 3) {
         for (let c = 0; c < 3; c++) {
           const cornerIdx = mirrored && c > 0 ? 3 - c : c;
           const i = idx ? idx.getX(t + cornerIdx) : t + cornerIdx;
@@ -338,7 +338,7 @@ export const setRayShadow = (r: RayResources, meshes: readonly THREE.Mesh[], cro
   r.geometry = geo;
   for (let i = 0; i < MAX_TEXTURES; i++) (u as unknown as Record<string, { value: THREE.Texture }>)[`gyRtTex${i}`]!.value = textures[i] ?? emptyTexture;
   setSectionPlane(r, crossSection);
-  r.键 = cacheKey ?? '';
+  r.key = cacheKey ?? '';
   r.triCount = triCount;
   return triCount;
 };

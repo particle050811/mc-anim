@@ -12,8 +12,8 @@ import { lerpV } from '@engine/core/数学.ts';
 
 // ---------- 雾 ----------
 const fogUniforms = {
-  mcFogStart: { value: terrainFog.起 },
-  mcFogEnd: { value: terrainFog.止 },
+  mcFogStart: { value: terrainFog.start },
+  mcFogEnd: { value: terrainFog.end },
   mcFogColor: { value: new THREE.Vector3(1, 1, 1) },
 };
 /** 这一帧的雾色（sRGB 数值）：画之前设 */
@@ -47,8 +47,8 @@ export const applyFog = <M extends THREE.Material>(m: M): M => {
 // ---------- 天 ----------
 export type SkyParams = {
   cameraRig: CameraRig;
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** 洞外的天、雾；洞里的天、雾 */
   天: RGB;
   fog: RGB;
@@ -59,7 +59,7 @@ export type SkyParams = {
 };
 
 /** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线取色 */
-export const PerspectiveSky: React.FC<SkyParams> = ({ cameraRig, 宽: width, 高: height, 天: skyRgb, fog, clearSky, clearFog, clearAt }) => {
+export const PerspectiveSky: React.FC<SkyParams> = ({ cameraRig, width: width, height: height, 天: skyRgb, fog, clearSky, clearFog, clearAt }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const drawWidth = width * filmScale, drawHeight = height * filmScale;
   useLayoutEffect(() => {

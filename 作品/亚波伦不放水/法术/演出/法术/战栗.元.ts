@@ -6,5 +6,5 @@ export default defineSpellMeta({
   长秒: 0.5, // 圆环速度 3，30 寿命每刻走 4，8 刻放完；砸地墙寿命 10 刻
   hitSec: 0,
   // WindHornSpell.SpellResult：wind_horn 音量 3
-  声音: [{ 资产: '音效/诡厄巫法/goety.wind_horn', 秒: 0, 音量: 3 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.wind_horn', sec: 0, 音量: 3 }],
 });

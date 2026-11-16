@@ -3,50 +3,50 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     },
     "音效/block.grass.break.2": {
-      "时长": 0.5,
-      "峰值": -1.5,
-      "响度": -21.1,
+      "duration": 0.5,
+      "peakDb": -1.5,
+      "loudness": -21.1,
       "sha": "b0763cf2c5b4"
     },
     "音效/block.gravel.break.1": {
-      "时长": 0.5,
-      "峰值": -1.5,
-      "响度": -23.9,
+      "duration": 0.5,
+      "peakDb": -1.5,
+      "loudness": -23.9,
       "sha": "55a610c8739c"
     },
     "音效/block.gravel.break.2": {
-      "时长": 0.5,
-      "峰值": -0.6,
-      "响度": -27.6,
+      "duration": 0.5,
+      "peakDb": -0.6,
+      "loudness": -27.6,
       "sha": "60ebf0ed49f2"
     },
     "音效/block.gravel.break.3": {
-      "时长": 0.5,
-      "峰值": -0.8,
-      "响度": -22.6,
+      "duration": 0.5,
+      "peakDb": -0.8,
+      "loudness": -22.6,
       "sha": "ab5e4b408d1e"
     },
     "音效/block.gravel.break.4": {
-      "时长": 0.5,
-      "峰值": -1.9,
-      "响度": -22.9,
+      "duration": 0.5,
+      "peakDb": -1.9,
+      "loudness": -22.9,
       "sha": "fd4aa7553a4f"
     },
     "音效/把回忆拼好给你/entity.zombie.ambient.2": {
-      "时长": 1.375011,
-      "峰值": -6.6,
-      "响度": -19.3,
+      "duration": 1.375011,
+      "peakDb": -6.6,
+      "loudness": -19.3,
       "sha": "626e0f7a5bb1"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

@@ -20,7 +20,7 @@ const headModel: EntityModelData = {
   root: { name: 'root', pose: { offset: [0, 0, 0], rot: [0, 0, 0] }, cubes: [], children: [{ name: 'head', pose: { offset: [0, 0, 0], rot: [0, 0, 0] }, cubes: [{ uv: [0, 0], from: [-4, -8, -4], size: [8, 8, 8], grow: [0, 0, 0], mirror: false }], children: [] }] },
 };
 
-const WitherSkull: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const WitherSkull: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const projectiles = witherSkullShots(from, target, seed);
   return (
@@ -31,12 +31,12 @@ const WitherSkull: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: 
         return (
           <MinecraftSpace key={i} 位={trajectoryPos(projectile.trajectory, tick)}>
             <group scale={[-1, -1, 1]}>
-              <ModelPart 模型={headModel} 图={png(witherPng)} 画法="镂空" partPoses={{ head: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
+              <ModelPart model={headModel} image={png(witherPng)} 画法="镂空" partPoses={{ head: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
             </group>
           </MinecraftSpace>
         );
       })}
-      <VanillaParticles spawns={[...fireballSmoke(projectiles, tick, seed), ...projectiles.map((projectile, i) => vanillaExplosion(trajectoryAt(projectile.trajectory, projectile.flightTick), projectile.flightTick, seed * 17 + i))]} 秒={sec} />
+      <VanillaParticles spawns={[...fireballSmoke(projectiles, tick, seed), ...projectiles.map((projectile, i) => vanillaExplosion(trajectoryAt(projectile.trajectory, projectile.flightTick), projectile.flightTick, seed * 17 + i))]} sec={sec} />
     </>
   );
 };

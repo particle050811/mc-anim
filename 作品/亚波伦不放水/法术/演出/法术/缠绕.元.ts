@@ -11,8 +11,8 @@ export default defineSpellMeta({
   长秒: vineVanishTick / 20,
   hitSec: vineEmergeTick / 20,
   // EntangleVines.burst：VINE_TRAP_BURST（音量 2）、VINE_TRAP_HOLD
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.vine_trap_burst.1', 秒: vineEmergeTick / 20, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.vine_trap_hold', 秒: vineEmergeTick / 20 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.vine_trap_burst.1', sec: vineEmergeTick / 20, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.vine_trap_hold', sec: vineEmergeTick / 20 },
   ],
 });

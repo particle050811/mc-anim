@@ -9,16 +9,16 @@ export type Launch = {
   /** 法术表的注册名，如 fireball */
   id: string;
   /** 出手的时刻 */
-  秒: number;
+  sec: number;
   /** 不给 = 出手那一刻的杖尖 */
   from?: V3;
   /** 不给 = 出手那一刻史蒂夫的脚底 */
-  目标?: V3;
+  target?: V3;
   /** 持续施法的（光束、吐息、绕身的风）起点跟着施法者走：画的时候每帧取这一刻的位置当起点；命中时刻照出手那一刻的 起点 算 */
   follow?: (sec: number) => V3;
-  种子?: number;
+  seed?: number;
   /** 画到这一刻为止（硬切）：挡住人的大件在切镜头时收掉 */
-  止?: number;
+  end?: number;
   /** 这一发自己的钟（编排的钟 → 演到哪一刻）：打击停顿时这一发定住几帧、别的照走。不给 = 跟编排的钟走 */
   clock?: (sec: number) => number;
   /** 聚晶附魔、施法条件（法术/演出/接口.ts 的 法术选项）；不给 = 不附魔、原版快慢 */
@@ -38,10 +38,10 @@ export const fireKey = (id: string): string => {
   return focusKey;
 };
 
-export const launchFrom = (cast: Launch, sceneCtx: SceneCtx): V3 => cast.from ?? sceneCtx.wandTip(cast.秒);
-export const launchTarget = (cast: Launch, sceneCtx: SceneCtx): V3 => cast.目标 ?? sceneCtx.steveFoot(cast.秒);
+export const launchFrom = (cast: Launch, sceneCtx: SceneCtx): V3 => cast.from ?? sceneCtx.wandTip(cast.sec);
+export const launchTarget = (cast: Launch, sceneCtx: SceneCtx): V3 => cast.target ?? sceneCtx.steveFoot(cast.sec);
 /** 这一发命中的时刻；没有命中一说的返回 undefined */
 export const launchHit = (cast: Launch, sceneCtx: SceneCtx): number | undefined => {
   const hitSec = spellDuration(getSpellMeta(cast.id), launchFrom(cast, sceneCtx), launchTarget(cast, sceneCtx), cast.options).hitSec;
-  return hitSec === undefined ? undefined : cast.秒 + hitSec;
+  return hitSec === undefined ? undefined : cast.sec + hitSec;
 };

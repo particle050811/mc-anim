@@ -1,0 +1,10 @@
+# 格式：资产来源　位置：assets/src/来源.toml
+# 读写：assets/tools/导入旧项目.py　分类：Git　现有 1 个文件（1 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+可见性	visibility
+旧路径	oldPath
+源文件	sourceFile
+许可	license
+说明	note
+路径	path

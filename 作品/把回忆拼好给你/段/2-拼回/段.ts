@@ -13,12 +13,12 @@ const clickTail = clipToSegment(clock.sceneWindow, groupPhotoClickSound);
 if (!clickTail) throw new Error('15 尾的咔哒没有拖进 2-拼回 的窗口');
 
 export default defineSeg({
-  场: '2-选择世界',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-选择世界',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
   // 原声放到最后一个整帧（原版音频 56.0 秒时已淡到 −40 dB），段在一串歌的末尾，不另淡出
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }, clickTail],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: originalGain }, clickTail],
 });

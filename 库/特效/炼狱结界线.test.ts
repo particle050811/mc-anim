@@ -10,11 +10,11 @@ describe('炼狱结界线段表', () => {
     expect(lineSegs.length).toBe(50);
   });
   it('端点都在外接球上，并成 20 个顶点、30 条棱（正十二面体），其中 20 条棱画了两遍', () => {
-    for (const s of lineSegs) for (const p of [s.起, s.止]) expect(Math.abs(Math.hypot(...p) - cageSphereRadius)).toBeLessThan(2e-3);
-    expect(new Set(lineSegs.flatMap((s) => [pointKey(s.起), pointKey(s.止)])).size).toBe(20);
+    for (const s of lineSegs) for (const p of [s.start, s.end]) expect(Math.abs(Math.hypot(...p) - cageSphereRadius)).toBeLessThan(2e-3);
+    expect(new Set(lineSegs.flatMap((s) => [pointKey(s.start), pointKey(s.end)])).size).toBe(20);
     const edgeCounts = new Map<string, number>();
     for (const s of lineSegs) {
-      const k = [pointKey(s.起), pointKey(s.止)].sort().join('|');
+      const k = [pointKey(s.start), pointKey(s.end)].sort().join('|');
       edgeCounts.set(k, (edgeCounts.get(k) ?? 0) + 1);
     }
     expect(edgeCounts.size).toBe(30);
@@ -22,13 +22,13 @@ describe('炼狱结界线段表', () => {
     expect([...edgeCounts.values()].every((n) => n <= 2)).toBe(true);
   });
   it('棱长都是 2·sin36°', () => {
-    for (const s of lineSegs) expect(Math.hypot(s.止[0] - s.起[0], s.止[1] - s.起[1], s.止[2] - s.起[2])).toBeCloseTo(2 * Math.sin(Math.PI / 5), 3);
+    for (const s of lineSegs) expect(Math.hypot(s.end[0] - s.start[0], s.end[1] - s.start[1], s.end[2] - s.start[2])).toBeCloseTo(2 * Math.sin(Math.PI / 5), 3);
   });
   it('法线是 (x2−x, 1, y2−y) 转过去的：长度 √(棱长² + 1)，不沿线的方向', () => {
     for (const s of lineSegs) expect(Math.hypot(...s.normal)).toBeCloseTo(Math.hypot(2 * Math.sin(Math.PI / 5), 1), 3);
   });
   it('边比例 0.5 时每段短一截', () => {
-    for (const s of cageSegmentTable(0.5)) expect(Math.hypot(s.止[0] - s.起[0], s.止[1] - s.起[1], s.止[2] - s.起[2])).toBeLessThan(0.65);
+    for (const s of cageSegmentTable(0.5)) expect(Math.hypot(s.end[0] - s.start[0], s.end[1] - s.start[1], s.end[2] - s.start[2])).toBeLessThan(0.65);
   });
 });
 

@@ -18,15 +18,15 @@ export type EnvProps = {
   /** 给了穹顶就固定在这里（暮色画法不放大，同 TwilightLighting 的 domeCenter）；不给跟着镜头 */
   domeCenter?: readonly number[];
   /** 描述是环境轨时，关键帧按第几帧取（帧是环境轨自己的格，调用处按秒换算好传进来）；描述是固定的不用给 */
-  帧?: number;
+  frame?: number;
 };
 
-export const Environment: React.FC<EnvProps> = ({ description, 画法: renderer, cameraPos, eyeHeight, domeCenter, 帧: frame }) => {
+export const Environment: React.FC<EnvProps> = ({ description, 画法: renderer, cameraPos, eyeHeight, domeCenter, frame: frame }) => {
   if (isEnvTrack(description) && frame === undefined) throw new Error('<环境> 的描述是环境轨，要给 帧');
   const e = envAtFrame(description, frame ?? 0);
   const lighting = LightCoeffs(e);
   const modules: readonly DrawModule[] = Array.isArray(renderer) ? renderer : [renderer as DrawModule];
-  const renderMode = modules.find((m) => m.名 === e.画法);
-  if (!renderMode) throw new Error(`描述的画法是「${e.画法}」，<环境 画法> 给的是 ${modules.map((m) => `「${m.名}」`).join('、')}：引 engine/light/画法/${e.画法}.tsx 传进来`);
+  const renderMode = modules.find((m) => m.name === e.画法);
+  if (!renderMode) throw new Error(`描述的画法是「${e.画法}」，<环境 画法> 给的是 ${modules.map((m) => `「${m.name}」`).join('、')}：引 engine/light/画法/${e.画法}.tsx 传进来`);
   return <renderMode.component e={e} lighting={lighting} cameraPos={cameraPos} eyeHeight={eyeHeight ?? cameraPos[2]!} domeCenter={domeCenter} />;
 };

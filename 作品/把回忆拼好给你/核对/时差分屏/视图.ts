@@ -6,29 +6,29 @@ import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
 import type { HerPage } from '../../场/2-门口/时差分屏.tsx';
 
 export type View = {
-  名: string;
-  帧: number;
+  name: string;
+  frame: number;
   outline?: boolean;
   withPost?: boolean;
   /** 盖在她这一页的样子上（对照帧） */
   liYing?: Partial<HerPage>;
 };
 
-const stillFrame = mainCutEvents.growthStep3.帧;
+const stillFrame = mainCutEvents.growthStep3.frame;
 /** 事件那一帧往后 n 个 24 fps 的帧（按秒取到最近的一帧） */
 const frameAfter = (frame: number, n: number) => frame + Math.round(legacyFrameSec(n) * fps);
 
 export const views: readonly View[] = [
-  { 名: '定稿', 帧: stillFrame },
-  { 名: '描边开', 帧: stillFrame, outline: true },
-  { 名: '描边关', 帧: stillFrame, outline: false },
-  { 名: '后期关', 帧: stillFrame, withPost: false },
+  { name: '定稿', frame: stillFrame },
+  { name: '描边开', frame: stillFrame, outline: true },
+  { name: '描边关', frame: stillFrame, outline: false },
+  { name: '后期关', frame: stillFrame, withPost: false },
   // 自检：起风前（分屏停稳、日历还没动）、头一页刚飞起来（头一棵樱花树一起冒）、远景冒满中景冒头一棵、门口树苗长成前一帧、停在 1 以后
-  { 名: '自检-起风前', 帧: frameAfter(mainCutEvents.timetableLit2.帧, 1) },
-  { 名: '自检-头一页飞', 帧: frameAfter(mainCutEvents.windBlowsCalendar.帧, 3) },
-  { 名: '自检-中景头一棵', 帧: frameAfter(mainCutEvents.growthStep4.帧, 1) },
-  { 名: '自检-树苗长成前', 帧: mainCutEvents.calendarAtOne.帧 - 1 },
-  { 名: '自检-停在1', 帧: frameAfter(mainCutEvents.calendarAtOne.帧, 6) },
+  { name: '自检-起风前', frame: frameAfter(mainCutEvents.timetableLit2.frame, 1) },
+  { name: '自检-头一页飞', frame: frameAfter(mainCutEvents.windBlowsCalendar.frame, 3) },
+  { name: '自检-中景头一棵', frame: frameAfter(mainCutEvents.growthStep4.frame, 1) },
+  { name: '自检-树苗长成前', frame: mainCutEvents.calendarAtOne.frame - 1 },
+  { name: '自检-停在1', frame: frameAfter(mainCutEvents.calendarAtOne.frame, 6) },
   // 对照：蹲着她身子往镜头斜转 30°（yaw −120）、头转 20°，胳膊和花同定稿，只差朝向（定稿是正侧面 yaw −90、头转 40°）
-  { 名: '对照-蹲身子斜转30', 帧: stillFrame, liYing: { yaw: -120, 看: [5, -20] } },
+  { name: '对照-蹲身子斜转30', frame: stillFrame, liYing: { yaw: -120, 看: [5, -20] } },
 ];

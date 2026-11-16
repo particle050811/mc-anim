@@ -57,9 +57,9 @@ const keywordEffect = (lineIndex: number, word: string, startFrame: number): Wor
   const fromIndex = [...word].findIndex((_, i) => [...word].slice(i, i + [...k.word].length).join('') === k.word);
   if (fromIndex < 0) throw new Error(`第 ${lineIndex} 句「${word}」里没有关键词「${k.word}」`);
   const endIndex = fromIndex + [...k.word].length - 1;
-  if (k.effect === '刹那') return { effect: k.effect, 从: fromIndex, 到: endIndex, shatterFrame: lyricEvents.worldShatters.帧 - startFrame };
-  if (k.effect === '时差') return { effect: k.effect, 从: fromIndex, 到: endIndex, halfBeat: (beatGrid.拍长 / 2) * fps };
-  return { effect: k.effect, 从: fromIndex, 到: endIndex };
+  if (k.effect === '刹那') return { effect: k.effect, 从: fromIndex, dest: endIndex, shatterFrame: lyricEvents.worldShatters.frame - startFrame };
+  if (k.effect === '时差') return { effect: k.effect, 从: fromIndex, dest: endIndex, halfBeat: (beatGrid.beatSec / 2) * fps };
+  return { effect: k.effect, 从: fromIndex, dest: endIndex };
 };
 
 /** 照 进场 推的入帧（不管让聊天）：上一句的末字到这一句的首字 */
@@ -83,14 +83,14 @@ export const mainCutLyricLine = (lineIndex: number, startFrame = 0): RuneLyricLi
   if (!syllables || !timeSpan) throw new Error(`第 ${lineIndex} 句没有拼音或逐字时刻`);
   let enterFrame = normalEnter(lineIndex);
   let charTimes = timeSpan.map((t) => t * fps);
-  const yieldEnterFrame = lineIndex === 12 ? lyricEvents.line12LyricsIn.帧 : lineIndex === 15 ? lyricEvents.line15LyricsIn.帧 : undefined;
+  const yieldEnterFrame = lineIndex === 12 ? lyricEvents.line12LyricsIn.frame : lineIndex === 15 ? lyricEvents.line15LyricsIn.frame : undefined;
   if (yieldEnterFrame !== undefined) {
     enterFrame = yieldEnterFrame;
     charTimes = chaseTimes(charTimes, enterFrame);
   }
   // 第 14 句在你上线那一帧退完；第 11 句在第 12 句原来的进场时刻退完（世界碎掉、「Steve退出了游戏」出来那一下），不跟着它晚进拖着；
   // 第 12 句在她左边（歌词排版表），镜头一往右横移她就往左滑过来，横移起那一帧退完
-  const exitDone = lineIndex === 14 ? lyricEvents.rejoinGame.帧 : lineIndex === 12 ? lyricEvents.sidePanStart.帧 : lineIndex === 11 ? normalEnter(12) : undefined;
+  const exitDone = lineIndex === 14 ? lyricEvents.rejoinGame.frame : lineIndex === 12 ? lyricEvents.sidePanStart.frame : lineIndex === 11 ? normalEnter(12) : undefined;
   const fadeOutFrame = exitDone === undefined ? undefined : exitDone - runeLyricDefault.exitSec * fps;
   const wordEffect = keywordEffect(lineIndex, s.text, startFrame);
   return {

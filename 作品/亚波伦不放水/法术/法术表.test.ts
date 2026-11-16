@@ -46,7 +46,7 @@ describe('法术表', () => {
     for (const spell of spellTable) {
       expect(spell.chineseName, spell.registryName).toMatch(/聚晶$/);
       expect(spell.englishName, spell.registryName).toMatch(/ Focus$/);
-      for (const field of [spell.依据, spell.画面, spell.difficultyReason, spell.spellJavaClass] as const) expect(field.length, spell.registryName).toBeGreaterThan(0);
+      for (const field of [spell.basis, spell.画面, spell.difficultyReason, spell.spellJavaClass] as const) expect(field.length, spell.registryName).toBeGreaterThan(0);
       expect(spell.icon, spell.registryName).toMatch(/^assets\/goety(_revelation)?\/textures\/item\/focus\/.+\.png$/);
     }
   });
@@ -60,8 +60,8 @@ describe('法术表', () => {
       expect(spell.pending, spell.registryName).toBeDefined();
       const [firstCandidate, second] = spell.pending!.候选;
       expect(firstCandidate).not.toBe(second);
-      expect(spell.pending!.理由[firstCandidate]?.length, spell.registryName).toBeGreaterThan(0);
-      expect(spell.pending!.理由[second]?.length, spell.registryName).toBeGreaterThan(0);
+      expect(spell.pending!.reason[firstCandidate]?.length, spell.registryName).toBeGreaterThan(0);
+      expect(spell.pending!.reason[second]?.length, spell.registryName).toBeGreaterThan(0);
     }
   });
 

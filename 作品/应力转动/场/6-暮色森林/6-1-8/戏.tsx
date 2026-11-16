@@ -16,7 +16,7 @@ const ATLAS = png(AuroraPalace_ATLAS);
 
 // 镜头：世界坐标的镜头位置，飞散的碎块离镜头太近就淡出（模型/特效/方块飞溅.tsx 的 近隐）
 export const SnowQueenScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPos: camPos }) => {
-  const show = t > choreo.visibleWindow.起 && t < choreo.visibleWindow.止;
+  const show = t > choreo.visibleWindow.start && t < choreo.visibleWindow.end;
   const queen = choreo.queen(t);
   const camLocal = camPos && choreo.palaceFrame.toLocal(camPos);
   // 撞飞的冰盾离镜头太近就淡出（同碎块的 近隐）：7 块冰盾都从北墙撞开的洞里飞出去（编排.ts 的 冰盾运动），镜头紧跟着扫帚从同一个洞钻出去，
@@ -29,7 +29,7 @@ export const SnowQueenScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, 
   };
   // 宫殿只画核心（宫殿本体，暮色新世界.tsx 极光宫殿那一行），外面的冰川是新世界的：核心外按方块藏（hideBlocks），核心边上补侧面
   return (
-    <LandmarkPlacement 名="极光宫殿">
+    <LandmarkPlacement name="极光宫殿">
       <AuroraPalace hide={choreo.hideFor(t)} hideBlocks={landmarkHideOutsideCore.极光宫殿} />
       {show && (
         <>

@@ -4,8 +4,8 @@
 import { decompressNbt, readNbtNamed, type Compound, type NbtValue } from '../nbt.ts';
 import { stateString } from '../存档.ts';
 
-export type Structure = { 大小: [number, number, number]; 格: (string | null)[]; blockEntityCount: number; 格式: 'nbt' | 'schem2' | 'schem3' };
-export const cellIndex = (s: Structure, x: number, y: number, z: number) => (y * s.大小[2] + z) * s.大小[0] + x;
+export type Structure = { size: [number, number, number]; cell: (string | null)[]; blockEntityCount: number; 格式: 'nbt' | 'schem2' | 'schem3' };
+export const cellIndex = (s: Structure, x: number, y: number, z: number) => (y * s.size[2] + z) * s.size[0] + x;
 
 const nbtNum = (v: NbtValue | undefined, fieldName: string) => {
   if (typeof v !== 'number') throw new Error(`结构文件缺 ${fieldName}`);
@@ -20,10 +20,10 @@ const readVanilla = (root: Compound): Structure => {
   const palette = (root.palette ?? (root.palettes as Compound[][] | undefined)?.[0]) as Compound[] | undefined;
   if (!palette) throw new Error('结构 .nbt 缺 palette');
   const blockStates = palette.map((p) => (p.Name === 'minecraft:structure_void' ? null : stateString(p.Name as string, p.Properties as Record<string, string> | undefined)));
-  const s: Structure = { 大小: dims, 格: new Array(dims[0] * dims[1] * dims[2]).fill(null), blockEntityCount: 0, 格式: 'nbt' };
+  const s: Structure = { size: dims, cell: new Array(dims[0] * dims[1] * dims[2]).fill(null), blockEntityCount: 0, 格式: 'nbt' };
   for (const b of (root.blocks ?? []) as Compound[]) {
     const [x, y, z] = b.pos as number[];
-    s.格[cellIndex(s, x!, y!, z!)] = blockStates[b.state as number] ?? null;
+    s.cell[cellIndex(s, x!, y!, z!)] = blockStates[b.state as number] ?? null;
     if (b.nbt) s.blockEntityCount++;
   }
   return s;
@@ -61,14 +61,14 @@ const readSponge = (sch: Compound): Structure => {
   for (const [k, i] of Object.entries(pal)) blockStates[i] = k === 'minecraft:structure_void' ? null : splitNotation(k);
   const n = size[0] * size[1] * size[2];
   const ids = readVarLen(data, n);
-  const s: Structure = { 大小: size, 格: new Array(n), blockEntityCount: ((schematicVersion >= 3 ? schemBlocks.BlockEntities : sch.BlockEntities) as unknown[] | undefined)?.length ?? 0, 格式: schematicVersion >= 3 ? 'schem3' : 'schem2' };
+  const s: Structure = { size: size, cell: new Array(n), blockEntityCount: ((schematicVersion >= 3 ? schemBlocks.BlockEntities : sch.BlockEntities) as unknown[] | undefined)?.length ?? 0, 格式: schematicVersion >= 3 ? 'schem3' : 'schem2' };
   // Sponge 的下标 x + z·宽 + y·宽·长 正好就是 格下标 的 (y·长 + z)·宽 + x
-  for (let i = 0; i < n; i++) s.格[i] = blockStates[ids[i]!] ?? null;
+  for (let i = 0; i < n; i++) s.cell[i] = blockStates[ids[i]!] ?? null;
   return s;
 };
 
 export const readStructure = (buf: Buffer, displayName = '结构'): Structure => {
-  const { 名: rootName, 值: value } = readNbtNamed(decompressNbt(buf));
+  const { name: rootName, value: value } = readNbtNamed(decompressNbt(buf));
   try {
     if (rootName === 'Schematic' && value.Version !== undefined) return readSponge(value); // 版本 2：根就叫 Schematic
     if (value.Schematic && typeof value.Schematic === 'object') return readSponge(value.Schematic as Compound); // 版本 3：根下包一层

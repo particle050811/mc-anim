@@ -6,11 +6,11 @@ import timeline from '../../场/2-教堂/时间线.ts';
 import soundTable from './声音表.生成.ts';
 
 export default windowSeg(timeline, {
-  起: '开始',
-  止: '结束',
+  start: '开始',
+  end: '结束',
   soundTable,
-  声音: ({ 放: play, 事件: events }) => [
+  sound: ({ 放: play, events: events }) => [
     // 曲子从文件头放，比舞晚 曲晚秒（对拍怎么量的见 忘情牛肉面时长.ts）；放到段尾，收住那 2 秒淡掉
-    play('配乐/结算舞/DreamFunk忘情牛肉面', events.danceStart + musicLateSec, { 响度: -18, fadeOutSec: events.结束 - events.danceDone, 名: '结算曲' }),
+    play('配乐/结算舞/DreamFunk忘情牛肉面', events.danceStart + musicLateSec, { loudness: -18, fadeOutSec: events.结束 - events.danceDone, name: '结算曲' }),
   ],
 });

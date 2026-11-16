@@ -32,7 +32,7 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 import { useSnappedFrame } from '../../当前帧.ts';
 
-const width = aspect.宽, height = aspect.高;
+const width = aspect.width, height = aspect.height;
 const standY = entrance.standRowY;
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, toSongFrame(0)));
 /** 照片墙一格 64 个地图像素：N = 16 是 4 的倍数，一个地图像素正好 4 个成片像素（特效/地图画.ts） */
@@ -59,11 +59,11 @@ const Characters: React.FC<{ f: number }> = ({ f }) => {
           看={liYing.看}
           skeleton={liYing.skeleton}
           blink={liYing.blink}
-          秒={liYing.秒}
+          sec={liYing.sec}
           backStaff={false}
         />
       </TexturePixelAlign>
-      {photo && <MapArtCard photo={newPhoto} sideLength={photoWallEdge} 角={photo.角} side={photo.side} />}
+      {photo && <MapArtCard photo={newPhoto} sideLength={photoWallEdge} angle={photo.angle} side={photo.side} />}
       <TexturePixelAlign 锚={creeper.loc}>
         <Creeper pose={creeper} />
       </TexturePixelAlign>
@@ -75,7 +75,7 @@ const CollectHappyBubble: React.FC<{ f: number; framing: DoorFraming }> = ({ f, 
   const bubble = bubbleState(f);
   if (!bubble) return null;
   const anchor = sideProjection(framing, width, height, orthoTop)(bubble.x, bubbleAnchorHeight(), standY);
-  return <MaidBubble 锚={anchor} 缩放={line8ShotCount} 文字={bubble.字} 字体={pixelFont} anchorAlign={line8ShotCount} />;
+  return <MaidBubble 锚={anchor} scale={line8ShotCount} 文字={bubble.char} 字体={pixelFont} anchorAlign={line8ShotCount} />;
 };
 
 const picture: React.FC = () => {
@@ -84,18 +84,18 @@ const picture: React.FC = () => {
   const photoWall = photoWallCells([...line8Photos.slice(0, wallPhotoCount(f)), null].slice(0, 4));
   return (
     <>
-      <FilmPost grade={tone.grade} 种子={toSongFrame(f)}>
+      <FilmPost grade={tone.grade} seed={toSongFrame(f)}>
         <DoorCanvas
           shading={shadingBySeg['2-收集快乐']}
           shadingScene={line8ShadingScene}
           doorOpen
           photoWall={photoWall}
           photoWallEdge={photoWallEdge}
-          远景={{ clouds: line8Cloud(toSongFrame(f)) }}
+          farView={{ clouds: line8Cloud(toSongFrame(f)) }}
           tone={tone}
           framing={framing}
           arc={null}
-          叠层={<CollectHappyBubble f={f} framing={framing} />}
+          overlay={<CollectHappyBubble f={f} framing={framing} />}
         >
           <Characters f={f} />
         </DoorCanvas>

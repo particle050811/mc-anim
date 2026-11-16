@@ -34,7 +34,7 @@ const petalFacing = ['east', 'south', 'west', 'north'] as const;
 /** 树苗所在的格 [i, j, k]（树干那排）→ 树苗，或长成的整棵（前排 j − 1、后排 j + 1） */
 export const cherryTreeBlocks = (grown: boolean, root: readonly [number, number, number]): PlacedBlock[] => {
   const [i0, j0, k0] = root;
-  if (!grown) return [{ 状态: 'minecraft:cherry_sapling', 位: [i0, j0, k0] }];
+  if (!grown) return [{ state: 'minecraft:cherry_sapling', 位: [i0, j0, k0] }];
   const out: PlacedBlock[] = [];
   const shapeHeight = shape.length;
   shape.forEach((row, r) => {
@@ -43,14 +43,14 @@ export const cherryTreeBlocks = (grown: boolean, root: readonly [number, number,
     for (let c = 0; c < row.length; c++) {
       const ch = row[c];
       const i = i0 + c - 4;
-      if (ch === 'L' || ch === 'H') out.push({ 状态: 'minecraft:cherry_leaves', 位: [i, j0, k] });
-      if (ch === 'T') out.push({ 状态: 'minecraft:cherry_log[axis=y]', 位: [i, j0, k] });
+      if (ch === 'L' || ch === 'H') out.push({ state: 'minecraft:cherry_leaves', 位: [i, j0, k] });
+      if (ch === 'T') out.push({ state: 'minecraft:cherry_log[axis=y]', 位: [i, j0, k] });
       if ((ch === 'L' || ch === 'T') && hasLeaves(c - 1) && hasLeaves(c + 1)) {
-        out.push({ 状态: 'minecraft:cherry_leaves', 位: [i, j0 - 1, k] });
-        out.push({ 状态: 'minecraft:cherry_leaves', 位: [i, j0 + 1, k] });
+        out.push({ state: 'minecraft:cherry_leaves', 位: [i, j0 - 1, k] });
+        out.push({ state: 'minecraft:cherry_leaves', 位: [i, j0 + 1, k] });
       }
     }
   });
-  petalOffsets.forEach(([dx, dj], n) => out.push({ 状态: `minecraft:pink_petals[facing=${petalFacing[n % 4]},flower_amount=${(n % 3) + 2}]`, 位: [i0 + dx, j0 + dj, k0] }));
+  petalOffsets.forEach(([dx, dj], n) => out.push({ state: `minecraft:pink_petals[facing=${petalFacing[n % 4]},flower_amount=${(n % 3) + 2}]`, 位: [i0 + dx, j0 + dj, k0] }));
   return out;
 };

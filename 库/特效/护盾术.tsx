@@ -18,7 +18,7 @@ import texOverlay from 'asset:贴图/特效/护盾术/护盾';
 import texTrim from 'asset:贴图/特效/护盾术/边框';
 
 const DATA = (raw as unknown as { models: { 护盾: EntityModelData; 边框: EntityModelData } }).models;
-export const SHIELD = { 宽: 5, scale: 5 * 0.65, castRange: 3, lifeTicks: 400, tint: 0.65 };
+export const SHIELD = { width: 5, scale: 5 * 0.65, castRange: 3, lifeTicks: 400, tint: 0.65 };
 
 const swirlNoise = (x: number) => (Math.sin(x / 4) + 2 * Math.sin(x / 3) + 3 * Math.sin(x / 2) + 4 * Math.sin(x)) * 0.25;
 export const shieldSwirlOffset = (tick: number): [number, number] => {

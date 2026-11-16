@@ -41,7 +41,7 @@ export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 天、灯、云（lib/主世界光照.tsx）；日光投影见 lib/飞行镜头.tsx 的 `OverworldSunLight` */}
           <FlightSky camPos={cam.pos} shadow={{ shadowFar: overworldShadowFar(choreo.visibility(globalSec)), aboveGround: cam.pos[2] - choreo.routeGround(cam.pos[0], cam.pos[1]) }} />
-          <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />
+          <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />
           <group position={borderTownPos}>
             <BorderTown />
           </group>
@@ -54,5 +54,5 @@ export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
 
 export const FlyOverworld: React.FC = () => {
   const sec = useCurrentSec();
-  return <FlightView T={choreo.segmentTable['6-2-5'].起 + sec} />;
+  return <FlightView T={choreo.segmentTable['6-2-5'].start + sec} />;
 };

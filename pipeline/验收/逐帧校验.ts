@@ -31,8 +31,8 @@ const solidSuspectBytes = 64 * 1024;
 const maxListedDiffFrames = 20;
 const FIRST_FRAME_SEC = 15;
 
-export type FrameCheck = { sha: string; 字节: number };
-export type CheckRecord = { 段: string; 段帧数: number; 指纹: string; 提交: string; 帧: Map<number, FrameCheck> };
+export type FrameCheck = { sha: string; bytes: number };
+export type CheckRecord = { segment: string; 段帧数: number; fingerprint: string; commit: string; frame: Map<number, FrameCheck> };
 
 /** --frames：a-b（含两头）或 帧,帧,帧 */
 export const parseFrames = (rangeText: string): number[] => {
@@ -63,28 +63,28 @@ export const checkFile = (checkName: string, segKey: string, work = workName()) 
 /** 先写临时名再改名：渲到一半被杀不留半份基准 */
 export const writeCheckRecord = (file: string, r: CheckRecord) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  const frameLines = [...r.帧].sort((a, b) => a[0] - b[0]).map(([f, x]) => `${f}\t${x.sha}\t${x.字节}`);
+  const frameLines = [...r.frame].sort((a, b) => a[0] - b[0]).map(([f, x]) => `${f}\t${x.sha}\t${x.bytes}`);
   const tmp = `${file}.写入中-${process.pid}`;
-  fs.writeFileSync(tmp, [`# 段\t${r.段}`, `# 段帧数\t${r.段帧数}`, `# 指纹\t${r.指纹}`, `# 提交\t${r.提交}`, '帧\tsha256\t字节', ...frameLines, ''].join('\n'), 'utf8');
+  fs.writeFileSync(tmp, [`# 段\t${r.segment}`, `# 段帧数\t${r.段帧数}`, `# 指纹\t${r.fingerprint}`, `# 提交\t${r.commit}`, '帧\tsha256\t字节', ...frameLines, ''].join('\n'), 'utf8');
   fs.renameSync(tmp, file);
 };
 
 export const readCheckRecord = (file: string): CheckRecord => {
-  const r: CheckRecord = { 段: '', 段帧数: 0, 指纹: '', 提交: '', 帧: new Map() };
+  const r: CheckRecord = { segment: '', 段帧数: 0, fingerprint: '', commit: '', frame: new Map() };
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
     if (!line || line.startsWith('帧\t')) continue;
     const cols = line.split('\t');
     if (line.startsWith('# ')) {
       const propKey = cols[0]!.slice(2);
-      if (propKey === '段') r.段 = cols[1]!;
+      if (propKey === '段') r.segment = cols[1]!;
       else if (propKey === '段帧数') r.段帧数 = Number(cols[1]);
-      else if (propKey === '指纹') r.指纹 = cols[1]!;
-      else if (propKey === '提交') r.提交 = cols[1]!;
+      else if (propKey === '指纹') r.fingerprint = cols[1]!;
+      else if (propKey === '提交') r.commit = cols[1]!;
       continue;
     }
     const frame = Number(cols[0]);
     if (!Number.isInteger(frame) || !/^[0-9a-f]{64}$/.test(cols[1] ?? '')) throw new Error(`${file} 读不懂这一行：${line}`);
-    r.帧.set(frame, { sha: cols[1]!, 字节: Number(cols[2]) });
+    r.frame.set(frame, { sha: cols[1]!, bytes: Number(cols[2]) });
   }
   return r;
 };
@@ -107,19 +107,19 @@ export const pickRenderFrames = (frameCount: number, givenFrames: readonly numbe
 };
 
 export const compareChecks = (baseline: ReadonlyMap<number, FrameCheck>, current: ReadonlyMap<number, FrameCheck>) => {
-  const mismatches = [...current].filter(([f, x]) => baseline.get(f)?.sha !== x.sha).map(([f, x]) => ({ 帧: f, 基准: baseline.get(f)?.sha ?? '', current: x.sha })).sort((a, b) => a.帧 - b.帧);
+  const mismatches = [...current].filter(([f, x]) => baseline.get(f)?.sha !== x.sha).map(([f, x]) => ({ frame: f, baseline: baseline.get(f)?.sha ?? '', current: x.sha })).sort((a, b) => a.frame - b.frame);
   return { 相同: current.size - mismatches.length, 不同: mismatches };
 };
 
 const commitText = () => {
   const x = commitStatus();
-  return x ? `${x.提交}${x.有改动 ? '+未提交改动' : ''}` : '不在 git 里';
+  return x ? `${x.commit}${x.dirty ? '+未提交改动' : ''}` : '不在 git 里';
 };
 
-type SegPlan = { 段: SegInfo; 帧: number[]; 基准: CheckRecord | null; 指纹: string; 地形: Record<string, string>; 帧数: number; 参数: RenderParamsTable };
+type SegPlan = { segment: SegInfo; frame: number[]; baseline: CheckRecord | null; fingerprint: string; terrain: Record<string, string>; frameCount: number; params: RenderParamsTable };
 
-export const runPerFrame = async (segments: readonly SegInfo[], o: { checkMode: '存' | '比'; 名: string; 帧: readonly number[] | null; keepDir: string | null; runRecord: RunRecord }): Promise<number> => {
-  const { checkMode, 名: checkName, runRecord } = o;
+export const runPerFrame = async (segments: readonly SegInfo[], o: { checkMode: '存' | '比'; name: string; frame: readonly number[] | null; keepDir: string | null; runRecord: RunRecord }): Promise<number> => {
+  const { checkMode, name: checkName, runRecord } = o;
   let failed = 0;
   let kept = 0;
   const addError = (messageText: string) => {
@@ -130,108 +130,108 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: { checkMode: 
   const wantedSegs = segments.filter((s) => {
     const pack = missingLocalTerrain(s);
     if (!pack) return true;
-    skipped.push(s.键);
+    skipped.push(s.key);
     // 存过基准的段没渲到就是没比到，不能算过；没存过的段这台机器本来就比不了（章选择器存的时候也跳过了它）
-    if (checkMode === '比' && fs.existsSync(checkFile(checkName, s.键))) addError(`${s.键}：「${checkName}」里存过这段，但本机没有区段包 ${pack}，没比到（anim world bake 烘出来才能渲）`);
-    else console.log(`跳过 ${s.键}：本机没有区段包 ${pack}（anim world bake 烘出来才能渲）`);
+    if (checkMode === '比' && fs.existsSync(checkFile(checkName, s.key))) addError(`${s.key}：「${checkName}」里存过这段，但本机没有区段包 ${pack}，没比到（anim world bake 烘出来才能渲）`);
+    else console.log(`跳过 ${s.key}：本机没有区段包 ${pack}（anim world bake 烘出来才能渲）`);
     return false;
   });
   // 不覆盖基准：存错了换个名，比的时候不会悄悄和新存的比
   if (checkMode === '存') {
-    const existing = wantedSegs.filter((s) => fs.existsSync(checkFile(checkName, s.键)));
-    if (existing.length) throw new UsageError(`「${checkName}」里已经有 ${existing.map((s) => s.键).join('、')}，不覆盖：换个名，或者选别的段`);
+    const existing = wantedSegs.filter((s) => fs.existsSync(checkFile(checkName, s.key)));
+    if (existing.length) throw new UsageError(`「${checkName}」里已经有 ${existing.map((s) => s.key).join('、')}，不覆盖：换个名，或者选别的段`);
   }
   fillBytesAndReport(workRoot(), dataRoot());
   const allSegments = await loadAllSegments();
   const outputs = await segmentProducts(allSegments, wantedSegs, level);
   const plans: SegPlan[] = [];
   for (const [i, s] of wantedSegs.entries()) {
-    const file = checkFile(checkName, s.键);
+    const file = checkFile(checkName, s.key);
     if (checkMode === '比' && !fs.existsSync(file)) {
-      addError(`${s.键}：「${checkName}」里没存过这段（${file}），先 anim verify frames ${s.键} --save ${checkName}`);
+      addError(`${s.key}：「${checkName}」里没存过这段（${file}），先 anim verify frames ${s.key} --save ${checkName}`);
       continue;
     }
     const baseline = checkMode === '比' ? readCheckRecord(file) : null;
     const artifact = outputs[i]!;
     const frameCount = artifact.outputFrames;
-    const { toRender, outOfRange, missingInBase } = pickRenderFrames(frameCount, o.帧, baseline ? [...baseline.帧.keys()].sort((a, b) => a - b) : null);
-    const baselineOutOfRange = outOfRange.filter((f) => baseline?.帧.has(f));
-    if (baselineOutOfRange.length) addError(`${s.键}：段现在只有 ${frameCount} 帧，基准存的这些帧没了：${frameNumText(baselineOutOfRange)}`);
-    else if (outOfRange.length) console.log(`· ${s.键} 只有 ${frameCount} 帧，不渲 ${frameNumText(outOfRange)}`);
-    if (missingInBase.length) console.log(`· ${s.键}：基准没存这些帧，比不了：${frameNumText(missingInBase)}`);
-    if (o.帧 && baseline && toRender.some((f) => !o.帧!.includes(f))) console.log(`· ${s.键}：基准的帧是连着渲的，隔开渲比不了，这次连前面的帧一起渲、一起比：${frameNumText(toRender)}`);
-    if (baseline && !o.帧 && baseline.段帧数 !== frameCount) addError(`${s.键}：存基准时段有 ${baseline.段帧数} 帧，现在 ${frameCount} 帧（段长或帧率变过，要重存）`);
+    const { toRender, outOfRange, missingInBase } = pickRenderFrames(frameCount, o.frame, baseline ? [...baseline.frame.keys()].sort((a, b) => a - b) : null);
+    const baselineOutOfRange = outOfRange.filter((f) => baseline?.frame.has(f));
+    if (baselineOutOfRange.length) addError(`${s.key}：段现在只有 ${frameCount} 帧，基准存的这些帧没了：${frameNumText(baselineOutOfRange)}`);
+    else if (outOfRange.length) console.log(`· ${s.key} 只有 ${frameCount} 帧，不渲 ${frameNumText(outOfRange)}`);
+    if (missingInBase.length) console.log(`· ${s.key}：基准没存这些帧，比不了：${frameNumText(missingInBase)}`);
+    if (o.frame && baseline && toRender.some((f) => !o.frame!.includes(f))) console.log(`· ${s.key}：基准的帧是连着渲的，隔开渲比不了，这次连前面的帧一起渲、一起比：${frameNumText(toRender)}`);
+    if (baseline && !o.frame && baseline.段帧数 !== frameCount) addError(`${s.key}：存基准时段有 ${baseline.段帧数} 帧，现在 ${frameCount} 帧（段长或帧率变过，要重存）`);
     if (!toRender.length) {
-      addError(`${s.键}：没有能渲的帧`);
+      addError(`${s.key}：没有能渲的帧`);
       continue;
     }
-    plans.push({ 段: s, 帧: toRender, 基准: baseline, 指纹: artifact.画面指纹.指纹, 地形: artifact.画面指纹.项.地形, 帧数: frameCount, 参数: artifact.参数 });
+    plans.push({ segment: s, frame: toRender, baseline: baseline, fingerprint: artifact.pictureFingerprint.fingerprint, terrain: artifact.pictureFingerprint.items.terrain, frameCount: frameCount, params: artifact.params });
   }
   // 开跑前查：不覆盖，也不和上次留的混在一起；比的时候哪帧不同渲完才知道，按可能写的算
   if (o.keepDir) {
-    const existingFiles = plans.flatMap((x) => x.帧.map((f) => stillFile(o.keepDir!, x.段.键, f))).filter((f) => fs.existsSync(f));
+    const existingFiles = plans.flatMap((x) => x.frame.map((f) => stillFile(o.keepDir!, x.segment.key, f))).filter((f) => fs.existsSync(f));
     if (existingFiles.length) throw new UsageError(`--keep-images ${o.keepDir} 里已经有 ${existingFiles.length} 张这次可能写的 PNG（${path.basename(existingFiles[0]!)} 等），不覆盖：换个空目录`);
     fs.mkdirSync(o.keepDir, { recursive: true });
   }
   if (plans.length) {
     const estimates = plans.map((x) => {
-      const wholeSegSec = estimateTiming(renderLabel(x.段.键, level));
+      const wholeSegSec = estimateTiming(renderLabel(x.segment.key, level));
       if (wholeSegSec === null) return null;
       // 只渲一截时第一帧的读地形摊不到，单独加上
-      return x.帧.length === x.帧数 ? wholeSegSec : (wholeSegSec * x.帧.length) / x.帧数 + FIRST_FRAME_SEC;
+      return x.frame.length === x.frameCount ? wholeSegSec : (wholeSegSec * x.frame.length) / x.frameCount + FIRST_FRAME_SEC;
     });
     const knownEstimates = estimates.filter((x): x is number => x !== null);
-    console.log(`== 逐帧${checkMode} ${plans.length} 段、${plans.reduce((a, x) => a + x.帧.length, 0)} 帧${knownEstimates.length ? `；按耗时表预计约 ${Math.round(knownEstimates.reduce((a, b) => a + b, 0))} 秒${knownEstimates.length < plans.length ? `（另 ${plans.length - knownEstimates.length} 段没有记录）` : ''}` : ''}`);
-    await perGroupWithResourcePacks(workRoot(), plans, (x) => x.段.键, (group) => openSession(level, async (h) => {
+    console.log(`== 逐帧${checkMode} ${plans.length} 段、${plans.reduce((a, x) => a + x.frame.length, 0)} 帧${knownEstimates.length ? `；按耗时表预计约 ${Math.round(knownEstimates.reduce((a, b) => a + b, 0))} 秒${knownEstimates.length < plans.length ? `（另 ${plans.length - knownEstimates.length} 段没有记录）` : ''}` : ''}`);
+    await perGroupWithResourcePacks(workRoot(), plans, (x) => x.segment.key, (group) => openSession(level, async (h) => {
       for (const x of group) {
-        const segKey = x.段.键;
-        const composition = findComposition(h, x.段, allSegments);
+        const segKey = x.segment.key;
+        const composition = findComposition(h, x.segment, allSegments);
         const label = `逐帧校验:${workName()}/${segKey}`;
         await waitSolveCacheWrites();
         const queueStartMs = Date.now();
         const current = new Map<number, FrameCheck>();
         await passRenderGate(async () => {
           const t0 = Date.now();
-          recordPhase(runRecord.阶段, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
+          recordPhase(runRecord.stage, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
           const detail = new DetailCollector(label);
-          await detail.包(() =>
-            renderFramesSamePage({ ...h, 参数: x.参数 }, composition, x.帧, {
+          await detail.pack(() =>
+            renderFramesSamePage({ ...h, params: x.params }, composition, x.frame, {
               withAudio: true,
-              环境: segRenderEnv(segKey, x.地形),
+              env: segRenderEnv(segKey, x.terrain),
               onFrame: (png, f) => {
                 const sha = crypto.createHash('sha256').update(png).digest('hex');
-                current.set(f, { sha, 字节: png.length });
+                current.set(f, { sha, bytes: png.length });
                 // 比的时候只留不同的帧：相同的和基准一样，整段的 PNG 又很占地方
-                if (o.keepDir && (!x.基准 || x.基准.帧.get(f)?.sha !== sha)) {
+                if (o.keepDir && (!x.baseline || x.baseline.frame.get(f)?.sha !== sha)) {
                   fs.writeFileSync(stillFile(o.keepDir, segKey, f), png, { flag: 'wx' });
                   kept++;
                 }
                 detail.frameDone(current.size);
-                if (current.size % 100 === 0) console.error(`   ${segKey}：${current.size}/${x.帧.length} 帧`);
+                if (current.size % 100 === 0) console.error(`   ${segKey}：${current.size}/${x.frame.length} 帧`);
               },
             }),
           );
-          await recordMeasuredFrames(segKey, x.帧);
-          recordPhase(runRecord.阶段, label, '出帧', t0, (Date.now() - t0) / 1000);
-          await detail.writeOut(runRecord.阶段, { 指纹: x.指纹.slice(0, 16) });
-        },undefined,{}, {种:'逐帧校验',作品:workName(),段:segKey,帧数:x.帧.length,帧:x.帧.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
-        const smallFrames = [...current].filter(([, v]) => v.字节 < solidSuspectBytes).map(([f]) => f).sort((a, b) => a - b);
+          await recordMeasuredFrames(segKey, x.frame);
+          recordPhase(runRecord.stage, label, '出帧', t0, (Date.now() - t0) / 1000);
+          await detail.writeOut(runRecord.stage, { fingerprint: x.fingerprint.slice(0, 16) });
+        },undefined,{}, {kind:'逐帧校验',work:workName(),segment:segKey,frameCount:x.frame.length,frame:x.frame.join(',').slice(0,60),purpose:process.env.ANIM_PURPOSE??'核对'});
+        const smallFrames = [...current].filter(([, v]) => v.bytes < solidSuspectBytes).map(([f]) => f).sort((a, b) => a - b);
         if (smallFrames.length) runRecord.log('警告', `${segKey}：这些帧的 PNG 不到 ${solidSuspectBytes / 1024} KB，可能是纯色，看一眼画面：${frameNumText(smallFrames)}`);
         if (checkMode === '存') {
           const file = checkFile(checkName, segKey);
-          writeCheckRecord(file, { 段: segKey, 段帧数: x.帧数, 指纹: x.指纹, 提交: commitText(), 帧: current });
-          runRecord.产物.push(file);
+          writeCheckRecord(file, { segment: segKey, 段帧数: x.frameCount, fingerprint: x.fingerprint, commit: commitText(), frame: current });
+          runRecord.artifacts.push(file);
           console.log(`✓ ${segKey}：${current.size} 帧 → ${file}`);
           continue;
         }
-        const { 相同: same, 不同: mismatches } = compareChecks(x.基准!.帧, current);
-        const fingerprintNote = x.基准!.指纹 === x.指纹 ? `段指纹和存基准时一样（${x.指纹.slice(0, 16)}）` : `段指纹变了（基准 ${x.基准!.指纹.slice(0, 16)}，现在 ${x.指纹.slice(0, 16)}）`;
+        const { 相同: same, 不同: mismatches } = compareChecks(x.baseline!.frame, current);
+        const fingerprintNote = x.baseline!.fingerprint === x.fingerprint ? `段指纹和存基准时一样（${x.fingerprint.slice(0, 16)}）` : `段指纹变了（基准 ${x.baseline!.fingerprint.slice(0, 16)}，现在 ${x.fingerprint.slice(0, 16)}）`;
         if (!mismatches.length) {
           console.log(`✓ ${segKey}：${same} 帧全部相同；${fingerprintNote}`);
           continue;
         }
-        const detailLines = mismatches.slice(0, maxListedDiffFrames).map((d) => `第 ${d.帧} 帧：基准 ${d.基准.slice(0, 16)}，这次 ${d.current.slice(0, 16)}`);
-        addError([`${segKey}：${current.size} 帧里 ${mismatches.length} 帧不同（${frameNumText(mismatches.map((d) => d.帧))}）；${fingerprintNote}`, ...detailLines, ...(mismatches.length > maxListedDiffFrames ? [`另 ${mismatches.length - maxListedDiffFrames} 帧`] : [])].join('\n    '));
+        const detailLines = mismatches.slice(0, maxListedDiffFrames).map((d) => `第 ${d.frame} 帧：基准 ${d.baseline.slice(0, 16)}，这次 ${d.current.slice(0, 16)}`);
+        addError([`${segKey}：${current.size} 帧里 ${mismatches.length} 帧不同（${frameNumText(mismatches.map((d) => d.frame))}）；${fingerprintNote}`, ...detailLines, ...(mismatches.length > maxListedDiffFrames ? [`另 ${mismatches.length - maxListedDiffFrames} 帧`] : [])].join('\n    '));
       }
     }, runRecord));
   }

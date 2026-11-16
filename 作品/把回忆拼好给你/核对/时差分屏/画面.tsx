@@ -10,8 +10,8 @@ const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <Freeze frame={v.帧}>
-        <TimeLagSplit 帧={v.帧} 种子={v.帧} outline={v.outline} withPost={v.withPost} liYing={v.liYing} />
+      <Freeze frame={v.frame}>
+        <TimeLagSplit frame={v.frame} seed={v.frame} outline={v.outline} withPost={v.withPost} liYing={v.liYing} />
       </Freeze>
     </AbsoluteFill>
   );

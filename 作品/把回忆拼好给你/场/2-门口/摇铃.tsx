@@ -44,28 +44,28 @@ const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 const events = mainCutEvents;
 
 /** 樱花风的时间轴：摇铃起风，风散开（转场）那一拍整屏盖住。隐世之境那一镜接着用同一个 */
-export const bellWind: SakuraWindMoment = { 起: events.ringBell.秒, full: events.windClears.秒 };
+export const bellWind: SakuraWindMoment = { start: events.ringBell.sec, full: events.windClears.sec };
 
 /** 「Steve加入了游戏」那一行进聊天栏以后过了多少刻（原版聊天按刻走）：歌曲帧 → 刻 */
-export const joinGameTick = (frame: number) => ((frame - events.rejoinGame.帧) / fps) * 20;
+export const joinGameTick = (frame: number) => ((frame - events.rejoinGame.frame) / fps) * 20;
 
 /** 原版聊天栏的缩放：2560×1440 下原版自动选的界面尺寸 6（同 场/2-隐世之境 对视那一帧，同一行字跨镜头一样大）；聊天宽也同那一帧（界面/聊天栏宽.ts） */
 export const chatScale = 6;
 
 /** 左下的原版聊天栏，只有「Steve加入了游戏」一行（帧：歌曲帧） */
-export const JoinGameChat: React.FC<{ 帧: number }> = ({ 帧: frame }) => (
+export const JoinGameChat: React.FC<{ frame: number }> = ({ frame: frame }) => (
   <PixelChatBar
     lines={[{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }]}
     刻={joinGameTick(frame)}
-    缩放={chatScale}
+    scale={chatScale}
     字体={pixelFont}
-    宽={aspect.宽}
-    高={aspect.高}
+    width={aspect.width}
+    height={aspect.height}
     chatWidth={line15ChatWidth}
   />
 );
 
-const project = sideProjection(fullScreenShot.framing, aspect.宽, aspect.高, orthoTop);
+const project = sideProjection(fullScreenShot.framing, aspect.width, aspect.height, orthoTop);
 const bellCenter: V3 = [bell.hangPoint[0], bell.hangPoint[1], bell.hangPoint[2] - bell.hangLength];
 /** 铃心在画面上的位置（页面坐标）：樱花风从这里起 */
 export const bellInPicture = project(bellCenter[0], bellCenter[2], bellCenter[1]);
@@ -74,8 +74,8 @@ const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /** 你这一刻的姿势（秒：歌上的秒） */
 const youPose = (sec: number) => {
-  const turnToBellSec = events.turnToBell.秒;
-  const shakeStart = events.ringBell.秒;
+  const turnToBellSec = events.turnToBell.sec;
+  const shakeStart = events.ringBell.sec;
   // 头：看树 → 转向铃时转去看铃（0.15 秒转过去）→ 摇铃后 0.1 秒起抬头看风（0.2 秒）
   const lerpGaze = (a: [number, number], b: [number, number], k: number) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
   let headPose = youHead.lookTree as number[];
@@ -92,40 +92,40 @@ const youPose = (sec: number) => {
 
 /** 铃绕挂点摆的角（度，正 = 铃往画面右边甩）：摇铃时被手往左一拨，之后衰减着摆 */
 const bellAngle = (sec: number) => {
-  const t = sec - events.ringBell.秒;
+  const t = sec - events.ringBell.sec;
   if (t < 0) return 0;
   return -bellSwing.amplitude * Math.sin((t / bellSwing.periodSec) * Math.PI * 2) * bellSwing.damping ** t;
 };
 
 /** 这一帧的调子：上线时还是第 14 句末的褪色（回色.起），樱花风卷起来以后颜色跟着回来，盖满时到夏日白天 */
 export const bellShakeTone = (frame: number) => {
-  const restoreMix = colorBackRange.起 + (colorBackRange.止 - colorBackRange.起) * sample([[bellWind.起, 0], [bellWind.full, 1]], frame / fps);
+  const restoreMix = colorBackRange.start + (colorBackRange.end - colorBackRange.start) * sample([[bellWind.start, 0], [bellWind.full, 1]], frame / fps);
   return lerpTone(palette.褪色, palette.夏日白天, restoreMix);
 };
 
 export type BellShakePictureProps = {
   /** 歌曲帧 */
-  帧: number;
+  frame: number;
   outline?: boolean;
   withPost?: boolean;
   /** 盖在最上面、整片后期里面的东西（符文歌词），页面坐标 1280×720 */
-  叠层?: React.ReactNode;
+  overlay?: React.ReactNode;
   /** 整片后期颗粒的种子，不给 = 当前帧号；段里给歌曲帧 */
-  种子?: number;
+  seed?: number;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只开门口这边（见 门口.tsx 的 门口画布）；不给 = 不开 */
   shading?: ShadingOptions | null;
 };
 
 /** 一整帧（1280×720 页面），自己铺满 */
-export const ShakeBellPicture: React.FC<BellShakePictureProps> = ({ 帧: frame, outline = defaultOutline.开, withPost = true, 叠层: overlay, 种子: seed, shading }) => {
+export const ShakeBellPicture: React.FC<BellShakePictureProps> = ({ frame: frame, outline = defaultOutline.开, withPost = true, overlay: overlay, seed: seed, shading }) => {
   const sec = frame / fps;
   const tone = bellShakeTone(frame);
   const you = youPose(sec);
   return (
-    <FilmPost grade={withPost ? tone.grade : null} 种子={seed}>
+    <FilmPost grade={withPost ? tone.grade : null} seed={seed}>
       <ForestDoorCanvas
-        宽={aspect.宽}
-        高={aspect.高}
+        width={aspect.width}
+        height={aspect.height}
         {...fullScreenShot}
         刻={dayTick}
         tone={tone}
@@ -136,17 +136,17 @@ export const ShakeBellPicture: React.FC<BellShakePictureProps> = ({ 帧: frame, 
         signText={<SignPixelText lines={signRows} />}
         photoWall={photoWallCells(line8Photos, null)}
         photoWallEdge={photoWallEdge}
-        叠层={
+        overlay={
           <>
-            <PaperLayer 秒={sec} />
-            <SakuraWind 秒={sec} windTime={bellWind} 源={bellInPicture} />
-            <JoinGameChat 帧={frame} />
+            <PaperLayer sec={sec} />
+            <SakuraWind sec={sec} windTime={bellWind} 源={bellInPicture} />
+            <JoinGameChat frame={frame} />
           </>
         }
       >
-        <HangingBell 角={bellAngle(sec)} />
-        <LiYingWalkParticles 秒={sec} />
-        {frame >= events.rejoinGame.帧 && (
+        <HangingBell angle={bellAngle(sec)} />
+        <LiYingWalkParticles sec={sec} />
+        {frame >= events.rejoinGame.frame && (
           <OutlineGroup 开={outline}>
             <TexturePixelAlign 锚={you.loc as V3}>
               <Steve pose={you} />

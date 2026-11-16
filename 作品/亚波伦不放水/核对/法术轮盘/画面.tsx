@@ -32,7 +32,7 @@ const getIcon = (focusKey: string) => png((focusIcons as Record<string, string>)
 const vanillaFocusKeys = sortSpells(pickSpells('有画面'), '注册').map(focusKey);
 
 const multiRingParams = (view: Extract<View, { pictureMode: '多圈' | '世界' }>): MultiRingParams => {
-  const { 名: unusedName, pictureMode: drawKind, 刻: tick, ...rest } = view;
+  const { name: unusedName, pictureMode: drawKind, 刻: tick, ...rest } = view;
   return { ...rest, 刻: tick ?? openTicks };
 };
 
@@ -73,21 +73,21 @@ export default definePicture(seg, soundUrl, () => {
     if (view.textCell) wheelCells.push({ 文字: view.textCell });
     const s = fitScale(vanillaOuterRadiusPx, height, 24, 1 / 3, 8 / 3);
     note = `一圈 ${wheelCells.length} 格，内半径 30、外半径 60 GUI 像素，GUI 缩放 ${(s * 3).toFixed(0)}/3`;
-    content = <RadialWheel 宽={width} 高={height} s={s} 格={wheelCells} 刻={view.刻 ?? openTicks} selectedIdx={view.selectedId} centerIcon={getIcon(vanillaFocusKeys[0]!)} backdrop={png(focusWheelPng)} />;
+    content = <RadialWheel width={width} height={height} s={s} cell={wheelCells} 刻={view.刻 ?? openTicks} selectedIdx={view.selectedId} centerIcon={getIcon(vanillaFocusKeys[0]!)} backdrop={png(focusWheelPng)} />;
   } else {
     const params = multiRingParams(view);
-    const { cellsPerRing, 项: items } = arrangeWheel(params);
+    const { cellsPerRing, items: items } = arrangeWheel(params);
     missing = missingIcons(params);
     const outerRadius = wheelOuterRadius(params);
     const s = fitScale(outerRadius, height, 24, 1 / 3, 8 / 3);
     note = `${items.length} 个法术，${cellsPerRing.length} 圈，每圈格数（由里向外）${cellsPerRing.join('、')}，外半径 ${outerRadius} GUI 像素，第 ${params.刻} 刻` + (view.pictureMode === '多圈' ? `，GUI 缩放 ${(s * 3).toFixed(0)}/3` : '');
-    content = view.pictureMode === '世界' ? <WorldDiagram params={params} /> : <MultiRingWheel 宽={width} 高={height} s={s} {...params} />;
+    content = view.pictureMode === '世界' ? <WorldDiagram params={params} /> : <MultiRingWheel width={width} height={height} s={s} {...params} />;
   }
   return (
     <AbsoluteFill style={{ background: baseColor }}>
       {content}
       <div style={{ position: 'absolute', left: 16, top: 12, fontFamily: uiFontFamily, fontSize: 15, lineHeight: 1.4, color: '#ffffff', textShadow: '0 1px 2px #000' }}>
-        <div>{view.名}</div>
+        <div>{view.name}</div>
         <div style={{ fontSize: 12, opacity: 0.85 }}>{note}</div>
       </div>
       {missing.length > 0 && (

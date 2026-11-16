@@ -9,5 +9,5 @@ const cues = lipCues(Object.values(choreo.lines));
 export const ChaseIn: React.FC = () => {
   const t = useCurrentSec();
   const poses = choreo.pursuers(t);
-  return <PursuerScene 段="6-4-6" τ={choreo.τ(t)} cam={choreo.camera(t)} liu={withTalkNod(poses.刘, cues, '刘心忠', t, 1)} huang={withTalkNod(poses.黄, cues, '黄叛', t, 1)} />;
+  return <PursuerScene segment="6-4-6" τ={choreo.τ(t)} cam={choreo.camera(t)} liu={withTalkNod(poses.刘, cues, '刘心忠', t, 1)} huang={withTalkNod(poses.黄, cues, '黄叛', t, 1)} />;
 };

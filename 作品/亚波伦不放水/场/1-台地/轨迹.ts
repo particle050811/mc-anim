@@ -4,7 +4,7 @@
 import { hermite } from '@engine/core/数学.ts';
 
 /** 一个关键点：几秒、在哪（几维都行）、这一刻的速度（每秒；不写 = 照前后两段的平均速度取，首尾不写 = 停） */
-export type TrackPoint = readonly [秒: number, 位: readonly number[], 速?: readonly number[]];
+export type TrackPoint = readonly [sec: number, 位: readonly number[], 速?: readonly number[]];
 
 /**
  * 过关键点的曲线（三次埃尔米特，切线照不等间隔的 Catmull-Rom：前后两段平均速度按段长加权，同 engine/core/机位.ts 的 机位样条）。

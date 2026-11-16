@@ -39,7 +39,7 @@ export const rainOffset = (i: number, j: number, tick: number) => {
 
 /** 一张雨片：列 (i, j) 上、从 底 到 顶（z）的竖片。中心 [x, y]、横向半宽向量 [dx, dy]（原版 rainSizeX/Z × 0.5，正对镜头时垂直于视线）。
  *  u0、u1：这一片横着取贴图的哪一段（整列 0～1；被帽子这类东西挡住一截时切成几片，各取各的那段） */
-export type RainStreak = { i: number; j: number; 中心: readonly [number, number]; 半宽: readonly [number, number]; bottom: number; topY: number; u0?: number; u1?: number; alpha: number };
+export type RainStreak = { i: number; j: number; center: readonly [number, number]; halfWidth: readonly [number, number]; bottom: number; topY: number; u0?: number; u1?: number; alpha: number };
 
 /** 粗：贴图放大几倍（1 = 原版，一格 64 个贴图像素）。放大以后一格只取贴图横着的 1/粗，按列错开取哪一段，竖着同样放大，落的速度（格每秒）不变 */
 export const Rain: React.FC<{ 片们: readonly RainStreak[]; 刻: number; 色: string; rainAmount?: number; 粗?: number }> = ({ 片们: planes, 刻: tick, 色: color, rainAmount = 1, 粗: thick = 1 }) => {
@@ -55,7 +55,7 @@ export const Rain: React.FC<{ 片们: readonly RainStreak[]; 刻: number; 色: s
       const segIndex = (((p.i * 7 + p.j * 3) % thick) + thick) % thick;
       const atlasU = (u: number) => (segIndex + u) / thick;
       // 片在列里横向的位置：u 0 → 中心 − 半宽，u 1 → 中心 + 半宽
-      const at = (u: number) => [p.中心[0] + (2 * u - 1) * p.半宽[0], p.中心[1] + (2 * u - 1) * p.半宽[1]];
+      const at = (u: number) => [p.center[0] + (2 * u - 1) * p.halfWidth[0], p.center[1] + (2 * u - 1) * p.halfWidth[1]];
       const [ax, ay] = at(u0);
       const [bx, by] = at(u1);
       const vTop = (p.bottom * 0.25 + uvOffset) / thick, vBot = (p.topY * 0.25 + uvOffset) / thick; // 偏也除：落得和原版一样快（格每秒）

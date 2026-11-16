@@ -35,7 +35,7 @@ describe('旧名', () => {
     }
     expect(Object.keys(commandTable).filter((k) => commandTable[k]!.passThrough).sort()).toEqual([...passThroughCommands].sort());
     expect(Object.keys(commandTable).filter(hasHan)).toEqual([]);
-    for (const c of Object.values(commandTable)) expect([c.用法, c.help?.() ?? ''].join('\n')).not.toMatch(/--[㐀-鿿]/);
+    for (const c of Object.values(commandTable)) expect([c.usage, c.help?.() ?? ''].join('\n')).not.toMatch(/--[㐀-鿿]/);
     for (const v of [...Object.values(renamedCommands), ...Object.values(renamedFlags)]) expect(hasHan(v), v).toBe(false);
   });
 

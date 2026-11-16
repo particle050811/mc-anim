@@ -139,10 +139,10 @@ const patternTexture = (bytes: Uint8Array, cols: number, rows: number) => {
 
 export type SeaSurfaceProps = {
   /** 海上的镜头（和画布同一个）：水面以眼为中心铺，光路、远档按它算 */
-  机: Perspective;
+  machine: Perspective;
   /** 页面尺寸（和画布同一个） */
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** 船实体的位置和朝向（度）：船舱那块挖掉 */
   船: { loc: V3; yaw: number };
   /** 游戏刻：贴图动画、光路闪的节奏 */
@@ -152,7 +152,7 @@ export type SeaSurfaceProps = {
 };
 
 /** 放在三渲二画布里（场景坐标），水面在 z = 0 */
-export const SeaSurface: React.FC<SeaSurfaceProps> = ({ 机: rig, 宽: width, 高: height, 船: boat, 刻: tick, tint }) => {
+export const SeaSurface: React.FC<SeaSurfaceProps> = ({ machine: rig, width: width, height: height, 船: boat, 刻: tick, tint }) => {
   const geo = useMemo(() => new THREE.PlaneGeometry((viewDistance + 4) * 2, (viewDistance + 4) * 2), []);
   const m = seaMaterial();
   const seaFrames = waterFrames();
@@ -161,6 +161,6 @@ export const SeaSurface: React.FC<SeaSurfaceProps> = ({ 机: rig, 宽: width, �
   const a = (boat.yaw * Math.PI) / 180;
   uniforms.seaBoat.value.set(boat.loc[0], boat.loc[1], Math.cos(a), Math.sin(a));
   const pattern = seaPattern(rig, tick, width, height, seaBlockSize / filmScale);
-  uniforms.seaPat.value = patternTexture(pattern.字节, pattern.列, pattern.行);
+  uniforms.seaPat.value = patternTexture(pattern.bytes, pattern.列, pattern.行);
   return <mesh geometry={geo} material={m} position={[rig.眼[0], rig.眼[1], 0]} />;
 };

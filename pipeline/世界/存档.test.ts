@@ -26,12 +26,12 @@ describe('NBT 和紧凑数组', () => {
   it('写了能原样读回', () => {
     const buf = writeNbt({ a: { t: 'int', v: -5 }, b: { t: 'string', v: '中文' }, c: { t: 'list', elementType: 'short', v: [{ t: 'short', v: 7 }] }, d: { t: 'long', v: -2n }, e: { t: 'intArray', v: [1, 2] } }, 'Schematic');
     const r = readNbtNamed(buf);
-    expect(r.名).toBe('Schematic');
-    expect(r.值.a).toBe(-5);
-    expect(r.值.b).toBe('中文');
-    expect(r.值.c).toEqual([7]);
-    expect(r.值.d).toBe(-2n);
-    expect([...(r.值.e as Int32Array)]).toEqual([1, 2]);
+    expect(r.name).toBe('Schematic');
+    expect(r.value.a).toBe(-5);
+    expect(r.value.b).toBe('中文');
+    expect(r.value.c).toEqual([7]);
+    expect(r.value.d).toBe(-2n);
+    expect([...(r.value.e as Int32Array)]).toEqual([1, 2]);
   });
   it.each([4, 5, 7, 9])('%i 位压了能解回', (bits) => {
     const vals = Array.from({ length: 4096 }, (_, i) => (i * 7919) % (1 << bits));
@@ -54,18 +54,18 @@ describe('读存档', () => {
 
   it('区块解成列段，方块状态照游戏的写法规范化', () => {
     const r = readRegion(path.join(dir, 'region', 'r.0.0.mca'), 0, 0, '1')!;
-    expect(r.区块.map((c) => c.join(','))).toEqual(['0,0', '1,0']);
+    expect(r.chunks.map((c) => c.join(','))).toEqual(['0,0', '1,0']);
     const d = decodeColumnSegments(encodeColumnSegments(r.columnSeg));
     expect(d.yBottom).toBe(-64);
     expect(d.yTop).toBe(319);
-    expect(blockAt(d, 3, 61, 5)!.状态).toBe('minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]');
-    expect(blockAt(d, 4, 61, 4)!.状态).toBe('minecraft:oak_leaves[waterlogged=false]');
-    expect(blockAt(d, 1, 10, 1)!.状态).toBe('minecraft:air');
-    expect(blockAt(d, 20, 60, 3)).toEqual({ 状态: 'minecraft:grass_block[snowy=false]', 群系: 'minecraft:plains' });
+    expect(blockAt(d, 3, 61, 5)!.state).toBe('minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]');
+    expect(blockAt(d, 4, 61, 4)!.state).toBe('minecraft:oak_leaves[waterlogged=false]');
+    expect(blockAt(d, 1, 10, 1)!.state).toBe('minecraft:air');
+    expect(blockAt(d, 20, 60, 3)).toEqual({ state: 'minecraft:grass_block[snowy=false]', biome: 'minecraft:plains' });
     expect(blockAt(d, 40, 60, 3)).toBeNull(); // 区块 (2, 0) 不存在
     const col = spreadColumn(d, columnIndex(0, 0, 7, 7))!;
-    expect(d.stateTable[col.状态[59 + 64]!]).toBe('minecraft:stone');
-    expect(d.stateTable[col.状态[61 + 64]!]).toBe('minecraft:air');
+    expect(d.stateTable[col.state[59 + 64]!]).toBe('minecraft:stone');
+    expect(d.stateTable[col.state[61 + 64]!]).toBe('minecraft:air');
   });
 
   it('1.17 及以前的区块格式直接报错，不当成没生成', () => {
@@ -76,7 +76,7 @@ describe('读存档', () => {
 
   it('只要几个区块就只解那几个', () => {
     const r = readRegion(path.join(dir, 'region', 'r.0.0.mca'), 0, 0, '1', new Set([1]))!;
-    expect(r.区块.map((c) => c.join(','))).toEqual(['1,0']);
+    expect(r.chunks.map((c) => c.join(','))).toEqual(['1,0']);
   });
 
   it('状态串：空气并掉、树叶去 distance/persistent、属性排序', () => {
@@ -91,7 +91,7 @@ describe('读存档', () => {
     expect(a.regionFiles()).toEqual([[0, 0]]);
     expect(await a.preRead([[0, 0]], 1)).toEqual([[0, 0]]);
     const b = new RegionSource(path.join(dir, 'region'), '1', cacheDir);
-    const x = a.区域(0, 0)!, y = b.区域(0, 0)!;
+    const x = a.region(0, 0)!, y = b.region(0, 0)!;
     expect(Buffer.compare(encodeColumnSegments(x), encodeColumnSegments(y))).toBe(0);
     expect(fs.readdirSync(cacheDir).length).toBe(1);
   });

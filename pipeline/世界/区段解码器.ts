@@ -49,5 +49,5 @@ export const buildDecoder = (o: { check: boolean }) => {
   const same = fs.existsSync(f) && fs.readFileSync(f, 'utf8') === text;
   if (!same && o.check) throw new Error(`重编出的 WASM（sha256 ${sha(wasm).slice(0, 12)}）和 ${path.relative(codeRoot(), f)} 不一样`);
   if (!same) fs.writeFileSync(f, text);
-  return { 大小: wasm.length, sha256: sha(wasm), same };
+  return { size: wasm.length, sha256: sha(wasm), same };
 };

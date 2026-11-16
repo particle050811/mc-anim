@@ -37,7 +37,7 @@ export const cellAngle = (i: number, cellCount: number) => (cellCount === 0 ? 0 
 export const cellRange = (i: number, cellCount: number) => {
   const startAngle = cellAngle(i - 0.5, cellCount);
   const end = cellAngle(i + 0.5, cellCount);
-  return { 起: startAngle, 止: end, 中: (startAngle + end) * 0.5 };
+  return { start: startAngle, end: end, 中: (startAngle + end) * 0.5 };
 };
 
 /** updateAnimationState()：打开时进度 = (现在 − 开始) / 2.5，线性、没有缓动，到 1 进 NORMAL；关闭时是 1 − 它。刻从 tick() 记下开始时刻起算 */
@@ -45,7 +45,7 @@ export const openProgress = (tick: number, openCloseTicks: number = radialWheelC
 
 export type WheelState = {
   /** 进度 0～1 */
-  进度: number;
+  progress: number;
   /** OPENING / CLOSING 时 true：只画背景和扇形带；false（NORMAL）才画图标、文字、圆心物品（draw() 里的 isReady()） */
   animating: boolean;
   /** radiusIn = animated ? max(0.1, baseRadius × 进度) : baseRadius */
@@ -65,7 +65,7 @@ export const WheelState = (tick: number, fullInnerRadius: number = radialWheelCo
   const animating = progress < 1;
   const innerRadius = animating ? Math.max(0.1, fullInnerRadius * progress) : fullInnerRadius;
   const outerRadius = innerRadius * radialWheelConst.outerInnerRatio;
-  return { 进度: progress, animating, 内: innerRadius, outerRadius, iconRadius: (innerRadius + outerRadius) * 0.5, patternScale: animating ? progress : 1 };
+  return { progress: progress, animating, 内: innerRadius, outerRadius, iconRadius: (innerRadius + outerRadius) * 0.5, patternScale: animating ? progress : 1 };
 };
 
 /** drawItems() + ItemStackRadialMenuItem.draw()：图标左上角 = ((int)(x + r·cos), (int)(y + r·sin)) − 8。屏幕中心 x、y 是整数（width / 2 整数除法），

@@ -12,5 +12,5 @@ export default defineSpellMeta({
   长秒: 40 / 20,
   hitSec: 0, // 射线判定，放出来当刻结算
   // WitherQuietusSpell：revelationfix 的 QUIETUS_BEAM，音量 1、音高 1
-  声音: [{ 资产: '音效/启示录/revelationfix.quietus_beam', 秒: 0 }],
+  sound: [{ asset: '音效/启示录/revelationfix.quietus_beam', sec: 0 }],
 });

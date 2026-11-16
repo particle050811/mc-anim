@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 f5f3904666ba），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-黄叛-结构奇怪（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 682168192346），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-黄叛-结构奇怪（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-黄叛-结构奇怪",
-  "角色": "黄叛",
-  "念": "等一下刘兄，你不觉得这个结构……有些奇怪吗？",
-  "配音": "配音/6-黄叛-结构奇怪",
-  "成品sha": "57224b78986f",
-  "开口": 0.03,
+  "character": "黄叛",
+  "spoken": "等一下刘兄，你不觉得这个结构……有些奇怪吗？",
+  "voice": "配音/6-黄叛-结构奇怪",
+  "finishedSha": "57224b78986f",
+  "mouthOpen": 0.03,
   "有声长": 4.081,
-  "时长": 4.261,
+  "duration": 4.261,
   "文件秒数": 4.261,
-  "字": [
+  "char": [
     ["等",0,0.16],
     ["一",0.16,0.24],
     ["下",0.24,0.4],

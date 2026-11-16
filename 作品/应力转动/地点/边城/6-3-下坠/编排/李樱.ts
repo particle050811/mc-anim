@@ -72,7 +72,7 @@ const FIELDS = ['pitch', 'headPitch', 'headYaw', 'legR', 'legL', 'kneeR', 'kneeL
 const ROAD_ROLLER = '6-3-5-李樱-RoadRoller';
 // 开口比 6-3-5 止早一个有声长：说完正落在 6-3-5 末帧（原来有声长往上取整到 1/24 秒，用户 11-16 定不留 1/24 秒的格；6-举锤砸穿 段.ts 的台词 cue 按它排）。帧 = 开口的全局秒（口型按 1 帧/秒读）
 const shoutLeadSec = lineTable[ROAD_ROLLER].有声长;
-export const shoutLine = { id: ROAD_ROLLER, 帧: segTable['6-3-5'].止 - shoutLeadSec };
+export const shoutLine = { id: ROAD_ROLLER, frame: segTable['6-3-5'].end - shoutLeadSec };
 const shoutStartTr = -(impactSegSec + shoutLeadSec); // 6-3-5 止 = 6-3-6 起，原速
 const syllables = (lipTable as unknown as Record<string, { 字: [string, number, number][] }>)[ROAD_ROLLER].字;
 const syllableOnsets = syllables.filter(([ch]) => ch !== 'ッ').map(([, start]) => shoutStartTr + start);

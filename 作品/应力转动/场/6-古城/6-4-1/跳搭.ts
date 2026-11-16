@@ -215,15 +215,15 @@ export const chestBlockB = chestB.block;
 // ---------- 跳切 ----------
 // 一段成片 = 剧情时间线上首尾相接的几个窗口（剧情秒 [起, 止)），窗口之间跳过的剧情不演（跳切）。窗口两头对齐到 1/60 秒（输出帧），切点落在帧上、段长是整帧。
 // 判断落在哪个窗口时留 1e-9 秒的余量：切点正好落在输出帧上时算后一个窗口
-export type CutWindow = { 名: string; 起: number; 止: number };
+export type CutWindow = { name: string; start: number; end: number };
 const toFrame = (t: number) => Math.round(t * 60) / 60;
 export const cutWindows = (windows: CutWindow[]) => {
-  const rounded = windows.map((w) => ({ ...w, 起: toFrame(w.起), 止: toFrame(w.止) }));
+  const rounded = windows.map((w) => ({ ...w, start: toFrame(w.start), end: toFrame(w.end) }));
   const firstSecs: number[] = [];
   let total = 0;
   for (const win of rounded) {
     firstSecs.push(total);
-    total += win.止 - win.起;
+    total += win.end - win.start;
   }
   // 成片秒 → 第几个窗口、剧情秒
   const windowIndex = (cutSec: number) => {
@@ -233,7 +233,7 @@ export const cutWindows = (windows: CutWindow[]) => {
   };
   const storySec = (cutSec: number) => {
     const i = windowIndex(cutSec);
-    return rounded[i].起 + (cutSec - firstSecs[i]);
+    return rounded[i].start + (cutSec - firstSecs[i]);
   };
   return { windows: rounded, firstSecs, totalSec: total, indexAt: windowIndex, storySec };
 };

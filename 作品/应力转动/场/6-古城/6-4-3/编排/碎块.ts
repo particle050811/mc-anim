@@ -55,7 +55,7 @@ const tubePoints = Array.from({ length: 2 }, (_, i) => {
   return [point[0], point[1], point[2], (dist - 0.225) / geom.arrowMaxSpeed];
 });
 // 每个盒子一根管（方块飞溅.tsx 按管对象缓存，同一根管不能给两个盒子共用）
-const tubes: SpearTube[] = geom.breachBlocks.map(() => ({ 点: tubePoints, radius: 0.1, particleClockScale: closeupBreakClockScale.wall }));
+const tubes: SpearTube[] = geom.breachBlocks.map(() => ({ points: tubePoints, radius: 0.1, particleClockScale: closeupBreakClockScale.wall }));
 const fallingSet = new Set(geom.fallingBlocks.map((b) => b.join()));
 // 掉下来的那块落地的剧情时刻（箭碰到起按 16 米/秒² 下落，方块中心落到 `groundZ` + 0.5）：落地声在这一刻（6-4-3c 段尾以后，不放）
 export const rockLandSec = (() => {

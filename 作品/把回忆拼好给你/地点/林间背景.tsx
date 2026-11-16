@@ -33,7 +33,7 @@ export const backdropFraming = (near: SideFraming, width: number, height: number
   const bgLayer = (N: number, groundLineY: number): SideFraming => {
     const pxPerCell = 16 * N;
     // 地线页y = 高/2 + 中心z × 每格 / 2（z = 0、y = 0 那条线）
-    return { 中心: [snap(((near.中心[0] - alignment.forestOffset) * Nn) / N, pxPerCell), snap(((groundLineY - height / 2) * 2) / pxPerCell, pxPerCell)], pxPerCell };
+    return { center: [snap(((near.center[0] - alignment.forestOffset) * Nn) / N, pxPerCell), snap(((groundLineY - height / 2) * 2) / pxPerCell, pxPerCell)], pxPerCell };
   };
   const midLayer = bgLayer(midGrove.N, nearBackEdge + midHide);
   const midBackEdge = sideProjection(midLayer, width, height, midGrove.topDepth)(0, 0, midGrove.行).y;
@@ -54,8 +54,8 @@ const FogFilter: React.FC<{ id: string; 色: string; f: number }> = ({ id, 色: 
 };
 
 export type ForestBackdropProps = {
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** 近景的取景、顶面（两层照它对齐） */
   framing: SideFraming;
   topDepth: number;
@@ -64,12 +64,12 @@ export type ForestBackdropProps = {
   /** 雾往哪个色插：天的地平色 */
   fogColor: string;
   growth: number;
-  群系?: string;
+  biome?: string;
   alignment?: GroveAlign;
 };
 
 /** 远景、中景两层（不带天）：一块 宽 × 高、铺满定位容器 */
-export const ForestBackdrop: React.FC<ForestBackdropProps> = ({ 宽: width, 高: height, framing, topDepth, tint, fogColor, growth, 群系: biome, alignment }) => {
+export const ForestBackdrop: React.FC<ForestBackdropProps> = ({ width: width, height: height, framing, topDepth, tint, fogColor, growth, biome: biome, alignment }) => {
   const layerFraming = backdropFraming(framing, width, height, topDepth, alignment);
   const id = `linwu${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const fullCoverStyle: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: width, height: height };
@@ -80,13 +80,13 @@ export const ForestBackdrop: React.FC<ForestBackdropProps> = ({ 宽: width, 高:
         <FogFilter id={`${id}z`} 色={fogColor} f={groveFog.中} />
       </svg>
       <div style={{ ...fullCoverStyle, filter: `url(#${id}y)` }}>
-        <ToonCanvas 宽={width} 高={height} cameraRig={sideRig(layerFraming.far, farLayer.topDepth)} tint={tint} outline={false}>
-          <BlockAssembly blocks={farBlocks(growth)} 原点={[-0.5, 0, 0]} 群系={biome} frontPlants />
+        <ToonCanvas width={width} height={height} cameraRig={sideRig(layerFraming.far, farLayer.topDepth)} tint={tint} outline={false}>
+          <BlockAssembly blocks={farBlocks(growth)} origin={[-0.5, 0, 0]} biome={biome} frontPlants />
         </ToonCanvas>
       </div>
       <div style={{ ...fullCoverStyle, filter: `url(#${id}z)` }}>
-        <ToonCanvas 宽={width} 高={height} cameraRig={sideRig(layerFraming.中, midGrove.topDepth)} tint={tint} outline={false}>
-          <BlockAssembly blocks={midBlocks(growth)} 原点={[-0.5, 0, 0]} 群系={biome} frontPlants />
+        <ToonCanvas width={width} height={height} cameraRig={sideRig(layerFraming.中, midGrove.topDepth)} tint={tint} outline={false}>
+          <BlockAssembly blocks={midBlocks(growth)} origin={[-0.5, 0, 0]} biome={biome} frontPlants />
         </ToonCanvas>
       </div>
     </>

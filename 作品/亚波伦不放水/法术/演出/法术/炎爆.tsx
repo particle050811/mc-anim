@@ -18,20 +18,20 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const orangeGold = hexColor(0xdd9c16);
 const radius = 3.5;
 
-const FlameBurst: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+const FlameBurst: React.FC<SpellPerformanceProps> = ({ sec: sec, from, seed: seed }) => {
   const tick = sec * 20;
   const r = mulberry32(seed * 7919 + 17);
   const particleCount = 4 + Math.floor(r() * 13);
   const flames: ParticleBirth[] = Array.from({ length: particleCount }, (_, i) => {
     const pos: [number, number, number] = [from[0] + (r() - 0.5) * radius, from[1] + (r() - 0.5) * radius, from[2] + (r() - 0.5) * radius];
     const initial = risingInitial(seed * 101 + i, pos, [0, 0, 0], false);
-    return { 刻: 0, 位: initial.位, 速: initial.速, 寿命: bigFireLifetime, radius: defaultRadius(r) * 3, 种子: initial.种子 };
+    return { 刻: 0, 位: initial.位, 速: initial.速, 寿命: bigFireLifetime, radius: defaultRadius(r) * 3, seed: initial.seed };
   });
   return (
     <>
-      <ShockwaveRing 位={from} 刻={tick} 大小={radius} 色={orangeGold} 速={1} />
+      <ShockwaveRing 位={from} 刻={tick} size={radius} 色={orangeGold} 速={1} />
       <SphereBurst 位={from} 刻={tick} 色={orangeGold} 尺寸={radius} 速={1} />
-      <TexturedParticles 类={bigFireClass} spawns={flames} 秒={sec} />
+      <TexturedParticles type={bigFireClass} spawns={flames} sec={sec} />
     </>
   );
 };

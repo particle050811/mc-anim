@@ -1,12 +1,12 @@
 {
- "噪声": {
-  "长": 12138,
+ "noise": {
+  "length": 12138,
   "sha256": "2247324d89ab8cbda93c48edafe0b60b3006053c31ba96bfa8ae7d558c8ee0e5"
  },
- "地形": {
-  "长": 413,
+ "terrain": {
+  "length": 413,
   "sha256": "1ca5b0fa93af6214ece196788abf41770676bac889972732029d6ec37f79208b"
  },
  "wasm": "6f023133661165e810bfbb9fb973b727c0f372eaf1c8ec67d10237bc7c58ef47",
- "模型表": "259b401b555533e7ef60d1307bf0c09f3e621cfd1421b64fd1326584da126518"
+ "modelTable": "259b401b555533e7ef60d1307bf0c09f3e621cfd1421b64fd1326584da126518"
 }

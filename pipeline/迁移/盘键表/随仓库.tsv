@@ -1,0 +1,7 @@
+# 格式：随仓库　位置：作品/*/随仓库.toml、随发布.toml
+# 读写：pipeline/资产/发布.ts　分类：Git　现有 4 个文件（4 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+仓库	repo
+标签	label
+段	segment

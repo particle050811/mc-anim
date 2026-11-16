@@ -65,5 +65,5 @@ export const trainPackModel = (source: SectionSource, transform: (d: SectionData
     }
     if (neutralBytes <= candidateBytes) sectionModel = neutralModel;
   }
-  return { 模型: sectionModel, 区段: sectionCount, 样本数: sampleCount, candidateBytes, neutralBytes };
+  return { model: sectionModel, sections: sectionCount, 样本数: sampleCount, candidateBytes, neutralBytes };
 };

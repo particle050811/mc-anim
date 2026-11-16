@@ -3,114 +3,114 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/Wasted": {
-      "时长": 180.238753,
-      "峰值": 1.8,
-      "响度": -5.3,
+      "duration": 180.238753,
+      "peakDb": 1.8,
+      "loudness": -5.3,
       "sha": "f779ec3814ab"
     },
     "配音/6-九胡-等等我": {
-      "时长": 1.99,
-      "峰值": -4.8,
-      "响度": -18,
+      "duration": 1.99,
+      "peakDb": -4.8,
+      "loudness": -18,
       "sha": "107c3777eb01"
     },
     "配音/6-李樱-看我速通暮色": {
-      "时长": 1.963,
-      "峰值": -3.3,
-      "响度": -18,
+      "duration": 1.963,
+      "peakDb": -3.3,
+      "loudness": -18,
       "sha": "e84f89b5eb68"
     },
     "音效/block.grass.step.1": {
-      "时长": 0.5,
-      "峰值": -23.9,
-      "响度": -38.6,
+      "duration": 0.5,
+      "peakDb": -23.9,
+      "loudness": -38.6,
       "sha": "2959b1742d6f"
     },
     "音效/block.grass.step.2": {
-      "时长": 0.609388,
-      "峰值": -21.5,
-      "响度": -39.1,
+      "duration": 0.609388,
+      "peakDb": -21.5,
+      "loudness": -39.1,
       "sha": "226e6e9270b4"
     },
     "音效/block.grass.step.3": {
-      "时长": 0.484376,
-      "峰值": -21.4,
-      "响度": -36.2,
+      "duration": 0.484376,
+      "peakDb": -21.4,
+      "loudness": -36.2,
       "sha": "6e06a73583c8"
     },
     "音效/block.grass.step.4": {
-      "时长": 0.53127,
-      "峰值": -21.9,
-      "响度": -38.1,
+      "duration": 0.53127,
+      "peakDb": -21.9,
+      "loudness": -38.1,
       "sha": "ba77cb905a84"
     },
     "音效/block.grass.step.5": {
-      "时长": 0.562517,
-      "峰值": -18.6,
-      "响度": -34.4,
+      "duration": 0.562517,
+      "peakDb": -18.6,
+      "loudness": -34.4,
       "sha": "21bd69b639eb"
     },
     "音效/block.grass.step.6": {
-      "时长": 0.546893,
-      "峰值": -24.7,
-      "响度": -37.8,
+      "duration": 0.546893,
+      "peakDb": -24.7,
+      "loudness": -37.8,
       "sha": "e7078d68311e"
     },
     "音效/block.portal.travel": {
-      "时长": 9.5,
-      "峰值": -0.7,
-      "响度": -13,
+      "duration": 9.5,
+      "peakDb": -0.7,
+      "loudness": -13,
       "sha": "2a78858744fa"
     },
     "音效/block.stone.step.2": {
-      "时长": 0.484376,
-      "峰值": -7,
-      "响度": -33.9,
+      "duration": 0.484376,
+      "peakDb": -7,
+      "loudness": -33.9,
       "sha": "2cfbf8787436"
     },
     "音效/block.stone.step.3": {
-      "时长": 0.421882,
-      "峰值": -12,
-      "响度": -36.4,
+      "duration": 0.421882,
+      "peakDb": -12,
+      "loudness": -36.4,
       "sha": "c5d71e8d3251"
     },
     "音效/block.stone.step.4": {
-      "时长": 0.546893,
-      "峰值": -5.9,
-      "响度": -31.8,
+      "duration": 0.546893,
+      "peakDb": -5.9,
+      "loudness": -31.8,
       "sha": "95820d0b75e8"
     },
     "音效/block.stone.step.5": {
-      "时长": 0.562517,
-      "峰值": -9.1,
-      "响度": -31.3,
+      "duration": 0.562517,
+      "peakDb": -9.1,
+      "loudness": -31.3,
       "sha": "67b1e50426b2"
     },
     "音效/block.wool.place.4": {
-      "时长": 0.203469,
-      "峰值": -11,
-      "响度": -70,
+      "duration": 0.203469,
+      "peakDb": -11,
+      "loudness": -70,
       "sha": "09d5879722c5"
     },
     "音效/twilightforest.block.twilightforest.boss_chest.appear": {
-      "时长": 3.488,
-      "峰值": -4.6,
-      "响度": -22.9,
+      "duration": 3.488,
+      "peakDb": -4.6,
+      "loudness": -22.9,
       "sha": "96e683a5590c"
     }
   },
-  "台词": {
+  "lines": {
     "6-九胡-等等我": {
-      "配音": "配音/6-九胡-等等我",
-      "开口": 0.03,
-      "时长": 1.99
+      "voice": "配音/6-九胡-等等我",
+      "mouthOpen": 0.03,
+      "duration": 1.99
     },
     "6-李樱-看我速通暮色": {
-      "配音": "配音/6-李樱-看我速通暮色",
-      "开口": 0.03,
-      "时长": 1.963
+      "voice": "配音/6-李樱-看我速通暮色",
+      "mouthOpen": 0.03,
+      "duration": 1.963
     }
   }
 };

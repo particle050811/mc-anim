@@ -44,19 +44,19 @@ const Ground: React.FC<{ 色?: string }> = ({ 色: color = baseColors.灰.ground
 );
 
 const Content: React.FC<{ v: View }> = ({ v }) => {
-  if (v.pictureMode.类 === '原版') {
+  if (v.pictureMode.type === '原版') {
     return (
       <>
         {v.pictureMode.ground && <Ground />}
         <Steve pose={stevePose([0, 0, 0], 180)} mcLight={1} />
         <group position={[0, 0, 0.9]}>
-          <RevelationCageWire 秒={v.pictureMode.spinSec} opacity={v.pictureMode.ageTicks === undefined ? 1 : revelationCageOpacity(v.pictureMode.ageTicks)} />
+          <RevelationCageWire sec={v.pictureMode.spinSec} opacity={v.pictureMode.ageTicks === undefined ? 1 : revelationCageOpacity(v.pictureMode.ageTicks)} />
         </group>
       </>
     );
   }
   const groundColor = baseColors[v.bottomBackground ?? '灰'].ground;
-  if (v.pictureMode.类 === '并排') {
+  if (v.pictureMode.type === '并排') {
     const spinSec = v.pictureMode.spinSec;
     return (
       <>
@@ -64,31 +64,31 @@ const Content: React.FC<{ v: View }> = ({ v }) => {
         {sideBySideCenters.map((c, i) => (
           <React.Fragment key={i}>
             <Steve pose={stevePose([c[0], c[1], 0], 180)} mcLight={1} />
-            <group position={c}>{i === 0 ? <RevelationCageWire 秒={spinSec} /> : <RevelationCageGlow 秒={spinSec} />}</group>
+            <group position={c}>{i === 0 ? <RevelationCageWire sec={spinSec} /> : <RevelationCageGlow sec={spinSec} />}</group>
           </React.Fragment>
         ))}
       </>
     );
   }
-  const s = cagePerformanceStateAt(v.pictureMode.秒, performanceSettings);
+  const s = cagePerformanceStateAt(v.pictureMode.sec, performanceSettings);
   return (
     <>
       <Ground 色={groundColor} />
       {/* 史蒂夫面朝西看着亚波伦（yaw 正 = 往左转，0 朝 +Y） */}
       <Steve pose={stevePose([0, 0, 0], 90)} mcLight={1} hurt={s.fireIntensity > 0.6 ? 1 : 0} />
-      <GirlYaBoLun pose={{ loc: yaBoLunPos, yaw: -90 }} 秒={v.pictureMode.秒 % 3} act={hover} />
-      <RevelationCagePerformance 秒={v.pictureMode.秒} settings={performanceSettings} />
+      <GirlYaBoLun pose={{ loc: yaBoLunPos, yaw: -90 }} sec={v.pictureMode.sec % 3} act={hover} />
+      <RevelationCagePerformance sec={v.pictureMode.sec} settings={performanceSettings} />
     </>
   );
 };
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
-  const s = v.pictureMode.类 === '演出' ? cagePerformanceStateAt(v.pictureMode.秒, performanceSettings) : undefined;
+  const s = v.pictureMode.type === '演出' ? cagePerformanceStateAt(v.pictureMode.sec, performanceSettings) : undefined;
   const background = baseColors[v.bottomBackground ?? '灰'].background;
   return (
     <AbsoluteFill style={{ background: background }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: false }}>
         <color attach="background" args={[background]} />
         {v.bottomBackground === '暗红' && <fog attach="fog" args={[background, 16, 70]} />}
         <CameraRig v={v} />
@@ -99,11 +99,11 @@ const picture: React.FC = () => {
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
         {s && (
           <div style={{ fontSize: 16 }}>
-            演出第 {v.pictureMode.类 === '演出' ? v.pictureMode.秒.toFixed(2) : ''} 秒　阶段 {s.阶段}　半径系数 {s.radiusFactor.toFixed(2)}（顶点离中心 {s.circumRadius.toFixed(2)} 格）　透明度 {s.opacity.toFixed(2)}
+            演出第 {v.pictureMode.type === '演出' ? v.pictureMode.sec.toFixed(2) : ''} 秒　阶段 {s.stage}　半径系数 {s.radiusFactor.toFixed(2)}（顶点离中心 {s.circumRadius.toFixed(2)} 格）　透明度 {s.opacity.toFixed(2)}
           </div>
         )}
       </div>

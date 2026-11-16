@@ -43,7 +43,7 @@ describe('类型', () => {
         const c = new CheckContext(root, { depthCheck });
         const report = new CheckReport();
         runTsc(c, report);
-        return report.violations.map((q) => q.文本);
+        return report.violations.map((q) => q.text);
       };
       const incrementalRun = runOnce(false);
       expect(incrementalRun).toEqual(runOnce(true));

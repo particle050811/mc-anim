@@ -15,8 +15,8 @@ import type { CameraRig } from './编排.ts';
 const hexToRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
 
 const fogUniforms = {
-  mcFogStart: { value: terrainFog.起 },
-  mcFogEnd: { value: terrainFog.止 },
+  mcFogStart: { value: terrainFog.start },
+  mcFogEnd: { value: terrainFog.end },
   mcFogColor: { value: new THREE.Vector3(...hexToRgb(fogColor)) },
 };
 
@@ -58,7 +58,7 @@ const makeMaterial = (c: MatKind) => {
 };
 
 const buildMeshes = (blocks: readonly PlacedBlock[], biome: string): THREE.Mesh[] => {
-  const buffers = assembleBuffers(blocks, { 群系: biome });
+  const buffers = assembleBuffers(blocks, { biome: biome });
   const out: THREE.Mesh[] = [];
   for (const c of ['实心', '镂空'] as const) {
     const b = buffers[c];
@@ -114,13 +114,13 @@ const skyColorAt = (θ: number): [number, number, number] => {
 };
 
 /** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线仰角取色 */
-export const AltarSky: React.FC<{ cameraRig: CameraRig; 宽: number; 高: number }> = ({ cameraRig, 宽: width, 高: height }) => {
+export const AltarSky: React.FC<{ cameraRig: CameraRig; width: number; height: number }> = ({ cameraRig, width: width, height: height }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const drawWidth = width * filmScale, drawHeight = height * filmScale;
   useLayoutEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const cam = makeRigCamera({ 种: '透视', ...cameraRig }, width, height, 1);
+    const cam = makeRigCamera({ kind: '透视', ...cameraRig }, width, height, 1);
     const nx = Math.ceil(drawWidth / skyCellPx), ny = Math.ceil(drawHeight / skyCellPx);
     const small = document.createElement('canvas');
     small.width = nx;

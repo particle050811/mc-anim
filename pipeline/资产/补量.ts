@@ -5,25 +5,25 @@ import fs from 'node:fs';
 import { bytesPath, type AssetLock, type LockEntry } from './资产锁.ts';
 import { measureAudio, audioExtensions, type AudioMetadata } from './音频量.ts';
 
-const measureFields = ['时长', '峰值', '响度'] as const;
+const measureFields = ['duration', 'peakDb', 'loudness'] as const;
 
-export const isAudioEntry = (e: LockEntry) => audioExtensions.has(e.后缀.toLowerCase());
+export const isAudioEntry = (e: LockEntry) => audioExtensions.has(e.suffix.toLowerCase());
 /** 还没量过的音频条目。有时长就算量过：量音频数 量得出时长才写，峰值、响度和它一起写；
  *  量过仍缺峰值（静音）、响度（太短）的重量也量不出，不再挑，免得 --check 永远报能补、每次重量 */
-export const lacksAudioMetadata = (e: LockEntry) => isAudioEntry(e) && e.时长 === undefined;
+export const lacksAudioMetadata = (e: LockEntry) => isAudioEntry(e) && e.duration === undefined;
 
 export type FillMeasureResult = {
   assetLock: AssetLock;
-  音频: number;
+  audio: number;
   missing: string[];
   patched: string[];
   noBytes: string[];
-  unmeasured: { id: string; 原因: string }[];
+  unmeasured: { id: string; cause: string }[];
   /** 量完还缺字段的（静音没有峰值、太短没有积分响度） */
   stillMissing: { id: string; missingFields: string[] }[];
 };
 
-export type FillMeasureOptions = { dataRoot: string; checkOnly?: boolean; measure?: (file: string) => AudioMetadata; 进度?: (done: number, total: number) => void };
+export type FillMeasureOptions = { dataRoot: string; checkOnly?: boolean; measure?: (file: string) => AudioMetadata; progress?: (done: number, total: number) => void };
 
 /** 只把量出来、条目里原来没有的字段并进去 */
 export const mergeMissing = (e: LockEntry, measured: AudioMetadata): LockEntry => {
@@ -35,21 +35,21 @@ export const mergeMissing = (e: LockEntry, measured: AudioMetadata): LockEntry =
 export const fillAudioMetadata = (assetLock: AssetLock, o: FillMeasureOptions): FillMeasureResult => {
   const measure = o.measure ?? measureAudio;
   const nextLock: AssetLock = { ...assetLock };
-  const r: FillMeasureResult = { assetLock: nextLock, 音频: 0, missing: [], patched: [], noBytes: [], unmeasured: [], stillMissing: [] };
+  const r: FillMeasureResult = { assetLock: nextLock, audio: 0, missing: [], patched: [], noBytes: [], unmeasured: [], stillMissing: [] };
   const ids = Object.keys(assetLock).sort();
-  for (const id of ids) if (isAudioEntry(assetLock[id]!)) r.音频++;
+  for (const id of ids) if (isAudioEntry(assetLock[id]!)) r.audio++;
   r.missing = ids.filter((id) => lacksAudioMetadata(assetLock[id]!));
   r.missing.forEach((id, i) => {
     const e = assetLock[id]!;
     const file = bytesPath(e, o.dataRoot);
     if (!fs.existsSync(file)) return void r.noBytes.push(id);
     if (o.checkOnly) return;
-    o.进度?.(i + 1, r.missing.length);
+    o.progress?.(i + 1, r.missing.length);
     let audioMeta: AudioMetadata;
     try {
       audioMeta = measure(file);
     } catch (err) {
-      return void r.unmeasured.push({ id, 原因: (err as Error).message.split('\n')[0]! });
+      return void r.unmeasured.push({ id, cause: (err as Error).message.split('\n')[0]! });
     }
     const filled = mergeMissing(e, audioMeta);
     if (measureFields.some((k) => filled[k] !== e[k])) {

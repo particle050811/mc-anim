@@ -14,7 +14,7 @@ const picture: React.FC = () => {
   const f = useSnappedFrame();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <TimeLagSplit 帧={frameWindow.起帧 + f} 种子={f} />
+      <TimeLagSplit frame={frameWindow.起帧 + f} seed={f} />
     </AbsoluteFill>
   );
 };

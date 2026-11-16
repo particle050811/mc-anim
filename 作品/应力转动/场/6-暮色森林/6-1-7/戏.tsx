@@ -29,7 +29,7 @@ const add = (p: number[], q: number[]): V3 => [p[0] + q[0], p[1] + q[1], p[2] + 
 
 // 暮初恶魂：浮在塔顶，盯着从北偏东冲来的扫帚；被贯穿时变红、换成喷火那张脸，接着炸开（炸点、白烟放大）
 export const UrGhastScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) => {
-  const show = t > choreo.ghastShowWindow.起 && t < choreo.ghastShowWindow.止;
+  const show = t > choreo.ghastShowWindow.start && t < choreo.ghastShowWindow.end;
   const foot = choreo.GHAST_FOOT;
   const ghastCenter = choreo.GHAST_AT;
   // 视线：朝扫帚（模型约定头仰正 = 往下看；在恶魂自己转过去以后的坐标里算）
@@ -39,13 +39,13 @@ export const UrGhastScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) =
   // 被贯穿就变红、一直红到炸开（同巫妖，用户 10-07 定）
   const hurt = t >= 0 ? 1 : 0;
   return (
-    <LandmarkPlacement 名="幽冥高塔">
+    <LandmarkPlacement name="幽冥高塔">
       <DarkTower />
       {show && (
         <>
           {t < choreo.GHAST_DEATH.gone && (
             <group position={foot} rotation={[0, 0, (choreo.GHAST_HEADING * Math.PI) / 180]}>
-              <UrGhast 秒={t + 40} headYaw={Math.max(-0.6, Math.min(0.6, look.yawOffset))} headPitch={Math.max(-0.5, Math.min(0.5, look.pitch))} face={t >= 0 ? '喷火' : '睁眼'} hurt={hurt} />
+              <UrGhast sec={t + 40} headYaw={Math.max(-0.6, Math.min(0.6, look.yawOffset))} headPitch={Math.max(-0.5, Math.min(0.5, look.pitch))} face={t >= 0 ? '喷火' : '睁眼'} hurt={hurt} />
             </group>
           )}
           {[0, 1, 2].map((i) => (
@@ -61,7 +61,7 @@ export const UrGhastScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) =
 // 雪怪首领：站在大厅正中，反应不过来、一动不动（用户 10-07 定）；被贯穿时变红，接着炸开化成白烟
 // 镜头：世界坐标的镜头位置，飞散的碎块离镜头太近就淡出（模型/特效/方块飞溅.tsx 的 `NearHide`）
 export const AlphaYetiScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPos: camPos }) => {
-  const show = t > choreo.yetiShowWindow.起 && t < choreo.yetiShowWindow.止;
+  const show = t > choreo.yetiShowWindow.start && t < choreo.yetiShowWindow.end;
   const tIn = choreo.yetiTimeAt(choreo.yetiTunnels.enterCave);
   const hurt = t >= 0 ? 1 : 0;
   const tube = t >= tIn - 0.02;
@@ -89,7 +89,7 @@ export const AlphaYetiScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, 
     { a: choreo.yetiTunnels.exitGround, colors: snowDirt, count: 34, speed: 12, seed: 107 },
   ];
   return (
-    <LandmarkPlacement 名="雪怪洞窟">
+    <LandmarkPlacement name="雪怪洞窟">
       <YetiCave hide={tube ? YETI_HIDE : NO_HIDE} hideBlocks={landmarkHideOutsideCore.雪怪洞窟} />
       {show && (
         <>

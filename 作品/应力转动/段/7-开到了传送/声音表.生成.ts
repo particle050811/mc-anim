@@ -3,103 +3,103 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/7-李樱-开到了": {
-      "时长": 0.95,
-      "峰值": -4,
-      "响度": -18,
+      "duration": 0.95,
+      "peakDb": -4,
+      "loudness": -18,
       "sha": "54af6f426546"
     },
     "音效/block.chest.close.2": {
-      "时长": 0.631375,
-      "峰值": 0,
-      "响度": -16.5,
+      "duration": 0.631375,
+      "peakDb": 0,
+      "loudness": -16.5,
       "sha": "08c2e383401f"
     },
     "音效/block.chest.open": {
-      "时长": 0.515208,
-      "峰值": -0.7,
-      "响度": -14.1,
+      "duration": 0.515208,
+      "peakDb": -0.7,
+      "loudness": -14.1,
       "sha": "6b9b0c3672b4"
     },
     "音效/block.portal.travel": {
-      "时长": 9.5,
-      "峰值": -0.7,
-      "响度": -13,
+      "duration": 9.5,
+      "peakDb": -0.7,
+      "loudness": -13,
       "sha": "2a78858744fa"
     },
     "音效/block.portal.trigger": {
-      "时长": 4,
-      "峰值": -1.5,
-      "响度": -17.7,
+      "duration": 4,
+      "peakDb": -1.5,
+      "loudness": -17.7,
       "sha": "58ec8b9d6c81"
     },
     "音效/block.sculk_sensor.clicking.1": {
-      "时长": 1.295333,
-      "峰值": -3.2,
-      "响度": -23,
+      "duration": 1.295333,
+      "peakDb": -3.2,
+      "loudness": -23,
       "sha": "0cf5bf9d988f"
     },
     "音效/block.sculk_sensor.clicking.2": {
-      "时长": 1.448896,
-      "峰值": -3.5,
-      "响度": -19.4,
+      "duration": 1.448896,
+      "peakDb": -3.5,
+      "loudness": -19.4,
       "sha": "cd05b445dea7"
     },
     "音效/block.sculk_sensor.clicking.3": {
-      "时长": 0.943896,
-      "峰值": -1.6,
-      "响度": -17.8,
+      "duration": 0.943896,
+      "peakDb": -1.6,
+      "loudness": -17.8,
       "sha": "3003e277b377"
     },
     "音效/block.sculk_sensor.clicking.4": {
-      "时长": 1.791625,
-      "峰值": -0.5,
-      "响度": -17.9,
+      "duration": 1.791625,
+      "peakDb": -0.5,
+      "loudness": -17.9,
       "sha": "1cc999aeaa9f"
     },
     "音效/block.sculk_sensor.clicking.6": {
-      "时长": 1.024104,
-      "峰值": -2,
-      "响度": -24.9,
+      "duration": 1.024104,
+      "peakDb": -2,
+      "loudness": -24.9,
       "sha": "f568609506ab"
     },
     "音效/block.sculk_sensor.clicking_stop.1": {
-      "时长": 1.451896,
-      "峰值": -16.3,
-      "响度": -37.4,
+      "duration": 1.451896,
+      "peakDb": -16.3,
+      "loudness": -37.4,
       "sha": "ec119c7a8526"
     },
     "音效/block.sculk_sensor.clicking_stop.2": {
-      "时长": 1.54,
-      "峰值": -13.1,
-      "响度": -36.3,
+      "duration": 1.54,
+      "peakDb": -13.1,
+      "loudness": -36.3,
       "sha": "f8eeca8f9244"
     },
     "音效/block.sculk_sensor.clicking_stop.4": {
-      "时长": 1.768896,
-      "峰值": -19.3,
-      "响度": -35.1,
+      "duration": 1.768896,
+      "peakDb": -19.3,
+      "loudness": -35.1,
       "sha": "ee565be33545"
     },
     "音效/block.sculk_sensor.clicking_stop.5": {
-      "时长": 1.295875,
-      "峰值": -16.4,
-      "响度": -35.2,
+      "duration": 1.295875,
+      "peakDb": -16.4,
+      "loudness": -35.2,
       "sha": "0c9fd5463340"
     },
     "音效/block.sculk_shrieker.shriek.4": {
-      "时长": 6.493375,
-      "峰值": -2.3,
-      "响度": -16.8,
+      "duration": 6.493375,
+      "peakDb": -2.3,
+      "loudness": -16.8,
       "sha": "38828b02caa7"
     }
   },
-  "台词": {
+  "lines": {
     "7-李樱-开到了": {
-      "配音": "配音/7-李樱-开到了",
-      "开口": 0,
-      "时长": 0.95
+      "voice": "配音/7-李樱-开到了",
+      "mouthOpen": 0,
+      "duration": 0.95
     }
   }
 };

@@ -14,7 +14,7 @@ import { GirlYaBoLun, defineAct } from '../../角色/娘化亚波伦.tsx';
 import { chapelRig, halfSec, front, aspect } from './视图.ts';
 
 // idle 垫底（呼吸、眨眼、浮块自转照旧），舞的姿势盖在上面；头发、胸部的弹簧吃舞里的转身和起落速度
-const dance = defineAct({ 主: () => [{ 名: 'idle' }], 环境: noodleDanceEnv });
+const dance = defineAct({ 主: () => [{ name: 'idle' }], env: noodleDanceEnv });
 
 const baseColor = '#5a5e66';
 const skyColor = '#b4cfff';
@@ -44,7 +44,7 @@ const picture: React.FC = () => {
   const bgColor = inChapel ? skyColor : baseColor;
   return (
     <AbsoluteFill style={{ background: bgColor }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
         <color attach="background" args={[bgColor]} />
         {inChapel ? (
           <CameraRig 眼={addVec(church.dancePos, chapelRig.eyeOffset)} 看={addVec(church.dancePos, chapelRig.lookOffset)} fov={chapelRig.fov} />
@@ -67,7 +67,7 @@ const picture: React.FC = () => {
               </mesh>
             </>
           )}
-          <GirlYaBoLun pose={{ loc: inChapel ? church.dancePos : [0, 0, 0], yaw: 180 }} 秒={sec} act={dance} bonePose={bonePose} />
+          <GirlYaBoLun pose={{ loc: inChapel ? church.dancePos : [0, 0, 0], yaw: 180 }} sec={sec} act={dance} bonePose={bonePose} />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 26, textShadow: '0 1px 3px #000' }}>

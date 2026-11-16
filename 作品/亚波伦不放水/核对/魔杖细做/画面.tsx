@@ -76,32 +76,32 @@ const pointDownRight: Record<string, BonePose> = {
 
 const YaBoLun: React.FC<{ variant: Variant; 位: readonly number[]; yaw: number; bonePose?: Record<string, BonePose> }> = ({ variant, 位: pos, yaw, bonePose }) => {
   const staff = useMemo(() => (variant === '原版' ? undefined : refinedStaffVariant(variant)), [variant]);
-  return <GirlYaBoLun pose={{ loc: [...pos], yaw }} 秒={0.5} act={stand} holdWand 杖={staff} bonePose={bonePose} />;
+  return <GirlYaBoLun pose={{ loc: [...pos], yaw }} sec={0.5} act={stand} holdWand 杖={staff} bonePose={bonePose} />;
 };
 
 const Scene: React.FC<{ v: View }> = ({ v }) => {
   const { bottomBackground, pictureMode } = v;
   const cameraRig =
-    pictureMode.类 === '并排' ? sideBySideRig : pictureMode.类 === '杖头' ? wandHeadRig(coreHeight(pictureMode.variant)) : pictureMode.类 === '杆' ? shaftRig(shaftMid(pictureMode.variant, pictureMode.段)) : pictureMode.类 === '持杖' ? holdingRigs[pictureMode.cameraRig] : midShot.cameraRig;
+    pictureMode.type === '并排' ? sideBySideRig : pictureMode.type === '杖头' ? wandHeadRig(coreHeight(pictureMode.variant)) : pictureMode.type === '杆' ? shaftRig(shaftMid(pictureMode.variant, pictureMode.segment)) : pictureMode.type === '持杖' ? holdingRigs[pictureMode.cameraRig] : midShot.cameraRig;
   return (
     <>
       <color attach="background" args={[baseColors[bottomBackground]]} />
       <PlaceRig cameraRig={cameraRig} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <Lamp bottomBackground={bottomBackground} />
-        {pictureMode.类 === '并排' &&
+        {pictureMode.type === '并排' &&
           variants.map((k, i) => (
             <group key={k} position={[(i - 1.5) * sideBySideGap, 0, 0]}>
               <StandingWand variant={k} 转={25} />
             </group>
           ))}
-        {pictureMode.类 === '杖头' && <StandingWand variant={pictureMode.variant} 转={pictureMode.variant === '丙' ? 20 : 0} />}
-        {pictureMode.类 === '杆' && (
+        {pictureMode.type === '杖头' && <StandingWand variant={pictureMode.variant} 转={pictureMode.variant === '丙' ? 20 : 0} />}
+        {pictureMode.type === '杆' && (
           <group rotation={[0, Math.PI / 2, 0]}>
             <StandingWand variant={pictureMode.variant} 转={25} />
           </group>
         )}
-        {pictureMode.类 === '持杖' && (
+        {pictureMode.type === '持杖' && (
           <>
             <mesh position={[0, 0, -0.05]}>
               <boxGeometry args={[12, 12, 0.1]} />
@@ -110,7 +110,7 @@ const Scene: React.FC<{ v: View }> = ({ v }) => {
             <YaBoLun variant={pictureMode.variant} 位={[0, 0, 0]} yaw={180} />
           </>
         )}
-        {pictureMode.类 === '中景' && <YaBoLun variant={pictureMode.variant} 位={midShot.位} yaw={midShot.yaw} bonePose={pointDownRight} />}
+        {pictureMode.type === '中景' && <YaBoLun variant={pictureMode.variant} 位={midShot.位} yaw={midShot.yaw} bonePose={pointDownRight} />}
       </group>
     </>
   );
@@ -118,9 +118,9 @@ const Scene: React.FC<{ v: View }> = ({ v }) => {
 
 // 中景里她在左上：字挪到左下，不压着她
 const Caption: React.FC<{ v: View }> = ({ v }) => (
-  <div style={{ position: 'absolute', left: 16, right: 16, ...(v.pictureMode.类 === '中景' ? { bottom: 12 } : { top: 12 }), color: '#ffffff', fontFamily: 'sans-serif', fontSize: 20, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-    <div>{v.名}</div>
-    {v.说明 && <div style={{ fontSize: 13 }}>{v.说明}</div>}
+  <div style={{ position: 'absolute', left: 16, right: 16, ...(v.pictureMode.type === '中景' ? { bottom: 12 } : { top: 12 }), color: '#ffffff', fontFamily: 'sans-serif', fontSize: 20, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
+    <div>{v.name}</div>
+    {v.note && <div style={{ fontSize: 13 }}>{v.note}</div>}
   </div>
 );
 
@@ -128,7 +128,7 @@ export default definePicture(seg, soundUrl, () => {
   const v = views[Math.min(views.length - 1, useViewIndex())]!;
   return (
     <AbsoluteFill style={{ background: baseColors[v.bottomBackground] }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
         <Scene v={v} />
       </ThreeCanvas>
       <Caption v={v} />

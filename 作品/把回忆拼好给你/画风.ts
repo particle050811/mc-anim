@@ -14,13 +14,13 @@ export const orthoTop = 2;
 
 /** 描边：全片关（用户 10-24 定，原话「你不要搞这个阴影效果行不行？」「一开始就感觉很奇怪 你为什么要描这个阴影？」，规矩表 不描边）。
  *  开的话是一个贴图像素宽的暗色外轮廓，只描角色和手里、地上的小物件；段里不要自己打开 */
-export const outline = { 开: false, 宽: pixelCount } as const;
+export const outline = { 开: false, width: pixelCount } as const;
 
 /** 本作品默认的正交像素机位：N、顶面照上面，段里只给看点、朝向（要剖面再给 剖） */
-export const orthoRig = (p: { 看: V3; facing: OrthoRigParams['facing']; section?: number; depth?: number }): OrthoRigParams => ({ 种: '正交', N: pixelCount, topDepth: orthoTop, ...p });
+export const orthoRig = (p: { 看: V3; facing: OrthoRigParams['facing']; section?: number; depth?: number }): OrthoRigParams => ({ kind: '正交', N: pixelCount, topDepth: orthoTop, ...p });
 
 /** 三渲二画布跟调子走的几项：天色、平涂色调、描边（照上面的默认开关和宽，颜色取调子的） */
 export const canvasTone = (toneName: ToneName) => {
   const t = palette[toneName];
-  return { 天: t.天, tint: t.tint, outline: outline.开 ? { 宽: outline.宽, 色: t.outlineColor } : (false as const) };
+  return { 天: t.天, tint: t.tint, outline: outline.开 ? { width: outline.width, 色: t.outlineColor } : (false as const) };
 };

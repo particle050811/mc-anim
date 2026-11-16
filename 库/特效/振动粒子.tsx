@@ -56,7 +56,7 @@ const CORNERS = [
 
 // from：声源（振动发生的位置）；to：监听者的方块中心；sec：从发出起算的秒数（< 0 或飞到了就不画）；
 // 帧：全局动画帧的起点偏移（游戏里贴图动画跟全局时间走，和粒子什么时候发出无关）
-export const VibrationSignal: React.FC<{ from: V3; to: V3; sec: number; 帧?: number }> = ({ from, to, sec, 帧: frameOffset = 0 }) => {
+export const VibrationSignal: React.FC<{ from: V3; to: V3; sec: number; frame?: number }> = ({ from, to, sec, frame: frameOffset = 0 }) => {
   const geo = useMemo(() => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(8 * 3), 3));

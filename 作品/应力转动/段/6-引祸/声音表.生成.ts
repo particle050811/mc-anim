@@ -3,43 +3,43 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/6-李樱-会会你们": {
-      "时长": 3.133,
-      "峰值": -3.6,
-      "响度": -18,
+      "duration": 3.133,
+      "peakDb": -3.6,
+      "loudness": -18,
       "sha": "e507340eced4"
     },
     "音效/block.chain.hit.4": {
-      "时长": 0.546896,
-      "峰值": -2.4,
-      "响度": -24.6,
+      "duration": 0.546896,
+      "peakDb": -2.4,
+      "loudness": -24.6,
       "sha": "2626277da373"
     },
     "音效/block.sculk_shrieker.shriek.3": {
-      "时长": 6.484146,
-      "峰值": -1.1,
-      "响度": -15.6,
+      "duration": 6.484146,
+      "peakDb": -1.1,
+      "loudness": -15.6,
       "sha": "1eeecb1c8939"
     },
     "音效/block.wool.place.2": {
-      "时长": 0.203469,
-      "峰值": -13.8,
-      "响度": -70,
+      "duration": 0.203469,
+      "peakDb": -13.8,
+      "loudness": -70,
       "sha": "139fc234e51f"
     },
     "音效/block.wool.step.4": {
-      "时长": 0.203469,
-      "峰值": -11,
-      "响度": -70,
+      "duration": 0.203469,
+      "peakDb": -11,
+      "loudness": -70,
       "sha": "09d5879722c5"
     }
   },
-  "台词": {
+  "lines": {
     "6-李樱-会会你们": {
-      "配音": "配音/6-李樱-会会你们",
-      "开口": 0.03,
-      "时长": 3.133
+      "voice": "配音/6-李樱-会会你们",
+      "mouthOpen": 0.03,
+      "duration": 3.133
     }
   }
 };

@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { rightHandCenter, hover, holdWandPose, raisedPose, stand } from './娘化亚波伦.tsx';
 
-const { json, 图: mockImage, hasBytes } = await vi.hoisted(async () => {
+const { json, image: mockImage, hasBytes } = await vi.hoisted(async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { bytesPath, readAssetLock } = await import('../../../pipeline/资产/资产锁.ts');
@@ -17,7 +17,7 @@ const { json, 图: mockImage, hasBytes } = await vi.hoisted(async () => {
   const json = (id: string, fallback: string) => ({ default: JSON.parse(readBytes(id)?.toString('utf8') ?? fallback) });
   // 这组只算骨骼，贴图给一张 1×1 透明 PNG
   const mockImage = () => ({ default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' });
-  return { json, 图: mockImage, hasBytes: needIds.every((id) => readBytes(id)) };
+  return { json, image: mockImage, hasBytes: needIds.every((id) => readBytes(id)) };
 });
 vi.mock('asset:模型/角色/娘化亚波伦', () => json('模型/角色/娘化亚波伦', '{"texW":1,"texH":1,"bones":[]}'));
 vi.mock('asset:动画/角色/娘化亚波伦/main', () => json('动画/角色/娘化亚波伦/main', '{"animations":{}}'));
@@ -37,7 +37,7 @@ const tiltFromVertical = (axis: readonly number[]) => (Math.acos(axis[2]!) * 180
 describe.skipIf(!hasBytes)('持杖的默认摆法（斜举）', () => {
   it('站立：不给姿势，杖头朝斜上、往外、往前，和竖直 30～45 度；杖头在头的右侧外面、不低于头，杖尾也在身体右侧', () => {
     for (const sec of [0, 0.5, 1.5, 2.6]) {
-      const staff = holdWandPose({ pose: originPose, 秒: sec, act: stand });
+      const staff = holdWandPose({ pose: originPose, sec: sec, act: stand });
       expect(tiltFromVertical(staff.axis)).toBeGreaterThan(30);
       expect(tiltFromVertical(staff.axis)).toBeLessThan(45);
       expect(staff.axis[0]).toBeGreaterThan(0.2);
@@ -51,7 +51,7 @@ describe.skipIf(!hasBytes)('持杖的默认摆法（斜举）', () => {
 
   it('悬停（fly）：不给姿势用 斜举.飞，杖头朝上、朝她右边、朝前，整根杖在身体右侧；原动作（右手合在胸前）不是这样', () => {
     for (const sec of [0, 0.75, 1.4, 2.4]) {
-      const staff = holdWandPose({ pose: originPose, 秒: sec, act: hover });
+      const staff = holdWandPose({ pose: originPose, sec: sec, act: hover });
       expect(tiltFromVertical(staff.axis)).toBeGreaterThan(45);
       expect(tiltFromVertical(staff.axis)).toBeLessThan(65);
       expect(staff.axis[0]).toBeGreaterThan(0.6);
@@ -61,13 +61,13 @@ describe.skipIf(!hasBytes)('持杖的默认摆法（斜举）', () => {
       // 杖尾最里在第 0 秒（身子摆到最右）：0.09，在右胯外侧（核对段「持杖-飞行-正面-0秒」）
       expect(staff.tail[0]).toBeGreaterThan(0.05);
     }
-    expect(holdWandPose({ pose: originPose, 秒: 0.75, act: hover, bonePose: {} }).tip[0]).toBeLessThan(0.8);
+    expect(holdWandPose({ pose: originPose, sec: 0.75, act: hover, bonePose: {} }).tip[0]).toBeLessThan(0.8);
   });
 
   it('显式给姿势的不受默认影响：给空姿势就是动画原样（idle 垂手，杖头朝正前），给 斜举.站 和不给一样', () => {
-    const handDown = holdWandPose({ pose: originPose, 秒: 0, act: stand, bonePose: {} });
+    const handDown = holdWandPose({ pose: originPose, sec: 0, act: stand, bonePose: {} });
     expect(handDown.axis[1]).toBeCloseTo(1, 3);
-    expect(holdWandPose({ pose: originPose, 秒: 0.5, act: stand, bonePose: raisedPose.站 })).toEqual(holdWandPose({ pose: originPose, 秒: 0.5, act: stand }));
+    expect(holdWandPose({ pose: originPose, sec: 0.5, act: stand, bonePose: raisedPose.站 })).toEqual(holdWandPose({ pose: originPose, sec: 0.5, act: stand }));
   });
 
   it('杖握在手里（用户 11-10）：杖身的中轴穿过手心，站立斜举、飞行斜举、手腕另转的姿势都是；旧握法（不修正）离手心半个像素以上', () => {
@@ -79,10 +79,10 @@ describe.skipIf(!hasBytes)('持杖的默认摆法（斜举）', () => {
     };
     const onePixel = 0.7 / 16;
     for (const settings of [
-      { act: stand, 秒: 0.5 },
-      { act: hover, 秒: 1.4 },
-      { act: stand, 秒: 0.5, bonePose: { RightArm: { rot: [-20, 0, -60] }, RightHand: { rot: [90, 0, 0] } } },
-      { act: stand, 秒: 0.5, bonePose: { RightArm: { rot: [-60, 0, 30] }, RightHand: { rot: [30, -50, 20] } } },
+      { act: stand, sec: 0.5 },
+      { act: hover, sec: 1.4 },
+      { act: stand, sec: 0.5, bonePose: { RightArm: { rot: [-20, 0, -60] }, RightHand: { rot: [90, 0, 0] } } },
+      { act: stand, sec: 0.5, bonePose: { RightArm: { rot: [-60, 0, 30] }, RightHand: { rot: [30, -50, 20] } } },
     ]) {
       const poseParams = { pose: originPose, ...settings };
       expect(offAxis(holdWandPose(poseParams), rightHandCenter(poseParams))).toBeLessThan(0.6 * onePixel);

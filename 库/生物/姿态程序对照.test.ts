@@ -38,10 +38,10 @@ const rng = (seed: number) => () => {
 };
 const trials = 3000;
 
-const creeper = { 程序: await loadPoseProgram('动作/角色/苦力怕'), 模型: await loadModel('模型/角色/苦力怕', '苦力怕') };
-describe.skipIf(!creeper.程序 || !creeper.模型)('苦力怕：翻译版 = 库/生物/苦力怕.tsx 手抄版', () => {
+const creeper = { program: await loadPoseProgram('动作/角色/苦力怕'), model: await loadModel('模型/角色/苦力怕', '苦力怕') };
+describe.skipIf(!creeper.program || !creeper.model)('苦力怕：翻译版 = 库/生物/苦力怕.tsx 手抄版', () => {
   it(`${trials} 组随机输入，头和四条腿的转角差不过 1e-3 弧度（手抄版用 double 和 Math.cos，原版是 float、查 Mth 的 65536 格表，limbSwing 大时差到 2e-4 上下）`, () => {
-    const solve = poseEvaluator(creeper.程序!, creeper.模型!.root);
+    const solve = poseEvaluator(creeper.program!, creeper.model!.root);
     const r = rng(1);
     let maxDiff = 0;
     for (let n = 0; n < trials; n++) {
@@ -62,8 +62,8 @@ describe.skipIf(!creeper.程序 || !creeper.模型)('苦力怕：翻译版 = 库
   });
 });
 
-const zombie = { 程序: await loadPoseProgram('动作/角色/僵尸'), 模型: await loadModel('模型/角色/僵尸', '僵尸') };
-describe.skipIf(!zombie.程序 || !zombie.模型)('僵尸：翻译版 = 库/生物/僵尸.tsx 手抄版（不骑乘、不蹲、不游泳、不鞘翅飞，右撇子主手出手）', () => {
+const zombie = { program: await loadPoseProgram('动作/角色/僵尸'), model: await loadModel('模型/角色/僵尸', '僵尸') };
+describe.skipIf(!zombie.program || !zombie.model)('僵尸：翻译版 = 库/生物/僵尸.tsx 手抄版（不骑乘、不蹲、不游泳、不鞘翅飞，右撇子主手出手）', () => {
   const makeInput = (p: { limbSwing: number; stride: number; headYaw: number; headPitch: number; aggressive: boolean; attackTime: number; sec: number }) => ({
     limbSwing: p.limbSwing,
     limbSwingAmount: p.stride,
@@ -87,7 +87,7 @@ describe.skipIf(!zombie.程序 || !zombie.模型)('僵尸：翻译版 = 库/生�
   });
 
   it(`${trials} 组随机输入（一半在出手），手抄版写到的转角全对上（差不过 1e-3 弧度）`, () => {
-    const solve = poseEvaluator(zombie.程序!, zombie.模型!.root);
+    const solve = poseEvaluator(zombie.program!, zombie.model!.root);
     const r = rng(2);
     let maxDiff = 0;
     for (let n = 0; n < trials; n++) {
@@ -107,7 +107,7 @@ describe.skipIf(!zombie.程序 || !zombie.模型)('僵尸：翻译版 = 库/生�
   });
 
   it('已知差别：手抄版省掉的部分（翻译版照 HumanoidModel 全做了）', () => {
-    const solve = poseEvaluator(zombie.程序!, zombie.模型!.root);
+    const solve = poseEvaluator(zombie.program!, zombie.model!.root);
     const noAttack = solve(makeInput({ limbSwing: 3, stride: 0.5, headYaw: 10, headPitch: 5, aggressive: true, attackTime: 0, sec: 7 })).partPoses;
     // 不蹲时 1.20.1 的 HumanoidModel 把腿放回 y=12、z=0（老版本是 z=0.1），和模型初始一样
     expect(noAttack.right_leg.offset).toEqual([-1.9, 12, 0]);
@@ -123,7 +123,7 @@ describe.skipIf(!zombie.程序 || !zombie.模型)('僵尸：翻译版 = 库/生�
   });
 
   it('翻译版另有手抄版没有的输入：骑乘时两腿抬平', () => {
-    const solve = poseEvaluator(zombie.程序!, zombie.模型!.root);
+    const solve = poseEvaluator(zombie.program!, zombie.model!.root);
     const ride = solve({ ...makeInput({ limbSwing: 0, stride: 0, headYaw: 0, headPitch: 0, aggressive: false, attackTime: 0, sec: 0 }), 'model.riding': true }).partPoses;
     expect(ride.right_leg.rot[0]).toBeCloseTo(-1.4137167, 6);
     expect(ride.right_leg.rot[1]).toBeCloseTo(Math.PI / 10, 6);

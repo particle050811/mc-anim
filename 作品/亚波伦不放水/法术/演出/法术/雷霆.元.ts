@@ -11,5 +11,5 @@ export default defineSpellMeta({
   长秒: thunderLifeTicks / 20,
   hitSec: 0, // 射线判定，放出来当刻就结算伤害
   // ThunderboltSpell：施法者处 ModSounds.THUNDERBOLT（3 个变体取第 1 个）
-  声音: [{ 资产: '音效/诡厄巫法/goety.thunderbolt.1', 秒: 0 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.thunderbolt.1', sec: 0 }],
 });

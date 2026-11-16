@@ -10,7 +10,7 @@ import type { Blend } from './材质.ts';
 import { mulberry32 } from '@engine/core/数学.ts';
 
 export interface BreathParticleClass {
-  readonly 帧: readonly Png[];
+  readonly frame: readonly Png[];
   /** 整数年龄 → 第几帧 */
   readonly 帧号: (age: number) => number;
   /** lifetime（刻） */
@@ -26,7 +26,7 @@ export interface BreathParticleClass {
   readonly jitterVert: number;
   /** 碰到这个高度就没（hasPhysics 且落地即 remove 的给） */
   readonly ground?: number;
-  readonly 混合?: Blend;
+  readonly blend?: Blend;
 }
 
 export interface BreathBirth {
@@ -36,14 +36,14 @@ export interface BreathBirth {
   readonly 速: Vec3;
   /** quadSize（半边长） */
   readonly radius: number;
-  readonly 种子: number;
+  readonly seed: number;
 }
 
 /** 这一颗画在第几帧、它的面片 */
 const breathQuad = (breathKind: BreathParticleClass, spawn: BreathBirth, tick: number): readonly [number, QuadItem] | null => {
   const age = tick - spawn.刻;
   if (age < 0 || age >= breathKind.寿命) return null;
-  const r = mulberry32(spawn.种子);
+  const r = mulberry32(spawn.seed);
   let p = spawn.位;
   let prevPos = p;
   let v = spawn.速;
@@ -58,11 +58,11 @@ const breathQuad = (breathKind: BreathParticleClass, spawn: BreathBirth, tick: n
     v = [v[0] + r() * breathKind.jitterHoriz * randomSign(), v[1] + r() * breathKind.jitterHoriz * randomSign(), v[2] + r() * breathKind.jitterVert];
   }
   // 游戏画的是上一刻到这一刻之间
-  return [Math.min(breathKind.帧.length - 1, Math.max(0, breathKind.帧号(n))), facePatch(mix(prevPos, p, age - n), spawn.radius)];
+  return [Math.min(breathKind.frame.length - 1, Math.max(0, breathKind.帧号(n))), facePatch(mix(prevPos, p, age - n), spawn.radius)];
 };
 
-export const BreathParticles: React.FC<{ 类: BreathParticleClass; spawns: readonly BreathBirth[]; 秒: number }> = ({ 类: breathKind, spawns, 秒: sec }) => {
-  const byFrame: QuadItem[][] = breathKind.帧.map(() => []);
+export const BreathParticles: React.FC<{ type: BreathParticleClass; spawns: readonly BreathBirth[]; sec: number }> = ({ type: breathKind, spawns, sec: sec }) => {
+  const byFrame: QuadItem[][] = breathKind.frame.map(() => []);
   for (const spawn of spawns) {
     const frameQuad = breathQuad(breathKind, spawn, sec * 20);
     if (frameQuad) byFrame[frameQuad[0]]!.push(frameQuad[1]);
@@ -70,8 +70,8 @@ export const BreathParticles: React.FC<{ 类: BreathParticleClass; spawns: reado
   // 同一张图在序列里出现几次的（如 frost 的 1～6 再倒回 1）也各占一批，批数固定
   return (
     <>
-      {breathKind.帧.map((image, i) => (
-        <QuadGroup key={i} 图={image} 项={byFrame[i]!} 混合={breathKind.混合 ?? '镂空'} />
+      {breathKind.frame.map((image, i) => (
+        <QuadGroup key={i} image={image} items={byFrame[i]!} blend={breathKind.blend ?? '镂空'} />
       ))}
     </>
   );
@@ -86,14 +86,14 @@ const gaussian = (r: () => number) => Math.sqrt(-2 * Math.log(1 - r())) * Math.c
  * dragonBreathAttack：一刻撒 个数 颗。位置 = 口 ± 0.15（每个分量）；方向 = normalize(朝向 × 3 + 随机单位向量)，
  * 速率 = 基速 × (1 + 随机)，同一刻的几颗共用一个速率。（参数 angle 只进了随机向量归一化之前，不影响结果）
  */
-export const scatterDragonBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; 种子: number }[] => {
+export const scatterDragonBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; seed: number }[] => {
   const r = mulberry32(seed * 7919 + tick * 31 + 1);
   const rate = baseSpeed + r() * baseSpeed;
   const unitDir = unitVec(dir);
   return Array.from({ length: sprayCount }, (_, i) => {
     const pos: Vec3 = [mouth[0] + r() * 0.3 - 0.15, mouth[1] + r() * 0.3 - 0.15, mouth[2] + r() * 0.3 - 0.15];
     const jitter = unitVec([r() * 2 - 1, r() * 2 - 1, r() * 2 - 1]);
-    return { 位: pos, 速: scaleVec(unitVec(addVec(scaleVec(unitDir, 3), jitter)), rate), 种子: seed * 104729 + tick * 64 + i };
+    return { 位: pos, 速: scaleVec(unitVec(addVec(scaleVec(unitDir, 3), jitter)), rate), seed: seed * 104729 + tick * 64 + i };
   });
 };
 
@@ -101,7 +101,7 @@ export const scatterDragonBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, 
  * breathAttack（spreadOut = true）：一刻撒 个数 颗。位置 = 口 + 高斯 ÷ 2（每个分量）；
  * 速度 = (朝向 + 高斯 × 0.0075 × 散) × 速率，散 = 散布 × (1 + 随机 ÷ 2)，速率 = 基速 × (1 + 随机)，每颗各抽。
  */
-export const scatterBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, spread: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; 种子: number }[] => {
+export const scatterBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, spread: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; seed: number }[] => {
   const r = mulberry32(seed * 7919 + tick * 31 + 2);
   const unitDir = unitVec(dir);
   return Array.from({ length: sprayCount }, (_, i) => {
@@ -109,6 +109,6 @@ export const scatterBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSp
     const rate = baseSpeed + r() * baseSpeed;
     const speedVec = scaleVec([unitDir[0] + gaussian(r) * 0.0075 * jitteredSpread, unitDir[1] + gaussian(r) * 0.0075 * jitteredSpread, unitDir[2] + gaussian(r) * 0.0075 * jitteredSpread], rate);
     const pos: Vec3 = [mouth[0] + gaussian(r) / 2, mouth[1] + gaussian(r) / 2, mouth[2] + gaussian(r) / 2];
-    return { 位: pos, 速: speedVec, 种子: seed * 104729 + tick * 64 + i };
+    return { 位: pos, 速: speedVec, seed: seed * 104729 + tick * 64 + i };
   });
 };

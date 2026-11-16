@@ -29,12 +29,12 @@ import { EquippedSteve } from '../../角色/史蒂夫装备.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
-const aspect = { 宽: 1280, 高: 720 } as const;
+const aspect = { width: 1280, height: 720 } as const;
 const skyColor = '#b4cfff';
 // idle 垫底，舞的姿势盖在上面（同 核对/结算舞）
-const dance = defineAct({ 主: () => [{ 名: 'idle' }], 环境: noodleDanceEnv });
+const dance = defineAct({ 主: () => [{ name: 'idle' }], env: noodleDanceEnv });
 const addVec = (a: readonly number[], b: readonly number[]): V3 => [a[0]! + b[0]!, a[1]! + b[1]!, a[2]! + b[2]!];
-const yaBoLunGeometry = GirlYaBoLunCreature.definition.模型 as Parameters<typeof hemYieldLeg>[0];
+const yaBoLunGeometry = GirlYaBoLunCreature.definition.model as Parameters<typeof hemYieldLeg>[0];
 /** 这一刻她的手摆姿势：舞的骨骼，加上按腿让开的袍摆（袍摆要看动画垫底的那份合起来以后腿在哪） */
 const dancePose = (sec: number, danceSec: number): Record<string, BonePose> => {
   const danceBones = noodleDancePose(danceSec);
@@ -85,9 +85,9 @@ const lyingMatrix = new THREE.Matrix4()
 
 // 什么都不穿不拿：盔甲（连胸甲背后的披风）、剑、晋升之环都不要
 const noEquipment = { armor: [], 剑: false, hasRing: false } as const;
-const LyingSteve: React.FC<{ 秒: number }> = ({ 秒: sec }) => (
+const LyingSteve: React.FC<{ sec: number }> = ({ sec: sec }) => (
   <group matrix={lyingMatrix} matrixAutoUpdate={false}>
-    <EquippedSteve pose={lyingPose} 秒={sec} equipment={noEquipment} />
+    <EquippedSteve pose={lyingPose} sec={sec} equipment={noEquipment} />
   </group>
 );
 
@@ -95,23 +95,23 @@ const PlaceRig: React.FC<{ cameraRig: Cam }> = ({ cameraRig }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
-  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, aspect.宽 / aspect.高, { near: 0.05, far: 512 });
+  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, aspect.width / aspect.height, { near: 0.05, far: 512 });
   return null;
 };
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 事件: events } = useSeg(seg);
+  const { sec: sec, events: events } = useSeg(seg);
   const danceSec = sec - events.danceStart;
   return (
     <AbsoluteFill style={{ background: skyColor }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }} dpr={canvasDpr(1)}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }} dpr={canvasDpr(1)}>
         <color attach="background" args={[skyColor]} />
         <PlaceRig cameraRig={naveRig} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ChurchLighting />
           <PinkChurch />
-          <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} 秒={Math.max(0, danceSec)} act={dance} bonePose={dancePose(Math.max(0, danceSec), danceSec)} />
-          <LyingSteve 秒={sec} />
+          <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} sec={Math.max(0, danceSec)} act={dance} bonePose={dancePose(Math.max(0, danceSec), danceSec)} />
+          <LyingSteve sec={sec} />
         </group>
       </ThreeCanvas>
     </AbsoluteFill>

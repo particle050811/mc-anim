@@ -16,10 +16,10 @@ const TICKS_PER_SEC = 120;
 // 往上取到刻上（只收浮点零头）
 const ticksOf = (sec: number) => Math.ceil(sec * TICKS_PER_SEC - 1e-6);
 const cuts = [
-  { 段: '6-2-1', picture: Loot, 从: 0, 到: ticksOf(segmentTable['6-2-1'].长) },
-  { 段: '6-2-2', picture: WhatElse, 从: 0, 到: ticksOf(segmentTable['6-2-2'].长) },
-  { 段: '6-2-3', picture: AncientScroll, 从: 0, 到: ticksOf(segmentTable['6-2-3'].长) },
-  { 段: '6-2-4', picture: SetOff, 从: 0, 到: ticksOf(duration624) },
+  { segment: '6-2-1', picture: Loot, 从: 0, dest: ticksOf(segmentTable['6-2-1'].length) },
+  { segment: '6-2-2', picture: WhatElse, 从: 0, dest: ticksOf(segmentTable['6-2-2'].length) },
+  { segment: '6-2-3', picture: AncientScroll, 从: 0, dest: ticksOf(segmentTable['6-2-3'].length) },
+  { segment: '6-2-4', picture: SetOff, 从: 0, dest: ticksOf(duration624) },
 ];
 
-export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} 每秒={TICKS_PER_SEC} />);
+export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} perSec={TICKS_PER_SEC} />);

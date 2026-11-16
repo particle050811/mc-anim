@@ -29,5 +29,5 @@ export const airflow = (g: number): AirFlowParticle[] => {
   // 出生位置照 AirCurrent.tick（风扇中心 + 风向 × 0.5，±0.25），但后一半在风扇方块里；这里风扇是半透明虚影，
   // 生在里面会像从弓上冒出来，所以只生在出风口前 0～0.15 格（用户 10-10：气流「从鼓风机出风口才开始」）。
   const k = geom.fanSideLength;
-  return scatterDuct({ 种子: 11, storyTime: t, sideLength: k, outlet: geom.fanOutlet, windDir: geom.incomingDir, rotSpeedRpm: fanRpm, maxDist: (tt: number) => geom.ductMaxDist(fanRpm(tt)), fastForward: geom.windFastForward, spawnDist: [0, 0.5 * k], 起: 1.85 });
+  return scatterDuct({ seed: 11, storyTime: t, sideLength: k, outlet: geom.fanOutlet, windDir: geom.incomingDir, rotSpeedRpm: fanRpm, maxDist: (tt: number) => geom.ductMaxDist(fanRpm(tt)), fastForward: geom.windFastForward, spawnDist: [0, 0.5 * k], start: 1.85 });
 };

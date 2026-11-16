@@ -15,13 +15,13 @@ import { eachTick, arrowYawPitch } from '../零件/甲/共用.ts';
 import meta, { magicSwordPath } from './sword.元.ts';
 import diamondSwordPng from 'asset:贴图/法术/minecraft/item/diamond_sword';
 
-const magicSword: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const magicSword: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = magicSwordPath(from, target, options?.highSpeed);
   const particles: ParticleSpawn[] = eachTick(1, Math.min(tick, arriveTick)).map((n) => {
     const speedVec = sub(trajectory(n + 1), trajectory(n));
     const p = addVec(trajectory(n), scaleVec(speedVec, 0.75));
-    return { 种: 'enchant', 刻: n, p: [p[0], p[1], p[2]], v: [speedVec[0], speedVec[1], speedVec[2]], 种子: seed * 53 + n };
+    return { kind: 'enchant', 刻: n, p: [p[0], p[1], p[2]], v: [speedVec[0], speedVec[1], speedVec[2]], seed: seed * 53 + n };
   });
   const { yaw, pitch } = arrowYawPitch(trajectoryDir(trajectory, tick));
   return (
@@ -32,7 +32,7 @@ const magicSword: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: t
             <group rotation={[0, degToRad(yaw - 90), 0]}>
               <group rotation={[0, 0, degToRad(pitch - 45)]}>
                 {/* GROUND：translate(0, 2/16, 0)、scale 0.5；贴图第一行朝上，planeGeometry 的 v 反着，y 取负 */}
-                <mesh position={[0, 0.125, 0]} scale={[0.5, -0.5, 0.5]} material={faceMaterial(png(diamondSwordPng), { 混合: '镂空' })} frustumCulled={false}>
+                <mesh position={[0, 0.125, 0]} scale={[0.5, -0.5, 0.5]} material={faceMaterial(png(diamondSwordPng), { blend: '镂空' })} frustumCulled={false}>
                   <planeGeometry args={[1, 1]} />
                 </mesh>
               </group>
@@ -40,7 +40,7 @@ const magicSword: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: t
           </group>
         </MinecraftSpace>
       )}
-      <VanillaParticles spawns={particles} 秒={sec} />
+      <VanillaParticles spawns={particles} sec={sec} />
     </>
   );
 };

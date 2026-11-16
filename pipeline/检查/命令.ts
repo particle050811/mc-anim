@@ -10,8 +10,8 @@ import { ruleTable, runChecks, violationCount } from './检查.ts';
 
 export const checkCommands: Record<string, Command> = {
   check: {
-    用法: `check [${ruleNames.join('|')}…] [--fast] [--deep] [--verbose]`,
-    说明: '查类型、结构、分层和循环引用、清单、加载、台词、资产、规矩、平台卫生、共用函数副本、按秒写、新增中文标识符；--fast 不跑类型检查，--deep 逐个核对资产字节、tsc 不用增量缓存从头查，--verbose 列出全部待迁移',
+    usage: `check [${ruleNames.join('|')}…] [--fast] [--deep] [--verbose]`,
+    note: '查类型、结构、分层和循环引用、清单、加载、台词、资产、规矩、平台卫生、共用函数副本、按秒写、新增中文标识符；--fast 不跑类型检查，--deep 逐个核对资产字节、tsc 不用增量缓存从头查，--verbose 列出全部待迁移',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { toggles: ['--fast', '--deep', '--verbose'] });
       const unknownRules = p.位置.filter((x) => !(ruleNames as readonly string[]).includes(x));
@@ -22,19 +22,19 @@ export const checkCommands: Record<string, Command> = {
       }
       console.log(`作品：${work}\n`);
       const t0 = performance.now();
-      const reports = await runChecks(codeRoot(), { 只: p.位置 as RuleKind[], 快: p.toggles.has('--fast'), depthCheck: p.toggles.has('--deep'), 作品: work });
+      const reports = await runChecks(codeRoot(), { 只: p.位置 as RuleKind[], 快: p.toggles.has('--fast'), depthCheck: p.toggles.has('--deep'), work: work });
       for (const [ruleName, r] of reports) {
         const status = r.violations.length ? `✗ ${r.violations.length} 处违规` : '✓';
-        console.log(`${status} ${ruleName}：${ruleTable[ruleName].说明}`);
-        for (const q of r.violations) console.log(`    ${q.文件 ? `${q.文件}${q.行 ? `:${q.行}` : ''}  ` : ''}${q.文本}`);
-        for (const s of r.跳过) console.log(`    跳过：${s}`);
+        console.log(`${status} ${ruleName}：${ruleTable[ruleName].note}`);
+        for (const q of r.violations) console.log(`    ${q.file ? `${q.file}${q.行 ? `:${q.行}` : ''}  ` : ''}${q.text}`);
+        for (const s of r.skipped) console.log(`    跳过：${s}`);
         for (const s of r.infoLines) console.log(`    ${s}`);
-        if (r.待迁移.length) {
-          console.log(`    待迁移 ${r.待迁移.length} 项${p.toggles.has('--verbose') ? '' : '（--verbose 列出）'}`);
-          if (p.toggles.has('--verbose')) for (const q of r.待迁移) console.log(`      ${q.文本}`);
+        if (r.pendingMigration.length) {
+          console.log(`    待迁移 ${r.pendingMigration.length} 项${p.toggles.has('--verbose') ? '' : '（--verbose 列出）'}`);
+          if (p.toggles.has('--verbose')) for (const q of r.pendingMigration) console.log(`      ${q.text}`);
         }
         // 上面已经打过，事件直接进运行记录，不再经 记录.记 打一遍
-        for (const q of r.violations) runRecord.事件.push({ 时间: utcTime(), 级别: '错误', 文本: `${ruleName}：${q.文件 ? `${q.文件}${q.行 ? `:${q.行}` : ''} ` : ''}${q.文本}` });
+        for (const q of r.violations) runRecord.events.push({ time: utcTime(), level: '错误', text: `${ruleName}：${q.file ? `${q.file}${q.行 ? `:${q.行}` : ''} ` : ''}${q.text}` });
       }
       const n = violationCount(reports);
       console.log(`\n${n ? `${n} 处违规` : '全部通过'}（${((performance.now() - t0) / 1000).toFixed(1)} 秒）`);

@@ -1,0 +1,23 @@
+# 格式：认可　位置：作品/*/认可/<平台>/<段键>.toml
+# 读写：pipeline/验收/认可.ts　分类：Git　现有 37 个文件（37 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+上一版指纹	prevFingerprint
+哈希	hash
+响度	loudness
+块均值	blockMeans
+宽	width
+帧	frame
+帧数	frameCount
+平台	platform
+指纹	fingerprint
+换算	conversion
+提交	commit
+段	segment
+渲染级别	renderLevel
+理由	reason
+认可于	approvedAt
+起音	onsets
+间隔	interval
+音频sha	audioSha
+高	height

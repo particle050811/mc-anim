@@ -16,20 +16,20 @@ describe('帧段串', () => {
 });
 
 describe('并入用量', () => {
-  const emptyUsage = { 作品: '甲', 段: '段', 已量帧: '', 包: {} };
+  const emptyUsage = { work: '甲', segment: '段', measuredFrames: '', pack: {} };
   it('按并集累积，区段按级、i、j 数值排', () => {
-    const firstMerge = mergeUsage(emptyUsage, { 暮色: { 版本: 'v1', 区段: ['1|2|3', '0|10|0'] } }, [0, 1]);
-    const merged = mergeUsage(firstMerge, { 暮色: { 版本: 'v1', 区段: ['0|9|0', '1|2|3'] }, 主世界: { 版本: 'v2', 区段: [] } }, [2, 7]);
-    expect(merged.包.暮色!.区段).toEqual(['0|9|0', '0|10|0', '1|2|3']);
-    expect(merged.包.主世界).toEqual({ 版本: 'v2', 区段: [] });
-    expect(merged.已量帧).toBe('0-2,7');
+    const firstMerge = mergeUsage(emptyUsage, { 暮色: { version: 'v1', sections: ['1|2|3', '0|10|0'] } }, [0, 1]);
+    const merged = mergeUsage(firstMerge, { 暮色: { version: 'v1', sections: ['0|9|0', '1|2|3'] }, 主世界: { version: 'v2', sections: [] } }, [2, 7]);
+    expect(merged.pack.暮色!.sections).toEqual(['0|9|0', '0|10|0', '1|2|3']);
+    expect(merged.pack.主世界).toEqual({ version: 'v2', sections: [] });
+    expect(merged.measuredFrames).toBe('0-2,7');
   });
   it('包的版本换了：那个包作废重记，已量帧清零；别的包留着', () => {
-    const firstMerge = mergeUsage(emptyUsage, { 暮色: { 版本: 'v1', 区段: ['0|0|0'] }, 主世界: { 版本: 'v2', 区段: ['0|1|1'] } }, [0, 1, 2]);
-    const merged = mergeUsage(firstMerge, { 暮色: { 版本: 'v9', 区段: ['0|5|5'] } }, [3]);
-    expect(merged.包.暮色).toEqual({ 版本: 'v9', 区段: ['0|5|5'] });
-    expect(merged.包.主世界!.区段).toEqual(['0|1|1']);
-    expect(merged.已量帧).toBe('3');
+    const firstMerge = mergeUsage(emptyUsage, { 暮色: { version: 'v1', sections: ['0|0|0'] }, 主世界: { version: 'v2', sections: ['0|1|1'] } }, [0, 1, 2]);
+    const merged = mergeUsage(firstMerge, { 暮色: { version: 'v9', sections: ['0|5|5'] } }, [3]);
+    expect(merged.pack.暮色).toEqual({ version: 'v9', sections: ['0|5|5'] });
+    expect(merged.pack.主世界!.sections).toEqual(['0|1|1']);
+    expect(merged.measuredFrames).toBe('3');
   });
 });
 
@@ -58,14 +58,14 @@ describe('收地形用量', () => {
     };
     return { browser: browser as unknown as HeadlessBrowser, closedLog };
   };
-  const makeWindow = (segKey: string | undefined, usage: [string, { 版本: string; 区段: Set<string> }][]) => ({ process: { env: segKey ? { [terrainUsageSegEnv]: segKey } : {} }, terrainUsage: new Map(usage) });
+  const makeWindow = (segKey: string | undefined, usage: [string, { version: string; sections: Set<string> }][]) => ({ process: { env: segKey ? { [terrainUsageSegEnv]: segKey } : {} }, terrainUsage: new Map(usage) });
   const openPageThenClose = async (b: HeadlessBrowser) => {
     const page = await (b as unknown as { newPage: () => Promise<{ close: () => Promise<void> }> }).newPage();
     await page.close();
   };
 
   it('页面关掉前收走、写进 run/地形用量/<作品>/<段键>.json，多次累积；页面照常关', async () => {
-    const { browser, closedLog } = fakeBrowser(makeWindow('甲作/段一', [['暮色', { 版本: 'v1', 区段: new Set(['0|1|1']) }]]));
+    const { browser, closedLog } = fakeBrowser(makeWindow('甲作/段一', [['暮色', { version: 'v1', sections: new Set(['0|1|1']) }]]));
     collectTerrainUsage(browser);
     await openPageThenClose(browser);
     await waitTerrainUsageWrites();
@@ -75,12 +75,12 @@ describe('收地形用量', () => {
     await openPageThenClose(browser);
     await recordMeasuredFrames('段一', [2], '甲作');
     const r = readTerrainUsage('甲作', '段一')!;
-    expect(r.包.暮色!.区段).toEqual(['0|1|1']);
-    expect(r.已量帧).toBe('0-2');
+    expect(r.pack.暮色!.sections).toEqual(['0|1|1']);
+    expect(r.measuredFrames).toBe('0-2');
   });
 
   it('读 Composition 列表的页面（没传段名）、没读地形的段都不留文件；先记帧后关页也接得上', async () => {
-    const fakeHandle = fakeBrowser(makeWindow(undefined, [['暮色', { 版本: 'v1', 区段: new Set() }]]));
+    const fakeHandle = fakeBrowser(makeWindow(undefined, [['暮色', { version: 'v1', sections: new Set() }]]));
     collectTerrainUsage(fakeHandle.browser);
     await openPageThenClose(fakeHandle.browser);
     const noRead = fakeBrowser(makeWindow('甲作/段二', []));
@@ -88,26 +88,26 @@ describe('收地形用量', () => {
     await openPageThenClose(noRead.browser);
     await recordMeasuredFrames('段二', [0], '甲作');
     expect(fs.existsSync(path.join(root, 'run', '地形用量', '甲作'))).toBe(false);
-    const reader = fakeBrowser(makeWindow('甲作/段二', [['暮色', { 版本: 'v1', 区段: new Set(['0|0|0']) }]]));
+    const reader = fakeBrowser(makeWindow('甲作/段二', [['暮色', { version: 'v1', sections: new Set(['0|0|0']) }]]));
     collectTerrainUsage(reader.browser);
     await openPageThenClose(reader.browser);
-    expect(readTerrainUsage('甲作', '段二')!.已量帧).toBe('0');
+    expect(readTerrainUsage('甲作', '段二')!.measuredFrames).toBe('0');
   });
 
   it('整段重渲：旧记录清掉，记下这次指纹', async () => {
-    const prevBrowser = fakeBrowser(makeWindow('甲作/段三', [['主世界', { 版本: 'v1', 区段: new Set(['0|0|0']) }]]));
+    const prevBrowser = fakeBrowser(makeWindow('甲作/段三', [['主世界', { version: 'v1', sections: new Set(['0|0|0']) }]]));
     collectTerrainUsage(prevBrowser.browser);
     await openPageThenClose(prevBrowser.browser);
     await recordMeasuredFrames('段三', [5], '甲作');
     startWholeMeasure('段三', '指纹甲', '甲作');
-    const nextBrowser = fakeBrowser(makeWindow('甲作/段三', [['暮色', { 版本: 'v1', 区段: new Set(['0|9|9']) }]]));
+    const nextBrowser = fakeBrowser(makeWindow('甲作/段三', [['暮色', { version: 'v1', sections: new Set(['0|9|9']) }]]));
     collectTerrainUsage(nextBrowser.browser);
     await openPageThenClose(nextBrowser.browser);
     await recordMeasuredFrames('段三', [0, 1], '甲作');
     const r = readTerrainUsage('甲作', '段三')!;
-    expect(r.指纹).toBe('指纹甲');
-    expect(Object.keys(r.包)).toEqual(['暮色']);
-    expect(r.已量帧).toBe('0-1');
+    expect(r.fingerprint).toBe('指纹甲');
+    expect(Object.keys(r.pack)).toEqual(['暮色']);
+    expect(r.measuredFrames).toBe('0-1');
   });
 
   it('记录写不上只报警告：坏 JSON、关页时写失败都不抛，页面照常关；整段重渲清掉坏的就恢复', async () => {
@@ -116,7 +116,7 @@ describe('收地形用量', () => {
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, '{坏');
     await expect(recordMeasuredFrames('段四', [0], '甲作')).resolves.toBeUndefined();
-    const { browser, closedLog } = fakeBrowser(makeWindow('甲作/段四', [['暮色', { 版本: 'v1', 区段: new Set(['0|0|0']) }]]));
+    const { browser, closedLog } = fakeBrowser(makeWindow('甲作/段四', [['暮色', { version: 'v1', sections: new Set(['0|0|0']) }]]));
     collectTerrainUsage(browser);
     await openPageThenClose(browser);
     expect(closedLog).toEqual(['关']);
@@ -124,7 +124,7 @@ describe('收地形用量', () => {
     startWholeMeasure('段四', '指纹乙', '甲作');
     await openPageThenClose(browser);
     await recordMeasuredFrames('段四', [0], '甲作');
-    expect(readTerrainUsage('甲作', '段四')).toMatchObject({ 指纹: '指纹乙', 已量帧: '0' });
+    expect(readTerrainUsage('甲作', '段四')).toMatchObject({ fingerprint: '指纹乙', measuredFrames: '0' });
     errorSpy.mockRestore();
   });
 

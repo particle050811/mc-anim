@@ -19,18 +19,18 @@ import { csvText, type PregenPlan } from './计划.ts';
 export const progressLine = /\[Chunky\] Task running for (\S+)\. Processed: (\d+) chunks \(([\d.]+)%\).*Rate: ([\d.]+) cps/;
 export const finishLine = /\[Chunky\] Task finished for (\S+)\. Processed: (\d+) chunks \(([\d.]+)%\), Total time: (\S+)/;
 
-export type Progress = { 区块: number; 百分比: number; 速度: number; 时间: string };
-export type CompletedInfo = { 区块: number; 百分比: number; 用时: string; 时间: string };
+export type Progress = { chunks: number; percent: number; speed: number; time: string };
+export type CompletedInfo = { chunks: number; percent: number; elapsed: string; time: string };
 export type WatchState = {
-  块: string;
-  世界: string;
-  存档: string;
-  阶段: '主' | '补洞' | '完';
-  起服: { 阶段?: '主' | '补洞'; 开始: string; 结束?: string; 命令: string[]; 退出码?: number | null; 停服原因?: string | null; 最后进度?: Progress | null; 完成?: CompletedInfo | null }[];
-  完成: Partial<Record<'主' | '补洞', CompletedInfo>>;
+  tile: string;
+  world: string;
+  save: string;
+  stage: '主' | '补洞' | '完';
+  serverStarts: { stage?: '主' | '补洞'; startedAt: string; endedAt?: string; command: string[]; exitCode?: number | null; stopReason?: string | null; lastProgress?: Progress | null; completed?: CompletedInfo | null }[];
+  completed: Partial<Record<'主' | '补洞', CompletedInfo>>;
 };
 
-type ServerStartRecord = WatchState['起服'][number];
+type ServerStartRecord = WatchState['serverStarts'][number];
 
 /**
  * 末尾连着几次起服没有新进度。进度 = 同一阶段里 Chunky 的 Processed 比之前每次起服的最高值大（续跑 Chunky 接着数，所以重启后该往上走）；
@@ -39,10 +39,10 @@ type ServerStartRecord = WatchState['起服'][number];
 export const consecutiveNoProgress = (records: readonly ServerStartRecord[], stage: '主' | '补洞'): number => {
   let maxChunk = 0, stallCount = 0;
   for (const r of records) {
-    if ((r.阶段 ?? '主') !== stage) continue;
-    const lastChunkCount = r.最后进度?.区块 ?? 0;
-    if (r.完成 || lastChunkCount > maxChunk) stallCount = 0;
-    else if (r.结束) stallCount++;
+    if ((r.stage ?? '主') !== stage) continue;
+    const lastChunkCount = r.lastProgress?.chunks ?? 0;
+    if (r.completed || lastChunkCount > maxChunk) stallCount = 0;
+    else if (r.endedAt) stallCount++;
     maxChunk = Math.max(maxChunk, lastChunkCount);
   }
   return stallCount;
@@ -65,8 +65,8 @@ export const readTasks = (f: string): Record<string, string> => {
 export const isThisBlock = (t: Record<string, string>, p: PregenPlan) => {
   const nearEq = (a: string | undefined, b: number) => a !== undefined && Math.abs(Number(a) - b) < 1e-6;
   // 矩形的 z 半径另存 radius-z（Chunky 1.3 的 TaskLoader）
-  const radiusMatch = nearEq(t.radius, p.selection.半边[0]) && (p.selection.形状 === 'square' || nearEq(t['radius-z'], p.selection.半边[1]));
-  return nearEq(t['center-x'], p.selection.中心[0]) && nearEq(t['center-z'], p.selection.中心[1]) && radiusMatch && t.pattern === p.pattern && (p.pattern !== 'csv' || t.csv === p.csvName);
+  const radiusMatch = nearEq(t.radius, p.selection.halfSide[0]) && (p.selection.shape === 'square' || nearEq(t['radius-z'], p.selection.halfSide[1]));
+  return nearEq(t['center-x'], p.selection.center[0]) && nearEq(t['center-z'], p.selection.center[1]) && radiusMatch && t.pattern === p.pattern && (p.pattern !== 'csv' || t.csv === p.csvName);
 };
 
 /** 老年代占最大堆的百分比和 Full GC 次数。不用 jstat -gcutil 的 O 列：G1 下它是占「当前分到的」老年代的比例，刚起服时就到八九成 */
@@ -84,10 +84,10 @@ export const readHeap = (pid: number): { oldGen: number; fullGC: number } | null
 };
 
 export type WatchOptions = {
-  世界: string;
-  维度: string;
+  world: string;
+  dimension: string;
   serverDir: string;
-  存档: string;
+  save: string;
   loaderVersion?: string;
   chunky: string;
   logDir: string;
@@ -109,7 +109,7 @@ const nowIso = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
 export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchState> => {
   fs.mkdirSync(o.logDir, { recursive: true });
-  const chunkName = p.块.名;
+  const chunkName = p.tile.name;
   const OUT = path.join(o.logDir, `${chunkName}.out`);
   const STATE = path.join(o.logDir, `${chunkName}.状态.json`);
   const JSTAT = path.join(o.logDir, `${chunkName}.jstat.tsv`);
@@ -121,16 +121,16 @@ export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchSta
     fs.writeFileSync(`${STATE}.tmp`, JSON.stringify(s, null, 1));
     fs.renameSync(`${STATE}.tmp`, STATE);
   };
-  let st: WatchState = !o.fromScratch && fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : { 块: chunkName, 世界: o.世界, 存档: o.存档, 阶段: '主', 起服: [], 完成: {} };
-  if (st.存档 !== o.存档) throw new Error(`${STATE} 记的是存档 ${st.存档}，这次是 ${o.存档}；要从头来加 --from-scratch`);
-  if (st.阶段 === '完') {
+  let st: WatchState = !o.fromScratch && fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : { tile: chunkName, world: o.world, save: o.save, stage: '主', serverStarts: [], completed: {} };
+  if (st.save !== o.save) throw new Error(`${STATE} 记的是存档 ${st.save}，这次是 ${o.save}；要从头来加 --from-scratch`);
+  if (st.stage === '完') {
     log(`${chunkName} 已经跑完（${STATE}）；要再跑一遍加 --from-scratch`);
     return st;
   }
-  const taskPath = taskFile(o.serverDir, o.维度);
+  const taskPath = taskFile(o.serverDir, o.dimension);
   if (p.pattern === 'csv') {
     const destPath = path.join(o.serverDir, 'config', 'chunky', `${p.csvName}.csv`);
-    const csv = csvText(p.区块!);
+    const csv = csvText(p.chunks!);
     if (!fs.existsSync(destPath) || fs.readFileSync(destPath, 'utf8') !== csv) {
       const t = readTasks(taskPath);
       if (t.cancelled === 'false' && isThisBlock(t, p)) throw new Error(`${destPath} 和这次算的区块列表不一样，可这一块的任务还暂停着：续跑时 Chunky 按条数跳过，换了列表就对不上。先 chunky cancel 或换回原来的列表`);
@@ -138,25 +138,25 @@ export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchSta
       fs.writeFileSync(destPath, csv);
     }
   }
-  const preCheck = checkBeforeStart(o.serverDir, o.存档);
+  const preCheck = checkBeforeStart(o.serverDir, o.save);
   if (preCheck.issues.length) throw new Error(preCheck.issues.join('\n'));
   const noProgressLimit = o.maxNoProgressRestarts ?? 3;
   const limit = o.oldGenLimit ?? 90, stuckMs = (o.stuckMinutes ?? 10) * 60_000, intervalMs = (o.watchIntervalSec ?? 60) * 1000;
 
-  while (st.阶段 !== '完') {
+  while (st.stage !== '完') {
     const t = readTasks(taskPath);
     const paused = t.cancelled === 'false';
     if (paused && !isThisBlock(t, p)) throw new Error(`${taskPath} 里有暂停着的别的任务（中心 ${t['center-x']}, ${t['center-z']}，图案 ${t.pattern}），先跑完或 chunky cancel`);
     if (!o.skipGate) await passGate(async () => {});
-    const commands = paused ? ['chunky continue'] : [...p.步骤.map(([c]) => c), 'chunky start'];
-    const startRecord: ServerStartRecord = { 阶段: st.阶段, 开始: nowIso(), 命令: commands };
-    st.起服.push(startRecord);
+    const commands = paused ? ['chunky continue'] : [...p.steps.map(([c]) => c), 'chunky start'];
+    const startRecord: ServerStartRecord = { stage: st.stage, startedAt: nowIso(), command: commands };
+    st.serverStarts.push(startRecord);
     saveState(st);
-    log(`${st.阶段}：起服，${paused ? '续跑' : `选区 ${p.selection.形状} 中心 ${p.selection.中心.join(', ')} 半边 ${p.selection.半边.join(' × ')}，${p.pattern}，${p.区块数} 个区块`}`);
+    log(`${st.stage}：起服，${paused ? '续跑' : `选区 ${p.selection.shape} 中心 ${p.selection.center.join(', ')} 半边 ${p.selection.halfSide.join(' × ')}，${p.pattern}，${p.chunkCount} 个区块`}`);
     let lastProgress: Progress | null = null, completion: CompletedInfo | null = null, lastPrintMs = 0;
-    const s = await Server.起({
+    const s = await Server.start({
       目录: o.serverDir,
-      存档: o.存档,
+      save: o.save,
       loaderVersion: o.loaderVersion,
       heap: o.heap,
       genThreads: o.genThreads,
@@ -165,39 +165,39 @@ export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchSta
       onLine: (l) => {
         fs.appendFileSync(OUT, `${l}\n`);
         const m = progressLine.exec(l);
-        if (m && m[1] === o.维度) {
-          lastProgress = { 区块: Number(m[2]), 百分比: Number(m[3]), 速度: Number(m[4]), 时间: nowIso() };
+        if (m && m[1] === o.dimension) {
+          lastProgress = { chunks: Number(m[2]), percent: Number(m[3]), speed: Number(m[4]), time: nowIso() };
           if (Date.now() - lastPrintMs > 30_000) {
             lastPrintMs = Date.now();
             o.说(`  ${m[2]} 区块（${m[3]}%），${m[4]} 区块/秒`);
           }
         }
         const f = finishLine.exec(l);
-        if (f && f[1] === o.维度) completion = { 区块: Number(f[2]), 百分比: Number(f[3]), 用时: f[4]!, 时间: nowIso() };
+        if (f && f[1] === o.dimension) completion = { chunks: Number(f[2]), percent: Number(f[3]), elapsed: f[4]!, time: nowIso() };
       },
     });
     let reason: string | null = null;
     try {
       if (preCheck.overrides.length) {
         s.发('datapack list enabled');
-        const line = await s.等('data pack(s) enabled', 30);
-        const issues = checkOrder(o.存档, preCheck.overrides, parseEnabledPacks(line ?? ''));
+        const line = await s.waits('data pack(s) enabled', 30);
+        const issues = checkOrder(o.save, preCheck.overrides, parseEnabledPacks(line ?? ''));
         if (!line || issues.length) throw new Error(line ? issues.join('\n') : '/datapack list enabled 30 秒没回');
         log(`数据包 ${preCheck.overrides.join('、')} 已启用、排在它覆盖的包之上`);
       }
       if (paused) {
         s.发('chunky continue');
-        if (!(await s.等('Task continuing for', 30))) throw new Error('chunky continue 30 秒没回「Task continuing for」');
+        if (!(await s.waits('Task continuing for', 30))) throw new Error('chunky continue 30 秒没回「Task continuing for」');
       } else {
-        for (const [c, expectLog] of p.步骤) {
+        for (const [c, expectLog] of p.steps) {
           s.发(c);
-          if (!(await s.等(expectLog, 30))) throw new Error(`${c} 以后 30 秒内日志里没有「${expectLog}」，选区没改成，停服（不发 chunky start）`);
+          if (!(await s.waits(expectLog, 30))) throw new Error(`${c} 以后 30 秒内日志里没有「${expectLog}」，选区没改成，停服（不发 chunky start）`);
         }
         s.发('chunky start');
-        const matchedLine = await s.等((l) => l.includes('Task started in') || l.includes('A task was already started'), 30);
+        const matchedLine = await s.waits((l) => l.includes('Task started in') || l.includes('A task was already started'), 30);
         if (!matchedLine || matchedLine.includes('already started')) throw new Error(`chunky start 没开始：${matchedLine ?? '30 秒没回'}`);
       }
-      const waitDone = s.等((l) => finishLine.exec(l)?.[1] === o.维度, Infinity);
+      const waitDone = s.waits((l) => finishLine.exec(l)?.[1] === o.dimension, Infinity);
       let prevFullGc: number | null = null, consecutiveHigh = 0;
       const watchTimer = setInterval(() => {
         if (reason || !s.running) return;
@@ -206,7 +206,7 @@ export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchSta
           const gcDelta = prevFullGc === null ? 0 : heapUsage.fullGC - prevFullGc;
           prevFullGc = heapUsage.fullGC;
           const progress = lastProgress as Progress | null;
-          fs.appendFileSync(JSTAT, `${nowIso()}\t${heapUsage.oldGen.toFixed(1)}\t${heapUsage.fullGC}\t${progress?.区块 ?? ''}\t${progress?.速度 ?? ''}\n`);
+          fs.appendFileSync(JSTAT, `${nowIso()}\t${heapUsage.oldGen.toFixed(1)}\t${heapUsage.fullGC}\t${progress?.chunks ?? ''}\t${progress?.speed ?? ''}\n`);
           consecutiveHigh = heapUsage.oldGen >= limit ? consecutiveHigh + 1 : 0;
           if (heapUsage.oldGen >= limit && (gcDelta >= 2 || consecutiveHigh >= 3)) reason = `堆满：老年代占最大堆 ${heapUsage.oldGen.toFixed(0)}%，这一分钟 Full GC ${gcDelta} 次`;
         }
@@ -230,23 +230,23 @@ export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchSta
       }
       if (s.error) throw s.error;
     } finally {
-      startRecord.退出码 = await s.停();
-      Object.assign(startRecord, { 结束: nowIso(), 停服原因: reason, 最后进度: lastProgress, 完成: completion });
+      startRecord.exitCode = await s.停();
+      Object.assign(startRecord, { endedAt: nowIso(), stopReason: reason, lastProgress: lastProgress, completed: completion });
       saveState(st);
     }
     if (completion) {
-      st.完成[st.阶段 as '主' | '补洞'] = completion;
-      const nextStage: WatchState['阶段'] = st.阶段 === '主' && !o.skipHoleFill ? '补洞' : '完';
-      log(`${st.阶段}这一遍跑完：${(completion as CompletedInfo).区块} 个区块，用时 ${(completion as CompletedInfo).用时}；下一步 ${nextStage}`);
-      st.阶段 = nextStage;
+      st.completed[st.stage as '主' | '补洞'] = completion;
+      const nextStage: WatchState['stage'] = st.stage === '主' && !o.skipHoleFill ? '补洞' : '完';
+      log(`${st.stage}这一遍跑完：${(completion as CompletedInfo).chunks} 个区块，用时 ${(completion as CompletedInfo).elapsed}；下一步 ${nextStage}`);
+      st.stage = nextStage;
       saveState(st);
     } else if (!reason) throw new Error(`服务端退出了但任务没跑完（${STATE}），看 ${OUT} 和服务端 logs/latest.log`);
     else {
-      const stallCount = consecutiveNoProgress(st.起服, st.阶段);
+      const stallCount = consecutiveNoProgress(st.serverStarts, st.stage);
       if (stallCount >= noProgressLimit) {
-        const stoppedAt = Math.max(0, ...st.起服.filter((r) => (r.阶段 ?? '主') === st.阶段).map((r) => r.最后进度?.区块 ?? 0));
+        const stoppedAt = Math.max(0, ...st.serverStarts.filter((r) => (r.stage ?? '主') === st.stage).map((r) => r.lastProgress?.chunks ?? 0));
         throw new Error(
-          `${chunkName} 的「${st.阶段}」阶段连着 ${stallCount} 次重启都没有新进度（Chunky 停在 ${stoppedAt} 个区块，最近原因：${st.起服.slice(-stallCount).map((r) => r.停服原因 ?? '?').join('；')}），放弃，不再重启。` +
+          `${chunkName} 的「${st.stage}」阶段连着 ${stallCount} 次重启都没有新进度（Chunky 停在 ${stoppedAt} 个区块，最近原因：${st.serverStarts.slice(-stallCount).map((r) => r.stopReason ?? '?').join('；')}），放弃，不再重启。` +
             `看 ${OUT}、${JSTAT} 和 jstack 文件找原因；排查完重跑同一条命令接着来（只再试一次，再没进度又会停），--max-stalled-restarts <n> 可调`,
         );
       }

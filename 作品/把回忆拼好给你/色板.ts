@@ -14,63 +14,63 @@ export const palette: Readonly<Record<ToneName, Tone>> = {
     tint: '#ffffff',
     天: '#86b2ff',
     outlineColor: '#24170f',
-    grade: { 饱和: 1.06, 对比: 1.02, multiply: '#fffaf0', lift: '#0a0604', 暗角: 0.064, 颗粒: 0.028 },
+    grade: { 饱和: 1.06, comparison: 1.02, multiply: '#fffaf0', lift: '#0a0604', 暗角: 0.064, 颗粒: 0.028 },
   },
   // 雨刚停、阳光铺到地上（第 7 句末到第 8 句开头）：3D 受光面偏金，天还带点雨后的灰
   雨后暖阳: {
     tint: '#ffefd6',
     天: '#a8c4e4',
     outlineColor: '#2a1a10',
-    grade: { 饱和: 1.04, 对比: 1.0, multiply: '#fff6e6', lift: '#0d0906', 暗角: 0.08, 颗粒: 0.028 },
+    grade: { 饱和: 1.04, comparison: 1.0, multiply: '#fff6e6', lift: '#0d0906', 暗角: 0.08, 颗粒: 0.028 },
   },
   // 海上日落（第 4 句）：3D 整体压成橙红，天是落日色
   日落: {
     tint: '#ffc79a',
     天: '#f39a6b',
     outlineColor: '#2b120c',
-    grade: { 饱和: 1.08, 对比: 1.04, multiply: '#fff2e6', lift: '#0e0605', 暗角: 0.096, 颗粒: 0.028 },
+    grade: { 饱和: 1.08, comparison: 1.04, multiply: '#fff2e6', lift: '#0e0605', 暗角: 0.096, 颗粒: 0.028 },
   },
   // 雷雨夜（第 6 句）：灰蓝压暗，饱和降下来
   雷雨: {
     tint: '#7d8aa6',
     天: '#3a4356',
     outlineColor: '#0e1118',
-    grade: { 饱和: 0.8, 对比: 0.98, multiply: '#e8eef8', lift: '#0c0f16', 暗角: 0.112, 颗粒: 0.036 },
+    grade: { 饱和: 0.8, comparison: 0.98, multiply: '#e8eef8', lift: '#0c0f16', 暗角: 0.112, 颗粒: 0.036 },
   },
   // 夜（第 10、12 句、第 2 句的第一晚）：月光下压暗偏蓝，灯笼、烟花这类发光的不乘色调，照旧满亮
   夜: {
     tint: '#6774a3',
     天: '#101838',
     outlineColor: '#06070d',
-    grade: { 饱和: 0.92, 对比: 1.0, multiply: '#e6ecff', lift: '#080a14', 暗角: 0.12, 颗粒: 0.036 },
+    grade: { 饱和: 0.92, comparison: 1.0, multiply: '#e6ecff', lift: '#080a14', 暗角: 0.12, 颗粒: 0.036 },
   },
   // 末地（第 5 句）：末地天是暗紫，受光面略偏紫
   末地: {
     tint: '#e6dcef',
     天: '#1b1424',
     outlineColor: '#0c0810',
-    grade: { 饱和: 1.0, 对比: 1.02, multiply: '#f6eeff', lift: '#0e0a14', 暗角: 0.104, 颗粒: 0.032 },
+    grade: { 饱和: 1.0, comparison: 1.02, multiply: '#f6eeff', lift: '#0e0a14', 暗角: 0.104, 颗粒: 0.032 },
   },
   // 归隐之地（第 15 句、片尾合照）：重逢，晨光略带樱粉，比回忆的白天柔一点
   归隐之地: {
     tint: '#fff6f2',
     天: '#bcd6ff',
     outlineColor: '#26151a',
-    grade: { 饱和: 1.02, 对比: 0.98, multiply: '#fff8f8', lift: '#0d080a', 暗角: 0.072, 颗粒: 0.028 },
+    grade: { 饱和: 1.02, comparison: 0.98, multiply: '#fff8f8', lift: '#0d080a', 暗角: 0.072, 颗粒: 0.028 },
   },
   // 你下线后她那边（第 12–14 句右屏）：饱和降一半、黑位抬高像旧照片；3D 色调也收一点
   褪色: {
     tint: '#f2ece2',
     天: '#c9cdd2',
     outlineColor: '#3a332d',
-    grade: { 饱和: 0.5, 对比: 0.86, multiply: '#f4eee4', lift: '#3a3631', 暗角: 0.096, 颗粒: 0.04 },
+    grade: { 饱和: 0.5, comparison: 0.86, multiply: '#f4eee4', lift: '#3a3631', 暗角: 0.096, 颗粒: 0.04 },
   },
   // 现实（第 13、14 句左屏的教室、考场、撕书，现实/ 用 MC 方块和像素物件三渲二画）：冷灰、饱和低、颗粒比别的套多一点；色调乘在方块和物件上，描边给史蒂夫的手和桌上的小物件
   现实: {
     tint: '#eef2f8',
     天: '#d6dde6',
     outlineColor: '#161a22',
-    grade: { 饱和: 0.78, 对比: 0.96, multiply: '#e9f0ff', lift: '#12161e', 暗角: 0.088, 颗粒: 0.044 },
+    grade: { 饱和: 0.78, comparison: 0.96, multiply: '#e9f0ff', lift: '#12161e', 暗角: 0.088, 颗粒: 0.044 },
   },
   // 更正（10-24 分屏那一路）：上面「现实」的注释过时了。现在用在第 13、14 句的右屏（第 13 句教室墙上的课程表和高考倒计时，第 14 句教学楼下），
   //   考场、撕书已经删掉（用户 10-24）；全片不描边（规矩 不描边），「描边」这一项现在只在开描边时才用得上

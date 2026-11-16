@@ -10,15 +10,15 @@ import { toAssetCue, type FrameCue } from '../../声音/跨段音效.ts';
 const segKey = '2-收集快乐';
 const clock = segClock(segKey);
 const events = segMainCutEventFrames(segKey);
-const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
+const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.frameCount - startFrame);
 
 // 照片挂进框：原版荧光框放东西的声音，起音（文件一开头就最响）落在 挂照片 那一帧（照片进框同一帧）
-const hangPhoto: FrameCue = { 帧: events.hangPhoto, 资产: hangPhotoSound.资产, 名: '挂照片', 帧数: clampFramesToSegEnd(events.hangPhoto, hangPhotoSound.秒), 增益: hangPhotoSound.增益 };
+const hangPhoto: FrameCue = { frame: events.hangPhoto, asset: hangPhotoSound.asset, name: '挂照片', frameCount: clampFramesToSegEnd(events.hangPhoto, hangPhotoSound.sec), 增益: hangPhotoSound.增益 };
 
 // 猫的哈气声（entity.cat.hiss.1，1.17 秒，前 0.1 秒渐起、0.35 秒最响、0.6 秒后只剩尾音）：比哈气那一帧早 1/12 秒（24 fps 时 2 帧）起放，劲头落在她摆好架势之后；
 // 段尾截掉的是尾音，最后 1/6 秒（24 fps 时 4 帧）淡掉
 const hissStart = events.hiss - Math.round(legacyFrameSec(2) * fps);
-const hissCue: FrameCue = { 帧: hissStart, 资产: '音效/把回忆拼好给你/entity.cat.hiss.1', 名: '哈气', 帧数: clampFramesToSegEnd(hissStart, 1.169), 增益: puffSoundGain, fadeOutFrames: Math.round(legacyFrameSec(4) * fps) };
+const hissCue: FrameCue = { frame: hissStart, asset: '音效/把回忆拼好给你/entity.cat.hiss.1', name: '哈气', frameCount: clampFramesToSegEnd(hissStart, 1.169), 增益: puffSoundGain, fadeOutFrames: Math.round(legacyFrameSec(4) * fps) };
 
 // 原声：固定增益，哈气最响那一截让一让（按秒线性渐变进出）。段在一串歌中间，不淡入
 const { preSec, afterSec, rampSec } = originalSoundDuck;
@@ -26,14 +26,14 @@ const sighMix = (f: number) => {
   const s = (f - events.hiss) / fps;
   return Math.min(1, Math.max(0, (s + preSec + rampSec) / rampSec), Math.max(0, (afterSec + rampSec - s) / rampSec));
 };
-const originalGainFrames = Array.from({ length: clock.帧数 }, (_, f) => Math.round((originalGain + (originalSoundDuck.增益 - originalGain) * sighMix(f)) * 1e6) / 1e6);
+const originalGainFrames = Array.from({ length: clock.frameCount }, (_, f) => Math.round((originalGain + (originalSoundDuck.增益 - originalGain) * sighMix(f)) * 1e6) / 1e6);
 
 export default defineSeg({
-  场: '2-门口',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-门口',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: { 每秒: fps, 值: originalGainFrames } }, toAssetCue(hangPhoto), toAssetCue(hissCue)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: { perSec: fps, value: originalGainFrames } }, toAssetCue(hangPhoto), toAssetCue(hissCue)],
 });

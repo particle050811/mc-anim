@@ -11,8 +11,8 @@ import line7LightPillarPng from 'asset:贴图/照片/第7句光柱破云-三版'
 /** 按前面出场的先后：第 8 句开头墙上已经挂着前三张，她把最新那张（光柱破云）挂进最后一只空框（主会话 10-24 按用户「需要取舍」定）。
  *  照片墙格.ts 的 照片墙格位.夏天 按这个顺序排 */
 export const line8Photos: readonly PhotoImage[] = [
-  { 名: '递蛋糕', 图: png(line3OfferCakePng) },
-  { 名: '日落划船', 图: png(line4SunsetRowPng) },
-  { 名: '扑龙蛋', 图: png(line5PounceDragonEggPng) },
-  { 名: '光柱破云', 图: png(line7LightPillarPng) },
+  { name: '递蛋糕', image: png(line3OfferCakePng) },
+  { name: '日落划船', image: png(line4SunsetRowPng) },
+  { name: '扑龙蛋', image: png(line5PounceDragonEggPng) },
+  { name: '光柱破云', image: png(line7LightPillarPng) },
 ];

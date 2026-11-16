@@ -12,7 +12,7 @@ const parseColor = (s: string): RGB => {
 const coreColor = parseColor(lightPath.coreColor);
 const edgeColor = parseColor(lightPath.edgeColor);
 /** 太阳本体的半张角（度） */
-const sunHalfDeg = (Math.atan(sunBody.半边 / sunBody.距) * 180) / Math.PI;
+const sunHalfDeg = (Math.atan(sunBody.halfSide / sunBody.dist) * 180) / Math.PI;
 
 /** 固定的伪随机：两个整数 → 0～1（同一行同一步每次一样） */
 const scatter = (a: number, b: number) => {
@@ -27,7 +27,7 @@ export const lightPathColor = (depthBelow: number, azimuthDiff: number, tick: nu
   if (depthBelow <= 0 || depthBelow >= lightPath.near) return null;
   if (depthBelow < lightPath.startDist) {
     // 贴着海平线那一道：连成一片，和太阳本体差不多宽
-    const w = sunHalfDeg * lightPath.宽;
+    const w = sunHalfDeg * lightPath.width;
     const a = Math.abs(azimuthDiff);
     return a < w * lightPath.coreWidth ? coreColor : a < w ? edgeColor : null;
   }
@@ -37,7 +37,7 @@ export const lightPathColor = (depthBelow: number, azimuthDiff: number, tick: nu
   if (row % 2 === 1) return null; // 行与行之间隔一行水
   // 每行自己的相位，轮着换，不一起跳
   const stepIndex = Math.floor(tick / lightPath.stepTicks + scatter(row, 7));
-  const W = sunHalfDeg * (lightPath.宽 + lightPath.spread * depthBelow);
+  const W = sunHalfDeg * (lightPath.width + lightPath.spread * depthBelow);
   const cutoff = lightPath.missingBase + (1 - lightPath.missingBase) * (depthBelow / lightPath.near) * 0.8;
   for (let i = 0; i < lightPath.cuts; i++) {
     const n = stepIndex * 16 + i * 4;
@@ -79,5 +79,5 @@ export const seaPattern = (rig: Perspective, tick: number, width: number, height
         bytes.set([Math.round(c[0]), Math.round(c[1]), Math.round(c[2]), Math.round(m * 255)], o);
       }
     }
-  return { 字节: bytes, 列: cols, 行: rowCount };
+  return { bytes: bytes, 列: cols, 行: rowCount };
 };

@@ -26,33 +26,33 @@ export const runCuesBeforeRender = async (o: { log?: (line: string) => void } = 
   const workDir = workRoot();
   const m = (await import(pathToFileURL(path.join(workDir, '清单.ts')).href)) as WorkManifest;
   const segDirOf = (segKey: string) => path.join(workDir, ...m.segDir(segKey).split('/'));
-  const frameworkSegs = m.manifest.filter((t) => isFrameworkSegDir(segDirOf(t.键)));
+  const frameworkSegs = m.manifest.filter((t) => isFrameworkSegDir(segDirOf(t.key)));
   const autoResult: AutoResult = { written: [], failed: new Map() };
   if (!frameworkSegs.length) return autoResult;
   const assetLock = readWorkAssetLock(workDir);
   const lineTable = readLineTable(path.join(workDir, '台词.toml'));
   const filmSegments = m.manifest.filter((t) => t.章 !== '核对');
   for (const t of frameworkSegs) {
-    const i = filmSegments.findIndex((x) => x.键 === t.键);
-    const prevSeg = async (): Promise<SegmentDef | undefined> => (i > 0 ? ((await freshExec(path.join(segDirOf(filmSegments[i - 1]!.键), '段.ts'), root)).default as SegmentDef) : undefined);
+    const i = filmSegments.findIndex((x) => x.key === t.key);
+    const prevSeg = async (): Promise<SegmentDef | undefined> => (i > 0 ? ((await freshExec(path.join(segDirOf(filmSegments[i - 1]!.key), '段.ts'), root)).default as SegmentDef) : undefined);
     const env: GenerateEnv = { assetLock, lineTable, getMeasure: (id) => getAudioMeasure(id, assetLock[id], dataRoot()), prevSeg };
     try {
-      const r = await generateSeg(path.join(segDirOf(t.键), '段.ts'), root, env);
+      const r = await generateSeg(path.join(segDirOf(t.key), '段.ts'), root, env);
       if (r.changed.length) {
-        const changedFiles = r.changed.map((f) => relativeToCodeRoot(path.join(segDirOf(t.键), f)));
+        const changedFiles = r.changed.map((f) => relativeToCodeRoot(path.join(segDirOf(t.key), f)));
         autoResult.written.push(...changedFiles);
-        log(`✎ anim cues ${t.键}：段.ts 的 cue 和生成的文件对不上，重新生成了 ${r.changed.join('、')}`);
+        log(`✎ anim cues ${t.key}：段.ts 的 cue 和生成的文件对不上，重新生成了 ${r.changed.join('、')}`);
       }
     } catch (e) {
-      autoResult.failed.set(t.键, (e as Error).message);
+      autoResult.failed.set(t.key, (e as Error).message);
     }
   }
   return autoResult;
 };
 
 /** film、still 用：所选的段里有 cues 生成失败的就停（声音会放错），别的段失败只提醒 */
-export const checkSelectedSegCues = (r: AutoResult, selected: readonly { 键: string }[], log: (line: string) => void = (x) => console.error(x)) => {
-  const selectedKeys = new Set(selected.map((s) => s.键));
+export const checkSelectedSegCues = (r: AutoResult, selected: readonly { key: string }[], log: (line: string) => void = (x) => console.error(x)) => {
+  const selectedKeys = new Set(selected.map((s) => s.key));
   const failed = [...r.failed].filter(([k]) => selectedKeys.has(k));
   for (const [k, x] of r.failed) if (!selectedKeys.has(k)) log(`!! ${k} 的 anim cues 没跑通（这次没选它，先不管）：${x}`);
   if (failed.length) throw new Error(`段框架的段生成声音表失败，声音会放错：${failed.map(([k, x]) => `${k}：${x}`).join('；')}`);

@@ -17,26 +17,26 @@ class SynthRequest:
     """一个候选：一句台词用一个种子念一遍。路径都是 anim 给的绝对路径。"""
 
     id: str
-    念: str  # 交给 TTS 的字（台词的「念」，没写同「文本」）
-    语言: str  # 中文、日语、英语、粤语
+    spoken: str  # 交给 TTS 的字（台词.toml 的 spoken，没写同 text）
+    language: str  # 中文、日语、英语、粤语
     参考音频: str  # 角色音色参考 wav
     参考逐字稿: str
-    种子: int
-    输出: str  # 候选 wav 写到这里
-    语气: str = ''  # 这句的情境和语气描述（只给支持文字控制语气的后端）
-    语气参考: str = ''  # 情绪参考 wav（IndexTTS2 这类分开音色和语气的后端）
+    seed: int
+    output: str  # 候选 wav 写到这里
+    tone: str = ''  # 这句的情境和语气描述（只给支持文字控制语气的后端）
+    toneRef: str = ''  # 情绪参考 wav（IndexTTS2 这类分开音色和语气的后端）
     语气强度: float | None = None
-    角色: str = ''  # 台词.toml 的角色（按名字取音色的后端用）
-    参数: dict = field(default_factory=dict)  # 后端自己的参数，覆盖默认
+    character: str = ''  # 台词.toml 的 character（按名字取音色的后端用）
+    params: dict = field(default_factory=dict)  # 后端自己的参数，覆盖默认
 
 
 @dataclass
 class SynthResult:
     id: str
-    种子: int
-    输出: str
+    seed: int
+    output: str
     成功: bool
-    说明: str = ''
+    note: str = ''
 
 
 class Backend:
@@ -54,7 +54,7 @@ class Backend:
         self.backend_config = {**self.default_params, **(config or {})}
 
     def 参数(self, request: SynthRequest) -> dict:
-        return {**self.backend_config, **request.参数}
+        return {**self.backend_config, **request.params}
 
     def record_params(self, request: SynthRequest) -> dict:
         """这个候选是用什么参数出的（写进候选旁的 .json，定稿时进资产表的 来源）"""
@@ -66,7 +66,7 @@ class Backend:
 
     def describe(self, request: SynthRequest) -> dict:
         """dry-run：要发出去或交给模型的东西（不含音频字节）"""
-        return {'后端': self.名, **asdict(request), '参数': self.参数(request)}
+        return {'backend': self.名, **asdict(request), 'params': self.参数(request)}
 
     def synthesize(self, requests: list[SynthRequest]) -> list[SynthResult]:
         raise NotImplementedError

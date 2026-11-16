@@ -61,4 +61,4 @@ export const skyAt = (θ: number, skyRgb: RGB, fog: RGB): RGB => {
 };
 
 /** 地形的雾（FOG_TERRAIN，柱形）：起 = 距离 − clamp(距离 / 10, 4, 64)，止 = 距离 */
-export const terrainFog = { 起: params.renderDistance - Math.min(64, Math.max(4, params.renderDistance / 10)), 止: params.renderDistance } as const;
+export const terrainFog = { start: params.renderDistance - Math.min(64, Math.max(4, params.renderDistance / 10)), end: params.renderDistance } as const;

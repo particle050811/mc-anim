@@ -3,22 +3,22 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import type { SteveEquip } from '../../角色/史蒂夫装备.tsx';
 
-export const aspect = { 宽: 1280, 高: 720 } as const;
+export const aspect = { width: 1280, height: 720 } as const;
 
 export type View = {
-  名: string;
+  name: string;
   眼: V3;
   看: V3;
   fov: number;
   /** 附魔光泽、光环自转的时钟 */
-  秒: number;
+  sec: number;
   /** 不写 = 全套（附魔神灵金四件、断曜流光、晋升之环，旧版外观）；只物品 的视图只看里面的 外观 */
   equipment?: SteveEquip;
   /** 不画人：'图标' 摆一排物品栏图标（四件盔甲、剑、环）；'剑模型' 摆手里那个 3D 剑模型 */
   onlyItem?: '图标' | '剑模型';
   /** 底色和地面换成近黑：光环是加色的，灰底上会被底色抬白 */
   darkBg?: true;
-  说明?: string;
+  note?: string;
 };
 
 // 人高 1.875 格，头盔的冠到 2.2、光环顶到 2.7 上下，剑尖往前下方伸出去 2 格多
@@ -37,21 +37,21 @@ const newVersion = { appearance: '新版' } as const;
 
 // 默认都是旧版外观（用户 11-10 定）；名字带「新版对照」的两张是 jar 里不带 transformed 的那套，留着比
 export const views: readonly View[] = [
-  { 名: '全套-正面', ...front, 秒: 0.5 },
-  { 名: '全套-右前斜', ...rightFront, 秒: 0.5 },
-  { 名: '全套-正侧', ...directSide, 秒: 0.5, 说明: '从他右手边看：剑、披风离身子多远；光环斜 45 度，上沿探到头顶上方、下沿在脑后' },
-  { 名: '全套-背面', ...backView, 秒: 0.5 },
-  { 名: '全套-左后斜', ...leftBack, 秒: 0.5, 说明: '披风（胸甲带的，站着不动时垂下来的样子）' },
-  { 名: '头盔和环-前斜', ...headFront, 秒: 0.5 },
-  { 名: '头盔和环-后斜', ...headBack, 秒: 0.5, 说明: '光环的中心在头顶上 4 像素、往后 5 像素' },
-  { 名: '握剑-近看', ...swordGrip, 秒: 0.5, 说明: '断曜流光旧版：照 transform/valettein_normal.json 的第三人称显示变换（转 [0, 90, 0]、移 [8, 6, 2]、放大 [1.8, 1.8, 1]），手臂是拿东西的原版姿势' },
-  { 名: '物品栏图标', ...iconView, 秒: 0.5, onlyItem: '图标', 说明: '左起：头盔、胸甲、护腿、靴子、断曜流光（物品栏用的平面图标）、晋升之环。上排旧版带附魔光效（四件盔甲和剑），中排旧版原图，下排新版原图（环只有一套）' },
-  { 名: '剑模型-图标角度', ...itemView, 秒: 0.5, onlyItem: '剑模型', 说明: '旧版手里用的 3D 模型套它自己的 gui 显示变换；游戏的物品栏不显示这个，显示上一张的平面图标' },
-  { 名: '新版对照-右前斜', ...rightFront, 秒: 0.5, equipment: newVersion, 说明: '和「全套-右前斜」比：网格同一份，只换了贴图；剑是另一个模型' },
-  { 名: '新版对照-背面', ...backView, 秒: 0.5, equipment: newVersion, 说明: '和「全套-背面」比披风' },
-  { 名: '头盔和环-前斜-5秒后', ...headFront, 秒: 5.5, 说明: '光环每秒自转 18 度，这里比「头盔和环-前斜」多转 90 度；附魔光泽也滚到别处' },
-  { 名: '头盔和环-前斜-暗底', ...headFront, 秒: 0.5, darkBg: true, 说明: '同「头盔和环-前斜」，底色换成近黑看光环本来的颜色' },
-  { 名: '对照-不穿装备', ...front, 秒: 0.5, equipment: { armor: [], 剑: false, hasRing: false }, 说明: '库里的原版史蒂夫' },
-  { 名: '对照-没附魔', ...rightFront, 秒: 0.5, equipment: { enchanted: false }, 说明: '盔甲和剑都不带附魔光泽，和「全套-右前斜」比' },
-  { 名: '对照-只穿盔甲', ...rightFront, 秒: 0.5, equipment: { 剑: false, hasRing: false } },
+  { name: '全套-正面', ...front, sec: 0.5 },
+  { name: '全套-右前斜', ...rightFront, sec: 0.5 },
+  { name: '全套-正侧', ...directSide, sec: 0.5, note: '从他右手边看：剑、披风离身子多远；光环斜 45 度，上沿探到头顶上方、下沿在脑后' },
+  { name: '全套-背面', ...backView, sec: 0.5 },
+  { name: '全套-左后斜', ...leftBack, sec: 0.5, note: '披风（胸甲带的，站着不动时垂下来的样子）' },
+  { name: '头盔和环-前斜', ...headFront, sec: 0.5 },
+  { name: '头盔和环-后斜', ...headBack, sec: 0.5, note: '光环的中心在头顶上 4 像素、往后 5 像素' },
+  { name: '握剑-近看', ...swordGrip, sec: 0.5, note: '断曜流光旧版：照 transform/valettein_normal.json 的第三人称显示变换（转 [0, 90, 0]、移 [8, 6, 2]、放大 [1.8, 1.8, 1]），手臂是拿东西的原版姿势' },
+  { name: '物品栏图标', ...iconView, sec: 0.5, onlyItem: '图标', note: '左起：头盔、胸甲、护腿、靴子、断曜流光（物品栏用的平面图标）、晋升之环。上排旧版带附魔光效（四件盔甲和剑），中排旧版原图，下排新版原图（环只有一套）' },
+  { name: '剑模型-图标角度', ...itemView, sec: 0.5, onlyItem: '剑模型', note: '旧版手里用的 3D 模型套它自己的 gui 显示变换；游戏的物品栏不显示这个，显示上一张的平面图标' },
+  { name: '新版对照-右前斜', ...rightFront, sec: 0.5, equipment: newVersion, note: '和「全套-右前斜」比：网格同一份，只换了贴图；剑是另一个模型' },
+  { name: '新版对照-背面', ...backView, sec: 0.5, equipment: newVersion, note: '和「全套-背面」比披风' },
+  { name: '头盔和环-前斜-5秒后', ...headFront, sec: 5.5, note: '光环每秒自转 18 度，这里比「头盔和环-前斜」多转 90 度；附魔光泽也滚到别处' },
+  { name: '头盔和环-前斜-暗底', ...headFront, sec: 0.5, darkBg: true, note: '同「头盔和环-前斜」，底色换成近黑看光环本来的颜色' },
+  { name: '对照-不穿装备', ...front, sec: 0.5, equipment: { armor: [], 剑: false, hasRing: false }, note: '库里的原版史蒂夫' },
+  { name: '对照-没附魔', ...rightFront, sec: 0.5, equipment: { enchanted: false }, note: '盔甲和剑都不带附魔光泽，和「全套-右前斜」比' },
+  { name: '对照-只穿盔甲', ...rightFront, sec: 0.5, equipment: { 剑: false, hasRing: false } },
 ];

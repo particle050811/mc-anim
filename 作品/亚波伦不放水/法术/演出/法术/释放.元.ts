@@ -9,5 +9,5 @@ export default defineSpellMeta({
   长秒: releaseRingLifeTicks / 20,
   hitSec: 0, // 放出来当刻对半径内的生物结算（SpellExplosion）
   // DischargeSpell.SpellResult：REDSTONE_EXPLODE（4 个变体取第 1 个），音量 2
-  声音: [{ 资产: '音效/诡厄巫法/goety.redstone_explode.1', 秒: 0, 音量: 2 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.redstone_explode.1', sec: 0, 音量: 2 }],
 });

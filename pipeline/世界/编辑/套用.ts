@@ -18,7 +18,7 @@ const coversRegion = (b: Box, rx: number, rz: number) => b.x2 >= rx * 512 && b.x
 
 export class EditApplier {
   readonly editSet: EditSet;
-  private rawSource: Pick<RegionSource, '区域'>;
+  private rawSource: Pick<RegionSource, 'region'>;
   /** 全局状态表：各区域的状态号先换成这里的号再套 */
   private 表: string[] = [];
   private indexByKey = new Map<string, number>();
@@ -29,9 +29,9 @@ export class EditApplier {
   private footprint = new Map<number, Int32Array>();
   private regionRemap = new WeakMap<UnpackedColumnSegmentRegion, number[]>();
   /** 套用时碰到的问题（同一句只记一次） */
-  readonly 警告 = new Set<string>();
+  readonly warnings = new Set<string>();
 
-  constructor(editSet: EditSet, rawSource: Pick<RegionSource, '区域'>) {
+  constructor(editSet: EditSet, rawSource: Pick<RegionSource, 'region'>) {
     this.editSet = editSet;
     this.rawSource = rawSource;
     this.airId = this.stateId('minecraft:air');
@@ -61,25 +61,25 @@ export class EditApplier {
   }
 
   /** 原样世界里一列（全局号，下标 y − y底）；没数据返回 null */
-  private originalColumn(x: number, z: number): { 格: Uint32Array; yBottom: number } | null {
-    const r = this.rawSource.区域(x >> 9, z >> 9);
+  private originalColumn(x: number, z: number): { cell: Uint32Array; yBottom: number } | null {
+    const r = this.rawSource.region(x >> 9, z >> 9);
     if (!r) return null;
     const c = spreadColumn(r, columnIndex(r.rx, r.rz, x, z));
     if (!c) return null;
     const remap = this.buildRemap(r);
-    const cells = new Uint32Array(c.状态.length);
-    for (let i = 0; i < cells.length; i++) cells[i] = remap[c.状态[i]!]!;
-    return { 格: cells, yBottom: r.yBottom };
+    const cells = new Uint32Array(c.state.length);
+    for (let i = 0; i < cells.length; i++) cells[i] = remap[c.state[i]!]!;
+    return { cell: cells, yBottom: r.yBottom };
   }
 
   /** 第 i 步 clone 的源快照：执行到第 i 步之前的世界里源盒的方块（全局号，格下标的顺序；没数据的格是 未知） */
   private snapshot(i: number): Uint32Array {
     const cachedSnapshot = this.snapshots.get(i);
     if (cachedSnapshot) return cachedSnapshot;
-    const s = this.editSet.步[i]!;
-    if (s.种 !== 'clone') throw new Error('只有 clone 有源快照');
+    const s = this.editSet.step[i]!;
+    if (s.kind !== 'clone') throw new Error('只有 clone 有源快照');
     const b = s.源;
-    if (volume(b) > snapshotLimit) throw new Error(`${s.出处}：clone 的源盒 ${volume(b)} 格，超过 ${snapshotLimit}`);
+    if (volume(b) > snapshotLimit) throw new Error(`${s.provenance}：clone 的源盒 ${volume(b)} 格，超过 ${snapshotLimit}`);
     const sx = b.x2 - b.x1 + 1, sy = b.y2 - b.y1 + 1, sz = b.z2 - b.z1 + 1;
     const out = new Uint32Array(sx * sy * sz).fill(unresolved);
     let missingColumns = 0, firstColumn: [number, number] | null = null;
@@ -91,46 +91,46 @@ export class EditApplier {
           firstColumn ??= [x, z];
           continue;
         }
-        this.applyColumn(c.格, c.yBottom, x, z, i);
+        this.applyColumn(c.cell, c.yBottom, x, z, i);
         for (let y = b.y1; y <= b.y2; y++) {
           const k = y - c.yBottom;
-          if (k >= 0 && k < c.格.length) out[((y - b.y1) * sz + (z - b.z1)) * sx + (x - b.x1)] = c.格[k]!;
+          if (k >= 0 && k < c.cell.length) out[((y - b.y1) * sz + (z - b.z1)) * sx + (x - b.x1)] = c.cell[k]!;
         }
       }
     // 一步只记一条（源盒大时逐列记会刷出成千上万行）
-    if (firstColumn) this.警告.add(`${s.出处}：clone 的源有 ${missingColumns} 列区块没生成（第一列在 (${firstColumn[0]}, ${firstColumn[1]})），按没有方块处理（不复制）`);
+    if (firstColumn) this.warnings.add(`${s.provenance}：clone 的源有 ${missingColumns} 列区块没生成（第一列在 (${firstColumn[0]}, ${firstColumn[1]})），按没有方块处理（不复制）`);
     this.snapshots.set(i, out);
     return out;
   }
 
   /** place 第 i 步：世界列 (x, z) 对应结构里哪一列（结构 x + z·宽），不在结构里是 −1 */
   private structureColumn(i: number, x: number, z: number) {
-    const s = this.editSet.步[i]!;
-    if (s.种 !== 'place') return -1;
+    const s = this.editSet.step[i]!;
+    if (s.kind !== 'place') return -1;
     let f = this.footprint.get(i);
-    const w = s.盒.x2 - s.盒.x1 + 1;
+    const w = s.boxes.x2 - s.boxes.x1 + 1;
     if (!f) {
-      f = new Int32Array(w * (s.盒.z2 - s.盒.z1 + 1)).fill(-1);
-      const [ex, , ez] = s.结构.大小;
+      f = new Int32Array(w * (s.boxes.z2 - s.boxes.z1 + 1)).fill(-1);
+      const [ex, , ez] = s.结构.size;
       for (let a = 0; a < ex; a++)
         for (let c = 0; c < ez; c++) {
           const [dx, dz] = transformPos(a, c, s.rotation, s.mirror);
-          f[(s.位置[2] + dz - s.盒.z1) * w + (s.位置[0] + dx - s.盒.x1)] = a + c * ex;
+          f[(s.位置[2] + dz - s.boxes.z1) * w + (s.位置[0] + dx - s.boxes.x1)] = a + c * ex;
         }
       this.footprint.set(i, f);
     }
-    return f[(z - s.盒.z1) * w + (x - s.盒.x1)]!;
+    return f[(z - s.boxes.z1) * w + (x - s.boxes.x1)]!;
   }
 
   /** place 第 i 步：结构调色（变换过的状态的全局号，结构空位是 未知） */
   private structPalette(i: number) {
     let g = this.structureIds.get(i);
     if (g) return g;
-    const s = this.editSet.步[i]!;
-    if (s.种 !== 'place') throw new Error('只有 place 有结构');
+    const s = this.editSet.step[i]!;
+    if (s.kind !== 'place') throw new Error('只有 place 有结构');
     const cache = new Map<string, number>();
-    g = new Uint32Array(s.结构.格.length);
-    s.结构.格.forEach((st, k) => {
+    g = new Uint32Array(s.结构.cell.length);
+    s.结构.cell.forEach((st, k) => {
       if (st === null) return void (g![k] = unresolved);
       let v = cache.get(st);
       if (v === undefined) cache.set(st, (v = this.stateId(transformState(st, s.rotation, s.mirror))));
@@ -144,28 +144,28 @@ export class EditApplier {
   private applyColumn(cells: Uint32Array, yBottom: number, x: number, z: number, count: number) {
     const yTop = yBottom + cells.length - 1;
     const outOfRange = (s: EditStep, lo: number, hi: number) => {
-      if (lo < yBottom || hi > yTop) this.警告.add(`${s.出处}：y ${lo}～${hi} 超出世界高度 ${yBottom}～${yTop}，超出的部分不管`);
+      if (lo < yBottom || hi > yTop) this.warnings.add(`${s.provenance}：y ${lo}～${hi} 超出世界高度 ${yBottom}～${yTop}，超出的部分不管`);
     };
     for (let i = 0; i < count; i++) {
-      const s = this.editSet.步[i]!;
-      if (!coversColumn(s.盒, x, z)) continue;
-      const lo = Math.max(s.盒.y1, yBottom), hi = Math.min(s.盒.y2, yTop);
-      outOfRange(s, s.盒.y1, s.盒.y2);
-      switch (s.种) {
+      const s = this.editSet.step[i]!;
+      if (!coversColumn(s.boxes, x, z)) continue;
+      const lo = Math.max(s.boxes.y1, yBottom), hi = Math.min(s.boxes.y2, yTop);
+      outOfRange(s, s.boxes.y1, s.boxes.y2);
+      switch (s.kind) {
         case 'fill':
         case 'setblock': {
-          const v = this.stateId(s.状态);
-          const b = s.盒;
+          const v = this.stateId(s.state);
+          const b = s.boxes;
           const isEdgeColumn = x === b.x1 || x === b.x2 || z === b.z1 || z === b.z2;
           for (let y = lo; y <= hi; y++) {
             const k = y - yBottom;
-            if (s.种 === 'fill' && (s.fillMode === 'hollow' || s.fillMode === 'outline')) {
+            if (s.kind === 'fill' && (s.fillMode === 'hollow' || s.fillMode === 'outline')) {
               const isEdge = isEdgeColumn || y === b.y1 || y === b.y2;
               if (isEdge) cells[k] = v;
               else if (s.fillMode === 'hollow') cells[k] = this.airId;
             } else if (s.fillMode === 'keep') {
               if (cells[k] === this.airId) cells[k] = v;
-            } else if (s.种 === 'fill' && s.filterState) {
+            } else if (s.kind === 'fill' && s.filterState) {
               if (this.合(s.filterState, cells[k]!, `${i}`)) cells[k] = v;
             } else cells[k] = v;
           }
@@ -192,7 +192,7 @@ export class EditApplier {
           const c = this.structureColumn(i, x, z);
           if (c < 0) break;
           const colorPalette = this.structPalette(i);
-          const ex = s.结构.大小[0];
+          const ex = s.结构.size[0];
           const a = c % ex, cz = (c - a) / ex;
           for (let y = lo; y <= hi; y++) {
             const g = colorPalette[cellIndex(s.结构, a, y - s.位置[1], cz)]!;
@@ -206,13 +206,13 @@ export class EditApplier {
 
   /** 套到一个区域上：返回新的列段（没被碰到就是原对象） */
   applyEdits(r: UnpackedColumnSegmentRegion): UnpackedColumnSegmentRegion {
-    const steps = this.editSet.步.map((s, i) => [s, i] as const).filter(([s]) => coversRegion(s.盒, r.rx, r.rz));
+    const steps = this.editSet.step.map((s, i) => [s, i] as const).filter(([s]) => coversRegion(s.boxes, r.rx, r.rz));
     if (!steps.length) return r;
     // 要改的列：各步盒在本区域里的范围
     const edited = new Uint8Array(512 * 512);
     for (const [s] of steps) {
-      const x1 = Math.max(s.盒.x1, r.rx * 512) - r.rx * 512, x2 = Math.min(s.盒.x2, r.rx * 512 + 511) - r.rx * 512;
-      const z1 = Math.max(s.盒.z1, r.rz * 512) - r.rz * 512, z2 = Math.min(s.盒.z2, r.rz * 512 + 511) - r.rz * 512;
+      const x1 = Math.max(s.boxes.x1, r.rx * 512) - r.rx * 512, x2 = Math.min(s.boxes.x2, r.rx * 512 + 511) - r.rx * 512;
+      const z1 = Math.max(s.boxes.z1, r.rz * 512) - r.rz * 512, z2 = Math.min(s.boxes.z2, r.rz * 512 + 511) - r.rz * 512;
       for (let z = z1; z <= z2; z++) edited.fill(1, z * 512 + x1, z * 512 + x2 + 1);
     }
     const remap = this.buildRemap(r);
@@ -233,18 +233,18 @@ export class EditApplier {
       const s0 = r.runStarts[col]!, e0 = r.runStarts[col + 1]!;
       if (!edited[col] || s0 === e0) {
         if (edited[col]) noDataCount++;
-        for (let k = s0; k < e0; k++) (stateIds.push(r.状态[k]!), bottom.push(r.bottom[k]!), biomeIds.push(r.群系[k]!));
+        for (let k = s0; k < e0; k++) (stateIds.push(r.state[k]!), bottom.push(r.bottom[k]!), biomeIds.push(r.biome[k]!));
         continue;
       }
       const c = spreadColumn(r, col)!;
-      const cells = new Uint32Array(c.状态.length);
-      for (let k = 0; k < cells.length; k++) cells[k] = remap[c.状态[k]!]!;
-      this.applyColumn(cells, r.yBottom, r.rx * 512 + (col & 511), r.rz * 512 + (col >> 9), this.editSet.步.length);
+      const cells = new Uint32Array(c.state.length);
+      for (let k = 0; k < cells.length; k++) cells[k] = remap[c.state[k]!]!;
+      this.applyColumn(cells, r.yBottom, r.rx * 512 + (col & 511), r.rz * 512 + (col >> 9), this.editSet.step.length);
       // 从顶往下重新并段
       let n = 0;
       for (let k = cells.length - 1; k >= 0; k--) {
-        const st = reverseId(cells[k]!), bi = c.群系[k]!;
-        if (k < cells.length - 1 && st === reverseId(cells[k + 1]!) && bi === c.群系[k + 1]) {
+        const st = reverseId(cells[k]!), bi = c.biome[k]!;
+        if (k < cells.length - 1 && st === reverseId(cells[k + 1]!) && bi === c.biome[k + 1]) {
           bottom[bottom.length - 1] = r.yBottom + k;
           continue;
         }
@@ -254,8 +254,8 @@ export class EditApplier {
       if (n > 0xffff) throw new Error(`r.${r.rx}.${r.rz} 列 ${col} 套完编辑有 ${n} 段，放不进 u16`);
       segRunCounts[col] = n;
     }
-    if (noDataCount) this.警告.add(`r.${r.rx}.${r.rz}：编辑碰到的 ${noDataCount} 列区块没生成，跳过`);
+    if (noDataCount) this.warnings.add(`r.${r.rx}.${r.rz}：编辑碰到的 ${noDataCount} 列区块没生成，跳过`);
     if (stateTable.length > 65536) throw new Error(`r.${r.rx}.${r.rz} 套完编辑方块状态超过 65536 种`);
-    return { ...r, stateTable, 段数: segRunCounts, 状态: Uint16Array.from(stateIds), bottom: Int16Array.from(bottom), 群系: Uint8Array.from(biomeIds), runStarts: startTable(segRunCounts) };
+    return { ...r, stateTable, 段数: segRunCounts, state: Uint16Array.from(stateIds), bottom: Int16Array.from(bottom), biome: Uint8Array.from(biomeIds), runStarts: startTable(segRunCounts) };
   }
 }

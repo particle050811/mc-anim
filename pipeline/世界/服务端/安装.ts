@@ -39,7 +39,7 @@ const copyTo = (sourcePath: string, destPath: string) => {
 };
 
 export type InstallServerOptions = {
-  声明: WorldDecl;
+  decl: WorldDecl;
   /** 服务端目录（<ANIM_GAME>/<服务端>） */
   目录: string;
   acceptEula?: boolean;
@@ -53,8 +53,8 @@ export type InstallServerOptions = {
 export type InstallServerResult = { loaderInstalled: boolean; newMods: string[]; missingMods: string[]; newDatapacks: string[]; eula: '已同意' | '已写' | '没写' };
 
 export const installServer = async (o: InstallServerOptions): Promise<InstallServerResult> => {
-  const w = o.声明, log = o.说;
-  if (!w.Forge) throw new Error(`${w.文件} 没写 Forge（版本，如 1.20.1-47.4.10）`);
+  const w = o.decl, log = o.说;
+  if (!w.Forge) throw new Error(`${w.file} 没写 Forge（版本，如 1.20.1-47.4.10）`);
   const sourcingManifest = readManifest();
   fs.mkdirSync(o.目录, { recursive: true });
   const alreadyInstalled = (() => {
@@ -66,9 +66,9 @@ export const installServer = async (o: InstallServerOptions): Promise<InstallSer
     }
   })();
   if (!alreadyInstalled && !o.skipLoader) {
-    const installer = sourcingManifest.jars.get('forge-installer') as ({ 版本?: string } & ReturnType<typeof sourcingManifest.jars.get>) | undefined;
+    const installer = sourcingManifest.jars.get('forge-installer') as ({ version?: string } & ReturnType<typeof sourcingManifest.jars.get>) | undefined;
     if (!installer && !o.installerPath) throw new Error('sourcing/jars.toml 没登记 forge-installer');
-    if (installer && !o.installerPath && installer.版本 !== w.Forge) throw new Error(`jars.toml 登记的 Forge 安装器是 ${installer.版本}，${w.文件} 要 ${w.Forge}：先在 jars.toml 登记那一版（下载地址、sha256）`);
+    if (installer && !o.installerPath && installer.version !== w.Forge) throw new Error(`jars.toml 登记的 Forge 安装器是 ${installer.version}，${w.file} 要 ${w.Forge}：先在 jars.toml 登记那一版（下载地址、sha256）`);
     const extraEntries = fs.readdirSync(o.目录).filter((n) => !['eula.txt', 'server.properties'].includes(n));
     if (extraEntries.length) throw new Error(`${o.目录} 不是空的（有 ${extraEntries.slice(0, 5).join('、')}${extraEntries.length > 5 ? '…' : ''}）又不是装好的 Forge ${w.Forge}：不往里装，换个空目录`);
     const jar = o.installerPath ?? (await fetchJar('forge-installer', { sourcingManifest, 说: log }));
@@ -88,29 +88,29 @@ export const installServer = async (o: InstallServerOptions): Promise<InstallSer
   }
 
   const newMods: string[] = [], missingMods: string[] = [];
-  const toInstall: { id: string; 路径: string }[] = [];
-  for (const id of w.模组) {
+  const toInstall: { id: string; path: string }[] = [];
+  for (const id of w.mods) {
     if (id === 'mcai') continue;
     try {
-      toInstall.push({ id, 路径: await fetchJar(id, { sourcingManifest, 说: log }) });
+      toInstall.push({ id, path: await fetchJar(id, { sourcingManifest, 说: log }) });
     } catch (e) {
       missingMods.push(`${id}：${(e as Error).message}`);
     }
   }
   // 另需模组文件：写文件名，按 jars.toml 里同名文件，再按游戏环境 缓存/mods/ 找
-  for (const fileName of w.另需模组文件) {
-    const jarEntry = [...sourcingManifest.jars].find(([, j]) => path.basename(j.到) === fileName || (j as { 文件?: string }).文件 === fileName);
+  for (const fileName of w.extraModFiles) {
+    const jarEntry = [...sourcingManifest.jars].find(([, j]) => path.basename(j.dest) === fileName || (j as { file?: string }).file === fileName);
     const modPath = jarEntry ? jarPath(sourcingManifest, jarEntry[0]) : path.join(config('游戏'), '缓存', 'mods', fileName);
-    if (fs.existsSync(modPath)) toInstall.push({ id: fileName, 路径: modPath });
+    if (fs.existsSync(modPath)) toInstall.push({ id: fileName, path: modPath });
     else missingMods.push(`${fileName}：jars.toml 没登记、游戏环境 缓存/mods/ 里也没有`);
   }
-  for (const m of toInstall) if (copyTo(m.路径, path.join(o.目录, 'mods', path.basename(m.路径)))) newMods.push(path.basename(m.路径));
-  if (w.模组.includes('mcai') && !fs.readdirSync(path.join(o.目录, 'mods'), { withFileTypes: true }).some((e) => /^mcai-.*\.jar$/.test(e.name)))
+  for (const m of toInstall) if (copyTo(m.path, path.join(o.目录, 'mods', path.basename(m.path)))) newMods.push(path.basename(m.path));
+  if (w.mods.includes('mcai') && !fs.readdirSync(path.join(o.目录, 'mods'), { withFileTypes: true }).some((e) => /^mcai-.*\.jar$/.test(e.name)))
     log('注意：声明里有 mcai（取材 mod），mods/ 里还没有：anim mcai build 装上');
 
   // 第三方的数据包（jars.toml 里登记了文件名的 zip，如史诗地形）放进 世界数据包/，建世界时按声明挑
   const newDatapacks: string[] = [];
-  for (const dataPackName of w.数据包) {
+  for (const dataPackName of w.datapacks) {
     if (fs.existsSync(path.join(datapackDir(), dataPackName))) continue;
     const destPath = path.join(o.目录, SERVER_DATAPACK_DIR_NAME, dataPackName);
     if (fs.existsSync(destPath)) continue;

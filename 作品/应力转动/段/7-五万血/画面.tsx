@@ -34,13 +34,13 @@ const JadeLayer: React.FC<{ sec: number }> = ({ sec }) => {
   const ui = choreo.jade(sec);
   if (!ui) return null;
   const cam = choreo.camera(sec);
-  const ndc = sceneToThree(ui.点).project(makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height));
+  const ndc = sceneToThree(ui.points).project(makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height));
   const from: [number, number] = [((ndc.x + 1) / 2) * width, ((1 - ndc.y) / 2) * height];
   const s = jadeScalePerWidth * width;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <JadeLeaderLine from={from} toY={jadeBoxHeight * s} s={jadeLineScalePerWidth * width} progress={ui.lineScale} />
-      <JadeTooltip entity={{ name: '监守者', health: choreo.wardenHealthAt(sec).now, maxHealth: choreo.wardenHealthAt(sec).max, mod: 'Minecraft' }} s={s} cx={width / 2} visibility={ui.框} />
+      <JadeTooltip entity={{ name: '监守者', health: choreo.wardenHealthAt(sec).now, maxHealth: choreo.wardenHealthAt(sec).max, mod: 'Minecraft' }} s={s} cx={width / 2} visibility={ui.box} />
     </AbsoluteFill>
   );
 };

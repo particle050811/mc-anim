@@ -47,7 +47,7 @@ const LOOT_LEN = 7 / 6; // 同 6-4-1：开箱、伸手拿东西这一套
 const FACE_CHEST = yawTo(0, -1); // 面朝南（#210 在 C 南边一格）
 // 箱盖：弯腰后 1/6 秒掀开（同 6-4-1），一直开着（他开着箱子定住、黑暗过去接着翻，6-4-3a 开头箱子还开着）
 export const lidOpenSec = LOOT0 + 1 / 6;
-export const openChest = (t: number): ChestOpening => ({ chestId: chestArchery.chestId, 开: lidOpenSec, 秒: t });
+export const openChest = (t: number): ChestOpening => ({ chestId: chestArchery.chestId, 开: lidOpenSec, sec: t });
 
 // ---------- 羊毛（6-4-1 一路垫的那些在场景里一直留着） ----------
 export const wool = (t: number) => jumpBuild.woolStateAt(toJumpSec(t));
@@ -72,7 +72,7 @@ const soundChain = (() => {
     return { b: shrieker, t: activateSec + flightTicks(sensorCenter, to) * tickSec };
   });
   received.sort((a, c) => a.t - c.t);
-  return { vibrations: vibrations, activateSecs: [activateSec], shriek: { 块: received[0].b, p: blockBottomCenter(received[0].b), t: received[0].t } };
+  return { vibrations: vibrations, activateSecs: [activateSec], shriek: { tile: received[0].b, p: blockBottomCenter(received[0].b), t: received[0].t } };
 })();
 export const vibrations = soundChain.vibrations;
 export const activateSecs = soundChain.activateSecs; // 各感测体激活的本段秒数
@@ -274,5 +274,5 @@ export const keyMoments = {
   resume: resumeSec,
   lootUiOpen: lootUiOpenSec,
   lootTakeDone: lootTakeSecs[lootTakeSecs.length - 1],
-  末帧: STORY_END - GRID,
+  lastFrame: STORY_END - GRID,
 };

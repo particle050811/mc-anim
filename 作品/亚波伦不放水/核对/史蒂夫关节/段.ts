@@ -3,4 +3,4 @@
 import { defineSeg } from '@engine/段/段定义.ts';
 import { aspect, totalSec } from './视图.ts';
 
-export default defineSeg({ 场: '核对', 秒: totalSec, 宽: aspect.宽, 高: aspect.高, 地形: [] });
+export default defineSeg({ scene: '核对', sec: totalSec, width: aspect.width, height: aspect.height, terrain: [] });

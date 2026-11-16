@@ -1,6 +1,6 @@
 {
+  "lib": "store",
   "sha256": "9078427b96feeda612c04cdc3622b07e87685a79b7f13cd9cae16590fe3a24ea",
-  "后缀": ".png",
-  "大小": 338,
-  "库": "store"
+  "size": 338,
+  "suffix": ".png"
 }

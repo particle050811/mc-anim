@@ -35,21 +35,21 @@ export type HeightFog = { start: number; halfLife: number; density: number };
 export type Cloud =
   | {
       种类: 'photon';
-      海平面: number;
+      seaLevel: number;
       weather?: { temperature: number; humidity: number; wind: number };
       加?: readonly (readonly [number, number, number])[];
       clearRect?: readonly [number, number, number, number];
       aroundCamera?: readonly [number, number];
       exposure?: number;
     }
-  | { 种类: '原版'; 高: number; radius?: number; 色?: string; offset?: readonly [number, number] }
+  | { 种类: '原版'; height: number; radius?: number; 色?: string; offset?: readonly [number, number] }
   | { 种类: '无' };
 
 /** 美术光向（指向光源）：向量，或方位（度，0 = 北、顺时针）+ 仰角（度） */
 export type LightDir = V3 | { azimuthDeg: number; elevationDeg: number };
 
 export type EnvDescription = {
-  维度: DimensionInfo;
+  dimension: DimensionInfo;
   画法: RendererName;
   /** 游戏时间（刻）：0 日出、6000 正午、12000 日落、18000 午夜，可以超过 24000（月相按第几天走）。维度时间固定的不给 */
   gameTime?: number;
@@ -166,7 +166,7 @@ export const dawnDuskColor = (skyAngle: number): [number, number, number, number
 
 // ---------- 描述 → 灯 ----------
 /** 实际用的游戏时间：维度固定的取固定时刻 */
-export const effectiveGameTime = (e: EnvDescription): number | null => e.维度.fixedGameTime ?? e.gameTime ?? null;
+export const effectiveGameTime = (e: EnvDescription): number | null => e.dimension.fixedGameTime ?? e.gameTime ?? null;
 
 // 按时刻算灯时太阳贴着地平线淡出、换成月光的那一段（仰角正弦），和月光对日光的比例：暂定，没对过游戏
 const horizonFade: [number, number] = [-0.03, 0.1];
@@ -194,7 +194,7 @@ export const LightCoeffs = (e: EnvDescription): LightCoeffs => {
     return { lightDir: d, sun: d, isMoonLight: false, directMult: isClear ? 1 : 1 - w.雨, skyLightMult: isClear ? 1 : skyDarken(0, w) };
   }
   const t = effectiveGameTime(e);
-  if (t === null) throw new Error(`环境（${e.维度.id}）没给 时刻，也没给 太阳`);
+  if (t === null) throw new Error(`环境（${e.dimension.id}）没给 时刻，也没给 太阳`);
   const angle = skyAngle(t);
   const sunDir = sunDirection(angle, e.orbitTilt ?? 0);
   const moonDir: V3 = [-sunDir[0], -sunDir[1], -sunDir[2]];
@@ -211,16 +211,16 @@ const checkWeather = (w: Weather, displayName: string) => {
 
 /** 查一份环境描述，有问题直接抛（模块加载时就报，不等渲到那一帧） */
 export const defineEnvironment = (e: EnvDescription, displayName = '环境'): EnvDescription => {
-  const fixedTick = e.维度.fixedGameTime;
+  const fixedTick = e.dimension.fixedGameTime;
   if (e.gameTime !== undefined) {
     if (!Number.isFinite(e.gameTime)) throw new Error(`${displayName}：时刻 ${e.gameTime} 不是数`);
-    if (fixedTick !== undefined) throw new Error(`${displayName}：${e.维度.id} 的时间固定在 ${fixedTick}，时刻 不起作用；要换光向写 太阳`);
+    if (fixedTick !== undefined) throw new Error(`${displayName}：${e.dimension.id} 的时间固定在 ${fixedTick}，时刻 不起作用；要换光向写 太阳`);
     if (e.sun !== undefined) throw new Error(`${displayName}：时刻 和 太阳 只写一个（太阳 是美术光向，代替时刻算出的太阳）`);
   }
   if (e.sun !== undefined) {
     const d = lightDirToVec(e.sun);
     if (!d.every(Number.isFinite) || Math.hypot(...d) === 0) throw new Error(`${displayName}：太阳 ${JSON.stringify(e.sun)} 不是有效方向`);
-  } else if (e.gameTime === undefined && fixedTick === undefined) throw new Error(`${displayName}：${e.维度.id} 要写 时刻 或 太阳`);
+  } else if (e.gameTime === undefined && fixedTick === undefined) throw new Error(`${displayName}：${e.dimension.id} 要写 时刻 或 太阳`);
   if (e.weather) checkWeather(e.weather, displayName);
   if (typeof e.画法 !== 'string' || !/^[^/\\.\s]+$/.test(e.画法)) throw new Error(`${displayName}：画法 ${JSON.stringify(e.画法)} 要是 engine/light/画法/ 下的模块名`);
   if ('tier' in e.lightSpec && !(tierNames as readonly string[]).includes(e.lightSpec.tier)) throw new Error(`${displayName}：没有灯光档位「${e.lightSpec.tier}」（有：${tierNames.join('、')}；表里没有的写 配比）`);
@@ -239,7 +239,7 @@ export const defineEnvironment = (e: EnvDescription, displayName = '环境'): En
 /** 从这一帧到下一帧怎么过渡：线性、平滑（smoothstep）、阶跃（到下一帧才跳） */
 export type Easing = '线性' | '平滑' | '阶跃';
 /** 关键帧：帧（整数，段内或场内，看 <环境> 的 帧）上时刻、雨、雷是多少；没写的项不在这一帧定，各项各自插值，头尾之外保持 */
-export type EnvKeyframe = { 帧: number; 时刻?: number; 雨?: number; 雷?: number; easing?: Easing };
+export type EnvKeyframe = { frame: number; 时刻?: number; 雨?: number; 雷?: number; easing?: Easing };
 export type EnvTrack = { base: EnvDescription; keyframes: readonly EnvKeyframe[] };
 
 export const isEnvTrack = (x: EnvDescription | EnvTrack): x is EnvTrack => 'keyframes' in x;
@@ -248,15 +248,15 @@ export const defineEnvTrack = (envTrack: EnvTrack, displayName = '环境轨'): E
   defineEnvironment(envTrack.base, `${displayName}.基础`);
   let prevFrame = -Infinity;
   for (const k of envTrack.keyframes) {
-    const keyLabel = `${displayName} 第 ${k.帧} 帧`;
-    if (!Number.isInteger(k.帧) || k.帧 < 0) throw new Error(`${keyLabel}：帧要是非负整数`);
-    if (k.帧 <= prevFrame) throw new Error(`${keyLabel}：关键帧要按帧从小到大、不重复`);
-    prevFrame = k.帧;
+    const keyLabel = `${displayName} 第 ${k.frame} 帧`;
+    if (!Number.isInteger(k.frame) || k.frame < 0) throw new Error(`${keyLabel}：帧要是非负整数`);
+    if (k.frame <= prevFrame) throw new Error(`${keyLabel}：关键帧要按帧从小到大、不重复`);
+    prevFrame = k.frame;
     if (k.时刻 === undefined && k.雨 === undefined && k.雷 === undefined) throw new Error(`${keyLabel}：时刻、雨、雷至少写一项`);
     if (k.时刻 !== undefined) {
       if (!Number.isFinite(k.时刻)) throw new Error(`${keyLabel}：时刻 ${k.时刻} 不是数`);
       if (envTrack.base.sun !== undefined) throw new Error(`${keyLabel}：基础 用了美术光向（太阳），时刻 关键帧不起作用`);
-      if (envTrack.base.维度.fixedGameTime !== undefined) throw new Error(`${keyLabel}：${envTrack.base.维度.id} 的时间固定在 ${envTrack.base.维度.fixedGameTime}，时刻 关键帧不起作用`);
+      if (envTrack.base.dimension.fixedGameTime !== undefined) throw new Error(`${keyLabel}：${envTrack.base.dimension.id} 的时间固定在 ${envTrack.base.dimension.fixedGameTime}，时刻 关键帧不起作用`);
     }
     for (const f of ['雨', '雷'] as const) if (k[f] !== undefined && !(k[f]! >= 0 && k[f]! <= 1)) throw new Error(`${keyLabel}：${f} = ${k[f]}，要在 0～1`);
   }
@@ -269,14 +269,14 @@ const easeValue = (easeMode: Easing, t: number) => (easeMode === '阶跃' ? 0 : 
 export const keyframeValue = (keyframes: readonly EnvKeyframe[], trackItem: '时刻' | '雨' | '雷', frame: number): number | undefined => {
   const ks = keyframes.filter((k) => k[trackItem] !== undefined);
   if (!ks.length) return undefined;
-  if (frame <= ks[0]!.帧) return ks[0]![trackItem];
+  if (frame <= ks[0]!.frame) return ks[0]![trackItem];
   const lastKey = ks[ks.length - 1]!;
-  if (frame >= lastKey.帧) return lastKey[trackItem];
+  if (frame >= lastKey.frame) return lastKey[trackItem];
   let i = 0;
-  while (ks[i + 1]!.帧 <= frame) i++;
+  while (ks[i + 1]!.frame <= frame) i++;
   const a = ks[i]!;
   const b = ks[i + 1]!;
-  const t = easeValue(a.easing ?? '线性', (frame - a.帧) / (b.帧 - a.帧));
+  const t = easeValue(a.easing ?? '线性', (frame - a.frame) / (b.frame - a.frame));
   return a[trackItem]! + (b[trackItem]! - a[trackItem]!) * t;
 };
 

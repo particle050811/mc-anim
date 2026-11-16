@@ -25,13 +25,13 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 import { useSnappedFrame } from '../../当前帧.ts';
 
-const width = aspect.宽, height = aspect.高;
+const width = aspect.width, height = aspect.height;
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, toSongFrame(0)));
 
 // ---------- 破坏粒子：原版 TerrainParticle，草方块、泥土的粒子贴图都是泥土 ----------
 const dirtPng = dirtTexture();
 const particleImage = particleTexture(dirtPng.px, dirtPng.w, dirtPng.h, dirtPng);
-const shardParticles = shards.map((c, i) => spawnBlockBreak([...c.格] as V3, [1, 1, 1], [0, 0, 1, 1], [1, 1, 1], 31 + i));
+const shardParticles = shards.map((c, i) => spawnBlockBreak([...c.cell] as V3, [1, 1, 1], [0, 0, 1, 1], [1, 1, 1], 31 + i));
 const scaleColor = (hex: string, k: number): [number, number, number] => {
   const n = parseInt(hex.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255].map((v) => v * k) as [number, number, number];
@@ -39,7 +39,7 @@ const scaleColor = (hex: string, k: number): [number, number, number] => {
 
 const ParticleField: React.FC<{ f: number; tint: string }> = ({ f, tint }) => {
   const out: Particle[] = [];
-  shards.forEach((c, i) => collectBreakParticles(shardParticles[i]!, (f - c.帧) / fps, out));
+  shards.forEach((c, i) => collectBreakParticles(shardParticles[i]!, (f - c.frame) / fps, out));
   // 剖面外（y < 0）那排方块是切掉的，崩到那里的粒子会浮在剖面前面：不画（游戏里它们撞在那排方块上）
   const color = scaleColor(tint, particleColor);
   const visible = out.filter((p) => p.p[1] >= 0.02).map((p) => ({ ...p, color: color }));
@@ -92,7 +92,7 @@ const You: React.FC<{ f: number }> = ({ f }) => {
 const FallingDirt: React.FC<{ f: number }> = ({ f }) => (
   <>
     {dropItems(f).map((p, i) => (
-      <GroundDirt key={i} 位={p.位} 转={p.转} 大小={drop.大小} />
+      <GroundDirt key={i} 位={p.位} 转={p.转} size={drop.size} />
     ))}
   </>
 );
@@ -103,13 +103,13 @@ const picture: React.FC = () => {
   const crack = crackState(f);
   return (
     <>
-      <FilmPost grade={t.grade} 种子={toSongFrame(f)}>
+      <FilmPost grade={t.grade} seed={toSongFrame(f)}>
         {/* 光影照 默认.ts 的 光影段 */}
         <shadingScope.Provider value={{ shading: shadingBySeg['2-第一晚'] }}>
-          <NewWorld cameraRig={shotAt(f)} 你={null} tint={t.tint} 刻={skyTick(f)} section={{ pit: pitStateAt(f), peeled: stripAt(f) }} 宽={width} 高={height}>
+          <NewWorld cameraRig={shotAt(f)} 你={null} tint={t.tint} 刻={skyTick(f)} section={{ pit: pitStateAt(f), peeled: stripAt(f) }} width={width} height={height}>
             <You f={f} />
             <FallingDirt f={f} />
-            {crack && <BlockCracks 格={crack.格} 级={crack.级} />}
+            {crack && <BlockCracks cell={crack.cell} 级={crack.级} />}
             <ParticleField f={f} tint={t.tint} />
             <Zombies f={f} />
             <HoleDark darkness={holeDark(f)} topY={topWallDark(f)} />

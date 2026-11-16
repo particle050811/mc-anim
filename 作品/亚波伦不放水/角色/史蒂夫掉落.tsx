@@ -39,16 +39,16 @@ export const deathDropTrack = (feet: V3, itemCount: number, seed: number, option
 
 export type DropItem = { 节点: React.ReactNode; display: ItemTransform };
 
-const EnchantmentIcon: React.FC<{ 图: string; 秒: number }> = ({ 图: imagePath, 秒: sec }) => <GlintItem layers={[{ tex: png(imagePath) }]} sec={sec} />;
+const EnchantmentIcon: React.FC<{ image: string; sec: number }> = ({ image: imagePath, sec: sec }) => <GlintItem layers={[{ tex: png(imagePath) }]} sec={sec} />;
 
 /** 本片史蒂夫死后掉的 8 件（顺序固定，和 死亡掉落轨迹 的下标对应）。光泽秒：附魔光效的时钟 */
 export const steveDrops = (glintSec: number): DropItem[] => {
   const groundY = DISPLAY.generated.ground;
   return [
-    { 节点: <EnchantmentIcon 图={oldDivineHelmetPng} 秒={glintSec} />, display: groundY },
-    { 节点: <EnchantmentIcon 图={oldDivineChestplatePng} 秒={glintSec} />, display: groundY },
-    { 节点: <EnchantmentIcon 图={oldDivineLeggingsPng} 秒={glintSec} />, display: groundY },
-    { 节点: <EnchantmentIcon 图={oldDivineBootsPng} 秒={glintSec} />, display: groundY },
+    { 节点: <EnchantmentIcon image={oldDivineHelmetPng} sec={glintSec} />, display: groundY },
+    { 节点: <EnchantmentIcon image={oldDivineChestplatePng} sec={glintSec} />, display: groundY },
+    { 节点: <EnchantmentIcon image={oldDivineLeggingsPng} sec={glintSec} />, display: groundY },
+    { 节点: <EnchantmentIcon image={oldDivineBootsPng} sec={glintSec} />, display: groundY },
     { 节点: <Valettein appearance={defaultAppearance} glintSec={glintSec} />, display: valetteinDisplay[defaultAppearance].ground },
     { 节点: <ItemSprite layers={[{ tex: png(ascensionRingPng) }]} />, display: groundY },
     { 节点: <Bow />, display: groundY },
@@ -57,18 +57,18 @@ export const steveDrops = (glintSec: number): DropItem[] => {
 };
 
 /** 死后 秒 秒时的掉落物。轨迹 用 死亡掉落轨迹 算一次；件 和轨迹一一对应 */
-export const DeathDrop: React.FC<{ trajectory: readonly DropTrack[]; drops: readonly DropItem[]; 秒: number }> = ({ trajectory, drops, 秒: sec }) => {
+export const DeathDrop: React.FC<{ trajectory: readonly DropTrack[]; drops: readonly DropItem[]; sec: number }> = ({ trajectory, drops, sec: sec }) => {
   if (sec < 0) return null;
   const tick = sec * 20;
-  const k = Math.min(Math.floor(tick), trajectory[0]!.路.length - 2);
+  const k = Math.min(Math.floor(tick), trajectory[0]!.lane.length - 2);
   const f = Math.min(1, tick - k);
   return (
     <>
       {drops.map((dropItem, i) => {
         const track = trajectory[i];
         if (!track) return null;
-        const a = track.路[k]!;
-        const b = track.路[k + 1]!;
+        const a = track.lane[k]!;
+        const b = track.lane[k + 1]!;
         const floatOffset = Math.sin(tick / 10 + track.phaseRad) * 0.1 + 0.1 + 0.25 * (dropItem.display.scale?.[1] ?? 1);
         return (
           // 物品空间 Y 朝上 → 场景 Z 朝上：绕 X 转 +90 度；自转绕物品的 Y

@@ -15,10 +15,10 @@ export type BottomBackdrop = '亮天空' | '门口' | '夜' | '对视' | '分屏
 export type LyricStage = '飞来中' | '落定闪' | '拼齐';
 
 export type View = {
-  名: string;
+  name: string;
   bottomBackdrop: BottomBackdrop;
   /** 歌词画哪一帧（歌曲帧）；分屏、归隐的底也画这一帧 */
-  帧: number;
+  frame: number;
 };
 
 /** 每种底配哪一句：亮天空第 1 句（白天最亮的天，两行），门口第 8 句（哈气那个机位，15 个字断两行、错落），夜第 9 句（门口之夜，第 10 句留给烟花） */
@@ -31,41 +31,41 @@ const frameOffset = (n: number) => Math.round(legacyFrameSec(n) * fps);
 const stageFrame = (sentenceIndex: number, stage: LyricStage): number => {
   const segments = timeSpans(sentenceIndex);
   const midSeg = segments[Math.floor(segments.length / 2)]!;
-  if (stage === '飞来中') return Math.floor(midSeg.起) - frameOffset(2);
-  if (stage === '落定闪') return Math.ceil(midSeg.起);
+  if (stage === '飞来中') return Math.floor(midSeg.start) - frameOffset(2);
+  if (stage === '落定闪') return Math.ceil(midSeg.start);
   return Math.ceil(Math.max(...segments.map((d) => d.end))) + frameOffset(1);
 };
 
 /** 关键词拼齐那一帧（词里最后一个字的最后一块落定） */
 const alignedFrame = (sentenceIndex: number) => {
   const wordEffect = mainCutLyricLine(sentenceIndex).wordEffect!;
-  return Math.ceil(Math.max(...timeSpans(sentenceIndex).slice(wordEffect.从, wordEffect.到 + 1).map((d) => d.end)));
+  return Math.ceil(Math.max(...timeSpans(sentenceIndex).slice(wordEffect.从, wordEffect.dest + 1).map((d) => d.end)));
 };
 
 const phases: readonly LyricStage[] = ['飞来中', '落定闪', '拼齐'];
-const shatterFrame = mainCutEvents.worldShatters.帧;
+const shatterFrame = mainCutEvents.worldShatters.frame;
 
 export const views: readonly View[] = [
-  ...(['亮天空', '门口', '夜'] as const).flatMap((bottomBackdrop) => phases.map((stage): View => ({ 名: `${bottomBackdrop}-${stage}`, bottomBackdrop, 帧: stageFrame(bottomLine[bottomBackdrop], stage) }))),
+  ...(['亮天空', '门口', '夜'] as const).flatMap((bottomBackdrop) => phases.map((stage): View => ({ name: `${bottomBackdrop}-${stage}`, bottomBackdrop, frame: stageFrame(bottomLine[bottomBackdrop], stage) }))),
   // 光明（第 3 句，祭坛那句的白天）：拼齐那一帧两档、之后留一档
-  { 名: '光明-一亮', bottomBackdrop: '亮天空', 帧: alignedFrame(3) },
-  { 名: '光明-留光', bottomBackdrop: '亮天空', 帧: alignedFrame(3) + frameOffset(6) },
+  { name: '光明-一亮', bottomBackdrop: '亮天空', frame: alignedFrame(3) },
+  { name: '光明-留光', bottomBackdrop: '亮天空', frame: alignedFrame(3) + frameOffset(6) },
   // 烟花（第 10 句）：炸开后 2 帧、7 帧
-  { 名: '烟花-炸开', bottomBackdrop: '夜', 帧: alignedFrame(10) + frameOffset(2) },
-  { 名: '烟花-散开', bottomBackdrop: '夜', 帧: alignedFrame(10) + frameOffset(7) },
+  { name: '烟花-炸开', bottomBackdrop: '夜', frame: alignedFrame(10) + frameOffset(2) },
+  { name: '烟花-散开', bottomBackdrop: '夜', frame: alignedFrame(10) + frameOffset(7) },
   // 刹那（第 11 句）：「刹」冻住、「那」还在拼；整词冻住那一闪；裂开（第11句碎裂 那一帧）；往下掉；掉出字行（整句开始退）
-  { 名: '刹那-刹冻住', bottomBackdrop: '夜', 帧: Math.ceil(timeSpans(11)[6]!.end) + frameOffset(3) },
-  { 名: '刹那-冻住', bottomBackdrop: '夜', 帧: alignedFrame(11) },
-  { 名: '刹那-裂开', bottomBackdrop: '夜', 帧: shatterFrame },
-  { 名: '刹那-掉落', bottomBackdrop: '夜', 帧: shatterFrame + frameOffset(4) },
-  { 名: '刹那-掉出', bottomBackdrop: '夜', 帧: shatterFrame + frameOffset(6) },
+  { name: '刹那-刹冻住', bottomBackdrop: '夜', frame: Math.ceil(timeSpans(11)[6]!.end) + frameOffset(3) },
+  { name: '刹那-冻住', bottomBackdrop: '夜', frame: alignedFrame(11) },
+  { name: '刹那-裂开', bottomBackdrop: '夜', frame: shatterFrame },
+  { name: '刹那-掉落', bottomBackdrop: '夜', frame: shatterFrame + frameOffset(4) },
+  { name: '刹那-掉出', bottomBackdrop: '夜', frame: shatterFrame + frameOffset(6) },
   // 时差（第 13 句，分屏）：本体拼齐、残影还在飞；残影也落定；本体退了、残影还在
-  { 名: '时差-残影在飞', bottomBackdrop: '分屏', 帧: alignedFrame(13) + frameOffset(2) },
-  { 名: '时差-残影落定', bottomBackdrop: '分屏', 帧: alignedFrame(13) + frameOffset(7) },
-  { 名: '时差-残影晚退', bottomBackdrop: '分屏', 帧: mainCutLyricLine(14).入 - frameOffset(1) },
+  { name: '时差-残影在飞', bottomBackdrop: '分屏', frame: alignedFrame(13) + frameOffset(2) },
+  { name: '时差-残影落定', bottomBackdrop: '分屏', frame: alignedFrame(13) + frameOffset(7) },
+  { name: '时差-残影晚退', bottomBackdrop: '分屏', frame: mainCutLyricLine(14).入 - frameOffset(1) },
   // 放下（第 14 句，归隐的分屏）：刚飘起来、快退场（拼齐后 10 帧左右就合屏退场）
-  { 名: '放下-飘落', bottomBackdrop: '归隐', 帧: alignedFrame(14) + frameOffset(3) },
-  { 名: '放下-落远', bottomBackdrop: '归隐', 帧: alignedFrame(14) + frameOffset(8) },
+  { name: '放下-飘落', bottomBackdrop: '归隐', frame: alignedFrame(14) + frameOffset(3) },
+  { name: '放下-落远', bottomBackdrop: '归隐', frame: alignedFrame(14) + frameOffset(8) },
   // 第 15 句放底部（对视这一帧上面是她的脸和气泡），49.96 那一帧
-  { 名: '对视-第15句底部', bottomBackdrop: '对视', 帧: mainCutEvents.reunionGaze.帧 },
+  { name: '对视-第15句底部', bottomBackdrop: '对视', frame: mainCutEvents.reunionGaze.frame },
 ];

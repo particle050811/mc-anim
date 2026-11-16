@@ -11,6 +11,6 @@ import { ArrowRainGroup } from '../零件/甲/落雨画.tsx';
 import meta, { arrowRainShots } from './arrow_rain.元.ts';
 import rainArrowPng from 'asset:贴图/法术/goety/entity/projectiles/rain_arrow';
 
-const ArrowRain: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => <ArrowRainGroup projectiles={arrowRainShots(target, seed)} 秒={sec} 图={png(rainArrowPng)} fogColor={hexColor(0x4b4b4b)} 种子={seed} />;
+const ArrowRain: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => <ArrowRainGroup projectiles={arrowRainShots(target, seed)} sec={sec} image={png(rainArrowPng)} fogColor={hexColor(0x4b4b4b)} seed={seed} />;
 
 export default defineSpellPerformance(meta, ArrowRain);

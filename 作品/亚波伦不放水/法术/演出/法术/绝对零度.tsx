@@ -20,15 +20,15 @@ import iceSpikePng from 'asset:贴图/法术/goety/entity/projectiles/ice_spike'
 const domainRadius = 24;
 const ringTicks = [0, 40];
 
-const AbsoluteZero: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const AbsoluteZero: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   // 法阵、边界环围着施法者水平位置，高度取目标脚底的地面（起点在演出里悬在空中）
   const feet: [number, number, number] = [from[0], from[1], target[2]];
   const frostSpawns = ringTicks.flatMap((t, i) => frostRingSpawns(seed * 41 + i, feet, domainRadius, t));
   return (
     <>
       <FrostWall 位={feet} radius={domainRadius} 刻={sec * 20} />
-      <TexturedParticles 类={frostFlowerClass} spawns={frostSpawns} 秒={sec} />
-      <ArrowRainGroup projectiles={iceSpears(from, seed)} 秒={sec} 图={png(iceSpikePng)} fogColor={[1, 1, 1]} 种子={seed} />
+      <TexturedParticles type={frostFlowerClass} spawns={frostSpawns} sec={sec} />
+      <ArrowRainGroup projectiles={iceSpears(from, seed)} sec={sec} image={png(iceSpikePng)} fogColor={[1, 1, 1]} seed={seed} />
     </>
   );
 };

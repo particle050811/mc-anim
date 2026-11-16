@@ -32,8 +32,8 @@ export const islandRadius = 72;
  *  镜头往北看，画框里只有第 7、8 根（原版中心 (−13, −40)、(12, −40)，换成场景格 j = −z − 1 = 39）；n 取 5、8（半径 3、4，高出地面 27、36 格，伸出画框上沿），
  *  地面当原版 y = 64（Agent 暂定：主岛顶常见高度）。中心是格坐标 (i, j)，柱子占离中心格 距离² ≤ 半径² + 1 的格（distToLowCornerSqr） */
 export const obsidianPillars = [
-  { 中心: [-13, 39] as const, radius: 3, 高: 76 + 3 * 5 - 64 },
-  { 中心: [12, 39] as const, radius: 4, 高: 76 + 3 * 8 - 64 },
+  { center: [-13, 39] as const, radius: 3, height: 76 + 3 * 5 - 64 },
+  { center: [12, 39] as const, radius: 4, height: 76 + 3 * 8 - 64 },
 ];
 
 // ---------- 龙蛋 ----------
@@ -43,7 +43,7 @@ export const obsidianPillars = [
  *      在画面上夹在她和你中间、不和你（连挥手的胳膊）、她（趴着、坐着）叠在一起、背后是末地石、离原处四格多的：一眼看得出挪了，
  *      她坐起来扭头就看得见；核查 10-24 以后从往里三格挪远一格，原来在画面上贴着她趴着的帽子） */
 export const eggSpots = {
-  起: [5, -3, 0] as const,
+  start: [5, -3, 0] as const,
   一: [7, 1, 0] as const,
 };
 /** 龙蛋方块多高（dragon_egg.json 最高的一块到 16/16）；她趴在蛋顶上就是压在这个高度 */

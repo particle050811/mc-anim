@@ -1,80 +1,80 @@
 {
-  "说明": "地形区段包（正式段用的和只给预览用的都登记，后者在 说明 里写清）：<数据根>/terrain/<包名>/<版本>/，版本是内容指纹，目录只写不改。文件数、大小、清单sha256 由 anim world bake、转码 算（清单sha256 = 按相对路径排好的「路径\\tsha256」逐行再取 sha256）",
-  "包": {
+  "note": "地形区段包（正式段用的和只给预览用的都登记，后者在 说明 里写清）：<数据根>/terrain/<包名>/<版本>/，版本是内容指纹，目录只写不改。文件数、大小、清单sha256 由 anim world bake、转码 算（清单sha256 = 按相对路径排好的「路径\\tsha256」逐行再取 sha256）",
+  "pack": {
     "暮色放大-1752-扩展": {
-      "版本": "a5acd7e9165b",
-      "来源": "手工:取材服务端生成的暮色森林（放大 4 倍）存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 b29dfba0d167 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 d85050c74ee2 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 c42d60d01992 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "文件数": 58,
-      "大小": 257606898,
-      "清单sha256": "7248afdad7c488868549757bbcb3b910af677566376bd9b66d2df356568e5090"
+      "version": "f9189151eaaa",
+      "source": "手工:取材服务端生成的暮色森林（放大 4 倍）存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 b29dfba0d167 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 d85050c74ee2 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 c42d60d01992 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 a5acd7e9165b 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "fileCount": 58,
+      "size": 257606908,
+      "manifestSha256": "ce19599cb93fa8f9994d3ea7c40385afe55f4921eb7334f770784137ede275f2"
     },
     "主世界-116": {
-      "版本": "4f4ce09adc78",
-      "来源": "手工:取材服务端生成的主世界存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 9cd3fdcf8361 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 43b681414058 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 5c8a6378419e 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "文件数": 63,
-      "大小": 257719616,
-      "清单sha256": "abc739a6c5fe6ce8cde3b27b008313e2b31b4590c1767688c4c3b39cfdb6cb7b"
+      "version": "7e41ece2fc99",
+      "source": "手工:取材服务端生成的主世界存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 9cd3fdcf8361 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 43b681414058 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 5c8a6378419e 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 4f4ce09adc78 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "fileCount": 63,
+      "size": 257719626,
+      "manifestSha256": "b7c36836692500268539a9a7fba033cb9a7d92474a31dc18df038567eb565953"
     },
     "主世界-116-远景": {
-      "版本": "34cbe415b803",
-      "旧路径": "数据/渲染/区段包/主世界-116-远景/34cbe415b803",
-      "来源": "手工:主世界远景（高度、群系、交界层），经旧项目 工具/导入 远景步骤生成",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "文件数": 11,
-      "大小": 15229666,
-      "清单sha256": "98eacdac356becf54406a2dca1e683f56d358ae8b4379bce6dc14c981717e93d"
+      "version": "811fc551250c",
+      "oldPath": "数据/渲染/区段包/主世界-116-远景/34cbe415b803",
+      "source": "手工:主世界远景（高度、群系、交界层），经旧项目 工具/导入 远景步骤生成；盘键迁移从 34cbe415b803 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "fileCount": 11,
+      "size": 15229728,
+      "manifestSha256": "428b97206dafdd58a735103d14f064a0183cf642c884aa70e1818dc10b9ba09c"
     },
     "暮色-远景片场": {
-      "版本": "df4e879500e6",
-      "来源": "手工:取材客户端-远景 片场存档里原版尺寸的暮色森林，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 dd06ec2eff1c 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 16e7bc057f0d 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "说明": "地标网格就是从这片地导出的；正式段不用，旧项目 地貌导入预览、地标巡检 用",
-      "文件数": 7,
-      "大小": 4932046,
-      "清单sha256": "8b3b04c42819e34f13deae75e6c4b1097e4f49dcf90d633278e3e4e79bc5e716"
+      "version": "e53f7a675223",
+      "source": "手工:取材客户端-远景 片场存档里原版尺寸的暮色森林，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 dd06ec2eff1c 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 16e7bc057f0d 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 df4e879500e6 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "note": "地标网格就是从这片地导出的；正式段不用，旧项目 地貌导入预览、地标巡检 用",
+      "fileCount": 7,
+      "size": 4932055,
+      "manifestSha256": "d26150b5213e7a08360b7d77a6d25f3f904873b67055e781a95db848a2f6d0e9"
     },
     "测试-修整-岛": {
-      "版本": "2ee8d068d56b",
-      "来源": "手工:取材服务端-主世界 测试-修整-种子116 存档的 RX 75～79、RZ -5～0，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 887d3c5c1b89 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 ea8e4fb3f0a4 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "说明": "主世界修整的试验包；正式段不用，旧项目 主世界修整窗外、主世界远景预览 用",
-      "文件数": 9,
-      "大小": 14449847,
-      "清单sha256": "88c16c5a663a16347d15063ba298660a734c003ed2c0d4fbc061e55d956390bf"
+      "version": "f50e095335df",
+      "source": "手工:取材服务端-主世界 测试-修整-种子116 存档的 RX 75～79、RZ -5～0，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 887d3c5c1b89 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 ea8e4fb3f0a4 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 2ee8d068d56b 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "note": "主世界修整的试验包；正式段不用，旧项目 主世界修整窗外、主世界远景预览 用",
+      "fileCount": 9,
+      "size": 14449856,
+      "manifestSha256": "83d856cb5616b02a835796eeb8c438993a4c46f041b52f43b2af6c15272b0eea"
     },
     "暮色放大-1752-远景": {
-      "版本": "d4251e4ddc29",
-      "来源": "手工:暮色放大-1752 的暮色远景（mcai far 在服务端里只跑地形和地表那一步取样），anim world 远景 打包",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "文件数": 10,
-      "大小": 2181491,
-      "清单sha256": "b3ab8f35117dd40ba259bf925dfd58b822bfe839b83839296c6858d20befff1b"
+      "version": "7d762d294e6a",
+      "source": "手工:暮色放大-1752 的暮色远景（mcai far 在服务端里只跑地形和地表那一步取样），anim world 远景 打包；盘键迁移从 d4251e4ddc29 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "fileCount": 10,
+      "size": 2181501,
+      "manifestSha256": "af8dcc0a519b81c152b12a24a189a8d6d64c32b09df2e6cebf136c7d621e0b45"
     },
     "暮色放大-1752-远地标": {
-      "版本": "cda55bb7f0a2",
-      "来源": "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "文件数": 162,
-      "大小": 35750877,
-      "清单sha256": "546d3d87a90084e73f88a4e7ac11a939f37f8e94dbc956e4debe840242aa4199"
+      "version": "330fab40bc05",
+      "source": "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙；盘键迁移从 cda55bb7f0a2 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "fileCount": 162,
+      "size": 35750886,
+      "manifestSha256": "0117dc6668d98153e8ed013ac59ea3197cbfcbf892fe6b89392c8cdc9a8cb365"
     },
     "下界-无结构-1110": {
-      "版本": "052c14aea78a",
-      "来源": "取材服务端 下界-无结构-1110 存档的下界 RX 0～2、RZ -3～0，套编辑层（场地一带的模组岩层换成下界岩，地形不动），anim world bake 烘焙（全高），套编辑 sourcing/worlds/下界-无结构-1110.编辑.toml（2 条命令，sha256 ae4ee1294b68）",
-      "许可": "LicenseRef-Minecraft-Derived",
-      "可见性": "发布",
-      "文件数": 5,
-      "大小": 18511727,
-      "清单sha256": "1823df6949916d2f68cc19f4b078bfa6e148b32f02a905c3827bc0cdb0caaf80"
+      "version": "ee02641c105d",
+      "source": "取材服务端 下界-无结构-1110 存档的下界 RX 0～2、RZ -3～0，套编辑层（场地一带的模组岩层换成下界岩，地形不动），anim world bake 烘焙（全高），套编辑 sourcing/worlds/下界-无结构-1110.编辑.toml（2 条命令，sha256 ae4ee1294b68）；盘键迁移从 052c14aea78a 改键名",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "fileCount": 5,
+      "size": 18511736,
+      "manifestSha256": "88a13ef5c5cef64fbb8a1209ae74a992aea1bb84c7389b41ee38083cc4d42dda"
     }
   }
 }

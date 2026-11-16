@@ -1,12 +1,12 @@
 {
-  "仓库": "particle050811/mc-anim",
-  "标签": "assets-v1",
-  "附件": [
+  "repo": "particle050811/mc-anim",
+  "label": "assets-v1",
+  "attachments": [
     {
-      "名": "bytes-ccb68eaddaad.tar",
+      "name": "bytes-ccb68eaddaad.tar",
       "sha256": "8f5687d691744210db3786a2a93cac9254e5f2d832369a0b796e072d5ef195bd",
-      "大小": 208202240,
-      "字节": [
+      "size": 208202240,
+      "bytes": [
         "0012c999d656bcaa705427055bdf173523a1fb6508a5b0c5ea250019e67da1a5",
         "00443b76381462fb8a20e7c82369f99196924d6c56958d0774635a80c4c2550f",
         "00fd68d2a3773eb8c56f72a2e366ec357da44ebfcb48f2309e53b0f92ce3f3b2",
@@ -767,48 +767,48 @@
       ]
     },
     {
-      "名": "terrain-4f4ce09adc78.tar",
-      "sha256": "679f5499e1454b6945e2111b972461d4bc15b0d9628a3e102bc51f176e91c638",
-      "大小": 257833984,
-      "地形": {
-        "包": "主世界-116",
-        "版本": "4f4ce09adc78"
+      "name": "terrain-7e41ece2fc99.tar",
+      "sha256": "d1a01d9a82bbf35cdaee3c50a57e35f4d1ee4e0361db80c933af5449ea225dd9",
+      "size": 257833984,
+      "terrain": {
+        "pack": "主世界-116",
+        "version": "7e41ece2fc99"
       }
     },
     {
-      "名": "terrain-34cbe415b803.tar",
-      "sha256": "50175b695754898e179c17c63479456b5aaefca7cc276e3fcf8a4c40a0f5cd53",
-      "大小": 15251456,
-      "地形": {
-        "包": "主世界-116-远景",
-        "版本": "34cbe415b803"
+      "name": "terrain-811fc551250c.tar",
+      "sha256": "6ecd9ff05e5a8bf6463ad4f8a2467c1c30ae2926d743890a76c3e1520808df4d",
+      "size": 15251456,
+      "terrain": {
+        "pack": "主世界-116-远景",
+        "version": "811fc551250c"
       }
     },
     {
-      "名": "terrain-a5acd7e9165b.tar",
-      "sha256": "d570719425e445442da2e88eb38c0345fa2d1d3ce749acc9067b6d356530ecb1",
-      "大小": 257711104,
-      "地形": {
-        "包": "暮色放大-1752-扩展",
-        "版本": "a5acd7e9165b"
+      "name": "terrain-f9189151eaaa.tar",
+      "sha256": "689e35970aa62a5758364c84f9a0b8d517d8da353406e65d21be0d39a3b54c27",
+      "size": 257711104,
+      "terrain": {
+        "pack": "暮色放大-1752-扩展",
+        "version": "f9189151eaaa"
       }
     },
     {
-      "名": "terrain-cda55bb7f0a2.tar",
-      "sha256": "018cf22f0d4040d1605945286d312f62c3763d25e2dae55ac171a6be30d87b25",
-      "大小": 36041728,
-      "地形": {
-        "包": "暮色放大-1752-远地标",
-        "版本": "cda55bb7f0a2"
+      "name": "terrain-330fab40bc05.tar",
+      "sha256": "7fe279c7b2273d8c25357e2b06e5fd8e3a3c5cd3fb38a5a8a050a1a1318b1076",
+      "size": 36041728,
+      "terrain": {
+        "pack": "暮色放大-1752-远地标",
+        "version": "330fab40bc05"
       }
     },
     {
-      "名": "terrain-d4251e4ddc29.tar",
-      "sha256": "94819b043378005e810ee49c89642a1323ed5782e73fcebbb19bc4a48d468309",
-      "大小": 2201088,
-      "地形": {
-        "包": "暮色放大-1752-远景",
-        "版本": "d4251e4ddc29"
+      "name": "terrain-7d762d294e6a.tar",
+      "sha256": "73ea60d133893809a51c1e952610f05f338cfe31b89cb43cd90b63672bf04eaf",
+      "size": 2201088,
+      "terrain": {
+        "pack": "暮色放大-1752-远景",
+        "version": "7d762d294e6a"
       }
     }
   ]

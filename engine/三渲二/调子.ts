@@ -6,7 +6,7 @@ export type Grade = {
   /** 饱和度倍数，1 = 不变（按 Rec.709 亮度权重） */
   饱和: number;
   /** 对比度，绕 0.5 拉伸，1 = 不变 */
-  对比: number;
+  comparison: number;
   /** 乘色：整体乘上这个颜色（白 = 不变），偏暖偏冷靠它 */
   multiply: string;
   /** 抬黑：纯黑抬到这个颜色、纯白不动（黑 = 不变），褪色、胶片感靠它 */
@@ -46,9 +46,9 @@ export const gradeMatrix = (t: Grade): number[] => {
   const out: number[] = [];
   for (let i = 0; i < 3; i++) {
     // 饱和：x' = s·x + (1 − s)·亮度；对比：c·x' + 0.5(1 − c)；乘色、抬黑：l + (1 − l)·g·x
-    const k = (1 - l[i]!) * g[i]! * t.对比;
+    const k = (1 - l[i]!) * g[i]! * t.comparison;
     for (let j = 0; j < 3; j++) out.push(k * ((i === j ? s : 0) + (1 - s) * w[j]!));
-    out.push(0, l[i]! + (1 - l[i]!) * g[i]! * 0.5 * (1 - t.对比));
+    out.push(0, l[i]! + (1 - l[i]!) * g[i]! * 0.5 * (1 - t.comparison));
   }
   out.push(0, 0, 0, 1, 0);
   return out;
@@ -65,7 +65,7 @@ export const lerpTone = (a: Tone, b: Tone, k: number): Tone => ({
   outlineColor: lerpColor(a.outlineColor, b.outlineColor, k),
   grade: {
     饱和: lerp(a.grade.饱和, b.grade.饱和, k),
-    对比: lerp(a.grade.对比, b.grade.对比, k),
+    comparison: lerp(a.grade.comparison, b.grade.comparison, k),
     multiply: lerpColor(a.grade.multiply, b.grade.multiply, k),
     lift: lerpColor(a.grade.lift, b.grade.lift, k),
     暗角: lerp(a.grade.暗角, b.grade.暗角, k),

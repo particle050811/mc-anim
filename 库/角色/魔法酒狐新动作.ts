@@ -198,7 +198,7 @@ export type MagicalWineFoxExMotionParams = {
   /** 头相对身子的 [俯仰, 左右]（度，正 = 抬头、往左），左右超过 75° 会被夹住 */
   看?: [number, number];
   blink: number | 'auto';
-  秒?: number;
+  sec?: number;
   /** 右手拿着东西：胳膊换成该姿势的拿东西摆法 */
   holding?: boolean;
 };
@@ -212,9 +212,9 @@ export const magicalWineFoxExMotion = (o: MagicalWineFoxExMotionParams): { skele
   // 尾巴：屁股挨着地（坐、蹲、抱膝坐）时 Tail2 不摆，同游戏里坐着被 sit 盖成 −15°
   const motionBasePose = o.stancePose === '坐' || o.stancePose === '蹲' || o.stancePose === '抱膝坐' ? '坐' : '站';
   const oldExpression: MagicalWineFoxExpression = o.expression === '认出你' || o.expression === '哈气' ? '无' : (o.expression ?? (o.stancePose === '静站' ? '无' : '微笑'));
-  const base = magicalWineFoxMotion({ stancePose: motionBasePose, expression: oldExpression, blink: o.blink, 秒: o.秒 });
-  const blink = o.blink !== 'auto' ? o.blink : o.秒 === undefined ? 0 : magicalWineFoxBlink(o.秒);
-  const breath = bottomPosture === '站' && o.stancePose !== '静站' && o.秒 !== undefined ? magicalWineFoxBreath(o.秒) : {};
+  const base = magicalWineFoxMotion({ stancePose: motionBasePose, expression: oldExpression, blink: o.blink, sec: o.sec });
+  const blink = o.blink !== 'auto' ? o.blink : o.sec === undefined ? 0 : magicalWineFoxBlink(o.sec);
+  const breath = bottomPosture === '站' && o.stancePose !== '静站' && o.sec !== undefined ? magicalWineFoxBreath(o.sec) : {};
   // 呼吸叠在姿势的上身转角上（蹲、哈气的前倾 + idle 的 ±1°）
   const bonePose = poseTable[o.stancePose];
   const upperBody: SkeletonTable = breath.UpBody ? { UpBody: { ...bonePose.UpBody, rot: addRot(bonePose.UpBody?.rot, breath.UpBody.rot!) } } : {};

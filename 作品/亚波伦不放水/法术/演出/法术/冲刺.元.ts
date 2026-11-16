@@ -6,8 +6,8 @@ export default defineSpellMeta({
   长秒: 2, // 风带最长 39 刻才散；冲刺本身五六刻
   hitSec: 0.2, // 冲到目标跟前
   // BoltingSpell：heavy_woosh、redstone_explode，音量都是 3
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.heavy_woosh.1', 秒: 0, 音量: 3 },
-    { 资产: '音效/诡厄巫法/goety.redstone_explode.1', 秒: 0, 音量: 3 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.heavy_woosh.1', sec: 0, 音量: 3 },
+    { asset: '音效/诡厄巫法/goety.redstone_explode.1', sec: 0, 音量: 3 },
   ],
 });

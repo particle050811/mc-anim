@@ -182,7 +182,7 @@ export const waterGlow = (t: number) => (t >= STRIKE ? 0 : track([[LAND, 0], [LA
 // 硬闪：档内不插值，帧落在哪一档就是哪一档的亮度（整格上和以前逐格给的一样）
 const FLASH = [1, 1, 0.35, 1, 0.75, 0.2, 0.6, 0.3, 0.12];
 const FLASH_PER_SEC = 24;
-export const flash = (t: number) => pickTier(FLASH, (t - STRIKE) * FLASH_PER_SEC, { 值: 0 });
+export const flash = (t: number) => pickTier(FLASH, (t - STRIKE) * FLASH_PER_SEC, { value: 0 });
 export const BOLT_AT: V3 = [PX, PY, PZ];
 // 闪电形状：机位 A 里只看得到最下面一段的下半截，挑一个在画面平面里往左上斜、不朝镜头也不朝人倒的，人在右边不被挡
 export const BOLT_SEED = 23;

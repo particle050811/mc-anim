@@ -26,12 +26,12 @@ const composite = (g: number) => {
   let keepInFrame = false;
   let ownPos = 0; // 位置有多少是自己走的机位给的（这一份不夹孔道）
   for (const span of camSpans) {
-    if (g < span.起 || g > span.止) continue;
+    if (g < span.start || g > span.end) continue;
     // 起飞从首帧起不渐入、降落一直到最后一帧不渐出。渐入（出）用第一个（最后一个）关键帧间隔那么长：
     // 叠在一起的时候两边的关键帧都在动，0.5 秒换过去焦距一格（1/24 秒）变 4%
     const fadeIn = Math.max(fadeSec, span.Keys[1][0] - span.Keys[0][0]);
     const fadeOut = Math.max(fadeSec, span.Keys[span.Keys.length - 1][0] - span.Keys[span.Keys.length - 2][0]);
-    const segWeight = Math.min(span.名 === '起飞' ? 1 : smootherstep01((g - span.起) / fadeIn), span.名 === '降落' ? 1 : smootherstep01((span.止 - g) / fadeOut));
+    const segWeight = Math.min(span.name === '起飞' ? 1 : smootherstep01((g - span.start) / fadeIn), span.name === '降落' ? 1 : smootherstep01((span.end - g) / fadeOut));
     let spanFraming = sampleKeys(span.Keys, g, span.锚);
     const posCamRes = span.位?.(g);
     const posWeight = posCamRes ? posCamRes.weight : 0;

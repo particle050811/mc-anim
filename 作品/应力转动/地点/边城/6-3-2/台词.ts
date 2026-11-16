@@ -18,42 +18,42 @@ export type LineVersion = '改字' | '原文' | '五句';
 // `增益dB`：拉到和 src/配音/ 的台词一样响（-18 LUFS，工具/配音/生成台词.py 的规矩）要加多少。这一句不走台词轨（没有 src/配音/ 的副本），文件原样放、在这里压（src/配音/台词表.json 的 6-3-2-李樱-压路机 也记了）
 export const lineTable: Record<
   LineVersion,
-  { 字: string; 文件: string; 时长: number; 头: number; wordTimes: [number, number, number, number, number]; smash: { impactSec: number; shatter: [number, number] }; end: number; 增益dB: number }
+  { char: string; file: string; duration: number; 头: number; wordTimes: [number, number, number, number, number]; smash: { impactSec: number; shatter: [number, number] }; end: number; gainDb: number }
 > = {
   改字: {
-    字: '手持重锤类武器，可以召唤出体内空间的动力压路机，能使重锤的高度伤害倍率增加，并破坏接触到的方块，应力转动之力，实际全能！',
-    文件: '李樱-压路机-改字.wav',
-    时长: 11.294, // 1.288 秒起先是一小段气声，「手」1.42 秒起
+    char: '手持重锤类武器，可以召唤出体内空间的动力压路机，能使重锤的高度伤害倍率增加，并破坏接触到的方块，应力转动之力，实际全能！',
+    file: '李樱-压路机-改字.wav',
+    duration: 11.294, // 1.288 秒起先是一小段气声，「手」1.42 秒起
     头: 1.288,
     wordTimes: [1.43, 2.78, 5.1, 7.21, 8.81], // 手持 / 可以 / 能使 / 并破坏 / 应力
     smash: { impactSec: 7.4, shatter: [7.73, 8.17] }, // 「破」/「接」/「方」
     end: 10.85,
-    增益dB: 0, // 原件已拉到 −18 LUFS（src/配音/台词表.json 的 6-3-2-李樱-压路机 记的）
+    gainDb: 0, // 原件已拉到 −18 LUFS（src/配音/台词表.json 的 6-3-2-李樱-压路机 记的）
   },
   原文: {
-    字: '高空，加上在试炼大厅获得的重锤，外加体内空间的动力压路机，在战斗中可以让重锤的高度伤害倍率增加，落在方块上还能将方块破坏，直达地下，应力转动之力，实际全能！',
-    文件: '李樱-压路机-原文.wav',
-    时长: 13.28,
+    char: '高空，加上在试炼大厅获得的重锤，外加体内空间的动力压路机，在战斗中可以让重锤的高度伤害倍率增加，落在方块上还能将方块破坏，直达地下，应力转动之力，实际全能！',
+    file: '李樱-压路机-原文.wav',
+    duration: 13.28,
     头: 0.237,
     wordTimes: [0.39, 3.28, 5.29, 8.07, 10.96], // 高空 / 外加 / 在战斗中 / 落在 / 应力
     smash: { impactSec: 8.54, shatter: [9.2, 9.87] }, // 「方块上」的「块」/「将」/「破坏」的「坏」（「直达地下」的「直」10.17）
     end: 13.1,
-    增益dB: -4.3,
+    gainDb: -4.3,
   },
   五句: {
-    字: '手持锤类武器，从体内空间召出动力压路机，动力压路机会附带额外的下落伤害，砸中的方块会被破坏，应力转动之力，实际全能！',
-    文件: '李樱-压路机-五句.wav',
-    时长: 9.44,
+    char: '手持锤类武器，从体内空间召出动力压路机，动力压路机会附带额外的下落伤害，砸中的方块会被破坏，应力转动之力，实际全能！',
+    file: '李樱-压路机-五句.wav',
+    duration: 9.44,
     头: 0.236,
     wordTimes: [0.37, 1.55, 3.58, 5.77, 7.28], // 手持 / 从 / 动力 / 砸中 / 应力
     smash: { impactSec: 5.78, shatter: [6.37, 6.93] }, // 「砸」/「方块」的「方」/「破」（松手正好在「下落伤害」的「落」5.2 上下）
     end: 9.25,
-    增益dB: -4.2,
+    gainDb: -4.2,
   },
 };
 const requested = (() => {
   try {
-    return (renderInput() as { 台词?: LineVersion }).台词;
+    return (renderInput() as { '台词'?: LineVersion })['台词']; // 键是 --props 里的名字（见文件头），不是属性名
   } catch {
     return undefined; // 诊断脚本在 node 里跑，没有 Remotion 环境
   }

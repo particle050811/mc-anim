@@ -44,7 +44,7 @@ export const itemFallOptions: FallOptions = { 重力: vanillaMotion.itemGravity,
 
 /** 下落一刻：默认先挪再改速度（生物）；先加重力 时先 v − 重力、再挪、再乘阻力（物品） */
 export const fallOneTick = (height: number, vSpeed: number, gravity: number = vanillaMotion.mobGravity, drag: number = vanillaMotion.verticalDrag, gravityFirst = false) =>
-  gravityFirst ? { 高: height + vSpeed - gravity, 速: (vSpeed - gravity) * drag } : { 高: height + vSpeed, 速: (vSpeed - gravity) * drag };
+  gravityFirst ? { height: height + vSpeed - gravity, 速: (vSpeed - gravity) * drag } : { height: height + vSpeed, 速: (vSpeed - gravity) * drag };
 
 /**
  * 从 0 起落了 刻数 刻时的高度（≤ 0 时一直往下，不碰地面）；刻数可带小数，刻与刻之间线性插值。刻数 ≤ 0 给 0。
@@ -55,9 +55,9 @@ export const fallHeightAtTick = (tickCount: number, options: FallOptions = {}): 
   let height = 0;
   let vSpeed = options.initSpeed ?? 0;
   const n = Math.floor(tickCount);
-  for (let k = 0; k < n; k++) ({ 高: height, 速: vSpeed } = fallOneTick(height, vSpeed, options.重力, options.drag, options.gravityFirst));
+  for (let k = 0; k < n; k++) ({ height: height, 速: vSpeed } = fallOneTick(height, vSpeed, options.重力, options.drag, options.gravityFirst));
   // 刻间按下一刻的位置插（先加重力 时下一刻挪的是 速 − 重力，不是 速）
-  return height + (tickCount - n) * (fallOneTick(height, vSpeed, options.重力, options.drag, options.gravityFirst).高 - height);
+  return height + (tickCount - n) * (fallOneTick(height, vSpeed, options.重力, options.drag, options.gravityFirst).height - height);
 };
 
 /**
@@ -72,7 +72,7 @@ export const fallTable = (fallHeight: number, options: FallOptions = {}): number
   for (let k = 0; height > -fallHeight; k++) {
     if (k > 100000) throw new Error(`下落表：${fallHeight} 格落不到底（初速 ${options.initSpeed}）`);
     const nextState = fallOneTick(height, vSpeed, options.重力, options.drag, options.gravityFirst);
-    height = Math.max(-fallHeight, nextState.高);
+    height = Math.max(-fallHeight, nextState.height);
     vSpeed = nextState.速;
     out.push(height);
   }
@@ -89,8 +89,8 @@ export const landTick = (fallHeight: number, options: FallOptions = {}): number 
   let vSpeed = options.initSpeed ?? 0;
   for (let k = 0; k < 100000; k++) {
     const nextState = fallOneTick(height, vSpeed, options.重力, options.drag, options.gravityFirst);
-    if (nextState.高 <= -fallHeight) return k + (height + fallHeight) / (height - nextState.高);
-    height = nextState.高;
+    if (nextState.height <= -fallHeight) return k + (height + fallHeight) / (height - nextState.height);
+    height = nextState.height;
     vSpeed = nextState.速;
   }
   throw new Error(`落地刻：${fallHeight} 格落不到底（初速 ${options.initSpeed}）`);

@@ -21,7 +21,7 @@ import { DoorCanvas } from '../../场/2-门口/门口.tsx';
 import { views } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
 
-const width = aspect.宽, height = aspect.高;
+const width = aspect.width, height = aspect.height;
 const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入游戏
 /** 魔法酒狐站着戴帽的头顶（格，脚底起）：N = 6 的站位帧上按像素量的帽尖最高那一行（172 像素）。不戴帽量到头发顶是 1.515（MAGICAL_WINE_FOX.headTop） */
 const wineFoxHatTop = 1.79;
@@ -32,19 +32,19 @@ const textStyle = { position: 'absolute', fontFamily: uiFontFamily, color: '#fff
 const ScaleTicks: React.FC<{ framing: DoorFraming }> = ({ framing }) => {
   const project = sideProjection(framing, width, height);
   const verticalTicks = [
-    { x: entrance.门.x, 名: '门 x=0' },
-    { x: entrance.chest[0], 名: `箱子 x=${entrance.chest[0]}` },
-    { x: entrance.saplingPos[0], 名: `树苗 x=${entrance.saplingPos[0]}` },
-    { x: entrance.signboardPos[0], 名: `告示牌 x=${entrance.signboardPos[0]}` },
+    { x: entrance.门.x, name: '门 x=0' },
+    { x: entrance.chest[0], name: `箱子 x=${entrance.chest[0]}` },
+    { x: entrance.saplingPos[0], name: `树苗 x=${entrance.saplingPos[0]}` },
+    { x: entrance.signboardPos[0], name: `告示牌 x=${entrance.signboardPos[0]}` },
   ];
   const screenY = project(0, 0).y;
   const toPercent = (h: number) => `${((h * framing.pxPerCell) / (height * filmScale)) * 100}`.slice(0, 4);
   return (
     <>
       {verticalTicks.map((v) => (
-        <React.Fragment key={v.名}>
+        <React.Fragment key={v.name}>
           <div style={{ position: 'absolute', left: project(v.x, 0).x - 0.5, top: 0, width: 1, height: height, background: 'rgba(255,60,60,0.7)' }} />
-          <div style={{ ...textStyle, fontSize: 14, left: project(v.x, 0).x + 4, top: 70 }}>{v.名}</div>
+          <div style={{ ...textStyle, fontSize: 14, left: project(v.x, 0).x + 4, top: 70 }}>{v.name}</div>
         </React.Fragment>
       ))}
       <div style={{ position: 'absolute', left: 0, top: screenY - 0.5, width: width, height: 1, background: 'rgba(255,230,60,0.8)' }} />
@@ -67,7 +67,7 @@ const CelestialPath: React.FC<{ framing: DoorFraming }> = ({ framing }) => {
         const p = celestialPosition(i * 1000, arc).sun;
         const q = project(p.x, p.z);
         return (
-          <div key={i} style={{ position: 'absolute', left: q.x - 4, top: q.y - 4, width: 8, height: 8, borderRadius: 4, background: p.高 > 0 ? '#ff5050' : '#666' }}>
+          <div key={i} style={{ position: 'absolute', left: q.x - 4, top: q.y - 4, width: 8, height: 8, borderRadius: 4, background: p.height > 0 ? '#ff5050' : '#666' }}>
             <span style={{ ...textStyle, fontSize: 12, left: 10, top: -4 }}>{i}</span>
           </div>
         );
@@ -88,23 +88,23 @@ const picture: React.FC = () => {
       {v.doorCompare ? (
         [false, true].map((doorOpen, i) => (
           <div key={i} style={{ position: 'absolute', left: (i * width) / 2, top: 0 }}>
-            <DoorCanvas 宽={width / 2} 高={height} framing={halfScreenFraming((width / 2) * filmScale, 0.5)} {...houseProps} doorOpen={doorOpen} />
+            <DoorCanvas width={width / 2} height={height} framing={halfScreenFraming((width / 2) * filmScale, 0.5)} {...houseProps} doorOpen={doorOpen} />
             <div style={{ ...textStyle, left: 16, top: 60, fontSize: 20 }}>{doorOpen ? '门开' : '门关'}</div>
           </div>
         ))
       ) : v.halfScreen ? (
         <div style={{ position: 'absolute', left: width / 2, top: 0 }}>
-          <DoorCanvas 宽={width / 2} 高={height} framing={halfScreenFraming((width / 2) * filmScale, v.halfScreen.doorFrac)} {...houseProps} />
+          <DoorCanvas width={width / 2} height={height} framing={halfScreenFraming((width / 2) * filmScale, v.halfScreen.doorFrac)} {...houseProps} />
         </div>
       ) : (
         <DoorCanvas
           {...houseProps}
           framing={framing}
-          叠层={
+          overlay={
             v.showRuler && (
               <>
-                <MaidBubble 锚={anchor} 缩放={N} 文字="˃ʍ˂" 字体={pixelFont} anchorAlign={N} />
-                <PixelChatBar lines={[{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }]} 刻={0} 缩放={N} 字体={pixelFont} 宽={width} 高={height} />
+                <MaidBubble 锚={anchor} scale={N} 文字="˃ʍ˂" 字体={pixelFont} anchorAlign={N} />
+                <PixelChatBar lines={[{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }]} 刻={0} scale={N} 字体={pixelFont} width={width} height={height} />
                 <ScaleTicks framing={framing} />
               </>
             )
@@ -119,7 +119,7 @@ const picture: React.FC = () => {
         </DoorCanvas>
       )}
       {v.celestialPath && <CelestialPath framing={framing} />}
-      <div style={{ ...textStyle, left: 16, top: 12, fontSize: 22 }}>核对-门口 · {v.名}</div>
+      <div style={{ ...textStyle, left: 16, top: 12, fontSize: 22 }}>核对-门口 · {v.name}</div>
     </AbsoluteFill>
   );
 };
