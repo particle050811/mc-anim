@@ -1,5 +1,5 @@
 // 第 7 章第 3 场「墙头追逐」的整场时间线：三段是同一条连续剧情时间轴（T，秒）上前后相接的三截。
-// T = 0 是 7-1-7 末格（契约 古城4x布局.ts 的 `handoffs.七三首`），7-3-1 第 0 秒是它的下一格（T = 1/24，同 7-1 的段界规矩：不共用格；旧编排 1/24 秒一格）。
+// T = 0 是 7-1-7 末帧（契约 古城4x布局.ts 的 `handoffs.七三首`），7-3-1 第 0 秒是它的下一帧（T = 1/60，同 7-1 的段界规矩：不共用帧）。
 // 段界放在切镜头的那一刻，一个镜头不拆进两段。人、马、监守者、特效全是 T 的函数（戏.ts），各段只管机位和声音。
 //
 // 编排（用户 10-19：马一路往前、抄近路，监守者绕远路；迫击炮只在近处放；不回合制，一方出手时另一方也在动）：
@@ -10,7 +10,7 @@
 import { horseStart, towerTop, wallTopEast, avenue } from './几何.ts';
 import { leapApex, leapFrom, leapCellsPerSec, towerBrakeSec, knockSlide, wardenRouteToHold, wardenRouteToTower, wardenStairTopS, horseChaseSpeed, horseAccel } from './追逐.ts';
 import { G4 } from '../../古城4x.tsx';
-import { seenCellToFrame } from '../7-1/旧格对帧.ts';
+import { sceneFrames } from '../7-1/段界.ts';
 import { STEED } from '@库/生物/幽灵马.tsx';
 import { scene73 } from '../布局.ts';
 
@@ -80,21 +80,20 @@ export const gallopAccelSec = (horseChaseSpeed - leap3.horizSpeed) / horseAccel;
 
 // ---------- 分段（段界 = 切镜那一刻） ----------
 // 7-3-1 收在第一跃落地、刘心忠回身甩出第二炮之后；7-3-2 收在马上了塔顶刹住；7-3-3 收在马落到大道冲起来（再往后它出画、硬切 7-4-1）
-// 段首、段末是剧情时刻（7-3-3 有慢放，成片长度看 段.ts）。7-3-1 从第 1 场末格的下一格（T = 1/24，旧编排的一格）演起；段末格比下一段的段首早 1/24 秒；7-3-3 的段末是 seg3EndT 那一刻
+// 段首、段末是剧情时刻（7-3-3 有慢放，成片长度看 段.ts）。7-3-1 从第 1 场末帧的下一帧演起；段界落到帧上（../7-1/段界.ts），段末帧比下一段的段首早一帧；7-3-3 的段末是 seg3EndT 那一帧
 const seg1EndT = mortarFireTs[1] + 0.12;
 const seg2EndT = towerStopT + 0.04;
 const seg3EndT = leap3LandT + 0.45;
-// 段界落到帧上（旧编排取整到 1/24 秒格上的段界挪到最近的帧，见 ../7-1/旧格对帧.ts）；按旧格计数、挪过的是小数格，先按格算再除以 24，同 ../7-1/时间线.ts
-const cellsAt = (T: number) => seenCellToFrame(Math.round(T * 24), T) / 2.5;
+const frames = sceneFrames(1 / 60);
 export const segments = [
-  { id: '7-3-1', 名: '墙头', startCell: 1, lastCell: cellsAt(seg1EndT) - 1 },
-  { id: '7-3-2', 名: '上塔', startCell: cellsAt(seg1EndT), lastCell: cellsAt(seg2EndT) - 1 },
-  { id: '7-3-3', 名: '音波', startCell: cellsAt(seg2EndT), lastCell: cellsAt(seg3EndT) },
+  { id: '7-3-1', 名: '墙头', startFrame: 0, lastFrame: frames.frameAt(seg1EndT) - 1 },
+  { id: '7-3-2', 名: '上塔', startFrame: frames.frameAt(seg1EndT), lastFrame: frames.frameAt(seg2EndT) - 1 },
+  { id: '7-3-3', 名: '音波', startFrame: frames.frameAt(seg2EndT), lastFrame: frames.frameAt(seg3EndT) },
 ];
 export type SegmentId = '7-3-1' | '7-3-2' | '7-3-3';
 const segmentOf = (segId: SegmentId) => segments.find((s) => s.id === segId)!;
-export const tAt = (segId: SegmentId, sec: number) => (segmentOf(segId).startCell + sec * 24) / 24;
-export const segmentStartT = (segId: SegmentId) => segmentOf(segId).startCell / 24;
-export const segmentEndT = (segId: SegmentId) => segmentOf(segId).lastCell / 24;
-export const segmentLastSec = (segId: SegmentId) => (segmentOf(segId).lastCell - segmentOf(segId).startCell) / 24;
+export const tAt = (segId: SegmentId, sec: number) => frames.tAtFrame(segmentOf(segId).startFrame + sec * 60);
+export const segmentStartT = (segId: SegmentId) => frames.tAtFrame(segmentOf(segId).startFrame);
+export const segmentEndT = (segId: SegmentId) => frames.tAtFrame(segmentOf(segId).lastFrame);
+export const segmentLastSec = (segId: SegmentId) => (segmentOf(segId).lastFrame - segmentOf(segId).startFrame) / 60;
 

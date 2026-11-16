@@ -7,7 +7,7 @@ import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import { camPoses, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
 export const segmentId = '7-1-1' as const;
-export const lastSec = timeline.segmentLastSec(segmentId); // 段内最后一格（旧编排 1/24 秒一格）的秒
+export const lastSec = timeline.segmentLastSec(segmentId); // 段内末帧的秒
 export const timeAt = (sec: number) => timeline.tAt(segmentId, sec);
 const t0 = timeline.segmentStartT(segmentId);
 const warden = play.wardenChest(t0);

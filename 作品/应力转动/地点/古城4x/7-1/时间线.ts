@@ -1,5 +1,5 @@
-// 第 7 章第 1 场「黑暗监守」的整场时间线：七段是同一条连续时间轴（t，秒）上前后相接的七截。t = 0 是 6-4-9 末帧，7-1-1 从它的下一格（t = 1/24，6-4-9 还是 1/24 秒一格的编排）演起。
-// 段界放在切镜头的那一刻，一个镜头不拆进两段；后一段从前一段末格的下一格演起（写法同 ../7-3/时间线.ts）。段内时间一律是秒。
+// 第 7 章第 1 场「黑暗监守」的整场时间线：七段是同一条连续时间轴（t，秒）上前后相接的七截。t = 0 是 6-4-9 末帧，7-1-1 从它的下一格（t = 1 / 6-4-9 的 FPS）演起。
+// 段界放在切镜头的那一刻（落到帧上，见 段界.ts），一个镜头不拆进两段；后一段从前一段末帧的下一帧演起（写法同 ../7-3/时间线.ts）。段内时间一律是秒。
 // 人物、监守者、恼鬼、箭的状态全是 t 的函数（戏.ts），各段只管机位和声音。
 // 二人全程强者跳（../古城4x布局.ts 的 强者跳、闪避跳，落脚点在 七一）；监守者 60 米/秒（用户 10-18 定的古城基准速度，比人快一倍），循着振动追，攻击冷却照原版 18 刻；
 //   它几步就到，所以每一下都是人刚跳走它就扑到：二人靠往它够不着的高处跳、落地即走，打法不回合制（用户 10-18）。恼鬼照原版 VexMoveControl 逐刻推。
@@ -7,6 +7,8 @@
 import lineTableJson from 'asset:数据/配音/台词表';
 import { elite, eliteLeap } from '../布局.ts';
 import * as geom from './几何.ts';
+import { FPS as fps649 } from '../6-4-9/编排.ts';
+import { sceneFrames } from './段界.ts';
 
 const leapOf = (a: number[], b: number[], apex: number) => eliteLeap(a as [number, number, number], b as [number, number, number], apex);
 const travel = (a: number[], b: number[]) => geom.wardenTravelSec(geom.flatDist(a as [number, number, number], b as [number, number, number]));
@@ -93,7 +95,7 @@ export const huangFollowArrowHitTs = [shieldSwingTs[1] + 0.1, shieldSwingTs[1] +
 // 7-1-6 原来先有一镜黄叛越肩射火把、照出羊毛（「羊毛……？！」「刘兄，快到羊毛上逃！」），用户 10-19 删了这两句和这一镜：
 //   后面是追逐，上羊毛躲不掉它。剧情时间轴不动（7-2-1 按它远望第 1 场），只把 7-1-5 末到刘心忠快落到 C2 那一截跳过去不演（`skipTo`）。
 const cutTs = {
-  '7-1-1': 1 / 24,
+  '7-1-1': 1 / fps649, // 6-4-9 末帧的下一格：6-4-9 还是一格一格的编排，等它改成秒再跟
   '7-1-2': wardenStepT + 0.03,
   '7-1-3': firstVexSwingT - 0.45,
   '7-1-4': impossibleT + 0.45,
@@ -107,23 +109,19 @@ export const sceneEndT0 = wallLandT + 0.1;
 const names = { '7-1-1': '黑暗', '7-1-2': '恼鬼与火把', '7-1-3': '秒杀', '7-1-4': '逃', '7-1-5': '风矢', '7-1-6': '连跳', '7-1-7': '骏马' } as const;
 export type SegmentId = keyof typeof cutTs;
 const ids = Object.keys(cutTs) as SegmentId[];
-// 段界照旧编排取整到 1/24 秒的格上，不挪到帧上（别处取整到格上的时刻挪到了帧上，见 旧格对帧.ts）：变速段（7-1-3、7-1-7）的场时刻表从段首起每 1/24 秒一个样、
-//   打中护盾在那一样里定住，段首或段末一挪，打击停顿以后的样整个错开，场时刻差到 1/24 秒，超过用户允许的 1/120 秒（11-15）；第 3 场的时间轴（../7-3/戏.ts 的 scene1T）
-//   也从本场末格接着走。段的末格比下一段的段首早一格；最后一段的末格是 sceneEndT0 那一格。
-// 先按格数算再除以 24：和旧的逐格算法一位不差（恰好落在事件时刻上的那一帧不换边）
-const oldCellOf = (t: number) => Math.round(t * 24);
+const frames = sceneFrames(cutTs['7-1-1']);
 export const segments = ids.map((id, i) => {
-  const startCell = oldCellOf(skipTo[id] ?? cutTs[id]);
-  const lastCell = i + 1 < ids.length ? oldCellOf(cutTs[ids[i + 1]]) - 1 : oldCellOf(sceneEndT0);
-  return { segmentId: id, 名: names[id], startCell, lastCell };
+  const startFrame = frames.frameAt(skipTo[id] ?? cutTs[id]);
+  const lastFrame = i + 1 < ids.length ? frames.frameAt(cutTs[ids[i + 1]]) - 1 : frames.frameAt(sceneEndT0);
+  return { segmentId: id, 名: names[id], startFrame, lastFrame };
 });
 const segmentOf = (segId: SegmentId) => segments.find((s) => s.segmentId === segId)!;
 // 段内秒 → 场时刻 t（秒）
-export const tAt = (segId: SegmentId, sec: number) => (segmentOf(segId).startCell + sec * 24) / 24;
-export const segmentStartT = (segId: SegmentId) => segmentOf(segId).startCell / 24;
-export const segmentEndT = (segId: SegmentId) => segmentOf(segId).lastCell / 24;
-// 末格在段内第几秒（机位关键帧的收尾放在这里）
-export const segmentLastSec = (segId: SegmentId) => (segmentOf(segId).lastCell - segmentOf(segId).startCell) / 24;
+export const tAt = (segId: SegmentId, sec: number) => frames.tAtFrame(segmentOf(segId).startFrame + sec * 60);
+export const segmentStartT = (segId: SegmentId) => frames.tAtFrame(segmentOf(segId).startFrame);
+export const segmentEndT = (segId: SegmentId) => frames.tAtFrame(segmentOf(segId).lastFrame);
+// 末帧在段内第几秒（机位关键帧的收尾放在这里）
+export const segmentLastSec = (segId: SegmentId) => (segmentOf(segId).lastFrame - segmentOf(segId).startFrame) / 60;
 
 // ---------- 台词开口（场时刻 t；id 照 7-<场>-<段>-<角色>-<短名>，句子在 id 的那一段开口，给了 段 的在 段 开口） ----------
 export const dialogue: Record<string, { t: number; 文: string; 段?: SegmentId }> = {

@@ -8,7 +8,6 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import * as geom from '../../场/7-李樱撤离/7-2/几何.ts';
 import * as timeline from '../../场/7-李樱撤离/7-2/时间线.ts';
-import { seenSecToFrameSec } from '../../地点/古城4x/7-1/旧格对帧.ts';
 import * as play from '../../场/7-李樱撤离/7-2/戏.ts';
 import * as K71 from '../../地点/古城4x/7-1/戏.ts';
 import { lerp, smoothstep01 } from '@engine/core/数学.ts';
@@ -17,9 +16,9 @@ import type { Cam } from '@engine/core/机位.ts';
 export const sceneSec = (sec: number) => timeline.sceneSecAt('7-2-1', sec); // 场内秒
 
 // ---------- 台词 ----------
-// 开口秒（段内，落到帧上：../../地点/古城4x/7-1/旧格对帧.ts）：五万血在镜 Jade 里，他不在画面上（画外音）；溜了在镜 3 起跳那一刻
-export const fiftyKHpLineSec = seenSecToFrameSec(timeline.fiftyKHpLineT);
-export const slipLineSec = seenSecToFrameSec(timeline.slipLineT);
+// 开口秒（段内）：五万血在镜 Jade 里，他不在画面上（画外音）；溜了在镜 3 起跳那一刻
+export const fiftyKHpLineSec = timeline.fiftyKHpLineT;
+export const slipLineSec = timeline.slipLineT;
 export const lines: { id: string; startSec: number; text: string; estDuration: number }[] = [
   { id: '7-2-1-李樱-五万血', startSec: fiftyKHpLineSec, text: '五万血？！这我打个集贸啊！', estDuration: timeline.fiftyKHpLineDur },
   { id: '7-2-1-李樱-溜了', startSec: slipLineSec, text: '溜了溜了。', estDuration: timeline.slipLineDur },
@@ -68,7 +67,7 @@ const jadeLens = [100, 115];
 const jadeCamera = (sec: number): Cam => {
   const samples = [0, 2, 4, 6].map((d) => wardenChestAt(wideTime(Math.max(0, sec - d / 24))));
   const tgt = [0, 1, 2].map((i) => samples.reduce((acc, p) => acc + p[i], 0) / samples.length) as V3;
-  const k = smoothstep01(sec / (jadeShotEnd - 1 / 24));
+  const k = smoothstep01(sec / (jadeShotEnd - 1 / 60));
   return { pos: addOffset(head, [dJade, lerp(jadeForward[0], jadeForward[1], k)], [[0, 0, 1], jadeRise]), tgt, lens: lerp(jadeLens[0], jadeLens[1], k) };
 };
 // 监守者的血：第 1 场命中表（../7-1/戏/伤害.ts）按这一刻算，镜 Jade 里风矢打中它，框里的数跟着掉

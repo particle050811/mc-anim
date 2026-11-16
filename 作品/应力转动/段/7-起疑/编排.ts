@@ -93,7 +93,7 @@ const lineTipY = (k: number) => bookOnDesk[1] + pageHeight / 2 - (lineAt(k) + li
 // 手末端下沿落到那一行、贴着纸面最高处；够不着靠前倾（上身前后挪）和抬放胳膊一起凑
 // 镜 3 里手停在镜 2 最后一帧的样子
 export const qiaoLeifuPose = (t: number): FigurePose => {
-  if (t >= shot2End) return reachAt(shot2End - 1 / 24, basePose(t));
+  if (t >= shot2End) return reachAt(shot2End - 1 / 60, basePose(t));
   return reachAt(t, basePose(t));
 };
 const reachAt = (handSec: number, pose: FigurePose): FigurePose => {

@@ -86,9 +86,9 @@ const shots: Shot[] = [
     cam: (T, k) => ({ pos: lerpV(G4(-732.5, -34.0, 269.0), G4(-732.0, -34.3, 268.4), smoothstep01(k)), tgt: G4(-727.0, -40.0, 250.0), lens: 16 }),
   },
 ];
-// 段长 8.75 秒；末格（旧编排 1/24 秒一格）在 lastSec
+// 段长 8.75 秒；末帧在 lastSec
 export const durSec = 8.75;
-export const lastSec = durSec - 1 / 24;
+export const lastSec = durSec - 1 / 60;
 export const shotCount = shots.length;
 // 镜号 1～6
 export const shotIndex = (sec: number) => shots.filter((s) => sec >= s.startSec).length;
@@ -108,7 +108,7 @@ export const secInShot = (k: number, T: number) => {
 export const camera = (sec: number): Cam => {
   const k = shotIndex(sec);
   const s = shots[k - 1];
-  return s.cam(storyT(sec), (sec - s.startSec) / Math.max(1 / 24, shotEndSec(k) - 1 / 24 - s.startSec));
+  return s.cam(storyT(sec), (sec - s.startSec) / Math.max(1 / 60, shotEndSec(k) - 1 / 60 - s.startSec));
 };
 // 每一下挨打都得落在某个镜头那一截里（伤害数字层逐下出数字，用户 10-19：算进血里的每一下都要看得到）
 for (const h of play.hits) {

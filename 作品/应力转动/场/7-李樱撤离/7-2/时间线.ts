@@ -1,5 +1,5 @@
 // 第 7 章第 2 场「李樱撤离」的剧情时间线（场内秒 s，原速、无慢放），两段都从这里取时刻。纯数据。
-// 段与段不共用格（同 7-3，旧编排 1/24 秒一格）：7-2-2至3 第 0 秒是 7-2-1 末格的下一格；场内秒 = 段首 + 段内秒（见 `sceneSecAt`）。段界在切镜那一刻，一个镜头不拆进两段（用户 10-18 定）。
+// 段与段不共用帧（同 7-3）：7-2-2至3 第 0 秒是 7-2-1 末帧的下一帧；场内秒 = 段首 + 段内秒（见 `sceneSecAt`）。段界在切镜那一刻，一个镜头不拆进两段（用户 10-18 定）。
 // 戏（脚本规划 7-2；场景在放大 4 倍的新城，地理见 几何.ts）：7-2-1 开场就是他在屋顶 V 上远望监守者的镜 Jade：Jade 显出它的血量，看到就喊出台词（画外音），
 //   切回他转回身强者跳 19.7 米落差 8 格；7-2-2至3 落到 #240 跟前垫的羊毛 X 上，掀开战利品箱，开箱发 container_open 振动，感测体咔嗒、尖啸体尖啸；
 //   弹出箱子界面，思索引线指出古卷，他 shift 点击把古卷、护腿移进物品栏，关掉界面、箱盖合上，传送石拉弓式按住 32 刻（1.6 秒）、警惕地张望，满了 128 个传送门粒子一炸人没了，镜头停在空羊毛上。
@@ -11,7 +11,7 @@
 //   - 看界面、移东西要 2 秒多，关箱（container_close）时三个感测体都已过了 40 刻（激活 30 + 冷却 10），又咔嗒一遍；尖啸体在叫或在 10 秒警告冷却里，不再叫。
 //     开始按住传送石（item_interact_start）时感测体还在第二遍的 40 刻里，不响；用完（item_interact_finish）人已传走。时序由 戏.ts 核对。
 import { FPS as cityPlayFps } from '../../../地点/古城4x/6-4-1/古城戏.ts';
-import { seenCellToFrame, seenSecToFrameSec } from '../../../地点/古城4x/7-1/旧格对帧.ts';
+import { sceneFrames } from '../../../地点/古城4x/7-1/段界.ts';
 import { eliteLeap, feetOnWool, wool722, lookoutFeet } from '../../../地点/古城4x/布局.ts';
 
 // 跳的接口（布局 的 eliteLeap、Jump 的 f0/f1，6-4-1/古城戏.ts 的 airPose、landPose）是 6 章共用的，按旧编排 1/24 秒一格数；本场的秒在调用处换成格
@@ -24,7 +24,7 @@ const tickSec = 1 / 20;
 export const jadeLineSec = 0.5; // 镜内秒：引线开始往上长（0.3 秒长到框）
 export const fiftyKHpLineT = 0.95; // 框出来 0.15 秒后开口
 export const fiftyKHpLineDur = 2.1; // 配音有声 2.10 秒（src/配音/台词表.json）
-export const jadeShotEndSec = seenSecToFrameSec(fiftyKHpLineT + fiftyKHpLineDur + 0.13); // 落到帧上（../../../地点/古城4x/7-1/旧格对帧.ts）
+export const jadeShotEndSec = fiftyKHpLineT + fiftyKHpLineDur + 0.13; // 切镜：这一刻之后的第一帧是下一镜
 
 // ---------- 跳、开箱 ----------
 // 切回他时他还望着场子，0.1 秒后转回身（往 #240）、蹲、跳
@@ -64,13 +64,13 @@ export const teleportSec = useStartSec + useTicks * tickSec; // 用满，传走�
 export const holdAfterTeleport = 0.6; // 人没了以后镜头再停多久：要赶在尖啸体回应（尖啸后 4.5 秒）之前
 
 // ---------- 段起止（场内秒） ----------
-// 段界：落地后 0.1 秒切到开箱的镜头（编排见 7-2-1、7-2-2至3）；旧编排从这一刻往后第一个整格起（往上取整到 1/24 秒的格），挪到离那一格最近的帧上
+// 段界：落地后 0.1 秒切到开箱的镜头（编排见 7-2-1、7-2-2至3），从这一刻往后的第一帧起；场的末帧是离 传走 + holdAfterTeleport 最近的那一帧
 export const cutToChestSec = landSec + 0.1;
-export const sceneLastSec = seenSecToFrameSec(teleportSec + holdAfterTeleport); // 本场最后一格，落到帧上
-// 段首按旧格（1/24 秒）计数，挪过的是小数格；段内秒 → 场内秒先换成格再除以 24：没挪的段和旧的逐格算法一位不差（恰好落在事件时刻、刻边上的那一帧不换边）
-const segmentStartCell = { '7-2-1': 0, '7-2-2至3': seenCellToFrame(Math.ceil(cutToChestSec * 24), cutToChestSec) / 2.5 } as const;
-export type SegmentId = keyof typeof segmentStartCell;
-export const sceneSecAt = (segId: SegmentId, sec: number) => (segmentStartCell[segId] + sec * 24) / 24;
+const frames = sceneFrames(0);
+const segmentStartFrame = { '7-2-1': 0, '7-2-2至3': Math.ceil(cutToChestSec * 60 - 1e-9) } as const;
+export const sceneLastSec = frames.tAtFrame(frames.frameAt(teleportSec + holdAfterTeleport)); // 本场末帧（场内秒）
+export type SegmentId = keyof typeof segmentStartFrame;
+export const sceneSecAt = (segId: SegmentId, sec: number) => frames.tAtFrame(segmentStartFrame[segId] + sec * 60);
 
 // ---------- 振动、尖啸（由 戏.ts 的 声音链 算出，这里只给回应时刻的上限检查用） ----------
 export const shriekResponseSec = 90 * tickSec; // SculkShriekerBlockEntity：尖啸后 90 刻 tryRespond

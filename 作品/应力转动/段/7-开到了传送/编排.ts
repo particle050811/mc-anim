@@ -8,7 +8,6 @@
 // 开箱到传走是一个镜头，所以是一段（用户 10-18 定：一个镜头不拆进两段）：小屋里南边上空 28mm 正对北俯看，慢推到传走，尖啸体在画面外。
 import type { V3 } from '@engine/model/parts.tsx';
 import * as timeline from '../../场/7-李樱撤离/7-2/时间线.ts';
-import { seenSecToFrameSec } from '../../地点/古城4x/7-1/旧格对帧.ts';
 import * as geom from '../../场/7-李樱撤离/7-2/几何.ts';
 import type { Stack } from '@库/界面/箱子界面.tsx';
 import { lerp, smoothstep01, lerpV } from '@engine/core/数学.ts';
@@ -20,8 +19,7 @@ const segmentStartSec = sceneSec(0);
 
 // ---------- 台词 ----------
 // id 沿用配音时的「7-2-2-李樱-开到了」（配音文件、口型按 id 存）
-// 开口落到帧上（../../地点/古城4x/7-1/旧格对帧.ts）
-export const gotItLineSec = seenSecToFrameSec(timeline.gotItLineT) - segmentStartSec;
+export const gotItLineSec = timeline.gotItLineT - segmentStartSec;
 export const lines: { id: string; startSec: number; text: string; estDuration: number }[] = [
   { id: '7-2-2-李樱-开到了', startSec: gotItLineSec, text: '开到了！', estDuration: timeline.gotItLineDur },
 ];

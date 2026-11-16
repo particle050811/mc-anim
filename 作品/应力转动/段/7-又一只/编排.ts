@@ -20,7 +20,6 @@ import * as geom from '../../场/7-收场/7-4-1/几何.ts';
 import * as X741 from '../../场/7-收场/7-4-1/戏.ts';
 import * as K741 from '../../场/7-收场/7-4-1/编排.ts';
 import { baseSpeed } from '../../地点/古城4x/布局.ts';
-import { seenCellToFrame } from '../../地点/古城4x/7-1/旧格对帧.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
@@ -33,9 +32,9 @@ const yawFromTo = (from: V3, to: V3) => yawTo(to[0] - from[0], to[1] - from[1]);
 // ---------- 镜 1：岛上得意（7-4-1 硬切过来） ----------
 export const shot1aEnd = 1; // 刘心忠举杖：起 1/6 秒、举 0.5 秒、举着停 1/3 秒
 export const shot1End = shot1aEnd + 11 / 12; // 黄叛举拳：起 1/12 秒、举 5/12 秒、举着停 5/12 秒
-// 镜 1 的剧情时刻（7-4-1/戏.ts 的时间轴）：第 0 秒是 7-4-1 末格的下一格（旧编排 1/24 秒一格），不共用格
+// 镜 1 的剧情时刻（7-4-1/戏.ts 的时间轴）：第 0 秒是 7-4-1 末帧的下一帧，不共用帧
 const T741End = K741.storyT(K741.lastSec);
-export const T12 = (sec: number) => T741End + sec + 1 / 24;
+export const T12 = (sec: number) => T741End + sec + 1 / 60;
 
 // ---------- 开箱和振动链（镜 2） ----------
 export const lidOpenSec = shot1End + 0.75;
@@ -89,9 +88,8 @@ const firstShriekSec = Math.min(...wardenPlans.map((w) => chain.receivedSecs[w.s
 const pairMid: V3 = [(geom.horseChestSpot[0] + geom.huangPanChestSpot[0]) / 2, (geom.horseChestSpot[1] + geom.huangPanChestSpot[1]) / 2, 0];
 export const wardens = wardenPlans.map((plan) => {
   const shriekSec = Math.max(chain.receivedSecs[plan.shriekerIndex], firstShriekSec + plan.gap);
-  // 本段第几秒开始钻出，落到帧上（../../地点/古城4x/7-1/旧格对帧.ts）；emergeCell 按旧格（1/24 秒）计数，挪过的是小数格
-  const emergeCell = seenCellToFrame(Math.round((shriekSec + 0.75) * 24), shriekSec + 0.75) / 2.5;
-  const emergeAt = emergeCell / 24;
+  // 本段第几秒开始钻出：尖啸后 0.75 秒
+  const emergeAt = shriekSec + 0.75;
   const p = toScene(plan.格[0] + 0.5, plan.格[1], plan.格[2] + 0.5);
   // 游戏时间（驱动待机晃动、心跳发光）：让第一下心跳落在钻出后 1 秒（心跳整 2 秒一次，见 6-4-8 声音.tsx）
   const gameSecOffset = (((2 - ((31 + emergeAt) % 2)) % 2) + 2) % 2;
@@ -102,14 +100,13 @@ export const wardens = wardenPlans.map((plan) => {
     shriekP: blockBottomCenter(shriekers[plan.shriekerIndex]),
     shriekSec,
     emergeAt,
-    emergeCell,
     yaw: (Math.atan2(pairMid[1] - p[1], pairMid[0] - p[0]) * 180) / Math.PI + 90,
     gameSecOffset,
   };
 });
 export type WardenPlan = (typeof wardens)[number];
-// 开始钻出以后过了几秒（画面时间）；按格算再除以 24，没挪的那几只和旧的逐格算法一位不差（钻出动画的阈值恰好落在帧上）
-export const emergeSecAt = (w: WardenPlan, sec: number) => (sec * 24 - w.emergeCell) / 24;
+// 开始钻出以后过了几秒（画面时间）
+export const emergeSecAt = (w: WardenPlan, sec: number) => sec - w.emergeAt;
 export const debrisSec = K8.crumbSec;
 export const wardenGameSec = (w: WardenPlan, sec: number) => 30 + sec + w.gameSecOffset;
 export const wardenState = (w: WardenPlan, sec: number) => {

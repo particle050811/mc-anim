@@ -14,7 +14,7 @@ const horseChest = (sec: number) => addOffset(play.horseState(timeAt(sec)).p, [0
 const shots: ShotCam[] = [
   {
     start: 0,
-    pos: [[0, G4(-853.0, -38.5, 196.0)], [shot2Start - 1 / 24, G4(-850.0, -38.5, 196.0)]],
+    pos: [[0, G4(-853.0, -38.5, 196.0)], [shot2Start - 1 / 60, G4(-850.0, -38.5, 196.0)]],
     tgt: (sec) => lerpV(horseChest(sec), play.wardenChest(timeAt(sec)), 0.45),
     lens: [[0, 15]],
   },
