@@ -1,7 +1,7 @@
 """字级对齐：配音成品 + 念的字 → [[单位, 起秒, 止秒]]（汉字一个字一个单位，日语、英文一个词一个单位），口型.py 拿它算嘴。
 
 对齐器是 Qwen3-ForcedAligner-0.6B，跑在它自己的 uv 工程里（qwen-aligner/.venv，装 qwen-asr、pypinyin；模型从魔搭下到同目录），本模块起子进程调它，一批只加载一次模型。
-CPU、float32 推理（旧项目 工具/配音/口型.py 的 align）。对不准的句子（九胡拖长音、撒娇腔，模型常把大半句时间给第一个字）在 台词.toml 的 口型手修 里手标，优先于对齐。
+CPU、float32 推理（旧项目 工具/配音/口型.py 的 align）。对不准的句子（九胡拖长音、撒娇腔，模型常把大半句时间给第一个字）在 台词.toml 的 lipManual（口型手修）里手标，优先于对齐。
 """
 from __future__ import annotations
 
