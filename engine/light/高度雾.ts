@@ -153,11 +153,12 @@ vec3 skyFogMix( vec3 fc, vec3 o, vec3 e, float f ) {
 // 远雾（用户 11-16：「近处应该近似于 0 的雾浓度，然后在接近视距的地方再急剧上升到百分之百」）：公里级镜头的地形最远距离 D 以内，
 // 起 × D 以内不加雾，起 × D 到 D 用 smoothstep 升到 1；距离按水平量（同 engine/voxel/区段.ts 挑区段，跨过 D 的最外一圈区段越出 D 的部分全进雾）。
 // D 处的颜色拉满成视线方向上的天色，不是雾色：雾色和后面的天不一样时，全进雾的山照样显出剪影。
-// - 不开大气（暮色）：远雾代替原来的线性雾 / 指数平方雾当底，高度雾、方向雾色、天色雾照叠；天色按天色雾登记的色带（useSkyFog），D 处拉满。
-// - 开大气（主世界，Photon 的空气雾、边界雾接管了材质的雾，three 的雾不起作用）：Photon 那套原样算完，再按远雾往穹顶在这个方向的颜色拉，
+// 是替换不是叠加（用户 11-16：「能被渲染到的尽量都看得到，不然我这不是白渲染了吗」）：开着远雾时地形、物体上别的雾都不算，起 × D 以内雾为 0；天空自己的散射和云照旧。
+// - 不开大气（暮色）：线性雾 / 指数平方雾、高度雾、天色雾比例都不算；D 处的颜色按天色雾登记的色带（useSkyFog），没登记色带用方向雾色。
+// - 开大气（主世界，Photon 的空气雾、边界雾接管了材质的雾，three 的雾不起作用）：不算 Photon 的空气雾、边界雾，只往穹顶在这个方向的颜色拉，
 //   穹顶色照 天空.tsx 的 atmoSkyMaterial（天色 × 空气雾透过率 + 内散射，再出色）；地平线以下的天色图取的是贴地平线那一行（大气.ts 的 skyRadiance 把仰角钳到 hm），
 //   所以天色用 atmoHorizon（16 个方位插值），不另传天色图。
-// fogEdge：x 起点（米）、y 终点 D（米，0 = 不开）。共用 uniform 同上：普通对象，所有材质和屏幕 AO 共用
+// fogEdge：x 起点（米）、y 终点 D（米，0 = 不开）、z 放进。共用 uniform 同上：普通对象，所有材质和屏幕 AO 共用
 const farFogVec = { x: 0, y: 0, z: 0, w: 0 };
 export const farFogUniforms = { fogEdge: { value: farFogVec } };
 for (const k of Object.keys(THREE.ShaderLib) as (keyof typeof THREE.ShaderLib)[]) {
@@ -168,25 +169,24 @@ Object.assign(THREE.UniformsLib.fog as Record<string, THREE.IUniform>, farFogUni
 // 起：远雾从 D 的几成开始升（用户还没定 0.8 还是 0.9，试看 {"雾曲线": {"起": 0.9}} 换）
 export const FAR_FOG_START = 0.8;
 export const farFogStart = () => trialParams<{ 起?: number }>('雾曲线')?.起 ?? FAR_FOG_START;
+// 试看 {"雾曲线": {"远": 米}}：换这个镜头的 D，地形最远距离跟着换（用户 11-16 要比不同视距看不看得出、省多少）
+export const trialFarM = (m: number) => trialParams<{ 远?: number }>('雾曲线')?.远 ?? m;
 const farFogSlot = newWriteSlot();
 const disableFarFog = () => {
   farFogVec.y = 0;
 };
 // 远：这个镜头的地形最远距离 D（米，VoxelWorld 的 far）；null = 不开。
-// 放进：0～1，起止从 从 = [近, 远]（米，原来那条雾的起止）渐到 [起 × D, D]（6-1-3 起飞那几帧跟着超远景一起放进），0 = 不开
-export type FarFog = { far: number; ramp?: number; from?: [number, number] };
-export const farFogRange = (o: FarFog): [number, number] => {
-  const k = o.ramp ?? 1;
-  const [n0, f0] = o.from ?? [o.far * farFogStart(), o.far];
-  return [n0 + (o.far * farFogStart() - n0) * k, f0 + (o.far - f0) * k];
-};
+// 放进：0～1，从原来那套雾渐到远雾（6-1-3 起飞那几帧跟着超远景一起放进，只有不开大气时有用），0 = 不开
+export type FarFog = { far: number; ramp?: number };
 export const useFarFog = (o: FarFog | null) => {
   useWriter(farFogSlot, disableFarFog);
   if (!o || !(o.far > 0) || (o.ramp ?? 1) <= 0) {
     farFogVec.y = 0;
     return;
   }
-  [farFogVec.x, farFogVec.y] = farFogRange(o);
+  farFogVec.x = o.far * farFogStart();
+  farFogVec.y = o.far;
+  farFogVec.z = Math.min(1, o.ramp ?? 1);
 };
 // 要在 SKY_FOG_GLSL 之后
 export const FAR_FOG_GLSL = /* glsl */ `
@@ -194,8 +194,18 @@ uniform vec4 fogEdge;
 float farFogAt( vec3 o, vec3 e ) {
   return fogEdge.y > 0.0 ? smoothstep( fogEdge.x, fogEdge.y, length( e.xz - o.xz ) ) : 0.0;
 }
-vec3 farFogSky( vec3 fc, vec3 o, vec3 e, float a ) {
-  return fogSky.z > 0.5 ? mix( fc, skyFogColor( o, e ), a ) : fc;
+vec3 farFogSky( vec3 fc, vec3 o, vec3 e ) {
+  return fogSky.z > 0.5 ? skyFogColor( o, e ) : fc;
+}
+// 不开大气时的雾那一份（已乘浓度，画面 = 出色 × (1 − f) + 返回值）：base 是线性 / 指数平方雾的浓度，fc 是方向雾色。
+// 远雾开着时按 fogEdge.z（放进 0～1）从原来那套（高度雾、天色雾）渐到远雾
+vec3 fogPart( float base, vec3 fc, vec3 o, vec3 e, vec3 fh, out float f ) {
+  float fo = addHeightFog( base, o, e, fh );
+  vec3 Fo = skyFogMix( fc, o, e, fo ) * fo;
+  if ( fogEdge.y <= 0.0 ) { f = fo; return Fo; }
+  float fn = farFogAt( o, e );
+  f = mix( fo, fn, fogEdge.z );
+  return mix( Fo, farFogSky( fc, o, e ) * fn, fogEdge.z );
 }`;
 // 要在 大气.ts 的 ATMO_FN_GLSL 之后
 export const FAR_FOG_ATMO_GLSL = /* glsl */ `
@@ -205,12 +215,11 @@ vec3 farFogDome( vec3 o, vec3 e ) {
   vec3 S = atmoAir( o, o + d * atmoP.y, T );
   return atmoDisp( atmoHorizon( d ) * T + S );
 }
-// 画面 = 出色 × keep + B 的两项按远雾改：全进远雾处只剩穹顶色
-void farFogAtmoParts( vec3 o, vec3 e, inout vec3 keep, inout vec3 B ) {
+// 远雾开着时代替 atmoFogParts：画面 = 出色 × keep + 返回值，起 × D 以内原色不动
+vec3 farFogAtmoParts( vec3 o, vec3 e, out vec3 keep ) {
   float a = farFogAt( o, e );
-  if ( a <= 0.0 ) return;
-  keep *= 1.0 - a;
-  B = mix( B, farFogDome( o, e ), a );
+  keep = vec3( 1.0 - a );
+  return a > 0.0 ? farFogDome( o, e ) * a : vec3( 0.0 );
 }`;
 
 export const heightFog = heightFogVec;
@@ -280,8 +289,7 @@ THREE.ShaderChunk.fog_fragment = /* glsl */ `
 #ifdef USE_FOG
 	if ( atmoP.x > 0.5 ) {
 		vec3 atmoKeep;
-		vec3 atmoAdd = atmoFogParts( cameraPosition, vFogWorld, atmoKeep );
-		farFogAtmoParts( cameraPosition, vFogWorld, atmoKeep, atmoAdd );
+		vec3 atmoAdd = fogEdge.y > 0.0 ? farFogAtmoParts( cameraPosition, vFogWorld, atmoKeep ) : atmoFogParts( cameraPosition, vFogWorld, atmoKeep );
 		gl_FragColor.rgb = gl_FragColor.rgb * atmoKeep + atmoAdd;
 	} else {
 	#ifdef FOG_EXP2
@@ -289,11 +297,9 @@ THREE.ShaderChunk.fog_fragment = /* glsl */ `
 	#else
 		float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
 	#endif
-	float farFog = farFogAt( cameraPosition, vFogWorld );
-	if ( fogEdge.y > 0.0 ) fogFactor = farFog;
-	fogFactor = addHeightFog( fogFactor, cameraPosition, vFogWorld, fogHeight );
-	vec3 fogTint = skyFogMix( dirFogColor( fogColor, cameraPosition, vFogWorld, fogSun, fogGlow ), cameraPosition, vFogWorld, fogFactor );
-	gl_FragColor.rgb = mix( gl_FragColor.rgb, farFogSky( fogTint, cameraPosition, vFogWorld, farFog ), fogFactor );
+	float fogAll;
+	vec3 fogAdd = fogPart( fogFactor, dirFogColor( fogColor, cameraPosition, vFogWorld, fogSun, fogGlow ), cameraPosition, vFogWorld, fogHeight, fogAll );
+	gl_FragColor.rgb = gl_FragColor.rgb * ( 1.0 - fogAll ) + fogAdd;
 	}
 #endif
 `;

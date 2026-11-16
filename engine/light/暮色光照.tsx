@@ -92,7 +92,7 @@ export const shadowFarFor = (fogFar: number) => quarterOctaveCeil(Math.min(fogFa
 // 跟着镜头时穹顶放大到 120 公里：星星是半透明点、最后画又不被雾盖，穹顶只 480 米的话高空往下看时 480 米外的地面会撒满星星；放大后星星大小不变（按像素画）。
 // 雾远：雾的远端（米）；雾近：近端（米，不给就是远 × 0.25；贴地的镜头给 `twilightFogNear`(雾远)）；离地：镜头离地多高（米，不给就是镜头的 z）。投影的中、远两级切在 max(300, 2 × 离地) 米，近处地面都在细的那两级里
 // 高度雾倍数：见 `useTwilightFog`；天色雾：0～1，全进雾的远处往穹顶颜色靠多少（lib/高度雾.ts 的 `useSkyFog`，暮色超远景用，0 = 雾色照旧）
-// 远雾：给了就把线性雾换成 lib/高度雾.ts 的远雾（远 = 地形最远距离，地形尽头拉满成天色；放进时从 [雾近, 雾远] 渐过去），不给照旧
+// 远雾：给了就把线性雾、高度雾、天色雾比例都换成 lib/高度雾.ts 的远雾（远 = 地形最远距离，地形尽头拉满成天色；放进时从原来那套渐过去），不给照旧
 export const TwilightLighting: React.FC<{ camPos: number[]; domeCenter?: number[]; fogFar: number; fogNear?: number; aboveGround?: number; heightFogScale?: number; skyFog?: number; farFog?: { far: number; ramp?: number } }> = ({
   camPos: camPos,
   domeCenter,
@@ -105,7 +105,7 @@ export const TwilightLighting: React.FC<{ camPos: number[]; domeCenter?: number[
 }) => {
   useTwilightFog(twilightSunDir, heightFogScale);
   const farOn = farFog !== undefined && (farFog.ramp ?? 1) > 0;
-  useFarFog(farOn ? { ...farFog, from: [fogNear, fogFar] } : null);
+  useFarFog(farOn ? farFog : null);
   // 色带、余晖同下面 SkyDome twilight 的默认（天空.tsx 的 duskAfterglow）；开远雾时比例 0 也登记天色
   useSkyFog(skyFog > 0 || farOn ? { k: skyFog, bands: twilightDusk?.skyColors ?? TWILIGHT.sky, glow: twilightDusk?.afterglow ?? null, glowK: twilightDusk?.afterglowStrength ?? 0, sunDir: twilightSunDir } : null);
   return (
