@@ -35,7 +35,7 @@ export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
-        <FlightFog visibility={choreo.visibility(globalSec)} />
+        <FlightFog visibility={choreo.visibility(globalSec)} far={terrain.farM} />
         <FlightRig c={cam} near={0.02} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>

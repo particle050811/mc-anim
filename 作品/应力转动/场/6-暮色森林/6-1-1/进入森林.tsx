@@ -183,7 +183,7 @@ export const EnterForest: React.FC = () => {
         {/* 两块画布的 key 不同：gl 的设置只在建画布时生效，同一个位置只换 props 会沿用旧画布，暮色那一半就跟着开了对数深度 */}
         <ThreeCanvas key="海岛" width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
           <color attach="background" args={[SKY.horizon]} />
-          <FlightFog visibility={overworldWindowView.visibility} />
+          <FlightFog visibility={overworldWindowView.visibility} far={overworldWindowView.farM} />
           <OverworldWaterSky />
           <Rig t={choreoT} />
           <ScreenAo />

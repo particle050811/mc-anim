@@ -21,6 +21,7 @@ import { JiuhuHandCompass } from '../../../角色/九胡持指南针.tsx';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { BaseWorkshop } from '../../../地点/基地工坊.tsx';
 import { BaseIslandTerrain } from '../../../地点/基地小岛.tsx';
+import { overworldWindowView } from '@engine/voxel/主世界地形.ts';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import * as choreo from './编排.ts';
 import { rad } from '@engine/core/数学.ts';
@@ -40,7 +41,7 @@ export const SetOff: React.FC = () => {
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <FlightFog visibility={choreo.VISIBILITY} />
+        <FlightFog visibility={choreo.VISIBILITY} far={overworldWindowView.farM} />
         <FlightRig c={cam} near={0.02} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>

@@ -220,7 +220,7 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; level?: RenderLevel; sc
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(dpr)}>
-        <TwilightLighting camPos={cam.pos} fogFar={fogFar} aboveGround={aboveGround} {...farViewLighting(far)} />
+        <TwilightLighting camPos={cam.pos} fogFar={fogFar} aboveGround={aboveGround} {...farViewLighting(far)} farFog={far ? { far: farDist } : undefined} />
         <FlightRig c={cam} near={0.05} far={150000} />
         {AO && <ScreenAo />}{/* 照 Voxy 的屏幕空间 AO（用户 10-03），默认开，关掉传 屏幕AO={false} */}
         <group rotation={[-Math.PI / 2, 0, 0]}>

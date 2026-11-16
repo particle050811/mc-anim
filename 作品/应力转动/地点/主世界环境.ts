@@ -11,8 +11,8 @@ const fallCloud = [borderTownPos[0], borderTownPos[1] + 110, 150] as const;
 const townClear = [borderTownPos[0], borderTownPos[1], 350, 150] as const;
 const seaY = 63 - 64;
 
-/** 能见度：同 FlightFog 的 visibility（米）；投影远：同 FlightSky 的 shadow.shadowFar（不给 = 不投影，离地给 <环境 离地>）；photon：false = 不开大气和云（钻到地下时，同 FlightSky 的 photon） */
-export const overworldEnv = (o: { visibility: number; shadowFar?: number; photon?: boolean }): EnvDescription =>
+/** 能见度：同 FlightFog 的 visibility（米）；远：同 FlightFog 的 far（地形最远距离，给了开远雾）；投影远：同 FlightSky 的 shadow.shadowFar（不给 = 不投影，离地给 <环境 离地>）；photon：false = 不开大气和云（钻到地下时，同 FlightSky 的 photon） */
+export const overworldEnv = (o: { visibility: number; far?: number; shadowFar?: number; photon?: boolean }): EnvDescription =>
   defineEnvironment(
     {
       dimension: overworld,
@@ -20,6 +20,7 @@ export const overworldEnv = (o: { visibility: number; shadowFar?: number; photon
       sun: SUN_OW,
       lightSpec: { tier: '主世界' },
       fog: { 种类: '指数平方', visibility: o.visibility },
+      ...(o.far === undefined ? {} : { farFog: { far: o.far } }),
       atmosphereFar: o.photon === false ? null : 40000,
       cloud: o.photon === false ? { 种类: '无' } : { 种类: 'photon', seaLevel: seaY, 加: [fallCloud], clearRect: townClear },
       shadow: o.shadowFar === undefined ? false : { far: o.shadowFar },

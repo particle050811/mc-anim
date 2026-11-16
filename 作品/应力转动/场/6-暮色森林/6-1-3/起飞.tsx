@@ -5,7 +5,7 @@
 // 光照（用户 2026-10-02）：和 6-1-2 同一套暮色森林的天、光、雾（lib/暮色光照.tsx），一直用到 6-1-9。镜头 1（接 6-1-2 末帧）里
 // 天空穹顶和 6-1-2 一样放在原点、主光的投影范围、雾一样（满视距 512 米，雾近端见 lib/暮色光照.tsx 的 `twilightFogNear`），首帧和 6-1-2 末帧接得上；切中景以后穹顶跟着镜头。云是 TwilightLighting 带的 Photon 云。
 import { ThreeCanvas } from '@remotion/three';
-import { canvasDpr } from '@engine/core/渲染级别.ts';
+import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
@@ -44,7 +44,7 @@ export const TakeOff: React.FC = () => {
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(t)} fogNear={twilightFogNear(choreo.fogFar(t))} aboveGround={choreo.aboveGround(t)} {...farViewLighting(choreo.farView(), choreo.farViewRamp(t))} />
+        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(t)} fogNear={twilightFogNear(choreo.fogFar(t))} aboveGround={choreo.aboveGround(t)} {...farViewLighting(choreo.farView(), choreo.farViewRamp(t))} farFog={choreo.farView() ? { far: LevelParams.视频.far, ramp: choreo.farViewRamp(t) } : undefined} />
         <FlightRig c={cam} />
         {/* 屏幕空间 AO：同 6-1-2、一镜到底一直开着（云也画在它里面） */}
         <ScreenAo />
