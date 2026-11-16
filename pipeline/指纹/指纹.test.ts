@@ -47,7 +47,7 @@ describe('默克尔指纹', () => {
   it('asset: 按资产锁 sha、npm 包按 lockfile 版本、Worker 的 new URL 都算进去；锁里没有的 id 报错', async () => {
     const d = makeTempDir();
     const moduleA = path.join(d, '甲.ts');
-    fs.writeFileSync(moduleA, "import image from 'asset:核对/冒烟色块'; import { interpolate } from 'remotion'; export const w = () => new Worker(new URL('./工人.ts', import.meta.url)); export default [image, interpolate];");
+    fs.writeFileSync(moduleA, "import 图 from 'asset:核对/冒烟色块'; import { interpolate } from 'remotion'; export const w = () => new Worker(new URL('./工人.ts', import.meta.url)); export default [图, interpolate];");
     fs.writeFileSync(path.join(d, '工人.ts'), 'export const 工 = 1;');
     const r = await computeMerkle([relPath(moduleA)]);
     expect(r.detail.asset).toEqual({ '核对/冒烟色块': readAssetLock()['核对/冒烟色块']!.sha256 });
