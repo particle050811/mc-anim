@@ -10,11 +10,11 @@ import { BROOM } from '@库/物品/扫帚.tsx';
 import { MACE } from '@库/物品/重锤.tsx';
 import { ROLLER } from '@库/物品/动力压路机.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
-import { FPS, tick, impactTime, impactSegFrame, segTable, liYingFall, setImpact, setAim, setTakeoff, start, blower } from '../时间线.ts';
+import { tick, impactTime, impactSegSec, segTable, liYingFall, setImpact, setAim, setTakeoff, start, blower } from '../时间线.ts';
 import { sample, type Key } from '@engine/anim/anim.ts';
 import { lineFrameCount } from '../../../../配音/台词轨.tsx';
 import lipTable from 'asset:数据/配音/口型';
-import { landingPose, flipAngle as landingFlipAngle, flipHipHeight, touchdownFrame } from '../../6-3-6/落地.ts';
+import { landingPose, flipAngle as landingFlipAngle, flipHipHeight, touchdownSec } from '../../6-3-6/落地.ts';
 import { releasePose } from '../../6-3-3/下落攻击.ts';
 import { add, D2R } from './工具.ts';
 import { groundZ, caveCeilingZ, ancientCityFloorZ } from './地面.ts';
@@ -70,8 +70,10 @@ const FIELDS = ['pitch', 'headPitch', 'headYaw', 'legR', 'legL', 'kneeR', 'kneeL
 // 关键时刻照这句台词的字（../../../配音/口型.json；台词文件末尾落在 6-3-5 末帧，见 `shoutLine`）：蓄力的气声里拉到脑后，「ロー」起慢慢再往后拉，「ッ」出手；
 // 每个字起音时锤和身子往后顿一下（`syllablePulse`），一直在动、不定住。打击那一刻（tr = 0）的姿势是 `STRIKE_HIT`，撞击深度和落点都按它算，别改
 const ROAD_ROLLER = '6-3-5-李樱-RoadRoller';
-export const shoutLine = { id: ROAD_ROLLER, 帧: segTable['6-3-5'].止 - lineFrameCount(ROAD_ROLLER) };
-const shoutStartTr = -(impactSegFrame + lineFrameCount(ROAD_ROLLER)) / FPS; // 6-3-5 末帧 = 6-3-6 首帧，原速
+// 开口比 6-3-5 止早「有声长取整到 1/24 秒」（6-举锤砸穿 段.ts 的台词 cue 按它排）。帧 = 开口的全局秒（口型按 1 帧/秒读）
+const shoutLeadSec = lineFrameCount(ROAD_ROLLER) / 24;
+export const shoutLine = { id: ROAD_ROLLER, 帧: segTable['6-3-5'].止 - shoutLeadSec };
+const shoutStartTr = -(impactSegSec + shoutLeadSec); // 6-3-5 止 = 6-3-6 起，原速
 const syllables = (lipTable as unknown as Record<string, { 字: [string, number, number][] }>)[ROAD_ROLLER].字;
 const syllableOnsets = syllables.filter(([ch]) => ch !== 'ッ').map(([, start]) => shoutStartTr + start);
 const releaseTr = shoutStartTr + syllables[syllables.length - 1][1]; // 「ッ」：出手
@@ -223,7 +225,7 @@ for (let k = 0; k < 2; k++) {
 // ---------- 竖井：砸穿以后的路线 ----------
 // 撞击点（竖井中心）= 撞击时刻锤头的水平位置。砸进地里后匀减速：从 `shaftEntrySpeed` 碾下去，打穿洞顶时 55 米/秒；进了古城自由落体。
 // 入井速度不用撞地时的 360 米/秒（竖井一闪而过）：撞击那一下把多余动能砸进坑里炸出金光。
-// 岩层 141 米，照 88 碾要 1.97 秒看久了拖，取 140（1.45 秒）还看得清一路碾碎；洞顶出来的 55 米/秒不变。6-3-6 撞击以前一帧不动（时间线.ts 的 `段表`）
+// 岩层 141 米，照 88 碾要 1.97 秒看久了拖，取 140（1.45 秒）还看得清一路碾碎；洞顶出来的 55 米/秒不变。6-3-6 撞击以前不动（时间线.ts 的 `段表`）
 const shaftEntrySpeed = 140;
 let SHAFT: { center: V3; hipXY: [number, number]; impactZ: number; entrySpeed: number; impactSpeed: number; breachZ: number; breachDelay: number; a: number; landSec: number; landZ: number } | null = null;
 export const liYingShaft = () => {
@@ -258,10 +260,10 @@ export const digHipZ = (physSec: number) => {
   const sinceBreach = Math.min(t, shaft.landSec - impactTime()) - shaft.breachDelay;
   const z = shaft.breachZ - 55 * sinceBreach - 0.5 * 9.81 * sinceBreach * sinceBreach;
   if (physSec < shaft.landSec) return z;
-  // 落地以后（落地.ts）：翻身几帧从打击姿势的髋高落到着地，之后髋高按骨架贴地算，脚不穿地也不悬空
+  // 落地以后（落地.ts）：翻身那一下从打击姿势的髋高落到着地，之后髋高按骨架贴地算，脚不穿地也不悬空
   const sinceLand = physSec - shaft.landSec;
   const groundedHipZ = (q: number) => ancientCityFloorZ + hipPx(landingPose(q, strikePoseAt(shaft.landSec))) * PX;
-  if (sinceLand * 24 < touchdownFrame) return flipHipHeight(sinceLand, shaft.landZ, groundedHipZ(touchdownFrame / 24));
+  if (sinceLand < touchdownSec) return flipHipHeight(sinceLand, shaft.landZ, groundedHipZ(touchdownSec));
   return groundedHipZ(sinceLand);
 };
 

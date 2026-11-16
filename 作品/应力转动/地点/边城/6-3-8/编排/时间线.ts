@@ -1,11 +1,9 @@
 // 6-3-8、6-3-10 的台词、时刻、段表。编排秒 t：0 = 6-3-8 首帧，原速；切坑以后剧情另加 `skipSec`（见 `storySec`）。
-// 段表、台词落点、声音用成片帧（全局，6-3-8 首帧 = 0），跳下城墙那一截跳切，成片帧换 t 用 `frameToSec`。
-import { impactTime, impactSegFrame, segFrameCount as segFrameCount } from '../../6-3-下坠/时间线.ts';
+// 段表、台词落点、声音用成片秒 u（全局，6-3-8 首帧 = 0），跳下城墙那一截跳切，成片秒换 t 用 `filmToChoreoSec`。
+import { impactTime, impactSegSec, segSpan } from '../../6-3-下坠/时间线.ts';
 import { ticksToSurface } from './落水.ts';
 import { chaseSpeed } from '../../../古城4x/布局/强者.ts';
 import { RAMP_SEC } from '@库/角色/跑步.ts';
-
-export const FPS = 24;
 
 // ---------- 台词 ----------
 // 只剩黄叛一句「上次抢劫我们城市的家伙又来了，我们快追！」（用户 10-12 删了别的台词，id 沿用 6-3-8-黄叛-又出现了）。
@@ -29,8 +27,8 @@ export const cues = (() => {
   const liuTakeoff = huangDone - 0.1;
   const huangTakeoff = huangDone + 0.2;
   // 跳下镜演到黄叛跳到最高点（两人都离开了走道），落水镜从刘心忠落水前 0.08 秒起：掉 28 米那一截不演（用户 10-19：「没有必要看从 28 米掉下来的一镜到底的镜头
-  // 直接跳下镜头和落水镜头不就好了」）。两人起跳竖直速度 0.42，同 编排/二人.ts。两个切点取整到帧，机位按它换镜不差半帧
-  const onFrame = (s: number) => Math.round(s * FPS) / FPS;
+  // 直接跳下镜头和落水镜头不就好了」）。两人起跳竖直速度 0.42，同 编排/二人.ts。两个切点取整到 1/24 秒的格，机位按它换镜不差半格
+  const onFrame = (s: number) => Math.round(s * 24) / 24;
   const jumpCut = onFrame(huangTakeoff + 0.33);
   const splashShot = onFrame(liuTakeoff + ticksToSurface(0.42) / 20 - 0.08);
   const cutToPit = huangTakeoff + 3.18; // 刘心忠上路后 0.18 秒、黄叛在池沿上；卫兵都已落水（落水时刻用 工具/追兵/时刻.ts 核对）
@@ -51,36 +49,36 @@ export const skipSec = (() => {
 // 剧情时间（秒）：碎块按它走
 export const storySec = (t: number) => (t < cues.cutToPit ? t : t + skipSec);
 // 6-3-8 首帧在 6-3-6 砸地以后多少秒：6-3-6 末帧往后 0.125 秒（硬切），从 时间线.ts 的段表算
-export const afterImpact = (segFrameCount('6-3-6') - 1 - impactSegFrame) / 24 + 0.125;
+export const afterImpact = segSpan('6-3-6') - impactSegSec + 0.125;
 export const fallTime = (t: number) => impactTime() + afterImpact + storySec(t);
 
 // ---------- 跳切 ----------
-// 成片帧 H（全局）在 `jumpCutFrame` 以前就是编排帧；从它起跳过 `fallSkipFrames` 帧（同一段里硬切，同 6-4-1 的跳切）
-const toFrame = (s: number) => Math.round(s * FPS);
-export const jumpCutFrame = toFrame(cues.jumpCut);
-export const fallSkipFrames = toFrame(cues.splashShot) - jumpCutFrame;
-export const frameToSec = (H: number) => (H < jumpCutFrame ? H : H + fallSkipFrames) / FPS;
-// 编排帧 → 成片帧；落在跳掉那截里的返回 undefined
-export const cutFrameOf = (F: number) => (F < jumpCutFrame ? F : F >= jumpCutFrame + fallSkipFrames ? F - fallSkipFrames : undefined);
+// 成片秒 u 在 `cues.jumpCut` 以前就是编排秒；从它起接上 `cues.splashShot`，跳过 `fallSkipSec` 秒（同一段里硬切，同 6-4-1 的跳切）
+export const fallSkipSec = cues.splashShot - cues.jumpCut;
+export const filmToChoreoSec = (u: number) => (u < cues.jumpCut ? u : cues.splashShot + (u - cues.jumpCut));
 
-// ---------- 段表（成片帧，含两头） ----------
-// 6-3-8 从城墙演到切坑前一帧（中间跳下镜 → 落水镜硬切），6-3-10 从切坑那一帧起是坑口（硬切，两段不共用帧）
+// ---------- 段表（成片秒） ----------
+// 6-3-8 从城墙演到切坑以前（中间跳下镜 → 落水镜硬切），6-3-10 从切坑那一刻起是坑口（硬切）。
+// 6-3-10 的起止是切坑、演完那两刻取整到 1/24 秒的格（6-追进竖井 段.ts 的声音按它排）
+const onOldGrid = (s: number) => Math.round(s * 24) / 24;
 export type SegmentName = '6-3-8' | '6-3-10';
-export const cutToPitFrame = toFrame(cues.cutToPit) - fallSkipFrames;
-export const segmentTable: Record<SegmentName, { 起: number; 止: number; 名: string }> = {
-  '6-3-8': { 起: 0, 止: cutToPitFrame - 1, 名: '二人登场' },
-  '6-3-10': { 起: cutToPitFrame, 止: toFrame(cues.seg10End) - fallSkipFrames, 名: '追进竖井' },
+const pitShotStart = onOldGrid(cues.cutToPit);
+const pitShotEnd = onOldGrid(cues.seg10End);
+export const segmentTable: Record<SegmentName, { 起: number; 名: string }> = {
+  '6-3-8': { 起: 0, 名: '二人登场' },
+  '6-3-10': { 起: pitShotStart - fallSkipSec, 名: '追进竖井' },
 };
-export const segmentFrames = (segment: SegmentName) => segmentTable[segment].止 - segmentTable[segment].起 + 1;
-export const lastFrame = segmentTable['6-3-10'].止;
-export const lastSec = frameToSec(lastFrame);
+// 6-3-10 末帧（7-收场 接它）的编排秒
+export const lastSec = pitShotEnd;
 
-// 台词落点（段内帧，开口那一帧；字幕组和 声音.tsx 都从这里取）。台词轨的帧 = 开口（第一个有声的时刻）
-export const lineStartFrame = { huangPanReappears: toFrame(cues.huangSpeaks) - segmentTable['6-3-8'].起 };
+// 台词落点（段内秒，开口那一刻；字幕组和 声音.tsx 都从这里取）。台词轨的落点 = 开口（第一个有声的时刻）
+export const lineStartSec = { huangPanReappears: cues.huangSpeaks };
+// 点头（`withTalkNod`）的平滑按格取样，格的大小跟着 fps 走，所以照旧给 1/24 秒一格的数：帧 = 开口秒 × 24
+export const nodSamplesPerSec = 24;
 export const lineCuesBySegment: Record<SegmentName, { id: string; 帧: number }[]> = {
-  '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartFrame.huangPanReappears }],
+  '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartSec.huangPanReappears * nodSamplesPerSec }],
   '6-3-10': [],
 };
 
-// 段内帧 → 编排秒 t
-export const toSec = (segment: SegmentName, f: number) => frameToSec(segmentTable[segment].起 + f);
+// 段内秒 → 编排秒 t
+export const toSec = (segment: SegmentName, sec: number) => (segment === '6-3-10' ? pitShotStart + sec : filmToChoreoSec(segmentTable[segment].起 + sec));

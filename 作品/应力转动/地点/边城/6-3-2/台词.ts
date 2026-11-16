@@ -66,14 +66,14 @@ export const activeLine = lineTable[chosenVersion];
 // 开口：界面开了 1.25 秒（底板、地面落完，李樱出现）后配音文件开始放（真正出声还要再过 头 秒）；两个数都取在整帧上，配音的 Sequence 从整帧开始。
 // 关界面：最后一个字说完再停 0.6 秒（这时碎屑早落完了，编排.ts 的 `demoEnd`），标题、按钮、说明框 0.5 秒淡出；淡完镜头往场景里的李樱推，
 //   推了 `pushLead` 秒是本段末帧（= 6-3-3 首帧），之后底色淡到天空（转场.ts）。界面淡出、推近、淡到天空依次来，不和演示叠（用户 10-19）。
-export const FPS = 24;
 export const uiOpen = 0.75;
 export const voiceStart = 1.25; // 思索场景时间
 export const uiClose = voiceStart + activeLine.end + 0.6; // 思索场景时间
 export const uiFade = 0.5;
 export const pushLead = 1;
-export const segmentFrames = Math.round((uiOpen + uiClose + uiFade + pushLead) * FPS) + 1;
-export const matchSec = (segmentFrames - 1) / FPS - uiOpen; // 本段末帧的思索场景时间
+// 段长（秒，段首到末帧）：取整到 1/24 秒的格
+export const segmentSpanSec = Math.round((uiOpen + uiClose + uiFade + pushLead) * 24) / 24;
+export const matchSec = segmentSpanSec - uiOpen; // 本段末帧的思索场景时间
 // 每段说明框出现的思索场景时间 = 开口 + 拍
 export const calloutBeats = activeLine.wordTimes.map((x) => voiceStart + x);
 // 砸穿跟着的那几个字（思索场景时间）：锤砸到石半砖、泥土碎、石头碎
