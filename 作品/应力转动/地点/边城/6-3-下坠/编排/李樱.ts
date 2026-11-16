@@ -12,7 +12,7 @@ import { ROLLER } from '@库/物品/动力压路机.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
 import { tick, impactTime, impactSegSec, segTable, liYingFall, setImpact, setAim, setTakeoff, start, blower } from '../时间线.ts';
 import { sample, type Key } from '@engine/anim/anim.ts';
-import { lineFrameCount } from '../../../../配音/台词轨.tsx';
+import { lineTable } from '../../../../配音/台词轨.tsx';
 import lipTable from 'asset:数据/配音/口型';
 import { landingPose, flipAngle as landingFlipAngle, flipHipHeight, touchdownSec } from '../../6-3-6/落地.ts';
 import { releasePose } from '../../6-3-3/下落攻击.ts';
@@ -70,8 +70,8 @@ const FIELDS = ['pitch', 'headPitch', 'headYaw', 'legR', 'legL', 'kneeR', 'kneeL
 // 关键时刻照这句台词的字（../../../配音/口型.json；台词文件末尾落在 6-3-5 末帧，见 `shoutLine`）：蓄力的气声里拉到脑后，「ロー」起慢慢再往后拉，「ッ」出手；
 // 每个字起音时锤和身子往后顿一下（`syllablePulse`），一直在动、不定住。打击那一刻（tr = 0）的姿势是 `STRIKE_HIT`，撞击深度和落点都按它算，别改
 const ROAD_ROLLER = '6-3-5-李樱-RoadRoller';
-// 开口比 6-3-5 止早「有声长取整到 1/24 秒」（6-举锤砸穿 段.ts 的台词 cue 按它排）。帧 = 开口的全局秒（口型按 1 帧/秒读）
-const shoutLeadSec = lineFrameCount(ROAD_ROLLER) / 24;
+// 开口比 6-3-5 止早一个有声长：说完正落在 6-3-5 末帧（原来有声长往上取整到 1/24 秒，用户 11-16 定不留 1/24 秒的格；6-举锤砸穿 段.ts 的台词 cue 按它排）。帧 = 开口的全局秒（口型按 1 帧/秒读）
+const shoutLeadSec = lineTable[ROAD_ROLLER].有声长;
 export const shoutLine = { id: ROAD_ROLLER, 帧: segTable['6-3-5'].止 - shoutLeadSec };
 const shoutStartTr = -(impactSegSec + shoutLeadSec); // 6-3-5 止 = 6-3-6 起，原速
 const syllables = (lipTable as unknown as Record<string, { 字: [string, number, number][] }>)[ROAD_ROLLER].字;

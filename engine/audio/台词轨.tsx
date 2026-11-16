@@ -16,8 +16,6 @@ export type LineCue = { id: string; 帧: number; 音量?: number };
 /** 台词表：资产 数据/配音/台词表 的内容；wav们：台词表里的 文件 名 → 打包后的地址 */
 export const makeLineTrack = (rawLineTable: unknown, wavs: Readonly<Record<string, string>>) => {
   const lineTable = rawLineTable as Record<string, LineEntry>;
-  // 一句从开口到说完要几帧（有声的长度）
-  const lineFrameCount = (id: string, fps = 24) => Math.ceil(lineTable[id].有声长 * fps);
   const LineTrack: React.FC<{ lines: LineCue[]; 每秒?: number }> = ({ lines: lines, 每秒: perSec = 24 }) => {
     const fps = useFrameRate();
     return (
@@ -39,5 +37,5 @@ export const makeLineTrack = (rawLineTable: unknown, wavs: Readonly<Record<strin
       </>
     );
   };
-  return { LineTrack, lineFrameCount, lineTable };
+  return { LineTrack, lineTable };
 };

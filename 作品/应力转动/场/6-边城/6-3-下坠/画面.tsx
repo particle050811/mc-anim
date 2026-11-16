@@ -46,6 +46,7 @@ import { JiuhuHandCompass } from '../../../角色/九胡持指南针.tsx';
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
 import { mouthAt } from '../../../配音/口型.ts';
 import { rad } from '@engine/core/数学.ts';
+import { segFps } from '@engine/段/段定义.ts';
 
 const jiuhuRaw = jiuHuModelData as unknown as object;
 
@@ -117,8 +118,8 @@ const fx = (): FxParams => {
 
 // 6-3-5 喊「ロードローラーだッ！」时动嘴：开口（全局秒）取 编排/李樱.ts 的 shoutLine（6-举锤砸穿 段.ts 的台词 cue 就是它）；台词只在 6-3-5 放，别的段不动嘴
 const shoutMouth = (globalSec: number) => mouthAt([choreo.shoutLine], '李樱', globalSec, 1);
-// 旧版按 24 帧/秒从段首往后顺着渲，入井后的大气后期、云影停在入井前最后渲到的那一帧
-const oldRenderPerSec = 24;
+// 入井后的大气后期、云影停在入井前最后一帧（原来按 24 帧/秒数，用户 11-16 定不留 1/24 秒的格，改按输出帧）
+const renderFps = segFps;
 
 export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> = ({ T: globalSec, segment: segment }) => {
   const { width, height } = useVideoConfig();
@@ -138,10 +139,10 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
     const span = timeline.segTable['6-3-6'];
     let last: ReturnType<typeof choreo.camPose> | undefined;
     let lastIdx = 0;
-    // 拼段跳过了 6-3-6 的第 0 格；这里只求相机参数，不预渲任何历史帧。正好落在格上的这一刻也算（1e-9 是浮点余量）
-    const doneCells = (globalSec - span.起) * oldRenderPerSec + 1e-9;
-    for (let k = 1; k <= doneCells; k++) {
-      const c = choreo.camPose(span.起 + k / oldRenderPerSec);
+    // 拼段跳过了 6-3-6 的第 0 帧；这里只求相机参数，不预渲任何历史帧。正好落在帧上的这一刻也算（1e-9 是浮点余量）
+    const doneFrames = (globalSec - span.起) * renderFps + 1e-9;
+    for (let k = 1; k <= doneFrames; k++) {
+      const c = choreo.camPose(span.起 + k / renderFps);
       if (c.pos[2] >= choreo.groundZ - 0.5) {
         last = c;
         lastIdx = k;
@@ -151,7 +152,7 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
     const ref = new THREE.PerspectiveCamera();
     ref.position.set(last.pos[0], last.pos[2], -last.pos[1]);
     ref.updateMatrixWorld();
-    return { camera: ref, waterSec: lastIdx / oldRenderPerSec };
+    return { camera: ref, waterSec: lastIdx / renderFps };
   }, [segment, globalSec]);
   const fxParams = fx();
   const pit = after ? choreo.crater() : null;
