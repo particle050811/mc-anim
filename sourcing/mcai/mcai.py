@@ -7,8 +7,9 @@
   mcai input on|off             默认 off：游戏窗口隐藏、鼠标键盘不生效；on：显示窗口，人自己进去操作
   mcai meta <截图.png>          读截图里存的机位、FOV、时间、天气
 
-  mcai game start [world=<存档>|server=<地址>] [offline=<玩家名>] [timeout=300] [idle=30]
+  mcai game start [world=<存档>|server=<地址>] [offline=<玩家名>] [timeout=300] [idle=30] [live=1|--live]
                                 空闲 idle 分钟没收到 mcai 请求，游戏自己存档退出（默认 30，0 不自动退出；input on 期间不算）
+                                进存档后默认冻结世界（record 时自己解冻、录完冻回去）；live=1 不冻，世界照常运转
   mcai game stop | status | log [n=40]
   mcai game instances           列出所有实例：端口、是否在运行、开着哪个存档
   mcai game newinstance name=<实例名> [from=取材客户端]   复制出一个新实例（同一批模组，另一个端口），给另一个 Agent 用
@@ -408,7 +409,13 @@ def game_start_locked(opts):
                 call("cmd", {"command": "gamerule doWeatherCycle false"})
                 # 天气存在主世界里，别的维度只是跟着读，所以要指到主世界去设（在暮色森林里直接 weather clear 不生效）
                 call("cmd", {"command": "execute in minecraft:overworld run weather clear"})
+                # 空等省资源（用户 11-15 定）：进存档默认冻结，区块照常加载、照常能 shoot、mesh；
+                # 要世界在动的（等水流、沙子落下、生物走动、换装备同步给客户端）先 mcai unfreeze，或 live=1 开
+                if opts.get("live") != "1":
+                    call("freeze")
+            frozen = "world" in opts and opts.get("live") != "1"
             print("就绪：" + ("已进入世界" if r["inWorld"] else "停在标题界面（没指定 world/server）")
+                  + ("，世界已冻结（要世界动起来用 mcai unfreeze，或 game start 加 live=1）" if frozen else "")
                   + "。窗口是隐藏的、输入是锁定的，要自己进游戏操作用 mcai input on")
             return
         elif r.get("screen", {}).get("titleKey") == "selectWorld.backupQuestion.experimental":
@@ -718,7 +725,7 @@ def dispatch(argv):
         game_root()  # 别的子命令都要游戏环境
     if argv[0] == "game":
         sub = argv[1] if len(argv) > 1 else ""
-        opts = parse_kv(argv[2:])
+        opts = parse_kv(["live=1" if t == "--live" else t for t in argv[2:]])  # --live 是 live=1 的别名
         if sub == "start":
             game_start(opts)
         elif sub == "stop":

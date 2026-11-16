@@ -63,12 +63,23 @@ def wait_for_chunks(x, y, z, timeout_sec=30):
 
 
 def record(spell, out_path, distance, tick, hold_ticks, seed, radius, staff, focus, arena, work_root):
-    x0, y0, z0 = arena
-    raw_path = Path(out_path).with_suffix(".原始.json")
     if not mcai("ready").get("result", {}).get("inWorld", True):
         sys.exit("游戏没进世界：先 MCAI_INSTANCE=取材客户端-诡厄 anim mcai game start world=法术录制")
     send_command("gamemode creative")
+    # game start 进存档默认冻结。摆场、清场要世界在动（被 kill 的生物要 tick 完死亡动画才消失），整段解冻，最后照原样冻回去
+    was_frozen = mcai("state").get("frozen", False)
     mcai("unfreeze")
+    try:
+        _record(spell, out_path, distance, tick, hold_ticks, seed, radius, staff, focus, arena, work_root)
+    finally:
+        if was_frozen:
+            time.sleep(2)  # 死亡动画 20 刻
+            mcai("freeze")
+
+
+def _record(spell, out_path, distance, tick, hold_ticks, seed, radius, staff, focus, arena, work_root):
+    x0, y0, z0 = arena
+    raw_path = Path(out_path).with_suffix(".原始.json")
     for c in ("gamerule doMobSpawning false", "gamerule doDaylightCycle false", "gamerule doWeatherCycle false",
               "gamerule doFireTick false", "gamerule mobGriefing false", "time set 6000", "weather clear"):
         send_command(c)

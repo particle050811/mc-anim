@@ -20,10 +20,10 @@
 ```sh
 anim mcai build                                   # 编译并装进 game/实例/取材客户端/.minecraft/mods/
 anim mcai game copyworld name=片场 from=<世界>       # 把 game/取材服务端/<世界> 复制成存档「片场」（from 必须写；已有则加 overwrite=1 重置）
-anim mcai game start world=片场                    # 起游戏、直接进存档、等到可以接命令（约 30 秒）
+anim mcai game start world=片场                    # 起游戏、直接进存档、冻结世界，等到可以接命令（约 30 秒）；live=1 不冻
 
 anim mcai cam pos=264,100,488 pitch=90 yaw=180 dim=twilightforest:twilight_forest   # 娜迦庭院正上方俯视，画面上方朝北
-anim mcai freeze                                   # 冻结世界
+anim mcai unfreeze                                 # 要世界动起来（等水流、生物走动）才解冻，用完 freeze 冻回去
 anim mcai cmd effect give @s night_vision infinite 0 true    # 暮色森林很暗，对照贴图先给夜视
 anim mcai shoot out=<数据根>/run/草稿/<月日-时分>-工作-实机对照/俯视.png   # Agent 看的中间稿放 run/草稿
 anim mcai batch "cam pos=222,52,548 look=264,0,488" "shoot out=<数据根>/run/草稿/<月日-时分>-工作-实机对照/斜视.png size=3840x2160"
@@ -133,6 +133,20 @@ anim mcai game stop                                # 正常退出游戏（会存
 - **`mcai input on`**：显示窗口并放开输入，给人自己进游戏操作；**`mcai input off`** 藏回去并重新锁定（同时把前台还给 `input on` 之前的应用）。
   `mcai state` 里的 `input`、`window.visible` 是当前状态。
 
+## 进存档默认冻结、空闲限帧（用户 11-15 定，11-16 做）
+
+- **默认冻结**：`mcai game start world=…` 进存档后（关天气循环、设晴天之后）自动 `freeze`，`state` 里 `frozen` 是 `true`。区块照常加载，`cam`、`shoot`、`mesh`、`cmd` 都照常。
+  `game start world=… live=1`（或 `--live`）不冻，世界照常运转；游戏已经开着、`game start` 直接复用时不改冻结状态。
+- **要世界在动的，先 `unfreeze`、做完再 `freeze`**：等水流、沙子落下、红石（计划刻）；庄稼长、结冰（随机刻）；生物走动、被 kill 的生物消失（死亡动画要 tick）、
+  召唤的生物或改了的装备同步给客户端（冻着时装备不下发，要解冻一两秒）；熔炉、机械动力的机器转（方块实体）。已经改好的地方：
+  - `record` 自己在录的这段里解冻，录完（成功、出错都算）冻回去，结果里 `录时解冻` 说明录之前是不是冻着；
+  - `sourcing/extract/录法术.py` 摆场、清场整段解冻，结束等 2 秒（死亡动画）照原样冻回去；
+  - `anim world edit replay` 生成的重放脚本编辑前解冻，编辑完等 10 秒照原样冻回去。
+- **空闲限帧**：没有 `mcai` 请求在跑、最近 5 秒也没收到过请求时，客户端帧率压到 10（改的是 `Minecraft.getFramerateLimit` 的返回值，不改 `options.txt`）；
+  有请求就回到设置的帧率（默认 120），`shoot`、`mesh`、`cam` 等区块、`record` 都按原帧率跑。客户端刻照常每秒 20 个，集成服务端不受影响。`input on` 期间不限。
+- 为什么不学 Linker 的「Esc 暂停 + 只推进自己的任务」：暂停以后集成服务端整个停下、区块不加载，`shoot` 换机位要加载新区块就做不了。
+- 实测（11-16，`取材客户端` 开 `片场`、窗口隐藏，进存档后空等 5 分钟，top 每 10 秒采一次，机器上同时有别的渲染）：CPU 平均 61.8% → 12.3%（中位 56.3% → 11.6%）；MEM 约 3.86G → 3.82G，基本不变（是 JVM 堆，冻结、限帧都省不了）。
+
 ## 空闲自动退出
 
 - 游戏 **30 分钟**没收到 `mcai` 的请求（任何动作都算，包括 `state`、`ready`、`game status`），就自己走正常流程退出（会存档），Prism 也跟着退，不留进程。
@@ -151,7 +165,7 @@ anim mcai game stop                                # 正常退出游戏（会存
 | `cam` | 摆机位。`pos`（镜头位置）+ `look`（看向的点）或 `yaw`/`pitch`；可选 `fov`、`roll`、`dim`（跨维度）。会把玩家切成旁观模式，并等客户端到位才返回 | 自行调度 |
 | `shoot` | 截图存 PNG。`out` 必填，`size=宽x高`（默认 1920x1080，和窗口大小无关），`timeout`（默认 60 秒） | 自行调度 |
 | `cmd` | 以权限 4 执行任意命令并返回输出；执行者是摄像机玩家（`@s`、`~` 相对它）。`mcai cmd time set day` 后面整段都是命令 | 服务端 |
-| `freeze` / `unfreeze` | 冻结/解冻世界 | 服务端 |
+| `freeze` / `unfreeze` | 冻结/解冻世界（`game start` 进存档默认冻结） | 服务端 |
 | `setblock` / `fill` | 放方块 / 填充长方体（没有 /fill 的 32768 格上限） | 服务端 |
 | `mesh` | 把一块区域导出成场景网格。`out`（不带扩展名）必填，范围写 `from`、`to` 或 `structure`，见下面「导出场景网格」 | 客户端 |
 | `undo` | 撤销上一次改世界的动作，可连续撤销（最多 50 步，只在内存里） | 服务端 |
@@ -171,7 +185,7 @@ anim mcai game stop                                # 正常退出游戏（会存
 “服务端”指单人世界的集成服务端线程，所以 `cam`、`cmd`、`freeze`、`setblock`、`fill`、`undo` 只能在单人世界里用；
 连别的服务器时只有 `state`、`shoot`、`ready`、`closescreen`、`click`、`input`、`key`、`quit`、`biomes`、`blocks` 可用。
 
-游戏外：`mcai game start [world=<存档>|server=<地址>] [offline=<玩家名>] [timeout=300] [idle=30]`、`game stop`、`game status`、`game log [n=40]`、
+游戏外：`mcai game start [world=<存档>|server=<地址>] [offline=<玩家名>] [timeout=300] [idle=30] [live=1]`、`game stop`、`game status`、`game log [n=40]`、
 `game instances`、`game newinstance name=<实例名> [from=取材客户端]`、`game copyworld name=<存档> from=<世界> [overwrite=1]`、`mcai build`、`mcai meta <png>`、
 `mcai server stop server=<服务端目录名|路径> [timeout=300]`（走 RCON 发 stop 等存完盘；没开 RCON 时 Mac/Linux 发 SIGTERM）。
 
@@ -199,8 +213,9 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
   - 拍之前要求连续 10 轮（每轮隔 30ms）都满足：镜头周围渲染距离内的区块到齐、网格编译队列为空、已加载区块总数不再变化。超时会说明卡在哪一条。
   - 输出尺寸任意，做法是临时把主帧缓冲改成输出尺寸再改回去。
   - 暂停菜单开着时（只有 `input on` 且按了 ESC 才会出现）集成服务端是停的，`shoot` 会直接报错让你先 `closescreen`。
-- **freeze**：停的是服务端世界里的时间、天气、计划刻、随机刻、方块事件、方块实体、非玩家实体、自然刷怪和距离消失；
+- **freeze**：停的是服务端世界里的时间、天气循环、计划刻、随机刻、方块事件、方块实体、非玩家实体、自然刷怪和距离消失；
   玩家自己的 tick 和区块加载照常，所以冻结后仍可移动机位、加载新区块。客户端的时间推进也一并停掉。
+  天气循环关着时（`game start` 进存档就关）不停天气这一段：冻着也能 `weather rain` / `clear`，雨量照常渐变。`time set` 冻着也生效。
 - **setblock / fill**：只通知客户端，不给邻居发方块更新（沙子不会马上掉、红石水流不触发）；邻居的形状更新照常（栅栏会连上、失去支撑的花会掉）。要完整原版行为用 `cmd setblock ...`。
 - **undo**：动作执行期间，服务端每一次方块写入都先记下“改之前”的方块状态和方块实体数据，所以 `cmd` 里的 /fill、/clone、/place 也能撤销；
   期间新生成的实体（掉落物、召唤物）打上 `mcai` 标签，撤销时删掉。
@@ -460,10 +475,10 @@ anim mcai mesh from=-40,0,195 to=56,95,270 out=<目录>/巫妖怪塔.网格 mark
   - 只改方块实体数据而不换方块的操作（`/data merge block`、往箱子里放东西）不记录；
   - 动作返回之后才发生的连锁变化（沙子下落、水流）不算在内——要撤得干净，先 `freeze` 再改；
   - 被命令删掉的实体不会复活；撤销记录不跨游戏重启。
-- `batch` 不是“同一个 tick 内执行”（`shoot` 要跨很多帧），只是按顺序；需要画面静止就先 `freeze`。
+- `batch` 不是“同一个 tick 内执行”（`shoot` 要跨很多帧），只是按顺序；需要画面静止就冻着（进存档默认冻结）。
 - `batch` 的每一步会按 shell 规则再拆一次词，步骤里的双引号（NBT 字符串）要写成 `\"`；不想转义就别放进 batch，单独调用。
 - zsh 里带方括号的选择器要加引号：`anim mcai cmd 'kill @e[type=item]'`。
 - 发光描边（发光效果的实体轮廓）不会出现在截图里。
-- 游戏在跑但窗口隐藏时，它照样按正常帧率渲染，一个实例常驻占 2 个核左右和 GPU；不用时 `mcai game stop`（忘了的话空闲 30 分钟后自己退，见「空闲自动退出」）。
+- 游戏开着就占内存（实例分配 4～6G）；空等时已经冻结、限帧（见「进存档默认冻结、空闲限帧」），不用时照样 `mcai game stop`（忘了的话空闲 30 分钟后自己退，见「空闲自动退出」）。
 - 进别的服务器（`server=`）时只能看和拍，摆机位要靠那边的权限自己发命令；没有实测过。
 - 玩家死亡时的死亡界面 `closescreen` 关不掉（游戏立刻重新打开它）。要用 `mcai click text=重生`，但按钮在界面出现后约 1 秒内是灰的，得等一下再点。当摄像机用的旁观模式玩家不会死，正常取材碰不到。

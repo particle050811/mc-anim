@@ -1136,7 +1136,6 @@
   ["mcai", "batch", "cam pos=11.5,202.6825,12.5 look=11.5,201.8,10.5 fov=70", "shoot out=截图/隐世之境/01-一楼机位.png size=2560x1440", "cam pos=44,240,58 look=10.5,216,12.5 fov=70", "shoot out=截图/隐世之境/02-整体俯视.png size=2560x1440", "cam pos=13.1,202.15,12.4 look=11.5,201.62,10.5 fov=50", "shoot out=截图/隐世之境/03-女仆参考.png size=2560x1440"],
   ["mcai", "cam", "pos=10.5,212,40", "look=10.5,205,13", "fov=70"],
   ["mcai", "mesh", "from=0,200,0", "to=20,208,25", "origin=0,201,0", "out=src/模型/场景/隐世之境一楼.网格", "mark=minecraft:lantern,minecraft:candle,minecraft:soul_campfire,minecraft:light,minecraft:glow_lichen"],
-  ["mcai", "unfreeze"],
 ]
 ["sourcing"."artifacts"]
 "截图/隐世之境/一楼机位" = "截图/隐世之境/01-一楼机位.png"
