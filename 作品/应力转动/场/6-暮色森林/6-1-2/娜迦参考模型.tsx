@@ -192,7 +192,7 @@ const followCamPose = (t: number, mode: '全身' | '腰'): CamPose => {
 // 编排里的时间轴是剧情时间（助跑中途跳过了一段，见 编排.ts 的 `story`）；打击停顿在剧情时间上再停住一会儿。
 // 剧情时间落到刻上（../时刻.ts）：跳过、停顿都是整格，算出来本来就在刻上，只消掉加减带的浮点零头，切镜、断开这些正好落在帧上的判断才和旧的一致
 export const nagaShotCam = ({ hitStopSec = 0, newCams = false, followMode: followMode }: NagaShotProps, sec: number) => {
-  const storyTime = onTick(motion.hitStopTimes(hitStopSec)(choreo.story(sec + 1 / 24)));
+  const storyTime = onTick(motion.hitStopTimes(hitStopSec)(choreo.storyOfSeg(sec)));
   const cam: CamPose = followMode ? followCamPose(storyTime, followMode) : newCams ? motion.cameraV2(storyTime) : choreo.camera(storyTime);
   return { t: storyTime, cam: cam };
 };

@@ -151,10 +151,10 @@ export const cameraV2 = (t: number) => {
 // 正式 Composition 6-1-2-斩娜迦 = 动作改进 + 打击停顿 3 帧 + 新机位，不震屏（用户 10-18 嫌冲击镜头不好）、不闪白。凡要和正式 6-1-2 同帧对齐的（伤害数字层、6-1-3 接台词和声音、6-1-3 首帧接末帧的李樱）都从这里取，
 // 不要拿 编排.ts 的 `LENGTH`、台词开口、`liying`（原版时间轴）
 export const official = { motionImproved: true, hitStopSec: nagaHitStopSec, newCams: true } as const;
-// 正式版段长（秒，不含）：末帧在 officialLength − 1/24
+// 正式版段长（秒，不含）：6-1-3 的第 0 秒接在这一刻
 export const officialLength = choreo.LENGTH + official.hitStopSec;
 // 落到刻上，同 娜迦参考模型.tsx 的 `nagaShotCam`
-export const officialStoryTime = (sec: number) => onTick(hitStopTimes(official.hitStopSec)(choreo.story(sec + 1 / 24)));
+export const officialStoryTime = (sec: number) => onTick(hitStopTimes(official.hitStopSec)(choreo.storyOfSeg(sec)));
 // 剧情时间 → 正式版段内秒：剧情时间第一次到这一刻的段内秒（真值，不再落到 1/24 秒的格上，用户 11-16 定；切镜的剧情时间换成段内秒，第 1 场段界用）。
 // 每 1/240 秒往后找到第一个到了的点，再在前一步里二分
 const SEC_OF_SCAN_STEP = 1 / 240;

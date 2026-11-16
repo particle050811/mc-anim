@@ -43,7 +43,7 @@ export const BAR_CUT = song.analysis.网格.每小节拍数 * song.analysis.网�
 export const ONER_TRIM = 16 / 24;
 // 只剪画面不剪配乐，配乐接着 6-1-9 一路放（用户 10-20：「这个音乐不要截一部分拼起来 你直接一次性放完不行吗？ 你不要硬凑时长一致好吧」）：
 // 本段第 t 秒 = 一镜到底在 `G_CUT` + t 那一刻的配乐（6-1-3 编排的 `songSec`(6-1-3 末帧 + 一镜到底的秒)）
-export const musicStartSec = P613.songSec(P613.LENGTH - 1 / 24 + G0 - BAR_CUT - ONER_TRIM);
+export const musicStartSec = P613.songSec(P613.beats.last + G0 - BAR_CUT - ONER_TRIM);
 // 镜头升到顶、硬切到九胡的那一拍（段内秒数）：[28, 1] 重拍；[29, 1] 的 breakdown 在九胡说话时进来
 export const cutBeatSec = songSec(song, [28, 1]) - musicStartSec;
 // 台词落点（段内秒数；开口 = 第一个有声的时刻，同 台词轨）。九胡在切到她那一拍后 0.5 秒开口，李樱在她说完 0.4 秒后开口。字幕从这里取每句话的时间。

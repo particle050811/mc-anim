@@ -1,5 +1,5 @@
 // 6-1-2 的时间轴（切镜时刻、停住 0.5 秒、跳过助跑的剧情时间换算）和助跑道几何，其余各模块都从这里取。
-// 时间都是秒。原来按 1/24 秒一格排（第 1 格是段首），常数照原来的格写成 n / 24，时刻不变。
+// 时间都是秒。剧情时间原来按 1/24 秒一格排（第 1 格是段首），关键帧照原来的格写成 n / 24，所以剧情时间轴的原点不在段首：段首是剧情时间 `STORY_T0`。
 import { holdTime } from '@engine/anim/anim.ts';
 import { rad, smoothstep01, lerpV } from '@engine/core/数学.ts';
 
@@ -21,10 +21,13 @@ const SKIP_AT = 28 / 24;
 const SKIP = 52 / 24;
 export const story = (t: number) => (t < SKIP_AT ? t : t + SKIP);
 export const real = (t: number) => (t < SKIP_AT ? t : t < SKIP_AT + SKIP ? SKIP_AT : t - SKIP);
-// 实际时间的终点（不含）：段长
-export const LENGTH = END - 1 / 24 - SKIP;
-// 剧情时间 → 段内秒（实际时间从 1/24 秒起，段内从 0 起）：声音.tsx 的配音、音效按它落
-export const segSec = (s: number) => real(s) - 1 / 24;
+// 段首（段内第 0 秒）在剧情时间里的时刻：关键帧表是从这里写起的
+export const STORY_T0 = 1 / 24;
+// 段长（秒）：剧情时间到 END 为止
+export const LENGTH = END - STORY_T0 - SKIP;
+// 段内秒 ↔ 剧情时间：声音.tsx 的配音、音效按 `segSec` 落
+export const storyOfSeg = (sec: number) => story(sec + STORY_T0);
+export const segSec = (s: number) => real(s) - STORY_T0;
 // ---------- 跑道 ----------
 export const LANE_E = [-89, -0.4]; // L = 0 的点（水沟里）；L 往西增大
 const LANE_DEG = 90;

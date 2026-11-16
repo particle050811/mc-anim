@@ -16,18 +16,19 @@ import { cruiseFogFar, farViewOf, TWILIGHT_FAR_VIEW } from '../../../地点/暮�
 import * as choreo612 from '../6-1-2/编排.ts';
 // 6-1-2 的正式版（段长、台词开口都含打击停顿；末帧的李樱是收刀后站定带呼吸微动的样子）
 import { officialLiying, officialLineStart, officialJiuhuLineStart, officialLength } from '../6-1-2/动作改进.ts';
-import { frameInSegment } from '../../../配乐/配乐音轨.tsx';
+import { segmentRange } from '../../../配乐/配乐音轨.tsx';
+import { posToSec } from '@engine/audio/曲目.ts';
 import lineTable from 'asset:数据/配音/台词表';
 import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 import { onTick } from '../时刻.ts';
 
 export const segmentId = '6-1-3';
-// 6-1-2 末帧的状态：九胡跑到路线上的哪儿（t = 传送后的秒数）、李樱收刀站定的姿势、宝箱
+// 本段第 0 秒接着 6-1-2 段尾：九胡跑到路线上的哪儿（t = 传送后的秒数）、李樱收刀站定的姿势、宝箱
 const T0 = choreo612.MAZE_T612;
-// 九胡停稳的那一帧（本段秒，取到 60 帧/秒的帧上）
-const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 60) / 60;
-// 台词（本段帧号，负数是还在 6-1-2 里）：
-//   娜迦：6-1-2 滑停站稳就开口「暮色的boss就算加强了十倍，也不过如此。」；本段第 0 帧 = 6-1-2 末帧，所以开口帧 = 6-1-2 的开口帧 − (6-1-2 帧数 − 1)；
+// 九胡停稳的那一刻（本段秒，真值：本段的秒不落在输出帧上，取到 1/60 秒也对不上帧）
+const JH_ARRIVE = choreo612.MAZE_ARRIVE - T0;
+// 台词（本段秒，负数是还在 6-1-2 里）：
+//   娜迦：6-1-2 滑停站稳就开口「暮色的boss就算加强了十倍，也不过如此。」；本段第 0 秒 = 6-1-2 段尾，所以开口 = 6-1-2 的开口秒 − 6-1-2 段长；
 //   九胡：「等等我啊，狗修金Sama！」在 6-1-2 迷宫那一镜开跑后边跑边喊（用户 10-20，6-1-2 编排的 `MAZE_SHOUT`），开口帧同样换过来，本段放说进来的后半截，她刹车前说完；
 //   李樱：扫帚冒出来停稳就说「坐好了，看我速通暮色！」（用户 10-20：骑扫帚这一下要说明白是速通暮色），两人跳上扫帚时说，坐稳时说完，不动段长；
 //   坐稳 `seatedHold` 帧就往下一沉、起飞。
@@ -35,12 +36,12 @@ const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 60) / 60;
 // 有声长用真值，不再往上取到 1/24 秒的格（用户 11-16 定；唤出到起飞整串因此比旧版早几十毫秒）
 const voicedSec = (id: string) => (lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长;
 const seatedHold = 0.5;
-// 6-1-2 末帧（officialLength − 1/24）是本段第 0 秒
-const T612_LAST = officialLength - 1 / 24;
+// 本段第 0 秒在 6-1-2 段内的秒数：接在 6-1-2 段尾
+const T612_END = officialLength;
 export const lineTimes = (() => {
-  const nagaLine = officialLineStart - T612_LAST;
+  const nagaLine = officialLineStart - T612_END;
   const nagaLineEnd = nagaLine + voicedSec('6-1-2-李樱-不值一提');
-  const jiuhuLine = officialJiuhuLineStart - T612_LAST;
+  const jiuhuLine = officialJiuhuLineStart - T612_END;
   const jiuhuLineEnd = jiuhuLine + voicedSec('6-1-3-九胡-等等我');
   const summonTime = Math.max(JH_ARRIVE + 1, nagaLineEnd + 0.5, jiuhuLineEnd + 0.5); // 她停稳以后喘口气（1 秒），话也说完了，他再唤出扫帚
   const seatedTime = summonTime + 61 / 24;
@@ -117,14 +118,18 @@ export const beats = {
   last: onTick(takeoffTime + postTakeoffSec), // 末帧
 };
 // 配乐晚几帧进（用户 10-10 定）：整条往后推，让 drop（[5, 1]）落在起飞那一帧，渐大的几拍落在扫帚下沉蓄力上；前奏（没有鼓）垫在九胡跑来、两人上扫帚的几秒（drop 前的前奏比本段这一截长，段首切进去的是前奏中间），之前没有配乐
-// 配音轨.tsx 的 frameInSegment 还按 1/24 秒一格数（共用），这里换成秒
-export const musicDelay = beats.takeoff - frameInSegment(segmentId, [5, 1]) / 24;
+// drop 用歌里的真时刻，不用配乐音轨.tsx 的 `frameInSegment`（它取整到 1/24 秒的格，drop 会早 16 毫秒；用户 11-16 定取整一处不留）
+export const musicDelay = (() => {
+  const range = segmentRange(segmentId);
+  return beats.takeoff - (posToSec(range.table.song, [5, 1]) - range.start);
+})();
 export const songSec = (t: number) => t - musicDelay;
-export const LENGTH = beats.last + 1 / 24;
-// 6-1-2 末帧的李樱（正式版）：站定后的呼吸、头左右看、重心挪动接着用 6-1-2/动作改进.ts 的 `微动`；回身、唤出、跳上扫帚都叠在它上面
-const LY_END: FigurePose = officialLiying(choreo612.END - 1 / 24).pose;
-const standingPose = (t: number): FigurePose => officialLiying(choreo612.END - 1 / 24 + Math.max(0, t)).pose;
-export const CHEST = choreo612.chest(choreo612.END - 1 / 24).loc;
+// 本段到末帧这一刻为止，一镜到底的第 0 秒接在这里
+export const LENGTH = beats.last;
+// 6-1-2 段尾的李樱（正式版）：站定后的呼吸、头左右看、重心挪动接着用 6-1-2/动作改进.ts 的 `微动`；回身、唤出、跳上扫帚都叠在它上面
+const LY_END: FigurePose = officialLiying(choreo612.END).pose;
+const standingPose = (t: number): FigurePose => officialLiying(choreo612.END + Math.max(0, t)).pose;
+export const CHEST = choreo612.chest(choreo612.END).loc;
 
 // ---------- 扫帚：唤出在两人中间，杆头朝起飞方位（东南） ----------
 // 李樱在 (2.6, -0.8)，九胡停在他西南 (0.1, -3.6)，宝箱在 (-1, -0.8)。两人连线东北—西南，杆头朝东南正好垂直：李樱从东北、九胡从西南各自侧着跨上去
@@ -335,5 +340,5 @@ export const fogFar = (t: number) => {
   const farFog = Math.max(nearFog, VIEW_DISTANCE + (TWILIGHT_CRUISE_FOG_FAR - VIEW_DISTANCE) * farViewRamp(t));
   return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.toWorld(cam.pos), courtyard.toWorld(cam.tgt)), clampFogToEdge, farView(), farViewRamp(t));
 };
-// 6-1-2 末帧在 6-1-2 段内的秒数（= 本段第 0 秒）
-export const T612 = T612_LAST;
+// 本段第 0 秒在 6-1-2 段内的秒数
+export const T612 = T612_END;

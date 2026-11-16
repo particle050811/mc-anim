@@ -54,12 +54,12 @@ export const JH_MAZE_PTS: [number, number, number][] = [
   [0.1, -3.6, 0], // 停下的地方
 ];
 const JH_MAZE = makeTrail(JH_MAZE_PTS);
-// 时间 t = 传送后过了几秒（6-1-2 的 S3 那一刻是 0；6-1-3 的第 0 秒接 6-1-2 末帧，t = MAZE_T612）
+// 时间 t = 传送后过了几秒（6-1-2 的 S3 那一刻是 0；6-1-3 的第 0 秒接着 6-1-2 段尾，t = MAZE_T612）
 const MZ_LOOK = 4 / 24; // 刚被传送过来，站着愣 4 格（看一眼中心的方向）
 const MZ_ACC = 8 / 24; // 1/3 秒加到 10 米/秒
 const MZ_DEC = 0.5; // 刹车用 0.5 秒，滑出 2.5 格，正好停在路线终点
 const MZ_CRUISE = (JH_MAZE.len - (V_JH * MZ_ACC) / 2 - (V_JH * MZ_DEC) / 2) / V_JH; // 全速跑几秒
-export const MAZE_T612 = END - 1 / 24 - S3;
+export const MAZE_T612 = END - S3;
 export const MAZE_ARRIVE = MZ_LOOK + MZ_ACC + MZ_CRUISE + MZ_DEC;
 // 开跑 4 格后边跑边喊「等等我啊，狗修金Sama！」（用户 10-20：从她开始跑的这个镜头就喊），一口气连读下来，刹车前说完；说进 6-1-3 的后半截那边接着放
 export const MAZE_SHOUT = MZ_LOOK + 4 / 24;

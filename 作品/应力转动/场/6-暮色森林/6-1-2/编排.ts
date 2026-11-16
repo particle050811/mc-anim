@@ -1,4 +1,4 @@
-// 6-1-2 半空拔刀斩击杀娜迦：全部时间轴与姿态，纯函数，输入剧情时间（秒，第 1 格 = 1/24 秒；段内秒换剧情时间用 `story`(段内秒 + 1/24)）。
+// 6-1-2 半空拔刀斩击杀娜迦：全部时间轴与姿态，纯函数，输入剧情时间（秒；段首是剧情时间 `STORY_T0`，段内秒换剧情时间用 `storyOfSeg`）。
 // 原来按 1/24 秒一格排，注释里的「帧」「f」都是这种格（剧情时间 × 24），代码里写成 n / 24 秒。
 // 场景坐标 Z 朝上，1 = 1 米；场景是娜迦庭院（模型/场景/娜迦庭院.tsx），中心在原点。
 // 速度（用户 09-30 定，显出李樱的强）：九胡跑 10 米/秒，李樱 40，拔刀迅冲斩 120（每格 0.42 / 1.67 / 5 米）。
@@ -10,7 +10,7 @@
 // - 九胡（用户 10-01 定、10-02 改）：被甩开；S3 她被瞬移进庭院（车万女仆跟随传送），站在迷宫里水池南边东西向通道西头，愣一下顺通道往东直奔李樱；6-1-3 接着跑完同一路线（`JH_MAZE_PTS`）。
 // - 娜迦在中心（刷怪点在原点）像贪吃蛇爬：从南边树篱豁口进来，往北爬过冲刺线，被横斩脖子。
 // 入口：实现拆在 编排/ 下（时间轴、折线、李樱、九胡、娜迦、镜头），这里只转出。
-export { S2, S2C, S2B, S3, END, warp, story, LENGTH, segSec, GO } from './编排/时间轴.ts';
+export { S2, S2C, S2B, S3, END, STORY_T0, warp, story, storyOfSeg, LENGTH, segSec, GO } from './编排/时间轴.ts';
 export {
   sheathTimes, lineStoryTime, lineStartSec, DASH_Y, TAKEOFF, DASH1, CUT_X, lyPhase, heading, liyingLoc, liyingKeys, liying,
   bladeTrailTimes, ghosts, dust,

@@ -37,8 +37,8 @@ import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
 // 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口是段内秒（cue 在 段/6-进入森林/段.ts）。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
 const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 / 24 }];
-// 台词口型：段内秒，编排时间 = 段内秒 + 1/24
-const liYingMouth = (choreoT: number) => mouthAt(lineCues, '李樱', choreoT - 1 / 24, 1);
+// 台词口型：段内秒
+const liYingMouth = (choreoT: number) => mouthAt(lineCues, '李樱', choreo.segSec(choreoT), 1);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
 const Rig: React.FC<{ t: number }> = ({ t }) => {
@@ -173,7 +173,7 @@ const TwilightForest: React.FC<{ t: number; sec: number }> = ({ t, sec }) => {
 export const EnterForest: React.FC = () => {
   const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const choreoT = sec + 1 / 24;
+  const choreoT = sec + choreo.T0;
   const island = choreo.world(choreoT) === 'island';
   // 不超采样（用户 10-07 比过 2K 下超采样和不超采样，选不超采样，见 lib/渲染级别.ts）。
   // 声音照 段.ts 的 cue 放（definePicture 自动挂，决策 0015），不在这里挂。
