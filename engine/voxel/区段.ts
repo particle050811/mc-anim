@@ -1,10 +1,12 @@
-// 区段和分级（纯函数）：世界按级切成区段，第 L 级一格边长 2^L 米，一个区段 32 × 32 格（Voxy 的 section 是 32³；
-// 这里竖直方向不切，一个区段是整根柱子），边长 32·2^L 米。
+// 区段和分级（纯函数）：世界按级切成区段，第 L 级一格边长 2^L 米，一个区段 64 × 64 格（Voxy 的 section 是 32³；
+// 这里竖直方向不切，一个区段是整根柱子），边长 64·2^L 米。格式 4 起从 32 改成 64（用户 11-16 定试做 64×64：包小一成多、解码略快），
+// 远近分级的交界跟着从 32 米一档挪到 64 米一档，不强留 32 米（用户 11-16 定），见 docs/决策/0011-地形压缩.md「64×64」。
 // 每帧挑要画的区段：从最粗一级往下走四叉树，照 Voxy 的 hierarchical/screenspace.glsl（区段投到画面上够大就往下细分）：
 // 细一级的一格在画面上还有 像素 个像素以上，就换成细一级的四块。四叉树保证同一处只画一级，不重叠也不漏。
 
-export const sectionCells = 32;
-export const coarsestLevel = 6; // 一格 64 米，一块 2 公里
+export const sectionCells = 64;
+export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 66 列（区段包、编码、解码共用；放这里是因为 pipeline 能直接 import 这个文件）
+export const coarsestLevel = 6; // 一格 64 米，一块 4 公里
 export type SectionId = { L: number; i: number; j: number };
 export const sectionKey = (q: SectionId) => `${q.L}|${q.i}|${q.j}`;
 // 区段的范围（世界坐标，米）

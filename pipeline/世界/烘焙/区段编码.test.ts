@@ -12,22 +12,24 @@ import type { VoxelLib } from '../体素库.ts';
 import { decoderSource, decoderGeneratedFile, decoderSourceStale } from '../区段解码器.ts';
 import { toColumnMajor, encodeSection as encodeReference, encodeVerified, tableLayout } from './区段编码.ts';
 import { decodeSectionFormat2 as decodeFormat2Section } from './格式2解码.ts';
+import { decodeSectionFormat3 } from './格式3解码.ts';
 import { encodeFormat1Section, decodeFormat1Section } from './读区段.ts';
 
 const sectionModel = defaultModel();
 const decodeSection = (raw: Uint8Array, id: { L: number; i: number; j: number }) => decodeReference(raw, id, sectionModel);
 const voxelLib = { sectionDecoder: { decodeSection: decodeReference } } as unknown as VoxelLib;
 const encodeSection = (d: Parameters<typeof encodeReference>[0]) => encodeReference(d, sectionModel);
-const columnCount = 34 * 34;
+const side = 66, columnCount = side * side;
+const legacySide = 34; // 格式 1～3 的区段每边 34 列，转码时读
 
 const rng = (seed: number) => () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
 
 /** 噪声区段：每列若干段，相邻段可能同号（规范化之后才合并，不合并也要解得对） */
-const makeNoiseSection = (seed: number, L = 2, nz = 20, paletteSize = 4): SectionData => {
+const makeNoiseSection = (seed: number, L = 2, nz = 20, paletteSize = 4, edge = side): SectionData => {
   const r = rng(seed);
-  const runCounts = new Uint16Array(columnCount);
+  const runCounts = new Uint16Array(edge * edge);
   const ids: number[] = [], runLengths: number[] = [];
-  for (let c = 0; c < columnCount; c++) {
+  for (let c = 0; c < edge * edge; c++) {
     let remain = nz, n = 0;
     while (remain > 0) {
       const l = Math.min(remain, 1 + Math.floor(r() * 8));
@@ -44,11 +46,11 @@ const makeNoiseSection = (seed: number, L = 2, nz = 20, paletteSize = 4): Sectio
 };
 
 /** 像真地形：一片地表，下面石头，上面空气，高度缓变；整列相同、跳过都走得到 */
-const terrainSectionData = (L: number, nz: number): SectionData => {
-  const runCounts = new Uint16Array(columnCount).fill(3);
+const terrainSectionData = (L: number, nz: number, edge = side): SectionData => {
+  const runCounts = new Uint16Array(edge * edge).fill(3);
   const ids: number[] = [], runLengths: number[] = [];
-  for (let c = 0; c < columnCount; c++) {
-    const height = Math.min(nz - 2, 2 + (((c % 34) >> 3) + ((c / 34) >> 4)));
+  for (let c = 0; c < edge * edge; c++) {
+    const height = Math.min(nz - 2, 2 + (((c % edge) >> 3) + ((c / edge) >> 4)));
     ids.push(0, 2, 1);
     runLengths.push(nz - height - 1, 1, height);
   }
@@ -118,7 +120,7 @@ describe('逐格预测压缩', () => {
     expect(() => encodeSection({ ...makeNoiseSection(1), kBottom: 40000 })).toThrow(/放不进/);
   });
   it('格式 1 的区段（转码的来源）解得对', () => {
-    const d = makeNoiseSection(11);
+    const d = makeNoiseSection(11, 2, 20, 4, legacySide);
     const x = decodeFormat1Section(encodeFormat1Section(d));
     expect([x.L, x.i, x.j, x.kBottom, x.nz]).toEqual([d.L, d.i, d.j, d.kBottom, d.nz]);
     expect([...x.paletteIndex]).toEqual([...d.paletteIndex]);
@@ -148,9 +150,11 @@ describe('逐格预测压缩', () => {
     for (const m of [a, b, a]) for (const x of [d, makeNoiseSection(3), makeNoiseSection(7, 6, 1, 1)]) sameCells(x, decodeReference(encodeReference(x, m), x, m));
   });
 
-it('格式 2 冻结字节仍能由转码工具读，格式 3 编解码逐格相同', () => {
+it('格式 2 冻结字节、格式 3 冻结解码器仍能由转码工具读（34 列）', () => {
   const { base64 } = JSON.parse(fs.readFileSync(new URL('./金样/格式2区段.json', import.meta.url), 'utf8'));
-  const d = terrainSectionData(1, 64), x = decodeFormat2Section(Buffer.from(base64, 'base64'), d), m = learnModel(() => [x]);
+  const d = terrainSectionData(1, 64, legacySide), x = decodeFormat2Section(Buffer.from(base64, 'base64'), d), m = learnModel(() => [x]);
   sameCells(d, x);
-  sameCells(d, decodeReference(encodeReference(x, m), d, m));
+  sameCells(d, decodeSectionFormat3(encodeReference(x, m), d, m));
+  const n = makeNoiseSection(12, 0, 30, 9, legacySide);
+  sameCells(n, decodeSectionFormat3(encodeReference(n, m), n, m));
 });

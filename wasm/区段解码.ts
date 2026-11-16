@@ -2,7 +2,8 @@
 // 不在 tsconfig 的 include 里（AssemblyScript 的类型 tsc 不认）。编译和写回：anim world decoder（docs/决策/0011-地形压缩.md）。
 // 内存由 engine/voxel/区段解码.ts 排，这里只收指针；这个模块没有静态数据、不分配。
 // 算法：自适应二进制区间编码（LZMA 那一种，算法公开），这里是自己写的，没有拷第三方代码。
-const sectionSide: i32 = 34, columnCount: i32 = sectionSide * sectionSide;
+// 每边列数 = engine/voxel/区段.ts 的 paddedSectionCols（格式 4 起 66；格式 3 的 34 列冻结在 pipeline/世界/烘焙/格式3解码器.生成.ts）
+const sectionSide: i32 = 66, columnCount: i32 = sectionSide * sectionSide;
 // 空间概率按 1/32 更新；字面值显式传 4，按 1/16 更新。
 const offsetPlane2: usize = 768, offsetPlane3: usize = 1536, offsetJump: usize = 2304, offsetColumn: usize = 2688, tableBytes: usize = 2742;
 
