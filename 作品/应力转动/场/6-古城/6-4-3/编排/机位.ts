@@ -82,7 +82,7 @@ export const bowCloseupCams: Cam[] = (() => {
   ];
 })();
 // 按剧情时间给机位（6-4-3b 的跟拍按剧情时间走，各个时钟的版本都能用）；g 是主方案的画面秒。
-// 切点落在 1/24 秒的格上，比较时留 1e-9 秒余量：切点正好落在输出帧上时算后一个镜头
+// 切点落在输出帧上，比较时留 1e-9 秒余量：正好落在那一帧时算后一个镜头
 export const camera = (g: number): Cam => {
   const cutSecs = timeline.cutSecs;
   const t = storySecAt(g);

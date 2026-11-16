@@ -14,7 +14,6 @@ import { borderTownPos } from '../../../地点/主世界116.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
-// `eliteLeap` 的 f0、f1 和 `flightPose`、`landPose` 的帧都按 古城戏 的旧网格（1/24 秒一格）数，这里秒乘它换过去
 const D2R = Math.PI / 180;
 const add = (a: number[], b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const yawTo = (p: number[], q: number[]) => Math.atan2(-(q[0] - p[0]), q[1] - p[1]) / D2R;
