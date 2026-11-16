@@ -9,6 +9,9 @@
 // - 贪心合并：同一平面上挨着的整格面，贴图、叠加层、染色、类别、在格子里的深度、面内 UV 映射都一样的，按行扫再往下一行并成长方形（ScanMesher2D），uv 跟着拉长、贴图按格平铺（着色器里取 fract）。
 // - 按朝向分组：+x -x +y -y +z -z 和「不沿轴」（花草的十字面）七组，再加 +x -x +y -y 四组裙边，画的时候背对镜头的整组不画（Voxy 按区段、按朝向剔除）。
 // - 按材质分：实心、镂空（第 0 级的树叶等）、实心树叶（粗级）、水、花草（不挡光的小东西，屏幕 AO 里不挡也不压，见 lib/体素/材质.ts）。
+// - 挡光面（`shadowPlanes`，只进阴影图）：区段里每隔 `shadowPlaneCells` 格一道竖线，线两边按裙边的规矩出被剔掉的侧面。阴影图只画背光面，
+//   受光的台阶面离挡它的背光面不到一个偏移（级联阴影.ts 往光源挪两个阴影像素）就漏光；32×32 时这些线就是区段边，裙边在阴影图里多挡一层，
+//   区段改成 64×64 后少了中间那道，6-穿塔斩首领 1060 的洞壁漏出棋盘格光斑。补回来以后阴影和 32×32 时一样（用户 11-16 定修到和改前一样暗）。
 // - 面朝向亮度不烤进顶点（不照 Voxy 的 computeDirectionalFaceTint）：明暗全交给灯算，和导出网格（lib/方块网格.tsx）一致（用户 10-04 定）。
 // - 环境光遮蔽不在网格里：照 Voxy 用屏幕空间的（lib/体素/屏幕AO.tsx），网格不算顶点 AO，四个角一样亮，合并得更多。
 import { voxelFromState, blockProps, faceTable, faceStride } from './真实方块表.ts';
@@ -21,11 +24,13 @@ const FACES = faceTable;
 // 贴图（底层号 + 4096 × 乘染色 + 8192 × 随机转；叠加层，65535 = 没有；另一面的贴图号 + 4096 × 乘染色：侧面存这块方块的顶面、顶面存它的侧面，65535 = 没有，远处两面按它混成一样的颜色，见 lib/体素/材质.ts 的 台阶并色；空着）、颜色（染色 rgb，sRGB 字节；第 4 个字节空着，顶点属性按 4 字节对齐）。
 // 面按朝向排好：段[g]～段[g + 1] 是第 g 组（+x -x +y -y +z -z 不沿轴，再是 +x -x +y -y 的裙边，见文件头）
 export type FaceGroup = { n: number; pos: Int16Array; uv: Int16Array; tex: Uint16Array; col: Uint8Array; segment: number[] };
-export type SectionMesh = { 实心: FaceGroup; 镂空: FaceGroup; 实心树叶: FaceGroup; 水: FaceGroup; 花草: FaceGroup; faceCount: number };
+export type SectionMesh = { 实心: FaceGroup; 镂空: FaceGroup; 实心树叶: FaceGroup; 水: FaceGroup; 花草: FaceGroup; shadowPlanes: FaceGroup; faceCount: number };
 export const posScale = 64;
 export const groupCount = 11;
 export const skirtGroupStart = 7; // 第 裙边起 + d 组是朝 d（0～3：+x -x +y -y）的裙边
 export const uvScale = 16;
+export const shadowPlaneCells = 32; // 挡光面的间隔（格），见文件头
+const shadowOnly = 5; // 挡光面在第几套面组（前五套是五种材质）
 
 class FaceBuffer {
   n = 0;
@@ -87,7 +92,7 @@ const packFaceGroup = (bs: FaceBuffer[]): FaceGroup => {
 };
 
 // 和 `keyGrid` 一样只作同步调用的暂存区；合组仍复制到独立数组，后续区段不会覆盖已返回的网格。保留各组的容量，省掉每个区段重新分配的开销。
-const bufferSets = Array.from({ length: 5 }, () => Array.from({ length: groupCount }, () => new FaceBuffer()));
+const bufferSets = Array.from({ length: 6 }, () => Array.from({ length: groupCount }, () => new FaceBuffer()));
 
 // 台阶并色用的「另一面」（见 面组 的贴图）：朝 d 的面配的贴图号 + 4096 × 乘染色。侧面（d 0～3）配顶面，顶面（d 4）配第一个侧面，别的 65535
 // 体素号连续且方块表不变，用定长表替代每个输出面的 Map 查找；0 留给未计算，实际贴图号加一保存。
@@ -216,7 +221,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
     }
     tintIdx[i] = tintId;
   }
-  // 五种材质 × 组数 组（七组朝向、四组裙边）
+  // 五种材质和挡光面 × 组数 组（七组朝向、四组裙边；挡光面只用七组朝向）
   const bufs = bufferSets;
   for (const bs of bufs) for (const buffer of bs) buffer.n = 0;
   const apron = 1;
@@ -249,7 +254,10 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
         const voxel = PV[pi];
         const leaf = LEAF[voxel] === 1;
         // 四周都是整格不透明方块的整格方块（地下）直接跳过
-        if (FULL[voxel] && i > apron && i < nx - apron - 1 && j > apron && j < ny - apron - 1 && k + 1 < nz &&
+        // 挨着挡光线的那几个朝向（同 edgeDirs 的位），见文件头
+        const ci = i - apron, cj = j - apron;
+        const planeDirs = ((ci + 1) % shadowPlaneCells === 0 && ci + 1 < Ni ? 1 : 0) | (ci % shadowPlaneCells === 0 && ci > 0 ? 2 : 0) | ((cj + 1) % shadowPlaneCells === 0 && cj + 1 < Nj ? 4 : 0) | (cj % shadowPlaneCells === 0 && cj > 0 ? 8 : 0);
+        if (FULL[voxel] && !planeDirs && i > apron && i < nx - apron - 1 && j > apron && j < ny - apron - 1 && k + 1 < nz &&
           (occlusionMask[vox[idx - 1]] & 1) && (occlusionMask[vox[idx + 1]] & 1) && (occlusionMask[vox[idx - nx]] & 1) && (occlusionMask[vox[idx + nx]] & 1) &&
           (occlusionMask[vox[idx + sz]] & 1) && ((k === 0 ? belowMask : occlusionMask[vox[idx - sz]]) & 1)) continue;
         const faces = FACES[voxel];
@@ -271,17 +279,21 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
           const dir = faces[faceOff], cullDir = faces[faceOff + 1];
           // 裙边：朝着 apron、按 apron 剔得掉的侧面（只认朝向和剔面方向一致的，别的照常画）
           let isSkirt = false;
+          let faceSet = mi;
           if (cullDir < 6) {
             const nb = cullDir === 5 && k === 0 ? belowMask : cullDir === 4 && k + 1 === nz ? 0 : occlusionMask[vox[idx + neighborOffset[cullDir]]];
             if (nb & cullMask) {
               // apron 不参与剔面；同向的侧面只归裙边，非同向面照常留下。上下仍分别当空气、石头。
-              if (!(edgeDirs & (1 << cullDir))) continue;
-              isSkirt = dir === cullDir;
+              if (edgeDirs & (1 << cullDir)) isSkirt = dir === cullDir;
+              // 挡光线上被剔的面（裙边和非同向的面都算，同区段边上那样）只进挡光面；水、花草不投影
+              else if (planeDirs & (1 << cullDir) && mi < 3) faceSet = shadowOnly;
+              else continue;
             }
           }
           const group = isSkirt ? skirtGroupStart + dir : dir;
-          const t0 = faces[faceOff + 2] + (faces[faceOff + 4] ? 4096 : 0) + (SPIN[voxel] && (dir === 4 || dir === 5) ? 8192 : 0);
-          const t1 = faces[faceOff + 3] < 0 ? 65535 : faces[faceOff + 3];
+          // 挡光面只画深度，贴图、染色都不要，并得更大
+          const t0 = faceSet === shadowOnly ? 0 : faces[faceOff + 2] + (faces[faceOff + 4] ? 4096 : 0) + (SPIN[voxel] && (dir === 4 || dir === 5) ? 8192 : 0);
+          const t1 = faceSet === shadowOnly || faces[faceOff + 3] < 0 ? 65535 : faces[faceOff + 3];
           // 能合并的：整格面、不偏移
           if (faces[faceOff + 29] && !dx && !dy) {
             const uCell = dir < 2 ? j - apron : i - apron;
@@ -291,9 +303,9 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
             if (!rowEnd[row] || uCell < rowStart[row]) rowStart[row] = uCell;
             if (uCell >= rowEnd[row]) rowEnd[row] = uCell + 1;
             // 键：合并签名、贴图、叠加层、染色、类别、是不是裙边都一样才并（数值放得下 53 位：10 + 14 + 12 + 12 + 3 + 1 + 1）
-            const tk = (faces[faceOff + 4] || t1 !== 65535) && ti >= 0 ? ti : 4095;
+            const tk = faceSet !== shadowOnly && (faces[faceOff + 4] || t1 !== 65535) && ti >= 0 ? ti : 4095;
             const sig = (mergeSigCache[voxel] || buildMergeSig(voxel))[face];
-            keyGrid[cell] = sig * 2 ** 43 + ((((t0 * 4096 + (t1 === 65535 ? 4095 : t1)) * 4096 + tk) * 8 + mi) * 2 + (isSkirt ? 1 : 0)) * 2 + 1;
+            keyGrid[cell] = sig * 2 ** 43 + ((((t0 * 4096 + (t1 === 65535 ? 4095 : t1)) * 4096 + tk) * 8 + faceSet) * 2 + (isSkirt ? 1 : 0)) * 2 + 1;
             faceGrid[cell] = voxel * 64 + face;
             hasMergeable = true;
             continue;
@@ -307,7 +319,8 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
             uv[corner * 2] = faces[faceOff + 18 + srcCorner * 2];
             uv[corner * 2 + 1] = faces[faceOff + 19 + srcCorner * 2];
           }
-          bufs[mi][group].push(corners, uv, t0, t1, cr, cg, cb, otherFaceTex(voxel, dir));
+          if (faceSet === shadowOnly) bufs[shadowOnly][dir].push(corners, uv, 0, 65535, 255, 255, 255, 65535);
+          else bufs[mi][group].push(corners, uv, t0, t1, cr, cg, cb, otherFaceTex(voxel, dir));
         }
       }
     }
@@ -366,14 +379,14 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
             const t1k = (lowBits >>> 17) & 4095;
             const t0 = Math.floor(key / (32 * 4096 * 4096)) % 16384;   // 再往上是合并签名
             const tc = tk < 4095 ? tints[tk] : null;
-            bufs[mi][skirtBit ? skirtGroupStart + dir : dir].push(corners, uv, t0, t1k === 4095 ? 65535 : t1k, tc ? tc[0] : 255, tc ? tc[1] : 255, tc ? tc[2] : 255, otherFaceTex(vf >> 6, dir));
+            bufs[mi][skirtBit ? skirtGroupStart + dir : dir].push(corners, uv, t0, t1k === 4095 ? 65535 : t1k, tc ? tc[0] : 255, tc ? tc[1] : 255, tc ? tc[2] : 255, mi === shadowOnly ? 65535 : otherFaceTex(vf >> 6, dir));
             uu += width - 1;
           }
         }
       }
     }
   const groups = bufs.map(packFaceGroup);
-  return { 实心: groups[0], 镂空: groups[1], 实心树叶: groups[2], 水: groups[3], 花草: groups[4], faceCount: groups.reduce((s, x) => s + x.n, 0) };
+  return { 实心: groups[0], 镂空: groups[1], 实心树叶: groups[2], 水: groups[3], 花草: groups[4], shadowPlanes: groups[5], faceCount: groups.reduce((s, x) => s + x.n, 0) };
 };
 
 // 一组面里，从镜头看得到正面的那几组朝向：盒子 [x0, y0, z0, x1, y1, z1] 是这块网格的范围（场景坐标）。

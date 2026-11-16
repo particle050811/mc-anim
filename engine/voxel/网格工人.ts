@@ -2,7 +2,7 @@
 import { buildSectionMesh, type SectionMesh } from './网格.ts';
 import type { VoxelGrid } from './生成.ts';
 
-const materialKeys = ['实心', '镂空', '实心树叶', '水', '花草'] as const;
+const materialKeys = ['实心', '镂空', '实心树叶', '水', '花草', 'shadowPlanes'] as const;
 
 self.onmessage = (event: MessageEvent<{ id: number; V: VoxelGrid; 实心树叶: boolean }>) => {
   const { id, V: voxels, 实心树叶: solidLeaves } = event.data;

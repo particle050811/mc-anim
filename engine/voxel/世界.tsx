@@ -61,8 +61,9 @@ const trimKept = () => {
   }
 };
 
-// items：水以外各类的面（交给代理物体画），类号是 materialClasses 里的下标；casters：其中投影的（花草不投影）；water：水类的网格（逐网格画）
-type Entry = { items: [number, BatchItem][]; casters: BatchItem[]; water: VoxelMesh | null; plants: BatchItem | null; box: number[]; faceCount: number; used: number; kept: Kept };
+// items：水以外各类的面（交给代理物体画），类号是 materialClasses 里的下标；casters：其中投影的（花草不投影），再加只进阴影图的挡光面（网格.ts 文件头）；
+// shadowOnly：挡光面那一项（不在 items 里，释放时另放）；water：水类的网格（逐网格画）
+type Entry = { items: [number, BatchItem][]; casters: BatchItem[]; shadowOnly: BatchItem | null; water: VoxelMesh | null; plants: BatchItem | null; box: number[]; faceCount: number; used: number; kept: Kept };
 // batches：各类的代理物体（下标同 materialClasses，水那一格空着）；shadowBatch：只进阴影图的
 // 投、像素角：变焦的镜头（穿塔加速时视角一帧宽 1.4%）细分门槛跟着视角走，不一起外推就猜不中
 type CameraPose = { 位: THREE.Vector3; dirQuat: THREE.Quaternion; 心: number[]; projection: THREE.Matrix4; pixelAngle: number };
@@ -74,7 +75,7 @@ export const voxelsPending = new Set<object>();
 const probe = newSurface();
 
 // 区段直接用包里解出来的（没有这一块就是空的，见 体素来源.区段）
-const emptyEntry = (rec: Kept): Entry => ({ items: [], casters: [], water: null, plants: null, box: [], faceCount: 0, used: 0, kept: rec });
+const emptyEntry = (rec: Kept): Entry => ({ items: [], casters: [], shadowOnly: null, water: null, plants: null, box: [], faceCount: 0, used: 0, kept: rec });
 // 树叶：第 0 级照游戏「高品质」镂空，粗级照 Voxy 画成实心（区段出网格 的第二个参数 q.L >= 1）
 const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, 'origin' | 'cell' | 'nz'>, section: SectionId, rec: Kept): Entry => {
   const [x0, y0, sizeM] = sectionBounds(section);
@@ -95,7 +96,9 @@ const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxe
     if (materialClass === '花草') plants = item;
     else casters.push(item);
   });
-  return { items, casters, water, plants, box, faceCount: sectionMesh.faceCount, used: 0, kept: rec };
+  const shadowOnly = sectionMesh.shadowPlanes.n ? buildBatchItem(ctx, sectionMesh.shadowPlanes, false, voxels.origin, posScale / voxels.cell, box) : null;
+  if (shadowOnly) casters.push(shadowOnly);
+  return { items, casters, shadowOnly, water, plants, box, faceCount: sectionMesh.faceCount, used: 0, kept: rec };
 };
 
 // ---------- 预取下一帧（用户 11-15 定做）----------
@@ -360,10 +363,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
     for (const [k, entry] of all) {
       if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
-      releaseBatchItems(
-        ctx,
-        entry.items.map((x) => x[1]),
-      );
+      releaseBatchItems(ctx, [...entry.items.map((x) => x[1]), ...(entry.shadowOnly ? [entry.shadowOnly] : [])]);
       if (entry.water) releaseVoxelMeshes(ctx, [entry.water]);
       world.faceCount -= entry.faceCount;
       cache.delete(k);
