@@ -1,6 +1,6 @@
 // 渲染参数（全部显式传给 Remotion，并整份进指纹）。每段渲出来就是成片的一截（用户 11-05 定「母版 = 成片切片」）：
 // 叠层、字幕画在段里，Remotion 直接按成片参数压（x264 medium CRF 18 + 码率上限、BT.709），成片只接不重压；段的声音和画面同一遍出（段产物.ts 打开 muted、separateAudioTo 出 wav）。
-// 视频级 PNG 帧、截图按成片档放大；预览级 JPEG、不放大、inputProps 级别=预览。并发 1（用户 10-06 定）。
+// 视频级 PNG 帧、截图按成片档放大；预览级 JPEG、不放大、inputProps level=预览。并发 1（用户 10-06 定）。
 import { config } from '../环境/配置.ts';
 import { normalizeSettings, type SegSubtitle, type RenderLevel } from '../../engine/段/设置值.ts';
 
