@@ -139,7 +139,7 @@ export const transcodePack = async (pack: string, o: TranscodeOptions) => {
   const ratioPct = ((100 * result.新字节) / result.旧字节).toFixed(1);
   o.log(`${pack}：${oldVersion} → ${version}${existed ? '（这一版已经有了）' : ''}`);
   o.log(`  ${blockFileNames.length} 个块文件（现行）、${result.sections} 个区段、${result.cell} 格（非空气 ${result.非空气格}）逐格${visible ? '和重做一遍变换的' : ''}相同，读盘验证 ${verifySec.toFixed(3)} 秒`);
-  if (visible) o.log(`  改了的 ${result.changedSectionCount} 个区段核过格（只换埋住的、封死的、邻圈不挡面的）和网格（${result.meshCheckCount} 个区段原样、改后各建一遍：前七组不变或只少腔壁，裙边只换贴图）`);
+  if (visible) o.log(`  改了的 ${result.changedSectionCount} 个区段核过格（只换埋住的、封死的、邻圈不挡面的）和网格（${result.meshCheckCount} 个区段原样、改后各建一遍：前八组不变或只少腔壁，裙边只换贴图）`);
   o.log(`  区段字节 ${result.旧字节} → ${result.新字节}（${ratioPct}%），平均解一个区段 ${(result.decodeMs / result.sections).toFixed(3)} 毫秒（工人并行时测的，机器忙时偏大）`);
 
   const existing = terrainTable[pack];

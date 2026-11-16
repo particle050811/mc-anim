@@ -7,8 +7,12 @@
 //   为什么要藏：裙边是竖墙，从高处往下看几乎侧对镜头；three 的对数深度在片元着色器写 gl_FragDepth，开 MSAA 时一个像素里各采样点共用像素中心的深度，
 //   侧对镜头的墙把深度外推到像素中心，会比挡在它前面的地面还近，抢走几个采样点，于是 6-3 从高空往下看时第 1 级区段边上有一条条 1 像素的土色直线（关对数深度、关 MSAA 或不画裙边都没了）。
 // - 贪心合并：同一平面上挨着的整格面，贴图、叠加层、染色、类别、在格子里的深度、面内 UV 映射都一样的，按行扫再往下一行并成长方形（ScanMesher2D），uv 跟着拉长、贴图按格平铺（着色器里取 fract）。
-// - 按朝向分组：+x -x +y -y +z -z 和「不沿轴」（花草的十字面）七组，再加 +x -x +y -y 四组裙边，画的时候背对镜头的整组不画（Voxy 按区段、按朝向剔除）。
+// - 按朝向分组：+x -x +y -y +z -z、「不沿轴」（花草的十字面）、「两面沿轴」（花草里两面画的沿轴面，见下）八组，再加 +x -x +y -y 四组裙边，
+//   画的时候背对镜头的整组不画（Voxy 按区段、按朝向剔除）；后两组哪边都看得见，总画。
 // - 按材质分：实心、镂空（第 0 级的树叶等）、实心树叶（粗级）、水、花草（不挡光的小东西，屏幕 AO 里不挡也不压，见 lib/体素/材质.ts）。
+// - 花草两面画（用户 11-16 定做，照 Linker「Blender 精简」的「植被 · 双面」）：方块模型里同一张面片正反各一张面（草的十字面、海草的四片），
+//   只出一张，花草材质两面都画（`twoSidedTable`）。背面贴图原来多半是左右镜像的，顶点里记着，着色器在背面把 u 翻回去；
+//   没配对的面照旧单面，着色器在背面丢掉。法线、光照、阴影不用另管：体素材质平面着色、法线按屏幕导数算，总朝镜头；花草不投影。
 // - 挡光面（`shadowPlanes`，只进阴影图）：区段里每隔 `shadowPlaneCells` 格一道竖线，线两边按裙边的规矩出被剔掉的侧面。阴影图只画背光面，
 //   受光的台阶面离挡它的背光面不到一个偏移（级联阴影.ts 往光源挪两个阴影像素）就漏光；32×32 时这些线就是区段边，裙边在阴影图里多挡一层，
 //   区段改成 64×64 后少了中间那道，6-穿塔斩首领 1060 的洞壁漏出棋盘格光斑。补回来以后阴影和 32×32 时一样（用户 11-16 定修到和改前一样暗）。
@@ -21,13 +25,16 @@ const { full: FULL, leaf: LEAF, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS
 const FACES = faceTable;
 
 // 一组面（同一种材质）：每个顶点 位置 xyz（相对体素块原点、以格为单位 × 64，Int16）、uv（× 16，Int16）、
-// 贴图（底层号 + 4096 × 乘染色 + 8192 × 随机转；叠加层，65535 = 没有；另一面的贴图号 + 4096 × 乘染色：侧面存这块方块的顶面、顶面存它的侧面，65535 = 没有，远处两面按它混成一样的颜色，见 lib/体素/材质.ts 的 台阶并色；空着）、颜色（染色 rgb，sRGB 字节；第 4 个字节 = 255 − 贴图发光，真实方块表.ts 的 贴图发光，不发光的是 255）。
-// 面按朝向排好：段[g]～段[g + 1] 是第 g 组（+x -x +y -y +z -z 不沿轴，再是 +x -x +y -y 的裙边，见文件头）
+// 贴图（底层号 + 4096 × 乘染色 + 8192 × 随机转；叠加层，65535 = 没有；另一面的贴图号 + 4096 × 乘染色：侧面存这块方块的顶面、顶面存它的侧面，65535 = 没有，远处两面按它混成一样的颜色，见 lib/体素/材质.ts 的 台阶并色；
+// 两面：0 = 单面，1 = 两面画、背面贴图照正面，S + 1 = 两面画、背面 u 换成 S − u（u 以 1/16 张贴图为单位，同 uv），只有花草用）、颜色（染色 rgb，sRGB 字节；第 4 个字节 = 255 − 贴图发光，真实方块表.ts 的 贴图发光，不发光的是 255）。
+// 面按朝向排好：段[g]～段[g + 1] 是第 g 组（+x -x +y -y +z -z 不沿轴 两面沿轴，再是 +x -x +y -y 的裙边，见文件头）
 export type FaceGroup = { n: number; pos: Int16Array; uv: Int16Array; tex: Uint16Array; col: Uint8Array; segment: number[] };
 export type SectionMesh = { 实心: FaceGroup; 镂空: FaceGroup; 实心树叶: FaceGroup; 水: FaceGroup; 花草: FaceGroup; shadowPlanes: FaceGroup; faceCount: number };
 export const posScale = 64;
-export const groupCount = 11;
-export const skirtGroupStart = 7; // 第 裙边起 + d 组是朝 d（0～3：+x -x +y -y）的裙边
+export const groupCount = 12;
+export const crossGroup = 6; // 不沿轴（十字面）
+export const twoSidedGroup = 7; // 两面沿轴
+export const skirtGroupStart = 8; // 第 裙边起 + d 组是朝 d（0～3：+x -x +y -y）的裙边
 export const uvScale = 16;
 export const shadowPlaneCells = 32; // 挡光面的间隔（格），见文件头
 const shadowOnly = 5; // 挡光面在第几套面组（前五套是五种材质）
@@ -53,7 +60,7 @@ class FaceBuffer {
     this.col = col;
   }
   // 四个角（从外面看逆时针）、uv、贴图、染色
-  push(corners: ArrayLike<number>, uv: ArrayLike<number>, t0: number, t1: number, red: number, green: number, blue: number, otherTex: number) {
+  push(corners: ArrayLike<number>, uv: ArrayLike<number>, t0: number, t1: number, red: number, green: number, blue: number, otherTex: number, twoSided = 0) {
     if ((this.n + 1) * 12 > this.pos.length) this.grow();
     const vertexBase = this.n * 4;
     for (let k = 0; k < 4; k++) {
@@ -65,6 +72,7 @@ class FaceBuffer {
       this.tex[(vertexBase + k) * 4] = t0;
       this.tex[(vertexBase + k) * 4 + 1] = t1;
       this.tex[(vertexBase + k) * 4 + 2] = otherTex;
+      this.tex[(vertexBase + k) * 4 + 3] = twoSided;
       const colorAt = (vertexBase + k) * 4;
       this.col[colorAt] = red;
       this.col[colorAt + 1] = green;
@@ -112,6 +120,45 @@ const otherFaceTex = (voxel: number, dir: number) => {
   otherFaceCache[k] = t + 1;
   return t;
 };
+// 花草两面画（见文件头）：一种方块的每张面出不出、怎么出。-1 = 是别的面的背面，不出；0 = 单面；1、S + 1 = 两面（同顶点里的「两面」）。
+// 配对：都不沿轴或朝向相反，四个角重合、绕向相反，贴图、叠加、染色、远处另一面都一样，都不剔；背面的 v 和正面逐角相同，u 逐角相同或者逐角加起来是同一个数 S。
+// 配不上的（向日葵正反两张贴图、u v 换了轴的）两张照旧各出各的。只配花草：别的材质单面画。
+const twoSidedCache: Int32Array[] = [];
+const buildTwoSided = (voxel: number) => {
+  const faces = FACES[voxel];
+  const nf = faces.length / faceStride;
+  const table = new Int32Array(nf);
+  twoSidedCache[voxel] = table;
+  if (!PLANT[voxel]) return table;
+  for (let a = 0; a < nf; a++) {
+    const fa = a * faceStride, da = faces[fa];
+    if (table[a] || faces[fa + 1] !== 6) continue;
+    for (let b = a + 1; b < nf; b++) {
+      const fb = b * faceStride, db = faces[fb];
+      if (table[b] || faces[fb + 1] !== 6 || (da === 6 ? db !== 6 : db !== (da ^ 1))) continue;
+      if (faces[fa + 2] !== faces[fb + 2] || faces[fa + 3] !== faces[fb + 3] || faces[fa + 4] !== faces[fb + 4] || otherFaceTex(voxel, da) !== otherFaceTex(voxel, db)) continue;
+      // b 的第 m 角和 a 的第 0 角重合；绕向相反，a 的第 c 角对 b 的第 (m − c) mod 4 角
+      let m = -1;
+      for (let c = 0; c < 4 && m < 0; c++) if (faces[fb + 6 + c * 3] === faces[fa + 6] && faces[fb + 7 + c * 3] === faces[fa + 7] && faces[fb + 8 + c * 3] === faces[fa + 8]) m = c;
+      if (m < 0) continue;
+      let ok = true, same = true, sum = NaN;
+      for (let c = 0; c < 4 && ok; c++) {
+        const bc = (m - c + 4) % 4;
+        for (let t = 0; t < 3; t++) if (faces[fa + 6 + c * 3 + t] !== faces[fb + 6 + bc * 3 + t]) ok = false;
+        const ua = Math.round(faces[fa + 18 + c * 2] * 16), ub = Math.round(faces[fb + 18 + bc * 2] * 16);
+        if (faces[fa + 19 + c * 2] !== faces[fb + 19 + bc * 2]) ok = false;
+        if (ua !== ub) same = false;
+        if (c === 0) sum = ua + ub;
+        else if (ua + ub !== sum) sum = NaN;
+      }
+      if (!ok || (!same && !(sum > 0))) continue;
+      table[a] = same ? 1 : sum + 1;
+      table[b] = -1;
+      break;
+    }
+  }
+  return table;
+};
 // 每个朝向的面内两个轴（u 轴、v 轴）：合并时在面内按 u 行、v 列扫
 const faceAxes = [[1, 2], [1, 2], [0, 2], [0, 2], [0, 1], [0, 1]];
 // 面内 UV 只由方块模型决定，不随区段、合并宽高改变；每种模型算一次，免去每个矩形找角和分配 du/dv。
@@ -141,7 +188,7 @@ const buildMergedUv = (voxel: number) => {
   mergedUvCache[voxel] = table;
   return table;
 };
-// 合并签名：面在格子里的深度 + 面内 UV 映射（上面那六个数），一样才能并，否则下半砖挨上半砖时顶面错半格、横放原木 x 挨 z 时树皮纹转错 90°。
+// 合并签名：面在格子里的深度 + 面内 UV 映射（上面那六个数）+ 两面，一样才能并，否则下半砖挨上半砖时顶面错半格、横放原木 x 挨 z 时树皮纹转错 90°。
 // 照 Linker 游戏端的合并键（RenderableBakeGreedyMesher$GreedyGroupKey 的 plane 和四角 UV）。
 // 编号按出现先后给，只用来比相等，各 Worker 各编一套不影响网格；整张方块表只有 179 种（11-16 数的），键里留了 10 位。
 const mergeSigBits = 10;
@@ -150,12 +197,13 @@ const mergeSigIds = new Map<string, number>();
 const buildMergeSig = (voxel: number) => {
   const faces = FACES[voxel];
   const uvTable = mergedUvCache[voxel] || buildMergedUv(voxel);
+  const twoSided = twoSidedCache[voxel] || buildTwoSided(voxel);
   const sig = new Int32Array(faces.length / faceStride);
   for (let faceOff = 0; faceOff < faces.length; faceOff += faceStride) {
     if (!faces[faceOff + 29]) continue;
     const at = faceOff / faceStride;
     const depth = faces[faceOff + 6 + (faces[faceOff] >> 1)];
-    const text = `${depth},${Array.from(uvTable.subarray(at * 6, at * 6 + 6)).join(',')}`;
+    const text = `${depth},${Array.from(uvTable.subarray(at * 6, at * 6 + 6)).join(',')}${twoSided[at] ? `,${twoSided[at]}` : ''}`;
     let id = mergeSigIds.get(text);
     if (id === undefined) {
       id = mergeSigIds.size;
@@ -221,7 +269,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
     }
     tintIdx[i] = tintId;
   }
-  // 五种材质和挡光面 × 组数 组（七组朝向、四组裙边；挡光面只用七组朝向）
+  // 五种材质和挡光面 × 组数 组（八组朝向、四组裙边；挡光面只用前七组朝向）
   const bufs = bufferSets;
   for (const bs of bufs) for (const buffer of bs) buffer.n = 0;
   const apron = 1;
@@ -262,6 +310,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
           (occlusionMask[vox[idx + sz]] & 1) && ((k === 0 ? belowMask : occlusionMask[vox[idx - sz]]) & 1)) continue;
         const faces = FACES[voxel];
         const nf = faces.length / faceStride;
+        const twoSided = twoSidedCache[voxel] || buildTwoSided(voxel);
         const ti = tintIdx[pi];
         const cr = ti >= 0 ? palette[pi].c[0] : 255, cg = ti >= 0 ? palette[pi].c[1] : 255, cb = ti >= 0 ? palette[pi].c[2] : 255;
         const renderLayer = CLS[voxel];
@@ -277,6 +326,8 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
         for (let face = 0; face < nf; face++) {
           const faceOff = face * faceStride;
           const dir = faces[faceOff], cullDir = faces[faceOff + 1];
+          const side = twoSided[face];
+          if (side < 0) continue;
           // 裙边：朝着 apron、按 apron 剔得掉的侧面（只认朝向和剔面方向一致的，别的照常画）
           let isSkirt = false;
           let faceSet = mi;
@@ -290,7 +341,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
               else continue;
             }
           }
-          const group = isSkirt ? skirtGroupStart + dir : dir;
+          const group = isSkirt ? skirtGroupStart + dir : side && dir < 6 ? twoSidedGroup : dir;
           // 挡光面只画深度，贴图、染色都不要，并得更大
           const t0 = faceSet === shadowOnly ? 0 : faces[faceOff + 2] + (faces[faceOff + 4] ? 4096 : 0) + (SPIN[voxel] && (dir === 4 || dir === 5) ? 8192 : 0);
           const t1 = faceSet === shadowOnly || faces[faceOff + 3] < 0 ? 65535 : faces[faceOff + 3];
@@ -320,7 +371,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
             uv[corner * 2 + 1] = faces[faceOff + 19 + srcCorner * 2];
           }
           if (faceSet === shadowOnly) bufs[shadowOnly][dir].push(corners, uv, 0, 65535, 255, 255, 255, 65535);
-          else bufs[mi][group].push(corners, uv, t0, t1, cr, cg, cb, otherFaceTex(voxel, dir));
+          else bufs[mi][group].push(corners, uv, t0, t1, cr, cg, cb, otherFaceTex(voxel, dir), side);
         }
       }
     }
@@ -379,7 +430,8 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
             const t1k = (lowBits >>> 17) & 4095;
             const t0 = Math.floor(key / (32 * 4096 * 4096)) % 16384;   // 再往上是合并签名
             const tc = tk < 4095 ? tints[tk] : null;
-            bufs[mi][skirtBit ? skirtGroupStart + dir : dir].push(corners, uv, t0, t1k === 4095 ? 65535 : t1k, tc ? tc[0] : 255, tc ? tc[1] : 255, tc ? tc[2] : 255, mi === shadowOnly ? 65535 : otherFaceTex(vf >> 6, dir));
+            const side = mi === shadowOnly ? 0 : twoSidedCache[vf >> 6][vf & 63];
+            bufs[mi][skirtBit ? skirtGroupStart + dir : side ? twoSidedGroup : dir].push(corners, uv, t0, t1k === 4095 ? 65535 : t1k, tc ? tc[0] : 255, tc ? tc[1] : 255, tc ? tc[2] : 255, mi === shadowOnly ? 65535 : otherFaceTex(vf >> 6, dir), side);
             uu += width - 1;
           }
         }
@@ -392,7 +444,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
 // 一组面里，从镜头看得到正面的那几组朝向：盒子 [x0, y0, z0, x1, y1, z1] 是这块网格的范围（场景坐标）。
 // 裙边[d]：朝 d（+x -x +y -y）那一侧要不要画裙边（同一级的邻居不在画才要，见文件头）；不给就都画
 export const visibleDirs = (box: number[], camPos: number[], skirtVisible?: boolean[]) => {
-  const visible = [camPos[0] > box[0], camPos[0] < box[3], camPos[1] > box[1], camPos[1] < box[4], camPos[2] > box[2], camPos[2] < box[5], true];
+  const visible = [camPos[0] > box[0], camPos[0] < box[3], camPos[1] > box[1], camPos[1] < box[4], camPos[2] > box[2], camPos[2] < box[5], true, true];
   for (let dir = 0; dir < 4; dir++) visible.push(visible[dir] && (!skirtVisible || skirtVisible[dir]));
   return visible;
 };
