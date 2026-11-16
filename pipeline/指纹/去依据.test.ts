@@ -3,10 +3,24 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { codeRoot } from '../环境/路径.ts';
-import { stripBasis } from './去依据.ts';
+import { stripBasis, atKey, basisKey, endKey, segKeyField, segWindowKeys, startKey, timeKeys, type KeyTable } from './去依据.ts';
+import type { Moment as StoryboardTime, EventDef as StoryboardEventDef, SegmentWindowDef as StoryboardSegWindow } from '../../作品/把回忆拼好给你/分镜/时间.ts';
 import { computeMerkle } from './默克尔.ts';
 
 const relPath = (p: string) => path.relative(codeRoot(), p).split(path.sep).join('/');
+
+// 分镜.ts 的写法（把回忆拼好给你）：去依据.ts 不引作品的类型，键对不对在这里核。作品的类型加减键，下面的表 tsc 就编译不过
+const storyboardTimeKeys: KeyTable<StoryboardTime> = { 秒: true, beat: true, measure: true, 句: true, 点: true, after: true, addSec: true };
+const storyboardSegWindowKeys: KeyTable<StoryboardSegWindow> = { 键: true, 起: true, 止: true, 依据: true };
+const storyboardEventKeys: KeyTable<StoryboardEventDef> = { 在: true, 依据: true };
+const storyboardFields: [keyof StoryboardEventDef, keyof StoryboardEventDef, keyof StoryboardSegWindow, keyof StoryboardSegWindow, keyof StoryboardSegWindow] = [atKey, basisKey, segKeyField, startKey, endKey];
+
+it('分镜.ts 的时刻、事件、段窗都在认的形状里', () => {
+  for (const k of Object.keys(storyboardTimeKeys)) expect(timeKeys.has(k), k).toBe(true);
+  for (const k of Object.keys(storyboardSegWindowKeys)) expect(segWindowKeys.has(k), k).toBe(true);
+  expect(Object.keys(storyboardEventKeys).sort()).toEqual([atKey, basisKey].sort());
+  expect(storyboardFields).toHaveLength(5);
+});
 
 describe('去依据（文本）', () => {
   it('事件：只去说明文字，时刻留着', () => {

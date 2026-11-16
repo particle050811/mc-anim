@@ -1,6 +1,8 @@
 // 检查用的内容视图：执行所查作品的 清单.ts 和各段 段.ts（纯模块），按清单顺序给出每段的定义；场键的先后按清单里第一次出现排。
+// 也读作品的 台词.toml（检查和 分发/随仓库.ts 共用）。
 import type { SegmentDef } from '../../engine/段/段定义.ts';
-import type { CheckContext } from './上下文.ts';
+import type { LineEntry } from '../配音/台词表.ts';
+import type { CheckContext, CheckReport } from './上下文.ts';
 
 export type ManifestLine = { 键: string; 章: number | '核对'; 集?: number };
 export type SegItem = ManifestLine & { 目录: string; 段文件: string; definition?: SegmentDef; 错误?: string };
@@ -46,4 +48,17 @@ export const readContent = (c: CheckContext): Promise<ParsedContent> => {
 export const listExistingDirs = (c: CheckContext, layerKind: '段' | '场' | '核对') => {
   const dirPrefix = c.workPath(`${layerKind}/`);
   return [...new Set(c.文件().filter((p) => p.startsWith(dirPrefix) && p.slice(dirPrefix.length).includes('/')).map((p) => p.slice(dirPrefix.length).split('/')[0]!))].sort();
+};
+
+export const lineTablePath = (c: CheckContext) => c.workPath('台词.toml');
+
+export const readLineTable = (c: CheckContext, report?: CheckReport): LineEntry[] | null => {
+  const path = lineTablePath(c);
+  if (!c.exists(path)) return null;
+  try {
+    return ((c.readToml(path)!['台词'] ?? []) as LineEntry[]);
+  } catch (e) {
+    report?.错(`TOML 解析失败：${(e as Error).message.split('\n')[0]}`, path);
+    return null;
+  }
 };

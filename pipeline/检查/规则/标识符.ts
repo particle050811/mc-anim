@@ -6,7 +6,7 @@
 // 只看语法树里的标识符（只解析不做类型检查，forEachChild 不进注释）：字符串、注释、JSX 文本、文件名都不算。
 // 查全仓的代码（所有作品、测试也算），基线是全仓一张；Python 不查。
 import { execFileSync } from 'node:child_process';
-import { codeExtRegex, type CheckReport, type CheckContext } from '../上下文.ts';
+import { codeExtRegex, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { lineNo, parseSource, ts } from '../语法.ts';
 
 export const hanBaselinePath = 'pipeline/检查/中文标识符基线.txt';

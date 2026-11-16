@@ -1,7 +1,7 @@
 // 时间：段、场、库的画面代码按秒写（用户 11-06「不应该都是按函数那种写的吗」，docs/决策/0015-原生60帧.md），不直接调 useCurrentFrame()；
 // 时间一律从 engine/段/时间.tsx 取（useCurrentSec、SecondSequence，核对视图用 useViewIndex）。11-06 全迁完，没有例外（以前的 docs/帧号例外表.tsv 删了）。
 // 只查 engine、库 和这次查的作品的渲染代码（不含测试）；时间工具自己（时间.tsx）不查。
-import { isRenderCode, type CheckReport, type CheckContext } from '../上下文.ts';
+import { isRenderCode, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { parseSource, walk, lineNo, ts } from '../语法.ts';
 
 const timeModules = new Set(['engine/段/时间.tsx']);

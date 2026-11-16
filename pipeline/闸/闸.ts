@@ -6,7 +6,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { config } from '../环境/配置.ts';
 import { enoughMemory, readMemory, readPressure, readingNote, coreCount, load1Min, type MemReading } from '../环境/资源.ts';
 import { holderPid, tryAcquire, releaseLock, processAlive, reclaimDeadLock, lockHeld } from './锁.ts';
-import { registerCleanup } from './收尾.ts';
+import { registerCleanup } from '../环境/收尾.ts';
 import { resolveSchedulerEnv, openTask, hasTask, cleanCrashed, type SchedulerEnv, type TaskDecl } from './任务.ts';
 import { claimTicket, listTickets, ticketAlive, type Ticket, requeueTail, setOrder, writeTicket, clearTaskTickets, recordOvertaken, isLowPriorityTicket } from './票.ts';
 import { writeJson, readJson, promptOnly } from './文件.ts';
@@ -17,7 +17,7 @@ import { readMachineSnapshot, readMachineSnapshotParallel, type MachineSnapshot 
 import { estimate } from './估计.ts';
 import { readDirective, getPassGrant, consumePassGrant, deleteDirective, routeYield, SchedYieldError, failExitCode } from './指令.ts';
 export type { TaskDecl } from './任务.ts';
-export { gateRecordKilled, registerTempFile } from './收尾.ts';
+export { gateRecordKilled, registerTempFile } from '../环境/收尾.ts';
 export const ancestorLockEnv = 'MCAI_RENDER_LOCK_PID';
 const lockContext = new AsyncLocalStorage<LockHandle>();
 const serialQueue = new Map<string, Promise<void>>();

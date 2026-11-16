@@ -3,8 +3,8 @@
 // 段框架的段（窗口段）另核对 anim cues 生成的声音表、声音地址和 段.ts 的 cue 对得上（段框架/生成.ts 的 核对一段）。
 // 段、场、核对目录下的 环境.ts 另查声明（环境声明.ts：描述合法、画法有模块、关键帧在段里）。
 // 作品的 地点/地形改动.ts 另核挖框、整平都落在世界声明的保真范围里（地形改动.ts）。
-import { readContent } from '../内容.ts';
-import { isPureModule, type CheckReport, type CheckContext } from '../上下文.ts';
+import { readContent } from '../../源码/内容.ts';
+import { isPureModule, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { checkSegFramework } from '../../段框架/核对.ts';
 import { checkEnvDecl } from '../环境声明.ts';
 import { checkTerrainChanges } from '../地形改动.ts';

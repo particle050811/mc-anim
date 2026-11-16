@@ -4,7 +4,8 @@ import ts from 'typescript';
 const scriptKind = (file: string) =>
   file.endsWith('.tsx') ? ts.ScriptKind.TSX : file.endsWith('.jsx') ? ts.ScriptKind.JSX : /\.[cm]?js$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS;
 
-export const parseSource = (file: string, source: string) => ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind(file));
+/** withParents：要用 node.parent 的规则才要；只读 import 的引用图不建父指针，解析快一截 */
+export const parseSource = (file: string, source: string, withParents = true) => ts.createSourceFile(file, source, ts.ScriptTarget.Latest, withParents, scriptKind(file));
 
 export const walk = (n: ts.Node, fn: (n: ts.Node) => void) => {
   fn(n);

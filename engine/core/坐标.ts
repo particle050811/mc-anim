@@ -12,7 +12,8 @@
 //
 // 纯模块（只有类型 import）：段.ts、时间线.ts、末态.ts 和它们引的编排也能用（那些文件的闭包里不许有 three）。
 // 要 three 对象的（toThree 的正本 sceneToThree，给 Vector3）在 three换算.ts；要 three 轴的数组用不带原点的 sceneToGame（库/界面/投影.ts 的 zUpToThree）。
-import type { V3 } from '../model/parts.tsx';
+/** 三维点、向量（场景或游戏坐标）；engine/model/parts.tsx 原样转出，老代码照旧从那里引 */
+export type V3 = [number, number, number];
 
 /** 游戏或场景的原点：游戏坐标 (ox, oy, oz) 落在场景 (0, 0, 0) */
 export type Origin = readonly [number, number, number];

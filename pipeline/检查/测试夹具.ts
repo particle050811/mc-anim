@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { codeRoot } from '../环境/路径.ts';
-import { CheckReport, CheckContext, type RuleKind } from './上下文.ts';
+import { CheckReport, CheckContext, type RuleKind } from '../源码/上下文.ts';
 import { ruleTable } from './检查.ts';
 
 export type FileTable = Record<string, string | Buffer | null>;

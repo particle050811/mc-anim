@@ -1,7 +1,6 @@
 // 取材产物的许可按 jar 继承：jars.toml 每个 jar 的「许可」是结构化字段（代码、资源，可选 声音、结构、模型），值是 SPDX 表达式。
 // 资产表里 来源 = 提取:<配方>@<sha12>[+<sha12>…] 的条目，按 @ 后面每个 jar 取「这类资产对应的那一部分」许可，用 AND 连起来（一张图集可能拼了几个 jar 的贴图，取最严的合取）。
 // 值以 LicenseRef-待定 或 LicenseRef-待核- 开头的算没定（比如只知道是 CC BY-NC-SA、版本没核），继承出来仍是待定，列进 assets/待确认.md 等用户定。
-import type { JarRecord } from './清单.ts';
 
 export const licensePartValues = ['代码', '资源', '声音', '结构', '模型'] as const;
 export type LicensePart = (typeof licensePartValues)[number];
@@ -39,11 +38,13 @@ export const conjunction = (exprs: readonly string[]): string => {
 };
 
 export type LicenseEntry = { id: string; 许可: JarLicense };
+/** jars.toml 一条里查许可要的字段（清单.ts 的 JarRecord 带着这些；只写这几个，许可.ts 不引 清单.ts，免得两边互引） */
+export type LicensedJar = { id: string; sha256?: string; 许可?: JarLicense; 旧sha256前缀?: string[] };
 /**
  * sha256 前 12 位 → jar；资源索引另认 jars.toml 里记的历史前缀（Mojang 会更新同一个索引文件）。
  * 现算：jars.toml 没记 sha256 的（资源索引），按本机文件现算的前缀也认（登记时来源就是这么算的，见 登记.ts 来源串）；算不出返回 undefined
  */
-export const licenseTable = (jars: Iterable<JarRecord>, computeLocalSha?: (id: string) => string | undefined): Map<string, LicenseEntry> => {
+export const licenseTable = (jars: Iterable<LicensedJar>, computeLocalSha?: (id: string) => string | undefined): Map<string, LicenseEntry> => {
   const m = new Map<string, LicenseEntry>();
   for (const j of jars) {
     const item = { id: j.id, 许可: j.许可 ?? {} };

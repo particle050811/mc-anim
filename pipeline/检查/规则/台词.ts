@@ -4,29 +4,17 @@
 // 作品有 台词/ 目录（anim voice 的句模块）的，有配音的每句都要有句模块、跟得上表和成品、是工具写的原样（嘴能不能按字重算出来归 anim voice check，要跑 Python）。
 // 没有台词表、段里也没有台词 cue 的作品不查。
 import fs from 'node:fs';
-import { readContent } from '../内容.ts';
+import { readContent, lineTablePath, readLineTable } from '../../源码/内容.ts';
 import { findOldNameClashes, readOldNames } from '../旧名.ts';
-import type { CheckReport, CheckContext } from '../上下文.ts';
+import type { CheckReport, CheckContext } from '../../源码/上下文.ts';
 import type { AssetLock } from '../../资产/资产锁.ts';
 import { writeSentenceText, parseSentenceModule } from '../../配音/句模块.ts';
 import { sentenceModuleIssues } from '../../配音/配音.ts';
 import { textHash, voiceTextHash, type LineEntry } from '../../配音/台词表.ts';
 
-export const lineTablePath = (c: CheckContext) => c.workPath('台词.toml');
 export { textHash };
 
 export const subtitlePositions = ['下', '思索上'];
-
-export const readLineTable = (c: CheckContext, report?: CheckReport): LineEntry[] | null => {
-  const path = lineTablePath(c);
-  if (!c.exists(path)) return null;
-  try {
-    return ((c.readToml(path)!['台词'] ?? []) as LineEntry[]);
-  } catch (e) {
-    report?.错(`TOML 解析失败：${(e as Error).message.split('\n')[0]}`, path);
-    return null;
-  }
-};
 
 export const checkLines = async (c: CheckContext, report: CheckReport) => {
   const path = lineTablePath(c);

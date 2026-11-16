@@ -1,6 +1,6 @@
 // 作品/<名>/旧名.tsv：类别、旧名、新键、备注四列。旧名永不复用：新段键、段名、场键、台词 id 不能等于表里的旧名，除非那一行的新键就是它自己（docs/命名.md）。
 // 没有旧名表的作品（新作品没改过名）不查。
-import type { CheckReport, CheckContext } from './上下文.ts';
+import type { CheckReport, CheckContext } from '../源码/上下文.ts';
 
 export const oldNameKinds = ['场号', '段号', 'Composition', '拍号', '段名', '台词', '已删段', '已删台词'] as const;
 export type OldNameRow = { 类别: string; oldName: string; newKey: string; 备注: string; 行: number };

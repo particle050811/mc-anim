@@ -1,6 +1,6 @@
 // 起子进程的唯一入口：一律数组参数、不开 shell；Windows 上 .cmd、PATHEXT 交给 cross-spawn。文本输出固定 UTF-8。
 import spawn from 'cross-spawn';
-import {registerCleanup} from '../闸/收尾.ts';
+import {registerCleanup} from './收尾.ts';
 import type { SpawnOptions } from 'node:child_process';
 import { isMac, isWindows } from './配置.ts';
 

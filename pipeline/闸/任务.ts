@@ -5,9 +5,10 @@ import { dataPath, config } from '../环境/配置.ts';
 import { readCaller, type Caller } from './发起者.ts';
 import { recordSchedulerEvent } from './调度日志.ts';
 import { readJson, writeJson, listFiles, promptOnly } from './文件.ts';
-import { registerCleanup } from './收尾.ts';
+import { registerCleanup } from '../环境/收尾.ts';
 import { pidReplaced, processAlive } from './锁.ts';
 import { readDirective, directiveFile } from './指令.ts';
+import type { SchedulerEnv } from './调度环境.ts';
 import { load1Min } from '../环境/资源.ts';
 export type TaskDecl = {
     种?: string;
@@ -29,14 +30,7 @@ export type TaskDecl = {
     低优先?: boolean;
     需负载?: boolean;
 };
-export type SchedulerEnv = {
-    lockDir: string;
-    logDir: string;
-    schedulerDir: string;
-    localHost: string;
-    caller: Caller;
-    nowMs: () => number;
-};
+export type { SchedulerEnv };
 export type TaskInfo = {
     任务: string;
     起: number;

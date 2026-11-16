@@ -3,7 +3,7 @@
 //   声音地址.生成.ts 资产 id → 打包后的地址（asset: import；私有配乐走 engine/audio/私有配乐.ts 现取）再带上声音表。画面.tsx 交给 definePicture
 // 按段分开生成：一段只依赖自己用到的那几个声音，加一声不让别的段过期（全作品一张大表的话，加一声全部过期）。
 // 生成要先执行 段.ts 才知道用到哪些声音，可 放() 又要表里的数：所以先在「收集」模式下执行一遍（要过的 id 都记下，表里没有的给占位），量完写表，再正常执行一遍取最终 cue。
-// 每次执行都用 esbuild 连依赖打成一个新的临时文件再 import，不吃 Node 的模块缓存（同 检查/上下文.ts 的 加载）。
+// 每次执行都用 esbuild 连依赖打成一个新的临时文件再 import，不吃 Node 的模块缓存（同 源码/上下文.ts 的 加载）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,6 +19,13 @@ import { knownAudioMeasure } from './音频数.ts';
 import { lineHeads, openTable } from '../合成/台词落点.ts';
 
 export const soundTableFile = '声音表.生成.ts';
+
+/** 一眼看得出的段框架的段：段.ts 直接引了 窗口段，或目录里已经有生成的声音表。看不出的（经场里的工厂间接用 窗口段）要执行一遍才知道 */
+export const isFrameworkSegDir = (segDir: string) => {
+  const segFile = path.join(segDir, '段.ts');
+  return fs.existsSync(path.join(segDir, soundTableFile)) || (fs.existsSync(segFile) && /@engine\/段\/窗口段(\.ts)?['"]/.test(fs.readFileSync(segFile, 'utf8')));
+};
+
 export const soundUrlFile = '声音地址.生成.ts';
 
 /** 台词.toml 的一条里生成要用的字段 */

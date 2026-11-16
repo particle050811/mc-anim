@@ -5,8 +5,7 @@
 // anim.local.toml 不拷（worktree 里没有就读主检出那份）；.venv 不拷（没有就走 uv run，uv 自己有全局缓存）；不进 Git 的 .claude/skills 复制过去。
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Command } from '../cli/命令.ts';
-import { UsageError, parseArgs } from '../cli/参数.ts';
+import { UsageError } from '../cli/参数.ts';
 import { runCmd, runCapture } from './子进程.ts';
 import { mainCheckout } from './路径.ts';
 
@@ -30,17 +29,4 @@ export const openWorktree = async (worktreeName: string, fromRef: string) => {
     carried.push(d);
   }
   return { 目标: targetWorktreeDir, carried };
-};
-
-export const worktreeCommands: Record<string, Command> = {
-  wt: {
-    用法: 'wt new <名> [--from <分支>]',
-    说明: '开 worktree（../mc-anim-wt/<名>，新分支 <名>，默认从 main）并备好依赖：pnpm install --frozen-lockfile（从全机共用的 store 克隆或硬链接，几秒）；不进 Git 的 .claude/skills 复制过去。并行任务、子 Agent 开 worktree 都用它',
-    跑: async (args) => {
-      const p = parseArgs(args, { 值: ['--from'] });
-      if (p.位置[0] !== 'new' || p.位置.length !== 2) throw new UsageError('用法：anim wt new <名> [--from <分支>]');
-      const r = await openWorktree(p.位置[1]!, p.值['--from'] ?? 'main');
-      console.log(`${r.目标}\n依赖：${installDeps.join(' ')}${r.carried.length ? `；带过去：${r.carried.join('、')}` : ''}`);
-    },
-  },
 };

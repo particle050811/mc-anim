@@ -5,9 +5,9 @@
 // 作品没有 规矩.toml 也没用 例外 就跳过；别的作品目录里的 例外 不归这里查。
 import fs from 'node:fs';
 import path from 'node:path';
-import { readContent } from '../内容.ts';
+import { readContent } from '../../源码/内容.ts';
 import { config } from '../../环境/配置.ts';
-import { codeExtRegex, isRenderCode, type CheckReport, type CheckContext } from '../上下文.ts';
+import { codeExtRegex, isRenderCode, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { declaredNames, literalValue, propertyName, lineNo, parseSource, walk, ts } from '../语法.ts';
 import type * as exceptionModuleType from '../../../engine/core/例外.ts';
 import type { RuleExceptionBasis } from '../../../engine/core/例外.ts';

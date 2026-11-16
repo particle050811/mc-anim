@@ -1,7 +1,7 @@
 // Remotion 的 bundle() 每次在系统临时目录新建一份约 345 MB 的包，用完不删（10-31 查到两天积了 120 GB）。
 import fs from 'node:fs';
 import path from 'node:path';
-import { registerCleanup } from '../闸/收尾.ts';
+import { registerCleanup } from '../环境/收尾.ts';
 
 const teardowns = new Map<string, () => void>();
 export const registerBundle = (serveUrl: string) => {

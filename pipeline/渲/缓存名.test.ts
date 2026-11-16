@@ -11,10 +11,10 @@ import webpack from 'webpack';
 const tempDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-缓存名-')));
 process.env.ANIM_DATA = path.join(tempDir, '数据根');
 
-const { webpackOverride } = await import('./webpack.ts');
+const { webpackOverride } = await import('../资产/webpack.ts');
 const { stableCacheName } = await import('./缓存名.ts');
-const { MissingBytePlaceholderPlugin: missingBytePlaceholderPlugin } = await import('./缺字节.ts');
-const { importToStore, writeAssetLock } = await import('./资产锁.ts');
+const { MissingBytePlaceholderPlugin: missingBytePlaceholderPlugin } = await import('../分发/缺字节.ts');
+const { importToStore, writeAssetLock } = await import('../资产/资产锁.ts');
 const require = createRequire(import.meta.url);
 // Remotion 不导出这个模块，按文件取（它算缓存名用的就是这个函数）
 const { computeHashAndFinalConfig } = require(path.join(path.dirname(require.resolve('@remotion/bundler')), 'shared-bundler-config.js')) as {

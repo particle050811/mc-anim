@@ -3,8 +3,8 @@
 // Math.random、Date.now、相对路径引的资产、写死的路径或主机名；不许 import 地形版本表、不许读时刻的 依据。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
 import os from 'node:os';
 import { checkSectionModelReg } from '../区段模型登记.ts';
-import { readContent } from '../内容.ts';
-import { codeExtRegex, isRenderCode, isPureModule, isTestOrDecl, type CheckReport, type CheckContext } from '../上下文.ts';
+import { readContent } from '../../源码/内容.ts';
+import { codeExtRegex, isRenderCode, isPureModule, isTestOrDecl, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { dotPath, lineNo, parseSource, walk, ts } from '../语法.ts';
 import { basisKey } from '../../指纹/去依据.ts';
 import type * as assetDirModule from '../../../engine/core/资产目录.ts';
@@ -34,57 +34,58 @@ const displayName = (l: PathLayer) => (l.键 ? `${l.名}/${l.键}` : l.名);
 /** 文件属于哪部作品（作品/<名>/ 下的才有） */
 const ownerWork = (p: string) => /^作品\/([^/]+)\//.exec(p)?.[1];
 
+/**
+ * 一条依赖边违反了哪条渲染层规则（作品不互引、不引核对、pipeline 只引纯模块、分层方向、段不互引、场只接上一场的末态），没有返回 null。
+ * 结构规则拿 esbuild 的边（值导入）查；分层规则（分层.ts）拿只有类型的边再查一遍。typeOnly：pipeline 引 engine、库 的类型不算违规（类型不进 Node 执行的闭包），引作品的仍只许纯模块。
+ */
+export const edgeIssue = (c: CheckContext, fromFile: string, target: string, sceneOrder: readonly string[] | null, typeOnly = false): string | null => {
+  const a = layerOf(fromFile);
+  const b = layerOf(target);
+  // 放在别的层规则前面：两部作品的段键、场键可能同名，按层比键会当成自己的段、场放过去
+  const fromWork = ownerWork(fromFile);
+  const toWork = ownerWork(target);
+  if (fromWork && toWork && fromWork !== toWork) return `作品不许引用别的作品：${fromFile} → ${target}（两部作品共用的东西放 库/ 或 engine/）`;
+  // 例外：核对段没有场，几段共用的场时间线放在头一段目录里（核对/<名>/时间线.ts），别的核对段可以引它
+  if (b.名 === '核对' && !(a.名 === '核对' && (a.键 === b.键 || target.endsWith(`/核对/${b.键}/时间线.ts`)))) {
+    return `不许引用 核对/：${fromFile} → ${target}（核对可以引任何东西，反过来不行；核对段之间只许引别的核对段的 时间线.ts）`;
+  }
+  if (a.名 === 'pipeline') {
+    if (typeOnly && (b.名 === 'engine' || b.名 === '库')) return null;
+    return isRenderLayer(b) && !isPureModule(target) ? `pipeline 只许 import 纯模块（清单.ts、段.ts、时间线.ts、末态.ts…）${typeOnly ? '，类型也一样' : ''}：${fromFile} → ${target}` : null;
+  }
+  if (!isRenderLayer(a)) return null; // remotion.config.ts 这类配置、工具脚本
+  if (target === 'assets/地形版本.json') {
+    return `渲染代码不许 import 地形版本表：${fromFile}（整表进闭包，改任何一个包声明没声明的段都过期；版本由渲染入口按段传，见 engine/voxel/区段包位置.ts）`;
+  }
+  if (b.名 === 'pipeline' || (b.名 === '其他' && codeExtRegex.test(target))) return `渲染代码不许 import 管线和工具代码：${fromFile} → ${target}`;
+  if (a.名 === '核对' || b.名 === '其他') return null; // 核对可以引任何东西；其他 是进 Git 的数据文件（json）
+  if (a.名 === '段' && b.名 === '段' && a.键 !== b.键) return `段不许引用别的段：${fromFile} → ${target}（两段共用的东西往下放到场或作品公共目录）`;
+  if (a.名 === '场' && b.名 === '场' && a.键 !== b.键) {
+    const prevScene = sceneOrder && a.键 ? sceneOrder[sceneOrder.indexOf(a.键) - 1] : undefined;
+    if (target === c.workPath(`场/${b.键}/末态.ts`) && prevScene === b.键) return null;
+    return `场只许引用上一场的 末态.ts：${fromFile} → ${target}${prevScene ? `（上一场是 ${prevScene}）` : '（清单里排不出上一场）'}`;
+  }
+  if (layerRank[b.名]! > layerRank[a.名]!) return `分层方向反了：${displayName(a)} 不能引用 ${displayName(b)}（${fromFile} → ${target}；只能 engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册）`;
+  return null;
+};
+
+/** 读清单排出的场序（场只许接上一场的末态要用）；清单读不出时为 null */
+export const readSceneOrder = async (c: CheckContext) => {
+  const parsedContent = await readContent(c);
+  return 'sceneOrder' in parsedContent ? parsedContent.sceneOrder : null;
+};
+
 export const checkLayers = async (c: CheckContext, report: CheckReport) => {
   const depGraph = await c.depGraph();
   for (const e of depGraph.错误) report.错(`打包失败，依赖图不全：${e}`);
-  const parsedContent = await readContent(c);
-  const sceneOrder = 'sceneOrder' in parsedContent ? parsedContent.sceneOrder : null;
+  const sceneOrder = await readSceneOrder(c);
 
   for (const [fromFile, edges] of depGraph.edges) {
     if (c.isOtherWork(fromFile)) continue; // 别的作品的文件只会经下面报过的跨作品引用进图，它自己的边归它自己查
-    const a = layerOf(fromFile);
-    const fromWork = ownerWork(fromFile);
     for (const e of edges) {
       if (e.external) continue;
-      const target = e.到;
-      const b = layerOf(target);
-      // 放在别的层规则前面：两部作品的段键、场键可能同名，按层比键会当成自己的段、场放过去
-      const toWork = ownerWork(target);
-      if (fromWork && toWork && fromWork !== toWork) {
-        report.错(`作品不许引用别的作品：${fromFile} → ${target}（两部作品共用的东西放 库/ 或 engine/）`, fromFile);
-        continue;
-      }
-      // 例外：核对段没有场，几段共用的场时间线放在头一段目录里（核对/<名>/时间线.ts），别的核对段可以引它
-      if (b.名 === '核对' && !(a.名 === '核对' && (a.键 === b.键 || target.endsWith(`/核对/${b.键}/时间线.ts`)))) {
-        report.错(`不许引用 核对/：${fromFile} → ${target}（核对可以引任何东西，反过来不行；核对段之间只许引别的核对段的 时间线.ts）`, fromFile);
-        continue;
-      }
-      if (a.名 === 'pipeline') {
-        if (isRenderLayer(b) && !isPureModule(target)) report.错(`pipeline 只许 import 纯模块（清单.ts、段.ts、时间线.ts、末态.ts…）：${fromFile} → ${target}`, fromFile);
-        continue;
-      }
-      if (!isRenderLayer(a)) continue; // remotion.config.ts 这类配置、工具脚本
-      if (target === 'assets/地形版本.json') {
-        report.错(`渲染代码不许 import 地形版本表：${fromFile}（整表进闭包，改任何一个包声明没声明的段都过期；版本由渲染入口按段传，见 engine/voxel/区段包位置.ts）`, fromFile);
-        continue;
-      }
-      if (b.名 === 'pipeline' || (b.名 === '其他' && codeExtRegex.test(target))) {
-        report.错(`渲染代码不许 import 管线和工具代码：${fromFile} → ${target}`, fromFile);
-        continue;
-      }
-      if (a.名 === '核对' || b.名 === '其他') continue; // 核对可以引任何东西；其他 是进 Git 的数据文件（json）
-      if (a.名 === '段' && b.名 === '段' && a.键 !== b.键) {
-        report.错(`段不许引用别的段：${fromFile} → ${target}（两段共用的东西往下放到场或作品公共目录）`, fromFile);
-        continue;
-      }
-      if (a.名 === '场' && b.名 === '场' && a.键 !== b.键) {
-        const prevScene = sceneOrder && a.键 ? sceneOrder[sceneOrder.indexOf(a.键) - 1] : undefined;
-        if (!(target === c.workPath(`场/${b.键}/末态.ts`) && prevScene === b.键)) {
-          report.错(`场只许引用上一场的 末态.ts：${fromFile} → ${target}${prevScene ? `（上一场是 ${prevScene}）` : '（清单里排不出上一场）'}`, fromFile);
-        }
-        continue;
-      }
-      if (layerRank[b.名]! > layerRank[a.名]!) report.错(`分层方向反了：${displayName(a)} 不能引用 ${displayName(b)}（${fromFile} → ${target}；只能 engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册）`, fromFile);
+      const issue = edgeIssue(c, fromFile, e.到, sceneOrder);
+      if (issue) report.错(issue, fromFile);
     }
   }
 

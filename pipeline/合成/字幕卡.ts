@@ -11,7 +11,7 @@ export type SubtitlePosition = '下' | '思索上';
 
 type Glyph = { w: number; h: number; scale: number; adv: number; shadow: number; top: number; rows: number[] };
 let glyphLibrary: Record<string, Glyph> | undefined;
-/** 字幕卡的点阵（共用资产表登记）；有台词的段随仓库发字节时也带上它（资产/随仓库.ts） */
+/** 字幕卡的点阵（共用资产表登记）；有台词的段随仓库发字节时也带上它（分发/随仓库.ts） */
 export const pixelFontAsset = '字体/像素字';
 /** 像素字点阵（资产 字体/像素字）；测试可以先 设字库 */
 export const setGlyphLibrary = (x: Record<string, Glyph>) => (glyphLibrary = x);

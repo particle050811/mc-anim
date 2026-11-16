@@ -10,7 +10,7 @@ import { config } from '../环境/配置.ts';
 import { lowPriority, runCmd } from '../环境/子进程.ts';
 import { videoInfo } from '../渲/探测.ts';
 import { segPicturePath } from '../渲/段产物.ts';
-import { matchesMaster, readSegStamp, readSegStampHistory, type SegStamp } from '../段签/段签.ts';
+import { matchesMaster, readSegStamp, readSegStampHistory, type SegStamp } from './段签.ts';
 import { sampleFrames, sampledStream, sampleFilter, sha } from './帧流.ts';
 import { sideNoteFile, type Sidecar } from './参考像素.ts';
 import { sameVersion, sampleKey, type ApprovalRecord } from './认可.ts';

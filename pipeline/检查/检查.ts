@@ -1,9 +1,10 @@
-// anim check 的十一类规则（方案三-6，副本是 10-30 整体优化方案 0.6 加的，时间是 11-06 原生 60 帧加的，标识符是 11-15 代码名改英文加的）：类型、结构、清单、加载、台词、资产、规矩、平台、副本、时间、标识符。没有白名单：违规就改代码或改表。
+// anim check 的十二类规则（方案三-6，副本是 10-30 整体优化方案 0.6 加的，时间是 11-06 原生 60 帧加的，标识符是 11-15 代码名改英文加的，分层是 11-16 查循环引用加的）：类型、结构、分层、清单、加载、台词、资产、规矩、平台、副本、时间、标识符。没有白名单：违规就改代码或改表。
 // 一次查一部作品（选项 作品；不给且只有一部就查它）；漫剧专属的表（台词、旧名、规矩）作品里没有、也没用到就跳过。
 // 「待迁移」不算违规：落点、例外还在旧项目、对应的段或场没搬进来的，列出来提醒，搬完自然消失。
-import { CheckReport, CheckContext, ruleNames, type RuleKind } from './上下文.ts';
+import { CheckReport, CheckContext, ruleNames, type RuleKind } from '../源码/上下文.ts';
 import { typeCheck } from './规则/类型.ts';
 import { checkStructure } from './规则/结构.ts';
+import { checkLayering } from './规则/分层.ts';
 import { checkManifest } from './规则/清单.ts';
 import { checkLoad } from './规则/加载.ts';
 import { checkLines } from './规则/台词.ts';
@@ -17,6 +18,7 @@ import { hanIdentifierRule } from './规则/标识符.ts';
 export const ruleTable: Record<RuleKind, { 说明: string; 跑: (c: CheckContext, report: CheckReport) => Promise<void> | void }> = {
   types: { 说明: 'tsc strict；Python 的 ruff、pyright；改到 mod 时编译 mod、跑暮色网格核对和游戏导表出表核对（test/twilight-grid-test.sh、game-data-test.sh）', 跑: typeCheck },
   structure: { 说明: '分层、作品不互引、段不互引、不引核对、纯模块闭包、getInputProps、渲染代码的确定性、pipeline 渲染器统一入口与测试 mock', 跑: checkStructure },
+  layers: { 说明: 'pipeline 内部分层方向（含 import type）、engine/core 不引别的 engine 子目录、任何循环引用（engine、库、pipeline、作品，含只有类型的）、只有类型的引用也守渲染分层', 跑: checkLayering },
   manifest: { 说明: '段目录和清单一一对应、段键段名合规唯一、不撞旧名、连续段接帧', 跑: checkManifest },
   load: { 说明: '在 Node 里执行全部纯模块，断言都跑到；环境.ts 的声明（时刻、天气、档位、画法、关键帧）合法；作品的地形改动落在世界声明的保真范围里', 跑: checkLoad },
   lines: { 说明: 'cue 的台词都登记、每句恰好开口一次（接上段的接在开口后面）、开口和字幕位置、文本哈希和成品 sha、口型绑定成品、句模块跟得上', 跑: checkLines },

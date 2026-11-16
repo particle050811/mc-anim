@@ -1,17 +1,18 @@
-// anim env：列出每项配置的值和来源；anim doctor：查本机能不能跑（必需项不过就退出码 1，可选项只提示）。
+// anim env：列出每项配置的值和来源；anim doctor：查本机能不能跑（必需项不过就退出码 1，可选项只提示）；anim wt new：开 worktree（做法在 开worktree.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Command } from '../cli/命令.ts';
-import { parseArgs } from '../cli/参数.ts';
+import { UsageError, parseArgs } from '../cli/参数.ts';
 import { readAssetRegistry } from '../资产/资产表.ts';
 import { bytesPath, readAssetLock } from '../资产/资产锁.ts';
-import { readReleaseLock, missingAttachmentCount } from '../资产/发布锁.ts';
+import { readReleaseLock, missingAttachmentCount } from '../分发/发布锁.ts';
 import { allConfig, config, dataPath } from './配置.ts';
 import { codeRoot, mainCheckout } from './路径.ts';
 import { currentWork, listWorks } from './作品.ts';
 import { readMemory, readingNote } from './资源.ts';
 import { expectedVersion, browserLocation } from '../渲/浏览器.ts';
 import { tryRun } from './子进程.ts';
+import { installDeps, openWorktree } from './开worktree.ts';
 
 type CheckResult = { 项: string; 过: boolean; required: boolean; 说明: string };
 
@@ -138,6 +139,19 @@ export const envCommands: Record<string, Command> = {
       for (const x of r.filter((x) => !x.过)) runRecord.log(x.required ? '错误' : '警告', `${x.项}：${x.说明}`);
       console.log(failed.length ? `\n${failed.length} 项必需的没过` : '\n必需项全过');
       return failed.length ? 1 : 0;
+    },
+  },
+};
+
+export const worktreeCommands: Record<string, Command> = {
+  wt: {
+    用法: 'wt new <名> [--from <分支>]',
+    说明: '开 worktree（../mc-anim-wt/<名>，新分支 <名>，默认从 main）并备好依赖：pnpm install --frozen-lockfile（从全机共用的 store 克隆或硬链接，几秒）；不进 Git 的 .claude/skills 复制过去。并行任务、子 Agent 开 worktree 都用它',
+    跑: async (args) => {
+      const p = parseArgs(args, { 值: ['--from'] });
+      if (p.位置[0] !== 'new' || p.位置.length !== 2) throw new UsageError('用法：anim wt new <名> [--from <分支>]');
+      const r = await openWorktree(p.位置[1]!, p.值['--from'] ?? 'main');
+      console.log(`${r.目标}\n依赖：${installDeps.join(' ')}${r.carried.length ? `；带过去：${r.carried.join('、')}` : ''}`);
     },
   },
 };

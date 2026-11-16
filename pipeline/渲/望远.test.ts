@@ -43,7 +43,7 @@ describe('套望远', () => {
     const entries = c.entry as string[];
     expect(entries).toHaveLength(4);
     expect([entries[0], entries[2], entries[3]]).toEqual(['/a.js', '/作品/index.ts', '/b.js']);
-    expect(entries[1]).toMatch(/engine[\\/]core[\\/]望远\.ts$/);
+    expect(entries[1]).toMatch(/engine[\\/]段[\\/]望远\.ts$/);
   });
   it('找不到作品入口就报错', async () => {
     await expect(applyTelescope(async (x) => x, '/作品/index.ts')({ entry: ['/a.js'] })).rejects.toThrow(/找不到作品入口/);

@@ -3,7 +3,7 @@
 // 派生要解码切片，调用方传「等放行」（懒放行闸），真要派生时才过闸、一条命令只过一次。
 import fs from 'node:fs';
 import type { RunRecord } from '../运行记录/记录.ts';
-import { sameVersion, type Signature } from '../验收/认可.ts';
+import { sameVersion, type Signature } from './认可.ts';
 import { deriveSegStamp, matchesSlice, readSegStamp, segStampComplete, type SegStamp, type SelfCheck } from './段签.ts';
 
 export const driftHint = (segKey: string, check: SelfCheck) => `重渲漂移：${segKey} 同一指纹重渲出来和上次派生的段签不一样（${check.说明}），对这段跑 anim verify ${segKey}`;

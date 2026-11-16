@@ -8,7 +8,7 @@ import type { Command } from '../cli/命令.ts';
 import { UsageError, parseArgs } from '../cli/参数.ts';
 import { loadAllSegments, selectSegs } from '../清单/清单.ts';
 import { fingerprintHistory, fingerprintFile } from '../渲/母版.ts';
-import { readSegStamp, segStampComplete } from '../段签/段签.ts';
+import { readSegStamp, segStampComplete } from '../验收/段签.ts';
 import { segmentProducts, sameTier, isPictureRecord, type SegArtifact } from '../渲/段产物.ts';
 import { renderLabel } from '../渲/渲.ts';
 import { estimateTiming } from '../运行记录/记录.ts';
@@ -21,7 +21,7 @@ import { commitStatus } from '../环境/路径.ts';
 import { segStampDir } from '../环境/作品数据.ts';
 import { config } from '../环境/配置.ts';
 import { newPreviewDir } from '../预览/预览.ts';
-import { readBaseline, compareWithBaseline, checkBasis, saveSampleImage, saveSampleTable, type SampleEvidence } from './基点对照.ts';
+import { readBaseline, compareWithBaseline, checkBasis, saveSampleImage, saveSampleTable, type SampleEvidence } from '../验收/基点对照.ts';
 import { openSession, findComposition, renderFramesSamePage, missingLocalTerrain } from '../渲/渲.ts';
 import { segRenderEnv } from '../渲/地形注入.ts';
 import { recordMeasuredFrames } from '../渲/地形用量.ts';
@@ -33,7 +33,7 @@ import { DetailCollector } from '../运行记录/渲染明细.ts';
 import { readThresholds } from '../验收/比较.ts';
 import { frameNumText } from '../验收/逐帧校验.ts';
 import { checkSelectedSegCues, runCuesBeforeRender } from '../段框架/自动.ts';
-import { DEFAULT_SAMPLE_COUNT, pickFrames, findOldVersion, hasNewFingerprint, readOldFrames, compareFrame, registerReuse, stillCannotProve, frameToYuv, type FrameCompare, type OldVersion } from './认指纹.ts';
+import { DEFAULT_SAMPLE_COUNT, pickFrames, findOldVersion, hasNewFingerprint, readOldFrames, compareFrame, registerReuse, stillCannotProve, frameToYuv, type FrameCompare, type OldVersion } from '../验收/认指纹.ts';
 
 const parseLevel = (v: string | undefined): RenderLevel => {
   const level = (v ?? '视频') as RenderLevel;
