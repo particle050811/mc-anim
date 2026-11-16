@@ -39,7 +39,13 @@ const cellZ = (i: number) => gz(LANE_GROUND[Math.min(Math.max(i, 0), LANE_GROUND
 // 上台阶在边前 3 米里抬上去。按格线性插值的话 1 格不到一帧就走完，看着一帧掉一格（用户 10-18）。
 const RUN_V = 40;
 const STEP_UP = 3;
-export const laneZ = (laneDist: number) => {
+// 正好压在格线上（整数）时台阶高度不连续，浮点零头落在哪边决定这一帧的高度。按秒算的距离比原来按帧算的多出 1e-14 量级的零头，
+// 只把略大于整数的收回整数，6-斩娜迦 跑道段每一帧都和原来按帧算的一致（两边都收的话，有一帧原来就落在格线外侧，反而对不上）
+const LANE_SLACK = 1e-9;
+export const laneZ = (rawLaneDist: number) => {
+  const whole = Math.round(rawLaneDist);
+  const over = rawLaneDist - whole;
+  const laneDist = over > 0 && over < LANE_SLACK ? whole : rawLaneDist;
   let z = cellZ(Math.round(laneDist / 2));
   for (let i = 1; i < LANE_GROUND.length; i++) {
     const edge = 2 * i - 1;
