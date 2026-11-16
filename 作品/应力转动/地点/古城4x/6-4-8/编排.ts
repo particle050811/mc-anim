@@ -1,5 +1,5 @@
-// 6-4-8 钻出：全部时间轴和机位，纯函数，输入帧号 f（0 起，24 帧/秒）。地理见 ../古城4x布局.ts。
-// 戏：接 6-4-7 的第四次尖啸。场子东半边，二人往西走（`handoffs.六四八首`：1.6 米/秒，第 18 帧停到 `liuXinzhongSpot` / `huangPanSpot`），刘心忠在前，黄叛在他左后方（南边）；尖啸体 (−869, −51, 218) 头上的声波环还在往上飘。
+// 6-4-8 钻出：全部时间轴和机位，纯函数，输入段内秒 t（0 起）。地理见 ../古城4x布局.ts。
+// 戏：接 6-4-7 的第四次尖啸。场子东半边，二人往西走（`handoffs.六四八首`：1.6 米/秒，0.75 秒停到 `liuXinzhongSpot` / `huangPanSpot`），刘心忠在前，黄叛在他左后方（南边）；尖啸体 (−869, −51, 218) 头上的声波环还在往上飘。
 //   刘心忠前面 7 格的幽匿块地面冒起碎屑，监守者照原版钻出动画爬出来：手先撑出地面、触角、头、肩，撑着地面停一下，再整个爬出来、站直。
 //   钻出提速（用户 10-12：「要以迅雷不及掩耳之势爬出来，让对面没反应过来」）：原版钻出动画 6.68 秒整段按同一个倍数快放到 1.75 秒（先后、停顿比例照原版）。
 //   二人（用户 10-18 嫌「完全站着看着监守者出来 一点反应都没有」）：手撑出地面 0.2 秒后一激灵，一蹲往后急退、岔开拉开距离，空中就把家伙举起来，
@@ -17,29 +17,29 @@ import { WARDEN } from '@库/生物/监守者.tsx';
 import { walkPose } from '../../../角色/追兵.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { bowTextureFor } from '@库/物品/弓.tsx';
-import { FPS, blockCenter, nearYaw, yawTo } from '../6-4-1/古城戏.ts';
+import { blockCenter, nearYaw, yawTo } from '../6-4-1/古城戏.ts';
 import { G4 } from '../../古城4x.tsx';
 import { allWool, liuXinzhongSpot, shrieks, wardenEmerge, handoffs, huangPanSpot, woolBlockAt, woolOrder, eliteLeap, leapFeetAt, type Jump } from '../布局.ts';
 import { bump, crouchBy, elevationTo, glanceAt, hopAir, hopTo, huangAimPose, landingCushion, liuGuardPose, pulse, rampIn, startle, stepLeg, yawToWarden } from './二人.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
-export { FPS };
-export const EMERGE0 = 12; // 第 12 帧开始钻出（开头半秒地面先静着，声波环还在飘）
+export const emergeStartSec = 0.5; // 0.5 秒开始钻出（开头半秒地面先静着，声波环还在飘）
 // 钻出用多少秒（画面时间）：原版 6.68 秒快放到 1.75 秒，见文件头
 export const emergeDurationSec = 1.75;
 export const emergeSpeedup = WARDEN.emergeSec / emergeDurationSec;
-const TAIL = 20; // 站直以后再留 0.83 秒（触角一抖、头转向刘心忠、二人交换眼神）
-export const END = EMERGE0 + Math.ceil(emergeDurationSec * FPS) + TAIL;
+const tailSec = 5 / 6; // 站直以后再留 0.83 秒（触角一抖、头转向刘心忠、二人交换眼神）
+export const durationSec = emergeStartSec + Math.ceil(emergeDurationSec * 24) / 24 + tailSec;
+export const lastSec = durationSec - 1 / 24; // 末帧（原来按 1/24 秒一格）
 // 开始钻出以后过了几秒（画面时间、真实时间：人、碎屑、心跳都按它走）
-export const emergeSec = (f: number) => (f - EMERGE0) / FPS;
+export const emergeSec = (t: number) => t - emergeStartSec;
 // 钻出动画放到第几秒（动画时间，快放 钻出倍速）
-export const emergeAnimSec = (f: number) => emergeSec(f) * emergeSpeedup;
+export const emergeAnimSec = (t: number) => emergeSec(t) * emergeSpeedup;
 // 碎屑撒多久（画面时间）：原版钻出动画前 4.5 秒在撒，跟着动画快放
 export const crumbSec = WARDEN.emergeParticles.durationSec / emergeSpeedup;
 // 游戏时间（秒，驱动待机晃动、斑纹、心跳）：末帧定在 11.1167 秒，6-4-9 接着这个时间走，它按心跳排的切点（心脏那一镜）跟着这个钟。
-const lastFrameGameSec = 3.2 + 190 / FPS;
-export const gameSecAt = (f: number) => lastFrameGameSec - (END - 1 - f) / FPS;
+const lastFrameGameSec = 3.2 + 190 / 24;
+export const gameSecAt = (t: number) => lastFrameGameSec - (lastSec - t);
 
 export const WARDEN_AT = wardenEmerge;
 // 监守者面朝东（朝着二人）：实体正面朝 -Y，转 yaw 让正面对准二人中间
@@ -50,17 +50,17 @@ export const WARDEN_YAW = (Math.atan2(PAIR_MID[1] - WARDEN_AT[1], PAIR_MID[0] - 
 export const wardenHeadYawTo = (p: number[]) => -Math.max(-40, Math.min(40, nearYaw(0, yawTo(p[0] - WARDEN_AT[0], p[1] - WARDEN_AT[1]) - (WARDEN_YAW - 180))));
 // 触角：站直后 0.1 秒（画面时间）收到刘心忠那一踏的振动（`liuPlantSec` 起飞，10 格 = 10 刻 = 0.5 秒），亮一下、0.5 秒暗下去；头跟着转向他（0.25 秒），低头盯着
 export const tendrilSec = emergeDurationSec + 0.1;
-export const warden = (frame: number) => {
-  const t = emergeSec(frame);
-  const animSec = emergeAnimSec(frame);
+export const warden = (segSec: number) => {
+  const t = emergeSec(segSec);
+  const animSec = emergeAnimSec(segSec);
   const tendril = t > tendrilSec ? Math.max(0, 1 - (t - tendrilSec) / 0.5) : 0;
   const turn = smoothstep01(rampIn(t, tendrilSec + 0.05, tendrilSec + 0.3));
   // 钻出前：整个埋在地下（钻出动画第 0 秒的姿势）
   return {
-    秒: gameSecAt(frame),
+    秒: gameSecAt(segSec),
     钻出: animSec <= WARDEN.emergeSec ? Math.max(0, animSec) : undefined,
     tendril: tendril,
-    headYaw: wardenHeadYawTo(liuPoseAt(frame).loc) * turn,
+    headYaw: wardenHeadYawTo(liuPoseAt(segSec).loc) * turn,
     headPitch: animSec > WARDEN.emergeSec ? 8 + 4 * turn : 0,
   };
 };
@@ -71,16 +71,17 @@ export const woolNames = woolOrder.slice(0, woolOrder.indexOf('V') + 1);
 export const WOOL: V3[] = woolNames.map((n) => woolBlockAt(allWool[n]));
 // 第四次尖啸体 (−869, −51, 218)：尖啸在本段开头前 1 秒
 export const SHRIEKER: V3 = blockCenter(shrieks.fourth);
-export const shriekSec = (f: number) => f / FPS + 1.0;
+export const shriekSec = (t: number) => t + 1.0;
 
 // ---------- 二人 ----------
-// 往西走（`handoffs.六四八首`：1.6 米/秒，第 18 帧停到站位；f < 0 照同一速度往回推，6-4-7 末 0.4 秒淡进来用），地面一翻涌就低头看、转过去；
+// 往西走（`handoffs.六四八首`：1.6 米/秒，0.75 秒停到站位；t < 0 照同一速度往回推，6-4-7 末 0.4 秒淡进来用），地面一翻涌就低头看、转过去；
 // 手撑出地面 0.2 秒后一激灵（黄叛先、刘心忠晚 0.06 秒），一蹲往后急退（强者的闪避小跳：离地 1.5 米、三四米远、0.6 秒，刘心忠退往东北、黄叛退往东南，岔开拉开），
 // 空中就把家伙举起来：黄叛弓举到身前、落地搭箭拉满瞄着它，刘心忠落地右脚往前一踏、举杖戒备（这一踏的振动 0.5 秒后到，监守者刚站直就听见，触角一抖）；
 // 站定后交换一个眼神（刘心忠扭头看黄叛、点一下头，黄叛飞快瞟他一眼又盯回去）。姿势零件见 二人.ts。
 const handoff = handoffs.handoffTo648;
 const FACE_W = yawTo(-1, 0);
-const walkDist = (handoff.walkSpeed * handoff.holdFrames) / FPS; // 1.2
+const holdSec = handoff.holdFrames / 24; // 衔接.ts 还按 1/24 秒一格记
+const walkDist = handoff.walkSpeed * holdSec; // 1.2
 const hopApex = 1.5; // 强者跳的最低离地（古城4x布局/强者.ts 的 eliteLeap 最低 1.5）
 const beats = {
   黄: { jolt: 0.84, crouch: 0.96, takeoff: 1.08, raise: [1.25, 1.7], draw: [1.95, 2.55] },
@@ -89,95 +90,94 @@ const beats = {
   nod: [2.64, 2.9],
   glanceHuang: [2.5, 2.72],
 };
+// f0、f1 是段内秒（每秒 1 格）
 export const hops = {
-  刘: eliteLeap(liuXinzhongSpot, hopTo.刘, hopApex, beats.刘.takeoff * FPS),
-  黄: eliteLeap(huangPanSpot, hopTo.黄, hopApex, beats.黄.takeoff * FPS),
+  刘: eliteLeap(liuXinzhongSpot, hopTo.刘, hopApex, beats.刘.takeoff, 1),
+  黄: eliteLeap(huangPanSpot, hopTo.黄, hopApex, beats.黄.takeoff, 1),
 };
 // 刘心忠右脚往前一踏落地那一刻（秒）：振动按 1 格/刻飞到监守者（`warden` 的触角就在这时亮）
 export const liuPlantSec = beats.刘.plant[1];
-const feetAt = (who: '刘' | '黄', frame: number): V3 => {
+const feetAt = (who: '刘' | '黄', t: number): V3 => {
   const spot = who === '刘' ? liuXinzhongSpot : huangPanSpot;
   const hop = hops[who];
-  if (frame < hop.f0) {
-    const walked = walkDist * Math.min(1, frame / handoff.holdFrames);
+  if (t < hop.f0) {
+    const walked = walkDist * Math.min(1, t / holdSec);
     return [spot[0] + walkDist - walked, spot[1], spot[2]];
   }
-  return leapFeetAt(hop, frame);
+  return leapFeetAt(hop, t, 1);
 };
-const walkAmp: Key[] = [[0, 1], [EMERGE0 + 6, 0], [END, 0]];
+const walkAmp: Key[] = [[0, 1], [emergeStartSec + 1 / 4, 0], [durationSec, 0]];
 // 头看监守者：先低头看翻涌的地面，跟着它往上爬抬起头（看点从地面升到头的高度）
-const lookWeight = (f: number) => smoothstep01(rampIn(emergeSec(f), 0.08, 0.45));
-const lookPitchAt = (feet: number[], f: number) => elevationTo(feet, 2.6 * smoothstep01(rampIn(emergeSec(f), 0.1, 1.5))) * lookWeight(f);
-const bodyYaw = (feet: number[], f: number) => lerp(FACE_W, nearYaw(FACE_W, yawToWarden(feet)), lookWeight(f));
-// 站着的那些喘气、晃动在走路停下以后才加进来
-const settle = (f: number) => smoothstep01(rampIn(f, handoff.holdFrames, handoff.holdFrames + 8));
+const lookWeight = (t: number) => smoothstep01(rampIn(emergeSec(t), 0.08, 0.45));
+const lookPitchAt = (feet: number[], t: number) => elevationTo(feet, 2.6 * smoothstep01(rampIn(emergeSec(t), 0.1, 1.5))) * lookWeight(t);
+const bodyYaw = (feet: number[], t: number) => lerp(FACE_W, nearYaw(FACE_W, yawToWarden(feet)), lookWeight(t));
+// 站着的那些喘气、晃动在走路停下以后 1/3 秒里加进来
+const settle = (t: number) => smoothstep01(rampIn(t, holdSec, holdSec + 1 / 3));
 const airAndLand = (pose: FigurePose, s: number, b: { jolt: number; crouch: number; takeoff: number }, hop: Jump, rightTuck = 1) => {
   let p = startle(pose, bump(s, b.jolt, b.crouch + 0.02));
   p = crouchBy(p, smoothstep01(rampIn(s, b.crouch, b.takeoff)) * (s < b.takeoff ? 1 : 0));
-  const landSec = hop.f1 / FPS;
+  const landSec = hop.f1;
   if (s >= b.takeoff && s < landSec) p = hopAir(p, (s - b.takeoff) / hop.T, rightTuck);
   return crouchBy(p, landingCushion(s - landSec));
 };
-export const liuPoseAt = (frame: number): FigurePose => {
-  const s = frame / FPS;
+export const liuPoseAt = (s: number): FigurePose => {
   const b = beats.刘;
-  const feet = feetAt('刘', frame);
-  const yaw = bodyYaw(feet, frame);
+  const feet = feetAt('刘', s);
+  const yaw = bodyYaw(feet, s);
   const g = smoothstep01(rampIn(s, b.guard[0], b.guard[1]));
-  let pose = liuGuardPose(feet, yaw, s, g, lookPitchAt(feet, frame), settle(frame));
-  const amp = sample(walkAmp, frame);
+  let pose = liuGuardPose(feet, yaw, s, g, lookPitchAt(feet, s), settle(s));
+  const amp = sample(walkAmp, s);
   if (amp > 0) {
-    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, frame / handoff.holdFrames)) * 4, amp, 0);
+    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, s / holdSec)) * 4, amp, 0);
     pose = { ...pose, legR: walk.legR, legL: walk.legL, kneeR: walk.kneeR, kneeL: walk.kneeL, armR: walk.armR, armL: walk.armL };
   }
   pose = airAndLand(pose, s, b, hops.刘, -0.6);
   pose = stepLeg(pose, rampIn(s, b.plant[0], b.plant[1]), 'R', 0.6);
-  pose = glanceAt(pose, feet, feetAt('黄', frame), pulse(s, beats.glanceLiu[0], beats.glanceLiu[1], 0.1, 0.14));
+  pose = glanceAt(pose, feet, feetAt('黄', s), pulse(s, beats.glanceLiu[0], beats.glanceLiu[1], 0.1, 0.14));
   pose.headPitch -= 9 * bump(s, beats.nod[0], beats.nod[1]);
   return pose;
 };
-export const huangPoseAt = (frame: number): FigurePose => {
-  const s = frame / FPS;
+export const huangPoseAt = (s: number): FigurePose => {
   const b = beats.黄;
-  const feet = feetAt('黄', frame);
-  const yaw = bodyYaw(feet, frame);
+  const feet = feetAt('黄', s);
+  const yaw = bodyYaw(feet, s);
   const r = smoothstep01(rampIn(s, b.raise[0], b.raise[1]));
-  let pose = huangAimPose(feet, yaw, s, r, bowDrawAt(frame), lookPitchAt(feet, frame), settle(frame));
-  const amp = sample(walkAmp, frame);
+  let pose = huangAimPose(feet, yaw, s, r, bowDrawAt(s), lookPitchAt(feet, s), settle(s));
+  const amp = sample(walkAmp, s);
   if (amp > 0) {
-    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, frame / handoff.holdFrames)) * 4 + 1.3, amp, 0);
+    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, s / holdSec)) * 4 + 1.3, amp, 0);
     pose = { ...pose, legR: walk.legR, legL: walk.legL, kneeR: walk.kneeR, kneeL: walk.kneeL, armR: walk.armR, armL: walk.armL };
   }
   pose = airAndLand(pose, s, b, hops.黄);
-  return glanceAt(pose, feet, feetAt('刘', frame), pulse(s, beats.glanceHuang[0], beats.glanceHuang[1], 0.06, 0.08));
+  return glanceAt(pose, feet, feetAt('刘', s), pulse(s, beats.glanceHuang[0], beats.glanceHuang[1], 0.06, 0.08));
 };
-export const pursuers = (frame: number): { 刘: FigurePose; 黄: FigurePose } => ({ 刘: liuPoseAt(frame), 黄: huangPoseAt(frame) });
+export const pursuers = (t: number): { 刘: FigurePose; 黄: FigurePose } => ({ 刘: liuPoseAt(t), 黄: huangPoseAt(t) });
 // 拉弓 0～1（落地以后搭箭拉满）；弓的贴图照原版三档
-export function bowDrawAt(frame: number) {
-  return smoothstep01(rampIn(frame / FPS, beats.黄.draw[0], beats.黄.draw[1]));
+export function bowDrawAt(t: number) {
+  return smoothstep01(rampIn(t, beats.黄.draw[0], beats.黄.draw[1]));
 }
-export const bowAt = (frame: number) => bowTextureFor(bowDrawAt(frame) > 0.05, bowDrawAt(frame));
+export const bowAt = (t: number) => bowTextureFor(bowDrawAt(t) > 0.05, bowDrawAt(t));
 
 // ---------- 机位 ----------
 const wardenPos: V3 = WARDEN_AT;
-// 钻出提速以后，镜头跟着它往上爬的那几个点按同一个倍数挪（钻出后第 20、30、120 帧 → 第 5、8、31 帧，钻出动画里是同一个时刻），6-4-9 首帧接本段末帧
-const remapEmerge = (origFrame: number) => EMERGE0 + Math.round(origFrame / emergeSpeedup);
-// 二人往后急退（第 27～42 帧）正冲着镜头来，镜头跟着往后退 4 格、往北 1.5 格，看点压到监守者身前偏南的地面（第 30～56 帧），三个人都留在画面里，监守者还是那么大（用户 10-18 要二人有反应）
+// 钻出提速以后，镜头跟着它往上爬的那几个点按同一个倍数挪（钻出后 0.83、1.25、5 秒 → 0.21、0.33、1.29 秒，钻出动画里是同一个时刻），6-4-9 首帧接本段末帧
+const remapEmerge = (origSec: number) => emergeStartSec + Math.round((origSec / emergeSpeedup) * 24) / 24;
+// 二人往后急退（1.125～1.75 秒）正冲着镜头来，镜头跟着往后退 4 格、往北 1.5 格，看点压到监守者身前偏南的地面（1.25～2.33 秒），三个人都留在画面里，监守者还是那么大（用户 10-18 要二人有反应）
 const CAM_POS: VKey[] = [
   [0, G4(-847.0, -41.8, 223.8)],
-  [remapEmerge(30), G4(-847.2, -41.8, 223.8)],
-  [30, G4(-847.6, -42.0, 223.75)],
-  [56, G4(-844.4, -42.4, 222.2)],
-  [END, G4(-844.2, -42.4, 222.1)],
+  [remapEmerge(1.25), G4(-847.2, -41.8, 223.8)],
+  [1.25, G4(-847.6, -42.0, 223.75)],
+  [7 / 3, G4(-844.4, -42.4, 222.2)],
+  [durationSec, G4(-844.2, -42.4, 222.1)],
 ];
 const CAM_TGT: VKey[] = [
   [0, [wardenPos[0], wardenPos[1], wardenPos[2] + 0.3]],
-  [remapEmerge(30), [wardenPos[0], wardenPos[1], wardenPos[2] + 0.8]],
-  [30, [wardenPos[0] + 0.6, wardenPos[1], wardenPos[2] + 1.3]],
-  [56, [wardenPos[0] + 3.8, wardenPos[1] - 1.2, wardenPos[2] + 0.1]],
-  [END, [wardenPos[0] + 4, wardenPos[1] - 1.2, wardenPos[2]]],
+  [remapEmerge(1.25), [wardenPos[0], wardenPos[1], wardenPos[2] + 0.8]],
+  [1.25, [wardenPos[0] + 0.6, wardenPos[1], wardenPos[2] + 1.3]],
+  [7 / 3, [wardenPos[0] + 3.8, wardenPos[1] - 1.2, wardenPos[2] + 0.1]],
+  [durationSec, [wardenPos[0] + 4, wardenPos[1] - 1.2, wardenPos[2]]],
 ];
 // 镜头随监守者往上爬推近（焦距拉长），最后监守者占画面中间三分之一高
 // 焦距推得近（27/36/40）：监守者在 25 米外只占画面一小块、又在刘心忠身后，气势出不来。6-4-9 首帧接本段末帧的机位
-const LENS: Key[] = [[0, 24], [remapEmerge(20), 27], [remapEmerge(120), 36], [END, 40]];
-export const camera = (f: number): Cam => ({ pos: sampleV(CAM_POS, f) as V3, tgt: sampleV(CAM_TGT, f) as V3, lens: sample(LENS, f) });
+const LENS: Key[] = [[0, 24], [remapEmerge(5 / 6), 27], [remapEmerge(5), 36], [durationSec, 40]];
+export const camera = (t: number): Cam => ({ pos: sampleV(CAM_POS, t) as V3, tgt: sampleV(CAM_TGT, t) as V3, lens: sample(LENS, t) });

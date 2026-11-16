@@ -3,17 +3,17 @@
 import React from 'react';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DeflectView } from './画面.tsx';
-import { frameFractional as mainFrameFractional } from './时间线.ts';
-import { cameraAt, deflectArrowFrames, flickArrowFrames, fxAt, liying, tl, segStartFrame } from './打斗编排.ts';
-export { deflectArrowFrames, flickArrowFrames };
+import { secFractional as mainSecFractional } from './时间线.ts';
+import { cameraAt, deflectArrowSec, flickArrowSec, fxAt, liying, tl, segStartSec } from './打斗编排.ts';
+export { deflectArrowSec, flickArrowSec };
 
-// 段里第 0 帧 = 这条时间线的全局帧 startFrame（帧是 1/tl.FPS 秒一格）
-const makeSegment = (startFrame: number): React.FC => {
+// 段里 0 秒 = 这条时间线的画面秒 startSec
+const makeSegment = (startSec: number): React.FC => {
   const SegmentComp: React.FC = () => {
-    const f = startFrame + useCurrentSec() * tl.FPS;
-    return <DeflectView g={mainFrameFractional(tl.storyTime(f))} cam={cameraAt(f)} liying={liying} fx={fxAt(f)} />;
+    const g = startSec + useCurrentSec();
+    return <DeflectView g={mainSecFractional(tl.storyTime(g))} cam={cameraAt(g)} liying={liying} fx={fxAt(g)} />;
   };
   return SegmentComp;
 };
-export const DeflectArrow = makeSegment(segStartFrame['6-4-3b']);
-export const FlickArrow = makeSegment(segStartFrame['6-4-3c']);
+export const DeflectArrow = makeSegment(segStartSec['6-4-3b']);
+export const FlickArrow = makeSegment(segStartSec['6-4-3c']);

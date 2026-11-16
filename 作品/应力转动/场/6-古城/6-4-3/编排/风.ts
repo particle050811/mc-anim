@@ -14,14 +14,16 @@ export const fanFadeSec = geom.shootTime + 0.15;
 export const fanStopSec = geom.shootTime + 0.4;
 export const fanRpm = (t: number) => (t < fanFadeSec ? 256 * smoothstep01((t - 1.85) / (geom.roar - 1.85)) : 256 * (1 - smoothstep01((t - fanFadeSec) / (fanStopSec - fanFadeSec))));
 export const fanVisibility = (t: number) => smoothstep01((t - 1.85) / 0.15) * (1 - smoothstep01((t - fanFadeSec) / (fanStopSec - fanFadeSec)));
-export const fanState = (globalFrame: number) => {
-  const t = storySecAt(globalFrame);
+// 叶片转角是逐格累加的（库/物品/鼓风机.tsx 的 bladeVisualAngle，一格封顶转多少度），格跟着时间线的表走（1/24 秒一格）
+const perSec = timeline.samplesPerSec;
+export const fanState = (g: number) => {
+  const t = storySecAt(g);
   const visibility = fanVisibility(t);
-  const spin = bladeVisualAngle(globalFrame, (f) => ({ rpm: fanRpm(storySecAt(f)), storySec: storySecAt(f + 1) - storySecAt(f) }), { startFrame: timeline.frameAt(1.8) });
+  const spin = bladeVisualAngle(g * perSec, (i) => ({ rpm: fanRpm(storySecAt(i / perSec)), storySec: storySecAt((i + 1) / perSec) - storySecAt(i / perSec) }), { startFrame: timeline.gridSecAt(1.8) * perSec });
   return { pos: geom.fanCenter, facing: geom.incomingDir, sideLength: geom.fanSideLength, spin, opacity: 0.55 * visibility };
 };
-export const airflow = (globalFrame: number): AirFlowParticle[] => {
-  const t = storySecAt(globalFrame);
+export const airflow = (g: number): AirFlowParticle[] => {
+  const t = storySecAt(g);
   // 风道：照机械动力的风扇逐刻推（模型/特效/气流.tsx），按剧情放大两处（几何.ts 的 `风道最大距离`、`风快放`）：距离缩到 0.3 倍，快放 880 倍，一直比箭快。
   // 样子是 `散花风道`（芯 + 散花两层、末端渐稀，用户 10-18 定），7-1-5、7-4-1 同款。
   // 出生位置照 AirCurrent.tick（风扇中心 + 风向 × 0.5，±0.25），但后一半在风扇方块里；这里风扇是半透明虚影，

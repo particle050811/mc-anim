@@ -23,6 +23,7 @@ import * as G3 from '../../场/6-古城/6-4-3/几何.ts';
 import debrisRaw from 'asset:碎块/镜头/6-4-3/碎块';
 import * as choreo from '../../场/6-古城/6-4-5/编排.ts';
 import { mouthAt, type Mouth } from '../../配音/口型.ts';
+import { lipCues } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import { rad } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
@@ -66,25 +67,25 @@ const closeupCam = (ly: ReturnType<typeof choreo.liying>, bearingDeg: number): C
 export type LureParams = { rawSheathe?: boolean; closeup?: number };
 
 export const Lure: React.FC<LureParams> = ({ rawSheathe = false, closeup: closeupBearing }) => {
-  const segFrame = useCurrentSec() * choreo.FPS;
+  const t = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const globalFrame = choreo.globalFrameAt(segFrame);
-  const ly = choreo.liying(segFrame, rawSheathe);
-  const arrow = K3.arrowAt(globalFrame);
-  const wool = choreo.woolAt(segFrame / choreo.FPS);
+  const g = choreo.globalSecAt(t);
+  const ly = choreo.liying(t, rawSheathe);
+  const arrow = K3.arrowAt(g);
+  const wool = choreo.woolAt(t);
   return (
     <>
-      <AncientCity4xCanvas 段="6-4-5" cam={closeupBearing === undefined ? choreo.camera(segFrame) : closeupCam(ly, closeupBearing)} width={width} height={height} hide={K3.HIDE} chestOpening={K3.openChest(globalFrame)} wool={wool.wool} growingWool={wool.growingWool}>
-        <SheathingLiYing ly={ly} mouth={mouthAt([choreo.lines.challenge], '李樱', segFrame)} />
+      <AncientCity4xCanvas 段="6-4-5" cam={closeupBearing === undefined ? choreo.camera(t) : closeupCam(ly, closeupBearing)} width={width} height={height} hide={K3.HIDE} chestOpening={K3.openChest(g)} wool={wool.wool} growingWool={wool.growingWool}>
+        <SheathingLiYing ly={ly} mouth={mouthAt(lipCues([choreo.lines.challenge], 1), '李樱', t, 1)} />
         {(arrow.阶段 === '来' || arrow.阶段 === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
-        <BlockDebris data={DEBRIS} atlas={debrisAtlas} bursts={K3.debrisBursts(globalFrame)} fixWinding />
-        {K3.sensorStates(globalFrame).map((q, i) => (
+        <BlockDebris data={DEBRIS} atlas={debrisAtlas} bursts={K3.debrisBursts(g)} fixWinding />
+        {K3.sensorStates(g).map((q, i) => (
           <SculkSensor key={i} p={q.p} 秒={q.sec} secSinceActive={q.secSinceActive} seed={i + 1} />
         ))}
         {K3.vibrations.map((v, i) => (
-          <VibrationSignal key={i} from={v.from} to={v.to} sec={K3.storySecAt(globalFrame) - v.t} 帧={i * 3} />
+          <VibrationSignal key={i} from={v.from} to={v.to} sec={K3.storySecAt(g) - v.t} 帧={i * 3} />
         ))}
-        {K3.shriek && <ShriekRings p={K3.shriek.p} sec={K3.storySecAt(globalFrame) - K3.shriek.t} />}
+        {K3.shriek && <ShriekRings p={K3.shriek.p} sec={K3.storySecAt(g) - K3.shriek.t} />}
       </AncientCity4xCanvas>
     </>
   );

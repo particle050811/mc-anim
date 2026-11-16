@@ -4,7 +4,8 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DeflectView } from '../../场/6-古城/6-4-3/画面.tsx';
 import * as choreo from '../../场/6-古城/6-4-4/编排.ts';
 import { mouthAt } from '../../配音/口型.ts';
+import { lipCues } from '../../地点/古城4x/6-4-1/古城戏.ts';
 export const Twice: React.FC = () => {
-  const segFrame = useCurrentSec() * choreo.FPS;
-  return <DeflectView g={choreo.deflectFrameAt(segFrame)} cam={choreo.camera(segFrame)} mouth={mouthAt([choreo.lines.annoyed], '李樱', segFrame)} />;
+  const t = useCurrentSec();
+  return <DeflectView g={choreo.deflectSecAt(t)} cam={choreo.camera(t)} mouth={mouthAt(lipCues([choreo.lines.annoyed], 1), '李樱', t, 1)} />;
 };

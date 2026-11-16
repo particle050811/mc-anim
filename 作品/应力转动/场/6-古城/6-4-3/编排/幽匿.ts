@@ -58,8 +58,8 @@ export const soundChain = (() => {
   return { vibrations: vibrations, activateSecs: activateSecs, shriek: shriek };
 })();
 export const vibrations = soundChain.vibrations;
-export const sensorStates = (globalFrame: number) => {
-  const t = storySecAt(globalFrame);
+export const sensorStates = (g: number) => {
+  const t = storySecAt(g);
   return sensors.map((b, i) => ({ p: blockBottomCenter(b), sec: t, secSinceActive: t - soundChain.activateSecs[i] }));
 };
 // 网格里画死的感测体（触须是不动的第一帧）藏掉换成会抖的：底座侧面在格子边上（面中心离地 0.25 格），顶面和触须在格子里；

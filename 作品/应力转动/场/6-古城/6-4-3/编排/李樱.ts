@@ -63,8 +63,8 @@ const windupAt = (o: number) => smoothstep01((o - 93) / 3) * (1 - smoothstep01((
 const WINDUP = { kneeR: 35, kneeL: 30, legR: 12, legL: -8, pitch: -8, twist: 12, yaw: 8 };
 const holdAfterSwing = 0.12;
 
-export const makeLiying = (variant?: LiYingStaging) => (globalFrame: number) => {
-  const t = storySecAt(globalFrame);
+export const makeLiying = (variant?: LiYingStaging) => (g: number) => {
+  const t = storySecAt(g);
   // 翻箱子：手在箱子里来回翻
   const rummage = 0.3 + 0.2 * (0.5 + 0.5 * Math.sin(t * 7));
   const loot = lootPose(geom.FOOT, FACE_CHEST, rummage, 1.4);
