@@ -6,13 +6,13 @@ import { canRunDirectly, parseManifest } from './清单.ts';
 
 const lockEntry = (sha: string) => ({ sha256: sha.repeat(64), size: 1, lib: 'store' as const, suffix: '.json' });
 const existingRecipe = `
-[["取材"]]
-"名称" = "小屋"
-"需要" = []
-"要开游戏" = true
-"公开版" = "不提取"
-"步骤" = [["mcai", "mesh", "from=0,0,0", "to=1,1,1", "out=src/模型/场景/小屋.网格"]]
-["取材"."产物"]
+[["sourcing"]]
+"displayName" = "小屋"
+"requires" = []
+"needsGame" = true
+"publicVersion" = "不提取"
+"steps" = [["mcai", "mesh", "from=0,0,0", "to=1,1,1", "out=src/模型/场景/小屋.网格"]]
+["sourcing"."artifacts"]
 "网格/小屋/头" = "src/模型/场景/小屋.网格.json"
 `;
 const meshHeaders: Record<string, MeshHeader> = {

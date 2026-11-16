@@ -7,36 +7,36 @@ import { buildSourceTable, isError, checkParticleFrames, listParticles, computeP
 import type { AssetLock } from '../资产/资产锁.ts';
 
 const recipeText = `
-[["取材"]]
-"名称" = "库粒子"
-"步骤" = [["导出模型", "{jar:c}", "src/粒子", "assets/minecraft/textures/particle/generic_*.png", "assets/minecraft/textures/particle/lava.png"]]
-["取材"."产物"]
+[["sourcing"]]
+"displayName" = "库粒子"
+"steps" = [["导出模型", "{jar:c}", "src/粒子", "assets/minecraft/textures/particle/generic_*.png", "assets/minecraft/textures/particle/lava.png"]]
+["sourcing"."artifacts"]
 "贴图/特效/粒子/*" = "src/粒子/*.png"
 
-[["取材"]]
-"名称" = "作品贴图"
-"作品" = "甲"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "作品贴图"
+"work" = "甲"
+"steps" = [
   ["导出模型", "{jar:g}", "src/贴图/法术/goety/particle", "assets/goety/textures/particle/frost_1.png", "assets/goety/textures/particle/frost_2.png"],
   ["导出模型", "{jar:c}", "src/贴图/法术/minecraft/particle", "assets/minecraft/textures/particle/lava.png"],
   ["导出模型", "{jar:g}", "src/单张.png", "名=assets/goety/textures/particle/trail.png"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "贴图/法术/goety/particle/*" = "src/贴图/法术/goety/particle/*.png"
 "贴图/法术/minecraft/particle/*" = "src/贴图/法术/minecraft/particle/*.png"
 "贴图/法术/goety/拖尾" = "src/单张.png"
 
-[["取材"]]
-"名称" = "作品定义"
-"作品" = "甲"
-"步骤" = [
+[["sourcing"]]
+"displayName" = "作品定义"
+"work" = "甲"
+"steps" = [
   ["python", "{脚本}/拷jar文件.py", "{jar:g}", "assets/goety/particles/frost.json", "src/数据/法术/goety/particles/frost.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:g}", "assets/goety/particles/burning.json", "src/数据/法术/goety/particles/burning.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:g}", "assets/goety/particles/trail.json", "src/数据/法术/goety/particles/trail.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:g}", "assets/goety/particles/gone.json", "src/数据/法术/goety/particles/gone.json"],
   ["python", "{脚本}/拷jar文件.py", "{jar:c}", "assets/minecraft/particles/smoke.json", "src/数据/法术/minecraft/particles/smoke.json"],
 ]
-["取材"."产物"]
+["sourcing"."artifacts"]
 "数据/法术/goety/particles/*" = "src/数据/法术/goety/particles/*.json"
 "数据/法术/minecraft/particles/*" = "src/数据/法术/minecraft/particles/*.json"
 `;
