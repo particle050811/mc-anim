@@ -5,7 +5,7 @@ import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { nearYaw } from '../../6-4-1/古城戏.ts';
 import { leapFeetAt, type Jump } from '../../布局.ts';
 import * as timeline from '../时间线.ts';
-import { elevationDeg, FPS, pulseWindow, pursuersAfter649, yawFromTo } from './公用.ts';
+import { elevationDeg, leapCellsPerSec, pulseWindow, pursuersAfter649, yawFromTo } from './公用.ts';
 import { airPose, breathe, crouch, crouchAmount, isAirborne, landT, leapTurnYaw, liuLeaps, liuStart, takeoffT } from './跳.ts';
 import { wardenAt } from './监守者路.ts';
 import { horseSpawnPos, horseState, huangPanPos, liuLeapList, liuXinzhongPos, wallLandT } from './位置.ts';
@@ -40,12 +40,12 @@ export const liuXinzhongPose = (t: number): FigurePose => {
     if (leapName === 'J1') {
       // 背身蹬地，半空回身朝监守者，举杖施法
       const turnBack = smoothstep01((progress - 0.15) / 0.4);
-      const yaw = lerp(leap.yaw, nearYaw(leap.yaw, liuFacingYaw(t, leapFeetAt(leap, t * FPS))), turnBack);
+      const yaw = lerp(leap.yaw, nearYaw(leap.yaw, liuFacingYaw(t, leapFeetAt(leap, t * leapCellsPerSec))), turnBack);
       return withSummonArm(airPose(leap, t, yaw), t);
     }
     if (leapName === 'dodge') {
       // 后跃：面朝监守者往后飞
-      return airPose(leap, t, nearYaw(leap.yaw + 180, liuFacingYaw(t, leapFeetAt(leap, t * FPS))));
+      return airPose(leap, t, nearYaw(leap.yaw + 180, liuFacingYaw(t, leapFeetAt(leap, t * leapCellsPerSec))));
     }
     return airPose(leap, t, leap.yaw);
   }

@@ -5,33 +5,32 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../地点/古城4x.tsx';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
-import { camPoses, frameAt, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
+import { camPoses, localSecAt, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
 import { lerpV } from '@engine/core/数学.ts';
 
 export const segmentId = '7-1-2' as const;
-export const FPS = timeline.FPS;
-export const END = timeline.frameCountOf(segmentId);
-export const timeAt = (f: number) => timeline.tAt(segmentId, f);
-export const shot1EndFrame = frameAt(segmentId, 3.6);
-export const shot2EndFrame = frameAt(segmentId, 4.5);
-const huangAndWarden = (k: number) => (frame: number): V3 => {
-  const t = timeAt(frame);
+export const lastSec = timeline.segmentLastSec(segmentId); // 段内最后一格（旧编排 1/24 秒一格）的秒
+export const timeAt = (sec: number) => timeline.tAt(segmentId, sec);
+export const shot1End = localSecAt(segmentId, 3.6);
+export const shot2End = localSecAt(segmentId, 4.5);
+const huangAndWarden = (k: number) => (sec: number): V3 => {
+  const t = timeAt(sec);
   const huang = play.huangPanPos(t);
   return lerpV([huang[0], huang[1], huang[2] + 1.3], play.wardenChest(t), k);
 };
 const shots: ShotCam[] = [
   {
     start: 0,
-    pos: [[0, G4(-851.5, -41.5, 215.2)], [shot1EndFrame, G4(-851.8, -41.7, 215.3)]],
-    tgt: [[0, G4(-864.5, -48.0, 226.5)], [shot1EndFrame, G4(-864.0, -47.5, 227.6)]],
-    lens: [[0, 18], [shot1EndFrame, 18]],
+    pos: [[0, G4(-851.5, -41.5, 215.2)], [shot1End, G4(-851.8, -41.7, 215.3)]],
+    tgt: [[0, G4(-864.5, -48.0, 226.5)], [shot1End, G4(-864.0, -47.5, 227.6)]],
+    lens: [[0, 18], [shot1End, 18]],
   },
-  { start: shot1EndFrame, pos: [[shot1EndFrame, [-147.0, 9.2, 7.0]], [shot2EndFrame, [-147.6, 9.6, 7.2]]], tgt: huangAndWarden(0.35), lens: [[shot1EndFrame, 18], [shot2EndFrame, 18]] },
+  { start: shot1End, pos: [[shot1End, [-147.0, 9.2, 7.0]], [shot2End, [-147.6, 9.6, 7.2]]], tgt: huangAndWarden(0.35), lens: [[shot1End, 18], [shot2End, 18]] },
   {
-    start: shot2EndFrame,
-    pos: [[shot2EndFrame, G4(-865.6, -39.6, 228.4)], [END - 1, G4(-865.9, -39.7, 228.2)]],
-    tgt: [[shot2EndFrame, G4(-871.8, -46.0, 220.2)], [END - 1, G4(-871.8, -46.2, 220.2)]],
-    lens: [[shot2EndFrame, 18], [END - 1, 18]],
+    start: shot2End,
+    pos: [[shot2End, G4(-865.6, -39.6, 228.4)], [lastSec, G4(-865.9, -39.7, 228.2)]],
+    tgt: [[shot2End, G4(-871.8, -46.0, 220.2)], [lastSec, G4(-871.8, -46.2, 220.2)]],
+    lens: [[shot2End, 18], [lastSec, 18]],
   },
 ];
 export const { shotIndex, camera } = camPoses(shots);

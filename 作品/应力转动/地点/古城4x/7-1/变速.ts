@@ -1,13 +1,12 @@
-// 变速的打斗段（7-1-3、7-1-7、7-3-3 的 编排.ts）共用的变速：段内帧 → 场时刻 t（见 时间线.ts）。戏还是 戏.ts 那条时间轴，只换画面上怎么放。
-// 时钟 = 画面 1 秒对应多少场秒，时钟点之间按 smoothstep 过渡（标「对数」的按对数，同 6-4-3/时间线.ts）；`stops`（打中的场时刻）在那一刻把世界定住（打击停顿，帧数用 lib/anim.ts 的默认 `HIT_STOP_FRAMES`）。
-// 返回的接口同 音效/慢放.ts 的 时间线，声音用 scheduleToScreen 排。
+// 变速的打斗段（7-1-3、7-1-7、7-3-3 的 编排.ts）共用的变速：段内秒 → 场时刻 t（见 时间线.ts）。戏还是 戏.ts 那条时间轴，只换画面上怎么放。
+// 时钟 = 画面 1 秒对应多少场秒，时钟点之间按 smoothstep 过渡（标「对数」的按对数，同 6-4-3/时间线.ts）；`stops`（打中的场时刻）在那一刻把世界定住（打击停顿，按旧编排的格数 `HIT_STOP_FRAMES`，见 默认.ts）。
+// 场时刻表照旧编排每 1/24 秒记一个样（samplesPerSec），样与样之间线性插值；改样密度会挪动画面。
 import { HIT_STOP_FRAMES } from '../../../默认.ts';
-import * as timeline from './时间线.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 
 export type ClockPoint = [t: number, clock: number, 对数?: boolean];
 export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[], stops: number[] = []) => {
-  const FPS = timeline.FPS;
+  const samplesPerSec = 24;
   const clock = (t: number) => {
     if (t <= points[0][0]) return points[0][1];
     for (let i = 1; i < points.length; i++) {
@@ -27,7 +26,7 @@ export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[
     const pending = [...stops].sort((a, b) => a - b);
     while (t < endT) {
       for (let k = 0; k < SUB; k++) {
-        const dt = 1 / FPS / SUB;
+        const dt = 1 / samplesPerSec / SUB;
         const next = t + clock(t + (clock(t) * dt) / 2) * dt;
         if (pending.length && t < pending[0] && next >= pending[0]) {
           t = pending[0];
@@ -41,22 +40,13 @@ export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[
     }
     return out;
   })();
-  const totalFrames = SCENE_T.length;
-  const sceneT = (frame: number) => {
-    const i = Math.min(Math.max(Math.floor(frame), 0), totalFrames - 2);
-    return SCENE_T[i] + (SCENE_T[i + 1] - SCENE_T[i]) * (frame - i);
+  const sampleCount = SCENE_T.length;
+  // 段内秒 → 场时刻；过了最后一个样按最后两样的斜率外推
+  const storyTime = (sec: number) => {
+    const x = sec * samplesPerSec;
+    const i = Math.min(Math.max(Math.floor(x), 0), sampleCount - 2);
+    return SCENE_T[i] + (SCENE_T[i + 1] - SCENE_T[i]) * (x - i);
   };
-  const frameAt = (t: number) => {
-    const i = SCENE_T.findIndex((x) => x >= t);
-    return i < 0 ? totalFrames - 1 : i;
-  };
-  const frameFractional = (t: number) => {
-    const i = frameAt(t);
-    if (i <= 0) return 0;
-    const t0 = SCENE_T[i - 1];
-    const t1 = SCENE_T[i];
-    return i - 1 + (t1 > t0 ? Math.min(1, Math.max(0, (t - t0) / (t1 - t0))) : 1);
-  };
-  return { FPS, 总帧数: totalFrames, storyTime: sceneT, 帧: frameAt, frameFractional: frameFractional, clock: clock };
+  return { storyTime, clock };
 };
 export type SpeedRamp = ReturnType<typeof buildSpeedRamp>;

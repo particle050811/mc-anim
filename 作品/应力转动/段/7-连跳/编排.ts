@@ -5,17 +5,16 @@ import { G4 } from '../../地点/古城4x.tsx';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import { camPoses, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
 export const segmentId = '7-1-6' as const;
-export const FPS = timeline.FPS;
-export const END = timeline.frameCountOf(segmentId);
-export const timeAt = (f: number) => timeline.tAt(segmentId, f);
+export const lastSec = timeline.segmentLastSec(segmentId); // 段内最后一格（旧编排 1/24 秒一格）的秒
+export const timeAt = (sec: number) => timeline.tAt(segmentId, sec);
 const shots: ShotCam[] = [
   {
     start: 0,
     // 离地 1.7 格：再低，C2 跟前那个感测体 (−875, −51, 219) 挡住刘心忠的脚（工具/机位核对 --试）
-    pos: [[0, G4(-870.6, -49.3, 217.6)], [END - 1, G4(-871.0, -49.3, 217.7)]],
+    pos: [[0, G4(-870.6, -49.3, 217.6)], [lastSec, G4(-871.0, -49.3, 217.7)]],
     // 慢慢往左（南）带，刘心忠落 C2 时不贴画面左边
-    tgt: [[0, G4(-877.0, -50.4, 217.0)], [END - 1, G4(-877.0, -50.2, 218.6)]],
-    lens: [[0, 18], [END - 1, 19]],
+    tgt: [[0, G4(-877.0, -50.4, 217.0)], [lastSec, G4(-877.0, -50.2, 218.6)]],
+    lens: [[0, 18], [lastSec, 19]],
   },
 ];
 export const { shotIndex, camera } = camPoses(shots);

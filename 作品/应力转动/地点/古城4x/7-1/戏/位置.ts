@@ -4,7 +4,7 @@ import { steedRear } from '@库/生物/幽灵马.tsx';
 import { leapFeetAt, type Jump } from '../../布局.ts';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
-import { FPS } from './公用.ts';
+import { leapCellsPerSec } from './公用.ts';
 import { huangLeaps, huangStart, landT, leapAtSec, leapChainPos, liuLeaps, liuStart, takeoffT } from './跳.ts';
 export const horseSpawnPos = geom.horseSpawnPos;
 
@@ -21,7 +21,7 @@ export const horseState = (t: number) => {
     return { p: horseSpawnPos, yaw: northYaw, entityYaw: northYaw + 180, walkCycle: { legPhase: 0, amplitude: 0 }, 速: 0, rear };
   }
   if (t < wallLandT) {
-    const pos = leapFeetAt(horseLeap, t * FPS);
+    const pos = leapFeetAt(horseLeap, t * leapCellsPerSec);
     return { p: pos, yaw: northYaw, entityYaw: northYaw + 180, walkCycle: { legPhase: (t - timeline.horseJumpT) * 20 * 0.6, amplitude: 0.3 }, 速: horseLeap.horizSpeed, rear };
   }
   // 落上墙头站住（= 衔接.七三首.马），第 3 场从这里接着跑

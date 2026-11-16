@@ -6,14 +6,13 @@ import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import { camPoses, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 export const segmentId = '7-1-4' as const;
-export const FPS = timeline.FPS;
-export const END = timeline.frameCountOf(segmentId);
-export const timeAt = (f: number) => timeline.tAt(segmentId, f);
-const wardenAndLiu = (frame: number): V3 => {
-  const t = timeAt(frame);
+export const lastSec = timeline.segmentLastSec(segmentId); // 段内最后一格（旧编排 1/24 秒一格）的秒
+export const timeAt = (sec: number) => timeline.tAt(segmentId, sec);
+const wardenAndLiu = (sec: number): V3 => {
+  const t = timeAt(sec);
   const liu = play.liuXinzhongPos(t);
   const chest = play.wardenChest(t);
   return [liu[0] * 0.55 + chest[0] * 0.45, liu[1] * 0.55 + chest[1] * 0.45, (liu[2] + 1.0) * 0.55 + chest[2] * 0.45];
 };
-const shots: ShotCam[] = [{ start: 0, pos: [[0, [-143.5, 14.5, 1.0]], [END - 1, [-143.3, 14.3, 1.0]]], tgt: wardenAndLiu, lens: [[0, 20], [END - 1, 21]] }];
+const shots: ShotCam[] = [{ start: 0, pos: [[0, [-143.5, 14.5, 1.0]], [lastSec, [-143.3, 14.3, 1.0]]], tgt: wardenAndLiu, lens: [[0, 20], [lastSec, 21]] }];
 export const { shotIndex, camera } = camPoses(shots);

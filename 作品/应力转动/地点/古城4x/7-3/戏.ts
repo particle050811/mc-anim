@@ -41,7 +41,7 @@ export const horseSec = (T: number) => scene1T(T);
 
 // ======================= 马 =======================
 const liuEyeHeight = STEED.riderHeight + 1.62;
-const fps = geom.FPS;
+const fps = chase.leapCellsPerSec;
 const { leap1, leap2, leap3 } = timeline;
 const towerDir = (() => {
   const d = [geom.towerTop[0] - geom.wallTopEast[0], geom.towerTop[1] - geom.wallTopEast[1]];

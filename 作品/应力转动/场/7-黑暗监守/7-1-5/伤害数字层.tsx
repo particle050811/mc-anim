@@ -23,10 +23,10 @@ const anchor = damageNumberAnchor(sceneToThree(play.wardenState(play.windArrowSh
 export const windArrowHit = { ...hit, anchor }; // 7-2-1 李樱远望时看到的是同一个数字、同一个位置
 
 export const WindArrowDamageLayer: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const t = choreo.timeAt(frame);
-  const cam = choreo.camera(frame);
+  const t = choreo.timeAt(sec);
+  const cam = choreo.camera(sec);
   const camera = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   const ticks = (t - play.windArrowShot.中) * 20;
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={[{ damage: hit.damage, crit: hit.crit, anchor, ticks }]} />;

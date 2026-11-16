@@ -1,4 +1,4 @@
-// 7-1-3 秒杀：本段机位和变速。动作全在 ../7-1/戏.ts（见 ../7-1/时间线.ts），本段第 0 帧接 7-1-2 末帧的下一帧。
+// 7-1-3 秒杀：本段机位和变速。动作全在 ../7-1/戏.ts（见 ../7-1/时间线.ts），本段第 0 秒接 7-1-2 末格的下一格。
 // 戏：五只恼鬼四面俯冲，监守者每 0.9 秒（攻击冷却）拍飞一只、边拍边追着黄叛的落地声走；黄叛趁它拍恼鬼跳去南台顶、半空里再射一支火把；最后刘心忠「一百级的恼鬼……」，监守者掉头扑他。
 // 演法（用户 10-17 嫌缠斗僵、10-18 嫌像回合制）：一拍一个镜头，切在拍之前 0.45 秒；每个镜头里攻守两边同时在动——
 //   拍 1 监守者脚下仰拍，恼鬼从黄台上黄叛那边俯冲下来；拍 2 黄叛东边，他蹲下蹬地跳走的同时监守者在下面拍；拍 3 监守者北边，它在近处拍、半空的黄叛在远处回身放箭；
@@ -13,7 +13,6 @@ import { smoothstep01, lerpV } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
 export const segmentId = '7-1-3' as const;
-export const FPS = timeline.FPS;
 
 const [s1, s2, s3, s4, s5] = play.swingTs; // 攻击动画起点；打中在 +0.1（../7-1/声音.tsx 的 attack_impact、恼鬼同一刻死）
 const hitT = (s: number) => s + 0.1 + 0.002;
@@ -26,7 +25,6 @@ export const speedRamp = buildSpeedRamp(
   [[startT, 1]],
   [s1, s2, s3, s4, s5].map(hitT),
 );
-export const END = speedRamp.总帧数;
 export const timeAt = speedRamp.storyTime;
 
 const head = (p: V3, h: number): V3 => [p[0], p[1], p[2] + h];
@@ -58,4 +56,4 @@ const shots: SpeedRampShot[] = [
   { 起: cuts[5], cam: drift(cuts[5], endT, [-129.4, 4.2, 7.7], [-129.8, 4.0, 7.6], between(liuHead, wardenChest, 0.45), 20) },
 ];
 export const camera = buildCameraRig(speedRamp, shots);
-export const shotIndex = (frame: number) => cuts.filter((c) => timeAt(frame) >= c).length - 1;
+export const shotIndex = (sec: number) => cuts.filter((c) => timeAt(sec) >= c).length - 1;

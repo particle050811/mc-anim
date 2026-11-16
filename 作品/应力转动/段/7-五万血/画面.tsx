@@ -17,43 +17,41 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 
-export const fiftyKHpFrameCount = choreo.frameCount;
-
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
 // 风矢打中它冒出的伤害数字（汇流来世，定在世界里），和 7-1-5、7-1-7 同样的数、同样的位置；只在看得到场子的镜头里画
 const hitsSeen = [{ T: windArrowHit.t, damage: windArrowHit.damage, crit: windArrowHit.crit, anchor: windArrowHit.anchor }, ...followArrowHits];
-const DamageLayer: React.FC<{ frame: number }> = ({ frame }) => {
+const DamageLayer: React.FC<{ sec: number }> = ({ sec }) => {
   const { width, height } = useVideoConfig();
-  if (frame >= choreo.jadeShotEndFrame) return null;
-  const t = choreo.wideTime(frame);
-  const cam = choreo.camera(frame);
+  if (sec >= choreo.jadeShotEnd) return null;
+  const t = choreo.wideTime(sec);
+  const cam = choreo.camera(sec);
   const camera = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={hitsSeen.map((h) => ({ damage: h.damage, crit: h.crit, anchor: h.anchor, ticks: (t - h.T) * 20 }))} />;
 };
 
-const JadeLayer: React.FC<{ frame: number }> = ({ frame }) => {
+const JadeLayer: React.FC<{ sec: number }> = ({ sec }) => {
   const { width, height } = useVideoConfig();
-  const ui = choreo.jade(frame);
+  const ui = choreo.jade(sec);
   if (!ui) return null;
-  const cam = choreo.camera(frame);
+  const cam = choreo.camera(sec);
   const ndc = sceneToThree(ui.点).project(makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height));
   const from: [number, number] = [((ndc.x + 1) / 2) * width, ((1 - ndc.y) / 2) * height];
   const s = jadeScalePerWidth * width;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
       <JadeLeaderLine from={from} toY={jadeBoxHeight * s} s={jadeLineScalePerWidth * width} progress={ui.lineScale} />
-      <JadeTooltip entity={{ name: '监守者', health: choreo.wardenHealthAt(frame).now, maxHealth: choreo.wardenHealthAt(frame).max, mod: 'Minecraft' }} s={s} cx={width / 2} visibility={ui.框} />
+      <JadeTooltip entity={{ name: '监守者', health: choreo.wardenHealthAt(sec).now, maxHealth: choreo.wardenHealthAt(sec).max, mod: 'Minecraft' }} s={s} cx={width / 2} visibility={ui.框} />
     </AbsoluteFill>
   );
 };
 
 export const FiftyKHp: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS;
+  const sec = useCurrentSec();
   return (
     <>
-      <ScenePicture sf={choreo.sf(frame)} cam={choreo.camera(frame)} wideShot={frame < choreo.jadeShotEndFrame} pov={frame < choreo.jadeShotEndFrame} mouth={mouthAt(choreo.lines, '李樱', frame, choreo.FPS)} />
-      <DamageLayer frame={frame} />
-      <JadeLayer frame={frame} />
+      <ScenePicture s={choreo.sceneSec(sec)} cam={choreo.camera(sec)} wideShot={sec < choreo.jadeShotEnd} pov={sec < choreo.jadeShotEnd} mouth={mouthAt(choreo.mouthCues, '李樱', sec, 1)} />
+      <DamageLayer sec={sec} />
+      <JadeLayer sec={sec} />
     </>
   );
 };

@@ -7,6 +7,7 @@ import { exception } from '@engine/core/例外.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { RAMP_SEC } from '@库/角色/跑步.ts';
 import { baseSpeed, eliteLeap, scene73, type Jump } from '../布局.ts';
+import { FPS as cityPlayFps } from '../6-4-1/古城戏.ts';
 
 export const horseChaseSpeed = baseSpeed.horse;
 export const wardenChaseSpeed = baseSpeed.监守者;
@@ -82,8 +83,11 @@ export const wardenStairTopS = wardenRoute.cum[4];
 // ======================= 马：三跃（强者跳的弹道，../古城4x布局/强者.ts） =======================
 // 离地按 方块.py 查过不撞的取：第一跃擦过墙头豁口两边的垛、第二跃上塔、第三跃越过墙外沿的垛
 export const leapApex = { 一: 2.5, 二: 1.5, 三: 1.5 };
-export const leapFrom = (p0: V3, p1: V3, apex: number, t0: number, fps: number): Jump => eliteLeap(p0, p1, apex, t0 * fps, fps);
-// 第一跃落在墙头东段，几乎不停（落地 2 帧就是第二跃的蓄力）；第二跃落在塔顶西沿，按落地时的水平速度刹住。
+// 跳的接口（布局 的 eliteLeap、leapFeetAt、Jump 的 f0/f1，6-4-1/古城戏.ts 的 airPose、landPose）是 6 章共用的，按旧编排 1/24 秒一格数；本场的秒在调用处换成格
+export const leapCellsPerSec = cityPlayFps;
+// 起跳时刻 t0 是秒
+export const leapFrom = (p0: V3, p1: V3, apex: number, t0: number): Jump => eliteLeap(p0, p1, apex, t0 * leapCellsPerSec, leapCellsPerSec);
+// 第一跃落在墙头东段，几乎不停（落地 1/12 秒就是第二跃的蓄力）；第二跃落在塔顶西沿，按落地时的水平速度刹住。
 // 刹车不按全片的 `RAMP_SEC`（跑步.ts）：塔顶只有 5 格宽，0.3 秒要滑 2.2 米，再挨音爆往东横滑会停到塔顶东沿外 1 米（悬空），所以这里是例外
 export const towerBrakeSec = exception('起停', 0.15, { 场: '7-墙头追逐', 原因: '马落塔顶刹车：塔顶只有 5 格宽，0.3 秒会滑出塔沿；用户 10-21 定照留' });
 // 音爆的击退（原版 SonicBoom：水平 2.5 格/刻 × 方向的水平分量；之后每刻按地面摩擦 0.546 衰减）

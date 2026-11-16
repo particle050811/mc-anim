@@ -16,16 +16,16 @@ export const buildCameraRig = (v: SpeedRamp, shots: SpeedRampShot[]) => {
     while (i + 1 < shots.length && t >= shots[i + 1].起) i++;
     return i;
   };
-  return (frame: number): Cam => {
-    const t = v.storyTime(frame);
+  return (sec: number): Cam => {
+    const t = v.storyTime(sec);
     return shots[shotIndex(t)].cam(t);
   };
 };
 
 type ScenePictureComponent = React.FC<{ t: number; cam: Cam; width: number; height: number }>;
-// 一段的画面：段内格（1/24 秒一格，带小数）→ 场时刻 t，按本段的变速和机位画。7-1 用本场的 ScenePicture（默认），7-3 传自己的
-export const SpeedRampSegment: React.FC<{ v: SpeedRamp; camera: (frame: number) => Cam; Picture?: ScenePictureComponent }> = ({ v, camera, Picture = ScenePicture }) => {
-  const frame = useCurrentSec() * v.FPS;
+// 一段的画面：段内秒 → 场时刻 t，按本段的变速和机位画。7-1 用本场的 ScenePicture（默认），7-3 传自己的
+export const SpeedRampSegment: React.FC<{ v: SpeedRamp; camera: (sec: number) => Cam; Picture?: ScenePictureComponent }> = ({ v, camera, Picture = ScenePicture }) => {
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  return <Picture t={v.storyTime(frame)} cam={camera(frame)} width={width} height={height} />;
+  return <Picture t={v.storyTime(sec)} cam={camera(sec)} width={width} height={height} />;
 };

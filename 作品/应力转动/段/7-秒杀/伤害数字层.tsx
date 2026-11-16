@@ -25,10 +25,10 @@ const hits = play.swingTs.map((s, k) => {
 });
 
 export const VexSwipeDamageLayer: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const t = choreo.timeAt(frame);
-  const cam = choreo.camera(frame);
+  const t = choreo.timeAt(sec);
+  const cam = choreo.camera(sec);
   const camera = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   const numbers: DamageNumberItem[] = hits.map((h) => ({ damage: h.damage, crit: false, anchor: h.anchor, ticks: (t - h.T) * 20 }));
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={numbers} />;
