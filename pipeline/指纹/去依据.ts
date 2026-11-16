@@ -9,7 +9,7 @@ import ts from 'typescript';
 import type { BaseMoment, EventDef, SeriesSegDef, WindowEnd } from '../../engine/段/时间线.ts';
 import type { SongMoment } from '../../engine/段/歌网格.ts';
 
-// 认形状用的键从类型取，不写死：字段改名、加减键时 tsc 逼着这里跟上，改名工具（pipeline/改名）也会把这里的键并进字段那一组。
+// 认形状用的键从类型取，不写死：字段改名、加减键时 tsc 逼着这里跟上。
 // 分镜.ts 的写法（作品/把回忆拼好给你/分镜/时间.ts）pipeline 不引（只认作品的纯模块）：它的时刻、事件、段窗的键在不在这里认的形状里，由 去依据.test.ts 拿作品的类型核。
 type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
 /** 联合类型各支的键合起来，一个键一项；少写、多写、写错都编译不过 */

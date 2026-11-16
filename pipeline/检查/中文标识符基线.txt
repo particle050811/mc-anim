@@ -4,8 +4,6 @@ B站封面
 Photon卷云
 Photon积云
 Photon高积云
-disk是
-disk疑似
 github下载根
 git包
 mcanim哈气嘴
@@ -381,7 +379,6 @@ worktree静帧等锁
 屏幕AO
 岩
 峰
-嵌
 左
 左侧面
 左滚
@@ -473,7 +470,6 @@ worktree静帧等锁
 抱膝坐
 抽样键
 拉伸2D
-拍
 拧
 拨
 拼原样
