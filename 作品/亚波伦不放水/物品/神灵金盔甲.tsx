@@ -21,6 +21,7 @@ import { settleCape, capeVertexTable, type CapeData } from './神灵金披风.ts
 
 const textureMap = { 旧版: oldTexturePng, 新版: newTexturePng } as const;
 
+// 原始网格是取材导出的 JSON（store 里的字节，键是中文），字段名照字节
 type RawArmorMesh = { 骨: number; 顶点: number[] };
 const armorData = armorMeshData as unknown as { 骨: string[]; 槽: Record<'head' | 'chest' | 'legs' | 'feet', RawArmorMesh[]>; 披风: CapeData };
 
