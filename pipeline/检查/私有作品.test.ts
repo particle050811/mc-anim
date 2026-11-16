@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { CheckContext } from './上下文.ts';
+import { CheckContext } from '../源码/上下文.ts';
 
 const git = (dir: string, ...args: string[]) => execFileSync('git', ['-C', dir, ...args], { stdio: 'ignore' });
 const writeFile = (root: string, p: string, s = 'export {};\n') => {

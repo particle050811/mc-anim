@@ -4,7 +4,7 @@
 // 改了内容却保持大小和修改时间不变的（手动 touch -r）认不出来；anim 自己写文件都是新建再改名，修改时间一定变。
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileSha } from './去重.ts';
+import { fileSha } from '../环境/去重.ts';
 
 export type ShaEntry = { 大小: number; 改于: number; sha: string };
 type FileFormat = { 版本: 1; 文件: Record<string, ShaEntry> };

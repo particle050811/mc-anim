@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { terrainRoot, dataPath, config } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
-import { fileSha } from '../缓存/去重.ts';
+import { fileSha } from '../环境/去重.ts';
 import { holderPid, releaseLock, tryAcquire } from '../闸/锁.ts';
 
 /** 地形包整包清单指纹（同 assets/tools/导入旧项目.py 的 包清单：路径按段逐级比较排序，「相对路径\tsha256\n」逐行拼起来再取 sha256） */

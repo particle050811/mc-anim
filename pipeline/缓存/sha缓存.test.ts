@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { findDuplicates, fileSha } from './去重.ts';
+import { findDuplicates, fileSha } from '../环境/去重.ts';
 import { ShaCache } from './sha缓存.ts';
 
 let root = '';

@@ -1,10 +1,10 @@
-// 7-4-2 又一只：时间轴、人和怪的姿势、机位，纯函数，输入本段帧号 f（0 起，24 帧/秒）。画面在 画面.tsx，声音在 声音.tsx，地理见 ../7-4-1/几何.ts。
+// 7-4-2 又一只：时间轴、人和怪的姿势、机位，纯函数，输入本段秒 sec（0 起）。画面在 画面.tsx，声音在 声音.tsx，地理见 ../7-4-1/几何.ts。
 // 戏（正篇/07-监守者之怒/脚本规划.md 7-4-2）：从 7-4-1 硬切过来，二人在岛上得意；再硬切到北墙外小石龛：刘心忠骑在马上开战利品箱，振动飞进感测体（咔嗒）、再飞进龛里四个尖啸体，
 //   四个尖啸体先后尖啸，每个旁边钻出一只监守者（钻出动画同 6-4-8，快放到 1.75 秒），一只接一只错开 0.5～0.6 秒（用户 10-18：「陆陆续续从几个尖啸体爬出好几个……然后直接吓跑他们」）。
 //   第一只（龛口外东边）出来二人扭头看、一缩；第二只就在箱子跟前钻出来：一激灵、马受惊往后一退；第三只冒头时二人互看一眼，掉头就跑，第四只在他们逃跑的路边钻出来。
 // 为什么开箱会召出监守者（照 1.20.1，同 6-4-2 文件头的振动链）：刘心忠的警告等级在 6-4-7 已叫满四次，一叫就直接召唤；48 格内原来那只已死。
 //   和游戏不同（用户要的）：游戏里四个尖啸体几乎同一刻收到咔嗒，但警告有 10 秒冷却、48 格内只召一只；这里四个都叫、各召一只，并错开。尖啸后 0.75 秒钻出（游戏 90 刻，同 6-4-8）。
-// 镜头（硬切）：1 得意（1a 刘心忠勒停在岛南头台面上、朝着它倒下的地方举杖，1b 黄叛在传送门顶上垂弓举拳；剧情时刻接着 7-4-1 末帧往下走）；2a 开箱（龛口外东边看进龛里：开盖 → 咔嗒 → 尖啸）；
+// 镜头（硬切）：1 得意（1a 刘心忠勒停在岛南头台面上、朝着它倒下的地方举杖，1b 黄叛在传送门顶上垂弓举拳；剧情时刻接着 7-4-1 末格往下走）；2a 开箱（龛口外东边看进龛里：开盖 → 咔嗒 → 尖啸）；
 //   2b 第一只身后（它在前景钻出，二人扭头看过来，第二只在箱子跟前冒头，一激灵）；3 龛口往西（马受惊、第三只在马头前冒头、对视、掉头）；
 //   4 逃（南边过道口往回看：马 50、黄叛 30 米/秒冲下地台朝镜头跑来、从镜头底下过，第四只在路边钻出），硬切 7-4-3。
 import { type Key, sample } from '@engine/anim/anim.ts';
@@ -23,26 +23,23 @@ import { baseSpeed } from '../../地点/古城4x/布局.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
-export const FPS = geom.FPS;
-const secOf = (f: number) => f / FPS;
-const rampIn = (f: number, a: number, b: number) => smoothstep01((f - a) / (b - a));
+const rampIn = (sec: number, a: number, b: number) => smoothstep01((sec - a) / (b - a));
 // 0 → 1 → 0 的一下（a 起、b 落回）
-const bump = (f: number, a: number, b: number) => (f <= a || f >= b ? 0 : Math.sin((Math.PI * (f - a)) / (b - a)));
+const bump = (sec: number, a: number, b: number) => (sec <= a || sec >= b ? 0 : Math.sin((Math.PI * (sec - a)) / (b - a)));
 const nearestYaw = (a: number, b: number) => a + ((((b - a + 540) % 360) + 360) % 360) - 180;
 const yawFromTo = (from: V3, to: V3) => yawTo(to[0] - from[0], to[1] - from[1]);
 
 // ---------- 镜 1：岛上得意（7-4-1 硬切过来） ----------
-export const shot1aEnd = 24; // 刘心忠举杖：起 4 帧、举 12 帧、举着停 8 帧
-export const shot1End = shot1aEnd + 22; // 黄叛举拳：起 2 帧、举 10 帧、举着停 10 帧
-// 镜 1 的剧情时刻（7-4-1/戏.ts 的时间轴）：第 0 帧是 7-4-1 末帧的下一帧，不共用帧
-const T741End = K741.storyT(K741.END - 1);
-export const T12 = (f: number) => T741End + (f + 1) / FPS;
+export const shot1aEnd = 1; // 刘心忠举杖：起 1/6 秒、举 0.5 秒、举着停 1/3 秒
+export const shot1End = shot1aEnd + 11 / 12; // 黄叛举拳：起 1/12 秒、举 5/12 秒、举着停 5/12 秒
+// 镜 1 的剧情时刻（7-4-1/戏.ts 的时间轴）：第 0 秒是 7-4-1 末帧的下一帧，不共用帧
+const T741End = K741.storyT(K741.lastSec);
+export const T12 = (sec: number) => T741End + sec + 1 / 60;
 
 // ---------- 开箱和振动链（镜 2） ----------
-export const lidOpenFrame = shot1End + 18;
-export const lidOpenSec = lidOpenFrame / FPS;
+export const lidOpenSec = shot1End + 0.75;
 // 刘心忠开 #213：开盖、已开贴图都由画布按 模型/物品/箱子.tsx 算（用户 10-20：「这边打开箱子以后 箱子应该变白」）
-export const chestOpenAt = (f: number): ChestOpening => ({ chestId: geom.chest.chestId, 开: lidOpenSec, 秒: secOf(f) });
+export const chestOpenAt = (sec: number): ChestOpening => ({ chestId: geom.chest.chestId, 开: lidOpenSec, 秒: sec });
 const tickSec = 1 / 20;
 const blockCenter = ([x, y, z]: V3): V3 => toScene(x + 0.5, y + 0.5, z + 0.5);
 export const blockBottomCenter = ([x, y, z]: V3): V3 => toScene(x + 0.5, y, z + 0.5);
@@ -74,7 +71,7 @@ const chain = (() => {
 export const vibrations = chain.vibrations;
 export const activateSecs = chain.activateSecs;
 // 感测体触须的钟（幽匿感测体.tsx）：加 32 秒免得负数
-export const sensorClock = (f: number) => secOf(f) + 32;
+export const sensorClock = (sec: number) => sec + 32;
 
 // ---------- 四只监守者 ----------
 // 落点：尖啸体召唤时落在它周围水平 ±5 格、上下 ±6 格内能站下监守者（0.9 × 2.9）的实心地面上（SpawnUtil.trySpawnMob，见 6-4-8 文件头），
@@ -91,43 +88,44 @@ const firstShriekSec = Math.min(...wardenPlans.map((w) => chain.receivedSecs[w.s
 const pairMid: V3 = [(geom.horseChestSpot[0] + geom.huangPanChestSpot[0]) / 2, (geom.horseChestSpot[1] + geom.huangPanChestSpot[1]) / 2, 0];
 export const wardens = wardenPlans.map((plan) => {
   const shriekSec = Math.max(chain.receivedSecs[plan.shriekerIndex], firstShriekSec + plan.gap);
-  const emergeFrame = Math.round((shriekSec + 0.75) * FPS);
+  // 本段第几秒开始钻出：尖啸后 0.75 秒
+  const emergeAt = shriekSec + 0.75;
   const p = toScene(plan.格[0] + 0.5, plan.格[1], plan.格[2] + 0.5);
   // 游戏时间（驱动待机晃动、心跳发光）：让第一下心跳落在钻出后 1 秒（心跳整 2 秒一次，见 6-4-8 声音.tsx）
-  const gameSecOffset = (((2 - ((31 + emergeFrame / FPS) % 2)) % 2) + 2) % 2;
+  const gameSecOffset = (((2 - ((31 + emergeAt) % 2)) % 2) + 2) % 2;
   return {
     名: plan.名,
     p,
     shrieker: shriekers[plan.shriekerIndex],
     shriekP: blockBottomCenter(shriekers[plan.shriekerIndex]),
     shriekSec,
-    emergeFrame,
-    standUpFrame: emergeFrame + K8.emergeDurationSec * FPS,
+    emergeAt,
     yaw: (Math.atan2(pairMid[1] - p[1], pairMid[0] - p[0]) * 180) / Math.PI + 90,
     gameSecOffset,
   };
 });
 export type WardenPlan = (typeof wardens)[number];
-export const emergeSecAt = (w: WardenPlan, f: number) => (f - w.emergeFrame) / FPS; // 开始钻出以后过了几秒（画面时间）
+// 开始钻出以后过了几秒（画面时间）
+export const emergeSecAt = (w: WardenPlan, sec: number) => sec - w.emergeAt;
 export const debrisSec = K8.crumbSec;
-export const wardenGameSec = (w: WardenPlan, f: number) => 30 + secOf(f) + w.gameSecOffset;
-export const wardenState = (w: WardenPlan, frame: number) => {
-  const t = emergeSecAt(w, frame);
+export const wardenGameSec = (w: WardenPlan, sec: number) => 30 + sec + w.gameSecOffset;
+export const wardenState = (w: WardenPlan, sec: number) => {
+  const t = emergeSecAt(w, sec);
   const emergeT = t * K8.emergeSpeedup;
   const tendril = t > K8.emergeDurationSec + 0.1 ? Math.max(0, 1 - (t - K8.emergeDurationSec - 0.1) / 0.5) : 0;
-  return { 秒: wardenGameSec(w, frame), 钻出: emergeT <= WARDEN.emergeSec ? Math.max(0, emergeT) : undefined, tendril: tendril, headYaw: 0, headPitch: emergeT > WARDEN.emergeSec ? 8 : 0 };
+  return { 秒: wardenGameSec(w, sec), 钻出: emergeT <= WARDEN.emergeSec ? Math.max(0, emergeT) : undefined, tendril: tendril, headYaw: 0, headPitch: emergeT > WARDEN.emergeSec ? 8 : 0 };
 };
 const [wA, wB, wC] = wardens;
 
 // ---------- 剪辑点 ----------
-export const shot2aEnd = wA.emergeFrame - 3; // 第一只钻出前切到它身后
-export const shot2End = wB.emergeFrame + 10; // 第二只手撑出地面、二人一激灵的当口切反打
-export const eyeContactStart = wC.emergeFrame + 8; // 第三只冒头，二人对看一眼
-export const eyeContactEnd = eyeContactStart + 9;
-export const turnAwayStart = eyeContactEnd + 2;
-export const shot3End = turnAwayStart + 9; // 马原地拧过去的当口切逃跑
-export const END = shot3End + 26;
-export const shotIndex = (f: number) => (f < shot1End ? 1 : f < shot2End ? 2 : f < shot3End ? 3 : 4);
+export const shot2aEnd = wA.emergeAt - 0.125; // 第一只钻出前切到它身后
+export const shot2End = wB.emergeAt + 5 / 12; // 第二只手撑出地面、二人一激灵的当口切反打
+export const eyeContactStart = wC.emergeAt + 1 / 3; // 第三只冒头，二人对看一眼
+export const eyeContactEnd = eyeContactStart + 0.375;
+export const turnAwayStart = eyeContactEnd + 1 / 12;
+export const shot3End = turnAwayStart + 0.375; // 马原地拧过去的当口切逃跑
+export const durSec = shot3End + 13 / 12;
+export const shotIndex = (sec: number) => (sec < shot1End ? 1 : sec < shot2End ? 2 : sec < shot3End ? 3 : 4);
 
 // ---------- 二人 ----------
 const horseChestYaw = yawFromTo(geom.horseChestSpot, chestCenter);
@@ -136,11 +134,11 @@ const huangChestYaw = yawFromTo(geom.huangPanChestSpot, chestCenter);
 const huangPanIslandFeet = X741.huangFeet(T12(0));
 const huangPanGazeYaw = yawFromTo(huangPanIslandFeet, X741.deathPos());
 // 反应（人的反应时间 0.25 秒，同 6-4-8）：第一只手撑出地面（钻出后 0.14 秒）后转头看、身子一缩；第二只就在箱子跟前，手一出来就一激灵
-const lookAFrame = wA.emergeFrame + 0.14 * FPS;
-const flinchAFrame = wA.emergeFrame + 0.39 * FPS;
-const startleBFrame = wB.emergeFrame + 0.3 * FPS;
+const lookAt = wA.emergeAt + 0.14;
+const flinchAt = wA.emergeAt + 0.39;
+const startleAt = wB.emergeAt + 0.3;
 // 马受惊：第二只手撑出地面后 0.1 秒（马比人快），头往上一甩、往左后方（离开箱子）退 0.8 格、身子往左拧 25°
-const spookFrame = wB.emergeFrame + 0.24 * FPS;
+const spookAt = wB.emergeAt + 0.24;
 const spookSec = 0.45;
 const horseBackDir: V3 = (() => {
   const dx = geom.horseChestSpot[0] - chestCenter[0];
@@ -148,11 +146,11 @@ const horseBackDir: V3 = (() => {
   const n = Math.hypot(dx, dy);
   return [dx / n, dy / n, 0];
 })();
-const horseSpookPos = (frame: number): V3 => {
-  const k = rampIn(frame, spookFrame, spookFrame + spookSec * FPS) * 0.8;
+const horseSpookPos = (sec: number): V3 => {
+  const k = rampIn(sec, spookAt, spookAt + spookSec) * 0.8;
   return [geom.horseChestSpot[0] + horseBackDir[0] * k, geom.horseChestSpot[1] + horseBackDir[1] * k, geom.horseChestSpot[2]];
 };
-const horseSpookYaw = (frame: number) => horseChestYaw + 25 * rampIn(frame, spookFrame, spookFrame + spookSec * FPS) + 8 * bump(frame, spookFrame, spookFrame + 8);
+const horseSpookYaw = (sec: number) => horseChestYaw + 25 * rampIn(sec, spookAt, spookAt + spookSec) + 8 * bump(sec, spookAt, spookAt + 1 / 3);
 // 逃跑路线（游戏坐标，脚底）：出龛口往东跳下地台（高两格）、拐向南边过道（x −702～−701 往南到 z 235 是通的，二人进来走的就是这条；z 236～242 横着一座小亭子，跑到它跟前停住）
 const along = (pts: V3[], dist: number): { p: V3; yaw: number } => {
   let rem = Math.max(0, dist);
@@ -175,15 +173,15 @@ const horseFleeFrom = horseSpookPos(turnAwayStart);
 const horseFleePath: V3[] = [horseFleeFrom, toScene(-705.8, -49, 199.3), toScene(-704.0, -49, 199.9), toScene(-703.3, -51, 200.9), toScene(-703.1, -51, 202.6), toScene(-702.0, -51, 204.6), toScene(-701.1, -51, 206.2), toScene(-701.0, -51, 208), toScene(-701.0, -51, 217.0), toScene(-700.3, -51, 219.3), toScene(-700.3, -51, 222.0), toScene(-700.3, -50, 223.5), toScene(-700.3, -50, 227.8), toScene(-700.3, -51, 229.0), toScene(-700.3, -51, 234.5)];
 // 黄叛一激灵往后（东边）退半步，掉头跟在马后面跑
 const huangBackStep: V3 = [0.45, 0.1, 0]; // 场景坐标：往东、略往北
-const huangFleeStart = turnAwayStart + 3;
+const huangFleeStart = turnAwayStart + 0.125;
 const huangFleeFrom: V3 = [geom.huangPanChestSpot[0] + huangBackStep[0], geom.huangPanChestSpot[1] + huangBackStep[1], geom.huangPanChestSpot[2]];
 const huangFleePath: V3[] = [huangFleeFrom, toScene(-705.2, -49, 198.3), toScene(-704.7, -49, 198.7), toScene(-704.1, -51, 199.3), toScene(-702.6, -51, 203.2), toScene(-701.4, -51, 206.6), toScene(-701.6, -51, 216.0), toScene(-699.6, -51, 218.4), toScene(-699.6, -51, 232.5)];
 const pathLen = (pts: V3[]) => pts.slice(1).reduce((sum, b, i) => sum + Math.hypot(b[0] - pts[i][0], b[1] - pts[i][1]), 0);
 const horseFleeLen = pathLen(horseFleePath);
 const huangFleeLen = pathLen(huangFleePath);
 // 起步：先拧身 0.2 秒，之后 `RAMP_SEC` 加速到 v（马 50、人 30 米/秒，用户 10-18 定）；跑到路尽头前 `RAMP_SEC` 刹住（都已经跑出镜 4 的画面）
-const fleeDist = (frame: number, start: number, speed: number, len: number) => {
-  const t = Math.max(0, (frame - start) / FPS - 0.2);
+const fleeDist = (sec: number, start: number, speed: number, len: number) => {
+  const t = Math.max(0, sec - start - 0.2);
   const d = t < RAMP_SEC ? (speed * t * t) / (2 * RAMP_SEC) : speed * (t - RAMP_SEC / 2);
   const brake = (RAMP_SEC / 2) * speed;
   if (d <= len - brake) return d;
@@ -191,43 +189,43 @@ const fleeDist = (frame: number, start: number, speed: number, len: number) => {
   return len - brake * left * left;
 };
 const horseTurnSec = 0.35;
-export const horseState = (frame: number) => {
-  if (shotIndex(frame) === 1) {
-    const h = X741.horseState(T12(frame));
+export const horseState = (sec: number) => {
+  if (shotIndex(sec) === 1) {
+    const h = X741.horseState(T12(sec));
     return { p: h.p, yaw: h.yaw, entityYaw: h.entityYaw, walkCycle: h.walkCycle as { legPhase: number; amplitude: number } | undefined, headYaw: 0, headPitch: 0, rear: h.rear };
   }
   // 受惊：头往上一甩（马头 xRot 30° 往回收）、之后一直昂着；退步时腿小步倒腾
-  const headToss = -35 * bump(frame, spookFrame, spookFrame + 10) - 15 * rampIn(frame, spookFrame + 4, spookFrame + 12);
-  if (frame < turnAwayStart) {
-    const shuffling = frame >= spookFrame && frame < spookFrame + spookSec * FPS + 3;
-    const yaw = horseSpookYaw(frame);
-    return { p: horseSpookPos(frame), yaw, entityYaw: yaw + 180, walkCycle: shuffling ? { legPhase: (frame - spookFrame) * 1.2, amplitude: 0.35 } : undefined, headYaw: 0, headPitch: headToss };
+  const headToss = -35 * bump(sec, spookAt, spookAt + 5 / 12) - 15 * rampIn(sec, spookAt + 1 / 6, spookAt + 0.5);
+  if (sec < turnAwayStart) {
+    const shuffling = sec >= spookAt && sec < spookAt + spookSec + 0.125;
+    const yaw = horseSpookYaw(sec);
+    return { p: horseSpookPos(sec), yaw, entityYaw: yaw + 180, walkCycle: shuffling ? { legPhase: (sec - spookAt) * 28.8, amplitude: 0.35 } : undefined, headYaw: 0, headPitch: headToss };
   }
-  const dist = fleeDist(frame, turnAwayStart, baseSpeed.horse, horseFleeLen);
+  const dist = fleeDist(sec, turnAwayStart, baseSpeed.horse, horseFleeLen);
   const at = along(horseFleePath, dist);
   const fromYaw = horseSpookYaw(turnAwayStart);
-  const yaw = fromYaw + (nearestYaw(fromYaw, at.yaw) - fromYaw) * rampIn(frame, turnAwayStart, turnAwayStart + horseTurnSec * FPS);
-  return { p: at.p, yaw, entityYaw: yaw + 180, walkCycle: { legPhase: (frame - turnAwayStart) * (20 / FPS) + dist * 2, amplitude: Math.min(1, 0.4 + dist) }, headYaw: 0, headPitch: -15 + 15 * rampIn(frame, turnAwayStart, turnAwayStart + 10) };
+  const yaw = fromYaw + (nearestYaw(fromYaw, at.yaw) - fromYaw) * rampIn(sec, turnAwayStart, turnAwayStart + horseTurnSec);
+  return { p: at.p, yaw, entityYaw: yaw + 180, walkCycle: { legPhase: (sec - turnAwayStart) * 20 + dist * 2, amplitude: Math.min(1, 0.4 + dist) }, headYaw: 0, headPitch: -15 + 15 * rampIn(sec, turnAwayStart, turnAwayStart + 5 / 12) };
 };
-export const liuXinzhongPose = (frame: number): FigurePose => {
-  const horse = horseState(frame);
-  if (shotIndex(frame) === 1) {
-    // 举杖（镜 1a 开头 4 帧起举，0.5 秒举到头顶）：马已经勒过来朝着它倒下的地方（7-4-1/戏.ts），头微仰
-    const raise = rampIn(frame, 4, 16);
+export const liuXinzhongPose = (sec: number): FigurePose => {
+  const horse = horseState(sec);
+  if (shotIndex(sec) === 1) {
+    // 举杖（镜 1a 开头 1/6 秒起举，0.5 秒举到头顶）：马已经勒过来朝着它倒下的地方（7-4-1/戏.ts），头微仰
+    const raise = rampIn(sec, 1 / 6, 2 / 3);
     return ridePose(horse, { pitch: 4, armR: 36 + 130 * raise, headPitch: 4 + 10 * raise });
   }
   // 探身开箱：开盖前 0.4 秒往前探、右手往前伸，开着以后收回一半
-  const lean = rampIn(frame, lidOpenFrame - 10, lidOpenFrame - 2) * (1 - 0.5 * rampIn(frame, lidOpenFrame + 8, lidOpenFrame + 20));
+  const lean = rampIn(sec, lidOpenSec - 5 / 12, lidOpenSec - 1 / 12) * (1 - 0.5 * rampIn(sec, lidOpenSec + 1 / 3, lidOpenSec + 5 / 6));
   // 第一只：头往右后扭过去看（它在马的右后方、低两格），身子一缩；第二只（正前方箱子跟前）：头猛地扭回来，一激灵往后仰、杖横到身前
-  const lookA = rampIn(frame, lookAFrame, lookAFrame + 0.4 * FPS);
+  const lookA = rampIn(sec, lookAt, lookAt + 0.4);
   const lookAYaw = Math.max(-75, nearestYaw(horse.yaw, yawFromTo(horse.p, wA.p)) - horse.yaw);
-  const flinchA = bump(frame, flinchAFrame, flinchAFrame + 8) * 0.6;
-  const lookB = rampIn(frame, startleBFrame - 3, startleBFrame + 2);
+  const flinchA = bump(sec, flinchAt, flinchAt + 1 / 3) * 0.6;
+  const lookB = rampIn(sec, startleAt - 0.125, startleAt + 1 / 12);
   const lookBYaw = Math.max(-75, Math.min(75, nearestYaw(horse.yaw, yawFromTo(horse.p, wB.p)) - horse.yaw));
-  const startle = rampIn(frame, startleBFrame, startleBFrame + 0.3 * FPS);
-  const eyeContact = rampIn(frame, eyeContactStart, eyeContactStart + 4) * (1 - rampIn(frame, eyeContactEnd, eyeContactEnd + 3));
-  const eyeContactYaw = Math.max(-75, Math.min(75, nearestYaw(horse.yaw, yawFromTo(horse.p, huangPanAt(frame))) - horse.yaw));
-  const turnAway = rampIn(frame, turnAwayStart, turnAwayStart + 6);
+  const startle = rampIn(sec, startleAt, startleAt + 0.3);
+  const eyeContact = rampIn(sec, eyeContactStart, eyeContactStart + 1 / 6) * (1 - rampIn(sec, eyeContactEnd, eyeContactEnd + 0.125));
+  const eyeContactYaw = Math.max(-75, Math.min(75, nearestYaw(horse.yaw, yawFromTo(horse.p, huangPanAt(sec))) - horse.yaw));
+  const turnAway = rampIn(sec, turnAwayStart, turnAwayStart + 0.25);
   let headYaw = lookAYaw * lookA;
   headYaw += (lookBYaw - headYaw) * lookB;
   headYaw += (eyeContactYaw - headYaw) * eyeContact;
@@ -242,44 +240,46 @@ export const liuXinzhongPose = (frame: number): FigurePose => {
   });
 };
 // 黄叛脚底（逃跑前：一激灵退半步）
-function huangPanAt(frame: number): V3 {
-  if (frame >= huangFleeStart) return along(huangFleePath, fleeDist(frame, huangFleeStart, baseSpeed.人, huangFleeLen)).p;
-  const k = rampIn(frame, startleBFrame, startleBFrame + 0.3 * FPS);
+function huangPanAt(sec: number): V3 {
+  if (sec >= huangFleeStart) return along(huangFleePath, fleeDist(sec, huangFleeStart, baseSpeed.人, huangFleeLen)).p;
+  const k = rampIn(sec, startleAt, startleAt + 0.3);
   return [geom.huangPanChestSpot[0] + huangBackStep[0] * k, geom.huangPanChestSpot[1] + huangBackStep[1] * k, geom.huangPanChestSpot[2]];
 }
-export const huangPanPose = (frame: number): FigurePose => {
-  if (shotIndex(frame) === 1) {
-    // 还面朝它倒下的地方，垂下弓、右手举拳（镜 1b 开头 2 帧起举）
-    const raise = rampIn(frame, shot1aEnd + 2, shot1aEnd + 12);
+export const huangPanPose = (sec: number): FigurePose => {
+  if (shotIndex(sec) === 1) {
+    // 还面朝它倒下的地方，垂下弓、右手举拳（镜 1b 开头 1/12 秒起举）
+    const raise = rampIn(sec, shot1aEnd + 1 / 12, shot1aEnd + 0.5);
     return { ...standPose(huangPanIslandFeet), yaw: huangPanGazeYaw, armL: 20, armLRoll: 4, armR: 15 + 160 * raise, armRRoll: 6 + 19 * raise, elbowR: 20 * raise, headPitch: 10 * raise };
   }
-  const pos = huangPanAt(frame);
+  const pos = huangPanAt(sec);
   // 第一只：转过身去看它（0.6 秒）、一缩；第二只：身子猛地扭回箱子那边，一激灵退半步、握弓的左手抬到身前
-  const lookA = rampIn(frame, lookAFrame, lookAFrame + 0.6 * FPS);
-  const flinchA = bump(frame, flinchAFrame, flinchAFrame + 8) * 0.6;
-  const lookB = rampIn(frame, startleBFrame - 2, startleBFrame + 4);
-  const startle = rampIn(frame, startleBFrame, startleBFrame + 0.3 * FPS);
-  const eyeContact = rampIn(frame, eyeContactStart, eyeContactStart + 4) * (1 - rampIn(frame, eyeContactEnd, eyeContactEnd + 3));
+  const lookA = rampIn(sec, lookAt, lookAt + 0.6);
+  const flinchA = bump(sec, flinchAt, flinchAt + 1 / 3) * 0.6;
+  const lookB = rampIn(sec, startleAt - 1 / 12, startleAt + 1 / 6);
+  const startle = rampIn(sec, startleAt, startleAt + 0.3);
+  const eyeContact = rampIn(sec, eyeContactStart, eyeContactStart + 1 / 6) * (1 - rampIn(sec, eyeContactEnd, eyeContactEnd + 0.125));
   const yawA = nearestYaw(huangChestYaw, yawFromTo(geom.huangPanChestSpot, wA.p));
   const yawB = nearestYaw(yawA, yawFromTo(geom.huangPanChestSpot, wB.p));
   let yaw = huangChestYaw + (yawA - huangChestYaw) * lookA;
   yaw += (yawB - yaw) * lookB;
-  const eyeContactYaw = nearestYaw(yaw, yawFromTo(pos, horseState(frame).p));
+  const eyeContactYaw = nearestYaw(yaw, yawFromTo(pos, horseState(sec).p));
   yaw += (eyeContactYaw - yaw) * eyeContact * 0.4;
   const headYaw = Math.max(-70, Math.min(70, (eyeContactYaw - yaw) * eyeContact));
-  if (frame >= huangFleeStart) {
-    const dist = fleeDist(frame, huangFleeStart, baseSpeed.人, huangFleeLen);
+  if (sec >= huangFleeStart) {
+    const dist = fleeDist(sec, huangFleeStart, baseSpeed.人, huangFleeLen);
     const at = along(huangFleePath, dist);
-    const turn = rampIn(frame, huangFleeStart, huangFleeStart + 0.35 * FPS);
+    const turn = rampIn(sec, huangFleeStart, huangFleeStart + 0.35);
     const runYaw = yaw + (nearestYaw(yaw, at.yaw) - yaw) * turn;
     // 摆腿相位 = ∫步频（模型/角色/跑步.ts，步频封顶、快了靠步子大）；拧身那 0.35 秒腿先小步倒腾起来。
-    // 一格一格积，最后不满一格的那截按那一格的步频补上（frame 带小数时腿不按 24 帧跳；整格上和只积整格一样）
-    const stepCycle = (f: number) => runCadence((fleeDist(f + 1, huangFleeStart, baseSpeed.人, huangFleeLen) - fleeDist(f, huangFleeStart, baseSpeed.人, huangFleeLen)) * FPS) / FPS;
+    // 照旧编排每 1/24 秒一样积，最后不满一样的那截按那一样的步频补上（整样上和只积整样一样）；改样密度会挪腿
+    const dt = 1 / 24;
+    const stepCycle = (from: number) => runCadence((fleeDist(from + dt, huangFleeStart, baseSpeed.人, huangFleeLen) - fleeDist(from, huangFleeStart, baseSpeed.人, huangFleeLen)) / dt) * dt;
+    const x = (sec - huangFleeStart) / dt; // 起跑后第几样（带小数）
     let cycles = 0;
-    let f = huangFleeStart;
-    for (; f + 1 <= frame + 1e-9; f++) cycles += stepCycle(f);
-    if (frame > f) cycles += stepCycle(f) * (frame - f);
-    const speed = (fleeDist(frame + 1, huangFleeStart, baseSpeed.人, huangFleeLen) - dist) * FPS;
+    let n = 0;
+    for (; n + 1 <= x + 1e-9; n++) cycles += stepCycle(huangFleeStart + n * dt);
+    if (x > n) cycles += stepCycle(huangFleeStart + n * dt) * (x - n);
+    const speed = (fleeDist(sec + dt, huangFleeStart, baseSpeed.人, huangFleeLen) - dist) / dt;
     const run = runPoseAt(pos, runYaw, cycles, speed);
     const k = Math.min(1, turn * 1.5);
     return { ...run, legR: run.legR * k, legL: run.legL * k, armR: run.armR * k, armL: 30 };
@@ -294,7 +294,7 @@ export const huangPanPose = (frame: number): FigurePose => {
     armLRoll: 4,
     armR: 12 + 20 * startle,
     armRRoll: 6,
-    legR: -18 * bump(frame, startleBFrame, startleBFrame + 0.3 * FPS),
+    legR: -18 * bump(sec, startleAt, startleAt + 0.3),
   };
 };
 
@@ -315,7 +315,7 @@ const shot1bCam: Cam = {
 // 机位都用 工具/古城4x布局/方块.py 的视线查过（人、各只监守者的脚、腰、头到镜头不被方块挡）。
 // 镜 2a：龛口外东边、比地台高 3 格往西看进龛里：开盖、咔嗒、尖啸（马、箱子、感测体、尖啸体都在画面里）
 const shot2aCam: Cam = { pos: toScene(-700.3, -45.8, 199.6), tgt: toScene(-708.5, -48.2, 198.4), lens: 22 };
-// 镜 2b：第一只钻出前 3 帧硬切到它身后、离地 2 格往西看：它在画面右下方破土爬出来（背对镜头），二人隔着它扭头朝镜头这边看，第二只在他们后面箱子跟前冒头；慢慢推近一点
+// 镜 2b：第一只钻出前 0.125 秒硬切到它身后、离地 2 格往西看：它在画面右下方破土爬出来（背对镜头），二人隔着它扭头朝镜头这边看，第二只在他们后面箱子跟前冒头；慢慢推近一点
 const shot2bCam: Cam = { pos: toScene(-700.4, -49.0, 197.8), tgt: toScene(-707.0, -49.2, 198.4), lens: 18 };
 const shot2bEndCam: Cam = { pos: toScene(-700.6, -49.0, 197.8), tgt: toScene(-707.0, -49.1, 198.4), lens: 21 };
 // 镜 3：从镜 2b 往前推进到龛口、比地台高 2.4 格往西看：刘心忠骑马在画面左边、黄叛在右边背对镜头，中间后面是尖啸体和箱子，
@@ -329,10 +329,10 @@ const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({
   tgt: a.tgt.map((v, i) => v + (b.tgt[i] - v) * k) as V3,
   lens: a.lens + (b.lens - a.lens) * k,
 });
-export const camera = (frame: number): Cam => {
-  const k = shotIndex(frame);
-  if (k === 1) return frame < shot1aEnd ? shot1aCam : shot1bCam;
-  if (k === 2) return frame < shot2aEnd ? shot2aCam : lerpCam(shot2bCam, shot2bEndCam, sample([[shot2aEnd, 0], [shot2End, 1]] as Key[], frame));
+export const camera = (sec: number): Cam => {
+  const k = shotIndex(sec);
+  if (k === 1) return sec < shot1aEnd ? shot1aCam : shot1bCam;
+  if (k === 2) return sec < shot2aEnd ? shot2aCam : lerpCam(shot2bCam, shot2bEndCam, sample([[shot2aEnd, 0], [shot2End, 1]] as Key[], sec));
   if (k === 3) return shot3Cam;
   return shot4Cam;
 };

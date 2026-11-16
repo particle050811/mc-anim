@@ -6,7 +6,7 @@
 // 镜头自己的路（远景刹停、停住看 boss 炸开、追上去；雪怪首领在洞道里沿路线追）写成「位置机位」，换算回 P 再和别的机位接（见 镜段.ts 的远景）。
 // 各处 boss 一个镜段（见 镜段.ts），按时间一层层盖、两头渐变（见 `合成`）；关键帧值照审过的机位换算（见 镜头构图.ts 的 `fromLegacy`）。
 // 被方块挡住往骑手身上收（`收表`），首帧接 6-1-3 末帧。
-import { camSpans, fadeFrames } from './镜段.ts';
+import { camSpans, fadeSec } from './镜段.ts';
 import {
   type Vec, add, sub, mul, dot, len, norm, slerp,
   mixFraming, riderAt, camPosOf, posToFraming, solveView, cruiseFraming, sampleKeys, clampToBore,
@@ -19,23 +19,23 @@ const pullInData = pullInJson as unknown as { 收: number[][] };
 export type Cam = { pos: number[]; tgt: number[]; lens: number };
 
 // ---------- 合成：每一帧的 P 和位置 ----------
-// 镜段按时间一层层盖：窗口里 P = 前面几层合成的 P 和这一段的 P 按权混（权在窗口头尾 `渐` 帧里五次缓动渐变）。位置机位（远景）按它的权盖在 P 的位置部分上
-const composite = (Fg: number) => {
+// 镜段按时间一层层盖：窗口里 P = 前面几层合成的 P 和这一段的 P 按权混（权在窗口头尾 `fadeSec` 秒里五次缓动渐变）。位置机位（远景）按它的权盖在 P 的位置部分上
+const composite = (g: number) => {
   let framing = { ...cruiseFraming };
   let focus: Vec | null = null;
   let keepInFrame = false;
   let ownPos = 0; // 位置有多少是自己走的机位给的（这一份不夹孔道）
   for (const span of camSpans) {
-    if (Fg < span.起 || Fg > span.止) continue;
-    // 起飞从第 0 帧起不渐入、降落一直到最后一帧不渐出。渐入（出）用第一个（最后一个）关键帧间隔那么长：
-    // 叠在一起的时候两边的关键帧都在动，12 帧换过去焦距一帧变 4%
-    const fadeIn = Math.max(fadeFrames, span.Keys[1][0] - span.Keys[0][0]);
-    const fadeOut = Math.max(fadeFrames, span.Keys[span.Keys.length - 1][0] - span.Keys[span.Keys.length - 2][0]);
-    const segWeight = Math.min(span.名 === '起飞' ? 1 : smootherstep01((Fg - span.起) / fadeIn), span.名 === '降落' ? 1 : smootherstep01((span.止 - Fg) / fadeOut));
-    let spanFraming = sampleKeys(span.Keys, Fg, span.锚);
-    const posCamRes = span.位?.(Fg);
+    if (g < span.起 || g > span.止) continue;
+    // 起飞从首帧起不渐入、降落一直到最后一帧不渐出。渐入（出）用第一个（最后一个）关键帧间隔那么长：
+    // 叠在一起的时候两边的关键帧都在动，0.5 秒换过去焦距一格（1/24 秒）变 4%
+    const fadeIn = Math.max(fadeSec, span.Keys[1][0] - span.Keys[0][0]);
+    const fadeOut = Math.max(fadeSec, span.Keys[span.Keys.length - 1][0] - span.Keys[span.Keys.length - 2][0]);
+    const segWeight = Math.min(span.名 === '起飞' ? 1 : smootherstep01((g - span.起) / fadeIn), span.名 === '降落' ? 1 : smootherstep01((span.止 - g) / fadeOut));
+    let spanFraming = sampleKeys(span.Keys, g, span.锚);
+    const posCamRes = span.位?.(g);
     const posWeight = posCamRes ? posCamRes.weight : 0;
-    if (posCamRes && posWeight > 0) spanFraming = mixFraming(spanFraming, { ...spanFraming, ...posToFraming(posCamRes.C, Fg) }, posWeight);
+    if (posCamRes && posWeight > 0) spanFraming = mixFraming(spanFraming, { ...spanFraming, ...posToFraming(posCamRes.C, g) }, posWeight);
     framing = mixFraming(framing, spanFraming, segWeight);
     ownPos = lerp(ownPos, posWeight, segWeight);
     if (span.focus && spanFraming.偏 > 0 && segWeight > 0.5) focus = span.focus();
@@ -56,11 +56,11 @@ const limitToFrame = (fw: Vec, toRider: Vec, lens: number, isGiant: boolean) => 
 };
 
 // 从 P 摆镜头：位置（自己走的机位已经换算进 P，这里按 P 还原，同一个位置）→ 夹在孔道里 → 视线（骑手落在 (x, y)）→ 往 boss 偏
-const placeCam = (Fg: number) => {
-  const { P: framing, focus: focus, keepInFrame: keepInFrame, ownPos: ownPos } = composite(Fg);
-  const C0 = camPosOf(framing, Fg);
-  const camPos = ownPos >= 1 ? C0 : add(C0, mul(sub(clampToBore(C0, Fg, framing.方), C0), 1 - ownPos));
-  const rider = riderAt(Fg);
+const placeCam = (g: number) => {
+  const { P: framing, focus: focus, keepInFrame: keepInFrame, ownPos: ownPos } = composite(g);
+  const C0 = camPosOf(framing, g);
+  const camPos = ownPos >= 1 ? C0 : add(C0, mul(sub(clampToBore(C0, g, framing.方), C0), 1 - ownPos));
+  const rider = riderAt(g);
   const lens = Math.exp(framing.焦);
   let fw = solveView(camPos, rider, framing.x, framing.y, lens);
   if (focus && framing.偏 > 0) {
@@ -75,10 +75,12 @@ const placeCam = (Fg: number) => {
 
 // ---------- 收：被方块挡住时往骑手身上收 ----------
 // 同游戏第三人称镜头碰到方块就往玩家身上收（用户 10-07）：沿「镜头 → 骑手中心」往里收到不被挡为止，骑手在画面上位置不变只是变大；
-// 收多少沿时间先取 ±`收宽` 帧里最多的、再三角窗抹平。挡不挡按真方块算（`收表`.json，工具/一镜到底/收表.ts 量好写进来；镜头路线一改要重跑）
+// 收多少沿时间先取 ±`pullInHalfWin` 格里最多的、再三角窗抹平。挡不挡按真方块算（`收表`.json，工具/一镜到底/收表.ts 量好写进来；镜头路线一改要重跑）。
+// 收表每 1/24 秒一格
+const PULL_IN_SAMPLES_PER_SEC = 24;
 const pullInHalfWin = 6;
 const pullInTable = (() => {
-  const frameCount = route.totalFrames;
+  const frameCount = Math.round(route.totalLength * PULL_IN_SAMPLES_PER_SEC);
   const raw = new Float64Array(frameCount).fill(1);
   for (const [frame, k] of pullInData.收 as [number, number][]) if (frame < frameCount) raw[frame] = k;
   const lo = raw.map((_, frame) => {
@@ -99,13 +101,13 @@ const pullInTable = (() => {
 })();
 
 // 镜头离树顶近不自动顶高（用户 10-08 要报 warning 不擅自改路线），由 工具/一镜到底/诊断.ts 列出来
-export const cameraAt = (Fg: number): Cam => {
-  const placed = placeCam(Fg);
+export const cameraAt = (g: number): Cam => {
+  const placed = placeCam(g);
   let pos = placed.pos;
   // `收表` 只量了离骑手 20 米以内的帧，抹平的窗口会把收带到旁边的帧上：远景刹停那几帧镜头退到几十米外，再收就把停着的镜头往骑手拽。20～30 米之间渐到不收
   const dist = len(sub(pos, placed.B));
   // 收表一格一个，格之间插值（以前取最近的整格，60 帧输出时按 24 帧跳）
-  const k = lerp(1, interpTable(pullInTable, Fg), 1 - smoothstep01((dist - 20) / 10));
+  const k = lerp(1, interpTable(pullInTable, g * PULL_IN_SAMPLES_PER_SEC), 1 - smoothstep01((dist - 20) / 10));
   if (k < 1) pos = add(placed.B, mul(sub(pos, placed.B), k));
   return { pos, tgt: add(pos, mul(placed.fw, 10)), lens: placed.lens };
 };

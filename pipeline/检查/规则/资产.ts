@@ -2,8 +2,8 @@ import { readModel, modelFileName, sectionFormatVersion } from '../../../engine/
 // 资产：资产表字段齐全（许可是 SPDX 表达式）、资产表和资产锁一一对应、可见性私有的在 私有/ 库；
 // 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁/）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
 // 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
-// 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（资产/随仓库.ts）。
-// 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（资产/发布.ts）。
+// 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（分发/随仓库.ts）。
+// 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（分发/发布.ts）。
 // 写了 材质包.toml 的作品：[段] 里的段键在清单里，每一种选用的覆盖层锁都建了、和现在登记的包对得上（资产/资产锁.ts 套材质包）。
 // 粒子帧/ 下 anim extract --particle-frames 生成的模块和定义、配方、锁对得上（取材/粒子帧.ts）。
 // --deep：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
@@ -12,16 +12,15 @@ import { packManifest } from '../../世界/版本.ts';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { readContent } from '../内容.ts';
-import { isRenderCode, closure, type CheckReport, type CheckContext } from '../上下文.ts';
+import { readContent, lineTablePath, readLineTable } from '../../源码/内容.ts';
+import { isRenderCode, closure, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { parseSource, walk, ts } from '../语法.ts';
-import { lineTablePath, readLineTable } from './台词.ts';
 import { mergeAssetRegistry, readAssetRegistry, type AssetSide, type AssetEntry } from '../../资产/资产表.ts';
 import { workResourcePackTablePath, workResourcePackSelections, bytesPath, applyResourcePack, readResourcePackTable, type AssetLock } from '../../资产/资产锁.ts';
 import { dataRoot as configDataRoot } from '../../环境/配置.ts';
-import { compareBytes, computeRepoBundle, readRepoManifest, repoTableName, bytesDirName } from '../../资产/随仓库.ts';
-import { compareReleaseLock, computeExpectedRelease, readReleaseManifest, releaseTableName } from '../../资产/发布.ts';
-import { releaseLockName } from '../../资产/发布锁.ts';
+import { compareBytes, computeRepoBundle, readRepoManifest, repoTableName, bytesDirName } from '../../分发/随仓库.ts';
+import { compareReleaseLock, computeExpectedRelease, readReleaseManifest, releaseTableName } from '../../分发/发布.ts';
+import { releaseLockName } from '../../分发/发布锁.ts';
 import { lacksAudioMetadata } from '../../资产/补量.ts';
 import { parseManifest } from '../../取材/清单.ts';
 import { generatedFiles, buildSourceTable, checkParticleFrames } from '../../取材/粒子帧.ts';

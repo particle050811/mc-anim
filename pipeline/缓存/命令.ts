@@ -6,7 +6,7 @@ import { UsageError, parseArgs } from '../cli/参数.ts';
 import { currentWork, getSpecifiedWork } from '../环境/作品.ts';
 import { dataRoot } from '../环境/配置.ts';
 import { passRenderGate } from '../闸/闸.ts';
-import { savableBytes } from './去重.ts';
+import { savableBytes } from '../环境/去重.ts';
 import { keepClassOrder, sizeText, Subtotal, type KeepReason } from './回收.ts';
 import { reclaimKinds, defaultDays, computeReclaimPlan, runReclaim, type ReclaimClass, type ReclaimPlan } from './计划.ts';
 

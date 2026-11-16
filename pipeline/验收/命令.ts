@@ -6,9 +6,9 @@
 // anim verify backfill [<选择器…>]：从认可那版的切片抽出认可参考，之后认可那版删了也能比像素。
 // anim verify frames <选择器…> [--frames …] --save <名> | --compare <名> [--keep-images <目录>]：每帧 PNG 的 sha 存一份、再渲一次比，见 逐帧校验.ts。
 // 一律按视频级比；真要抽帧解码时才过放行闸（一次命令只过一次；指纹和认可版一样的段不解码、不等闸，用户 10-30 授权），
-// 缺切片加 --render 时渲染照旧过渲染闸（和 anim film 同一条路，渲/渲段.ts）。指纹一样、但段签说同一指纹重渲过（签名和认可记录不一样，或切片大小改于和段签记的不一样）的照样比：
+// 缺切片加 --render 时渲染照旧过渲染闸（和 anim film 同一条路，出片/渲段.ts）。指纹一样、但段签说同一指纹重渲过（签名和认可记录不一样，或切片大小改于和段签记的不一样）的照样比：
 // 这时现在的切片不是认可那版，认可那版的像素只取认可参考，或段签证明是认可那版的切片，不拿现在的冒充。
-// 新这一版的签名读段签（pipeline/段签/，缺了从切片当场派生），哈希和认可版不一样的帧解切片取像素（用户 11-02 定的比法：比小块平均颜色，压缩噪声在门槛以下）；
+// 新这一版的签名读段签（验收/段签.ts，缺了从切片当场派生），哈希和认可版不一样的帧解切片取像素（用户 11-02 定的比法：比小块平均颜色，压缩噪声在门槛以下）；
 // 认可那版的像素按 认可参考 → 认可那版的切片 → 只比块均值 取。现在这个指纹的切片都没了、又要看像素，报要重渲。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,7 +20,7 @@ import { markUsed } from '../渲/母版.ts';
 import { masterDir } from '../环境/作品数据.ts';
 import { masterSize } from '../渲/设置.ts';
 import { segmentProducts, type SegArtifact } from '../渲/段产物.ts';
-import { renderSegments } from '../渲/渲段.ts';
+import { renderSegments } from '../出片/渲段.ts';
 import { lazyPassGate } from '../闸/闸.ts';
 import { newPreviewDir } from '../预览/预览.ts';
 import { utcTime, type RunRecord } from '../运行记录/记录.ts';
@@ -28,8 +28,8 @@ import { readThresholds, conversion } from './比较.ts';
 import { platformId, findAmbiguous, readApproval, writeApproval, approvalFile, type ApprovalRecord } from './认可.ts';
 import { scanMaster, scanSegStamp, isChanged, NoSignatureError, MissingMasterError, RefMismatchError, type ScanResult } from './验收.ts';
 import { prepareRef, referenceFile, findApprovedMaster, type ReferenceResult } from './参考.ts';
-import { fetchSegStamp, sameFingerprintRerender } from '../段签/取.ts';
-import { matchesMaster, readSegStamp, segStampComplete, type SegStamp } from '../段签/段签.ts';
+import { fetchSegStamp, sameFingerprintRerender } from './取段签.ts';
+import { matchesMaster, readSegStamp, segStampComplete, type SegStamp } from './段签.ts';
 import { isValidTopic } from '../预览/预览.ts';
 import { checkSelectedSegCues, runCuesBeforeRender } from '../段框架/自动.ts';
 import { parseFrames, runPerFrame } from './逐帧校验.ts';

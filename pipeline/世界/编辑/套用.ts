@@ -4,7 +4,7 @@
 // 没有一步碰到的区域原样返回同一个对象：不改地形的包烘出来的字节和不套编辑时一样。
 import { columnIndex, spreadColumn, startTable, type UnpackedColumnSegmentRegion } from '../列段.ts';
 import type { RegionSource } from '../区域源.ts';
-import { volume, type Box, type EditStep } from './命令.ts';
+import { volume, type Box, type EditStep } from './编辑命令.ts';
 import type { EditSet } from './编辑文件.ts';
 import { matchState, type BlockState } from './方块状态.ts';
 import { transformPos, transformState, cellIndex } from './结构.ts';

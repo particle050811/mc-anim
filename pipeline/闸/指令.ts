@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readJson, writeJson, promptOnly } from './文件.ts';
-import type { SchedulerEnv } from './任务.ts';
+import type { SchedulerEnv } from './调度环境.ts';
 export type Directive = {
     动作: string;
     为什么: string;

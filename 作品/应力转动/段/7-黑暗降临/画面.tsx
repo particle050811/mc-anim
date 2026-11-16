@@ -8,10 +8,9 @@ import * as choreo from './编排.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
-export const c711FrameCount = choreo.END;
 export const C711: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  return <ScenePicture t={choreo.timeAt(frame)} cam={choreo.camera(frame)} width={width} height={height} />;
+  return <ScenePicture t={choreo.timeAt(sec)} cam={choreo.camera(sec)} width={width} height={height} />;
 };
 export default definePicture(seg, soundUrl, C711);

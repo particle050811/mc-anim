@@ -1,4 +1,4 @@
-// 6-2-4 出发：时间轴、人物、扫帚、镜头，纯函数，输入帧号 f（0 = 段首 = 29.1；24 帧/秒，共 `segmentFrames('6-2-4')` 帧）。
+// 6-2-4 出发：时间轴、人物、扫帚、镜头，纯函数，输入段内秒 t（0 = 段首 = 29.1，共 `DURATION` 秒，到 33.1）。动作长短原来按 1/24 秒一格定，写成 n / 24 秒，注释里的「帧」「格」是这种格。
 // 故事（脚本 正篇/06-古城寻卷/脚本规划.md 第 2 场、「室内转室外」）：基地工坊里，李樱把结构指南针递给九胡，九胡伸右手接过去、低头看一眼，之后一直握在右手里
 // （用户 10-20：「这边是九胡导航，所以前一段时间理应把指南针递给九胡，而不是自己收起来」；握法见 模型/角色/九胡持指南针.tsx），
 // 李樱唤出扫帚，二人跨上去（李樱在前、九胡在后），扫帚离地一点、原地转向西墙的门，镜头绕到扫帚后面；
@@ -6,8 +6,8 @@
 // 台词：九胡坐稳后一句「九胡导航」，开口帧在 出发.tsx 的 `lineCues`。
 // 门（10-12 剪映注释：房间至少给一个出口，不要钻屋顶；用户定「不要还走一段路，直接飞」）：出发朝向（西北偏西）那面西墙开了一道门
 // （基地工坊.布局.ts：本地 y 1～3、3 格宽、3 格高，门框是两边的云杉原木柱和上面一道去皮云杉横梁），扫帚离地只升到 1.25 格（人头顶约 2.65 格，门洞顶 3 格），对着门口冲出去，出了门才抬头往上窜。
-// 卡点（`frameInSegment('6-2-4', [bar, beat])`，配乐表 src/配乐/第六章飞行.ts；音乐对齐等画面定稿再统一对）：
-//   29.1 递指南针；30.1 跨上扫帚；31.1 扫帚离地；32.4 扫帚正好穿过门口；末帧 = 33.1 前一帧 = 6-2-5 首帧。
+// 卡点（`beatSec`(bar, beat)：歌里那一拍的真时刻，配乐表 src/配乐/第六章飞行.ts；音乐对齐等画面定稿再统一对）：
+//   29.1 递指南针；30.1 跨上扫帚；31.1 扫帚离地；32.4 扫帚正好穿过门口；末帧（`beats.last`）= 6-2-5 首帧。
 // 场景：模型/场景/基地工坊.tsx（按场景描述用游戏方块摆的房间），摆在主世界-116 基地小岛的真实地形上（模型/场景/基地小岛.tsx：岛东南部，不转向，东墙、南墙的大窗正对东、南）。
 // 房间按本地坐标写，屋子正中 (0, 0) 唤出扫帚，扫帚头先朝本地 +Y（北）。
 // 末帧（草束盖满画面）= 6-2-5 首帧：草束贴着镜头、看不到别的东西，所以只要扫帚和镜头的相对位置、扫帚相对太阳的朝向一样，两帧就一样，不用在同一个地方。
@@ -22,31 +22,35 @@ import * as THREE from 'three';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { jiuhuStandBones } from '@库/角色/九胡.tsx';
 import { COMPASS_SCALE, jiuhuCompassMatrix } from '../../../角色/九胡持指南针.tsx';
-import { segmentFrames, frameInSegment } from '../../../配乐/配乐音轨.tsx';
+import { segmentRange } from '../../../配乐/配乐音轨.tsx';
+import { posToSec } from '@engine/audio/曲目.ts';
 import { roomOrigin, roomHeading } from '../../../地点/基地小岛.tsx';
 import { overworldWindowView } from '@engine/voxel/主世界地形.ts';
 import * as choreo625 from '../../../地点/边城/6-2-5/编排.ts';
 import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 export const segmentId = '6-2-4';
-export const FRAMES = segmentFrames(segmentId);
-const beatFrame = (bar: number, beat: number) => frameInSegment(segmentId, [bar, beat]);
+// 段长、卡点都用歌里的真时刻（用户 11-16 定不再取整到 1/24 秒的格）
+const range = segmentRange(segmentId);
+export const DURATION = range.end - range.start;
+const beatSec = (bar: number, beat: number) => posToSec(range.table.song, [bar, beat]) - range.start;
 export const beats = {
-  handOffFrame: 0, // 29.1 李樱把指南针递给九胡（从 6-2-3 末帧递出的半途接着往她面前送，第 12 帧送到）
-  receive: 4, // 九胡低头看、伸右手去接
-  handoff: 16, // 九胡的手托住指南针（14～18 两只手都在上面，指南针从他手上换到她手上）
-  release: 18, // 李樱松手、手放下；九胡把指南针收到身前低处
-  lookUp: 40, // 九胡看完抬头
-  summon: 50, // 扫帚冒出来
-  mount: beatFrame(30, 1), // 30.1 跨上扫帚这一拍（李樱正蹲身起跳，4 帧后落座）
-  liYingMount: beatFrame(30, 1) + 4, // 30.1 李樱跳上前座（落座那一帧）
-  jiuHuUp: beatFrame(30, 1) + 20,
-  seated: beatFrame(30, 1) + 36,
-  liftOff: beatFrame(31, 1), // 31.1 扫帚慢慢离地、原地转向门口，镜头开始绕到后面
-  charge: beatFrame(32, 4) - 45, // 转好了，冲之前往下一沉
-  rush: beatFrame(32, 4) - 39, // 往门口冲（匀加速）
-  throughDoor: beatFrame(32, 4), // 32.4 扫帚正好穿过门口（杆中心过西墙中线）
-  lastFrame: FRAMES - 1,
+  handOff: 0, // 29.1 李樱把指南针递给九胡（从 6-2-3 末帧递出的半途接着往她面前送，12 格送到）
+  receive: 4 / 24, // 九胡低头看、伸右手去接
+  handoff: 16 / 24, // 九胡的手托住指南针（14～18 格两只手都在上面，指南针从他手上换到她手上）
+  release: 18 / 24, // 李樱松手、手放下；九胡把指南针收到身前低处
+  lookUp: 40 / 24, // 九胡看完抬头
+  summon: 50 / 24, // 扫帚冒出来
+  mount: beatSec(30, 1), // 30.1 跨上扫帚这一拍（李樱正蹲身起跳，4 格后落座）
+  liYingMount: beatSec(30, 1) + 4 / 24, // 30.1 李樱跳上前座（落座那一刻）
+  jiuHuUp: beatSec(30, 1) + 20 / 24,
+  seated: beatSec(30, 1) + 36 / 24,
+  liftOff: beatSec(31, 1), // 31.1 扫帚慢慢离地、原地转向门口，镜头开始绕到后面
+  charge: beatSec(32, 4) - 45 / 24, // 转好了，冲之前往下一沉
+  rush: beatSec(32, 4) - 39 / 24, // 往门口冲（匀加速）
+  throughDoor: beatSec(32, 4), // 32.4 扫帚正好穿过门口（杆中心过西墙中线）
+  // 末帧：段尾前 1/60 秒（60 帧/秒的最后一帧）起就是 6-2-5 首帧的样子，硬切过去两帧一样
+  last: DURATION - 1 / 60,
 };
 const D2R = Math.PI / 180;
 
@@ -63,9 +67,9 @@ const LIFT = 1.25;
 const DIP = 0.1; // 冲之前往下一沉
 export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; appear: number };
 // 不带悬停起伏、不带下沉、不带出门后往上窜的高度（镜头跟它走，免得画面跟着扫帚一颤一颤）
-const baseZ = (frame: number) => {
-  let z = HOVER + SETTLE * smoothstep01((frame - beats.seated) / 24);
-  z += (LIFT - HOVER - SETTLE) * smoothstep01((frame - beats.liftOff) / (beats.charge - beats.liftOff));
+const baseZ = (t: number) => {
+  let z = HOVER + SETTLE * smoothstep01(t - beats.seated);
+  z += (LIFT - HOVER - SETTLE) * smoothstep01((t - beats.liftOff) / (beats.charge - beats.liftOff));
   return z;
 };
 // ---------- 房间在世界里的摆法：本地 → 世界 = 绕竖轴转 ROOM.朝向，再平移 ROOM.位置（基地小岛.tsx 定的，不转） ----------
@@ -74,40 +78,40 @@ export const ROOM = { heading: roomHeading, origin: roomOrigin };
 // 西墙的门开在屋子正中沿这个方向出去的地方（约 69°；杆中心过西墙中线 x −6.5 时 y ≈ 2.5，门洞是 y 1～4）
 export const departYaw = wrap(END.facing - ROOM.heading);
 const DIR = [-Math.sin(departYaw * D2R), Math.cos(departYaw * D2R)]; // 出发方向（水平单位向量，本地）
-// ---------- 冲出门：沿出发方向匀加速，卡.出门 那一帧杆中心正好过西墙的中线（本地 x −6.5） ----------
+// ---------- 冲出门：沿出发方向匀加速，卡.出门 那一刻杆中心正好过西墙的中线（本地 x −6.5） ----------
 const S_DOOR = 6.5 / -DIR[0]; // 从屋子正中到门口的路程
-const ACC = (2 * S_DOOR) / ((beats.throughDoor - beats.rush) / 24) ** 2; // 格/秒²
-export const dashS = (frame: number) => {
-  const sec = Math.max(0, (Math.min(frame, beats.lastFrame) - beats.rush) / 24);
+const ACC = (2 * S_DOOR) / (beats.throughDoor - beats.rush) ** 2; // 格/秒²
+export const dashS = (t: number) => {
+  const sec = Math.max(0, Math.min(t, beats.last) - beats.rush);
   return 0.5 * ACC * sec * sec;
 };
-const S_END = dashS(beats.lastFrame);
+const S_END = dashS(beats.last);
 // 出了墙（墙外皮在 x −7，墙外一圈勒脚到 x −8）才抬头往上窜：从 `S_CLIMB` 起，杆中心升 `CLIMB` 格、扫帚头抬到 6-2-5 首帧的俯仰。
 // 墙外地比屋里地板高一格（存档里西北半边是 y 69 的草地），升得快一点，脚不擦地
 const S_CLIMB = 7.0 / -DIR[0];
 const CLIMB = 2.5;
 const climbK = (s: number) => smoothstep01((s - S_CLIMB) / (S_END - S_CLIMB));
-const zAt = (frame: number) => {
-  const bob = 0.05 * Math.sin((2 * Math.PI * frame) / 40) * (1 - smoothstep01((frame - beats.charge + 12) / 12));
-  const dip = -DIP * smoothstep01((frame - beats.charge) / 6) * (1 - smoothstep01((frame - beats.rush) / 10));
-  return baseZ(frame) + bob + dip + CLIMB * climbK(dashS(frame));
+const zAt = (t: number) => {
+  const bob = 0.05 * Math.sin((2 * Math.PI * t) / (40 / 24)) * (1 - smoothstep01((t - beats.charge + 12 / 24) / (12 / 24)));
+  const dip = -DIP * smoothstep01((t - beats.charge) / (6 / 24)) * (1 - smoothstep01((t - beats.rush) / (10 / 24)));
+  return baseZ(t) + bob + dip + CLIMB * climbK(dashS(t));
 };
-export const Z_END = zAt(beats.lastFrame);
-const pitchAt = (frame: number) => {
+export const Z_END = zAt(beats.last);
+const pitchAt = (t: number) => {
   // 冲之前扫帚头微微翘起蓄力（3°），冲起来压平；出了门抬到 6-2-5 首帧的俯仰
-  const pre = 3 * smoothstep01((frame - beats.charge) / 6) * (1 - smoothstep01((frame - beats.rush) / 8));
-  return lerp(pre, END.pitch, climbK(dashS(frame)));
+  const pre = 3 * smoothstep01((t - beats.charge) / (6 / 24)) * (1 - smoothstep01((t - beats.rush) / (8 / 24)));
+  return lerp(pre, END.pitch, climbK(dashS(t)));
 };
 // 31.1 离地起，扫帚一边慢慢升、一边原地转到出发朝向（对着门口），蓄力之前转完
-const yawAt = (f: number) => departYaw * smoothstep01((f - beats.liftOff) / (beats.charge - beats.liftOff));
-const posAt = (frame: number): V3 => {
-  const dist = dashS(frame);
-  return [DIR[0] * dist, DIR[1] * dist, zAt(frame)];
+const yawAt = (t: number) => departYaw * smoothstep01((t - beats.liftOff) / (beats.charge - beats.liftOff));
+const posAt = (t: number): V3 => {
+  const dist = dashS(t);
+  return [DIR[0] * dist, DIR[1] * dist, zAt(t)];
 };
-export const broom = (frame: number): BroomState => {
-  const appear = frame < beats.summon ? 0 : sample([[beats.summon, 0], [beats.summon + 6, 1.15], [beats.summon + 10, 1]], frame);
-  if (frame >= beats.lastFrame) return { 位置: posAt(beats.lastFrame), facing: departYaw, pitch: END.pitch, roll: 0, appear: 1 };
-  return { 位置: posAt(frame), facing: yawAt(frame), pitch: pitchAt(frame), roll: 0, appear };
+export const broom = (t: number): BroomState => {
+  const appear = t < beats.summon ? 0 : sample([[beats.summon, 0], [beats.summon + 6 / 24, 1.15], [beats.summon + 10 / 24, 1]], t);
+  if (t >= beats.last) return { 位置: posAt(beats.last), facing: departYaw, pitch: END.pitch, roll: 0, appear: 1 };
+  return { 位置: posAt(t), facing: yawAt(t), pitch: pitchAt(t), roll: 0, appear };
 };
 export const toWorld = (pt: number[]): number[] => {
   const yawRad = ROOM.heading * D2R;
@@ -115,21 +119,21 @@ export const toWorld = (pt: number[]): number[] => {
 };
 
 // ---------- 骑手 ----------
-export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: RideJiuhu | false } => {
-  if (frame >= beats.lastFrame) return { liYing: { ...END_RIDERS.李樱 }, jiuhu: { ...END_RIDERS.九胡 } };
+export const riders = (t: number): { liYing: RideLiYing | false; jiuhu: RideJiuhu | false } => {
+  if (t >= beats.last) return { liYing: { ...END_RIDERS.李樱 }, jiuhu: { ...END_RIDERS.九胡 } };
   // 冲出去的一路慢慢压成 6-2-5 首帧的骑姿
-  const k = smoothstep01((frame - beats.rush) / (beats.lastFrame - beats.rush));
-  const sink = smoothstep01((frame - beats.charge) / 6) * (1 - k);
+  const k = smoothstep01((t - beats.rush) / (beats.last - beats.rush));
+  const sink = smoothstep01((t - beats.charge) / (6 / 24)) * (1 - k);
   const ly = END_RIDERS.李樱;
   const jh = END_RIDERS.九胡;
   return {
-    liYing: frame >= beats.liYingMount ? { lean: lerp(22 + 10 * sink, ly.lean ?? 30, k), headRaise: lerp(6 - 6 * sink, ly.headRaise ?? 0, k) } : false,
-    jiuhu: frame >= beats.jiuHuUp
+    liYing: t >= beats.liYingMount ? { lean: lerp(22 + 10 * sink, ly.lean ?? 30, k), headRaise: lerp(6 - 6 * sink, ly.headRaise ?? 0, k) } : false,
+    jiuhu: t >= beats.jiuHuUp
       ? {
           lean: lerp(16 + 8 * sink, jh.lean ?? 20, k),
-          hugWaist: lerp(smoothstep01((frame - beats.jiuHuUp) / 6), jh.hugWaist ?? 1, k),
-          // 尾巴的相位到末帧正好是 6-2-5 首帧的 0
-          tailPhase: (frame - beats.lastFrame) / 9,
+          hugWaist: lerp(smoothstep01((t - beats.jiuHuUp) / (6 / 24)), jh.hugWaist ?? 1, k),
+          // 尾巴的相位到末帧正好是 6-2-5 首帧的 0（每 9/24 秒走 1）
+          tailPhase: (t - beats.last) / (9 / 24),
           wind: 0,
           headRaise: lerp(4, jh.headRaise ?? 0, k),
         }
@@ -148,24 +152,24 @@ const SEAT_FRONT = BROOM.seatFront;
 const SEAT_BACK = BROOM.seatBack;
 
 // 李樱：右手平托着结构指南针，往九胡面前再送一点 → 她接住后松手、手放下 → 唤出扫帚（右手往前上方一伸）→ 跳上前座，落座时转成朝北（扫帚头的方向）
-const giveK = (f: number) => lerp(0.3, 1, smoothstep01(f / 12)) * (1 - smoothstep01((f - beats.release) / 10));
-// 平托的右臂 [armR, armRRoll, elbowR]：首帧（6-2-3 末帧）→ 第 12 帧往她面前送。肘弯成直角、前臂端平，往里收向她那边；
-// 再把手伸出去递给她（`GIVE_REACH` 这几帧），肩和身子跟着朝她转过去一点（GIVE_TURN 度）
+const giveK = (t: number) => lerp(0.3, 1, smoothstep01(t / (12 / 24))) * (1 - smoothstep01((t - beats.release) / (10 / 24)));
+// 平托的右臂 [armR, armRRoll, elbowR]：首帧（6-2-3 末帧）→ 12 格往她面前送。肘弯成直角、前臂端平，往里收向她那边；
+// 再把手伸出去递给她（`GIVE_REACH` 这一截，秒），肩和身子跟着朝她转过去一点（GIVE_TURN 度）
 const HOLD_NEAR = [5, 15, 85];
 const HOLD_FAR = [18, 20, 72];
 const HOLD_GIVE = [42, 16, 46];
-const GIVE_REACH = [5, 15];
+const GIVE_REACH = [5 / 24, 15 / 24];
 const GIVE_TURN = 14;
-const giveReach = (f: number) => smoothstep01((f - GIVE_REACH[0]) / (GIVE_REACH[1] - GIVE_REACH[0]));
-export const liyingOnFoot = (frame: number): FigurePose | null => {
-  if (frame >= beats.liYingMount) return null;
-  const give = giveK(frame);
-  const hold = 1 - smoothstep01((frame - beats.release) / 10);
-  const arm = HOLD_NEAR.map((v, i) => lerp(lerp(v, HOLD_FAR[i], smoothstep01(frame / 12)), HOLD_GIVE[i], giveReach(frame)) * hold);
-  const summon = smoothstep01((frame - (beats.summon - 7)) / 7) * (1 - smoothstep01((frame - (beats.summon + 8)) / 8));
-  const hopK = smoothstep01((frame - (beats.liYingMount - 8)) / 8);
-  const crouch = frame > beats.liYingMount - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.liYingMount - 12)) / 6)) : 0;
-  const z = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (frame > beats.liYingMount - 8 ? 1 : 0);
+const giveReach = (t: number) => smoothstep01((t - GIVE_REACH[0]) / (GIVE_REACH[1] - GIVE_REACH[0]));
+export const liyingOnFoot = (t: number): FigurePose | null => {
+  if (t >= beats.liYingMount) return null;
+  const give = giveK(t);
+  const hold = 1 - smoothstep01((t - beats.release) / (10 / 24));
+  const arm = HOLD_NEAR.map((v, i) => lerp(lerp(v, HOLD_FAR[i], smoothstep01(t / (12 / 24))), HOLD_GIVE[i], giveReach(t)) * hold);
+  const summon = smoothstep01((t - (beats.summon - 7 / 24)) / (7 / 24)) * (1 - smoothstep01((t - (beats.summon + 8 / 24)) / (8 / 24)));
+  const hopK = smoothstep01((t - (beats.liYingMount - 8 / 24)) / (8 / 24));
+  const crouch = t > beats.liYingMount - 12 / 24 ? Math.sin(Math.PI * Math.min(1, (t - (beats.liYingMount - 12 / 24)) / (6 / 24))) : 0;
+  const z = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (t > beats.liYingMount - 8 / 24 ? 1 : 0);
   const basePose = standPose([lerp(LY_AT[0], 0, hopK), lerp(LY_AT[1], SEAT_FRONT, hopK), z]);
   return {
     ...basePose,
@@ -178,22 +182,22 @@ export const liyingOnFoot = (frame: number): FigurePose | null => {
     armR: arm[0] + 120 * summon,
     armRRoll: arm[1] + 20 * summon,
     elbowR: arm[2] + 20 * (1 - hold) * (1 - summon),
-    yaw: lerp(LY_YAW + GIVE_TURN * giveReach(frame), 0, hopK),
+    yaw: lerp(LY_YAW + GIVE_TURN * giveReach(t), 0, hopK),
   };
 };
 
 // 九胡：低头看他递过来的指南针、伸右手接住，收到身前低处再看一眼 → 抬头，扫帚冒出来时往后一缩 → 跳上后座（右手一直握着指南针）
 // bones：右臂的骨骼姿势（Figure 没有九胡的肘，弯肘、接东西的手臂直接给骨骼），叠在 `jiuhuStandBones` 上
 export type JiuhuOnFoot = { pose: FigurePose; tail: number; bend: number; bones: Record<string, BonePose> } | null;
-const JH_STEP = { dist: 0.25, frames: [4, 13] };
-const jiuhuBody = (frame: number) => {
-  const look = smoothstep01((frame - beats.receive) / 8) * (1 - smoothstep01((frame - beats.lookUp) / 8));
-  const flinch = Math.sin(Math.PI * Math.min(1, Math.max(0, (frame - beats.summon) / 12)));
-  const hopK = smoothstep01((frame - (beats.jiuHuUp - 8)) / 8);
-  const crouch = frame > beats.jiuHuUp - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.jiuHuUp - 12)) / 6)) : 0;
-  const hopZ = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (frame > beats.jiuHuUp - 8 ? 1 : 0);
+const JH_STEP = { dist: 0.25, secs: [4 / 24, 13 / 24] };
+const jiuhuBody = (t: number) => {
+  const look = smoothstep01((t - beats.receive) / (8 / 24)) * (1 - smoothstep01((t - beats.lookUp) / (8 / 24)));
+  const flinch = Math.sin(Math.PI * Math.min(1, Math.max(0, (t - beats.summon) / (12 / 24))));
+  const hopK = smoothstep01((t - (beats.jiuHuUp - 8 / 24)) / (8 / 24));
+  const crouch = t > beats.jiuHuUp - 12 / 24 ? Math.sin(Math.PI * Math.min(1, (t - (beats.jiuHuUp - 12 / 24)) / (6 / 24))) : 0;
+  const hopZ = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (t > beats.jiuHuUp - 8 / 24 ? 1 : 0);
   // 伸手去接时往他那边迈一小步（`JH_STEP`），之后就站在那里
-  const stepT = Math.min(1, Math.max(0, (frame - JH_STEP.frames[0]) / (JH_STEP.frames[1] - JH_STEP.frames[0])));
+  const stepT = Math.min(1, Math.max(0, (t - JH_STEP.secs[0]) / (JH_STEP.secs[1] - JH_STEP.secs[0])));
   const back = 0.35 * flinch * (1 - hopK) - JH_STEP.dist * smoothstep01(stepT);
   const stepSwing = Math.sin(Math.PI * stepT);
   const fx = -Math.sin(JH_YAW * D2R);
@@ -210,7 +214,7 @@ const jiuhuBody = (frame: number) => {
       armL: -15 * crouch,
       yaw: lerp(JH_YAW, 0, hopK),
     } as FigurePose,
-    tail: frame / 9,
+    tail: t / (9 / 24),
     bend: 6 * look,
   };
 };
@@ -224,8 +228,8 @@ const jiuhuRoot = (pose: FigurePose) =>
 type ArmRot = number[]; // [RightArm x, y, z, RightForeArm x, y]（基岩动画约定，相对模型原样）
 const armBones = (x: ArmRot): Record<string, BonePose> => ({ RightArm: { rot: [x[0], x[1], x[2]] }, RightForeArm: { rot: [x[3], x[4], 0] } });
 // 坐标下降法解右臂，让指南针（握在她手里，`jiuhuCompassMatrix`）的中心落到 target、表盘法线朝 normal、贴图上方朝 top（都在房间本地）
-const solveArm = (frame: number, target: number[], normal: number[], top: number[], guess: ArmRot): { arm: ArmRot; error: number } => {
-  const body = jiuhuBody(frame);
+const solveArm = (t: number, target: number[], normal: number[], top: number[], guess: ArmRot): { arm: ArmRot; error: number } => {
+  const body = jiuhuBody(t);
   const root = jiuhuRoot(body.pose);
   const base = jiuhuStandBones(body.pose, body.tail, body.bend, 0, 0);
   const wantN = new THREE.Vector3(...normal).normalize();
@@ -276,59 +280,59 @@ const GIVEN_AT = gripAt(liyingOnFoot(GIVE_REACH[1])!, COMPASS_GRIP);
 const ARM_REST: ArmRot = [0, 0, 0, 0, 0];
 const ARM_TAKE = solveArm(beats.handoff, GIVEN_AT, [0, 0, 1], [0, 1, 0], [-55, 0, -10, -30, 0]);
 const HOLD_AT = (() => {
-  const body = jiuhuBody(beats.release + 14).pose;
+  const body = jiuhuBody(beats.release + 14 / 24).pose;
   const yawRad = (body.yaw ?? 0) * D2R;
   const fwd = [-Math.sin(yawRad), Math.cos(yawRad)];
   const right = [Math.cos(yawRad), Math.sin(yawRad)];
   // 身前 0.3 格、往右 0.06 格、离地 0.9 格（肚子前面）
   return { pos: [body.loc[0] + fwd[0] * 0.3 + right[0] * 0.06, body.loc[1] + fwd[1] * 0.3 + right[1] * 0.06, 0.9], normal: [-fwd[0] * Math.sin(20 * D2R), -fwd[1] * Math.sin(20 * D2R), Math.cos(20 * D2R)], top: [fwd[0], fwd[1], 0] };
 })();
-const ARM_HOLD = solveArm(beats.release + 14, HOLD_AT.pos, HOLD_AT.normal, HOLD_AT.top, [-30, 0, -10, -60, 0]);
+const ARM_HOLD = solveArm(beats.release + 14 / 24, HOLD_AT.pos, HOLD_AT.normal, HOLD_AT.top, [-30, 0, -10, -60, 0]);
 export const jiuhuArmSolve = { take: ARM_TAKE, hold: ARM_HOLD }; // 核对用
-const armAt = (frame: number): ArmRot => {
-  const reachK = smoothstep01((frame - beats.receive) / (beats.handoff - beats.receive));
-  const holdK = smoothstep01((frame - beats.release) / 14);
+const armAt = (t: number): ArmRot => {
+  const reachK = smoothstep01((t - beats.receive) / (beats.handoff - beats.receive));
+  const holdK = smoothstep01((t - beats.release) / (14 / 24));
   return ARM_REST.map((v, i) => lerp(lerp(v, ARM_TAKE.arm[i], reachK), ARM_HOLD.arm[i], holdK));
 };
-export const jiuhuOnFoot = (frame: number): JiuhuOnFoot => {
-  if (frame >= beats.jiuHuUp) return null;
-  const body = jiuhuBody(frame);
-  return { ...body, bones: frame > beats.receive ? armBones(armAt(frame)) : {} };
+export const jiuhuOnFoot = (t: number): JiuhuOnFoot => {
+  if (t >= beats.jiuHuUp) return null;
+  const body = jiuhuBody(t);
+  return { ...body, bones: t > beats.receive ? armBones(armAt(t)) : {} };
 };
 
 // pos：表盘中心；quat：物品坐标系（正面 +Z、贴图上方 +Y）在房间本地的朝向；scale 同 `COMPASS_SCALE`。上了扫帚以后挂在 骑扫帚.tsx 的九胡右手上，这里返回 null
 export type CompassPose = { pos: number[]; quat: THREE.Quaternion; scale: number };
-const inJiuhuHand = (frame: number): CompassPose => {
-  const jh = jiuhuOnFoot(frame)!;
+const inJiuhuHand = (t: number): CompassPose => {
+  const jh = jiuhuOnFoot(t)!;
   const m = jiuhuRoot(jh.pose).multiply(jiuhuCompassMatrix({ ...jiuhuStandBones(jh.pose, jh.tail, jh.bend, 0, 0), ...jh.bones }));
   const pos = new THREE.Vector3();
   const quat = new THREE.Quaternion();
   m.decompose(pos, quat, new THREE.Vector3());
   return { pos: [pos.x, pos.y, pos.z], quat, scale: COMPASS_SCALE };
 };
-export const compass = (frame: number): CompassPose | null => {
-  if (frame >= beats.jiuHuUp) return null;
-  const ly = liyingOnFoot(frame);
+export const compass = (t: number): CompassPose | null => {
+  if (t >= beats.jiuHuUp) return null;
+  const ly = liyingOnFoot(t);
   const fromLiYing = { pos: ly ? gripAt(ly, COMPASS_GRIP) : GIVEN_AT, quat: new THREE.Quaternion(), scale: COMPASS_SCALE };
-  // 14～18 两只手都托着，从他手上的位置、朝向换到她手上的
-  const k = smoothstep01((frame - (beats.handoff - 2)) / 4);
+  // 14～18 格两只手都托着，从他手上的位置、朝向换到她手上的
+  const k = smoothstep01((t - (beats.handoff - 2 / 24)) / (4 / 24));
   if (k <= 0) return fromLiYing;
-  const toJiuhu = inJiuhuHand(frame);
+  const toJiuhu = inJiuhuHand(t);
   if (k >= 1) return toJiuhu;
   return { pos: lerpV(fromLiYing.pos, toJiuhu.pos, k), quat: fromLiYing.quat.clone().slerp(toJiuhu.quat, k), scale: COMPASS_SCALE };
 };
 
 // ---------- 镜头（先在本地坐标里算，再换到世界） ----------
 export type Cam = { pos: number[]; tgt: number[]; lens: number };
-const anchor = (f: number) => [0, 0, baseZ(f)]; // 镜头跟着的扫帚位置（不带起伏和下沉；冲之前扫帚在屋子正中不动）
+const anchor = (t: number) => [0, 0, baseZ(t)]; // 镜头跟着的扫帚位置（不带起伏和下沉；冲之前扫帚在屋子正中不动）
 // 镜头 1（0～31.1）：屋子北边的中景，平视两人的侧脸（李樱在画面右边、九胡在左边），背景是南墙的窗户和窗前摆着战利品的桌子；
 // 慢慢往前推、往东挪一点（两人坐上扫帚以后脸朝镜头，九胡从李樱身后露出半个身子）。坐上扫帚以后视线跟着抬到人身上
 const C1 = { from: [-0.4, 5.6, 1.75], to: [2.2, 4.3, 1.7], tgt: [0, -0.3, 1.1] };
-const shot1 = (frame: number): Cam => {
-  const t = Math.min(1, Math.max(0, frame / beats.liftOff));
-  const eased = smoothstep01(t) * 0.6 + t * 0.4;
-  const riding = smoothstep01((frame - beats.liYingMount) / 30);
-  return { pos: lerpV(C1.from, C1.to, eased), tgt: lerpV(C1.tgt, [0, 0, baseZ(frame) + 0.85], riding), lens: 28 };
+const shot1 = (t: number): Cam => {
+  const u = Math.min(1, Math.max(0, t / beats.liftOff));
+  const eased = smoothstep01(u) * 0.6 + u * 0.4;
+  const riding = smoothstep01((t - beats.liYingMount) / (30 / 24));
+  return { pos: lerpV(C1.from, C1.to, eased), tgt: lerpV(C1.tgt, [0, 0, baseZ(t) + 0.85], riding), lens: 28 };
 };
 // 镜头 2（31.1～冲）：扫帚慢慢离地、原地转到出发朝向（对着西墙的门），镜头绕到扫帚正后方、高 1.1 格，看着二人的背影和前面的门口。
 // 绕哪一边：镜头实际转的角度 = 绕人转的角度 + 扫帚转的角度，经左手边转出来超过 240°（画面甩一大圈，看着晕）就改从右手边绕，转得少
@@ -350,14 +354,14 @@ const rotZ = (pt: number[], deg: number) => {
   const rad = deg * D2R;
   return [pt[0] * Math.cos(rad) - pt[1] * Math.sin(rad), pt[0] * Math.sin(rad) + pt[1] * Math.cos(rad), pt[2]];
 };
-const orbit = (frame: number): Cam => {
-  const eased = smoothstep01((frame - beats.liftOff) / (beats.rush - beats.liftOff));
-  const anchorPos = anchor(frame);
+const orbit = (t: number): Cam => {
+  const eased = smoothstep01((t - beats.liftOff) / (beats.rush - beats.liftOff));
+  const anchorPos = anchor(t);
   const phi = (O0.phi + ORBIT_SWEEP * eased) * D2R;
   const radius = lerp(O0.r, ORBIT_END.r, eased);
   const height = lerp(O0.h, ORBIT_END.h, eased);
   // 视线从人身上慢慢移到扫帚头前面（跟着扫帚转），最后看着门口
-  const ahead = rotZ([0, 3, 0], yawAt(frame));
+  const ahead = rotZ([0, 3, 0], yawAt(t));
   return {
     pos: [anchorPos[0] + radius * Math.cos(phi), anchorPos[1] + radius * Math.sin(phi), anchorPos[2] + height],
     tgt: lerpV([anchorPos[0], anchorPos[1], anchorPos[2] + 0.85], [anchorPos[0] + ahead[0], anchorPos[1] + ahead[1], anchorPos[2] + 0.6], eased),
@@ -365,35 +369,35 @@ const orbit = (frame: number): Cam => {
   };
 };
 // 镜头 3（冲～末帧）：跟在扫帚后面一起冲出门（离扫帚 3.4 格 → 2.2 格；高度不跟着往上窜，过门洞时离门楣还有 0.6 格），
-// 出了门扫帚往上窜、扫帚头抬起来，草束从镜头下方扫上来；最后 12 帧镜头贴到草束末端后面 0.14 格，盖满画面。
+// 出了门扫帚往上窜、扫帚头抬起来，草束从镜头下方扫上来；最后 12 格（0.5 秒）镜头贴到草束末端后面 0.14 格，盖满画面。
 // 末帧镜头相对扫帚的位置就是 6-2-5 的 `FIRST_CAM`：草束末端后 0.14 格、高 0.04 格（扫帚本地），顺着扫帚往前看，24mm
 const TAIL = BROOM.tailY;
-// 扫帚本地（杆中心为原点）→ 房间本地：扫帚在第 f 帧的位置、朝向 出发朝向、俯仰（先俯仰、再朝向，同 骑扫帚.tsx）
-const onBroom = (frame: number, offset: number[]) => {
-  const pitch = (frame >= beats.lastFrame ? END.pitch : pitchAt(frame)) * D2R;
+// 扫帚本地（杆中心为原点）→ 房间本地：扫帚在 t 秒的位置、朝向 出发朝向、俯仰（先俯仰、再朝向，同 骑扫帚.tsx）
+const onBroom = (t: number, offset: number[]) => {
+  const pitch = (t >= beats.last ? END.pitch : pitchAt(t)) * D2R;
   const rotated = rotZ([offset[0], offset[1] * Math.cos(pitch) - offset[2] * Math.sin(pitch), offset[1] * Math.sin(pitch) + offset[2] * Math.cos(pitch)], departYaw);
-  const broomPos = posAt(Math.min(frame, beats.lastFrame));
+  const broomPos = posAt(Math.min(t, beats.last));
   return [broomPos[0] + rotated[0], broomPos[1] + rotated[1], broomPos[2] + rotated[2]];
 };
 const CHASE_Z = LIFT + ORBIT_END.h; // 冲出去时镜头的高度（不跟着扫帚往上窜）
-const rush = (frame: number): Cam => {
-  const progress = Math.min(1, Math.max(0, (frame - beats.rush) / (beats.lastFrame - beats.rush)));
-  const dist = dashS(frame);
+const rush = (t: number): Cam => {
+  const progress = Math.min(1, Math.max(0, (t - beats.rush) / (beats.last - beats.rush)));
+  const dist = dashS(t);
   const chaseDist = lerp(ORBIT_END.r, 2.2, smoothstep01(progress));
   const chase = { pos: [DIR[0] * (dist - chaseDist), DIR[1] * (dist - chaseDist), CHASE_Z], tgt: [DIR[0] * (dist + 3), DIR[1] * (dist + 3), LIFT + 0.6] };
-  const tail = { pos: onBroom(frame, [0, TAIL - 0.14, 0.04]), tgt: onBroom(frame, [0, TAIL + 6, 0.1]) };
-  const eased = smoothstep01((frame - (beats.lastFrame - 12)) / 12);
+  const tail = { pos: onBroom(t, [0, TAIL - 0.14, 0.04]), tgt: onBroom(t, [0, TAIL + 6, 0.1]) };
+  const eased = smoothstep01((t - (beats.last - 12 / 24)) / (12 / 24));
   return { pos: lerpV(chase.pos, tail.pos, eased), tgt: lerpV(chase.tgt, tail.tgt, eased), lens: 24 };
 };
-const cameraLocal = (f: number): Cam => (f < beats.liftOff ? shot1(f) : f < beats.rush ? orbit(f) : rush(f));
-export const camera = (frame: number): Cam => {
-  const localCam = cameraLocal(Math.min(frame, beats.lastFrame));
+const cameraLocal = (t: number): Cam => (t < beats.liftOff ? shot1(t) : t < beats.rush ? orbit(t) : rush(t));
+export const camera = (t: number): Cam => {
+  const localCam = cameraLocal(Math.min(t, beats.last));
   return { pos: toWorld(localCam.pos), tgt: toWorld(localCam.tgt), lens: localCam.lens };
 };
 // 雾：窗外的海要一直到地平线都是海，用基地窗外那一套（lib/体素/主世界地形.ts 的 `overworldWindowView`）。末帧草束离镜头 0.14 格，雾对它没有影响，和 6-2-5 首帧照样一样
 export const VISIBILITY = overworldWindowView.visibility;
 // 核对用：末帧扫帚和镜头的世界坐标。和 6-2-5 首帧不在同一个地方，要对上的是扫帚的朝向、俯仰和镜头相对扫帚的偏移
 export const endState = () => {
-  const broomState = broom(beats.lastFrame);
-  return { broom: { ...broomState, 位置: toWorld(broomState.位置), facing: broomState.facing + ROOM.heading }, camera: camera(beats.lastFrame) };
+  const broomState = broom(beats.last);
+  return { broom: { ...broomState, 位置: toWorld(broomState.位置), facing: broomState.facing + ROOM.heading }, camera: camera(beats.last) };
 };

@@ -42,32 +42,32 @@ export const mixFraming = (a: Framing, b: Framing, k: number): Framing => ({
 });
 
 // 骑手中心：扫帚杆中心往上 0.2 米（同 6-2-5、验收.ts）
-export const riderAt = (F: number) => add(route.broom(F).位置, [0, 0, 0.2]);
+export const riderAt = (g: number) => add(route.broom(g).位置, [0, 0, 0.2]);
 // 扫帚这一刻的朝向架：前（三维切线）、水平前、右（水平）、法（竖直面里垂直于前、朝上）。
 // 按规划航线（不带真实飞行偏移）的切线：偏移是慢漂移（用户 10-05），镜头跟着骑手平移、方向不跟着晃；
 // 跟着带偏移的切线转的话视线角加速度多出 0.1～0.2°/帧²
-export const broomFrame = (frame: number) => {
-  const dist = Math.min(Math.max(route.broom(frame).s, 1), route.routeLength - 1);
+export const broomFrame = (g: number) => {
+  const dist = Math.min(Math.max(route.broom(g).s, 1), route.routeLength - 1);
   const t = norm(sub(route.plannedPos(dist + 1), route.plannedPos(dist - 1)));
   const horizLen = Math.hypot(t[0], t[1]) || 1;
   const flatFwd = [t[0] / horizLen, t[1] / horizLen, 0];
   const right = [flatFwd[1], -flatFwd[0], 0];
   return { forward: t, flatFwd: flatFwd, right: right, normal: cross(right, t) };
 };
-// P 的位置部分 → 镜头位置（相对骑手）。方位绕竖直轴转（锁航向），仰角从扫帚前方往上量（一镜到底俯仰最快 2°/帧，镜头跟着转得匀）
-export const camPosOf = (framing: Framing, frame: number) => {
-  const { forward: fwd, right: right, normal: normal } = broomFrame(frame);
+// P 的位置部分 → 镜头位置（相对骑手）。方位绕竖直轴转（锁航向），仰角从扫帚前方往上量（一镜到底俯仰最快 48°/秒，镜头跟着转得匀）
+export const camPosOf = (framing: Framing, g: number) => {
+  const { forward: fwd, right: right, normal: normal } = broomFrame(g);
   const dist = Math.exp(framing.距);
   const azimuth = rad(framing.方);
   const elev = rad(framing.仰);
   // 往后（−前）转方位：方 90 = 左手边（−右）
   const horizDir = add(mul(fwd, -Math.cos(azimuth)), mul(right, -Math.sin(azimuth)));
-  return add(riderAt(frame), mul(add(mul(horizDir, Math.cos(elev)), mul(normal, Math.sin(elev))), dist));
+  return add(riderAt(g), mul(add(mul(horizDir, Math.cos(elev)), mul(normal, Math.sin(elev))), dist));
 };
 // 镜头位置 → P 的位置部分（停住、追、洞道这些自己走的机位换算回 P 用）
-export const posToFraming = (camPos: Vec, frame: number): Pick<Framing, '距' | '方' | '仰'> => {
-  const { forward: fwd, right: right, normal: normal } = broomFrame(frame);
-  const offset = sub(camPos, riderAt(frame));
+export const posToFraming = (camPos: Vec, g: number): Pick<Framing, '距' | '方' | '仰'> => {
+  const { forward: fwd, right: right, normal: normal } = broomFrame(g);
+  const offset = sub(camPos, riderAt(g));
   const dist = len(offset);
   const elev = Math.asin(Math.max(-1, Math.min(1, dot(offset, normal) / dist)));
   return { 距: Math.log(dist), 方: deg(Math.atan2(-dot(offset, right), -dot(offset, fwd))), 仰: deg(elev) };
@@ -152,13 +152,13 @@ export type Keys = [number, Framing];
 export const convertKeys = (ks: LegacyKey[], pullInAt: (i: number) => boolean = () => true): Keys[] => {
   let legacy = { ...legacyCruise };
   const out: Keys[] = [];
-  ks.forEach(([frame, partial], i) => {
+  ks.forEach(([t, partial], i) => {
     legacy = { ...legacy, ...partial };
     const framing = fromLegacy(legacy, pullInAt(i));
     // 方位：绕圈的按 角 一路往左数到 360°（不能按最短的方向插回去）；其余接着上一个关键帧按最短的方向数
     if (legacy.orbit >= 1) framing.方 = legacy.angle;
     else if (out.length) framing.方 = out[out.length - 1][1].方 + angleDiff(out[out.length - 1][1].方, framing.方);
-    out.push([frame, framing]);
+    out.push([t, framing]);
   });
   return out;
 };
@@ -167,9 +167,9 @@ export const convertKeys = (ks: LegacyKey[], pullInAt: (i: number) => boolean = 
 const narrowCruise = fromLegacy(legacyCruise);
 export const cruiseFraming: Framing = { ...narrowCruise, 焦: Math.log(WIDE_LENS), 距: narrowCruise.距 + Math.log(WIDE_LENS / legacyCruise.focalLength) };
 // 关键帧插值（lib/anim.ts 的 smooth：单调三次 Hermite，不冲过关键帧）
-export const sampleKeys = (ks: Keys[], frame: number, anchor = 0): Framing => {
+export const sampleKeys = (ks: Keys[], t: number, anchor = 0): Framing => {
   const result = { ...cruiseFraming };
-  for (const key of framingKeys) result[key] = sample(ks.map(([keyFrame, framing]) => [anchor + keyFrame, framing[key]] as Key), frame);
+  for (const key of framingKeys) result[key] = sample(ks.map(([keyT, framing]) => [anchor + keyT, framing[key]] as Key), t);
   return result;
 };
 
@@ -181,10 +181,10 @@ const bores: Bore[] = (Object.keys(route.pierceTable) as route.BossName[]).flatM
   const sp = route.markDist(`${bossName}.贯穿`);
   return ((boreSources[bossName] ?? []) as { a: [number, number]; side: number; 高: [number, number] }[]).map((k) => ({ s0: sp + k.a[0], s1: sp + k.a[1], side: k.side, 高: k.高 }));
 });
-export const clampToBore = (camPos: Vec, frame: number, azimuth: number) => {
-  const sr = route.broom(frame).s;
-  const { flatFwd: flatFwd } = broomFrame(frame);
-  const sc = Math.min(route.routeLength, Math.max(0, sr + dot(sub(camPos, riderAt(frame)), flatFwd)));
+export const clampToBore = (camPos: Vec, g: number, azimuth: number) => {
+  const sr = route.broom(g).s;
+  const { flatFwd: flatFwd } = broomFrame(g);
+  const sc = Math.min(route.routeLength, Math.max(0, sr + dot(sub(camPos, riderAt(g)), flatFwd)));
   const orbiting = clamp01(Math.abs(angleDiff(0, azimuth)) / 20);
   let out = camPos;
   for (const k of bores) {

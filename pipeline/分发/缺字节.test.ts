@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MissingBytePlaceholderPlugin, missingBytes, pickMissingBytesEntry, placeholderSource, entryPlaceholderSource } from './缺字节.ts';
-import type { DepGraph } from '../检查/上下文.ts';
-import type { AssetLock } from './资产锁.ts';
+import type { DepGraph } from '../源码/上下文.ts';
+import type { AssetLock } from '../资产/资产锁.ts';
 
 const assetLock: AssetLock = {
   '截图/私': { sha256: 'a'.repeat(64), 后缀: '.png', 大小: 1, 库: '私有' },

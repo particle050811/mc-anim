@@ -6,7 +6,7 @@
 //   例外：分叉点的 正本表.ts 里还没有的正本（这次新加的），它的旧副本可以第一次登记进表。
 // 只查 engine、库 和这次查的作品（渲染代码，不含测试）；别的作品的行留给查那部作品时比。pipeline 不能 import 渲染层，不查。
 import { execFileSync } from 'node:child_process';
-import { isRenderCode, type CheckReport, type CheckContext } from '../上下文.ts';
+import { isRenderCode, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { walk, lineNo, ts } from '../语法.ts';
 import { FileFunctions, isFnNode, isSameBehavior } from '../副本识别.ts';
 import { canonicalFiles, canonicalTable, type CanonicalItem } from '../正本表.ts';

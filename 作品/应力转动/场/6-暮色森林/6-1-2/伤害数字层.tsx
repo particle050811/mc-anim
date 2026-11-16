@@ -30,6 +30,7 @@ import * as choreo from './编排.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
+import { onTick } from '../时刻.ts';
 
 // ---------- 伤害 ----------
 export const nagaHealth = (120 + 130) * 10; // 困难（极限模式）× 原文的十倍
@@ -41,7 +42,7 @@ if (nagaSlashDamage < nagaHealth) throw new Error(`斩娜迦伤害 ${nagaSlashDa
 export const nagaSlashCrit = true;
 
 // ---------- 位置和时机 ----------
-// 刀穿过脖子那一帧（CUT_FRAME，和受击变红同一刻）生成，在留在原地那半截的切口正上方（用户 10-19 定：「移动到切口处」）。
+// 刀穿过脖子那一帧（CUT_TIME，和受击变红同一刻）生成，在留在原地那半截的切口正上方（用户 10-19 定：「移动到切口处」）。
 // 切口是第 2 节（断口后第一节，编排/娜迦.ts 的 CUT_I + 1）朝前那一面，取它停稳后的位置。
 // 从切面中间（半节高）起飘：切到 2b 时已飘了 8 帧，正好浮在切口上方一点；照原版从碰撞箱顶起飘会顶到画面上沿。
 // 游戏里身体节挨打转给本体（NagaSegment.hurt），数字其实冒在头上，但头往北窜出了 2b 的画面。
@@ -49,8 +50,8 @@ const cutSeg = choreo.naga(choreo.S2B).pose.segs[2];
 const cutDir = rad(cutSeg.yaw - 90); // 身体节 yaw = 前进方向数学角 + 90
 const cutFace = [cutSeg.loc[0] + Math.cos(cutDir) * GAME_NAGA.segmentSize / 2, cutSeg.loc[1] + Math.sin(cutDir) * GAME_NAGA.segmentSize / 2, cutSeg.loc[2]];
 const anchor = damageNumberAnchor(sceneToThree(courtyardToWorld(cutFace)), GAME_NAGA.segmentSize / 2, 117);
-// 段内帧（Remotion 帧）：斩中在打击停顿之前，原版、正式版是同一帧
-export const damageSpawnFrame = choreo.segFrame(choreo.CUT_FRAME);
+// 段内秒：斩中在打击停顿之前，原版、正式版是同一刻
+export const damageSpawnSec = choreo.segSec(choreo.CUT_TIME);
 
 // ---------- Jade 血量框 ----------
 // 框画法、位置照 7-2-1（模型/界面/Jade.tsx，屏幕顶边正中）。照 Jade 只在够得着时出（用户 10-20：「怎么半空中就能看到这个血量显示了？落地切的时候才能看到血量显示才合理吧」）：
@@ -60,47 +61,63 @@ export const damageSpawnFrame = choreo.segFrame(choreo.CUT_FRAME);
 const jadeReach = 4.5 + 20;
 const eyeHeight = 1.62;
 const gapToBox = (p: number[], center: number[], half: number) => Math.hypot(...p.map((v, i) => Math.max(0, Math.abs(v - center[i]) - half)));
-const nagaGap = (storyFrame: number) => {
-  const ly = choreo.liyingLoc(storyFrame);
+const nagaGap = (storyTime: number) => {
+  const ly = choreo.liyingLoc(storyTime);
   const eye = [ly[0], ly[1], ly[2] + eyeHeight];
-  const { head, segs } = choreo.naga(storyFrame).pose;
+  const { head, segs } = choreo.naga(storyTime).pose;
   const headZ = GAME_NAGA.headBottom + GAME_NAGA.headSize / 2;
   const segGaps = segs.map((s) => gapToBox(eye, [s.loc[0], s.loc[1], s.loc[2] + GAME_NAGA.segmentSize / 2], GAME_NAGA.segmentSize / 2));
   return Math.min(gapToBox(eye, [head.loc[0], head.loc[1], head.loc[2] + headZ], GAME_NAGA.headSize / 2), ...segGaps);
 };
-// 斩中前娜迦还没开始按 nagaWarp 停，原版、正式版同一帧
-const jadeOnFrame = (() => {
-  let f = choreo.S2;
-  while (f < choreo.CUT_FRAME && nagaGap(f) > jadeReach) f++;
-  return f;
-})();
-const headGoneFrames = new Map<boolean, number>();
-const headGoneFrame = (motionV2: boolean) => {
-  if (!headGoneFrames.has(motionV2)) {
-    let f = choreo.CUT_FRAME;
-    while (f < choreo.S3 && choreo.naga(motionV2 ? nagaWarp(f) : f).pose.head.scale !== 0) f++;
-    headGoneFrames.set(motionV2, f);
+// 斩中前娜迦还没开始按 nagaWarp 停，原版、正式版同一刻。取第一次够得着的那一刻（真值，不再落到 1/24 秒的格上，用户 11-16 定）：
+// 每 1/240 秒往后找到第一个够得着的点，再在前一步里二分
+const JADE_SCAN_STEP = 1 / 240;
+const jadeOnTime = (() => {
+  const reaches = (t: number) => nagaGap(t) <= jadeReach;
+  if (reaches(choreo.S2)) return choreo.S2;
+  let k = 1;
+  while (choreo.S2 + k * JADE_SCAN_STEP < choreo.CUT_TIME && !reaches(choreo.S2 + k * JADE_SCAN_STEP)) k++;
+  const end = choreo.S2 + k * JADE_SCAN_STEP;
+  if (end >= choreo.CUT_TIME) return choreo.CUT_TIME;
+  let lo = end - JADE_SCAN_STEP;
+  let hi = end;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (reaches(mid)) hi = mid;
+    else lo = mid;
   }
-  return headGoneFrames.get(motionV2)!;
+  return hi;
+})();
+const headGoneTimes = new Map<boolean, number>();
+const headGoneTime = (motionV2: boolean) => {
+  if (!headGoneTimes.has(motionV2)) {
+    // 按帧（1/60 秒）往后找；落到刻上（../时刻.ts），头消失那一刻正好落在帧上时不差浮点零头
+    let k = 0;
+    const at = (n: number) => onTick(choreo.CUT_TIME + n / 60);
+    while (at(k) < choreo.S3 && choreo.naga(motionV2 ? nagaWarp(at(k)) : at(k)).pose.head.scale !== 0) k++;
+    headGoneTimes.set(motionV2, at(k));
+  }
+  return headGoneTimes.get(motionV2)!;
 };
-const jadeFadeFrames = 2;
-const nagaJade = (storyFrame: number, motionV2: boolean) => {
-  const fadeIn = (storyFrame - jadeOnFrame + 1) / jadeFadeFrames;
-  const fadeOut = (headGoneFrame(motionV2) - storyFrame) / jadeFadeFrames;
-  return { visibility: Math.max(0, Math.min(1, fadeIn, fadeOut)), health: storyFrame < choreo.CUT_FRAME ? nagaHealth : 0 };
+const jadeFadeSec = 2 / 24;
+const nagaJade = (storyTime: number, motionV2: boolean) => {
+  // 淡入的中点落在提示条出现那一刻
+  const fadeIn = (storyTime - jadeOnTime) / jadeFadeSec + 0.5;
+  const fadeOut = (headGoneTime(motionV2) - storyTime) / jadeFadeSec;
+  return { visibility: Math.max(0, Math.min(1, fadeIn, fadeOut)), health: storyTime < choreo.CUT_TIME ? nagaHealth : 0 };
 };
 
 export const NagaDamageLayer: React.FC<NagaShotProps> = (props) => {
-  const frame = useCurrentSec() * choreo.FPS;
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const { f: storyFrame, cam: cam } = nagaShotCam(props, frame);
+  const { t: storyTime, cam: cam } = nagaShotCam(props, sec);
   const toWorld = (p: number[]) => sceneToThree(courtyardToWorld(p));
   const camera = makePerspectiveCamera(cam.lens, toWorld(cam.pos), toWorld(cam.tgt), width, height);
-  const ticks = ((frame - damageSpawnFrame) / choreo.FPS) * 20;
-  const jade = nagaJade(storyFrame, props.motionImproved ?? false);
+  const ticks = (sec - damageSpawnSec) * 20;
+  const jade = nagaJade(storyTime, props.motionImproved ?? false);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      {storyFrame >= choreo.S2B && storyFrame < choreo.S3 && (
+      {storyTime >= choreo.S2B && storyTime < choreo.S3 && (
         <DamageNumberLayer camera={camera} width={width} height={height} numbers={[{ damage: nagaSlashDamage, crit: nagaSlashCrit, anchor: anchor, ticks: ticks }]} />
       )}
       <JadeTooltip entity={{ name: '娜迦', health: jade.health, maxHealth: nagaHealth, mod: 'The Twilight Forest' }} s={jadeScalePerWidth * width} cx={width / 2} visibility={jade.visibility} />

@@ -22,10 +22,10 @@ const hits = play.huangFollowArrows.map((a, k) => {
 export const followArrowHits = hits; // 7-2-1 李樱远望时看到的是同样的数字、同样的位置
 
 export const FollowArrowDamageLayer: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const t = choreo.timeAt(frame);
-  const cam = choreo.camera(frame);
+  const t = choreo.timeAt(sec);
+  const cam = choreo.camera(sec);
   const camera = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   const numbers: DamageNumberItem[] = hits.map((h) => ({ damage: h.damage, crit: h.crit, anchor: h.anchor, ticks: (t - h.T) * 20 }));
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={numbers} />;

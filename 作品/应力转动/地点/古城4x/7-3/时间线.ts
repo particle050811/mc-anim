@@ -1,5 +1,5 @@
 // 第 7 章第 3 场「墙头追逐」的整场时间线：三段是同一条连续剧情时间轴（T，秒）上前后相接的三截。
-// T = 0 是 7-1-7 末帧（契约 古城4x布局.ts 的 `handoffs.七三首`），7-3-1 第 0 帧是它的下一帧（T = 1/24，同 7-1 的段界规矩：不共用帧）。
+// T = 0 是 7-1-7 末帧（契约 古城4x布局.ts 的 `handoffs.七三首`），7-3-1 第 0 秒是它的下一帧（T = 1/60，同 7-1 的段界规矩：不共用帧）。
 // 段界放在切镜头的那一刻，一个镜头不拆进两段。人、马、监守者、特效全是 T 的函数（戏.ts），各段只管机位和声音。
 //
 // 编排（用户 10-19：马一路往前、抄近路，监守者绕远路；迫击炮只在近处放；不回合制，一方出手时另一方也在动）：
@@ -7,22 +7,22 @@
 //   7-3-2 第二炮炸在刚冒上墙头、站定蓄音爆的它身上；马再一跃上塔，落上塔顶时刘心忠回身甩第三炮，它边蓄边沿墙头冲向塔脚。
 //   7-3-3 第三炮炸在冲过来的它身上，它冲出烟团、到塔脚刹住，杖一推出护盾，它当场放出音爆，同一刻黄叛在高台上开鼓风机一箭钉在它身上；音爆穿过护盾打中他，
 //     马被冲得在塔顶横滑，他稳住、拨马一跃下到墙外大道往东冲（硬切 7-4-1）。音爆前后慢到 1/4（用户 10-19 定：保留音波慢放特写，变速在 7-3-3/编排.ts）。
-import { FPS, horseStart, towerTop, wallTopEast, avenue } from './几何.ts';
+import { horseStart, towerTop, wallTopEast, avenue } from './几何.ts';
 import { leapApex, leapFrom, towerBrakeSec, knockSlide, wardenRouteToHold, wardenRouteToTower, wardenStairTopS, horseChaseSpeed, horseAccel } from './追逐.ts';
 import { G4 } from '../../古城4x.tsx';
+import { sceneFrames } from '../7-1/段界.ts';
 import { STEED } from '@库/生物/幽灵马.tsx';
 import { scene73 } from '../布局.ts';
-export { FPS };
 
 // ---------- 马（场时刻 T，秒） ----------
-// 开场马朝北站在落点上：0.3 秒拨头朝东，一跃落到墙头东段，2 帧后再一跃上塔顶西沿，按落地的水平速度刹住
+// 开场马朝北站在落点上：0.3 秒拨头朝东，一跃落到墙头东段，1/12 秒后再一跃上塔顶西沿，按落地的水平速度刹住
 export const turnEastT = 0.02;
 export const turnEastSec = 0.3;
-export const leap1 = leapFrom(horseStart, wallTopEast, leapApex.一, turnEastT + turnEastSec + 0.03, FPS);
-export const leap1T = leap1.f0 / FPS;
+export const leap1 = leapFrom(horseStart, wallTopEast, leapApex.一, turnEastT + turnEastSec + 0.03);
+export const leap1T = leap1.f0;
 export const leap1LandT = leap1T + leap1.T;
-export const leap2 = leapFrom(wallTopEast, towerTop, leapApex.二, leap1LandT + 2 / FPS, FPS);
-export const leap2T = leap2.f0 / FPS;
+export const leap2 = leapFrom(wallTopEast, towerTop, leapApex.二, leap1LandT + 1 / 12);
+export const leap2T = leap2.f0;
 export const leap2LandT = leap2T + leap2.T;
 export const towerStopT = leap2LandT + towerBrakeSec;
 const towerDir = [towerTop[0] - wallTopEast[0], towerTop[1] - wallTopEast[1]];
@@ -72,42 +72,28 @@ const slide = knockSlide(knockHorizFraction);
 export const slideEnd = [towerStop[0] + knockDir[0] * slide, towerStop[1] + knockDir[1] * slide, towerStop[2]] as [number, number, number];
 export const steadyT = hitT + 0.5; // 稳住
 export const turnDownSec = 0.35; // 拨马头朝大道
-export const leap3 = leapFrom(slideEnd, avenue, leapApex.三, steadyT + turnDownSec + 0.03, FPS);
-export const leap3T = leap3.f0 / FPS;
+export const leap3 = leapFrom(slideEnd, avenue, leapApex.三, steadyT + turnDownSec + 0.03);
+export const leap3T = leap3.f0;
 export const leap3LandT = leap3T + leap3.T;
 // 落地顺大道往东冲：从落地的水平速度加到全速
 export const gallopAccelSec = (horseChaseSpeed - leap3.horizSpeed) / horseAccel;
 
 // ---------- 分段（段界 = 切镜那一刻） ----------
 // 7-3-1 收在第一跃落地、刘心忠回身甩出第二炮之后；7-3-2 收在马上了塔顶刹住；7-3-3 收在马落到大道冲起来（再往后它出画、硬切 7-4-1）
-// 帧数是剧情帧；7-3-3 有慢放，成片帧数是 7-3-3/编排.ts 的 END
+// 段首、段末是剧情时刻（7-3-3 有慢放，成片长度看 段.ts）。7-3-1 从第 1 场末帧的下一帧演起；段界落到帧上（../7-1/段界.ts），段末帧比下一段的段首早一帧；7-3-3 的段末是 seg3EndT 那一帧
 const seg1EndT = mortarFireTs[1] + 0.12;
 const seg2EndT = towerStopT + 0.04;
 const seg3EndT = leap3LandT + 0.45;
-const toFrame = (T: number) => Math.round(T * FPS);
-const startFrame0 = 1;
+const frames = sceneFrames(1 / 60);
 export const segments = [
-  { id: '7-3-1', 名: '墙头', frameCount: toFrame(seg1EndT) - startFrame0 },
-  { id: '7-3-2', 名: '上塔', frameCount: toFrame(seg2EndT) - toFrame(seg1EndT) },
-  { id: '7-3-3', 名: '音波', frameCount: toFrame(seg3EndT) - toFrame(seg2EndT) + 1 },
-] as const;
-export type SegmentId = (typeof segments)[number]['id'];
-export const segmentStartFrame: Record<SegmentId, number> = (() => {
-  const out = {} as Record<SegmentId, number>;
-  let frameAcc = startFrame0;
-  for (const seg of segments) {
-    out[seg.id] = frameAcc;
-    frameAcc += seg.frameCount;
-  }
-  return out;
-})();
-export const frameCountOf = (segId: SegmentId) => segments.find((s) => s.id === segId)!.frameCount;
-export const tAt = (segId: SegmentId, f: number) => (segmentStartFrame[segId] + f) / FPS;
-export const segmentStartT = (segId: SegmentId) => segmentStartFrame[segId] / FPS;
-export const segmentEndT = (segId: SegmentId) => (segmentStartFrame[segId] + frameCountOf(segId) - 1) / FPS;
+  { id: '7-3-1', 名: '墙头', startFrame: 0, lastFrame: frames.frameAt(seg1EndT) - 1 },
+  { id: '7-3-2', 名: '上塔', startFrame: frames.frameAt(seg1EndT), lastFrame: frames.frameAt(seg2EndT) - 1 },
+  { id: '7-3-3', 名: '音波', startFrame: frames.frameAt(seg2EndT), lastFrame: frames.frameAt(seg3EndT) },
+];
+export type SegmentId = '7-3-1' | '7-3-2' | '7-3-3';
+const segmentOf = (segId: SegmentId) => segments.find((s) => s.id === segId)!;
+export const tAt = (segId: SegmentId, sec: number) => frames.tAtFrame(segmentOf(segId).startFrame + sec * 60);
+export const segmentStartT = (segId: SegmentId) => frames.tAtFrame(segmentOf(segId).startFrame);
+export const segmentEndT = (segId: SegmentId) => frames.tAtFrame(segmentOf(segId).lastFrame);
+export const segmentLastSec = (segId: SegmentId) => (segmentOf(segId).lastFrame - segmentOf(segId).startFrame) / 60;
 
-// ---------- 台词：这一场没有台词 ----------
-const estimateSec = (text: string) => text.replace(/[，。！？、…—「」]/g, '').length / 4.5;
-export const dialogue: Record<string, { T: number; 文: string }> = {};
-export const lineDuration = (id: keyof typeof dialogue) => estimateSec(dialogue[id].文);
-export const lineStartFrame = (segId: SegmentId, id: keyof typeof dialogue) => Math.round((dialogue[id].T - segmentStartT(segId)) * FPS);

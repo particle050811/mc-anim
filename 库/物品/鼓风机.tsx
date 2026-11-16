@@ -7,7 +7,7 @@
 // 物品栏、思索标题框画的是另一个模型（models/item/encased_fan.json → encased_fan/item.json：四边框 + 正面格栅 + 22.5° 斜放扇叶 + 背后齿轮箱板），这里不画。
 // `thickBlades`（给 6-1-5 李樱手前端虚化成鼓风机用）：薄片的视频模型看不出在转，所以按 fan_blades 贴图每个不透明像素拉出有厚度的小方块，四片叶子各绕自己的中线扭 28°，中间轮毂不扭。
 // `ghost` 虚影（给 6-3 下坠脚底、6-4-3 黄叛弓前用）：整台照 动力压路机.tsx 的虚影画——贴图去色后染淡青白、自发光、半透明、不写深度、不投影（体内空间的应力转动之力化出来的）。
-// 叶片转角由调用方传（`spin`，度），组件里不读时钟；按画面帧率换算用 `bladeDegPerFrame`、`bladeVisualAngle`。
+// 叶片转角由调用方传（`spin`，度），组件里不读时钟；按画面时间累加用 `bladeVisualAngle`。
 // 接口：
 //   <EncasedFan spin={度} 轴转角?={度} 厚叶片? opacity?={0~1} ghost? tint?="#cfeeff" 叶片?={{ 不透明度?, 亮度? }} />
 //     单位格、原点在方块中心，出风口朝本地 +Y，叶片绕 Y 转。摆放时 rotation 把 +Y 转到风向上。
@@ -221,27 +221,23 @@ export const EncasedFan: React.FC<{
 // 叶片转速（EncasedFanRenderer.renderSafe，FanVisual 同）：每刻转 clamp(|rpm|×5, 80, 1280) × 0.3 度，方向随 rpm 正负，0 不转。返回 度/剧情秒（一秒 20 刻）。
 export const bladeDegPerSec = (rpm: number) => (rpm === 0 ? 0 : Math.sign(rpm) * Math.min(1280, Math.max(80, Math.abs(rpm) * 5)) * 0.3 * 20);
 
-// 画面上每帧最多转 30°：扇叶四片，每帧过 45° 会看成倒转（车轮效应）。所以原速满速风扇在 24 帧画面里只画成每秒 2 圈；慢放时真实转角小于它，按真实转速画。
-export const BLADE_MAX_DEG_PER_FRAME = 30;
+// 画面上每 1/24 秒最多转 30°（720°/秒）：扇叶四片，24 帧画面里一帧过 45° 会看成倒转（车轮效应），所以原速满速风扇只画成每秒 2 圈；慢放时真实转角小于它，按真实转速画。
+// 封顶照 24 帧时看过的定，60 帧输出不跟着放宽
+export const BLADE_MAX_DEG_PER_SEC = 720;
 
-// 这一帧的画面转角（度）：真实角速度 × 这一帧经过的剧情秒数，绝对值封顶在 上限
-export const bladeDegPerFrame = (rpm: number, storySecPerFrame: number, maxDeg = BLADE_MAX_DEG_PER_FRAME) => {
-  const deg = bladeDegPerSec(rpm) * storySecPerFrame;
-  return Math.sign(deg) * Math.min(Math.abs(deg), maxDeg);
-};
-
-// 第 `frame` 帧（可带小数）时叶片的画面转角（度）：从 `起帧` 起逐帧累加 `bladeDegPerFrame`。`perFrame(f)` 给出画面第 f 帧到 f+1 帧之间的转速和走过的剧情秒数（原速 = 1/fps）。纯函数，任意顺序出帧结果一样。
-export const bladeVisualAngle = (frame: number, perFrame: (frameIdx: number) => { rpm: number; storySec: number }, opt: { startFrame?: number; maxDeg?: number } = {}) => {
-  const { startFrame: startFrame = 0, maxDeg: maxDeg = BLADE_MAX_DEG_PER_FRAME } = opt;
+// 画面第 sec 秒叶片的画面转角（度）：从 startSec 起每 stepSec 一步累加「真实角速度 × 这一步走过的剧情秒数」，每步绝对值封顶 上限 × 步长。
+// perStep(s, h) 给出画面 s 到 s + h 秒之间的转速和走过的剧情秒数（原速 = h）。步长只是积分的离散，和输出帧率无关；纯函数，任意顺序出帧结果一样
+export const bladeVisualAngle = (sec: number, perStep: (stepStartSec: number, stepSec: number) => { rpm: number; storySec: number }, opt: { startSec?: number; stepSec?: number; maxDegPerSec?: number } = {}) => {
+  const { startSec = 0, stepSec = 1 / 120, maxDegPerSec = BLADE_MAX_DEG_PER_SEC } = opt;
   let angle = 0;
-  const wholeFrames = Math.floor(frame);
-  for (let frameIdx = startFrame; frameIdx < wholeFrames; frameIdx++) {
-    const { rpm, storySec } = perFrame(frameIdx);
-    angle += bladeDegPerFrame(rpm, storySec, maxDeg);
-  }
-  if (frame > wholeFrames && wholeFrames >= startFrame) {
-    const { rpm, storySec } = perFrame(wholeFrames);
-    angle += bladeDegPerFrame(rpm, storySec, maxDeg) * (frame - wholeFrames);
-  }
+  const add = (s: number, h: number) => {
+    const { rpm, storySec } = perStep(s, h);
+    const deg = bladeDegPerSec(rpm) * storySec;
+    angle += Math.sign(deg) * Math.min(Math.abs(deg), maxDegPerSec * h);
+  };
+  const wholeSteps = Math.floor((sec - startSec) / stepSec + 1e-9);
+  for (let k = 0; k < wholeSteps; k++) add(startSec + k * stepSec, stepSec);
+  const rest = sec - startSec - wholeSteps * stepSec;
+  if (wholeSteps >= 0 && rest > 1e-12) add(startSec + wholeSteps * stepSec, rest);
   return angle;
 };

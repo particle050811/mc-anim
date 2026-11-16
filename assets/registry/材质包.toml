@@ -1,4 +1,4 @@
-# 资产表：材质包（标准 Java 版资源包 zip，pipeline/资产/材质包.ts 的兼容层读它们，作品在 <作品根>/材质包.toml 选用）。人写；锁由 anim assets add 写。
+# 资产表：材质包（标准 Java 版资源包 zip，pipeline/取材/材质包.ts 的兼容层读它们，作品在 <作品根>/材质包.toml 选用）。人写；锁由 anim assets add 写。
 # 许可不许再分发的 可见性 私有（字节只在数据根 私有/）。许可原文 11-02 查，出处写在 说明 里。
 # 字段和取值见 assets/README.md。
 
@@ -24,7 +24,7 @@ id = "材质包/faithful-64x"
 "来源" = "手工:下载 https://cdn.modrinth.com/data/r4GILswZ/versions/YOjutORB/Faithful%2064x%20-%20Beta%209.zip（Modrinth faithful-64x Beta 9，1.20.1，sha1 6dd076b2a74b7b9a0141339be48ef9c72c559516）"
 "许可" = "LicenseRef-Faithful-License-4"
 "可见性" = "公开"
-"说明" = "Faithful 64x，Faithful 32x 再细一倍，还是测试版（缺玩家皮肤和一些方块）。用户 11-02 要「顺便兼容一下可能以后出现的 64x」拿它试；本作品 像素N 6 只能缩到 32x 上屏（pipeline/资产/材质包.ts 放大上限）。许可同 Faithful 32x：https://faithfulpack.net/license（v4）"
+"说明" = "Faithful 64x，Faithful 32x 再细一倍，还是测试版（缺玩家皮肤和一些方块）。用户 11-02 要「顺便兼容一下可能以后出现的 64x」拿它试；本作品 像素N 6 只能缩到 32x 上屏（pipeline/取材/材质包.ts 放大上限）。许可同 Faithful 32x：https://faithfulpack.net/license（v4）"
 
 [["资产"]]
 id = "材质包/pixel-perfection-legacy"
@@ -56,7 +56,7 @@ id = "材质包/faithful-64x-1201"
 "来源" = "手工:下载 https://codeload.github.com/Faithful-Resource-Pack/Faithful-64x-Java/zip/2cf5b25ee70de67423e68aa0ec452a5aafb0fd9c（官方仓库 Faithful-64x-Java 的 1.20.1 分支 11-06 的头，文件名 Faithful-64x-Java-1.20.1-2cf5b25ee70d.zip，sha1 bd28ba363b65d8458f4868aa44f95d3ee694a83a）"
 "许可" = "LicenseRef-Faithful-License-4"
 "可见性" = "公开"
-"说明" = "Faithful 64x，官方 1.20.1 分支（Modrinth 上 1.20.1 只有 23 年的 Beta 9，见 材质包/faithful-64x；分支一直在回移新贴图，比 Beta 9 全：多了实体、粒子、界面）。用户 11-06 要看 64x 真上屏，拿它试（试验开关 ANIM_PACKS_TRY，pipeline/资产/材质包.ts）。许可同 Faithful 32x：https://faithfulpack.net/license（v4，包里带 LICENSE.txt）"
+"说明" = "Faithful 64x，官方 1.20.1 分支（Modrinth 上 1.20.1 只有 23 年的 Beta 9，见 材质包/faithful-64x；分支一直在回移新贴图，比 Beta 9 全：多了实体、粒子、界面）。用户 11-06 要看 64x 真上屏，拿它试（试验开关 ANIM_PACKS_TRY，pipeline/取材/材质包.ts）。许可同 Faithful 32x：https://faithfulpack.net/license（v4，包里带 LICENSE.txt）"
 
 [["资产"]]
 id = "材质包/faithful-hd-x128"

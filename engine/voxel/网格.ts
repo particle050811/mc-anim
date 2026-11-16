@@ -6,7 +6,7 @@
 //   裙边画不画每帧按邻居定（lib/体素/世界.tsx）：这一侧同一级的邻居这一帧也在画，裙边就藏在它的地面底下，不画；邻居是另一级或不在画，照旧画，免得交界漏缝。
 //   为什么要藏：裙边是竖墙，从高处往下看几乎侧对镜头；three 的对数深度在片元着色器写 gl_FragDepth，开 MSAA 时一个像素里各采样点共用像素中心的深度，
 //   侧对镜头的墙把深度外推到像素中心，会比挡在它前面的地面还近，抢走几个采样点，于是 6-3 从高空往下看时第 1 级区段边上有一条条 1 像素的土色直线（关对数深度、关 MSAA 或不画裙边都没了）。
-// - 贪心合并：同一平面上挨着的整格面，贴图、叠加层、染色、类别都一样的，按行扫再往下一行并成长方形（ScanMesher2D），uv 跟着拉长、贴图按格平铺（着色器里取 fract）。
+// - 贪心合并：同一平面上挨着的整格面，贴图、叠加层、染色、类别、在格子里的深度、面内 UV 映射都一样的，按行扫再往下一行并成长方形（ScanMesher2D），uv 跟着拉长、贴图按格平铺（着色器里取 fract）。
 // - 按朝向分组：+x -x +y -y +z -z 和「不沿轴」（花草的十字面）七组，再加 +x -x +y -y 四组裙边，画的时候背对镜头的整组不画（Voxy 按区段、按朝向剔除）。
 // - 按材质分：实心、镂空（第 0 级的树叶等）、实心树叶（粗级）、水、花草（不挡光的小东西，屏幕 AO 里不挡也不压，见 lib/体素/材质.ts）。
 // - 面朝向亮度不烤进顶点（不照 Voxy 的 computeDirectionalFaceTint）：明暗全交给灯算，和导出网格（lib/方块网格.tsx）一致（用户 10-04 定）。
@@ -136,6 +136,32 @@ const buildMergedUv = (voxel: number) => {
   mergedUvCache[voxel] = table;
   return table;
 };
+// 合并签名：面在格子里的深度 + 面内 UV 映射（上面那六个数），一样才能并，否则下半砖挨上半砖时顶面错半格、横放原木 x 挨 z 时树皮纹转错 90°。
+// 照 Linker 游戏端的合并键（RenderableBakeGreedyMesher$GreedyGroupKey 的 plane 和四角 UV）。
+// 编号按出现先后给，只用来比相等，各 Worker 各编一套不影响网格；整张方块表只有 179 种（11-16 数的），键里留了 10 位。
+const mergeSigBits = 10;
+const mergeSigCache: Int32Array[] = [];
+const mergeSigIds = new Map<string, number>();
+const buildMergeSig = (voxel: number) => {
+  const faces = FACES[voxel];
+  const uvTable = mergedUvCache[voxel] || buildMergedUv(voxel);
+  const sig = new Int32Array(faces.length / faceStride);
+  for (let faceOff = 0; faceOff < faces.length; faceOff += faceStride) {
+    if (!faces[faceOff + 29]) continue;
+    const at = faceOff / faceStride;
+    const depth = faces[faceOff + 6 + (faces[faceOff] >> 1)];
+    const text = `${depth},${Array.from(uvTable.subarray(at * 6, at * 6 + 6)).join(',')}`;
+    let id = mergeSigIds.get(text);
+    if (id === undefined) {
+      id = mergeSigIds.size;
+      if (id >= 2 ** mergeSigBits) throw new Error(`网格合并签名超过 ${2 ** mergeSigBits} 种，键放不下，要重排键的位`);
+      mergeSigIds.set(text, id);
+    }
+    sig[at] = id;
+  }
+  mergeSigCache[voxel] = sig;
+  return sig;
+};
 const hash3 = (x: number, y: number, z: number) => {
   let hash = Math.imul(x | 0, 0x8da6b343) ^ Math.imul(y | 0, 0xd8163841) ^ Math.imul(z | 0, 0xcb1ab31f);
   hash = Math.imul(hash ^ (hash >>> 13), 0x5bd1e995);
@@ -264,9 +290,10 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
             const row = dirRowBase[dir] + rowInDir;
             if (!rowEnd[row] || uCell < rowStart[row]) rowStart[row] = uCell;
             if (uCell >= rowEnd[row]) rowEnd[row] = uCell + 1;
-            // 键：贴图、叠加层、染色、类别、是不是裙边都一样才并（数值放得下 53 位：14 + 12 + 12 + 3 + 1 + 1）
+            // 键：合并签名、贴图、叠加层、染色、类别、是不是裙边都一样才并（数值放得下 53 位：10 + 14 + 12 + 12 + 3 + 1 + 1）
             const tk = (faces[faceOff + 4] || t1 !== 65535) && ti >= 0 ? ti : 4095;
-            keyGrid[cell] = ((((t0 * 4096 + (t1 === 65535 ? 4095 : t1)) * 4096 + tk) * 8 + mi) * 2 + (isSkirt ? 1 : 0)) * 2 + 1;
+            const sig = (mergeSigCache[voxel] || buildMergeSig(voxel))[face];
+            keyGrid[cell] = sig * 2 ** 43 + ((((t0 * 4096 + (t1 === 65535 ? 4095 : t1)) * 4096 + tk) * 8 + mi) * 2 + (isSkirt ? 1 : 0)) * 2 + 1;
             faceGrid[cell] = voxel * 64 + face;
             hasMergeable = true;
             continue;
@@ -337,7 +364,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
             const mi = (lowBits >>> 2) & 7;
             const tk = (lowBits >>> 5) & 4095;
             const t1k = (lowBits >>> 17) & 4095;
-            const t0 = Math.floor(key / (32 * 4096 * 4096));
+            const t0 = Math.floor(key / (32 * 4096 * 4096)) % 16384;   // 再往上是合并签名
             const tc = tk < 4095 ? tints[tk] : null;
             bufs[mi][skirtBit ? skirtGroupStart + dir : dir].push(corners, uv, t0, t1k === 4095 ? 65535 : t1k, tc ? tc[0] : 255, tc ? tc[1] : 255, tc ? tc[2] : 255, otherFaceTex(vf >> 6, dir));
             uu += width - 1;

@@ -1,5 +1,5 @@
 import { parseSource, walk, ts } from './语法.ts';
-import { isRenderCode, type CheckReport, type CheckContext } from './上下文.ts';
+import { isRenderCode, type CheckReport, type CheckContext } from '../源码/上下文.ts';
 
 /** 只守漏接线：同模块登记来源却完全没登记模型。不能替代浏览器里对版本、字节及调用先后的验证。 */
 export const isUnregisteredSectionModel = (file: string, sourceText: string): boolean => {

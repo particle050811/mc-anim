@@ -1,4 +1,4 @@
-// 第 2 场基地谋划的前三段：6-2-1 战利品、6-2-2 还差什么、6-2-3 古卷。纯函数，输入全局帧 G（24 帧/秒）。
+// 第 2 场基地谋划的前三段：6-2-1 战利品、6-2-2 还差什么、6-2-3 古卷。纯函数，输入全局秒 g。
 // 三段放在一条共用的时间线上，各段是上面的一个窗口（同 6-3-下坠/），首帧 = 上一段末帧；
 // 6-2-3 的末帧 = 6-2-4 的首帧：人、指南针、镜头、齿轮转角、九胡尾巴相位全部直接取 6-2-4/编排.ts 的第 0 帧（只读引用，那边改了这边跟着变）。
 // 戏（脚本 正篇/06-古城寻卷/脚本规划.md 第 2 场；界面部分是用户 10-03 加的，脚本还没跟着改）：
@@ -19,9 +19,9 @@
 // 台词时长：按正常语速（每秒约 4.5 个字，逗号、句号各停 0.2～0.3 秒）再加 0.5 秒。不挂配乐：三段的场景描述都写了不要配乐，配乐从 6-2-4 才淡入。
 // 代码分在 编排/ 下：时间线（段表、时刻、界面）、站位（含走路路线）、李樱、九胡、物品、镜头。
 import * as K624 from '../6-2-4/编排.ts';
-import { FPS, lastFrame } from './编排/时间线.ts';
+import { lastSec } from './编排/时间线.ts';
 
-export { FPS, type SegmentName, segmentTable, lineStarts, compassUiOpenFrame, ancientCityLineStart, segmentFrames, lastFrame, cues, uiState } from './编排/时间线.ts';
+export { type SegmentName, segmentTable, lineStarts, compassUiOpenSec, ancientCityLineStart, lastSec, cues, uiState } from './编排/时间线.ts';
 export { COMPASS_SIZE, enter, exitPath, jiuhuPath, walkPlans, trip } from './编排/站位.ts';
 export { liying } from './编排/李樱.ts';
 export { type JiuhuState, jiuhu } from './编排/九胡.ts';
@@ -29,6 +29,6 @@ export { type ItemState, blood, fur, compass, needle } from './编排/物品.ts'
 export { type Cam, toWorld, cameraLocal, camera } from './编排/镜头.ts';
 
 // 齿轮转动的时间（秒）：到 6-2-3 末帧正好是 6-2-4 的 0
-export const gearTime = (G: number) => (G - lastFrame) / FPS;
+export const gearTime = (g: number) => g - lastSec;
 export const VISIBILITY = K624.VISIBILITY;
 export const ROOM = K624.ROOM;

@@ -30,14 +30,14 @@ export const HIDE: number[][] = geom.sensors.flatMap(([x, y, z]) => {
 });
 
 // 嘴：李樱说话时的口型（各段用 src/lib/口型.ts 的 mouthAt 按本段台词算）；主观镜头（镜头在他眼睛上）不画他
-export const ScenePicture: React.FC<{ sf: number; cam: Cam; wideShot?: boolean; mouth?: Mouth; pov?: boolean }> = ({ sf, cam, wideShot: wideShot = false, mouth: mouth, pov = false }) => {
+// s：场内秒
+export const ScenePicture: React.FC<{ s: number; cam: Cam; wideShot?: boolean; mouth?: Mouth; pov?: boolean }> = ({ s: sec, cam, wideShot: wideShot = false, mouth: mouth, pov = false }) => {
   const { width, height } = useVideoConfig();
-  const sec = play.toSec(sf);
-  const ly = play.liYingStateAt(sf);
-  const wool = play.wool(sf);
-  const sensorClock = play.sensorClock(sf);
+  const ly = play.liYingStateAt(sec);
+  const wool = play.wool(sec);
+  const sensorClock = play.sensorClock(sec);
   return (
-    <AncientCity4xCanvas 段="7-2" cam={cam} width={width} height={height} hide={HIDE} wool={wool.placed} growingWool={wool.长} chestOpening={play.chestOpeningAt(sf)}>
+    <AncientCity4xCanvas 段="7-2" cam={cam} width={width} height={height} hide={HIDE} wool={wool.placed} growingWool={wool.长} chestOpening={play.chestOpeningAt(sec)}>
       {ly.在 && !pov && (
         <LiYing
           pose={ly.pose}
@@ -55,7 +55,7 @@ export const ScenePicture: React.FC<{ sf: number; cam: Cam; wideShot?: boolean; 
       <ShriekRings p={play.shriek.p} sec={sec - play.shriek.t} />
       <VanillaParticles spawns={play.useParticles} 秒={sec} />
       <VanillaParticles spawns={play.teleportAwayParticles} 秒={sec} />
-      {wideShot && <SceneActors t={play.wideTime(sf)} />}
+      {wideShot && <SceneActors t={play.wideTime(sec)} />}
     </AncientCity4xCanvas>
   );
 };

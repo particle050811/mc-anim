@@ -29,8 +29,8 @@ const critSources: CritSource[] = (() => {
   return out;
 })();
 const critTrackCache = new Map<number, { path: V3[]; life: number; half: number; f: number }>();
-export const critParticles = (globalFrame: number): Particle[] => {
-  const t = storySecAt(globalFrame);
+export const critParticles = (g: number): Particle[] => {
+  const t = storySecAt(g);
   const out: Particle[] = [];
   for (const src of critSources) {
     if (t < src.t) continue;

@@ -1,5 +1,5 @@
 // 冒烟画面：8×8 色块按 png 内联 + fast-png 同步解码画成格子（和旧项目 lib/贴图.ts 同一条路），一条随帧移动的竖条让每帧不同，
-// 第 0 帧、第 24 帧各放一次 1 秒的正弦音（ogg 资产，打包时解成 wav）。
+// 第 0 秒、第 1 秒各放一次 1 秒的正弦音（ogg 资产，打包时解成 wav）。
 import { Audio } from '@remotion/media';
 import { decode } from 'fast-png';
 import React from 'react';
@@ -22,10 +22,9 @@ const img = decodeImage(smokeBlockPng);
 const cellPx = 40;
 
 const picture: React.FC = () => {
-  // 段内第几格（一格 1/24 秒）；进度条的分母是段长折成的格数
-  const frame = snapToFrame(useCurrentSec() * 24);
-  const { width, durationInFrames: frameCount, fps: frameRate } = useVideoConfig();
-  const durationInFrames = (frameCount / frameRate) * 24;
+  // 段内第几帧（输出帧）；以前按 1/24 秒一格数，用户 11-16 定不留 1/24 秒的格
+  const { width, durationInFrames, fps } = useVideoConfig();
+  const frame = snapToFrame(useCurrentSec() * fps);
   const { 级别: level } = useSettings();
   const cells = [];
   for (let y = 0; y < img.h; y++) {

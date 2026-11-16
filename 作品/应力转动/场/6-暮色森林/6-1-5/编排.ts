@@ -87,8 +87,10 @@ export const T_TOUCH = pierceLine.bodies[0].touch / V;
 // 倒平、化成白烟（模型/特效/生物死亡.tsx 的 倒地：胸口绕脚底的线速度 = 飞行速度）
 export const T_TOPPLE = toppleDuration(LICH.chest, V);
 export const T_DEATH = T_TOUCH + T_TOPPLE * deathToFlatRatio;
-// 一镜到底的时钟在这几个时刻之间放慢（路线.ts 读）：撞墙前一点开始全速放慢，巫妖化烟以后开始恢复
-export const slowMo = { 起: T_IMPACT - 0.003, 止: T_DEATH + 0.004 };
+// 一镜到底的时钟在这几个时刻之间放慢（路线.ts 读）：撞墙那一下刚过全速放慢，巫妖化烟以后开始恢复
+// 起、止 的毫秒零头是对着配乐拉回来的：时钟改按真时刻算、6-1-3 放平改真值以后（用户 11-16 定 1/24 秒的格一处不留），照原样放慢穿刺在画面上晚半秒多；
+// 调 起（放慢 100 倍，差 1 毫秒画面上差 0.1 秒）让六次穿刺在配乐里的位置和改之前用户看过的一样（一镜到底/路线/时钟.ts）
+export const slowMo = { 起: T_IMPACT + 0.0034429, 止: T_DEATH + 0.0040576 };
 export const fxSpeed = 28;
 // 药水炸开的粒子、巫妖死时的白烟按更快的时钟走（碎得更猛、散得更快），镜头钻过去之前就散干净了
 export const potionFxSpeed = 55;

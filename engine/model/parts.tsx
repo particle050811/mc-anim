@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-export type V3 = [number, number, number];
+import type { V3 } from '../core/坐标.ts';
+export type { V3 };
 
 // 残影：同一个角色在前几帧的位置再画一遍，所有零件换成半透明单色
 export const Ghost = createContext<{ color: string; opacity: number } | null>(null);

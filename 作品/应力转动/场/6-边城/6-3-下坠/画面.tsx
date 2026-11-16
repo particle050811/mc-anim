@@ -1,5 +1,5 @@
-// 6-3 下坠的画面：按全局帧 G 画出这一帧（时钟见 时间线.ts，人和机位见 编排.ts，坑和井见 竖井.tsx，特效见 碎块.tsx）。
-// 各段 Composition（镜头/6-3-3/俯冲.tsx 等）只给段名：段内第 f 帧 = 全局帧 段起 + f。
+// 6-3 下坠的画面：按全局秒 T 画出这一刻（时钟见 时间线.ts，人和机位见 编排.ts，坑和井见 竖井.tsx，特效见 碎块.tsx）。
+// 各段 Composition（镜头/6-3-3/俯冲.tsx 等）只给段名：段内第 s 秒 = 全局秒 段起 + s。
 // 地上用主世界-116 的真实地形（城址整平、竖井和古城挖掉，见 地形.ts）+ 边城 + 云，光照同 6-2-5、6-2-6（飞行镜头.tsx 的灯），地形加屏幕空间 AO；
 // 地下（竖井、古城）用这套灯、不投影，像开了夜视（用户 10-02），不画天空；雾同古城4x 满视距（竖井.tsx 的 `UnderFog`）。
 // 不画推力来源（用户 10-10 删了脚底鼓风机虚影和气流）。金光、望远镜视野（原版镜筒遮罩）、6-3-6 撞击的金白闪光是画面层。
@@ -46,6 +46,7 @@ import { JiuhuHandCompass } from '../../../角色/九胡持指南针.tsx';
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
 import { mouthAt } from '../../../配音/口型.ts';
 import { rad } from '@engine/core/数学.ts';
+import { segFps } from '@engine/段/段定义.ts';
 
 const jiuhuRaw = jiuHuModelData as unknown as object;
 
@@ -115,18 +116,21 @@ const fx = (): FxParams => {
   return FX;
 };
 
-// 6-3-5 喊「ロードローラーだッ！」时动嘴：开口帧（全局帧）取 编排/李樱.ts 的 shoutLine（6-举锤砸穿 段.ts 的台词 cue 就是它）；台词只在 6-3-5 放，别的段不动嘴
-const shoutMouth = (globalFrame: number) => mouthAt([choreo.shoutLine], '李樱', globalFrame);
+// 6-3-5 喊「ロードローラーだッ！」时动嘴：开口（全局秒）取 编排/李樱.ts 的 shoutLine（6-举锤砸穿 段.ts 的台词 cue 就是它）；台词只在 6-3-5 放，别的段不动嘴
+const shoutMouth = (globalSec: number) => mouthAt([choreo.shoutLine], '李樱', globalSec, 1);
+// 入井后的大气后期、云影停在入井前最后一帧（原来按 24 帧/秒数，用户 11-16 定不留 1/24 秒的格，改按输出帧）
+const renderFps = segFps;
 
-export const FallScene: React.FC<{ G: number; segment: timeline.SegmentName }> = ({ G: globalFrame, segment: segment }) => {
+export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> = ({ T: globalSec, segment: segment }) => {
   const { width, height } = useVideoConfig();
   const terrain = useFallTerrain();
-  const physSec = timeline.physicalTime(globalFrame);
+  const physSec = timeline.physicalTime(globalSec);
   const imp = timeline.impactTime();
   const after = physSec >= imp;
-  // 6-3-1、6-3-2（G < 0）：机位、两人姿势、李樱手里的指南针换成 6-3-1/编排.ts、6-3-2/扫帚上.ts 的
-  const preLeap = globalFrame < timeline.segTable['6-3-1'].止 ? backToTown(globalFrame) : globalFrame < 0 ? onBroomState(globalFrame) : null;
-  const cam = preLeap?.cam ?? choreo.camPose(globalFrame);
+  // 6-3-1、6-3-2（T < 0）：机位、两人姿势、李樱手里的指南针换成 6-3-1/编排.ts、6-3-2/扫帚上.ts 的。
+  // 正好落在 6-3-1 止上的那一刻算 6-3-2（段表是累加出来的秒，1e-9 是浮点余量）
+  const preLeap = globalSec < timeline.segTable['6-3-1'].止 - 1e-9 ? backToTown(globalSec) : globalSec < 0 ? onBroomState(globalSec) : null;
+  const cam = preLeap?.cam ?? choreo.camPose(globalSec);
   const under = cam.pos[2] < choreo.groundZ - 0.5;
   // 已看过的顺序画面在入井后保留了入井前最后一帧的大气后期和云影。
   // 明确从时间线求这台参考相机，而不是沿用浏览器实际渲过的上一帧；地下雾和灯不变。
@@ -134,21 +138,22 @@ export const FallScene: React.FC<{ G: number; segment: timeline.SegmentName }> =
     if (segment !== '6-3-6') return undefined;
     const span = timeline.segTable['6-3-6'];
     let last: ReturnType<typeof choreo.camPose> | undefined;
-    let lastFrame = 0;
-    // 拼段跳过了 6-3-6 的第 0 帧；这里只求相机参数，不预渲任何历史帧。
-    for (let G = span.起 + 1; G <= globalFrame; G++) {
-      const c = choreo.camPose(G);
+    let lastIdx = 0;
+    // 拼段跳过了 6-3-6 的第 0 帧；这里只求相机参数，不预渲任何历史帧。正好落在帧上的这一刻也算（1e-9 是浮点余量）
+    const doneFrames = (globalSec - span.起) * renderFps + 1e-9;
+    for (let k = 1; k <= doneFrames; k++) {
+      const c = choreo.camPose(span.起 + k / renderFps);
       if (c.pos[2] >= choreo.groundZ - 0.5) {
         last = c;
-        lastFrame = G - span.起;
+        lastIdx = k;
       }
     }
     if (!last) return undefined;
     const ref = new THREE.PerspectiveCamera();
     ref.position.set(last.pos[0], last.pos[2], -last.pos[1]);
     ref.updateMatrixWorld();
-    return { camera: ref, waterSec: lastFrame / timeline.FPS };
-  }, [segment, globalFrame]);
+    return { camera: ref, waterSec: lastIdx / renderFps };
+  }, [segment, globalSec]);
   const fxParams = fx();
   const pit = after ? choreo.crater() : null;
   const nearTown = cam.pos[2] < choreo.groundZ + 400;
@@ -169,8 +174,9 @@ export const FallScene: React.FC<{ G: number; segment: timeline.SegmentName }> =
         <MaceInHand headSlot={phantom} glow={choreo.goldGlow(physSec)} />
       </group>
     ) : undefined;
-  const g6 = timeline.segTable['6-3-6'].起;
-  const flash = segment === '6-3-6' ? Math.max(0, 1 - Math.abs(globalFrame - g6 - timeline.impactSegFrame - 0.5) / 2) * 0.55 : 0;
+  // 撞击的闪光：撞击那一刻往后 1/48 秒最亮，前后 1/12 秒淡完
+  const t6 = timeline.segTable['6-3-6'].起;
+  const flash = segment === '6-3-6' ? Math.max(0, 1 - Math.abs(globalSec - t6 - timeline.impactSegSec - 1 / 48) / (1 / 12)) * 0.55 : 0;
   // 金光：锤头、光尾（沿走过的路往回取点，平移到锤头上）
   const glowLevel = exception('不加自制特效', choreo.goldGlow(physSec), { 段: ['6-飞越主世界俯冲边城', '6-城墙瞭望', '6-举锤砸穿'], 原因: '剧情要的锤头金色光尾和撞击金光' });
   const head = choreo.maceHeadPos(ly);
@@ -242,13 +248,13 @@ export const FallScene: React.FC<{ G: number; segment: timeline.SegmentName }> =
           {preLeap?.compass && <HeldCompass s={preLeap.compass} />}
           <LiYingGoldGlow g={glowLevel} head={head} hip={ly.hip} w={physSec} pathAt={pathAt} trailSec={trailSec} sampleExp={exponent} cam={cam.pos} zoom={zoom} />
           <group matrix={ly.matrix} matrixAutoUpdate={false}>
-            <LiYing pose={ly.pose} handR={mace} hipL={sheath} mouth={preLeap?.liYingMouth ?? (segment === '6-3-5' ? shoutMouth(globalFrame) : undefined)} />
+            <LiYing pose={ly.pose} handR={mace} hipL={sheath} mouth={preLeap?.liYingMouth ?? (segment === '6-3-5' ? shoutMouth(globalSec) : undefined)} />
           </group>
           {/* 北城墙上的卫兵（每人一张脸：号 = 第几张原版默认皮肤；巡逻的 5 号有位移和走路的摆腿，见 编排.ts 的 卫兵） */}
           {nearTown &&
             choreo.guardPositions.map((guardPos, i) => {
               if (i === hidden) return null;
-              const pose = choreo.guardPoseAt(globalFrame, i);
+              const pose = choreo.guardPoseAt(globalSec, i);
               return (
                 <group key={i} position={[borderTownPos[0] + guardPos[0] + pose.offset[0], borderTownPos[1] + guardPos[1] + pose.offset[1], borderTownPos[2] + guardPos[2] + pose.offset[2]]} rotation={[0, 0, rad(180 + pose.bodyTurn)]}>
                   <Guard sec={physSec + i * 0.7} glintSec={physSec} headPitch={pose.pictureHeadPitch} headYaw={pose.headYaw} raiseSpyglass={pose.raiseSpyglass} skinIndex={i} limbSwing={pose.步} stride={pose.stride} />
@@ -271,8 +277,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.SegmentName }> =
   );
 };
 
-// G 是下坠时间线的格（1/24 秒），由段内秒现算、带小数
 export const FallSegment: React.FC<{ segment: timeline.SegmentName }> = ({ segment: segment }) => {
   const sec = useCurrentSec();
-  return <FallScene G={timeline.segTable[segment].起 + sec * timeline.FPS} segment={segment} />;
+  return <FallScene T={timeline.segTable[segment].起 + sec} segment={segment} />;
 };

@@ -1,6 +1,6 @@
 // 6-3-2 思索：两人骑在悬停的扫帚上、李樱介绍动力压路机时盖上来的机械动力思索界面（戏和时间在 编排.ts、台词.ts，
 // 扫帚上的戏和镜头在 扫帚上.ts，界面外框在 模型/界面/思索界面.tsx，三维场景板和界面层的共用画法在 模型/界面/思索场景.tsx，转场在 转场.ts）。
-// 画面从下往上：世界画面（6-3-下坠/画面.tsx 按全局帧画；界面淡入以后被不透明的底色盖住，不画）→ 思索的底色 → 场景板、李樱、锤上的压路机虚影、金光、方块碎屑
+// 画面从下往上：世界画面（6-3-下坠/画面.tsx 按全局秒画；界面淡入以后被不透明的底色盖住，不画）→ 思索的底色 → 场景板、李樱、锤上的压路机虚影、金光、方块碎屑
 // （三维，互相遮挡）→ 标题、按钮、进度条、说明框（2D）→ 标题框里的物品（动力压路机，三维）。
 // 思索里的李樱和下坠里是同一个模型、同一套姿势和灯（灯的方向跟着他转 ψ，见 编排.ts 的 `figureRef`），转场时和底下真的俯冲叠得上。
 // `RollerPonder`：世界 + 界面，完整的一段（拼在 6-2-5至6-3-3 里，见 6-2至6-3段界/段表.ts）；6-3-3 开头用 world={false} 接着画到思索层淡完。
@@ -141,7 +141,7 @@ const PonderLiYing: React.FC<{ t: number }> = ({ t }) => {
     </group>
   );
   // 金光的光尾：沿他走过的路往回取点，平移到锤头上（同 6-3-下坠/画面.tsx）。转场里取下坠里的路（转 ψ、接到推近完的髋上），场景板上取这里往下掉的路。
-  // 转场里光尾跟着思索层淡掉的进度从无长出来：推完时他停在底板上没有光尾，全局帧 0 一下子冒出整条会跳
+  // 转场里光尾跟着思索层淡掉的进度从无长出来：推完时他停在底板上没有光尾，全局秒 0 一下子冒出整条会跳
   const head = LY.maceHeadPos(state);
   const off = [head[0] - f.hip[0], head[1] - f.hip[1], head[2] - f.hip[2]];
   const speed = w !== undefined && w > tick.leap ? Math.hypot(...liYingFall(w).v) : 0;
@@ -150,7 +150,7 @@ const PonderLiYing: React.FC<{ t: number }> = ({ t }) => {
   const pathAt = (secAgo: number): V3 => {
     if (w !== undefined) {
       const now = liYingHip(w);
-      const grow = 1 - ponderLayerOpacity((t - tMatch) * choreo.FPS);
+      const grow = 1 - ponderLayerOpacity(t - tMatch);
       const then = liYingHip(Math.max(tick.leap, w - secAgo * grow));
       const d = new THREE.Vector3(then[0] - now[0], then[1] - now[1], then[2] - now[2]).applyMatrix4(choreo.figureRef().psi);
       return [f.hip[0] + d.x + off[0], f.hip[1] + d.y + off[1], f.hip[2] + d.z + off[2]];
@@ -284,14 +284,14 @@ const RollerItem: React.FC = () => {
   );
 };
 
-// 帧：段内第几帧（1/24 秒一格，不给就是当前时刻；6-3-3 开头叠思索层时接着往下数）。世界：画不画底下的世界画面（不画就是透明底）
-export const PonderSegment: React.FC<{ world?: boolean; frame?: number }> = ({ world: showWorld = true, frame: frameOverride }) => {
-  const cur = useCurrentSec() * choreo.FPS;
-  const frame = frameOverride ?? cur;
-  const G = segTable['6-3-2'].起 + frame;
-  const t = frame / choreo.FPS - uiOpen; // 思索场景时间（开界面以前是负的）
+// sec：段内秒（不给就是当前时刻；6-3-3 开头叠思索层时接着往下数）。世界：画不画底下的世界画面（不画就是透明底）
+export const PonderSegment: React.FC<{ world?: boolean; sec?: number }> = ({ world: showWorld = true, sec: secOverride }) => {
+  const cur = useCurrentSec();
+  const sec = secOverride ?? cur;
+  const T = segTable['6-3-2'].起 + sec;
+  const t = sec - uiOpen; // 思索场景时间（开界面以前是负的）
   // 整层（底色、场景板、李樱）：开界面时淡入盖住扫帚，6-3-3 开头淡掉露出真的俯冲；标题、按钮、说明框另外在关界面时淡掉
-  const layerOpacity = G > 0 ? ponderLayerOpacity(G) : t < choreo.cues.close[0] ? choreo.uiOpacityAt(t) : 1;
+  const layerOpacity = T > 0 ? ponderLayerOpacity(T) : t < choreo.cues.close[0] ? choreo.uiOpacityAt(t) : 1;
   const chrome = choreo.uiOpacityAt(t);
   const sceneTime = Math.min(Math.max(t, 0), choreo.sceneDuration);
   const captions = ponderText.说明.map((text, i) => {
@@ -303,10 +303,10 @@ export const PonderSegment: React.FC<{ world?: boolean; frame?: number }> = ({ w
   const greenBox = choreo.greenBox(t);
   return (
     <AbsoluteFill style={{ backgroundColor: showWorld ? '#000' : 'transparent' }}>
-      {showWorld && layerOpacity < 1 && <FallScene G={G} segment="6-3-2" />}
+      {showWorld && layerOpacity < 1 && <FallScene T={T} segment="6-3-2" />}
       {layerOpacity > 0 && (
         <PonderUiLayer
-          frame={frame}
+          frame={sec}
           opacity={layerOpacity}
           view={choreo}
           title={ponderText.标题}

@@ -12,8 +12,7 @@ import { readWorkAssetLock } from '../资产/资产锁.ts';
 import { readLineTable } from '../合成/台词落点.ts';
 import type { ManifestEntry } from '../../engine/段/清单条目.ts';
 import type { SegmentDef } from '../../engine/段/段定义.ts';
-import { freshExec, generateSeg, type GenerateEnv } from './生成.ts';
-import { isFrameworkSegDir } from './命令.ts';
+import { freshExec, generateSeg, isFrameworkSegDir, type GenerateEnv } from './生成.ts';
 import { getAudioMeasure } from './音频数.ts';
 
 type WorkManifest = { manifest: readonly ManifestEntry[]; segDir: (segKey: string) => string };

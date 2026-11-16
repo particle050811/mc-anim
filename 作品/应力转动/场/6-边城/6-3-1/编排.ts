@@ -1,10 +1,10 @@
-// 6-3-1 又回到边城（编排，纯函数）：6-3 下坠共用时间线上 6-3-2 前面的窗口（负的全局帧，见 6-3-下坠/时间线.ts 的 `段表`）。用户 10-02 要求 6-3-2 开头悬停时预留对话，确认古城在边城。
+// 6-3-1 又回到边城（编排，纯函数）：6-3 下坠共用时间线上 6-3-2 前面的窗口（负的全局秒，见 6-3-下坠/时间线.ts 的 `段表`）。用户 10-02 要求 6-3-2 开头悬停时预留对话，确认古城在边城。
 // 扫帚悬停在边城正上方（6-2-6 末帧的位置，不动），物理时间原速；首帧 = 6-2-6 末帧，末帧 = 6-3-2 首帧（同机位同姿势，九胡双手环着李樱的腰）。
 // 段末那一帧归 6-3-2 思索（镜头/6-3-2/扫帚上.ts），这里只管它之前的帧，所有改动量到段末收回到 0。
 //
 // 戏（段内秒数 t，见 `cues631`）：镜头从悬停机位降到扫帚右前方两人中景；李樱低头看城，愣一下，说「诶，我们怎么又回到这里了？」，后半句转头问九胡；
 //   九胡右手（6-2-4 李樱递给她的结构指南针一直握在这只手里，见 模型/角色/九胡持指南针.tsx）松开他的腰、放到身前低处，低头看，指针晃一下停住、指着正下方；
-//   抬头说「狗修金要找的古城，就在这座边城的脚下。」，李樱顺着往下看城；她握着指南针把右手环回他的腰，歪头问「狗修金打算怎么下去呢？」（开口 `jiuhuAskFrame`，6-3-2 李樱的思索回答这一句）；两人坐回原姿势，镜头绕回后面拉回悬停机位。
+//   抬头说「狗修金要找的古城，就在这座边城的脚下。」，李樱顺着往下看城；她握着指南针把右手环回他的腰，歪头问「狗修金打算怎么下去呢？」（开口 `cues631.jiuhuAsk`，6-3-2 李樱的思索回答这一句）；两人坐回原姿势，镜头绕回后面拉回悬停机位。
 // 指南针（用户 10-12 剪映注释定）：不用举着给观众看（太诡异），李樱也不掏。九胡手放身前低处、肘弯着，表盘朝上低头看；右前方中景看，它在李樱身后被挡大半、露出一点。
 // 台词时长按正常语速留足（约每秒 4.5 字，逗号停顿另算，再加 0.5 秒余量）；说话时嘴按配音张合（src/lib/口型.ts），外加轻微头部动作。
 import * as THREE from 'three';
@@ -18,20 +18,20 @@ import { jiuhuCompassMatrix } from '../../../角色/九胡持指南针.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import jiuhuRaw from 'asset:模型/角色/九胡';
 import * as fallChoreo from '../../../地点/边城/6-3-下坠/编排.ts';
-import { FPS, segTable, physicalTime, start } from '../../../地点/边城/6-3-下坠/时间线.ts';
+import { segTable, physicalTime, start } from '../../../地点/边城/6-3-下坠/时间线.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 const D2R = Math.PI / 180;
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 
-export const G0 = segTable['6-3-1'].起;
-export const segmentSec = (segTable['6-3-1'].止 - G0) / FPS; // 秒
-// 段内秒数
-const toSegSec = (G: number) => (G - G0) / FPS;
+const T0 = segTable['6-3-1'].起;
+const segmentSec = segTable['6-3-1'].止 - T0;
+// 全局秒 → 段内秒数
+const toSegSec = (globalSec: number) => globalSec - T0;
 
 // ---------- 时刻（段内秒数） ----------
 // 台词时长：约每秒 4.5 字 + 逗号停顿 0.25 秒 + 余量 0.5 秒。
 // 李樱「诶，我们怎么又回到这里了？」3.2 秒；九胡「狗修金要找的古城，就在这座边城的脚下。」4.5 秒；
-// 九胡「狗修金打算怎么下去呢？」（用户在剪映里加的字幕，段内第 198 帧 = 8.25 秒）：到 10.95 秒，11 秒的段里放得下，段长不变；坐回、拉回挪到这句的后半截
+// 九胡「狗修金打算怎么下去呢？」（用户在剪映里加的字幕，段内 8.25 秒）：到 10.95 秒，11 秒的段里放得下，段长不变；坐回、拉回挪到这句的后半截
 export const cues631 = {
   pushIn: [0, 2.6] as const, // 镜头从悬停机位推到两人中景
   startle: 0.45, // 李樱愣一下（头微微一抬）
@@ -46,13 +46,11 @@ export const cues631 = {
   settleBack: [10.1, 10.85] as const, // 两人坐回原来的姿势（段末 0.15 秒谁都不动）
   pullBack: [9.3, 11.0] as const, // 镜头拉回悬停机位
 };
-// 新加的那句的开口帧（段内帧）：配音（6-3-1-九胡-怎么下去）另外在出，出来以后 `Sound.tsx` 的台词轨接这一帧
-export const jiuhuAskFrame = Math.round(cues631.jiuhuAsk[0] * FPS); // 198
-// 三句台词（段内帧 = 开口），声音.tsx 的台词轨和口型共用
-export const lines = [
-  { id: '6-3-1-李樱-又回到这里', 帧: cues631.liYingLine[0] * FPS },
-  { id: '6-3-1-九胡-边城脚下', 帧: cues631.jiuhuLine[0] * FPS },
-  { id: '6-3-1-九胡-怎么下去', 帧: jiuhuAskFrame },
+// 三句台词的开口（段内秒；口型按 1 帧/秒读，所以 帧 = 秒）
+const lines = [
+  { id: '6-3-1-李樱-又回到这里', 帧: cues631.liYingLine[0] },
+  { id: '6-3-1-九胡-边城脚下', 帧: cues631.jiuhuLine[0] },
+  { id: '6-3-1-九胡-怎么下去', 帧: cues631.jiuhuAsk[0] },
 ];
 
 // ---------- 扫帚、骑乘的基准（6-2-6 末帧 = 6-3-2 首帧） ----------
@@ -118,12 +116,12 @@ export const jiuhuBonePoint = (bones: Record<string, BonePose>, name: string, lo
 };
 
 // 尾巴摆动的相位：首帧接 6-2-6 末帧（它按帧数 / 9 走），段末接 6-3-2（物理时间 × 2）。中间按 6-3-2 的走法，差的相位（折到 ±π）在整段里慢慢补掉
-const tailBase = (G: number) => 2 * physicalTime(G);
+const tailBase = (globalSec: number) => 2 * physicalTime(globalSec);
 const TAIL_FIX = (() => {
-  const phaseDiff = JH0.tailPhase - tailBase(G0);
+  const phaseDiff = JH0.tailPhase - tailBase(T0);
   return phaseDiff - 2 * Math.PI * Math.round(phaseDiff / (2 * Math.PI));
 })();
-const tail = (G: number) => tailBase(G) + TAIL_FIX * (1 - smoothstep01(toSegSec(G) / segmentSec));
+const tail = (globalSec: number) => tailBase(globalSec) + TAIL_FIX * (1 - smoothstep01(toSegSec(globalSec) / segmentSec));
 
 // 头（相对 6-2-6 末帧的 抬头 / 转头；转头为负 = 往右转）：
 // 听李樱说话时抬头看他；拿出指南针后低头、往右偏一点看自己手里；抬起头从他右肩后面说话、轻轻点头；问他时歪着头往上看他
@@ -141,8 +139,8 @@ const JH_TURN: [number, number][] = [
 ];
 // 问的时候头往右歪一点（Head 的 z）
 const JH_TILT: [number, number][] = [[0, 0], [cues631.jiuhuAsk[0], 0], [8.7, 9], [cues631.settleBack[0], 9], [cues631.settleBack[1], 0]];
-const jhBody = (t: number, globalFrame: number) => {
-  const bones = jiuhuRideBones({ lean: JH0.lean, hugWaist: 1, headRaise: JH0.headRaise + track(JH_LOOKUP, t), headTurn: (JH0.headTurn ?? 0) + track(JH_TURN, t), tailPhase: tail(globalFrame), wind: JH0.wind });
+const jhBody = (t: number, globalSec: number) => {
+  const bones = jiuhuRideBones({ lean: JH0.lean, hugWaist: 1, headRaise: JH0.headRaise + track(JH_LOOKUP, t), headTurn: (JH0.headTurn ?? 0) + track(JH_TURN, t), tailPhase: tail(globalSec), wind: JH0.wind });
   const headRot = bones.Head?.rot ?? [0, 0, 0];
   bones.Head = { ...bones.Head, rot: [headRot[0], headRot[1], headRot[2] + track(JH_TILT, t)] };
   return bones;
@@ -184,8 +182,8 @@ const ARM_HOLD = (() => {
   return { RightArm: [x[0], x[1], x[2]], RightForeArm: [x[3], 0, 0], error: Math.sqrt(error) };
 })();
 const holdK = (t: number) => smoothstep01((t - cues631.grab[0]) / (cues631.grab[1] - cues631.grab[0])) * (1 - smoothstep01((t - cues631.handBack[0]) / (cues631.handBack[1] - cues631.handBack[0])));
-const jiuhuBones = (t: number, globalFrame: number) => {
-  const bones = jhBody(t, globalFrame);
+const jiuhuBones = (t: number, globalSec: number) => {
+  const bones = jhBody(t, globalSec);
   const holdWeight = holdK(t);
   const mix = (from: number[] | undefined, to: number[]) => (from ?? [0, 0, 0]).map((v, i) => lerp(v, to[i], holdWeight));
   bones.RightArm = { ...bones.RightArm, rot: mix(bones.RightArm?.rot, ARM_HOLD.RightArm) };
@@ -267,22 +265,21 @@ const camera = (t: number): fallChoreo.Cam => {
   return camBetween(mid, C0, smoothstep01((pullFrac - 0.25) / 0.75), smoothstep01(pullFrac / 0.8));
 };
 
-// ---------- 一帧的全部覆盖量（只在 G < 0 时用） ----------
+// ---------- 一帧的全部覆盖量（只在 T < 0 时用） ----------
 export type BackToTownState = { cam: fallChoreo.Cam; liYing: fallChoreo.LiYingState; liYingMouth?: Mouth; jiuhuMouth?: Mouth; jiuhu: fallChoreo.JiuhuState; compass: CompassState | null };
-export const backToTown = (globalFrame: number): BackToTownState => {
-  const t = toSegSec(globalFrame);
-  const physSec = physicalTime(globalFrame);
+export const backToTown = (globalSec: number): BackToTownState => {
+  const t = toSegSec(globalSec);
+  const physSec = physicalTime(globalSec);
   const cam = camera(t);
   const ly = fallChoreo.liYing(physSec); // 物理时间 < 0：坐在扫帚上（扫帚的矩阵、髋都不变），只换姿势
   const jh = fallChoreo.jiuhu(physSec);
-  const segFrame = globalFrame - G0;
-  const jiuhuMouth = mouthAt(lines, '九胡', segFrame, FPS);
-  const bones = { ...jiuhuBones(t, globalFrame), ...(jiuhuMouth ? JIUHU_TALK_BONES : {}) };
+  const jiuhuMouth = mouthAt(lines, '九胡', t, 1);
+  const bones = { ...jiuhuBones(t, globalSec), ...(jiuhuMouth ? JIUHU_TALK_BONES : {}) };
   const pose = liyingPose(t);
   return {
     cam: cam,
     liYing: { ...ly, pose },
-    liYingMouth: mouthAt(lines, '李樱', segFrame, FPS),
+    liYingMouth: mouthAt(lines, '李樱', t, 1),
     jiuhuMouth,
     jiuhu: { ...jh, bones },
     compass: compass(t, bones),

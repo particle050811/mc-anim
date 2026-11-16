@@ -1,4 +1,4 @@
-// 7-4-4 起疑的画面：编排.ts 的人、书、机位按帧画出来。场景：城主府书房网格（屋里）+ 6-3 同一套边城（窗外的广场）。
+// 7-4-4 起疑的画面：编排.ts 的人、书、机位按段内秒画出来。场景：城主府书房网格（屋里）+ 6-3 同一套边城（窗外的广场）。
 // 灯：同 7-4-3（太阳 SUN_OW、主世界的配比），书房的窗朝北，阳光照不进来：屋里只有天光（环境光压低）和两盏吊灯笼、桌上三根蜡烛的暖光，
 // 窗外的广场是大太阳，乔雷夫的背影衬在亮窗前面。屋子一带开软阴影（天空.tsx 的 SunLight）。最后 1 秒黑场。
 import { ThreeCanvas } from '@remotion/three';
@@ -19,11 +19,11 @@ import { OverworldSky, SUN_OW } from '../../地点/主世界光照.tsx';
 import { RoomLights } from '../../场/7-收场/7-4-3/画面.tsx';
 import * as choreo from './编排.ts';
 
-export const SuspicionPicture: React.FC<{ f: number }> = ({ f: frame }) => {
+export const SuspicionPicture: React.FC<{ sec: number }> = ({ sec }) => {
   const { width, height } = useVideoConfig();
-  const cam = choreo.camAt(frame);
+  const cam = choreo.camAt(sec);
   const pit = fallChoreo.crater();
-  const pose = choreo.qiaoLeifuPose(frame);
+  const pose = choreo.qiaoLeifuPose(sec);
   return (
     <AbsoluteFill style={{ backgroundColor: SKY.horizon }}>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
@@ -53,11 +53,11 @@ export const SuspicionPicture: React.FC<{ f: number }> = ({ f: frame }) => {
           </group>
           <QiaoLeifu pose={{ ...pose, loc: choreo.roomToWorld(pose.loc) }} />
           <group position={choreo.roomToWorld(choreo.bookOnDesk)}>
-            <OpenBook pages={choreo.bookPages} crumple={choreo.crumpleAt(frame)} gripPt={choreo.pageGripPt} />
+            <OpenBook pages={choreo.bookPages} crumple={choreo.crumpleAt(sec)} gripPt={choreo.pageGripPt} />
           </group>
         </group>
       </ThreeCanvas>
-      <AbsoluteFill style={{ backgroundColor: '#000', opacity: choreo.blackout(frame) }} />
+      <AbsoluteFill style={{ backgroundColor: '#000', opacity: choreo.blackout(sec) }} />
     </AbsoluteFill>
   );
 };

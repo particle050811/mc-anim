@@ -6,7 +6,7 @@ import { terrainFollow } from '@engine/flight/地形跟随.ts';
 import { norm } from './工具.ts';
 import { featureTop } from './地面.ts';
 import { clearance, minClearance, flatWaypoints, flatRoute, flatLen, roundOff, followGround, fullRoute, ROUTE } from './航线.ts';
-import { odometer, cloudPierceG, brakeG, endG } from './时间线.ts';
+import { odometer, cloudPierceSec, brakeSec, endSec } from './时间线.ts';
 
 // ---------- 真实飞行 ----------
 // 用户 10-05：航线太直，要模拟真实飞行；10-06 看了推近后的巡航、穿云：湍流波动影响飞行流畅，去掉。
@@ -15,14 +15,15 @@ import { odometer, cloudPierceG, brakeG, endG } from './时间线.ts';
 // - 阵风的气动导纳给 0：Dryden 湍流对航迹只有厘米级，留着只是毛刺；
 // - 竖直漂移给 0：几米的上下起伏在 0.2 赫兹上下，是最容易晕的频段。竖直只剩离近处最高顶的软下限（见「第二遍」），它沿里程取前后一公里的最大再抹平，只在贴着 `最小净空` 的地方把扫帚缓缓托高两三米。
 // 接法照 真实飞行.ts 文件头「主世界」那一段：
-// - 帧和里程的对应关系不变：扰动按 时间线.ts 的 `odometer`、`ROUTE` 算一次，扫帚位置 = `ROUTE.at(S)` + 右法线·横，高度另算，不拿偏移后的几何重建 `ROUTE`。
-// - 锚点：首帧到穿云（接 6-2-4 末帧、W2 要穿到）、悬停到末帧（接 6-3-1）扰动精确为 0；穿云后 3 秒渐渐放开，减速前 4 秒渐渐收回，减速的 46 帧在收回的渐变里（速度低于 500 米/秒的地方都要锚住，否则同样的横速就是好几倍的航向）。
+// - 时刻和里程的对应关系不变：扰动按 时间线.ts 的 `odometer`、`ROUTE` 算一次，扫帚位置 = `ROUTE.at(S)` + 右法线·横，高度另算，不拿偏移后的几何重建 `ROUTE`。
+// - 锚点：首帧到穿云（接 6-2-4 末帧、W2 要穿到）、悬停到末帧（接 6-3-1）扰动精确为 0；穿云后 3 秒渐渐放开，急刹前 4 秒渐渐收回，急刹前减速的 23/12 秒在收回的渐变里（速度低于 500 米/秒的地方都要锚住，否则同样的横速就是好几倍的航向）。
 // - 种子 11：试了六个种子，大弯只来自侧向漂移，11 的弯最看得出又不晕。
 const SEED = 11;
-const anchors: Anchor[] = [{ 帧: 0, 止帧: cloudPierceG, 后: 72 }, { 帧: brakeG, 止帧: endG, 前: 96 }];
+// realFlight 的「帧」按 fps 换成物理秒：这里给 fps 1，帧、止帧、前、后都直接是秒（全局秒 = 物理时间）
+const anchors: Anchor[] = [{ 帧: 0, 止帧: cloudPierceSec, 后: 3 }, { 帧: brakeSec, 止帧: endSec, 前: 4 }];
 const noShake = { amplitude: 0 };
 const smoothParams = { vertical: { drift: 0 }, gust: { admittance: 0 }, bump: { pitch: noShake, roll: noShake, facing: noShake, heave: noShake } };
-const basePerturb = realFlight({ 种子: SEED, 起帧: 0, 止帧: endG, distAt: (t) => odometer(t * 24), anchors: anchors, 参数: smoothParams });
+const basePerturb = realFlight({ 种子: SEED, 起帧: 0, 止帧: endSec, fps: 1, distAt: odometer, anchors: anchors, 参数: smoothParams });
 // 水平弧长（地形跟随用的那条 z = 0 的水平航线）和 ROUTE 里程互换：整条航线 的第 i 个点就是 ROUTE 的第 i + 2 个航点（前面是 W0、W1）
 const flatTable = fullRoute.horizArcLen;
 const routeTable = flatTable.map((_, i) => ROUTE.waypointArcLen(i + 2));
@@ -71,7 +72,7 @@ export const offsetRoute = roundOff(terrainFollow(offsetWaypoints, followGround,
 const newHeight = smoothInterp(offsetRoute.points.map((p) => p[2]), offsetRoute.horizArcLen[1]);
 const oldHeight = smoothInterp(fullRoute.points.map((p) => p[2]), flatTable[1]);
 // 高度差只在穿云那一帧以后、急刹点以前有：两头的高度由俯冲线、爬升线定，偏移在锚点里也是 0，`Δh` 本来就只有万分之几米；锚点里直接给 0，首尾的扫帚位置才和接入前逐字段一样（穿云前后那几帧的俯仰另有 `拉起俯仰`，起飞、俯冲的镜头另有 `camera`、`俯冲绕上`）
-const cloudPierceS = odometer(cloudPierceG);
+const cloudPierceS = odometer(cloudPierceSec);
 const Δh = (dist: number) => {
   const flatS = routeToFlatS(dist);
   return dist <= cloudPierceS || flatS >= flatLen ? 0 : newHeight(oldToNewArc(flatS)) - oldHeight(flatS);

@@ -1,7 +1,7 @@
 // 6-3-2 思索 → 6-3-3 俯冲的转场（用户 10-19：思索完了放大思索界面里的李樱，背景淡掉换回游戏里的天空，丝滑接上下落锤击，不再演从扫帚上跳下来）。
-// 演示整个演完、关界面（`cues.close`）：标题、按钮、说明框 0.5 秒淡掉，淡完镜头往砸到底的李樱推，推完是 6-3-2 末帧 = 6-3-3 首帧（全局帧 0），
-// 之后 `淡出帧数` 帧里思索的底色、场景板连同里面的李樱一起淡掉，底下是同一刻真的俯冲（6-3-3/俯冲.tsx 把思索层叠在上面）。推完才淡，不叠在一起（用户 10-19：界面淡出 → 放大李樱 → 换回天空）。
-// 对得上：思索里的李樱是下坠里那个李樱绕竖直轴转 ψ 摆进场景板（编排.ts 的 `figureRef`），全局帧 0 起姿势、虚影、金光都取同一物理时刻；
+// 演示整个演完、关界面（`cues.close`）：标题、按钮、说明框 0.5 秒淡掉，淡完镜头往砸到底的李樱推，推完是 6-3-2 末帧 = 6-3-3 首帧（全局秒 0），
+// 之后 `fadeOutSec` 秒里思索的底色、场景板连同里面的李樱一起淡掉，底下是同一刻真的俯冲（6-3-3/俯冲.tsx 把思索层叠在上面）。推完才淡，不叠在一起（用户 10-19：界面淡出 → 放大李樱 → 换回天空）。
+// 对得上：思索里的李樱是下坠里那个李樱绕竖直轴转 ψ 摆进场景板（编排.ts 的 `figureRef`），全局秒 0 起姿势、虚影、金光都取同一物理时刻；
 // 下坠的镜头就是思索镜头相对他的髋的位置、视线转回 −ψ，焦距相同，所以两边的他在画面上同一处、同一个姿势。推完以后镜头相对髋不动，一直跟到切城墙。
 // 镜头：整段用很远很窄的透视代替原版的正交（`restDistance` 外，和正交差不到千分之二）。推近时看见的高度、视角按对数插到终点（焦距 28），
 // 他的髋在画面上的位置从静止时那一点直线挪到终点那一点（直接插看点的话，看见的高度和看点一起缩，他一直贴在画面上沿，像在推场景板）。
@@ -11,20 +11,20 @@ import { ponderScreen } from '@库/界面/思索界面.tsx';
 import type { Cam } from '../6-3-下坠/编排/机位.ts';
 import type { PonderPerspective } from '@库/界面/思索场景.tsx';
 import { liYing } from '../6-3-下坠/编排/李樱.ts';
-import { FPS, segTable, tick, physicalTime } from '../6-3-下坠/时间线.ts';
+import { segTable, tick, physicalTime } from '../6-3-下坠/时间线.ts';
 import { cues, figureAt, figureRef, sceneCenter, pixelsPerBlock, viewRotation, toGame, toScene } from './编排.ts';
 import { uiOpen } from './台词.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 import { lensToFov } from '@engine/core/机位.ts';
 const logLerp = (a: number, b: number, k: number) => Math.exp(lerp(Math.log(a), Math.log(b), k));
 
-export const fadeOutFrameCount = 10;
-// 全局帧 → 思索场景时间（6-3-3 开头几帧接着 6-3-2 往下算）
-export const sceneTime = (G: number) => (G - segTable['6-3-2'].起) / FPS - uiOpen;
+export const fadeOutSec = 5 / 12;
+// 全局秒 → 思索场景时间（6-3-3 开头几帧接着 6-3-2 往下算）
+export const sceneTime = (globalSec: number) => globalSec - segTable['6-3-2'].起 - uiOpen;
 export const tMatch = sceneTime(0);
-// 思索层的不透明度：全局帧 0 起淡掉
-export const ponderLayerOpacity = (G: number) => 1 - smoothstep01(G / fadeOutFrameCount);
-// 全局帧 0 以后思索里的李樱按下坠的物理时间摆（之前停在 `刻`.俯冲起 的架势上）
+// 思索层的不透明度：全局秒 0 起淡掉
+export const ponderLayerOpacity = (globalSec: number) => 1 - smoothstep01(globalSec / fadeOutSec);
+// 全局秒 0 以后思索里的李樱按下坠的物理时间摆（之前停在 `刻`.俯冲起 的架势上）
 export const transitionW = (t: number) => (t >= tMatch ? tick.diveStart + (t - tMatch) : undefined);
 
 // 焦距 → 竖直视角（度），同 lib/飞行镜头.tsx 的 FlightRig（36 毫米宽的底片、16:9）
@@ -64,10 +64,10 @@ export const ponderCamAt = (t: number): PonderCam => {
 };
 
 // 6-3-3 俯冲的镜头（下坠的场景坐标）：思索镜头相对思索里李樱髋的位置转回 −ψ，挂到真李樱的髋上
-export const diveCam = (G: number): Cam => {
-  const cam = ponderCamAt(sceneTime(G));
+export const diveCam = (globalSec: number): Cam => {
+  const cam = ponderCamAt(sceneTime(globalSec));
   const hipPonder = figureAt(tMatch, tick.diveStart).hip;
-  const hipReal = liYing(physicalTime(G)).hip;
+  const hipReal = liYing(physicalTime(globalSec)).hip;
   const unRotate = figureRef().psi.clone().invert();
   const rel = (p: V3): V3 => {
     const v = new THREE.Vector3(...toScene(p)).sub(new THREE.Vector3(...hipPonder)).applyMatrix4(unRotate);

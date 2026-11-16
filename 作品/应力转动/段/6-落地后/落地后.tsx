@@ -1,4 +1,4 @@
-// 6-1-9b 落地后（画面）：一镜到底的画面（一镜到底/画面.tsx 的 一镜画面）按全局帧 F0 + f 接着往下画，机位换成 编排.ts 的 机位，
+// 6-1-9b 落地后（画面）：一镜到底的画面（一镜到底/画面.tsx 的 OnerFrame）按一镜到底的 G0 + t 秒接着往下画，机位换成 编排.ts 的 机位，
 // 两人的姿势在一镜到底落地站定的站姿上先叠 落地编排.ts 的从天落地，再叠 编排.ts 的增量（改骑手）。
 import { interpTable } from '@engine/段/按时取值.ts';
 import React from 'react';
@@ -18,16 +18,18 @@ import { mouthAt } from '../../配音/口型.ts';
 import brickUri from 'asset:贴图/镜头/6-1-9b/城堡砖';
 
 const BRICK = png(brickUri); // twilightforest:block/castle_brick（城堡砖、符文城堡砖的 particle 贴图都是它）
-const LandingParticles: React.FC<{ F: number }> = ({ F }) => {
+const LandingParticles: React.FC<{ g: number }> = ({ g }) => {
   const items: Particle[] = [];
-  for (const b of landing.bursts) collectBreakParticles(b.ps, (F - b.at) / 24, items);
+  for (const b of landing.bursts) collectBreakParticles(b.ps, g - b.at, items);
   return <BreakParticleQuads tex={particleTexture(BRICK.px, BRICK.w, BRICK.h, BRICK)} items={items} lit />;
 };
 
-// 九胡尾巴摆动的相位：一镜到底按全局帧 / 9 走（画面.tsx 的 骑手），这里东张西望时甩得快一点（编排.ts 的 尾快），按帧把快慢积起来，
-// 第 0 帧和一镜到底末帧同一个相位；表是一格一个，格之间插值（f 带小数，60 帧输出时以前取下标取到 undefined）
-const tailPhases: number[] = [(P613.beats.末帧 + choreo.F0) / 9];
-for (let frame = 1; frame <= choreo.frameCount; frame++) tailPhases.push(tailPhases[frame - 1] + choreo.jiuhuTweak((frame - 0.5) / choreo.FPS).tailSpeed / 9);
+// 九胡尾巴摆动的相位：一镜到底每 9/24 秒走 1（画面.tsx 的 ridersAt），这里东张西望时甩得快一点（编排.ts 的 tailSpeed），每 1/24 秒一格把快慢积起来，
+// 第 0 秒和一镜到底末帧同一个相位；格之间插值
+const TAIL_SAMPLES_PER_SEC = 24;
+const tailSamples = Math.round(choreo.segSec * TAIL_SAMPLES_PER_SEC) + 1;
+const tailPhases: number[] = [(P613.beats.last + choreo.G0) / (9 / 24)];
+for (let i = 1; i <= tailSamples; i++) tailPhases.push(tailPhases[i - 1] + choreo.jiuhuTweak((i - 0.5) / TAIL_SAMPLES_PER_SEC).tailSpeed / 9);
 const TAIL = ['Tail', 'Tail2', 'Tail3', 'Tail4', 'Tail5', 'Tail6', 'Tail7'];
 
 const addRot = (bone: BonePose | undefined, delta: number[]): BonePose => {
@@ -35,14 +37,13 @@ const addRot = (bone: BonePose | undefined, delta: number[]): BonePose => {
   return { ...bone, rot: rot.map((v, i) => v + (delta[i] ?? 0)) };
 };
 
-export const tweakRiders = (f: number) => (onerRiders: Riders): Riders => {
-  const riders = landing.tweakRiders(choreo.toGlobalFrame(f))(onerRiders);
-  const t = f / choreo.FPS;
+export const tweakRiders = (t: number) => (onerRiders: Riders): Riders => {
+  const riders = landing.tweakRiders(choreo.toOnerSec(t))(onerRiders);
   const ly = choreo.liyingTweak(t);
   const basePose = riders.liYing.poseOverride;
   const liYing: RideLiYing = {
     ...riders.liYing,
-    mouth: mouthAt(choreo.lineCues, '李樱', f),
+    mouth: mouthAt(choreo.lineCues, '李樱', t, 1),
     poseOverride: (base: FigurePose) => {
       const pose = typeof basePose === 'function' ? basePose(base) : { ...base, ...basePose };
       return {
@@ -59,7 +60,7 @@ export const tweakRiders = (f: number) => (onerRiders: Riders): Riders => {
   };
   const jh = choreo.jiuhuTweak(t);
   const bones = { ...(riders.jiuhu.boneOverrides ?? {}) };
-  const φ = interpTable(tailPhases, f);
+  const φ = interpTable(tailPhases, t * TAIL_SAMPLES_PER_SEC);
   TAIL.forEach((boneName, i) => {
     bones[boneName] = { ...bones[boneName], rot: [0, Math.sin(φ - i * 0.6) * (i < 3 ? 8 : 5), 0] };
   });
@@ -69,20 +70,20 @@ export const tweakRiders = (f: number) => (onerRiders: Riders): Riders => {
   bones.Left_ear = addRot(bones.Left_ear, [jh.earFlick, 0, 0]);
   bones.Right_ear = addRot(bones.Right_ear, [jh.earFlick, 0, 0]);
   const baseOffset = riders.jiuhu.offset ?? [0, 0, 0];
-  const jiuHu: RideJiuhu = { ...riders.jiuhu, mouth: mouthAt(choreo.lineCues, '九胡', f), boneOverrides: bones, offset: [baseOffset[0] + jh.offset[0], baseOffset[1] + jh.offset[1], baseOffset[2] + jh.offset[2]] };
+  const jiuHu: RideJiuhu = { ...riders.jiuhu, mouth: mouthAt(choreo.lineCues, '九胡', t, 1), boneOverrides: bones, offset: [baseOffset[0] + jh.offset[0], baseOffset[1] + jh.offset[1], baseOffset[2] + jh.offset[2]] };
   return { ...riders, liYing: liYing, jiuhu: jiuHu };
 };
 
-export const AfterLandingView: React.FC<{ f: number; cam?: ReturnType<typeof choreo.camPose> }> = ({ f: frame, cam: camOverride }) => (
-  <OnerFrame F={choreo.toGlobalFrame(frame)} cam={camOverride ?? choreo.camPose(frame)} tweakRiders={tweakRiders(frame)} extra={<LandingParticles F={choreo.toGlobalFrame(frame)} />} />
+export const AfterLandingView: React.FC<{ t: number; cam?: ReturnType<typeof choreo.camPose> }> = ({ t, cam: camOverride }) => (
+  <OnerFrame g={choreo.toOnerSec(t)} cam={camOverride ?? choreo.camPose(t)} tweakRiders={tweakRiders(t)} extra={<LandingParticles g={choreo.toOnerSec(t)} />} />
 );
 
-// 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（definePicture 自动挂）；f 是第几格（1/24 秒一格，带小数）
+// 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（definePicture 自动挂）；t 是段内秒
 export const AfterLanding: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS;
+  const t = useCurrentSec();
   return (
     <AbsoluteFill>
-      <AfterLandingView f={frame} />
+      <AfterLandingView t={t} />
     </AbsoluteFill>
   );
 };

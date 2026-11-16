@@ -1,4 +1,4 @@
-// 7-4-3 报告的画面：编排.ts、坑口.ts 的人、书、机位按帧画出来。
+// 7-4-3 报告的画面：编排.ts、坑口.ts 的人、书、机位按段内秒画出来。
 // 镜头 1 坑口：6-3-8/画面.tsx 的 PursuerScene（地形、边城、坑、竖井、碎块、灯都是 6-3-10 那一套），人换成 坑口.ts 的两人和卫兵。
 // 屋里：卫兵室网格 + 6-3 同一套边城、石半砖地面挖坑（窗外）。灯：太阳同主世界（SUN_OW，正西 20°），屋子一带开软阴影（天空.tsx 的 SunLight）。
 // 卫兵室的窗朝东，下午的太阳照不进屋（用户 10-15：不为窗光改太阳），屋里是天光和灯笼、蜡烛两盏暖色点光（游戏里亮度 15、14 的光源）。窗外的城照常是大太阳。
@@ -43,22 +43,22 @@ export const RoomLights: React.FC<{ lights: { p: number[]; 强: number }[] }> = 
   </>
 );
 
-// 镜头 1：6-3-10 末帧那一刻的场景（碎块、竖井都停在那时候），人按段内帧动
+// 镜头 1：6-3-10 末帧那一刻的场景（碎块、竖井都停在那时候），人按段内秒动
 const pitSceneT = lastSec6;
-const PitPicture: React.FC<{ f: number }> = ({ f }) => {
-  const liu = pit.leaperPose("刘", f);
-  const huang = pit.leaperPose("黄", f);
+const PitPicture: React.FC<{ sec: number }> = ({ sec }) => {
+  const liu = pit.leaperPose("刘", sec);
+  const huang = pit.leaperPose("黄", sec);
   return (
     <PursuerScene
       t={pitSceneT}
-      cam={pit.pitCam(f)}
+      cam={pit.pitCam(sec)}
       actors={
         <>
           {Array.from({ length: pit.guardCount }, (_, i) => {
-            const g = pit.guardPose(f, i);
+            const g = pit.guardPose(sec, i);
             return (
               <group key={i} position={[borderTownPos[0] + g.pos[0], borderTownPos[1] + g.pos[1], borderTownPos[2] + g.pos[2]]} rotation={[0, 0, rad(180 + g.bodyYaw)]}>
-                <Guard sec={f / choreo.FPS + i * 0.7} glintSec={f / choreo.FPS} headPitch={g.headPitch} headYaw={g.headYaw} raiseSpyglass={0} skinIndex={i} crouch={g.crouch} limbSwing={g.limbSwing} stride={g.stride} capeLift={g.capeLift} />
+                <Guard sec={sec + i * 0.7} glintSec={sec} headPitch={g.headPitch} headYaw={g.headYaw} raiseSpyglass={0} skinIndex={i} crouch={g.crouch} limbSwing={g.limbSwing} stride={g.stride} capeLift={g.capeLift} />
               </group>
             );
           })}
@@ -70,18 +70,18 @@ const PitPicture: React.FC<{ f: number }> = ({ f }) => {
   );
 };
 
-export const ReportPicture: React.FC<{ f: number }> = ({ f }) => (f < choreo.shot1End ? <PitPicture f={f} /> : <RoomPicture f={f} />);
+export const ReportPicture: React.FC<{ sec: number }> = ({ sec }) => (sec < choreo.shot1End ? <PitPicture sec={sec} /> : <RoomPicture sec={sec} />);
 
-const RoomPicture: React.FC<{ f: number }> = ({ f: frame }) => {
+const RoomPicture: React.FC<{ sec: number }> = ({ sec }) => {
   const { width, height } = useVideoConfig();
-  const cam = choreo.camAt(frame);
+  const cam = choreo.camAt(sec);
   const crater = fallChoreo.crater();
-  const liu = choreo.liuXinzhongState(frame);
-  const guard = choreo.guardState(frame);
+  const liu = choreo.liuXinzhongState(sec);
+  const guard = choreo.guardState(sec);
   const roomCenter = choreo.roomToWorld([4.5, -3, 1.5]);
   const liuWorldPose = { ...liu.pose, loc: choreo.roomToWorld(liu.pose.loc) };
   // 书：拿起前摊在桌上（合 0～1）；拿起以后是合上的书，变换见 编排.ts 的 bookMatrix（跟着手走）
-  const bookMat = choreo.bookMatrix(frame);
+  const bookMat = choreo.bookMatrix(sec);
   return (
     <AbsoluteFill style={{ backgroundColor: SKY.horizon }}>
       <ThreeCanvas
@@ -134,15 +134,15 @@ const RoomPicture: React.FC<{ f: number }> = ({ f: frame }) => {
           {/* 书（屋里坐标） */}
           <group position={choreo.roomToWorld([0, 0, 0])}>
             <group matrix={bookMat} matrixAutoUpdate={false}>
-              {choreo.bookOnHand(frame) ? <ClosedBook /> : <OpenBook pages={choreo.bookPages} charCounts={choreo.charCounts(frame)} closed={choreo.closeBook(frame)} />}
+              {choreo.bookOnHand(sec) ? <ClosedBook /> : <OpenBook pages={choreo.bookPages} charCounts={choreo.charCounts(sec)} closed={choreo.closeBook(sec)} />}
             </group>
           </group>
           {/* 卫兵：递书镜才进画 */}
-          {frame >= choreo.shot2End && (
+          {sec >= choreo.shot2End && (
             <group position={choreo.roomToWorld(guard.pos)} rotation={[0, 0, rad(guard.yaw)]}>
               <Guard
-                sec={frame / choreo.FPS}
-                glintSec={frame / choreo.FPS}
+                sec={sec}
+                glintSec={sec}
                 raiseSpyglass={0}
                 rightArm={guard.rightArm}
                 headPitch={guard.headPitch}

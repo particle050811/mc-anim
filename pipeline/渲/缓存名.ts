@@ -7,8 +7,8 @@
 // 不改 webpack.ts：它的文本进所有段指纹的「打包规则」，改一个字全片过期。
 import type { WebpackOverrideFn } from '@remotion/bundler';
 import webpack from 'webpack';
-import { AssetResolvePlugin } from './webpack.ts';
-import { MissingBytePlaceholderPlugin } from './缺字节.ts';
+import { AssetResolvePlugin } from '../资产/webpack.ts';
+import { MissingBytePlaceholderPlugin } from '../分发/缺字节.ts';
 
 /** DefinePlugin 里按内容变、webpack 自己会跟踪的定义：缓存名里只记名字 */
 const runtimeDefines = ['__SOLVER_FINGERPRINTS__'];

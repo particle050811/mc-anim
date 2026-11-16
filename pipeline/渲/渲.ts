@@ -1,7 +1,7 @@
 // 渲染会话和静帧：整个工程只打包一次、开一个浏览器（开会话），段（渲段.ts）、静帧、bench、逐帧校验、认指纹都在会话里出帧。
 // 分阶段计时和每帧明细见 运行记录/阶段.ts、渲染明细.ts（anim timing 看）。
-// 打包前把作品随仓库发的字节补进数据根（资产/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
-// 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（资产/缺字节.ts）；webpack 缓存名不随资产锁变（资产/缓存名.ts）。
+// 打包前把作品随仓库发的字节补进数据根（分发/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
+// 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（分发/缺字节.ts）；webpack 缓存名不随资产锁变（缓存名.ts）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,14 +14,14 @@ import { workName, workRoot } from '../环境/作品.ts';
 import { webpackOverride } from '../资产/webpack.ts';
 import { shadingEnvName, applyShadingTrial, type ShadingConfig } from './光影试看.ts';
 import { telescopeEnvName, applyTelescope, type TelescopeConfig } from './望远.ts';
-import { stableCacheName } from '../资产/缓存名.ts';
+import { stableCacheName } from './缓存名.ts';
 import { passRenderGate } from '../闸/闸.ts';
 import { dataRoot } from '../环境/配置.ts';
 import { keepAwake } from '../环境/子进程.ts';
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { verifySegResourcePacks, withSegResourcePack, readWorkAssetLock } from '../资产/资产锁.ts';
-import { fillBytesAndReport } from '../资产/随仓库.ts';
-import { fillMissingBytePlaceholders } from '../资产/缺字节.ts';
+import { fillBytesAndReport } from '../分发/随仓库.ts';
+import { fillMissingBytePlaceholders } from '../分发/缺字节.ts';
 import { preparePrivateMusic, missingMusicHint } from '../资产/私有配乐.ts';
 import { missingRegistryDirs, missingDirHint } from '../段框架/注册目录.ts';
 import type { RunRecord } from '../运行记录/记录.ts';

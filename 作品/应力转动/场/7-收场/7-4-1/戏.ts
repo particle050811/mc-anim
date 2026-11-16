@@ -26,7 +26,6 @@ import * as geom from './几何.ts';
 import * as chase from './追逐.ts';
 import { smoothstep01, lerp, mulberry32 } from '@engine/core/数学.ts';
 
-export const FPS = geom.FPS;
 const g2s = (p: number[]): V3 => toScene(p[0], p[1], p[2]);
 const yawOfHeading = ([dx, dz]: [number, number]) => yawTo(dx, -dz);
 

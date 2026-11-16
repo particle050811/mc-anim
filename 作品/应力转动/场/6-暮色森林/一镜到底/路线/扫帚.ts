@@ -1,4 +1,4 @@
-// 扫帚每帧的状态（位置、朝向、俯仰、横滚、速度），以及 6-1-9 脱手以后落到屋顶的抛物线。
+// 扫帚每一刻的状态（位置、朝向、俯仰、横滚、速度），以及 6-1-9 脱手以后落到屋顶的抛物线。
 import { combineRoll } from '@engine/flight/真实飞行.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import * as castleChoreo from '../../6-1-9/编排.ts';
@@ -29,19 +29,19 @@ const yawAt = lookupByDist(YAW_T);
 const broomPitchAt = lookupByDist(PIT_T);
 
 export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; 速度: number; s: number; T: number };
-export const broom = (frame: number): BroomState => {
-  const physT = physicalTime(frame);
+export const broom = (g: number): BroomState => {
+  const physT = physicalTime(g);
   const dist = routeDist(physT);
   const pos = positionAt(dist);
   let pitch = broomPitchAt(dist);
   const curSpeed = dist >= routeLength ? 0 : speedAt(dist);
   // 降落：扫帚减着速斜着扎向屋顶，到脱手点（航线终点）收起扫帚，两人顺着冲劲加重力落到屋顶；这一截仍用本函数给两人一起走的坐标系（见 6-1-9/编排.ts）
-  if (physT > T_ARRIVE) return afterRelease(physT - T_ARRIVE, frame);
-  return { 位置: pos, facing: yawAt(dist), pitch: pitch, roll: combineRoll(plannedBank(dist), steerBank(frame)), 速度: curSpeed, s: dist, T: physT };
+  if (physT > T_ARRIVE) return afterRelease(physT - T_ARRIVE);
+  return { 位置: pos, facing: yawAt(dist), pitch: pitch, roll: combineRoll(plannedBank(dist), steerBank(g)), 速度: curSpeed, s: dist, T: physT };
 };
 const roofZ = castleChoreo.castleOrigin[2] + castleChoreo.ROOF_Z;
 // 脱手以后 τ 秒：从航线终点按 末速、末俯仰 出发的抛物线，落到 落地杆高 就停住（着地的缓冲交给成片）
-const afterRelease = (τ: number, frame: number): BroomState => {
+const afterRelease = (τ: number): BroomState => {
   const endPos = positionAt(routeLength);
   const t = tangentAt(routeLength);
   const v0 = castleChoreo.endSpeed;

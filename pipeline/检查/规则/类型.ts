@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import type { CheckReport, CheckContext } from '../上下文.ts';
+import type { CheckReport, CheckContext } from '../../源码/上下文.ts';
 import { tryRun } from '../../环境/子进程.ts';
 import { isWindows, config } from '../../环境/配置.ts';
 import { codeRoot } from '../../环境/路径.ts';

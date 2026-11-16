@@ -6,7 +6,7 @@
 // - 网格的边是空心的：导出时边上朝外的面被旧世界邻居剔掉了，网格地面比新地形高就是一道看得穿的缝（树冠、导出上限截平处也空心）。`patchEdges` 在边上补缺的面。
 //
 // 坐标：.bin 里是游戏坐标减 origin（y 朝上、南 = +z），叫「bin 坐标」；盒子（`hide`、`hideBlocks`、`clearPlants`）是参考模型坐标（Z 朝上、南 = −Y，同 `BlockMesh`）。
-import type { BlockMeshInfo } from './方块网格.tsx';
+import type { BlockMeshInfo } from './方块网格信息.ts';
 import { BoxBuckets, dot, emitSubFace, HORIZ_DIRS, innerPoint, NORMALS, readFace, splitIntoCells, TV, type ExtraFaces, type Face } from './方块网格面.ts';
 
 export type { ExtraFaces } from './方块网格面.ts';

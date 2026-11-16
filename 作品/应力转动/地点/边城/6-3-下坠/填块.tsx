@@ -6,10 +6,11 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import * as choreo from './编排.ts';
-import { FPS, impactTime, segTable, physicalTime, impactSegFrame } from './时间线.ts';
+import { impactTime, segTable, physicalTime, impactSegSec } from './时间线.ts';
 import { blockMaterial, blockPngs, type BlockTextureName } from './竖井.tsx';
 import fillDataJson from 'asset:数据/镜头/6-3-下坠/竖井4x.填块';
 import { renderInput } from '@engine/core/渲染设置.ts';
+import { segFps } from '@engine/段/段定义.ts';
 const fillData = fillDataJson as unknown as { 原点y: number; 石半砖y: number; 格: (number | string)[][] };
 
 // ---------- 锤底 ----------
@@ -125,7 +126,7 @@ export const ShaftFill: React.FC<{ w: number }> = ({ w: physSec }) => {
   for (const { m: mesh, list } of groups) {
     let count = 0;
     for (const cell of list) {
-      if (cell.breakSec <= physSec + 1e-9) continue; // 1e-9：撞击那一帧的物理时间是 撞击时刻 − 3/24 + 3/24，浮点上可能差一点点
+      if (cell.breakSec <= physSec + 1e-9) continue; // 1e-9：撞击那一刻的物理时间是 撞击时刻 + (段起 + 0.125 − 段起 − 0.125)，浮点上可能差一点点
       dummy.position.set(cell.dx, cell.dy, (cell.bottomZ + cell.topZ) / 2);
       dummy.updateMatrix();
       mesh.setMatrixAt(count++, dummy.matrix);
@@ -144,21 +145,24 @@ export const ShaftFill: React.FC<{ w: number }> = ({ w: physSec }) => {
 
 // ---------- 核对：6-3-6 每一帧锤底在哪、这一帧里碎了哪几层 ----------
 // 层按游戏 y；锤底、顶面是场景 z。汇报和出对照图用（工具里没有直接跑 TS 的地方，在画面里按 --props 打到控制台）
+const breachSamplesPerSec = segFps;
 export const breachByFrame = () => {
-  const g6 = segTable['6-3-6'].起;
+  const t6 = segTable['6-3-6'].起;
+  const step = 1 / breachSamplesPerSec;
   const cells = fillCells();
   const layerTops = new Map<number, number>();
   for (const cell of cells) layerTops.set(cell.y, Math.max(layerTops.get(cell.y) ?? -Infinity, cell.topZ));
   const rows = [];
-  for (let frame = 0; frame <= segTable['6-3-6'].止 - g6; frame++) {
-    const physSec = physicalTime(g6 + frame);
-    const wPrev = physicalTime(g6 + frame - 1);
+  const sampleCount = Math.round((segTable['6-3-6'].止 - t6) * breachSamplesPerSec);
+  for (let frame = 0; frame <= sampleCount; frame++) {
+    const physSec = physicalTime(t6 + frame * step);
+    const wPrev = physicalTime(t6 + (frame - 1) * step);
     const brokenLayers = [...new Set(cells.filter((c) => c.breakSec > wPrev + 1e-9 && c.breakSec <= physSec + 1e-9).map((c) => c.y))].sort((a, b) => b - a);
     const remaining = cells.filter((c) => c.breakSec > physSec + 1e-9);
     const highestIntact = remaining.length ? Math.max(...remaining.map((c) => c.topZ)) : null;
-    rows.push({ f: frame, G: g6 + frame, w: +physSec.toFixed(4), maceBottom: +maceBottomZ(physSec).toFixed(3), brokenLayers: brokenLayers, highestIntactTop: highestIntact, remainingCells: remaining.length });
+    rows.push({ f: frame, T: +(t6 + frame * step).toFixed(4), w: +physSec.toFixed(4), maceBottom: +maceBottomZ(physSec).toFixed(3), brokenLayers: brokenLayers, highestIntactTop: highestIntact, remainingCells: remaining.length });
   }
-  return { FPS, impactSegFrame, groundZ: choreo.groundZ, caveCeilingZ: choreo.caveCeilingZ, layerTops: Object.fromEntries(layerTops), rows };
+  return { samplesPerSec: breachSamplesPerSec, impactSegSec, groundZ: choreo.groundZ, caveCeilingZ: choreo.caveCeilingZ, layerTops: Object.fromEntries(layerTops), rows };
 };
 
 // 命令行 --props='{"breachCheck":1}' 时把 `砸穿逐帧` 的结果分段打到控制台（console.warn，模块加载时打：渲染帧标签页的日志 remotion 不转出来），

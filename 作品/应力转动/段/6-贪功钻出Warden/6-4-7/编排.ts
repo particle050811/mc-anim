@@ -13,30 +13,29 @@ import { G4 } from '../../../地点/古城4x.tsx';
 import { mixPose } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { handoffs } from '../../../地点/古城4x/布局.ts';
 import { lookToward } from '../../../场/6-古城/6-4-6/走位.ts';
-import { FPS, τ647, frameCount647, huangPanPose, liuXinzhongPose, liuStompJump, huangFollowJump, fourthShriek, startSec647 } from '../../../场/6-古城/6-4-6/追兵.ts';
+import { τ647, durationSec647, huangPanPose, liuXinzhongPose, liuStompJump, huangFollowJump, fourthShriek, startSec647 } from '../../../场/6-古城/6-4-6/追兵.ts';
 import * as K648 from '../../../地点/古城4x/6-4-8/编排.ts';
 import { lineTable } from '../../../配音/台词轨.tsx';
 import type { Cam } from '@engine/core/机位.ts';
+import type { LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 
-export { FPS };
-export const frameCount = frameCount647;
-const lastFrame = frameCount - 1;
+export const durationSec = durationSec647;
+const lastSec = durationSec - 1 / 60; // 末帧（原来按 1/24 秒一格算，用户 11-16 定不留 1/24 秒的格）
 export const τ = τ647;
-// 第四次尖啸（段内）
+// 第四次尖啸（段内秒）
 export const shriekSec = fourthShriek.t - startSec647;
-export const shriekFrame = shriekSec * FPS;
-export const stompSec = liuStompJump.f1 / FPS - startSec647;
+export const stompSec = liuStompJump.f1 - startSec647;
 export const stompPos: V3 = liuStompJump.p1;
 export const shrieker4Pos: V3 = fourthShriek.p;
-// 台词落点（段内帧，A8 字幕读这里）：0.6 秒开口、有声 4.46 秒，5.06 秒说完；他 3.98 秒起跳，「……贵族生活了！」是在半空里喊完的
+// 台词落点（段内秒）：0.6 秒开口、有声 4.46 秒，5.06 秒说完；他 3.98 秒起跳，「……贵族生活了！」是在半空里喊完的
 export const lineDuration = lineTable['6-4-7-刘心忠-贵族生活'].有声长;
 export const lines = {
-  nobleLife: { id: '6-4-7-刘心忠-贵族生活', 帧: 0.6 * FPS },
-} as const;
+  nobleLife: { id: '6-4-7-刘心忠-贵族生活', 秒: 0.6 },
+} as const satisfies Record<string, LineAt>;
 
 // ---------- 二人 ----------
-export const liuJumpSec = liuStompJump.f0 / FPS - startSec647;
-const huangJumpSec = huangFollowJump.f0 / FPS - startSec647;
+export const liuJumpSec = liuStompJump.f0 - startSec647;
+const huangJumpSec = huangFollowJump.f0 - startSec647;
 const bump = (t: number, a: number, b: number) => Math.sin(Math.PI * Math.min(1, Math.max(0, (t - a) / (b - a))));
 // 6-4-6 末帧的「看」：黄叛看着北墙头、刘心忠看着黄叛（6-4-6/编排.ts 的 pursuers 末尾那几个权重都是 1），这里接着慢慢松开
 const huangWallTarget: V3 = G4(-866, -42, 211);
@@ -49,9 +48,8 @@ const huangWallTarget: V3 = G4(-866, -42, 211);
   if (off.length) throw new Error(`6-4-7 接 6-4-8 对不上：6-4-8 第 0 帧${off.map(([who, dist]) => `${who}离 handoffs.六四八首.${who} ${dist.toFixed(3)} 米`).join('，')}`);
 }
 const blendInSec = 0.4; // 最后 0.4 秒淡进 6-4-8 的 pursuers
-export const pursuers = (frame: number): { 刘: FigurePose; 黄: FigurePose } => {
-  const t = frame / FPS;
-  const chaseT = τ(frame);
+export const pursuers = (t: number): { 刘: FigurePose; 黄: FigurePose } => {
+  const chaseT = τ(t);
   let huangPose = huangPanPose(chaseT);
   let liuPose = liuXinzhongPose(chaseT);
   // 黄叛：从看北墙头转回来看刘心忠（他开口了），起跳前松开
@@ -63,9 +61,9 @@ export const pursuers = (frame: number): { 刘: FigurePose; 黄: FigurePose } =>
   liuPose = lookToward(liuPose, [huangPose.loc[0], huangPose.loc[1], huangPose.loc[2] + 0.2], track([[0, 1], [1.2, 1], [1.8, 0]], t), 0.4);
   const wave = bump(t, 0.6, 1.7);
   if (wave > 0) liuPose = { ...liuPose, armR: liuPose.armR + (110 - liuPose.armR) * wave, armRRoll: liuPose.armRRoll + 35 * Math.sin((t - 0.6) * 14) * wave };
-  if (frame > lastFrame - blendInSec * FPS) {
-    const poses648 = K648.pursuers(frame - lastFrame);
-    const blendWeight = (frame - (lastFrame - blendInSec * FPS)) / (blendInSec * FPS);
+  if (t > lastSec - blendInSec) {
+    const poses648 = K648.pursuers(t - lastSec);
+    const blendWeight = (t - (lastSec - blendInSec)) / blendInSec;
     const blendPose = (from: FigurePose, to: FigurePose): FigurePose => {
       const mixed = mixPose(from, to, blendWeight);
       return { ...mixed, loc: [from.loc[0] + (to.loc[0] - from.loc[0]) * blendWeight, from.loc[1] + (to.loc[1] - from.loc[1]) * blendWeight, from.loc[2] + (to.loc[2] - from.loc[2]) * blendWeight] };
@@ -85,25 +83,25 @@ const lastCam: Cam = K648.camera(0);
 // 机位在二人南边，刘心忠蹲下起跳时往东上方升 3 米（越过脚边碎石堆看他落地那一踩），二人都往西北跳走（离镜头越来越远不会撞上），第四次尖啸响过 0.1 秒才往北挪到 6-4-8 首帧机位（早挪会被东边碎石堆挡住刘心忠）
 const CAM_POS: VKey[] = [
   [0, firstCam.pos],
-  [3.8 * FPS, firstCam.pos],
-  [5.0 * FPS, jumpCamPos],
-  [5.6 * FPS, jumpCamPos],
-  [6.2 * FPS, lastCam.pos],
-  [lastFrame, lastCam.pos],
+  [3.8, firstCam.pos],
+  [5.0, jumpCamPos],
+  [5.6, jumpCamPos],
+  [6.2, lastCam.pos],
+  [lastSec, lastCam.pos],
 ];
 // 目标：起跳时往左上摇着跟刘心忠（他身上方 1 米），落地后转到西边的尖啸体，末帧交给 末机
 const liuWaistAt = (sec: number): V3 => {
-  const loc = liuXinzhongPose(τ(sec * FPS)).loc;
+  const loc = liuXinzhongPose(τ(sec)).loc;
   return [loc[0], loc[1], loc[2] + 1.2];
 };
 const CAM_TGT: VKey[] = [
   [0, firstCam.tgt],
-  [3.4 * FPS, firstCam.tgt],
-  [(liuJumpSec + 0.25) * FPS, liuWaistAt(liuJumpSec + 0.25)],
-  [(liuJumpSec + 0.7) * FPS, liuWaistAt(liuJumpSec + 0.6)],
-  [(stompSec + 0.05) * FPS, [liuWaistAt(stompSec)[0] - 2, liuWaistAt(stompSec)[1], liuWaistAt(stompSec)[2] - 0.3]],
-  [(shriekSec + 0.3) * FPS, [shrieker4Pos[0], shrieker4Pos[1], shrieker4Pos[2] + 1.2]],
-  [lastFrame, lastCam.tgt],
+  [3.4, firstCam.tgt],
+  [liuJumpSec + 0.25, liuWaistAt(liuJumpSec + 0.25)],
+  [liuJumpSec + 0.7, liuWaistAt(liuJumpSec + 0.6)],
+  [stompSec + 0.05, [liuWaistAt(stompSec)[0] - 2, liuWaistAt(stompSec)[1], liuWaistAt(stompSec)[2] - 0.3]],
+  [shriekSec + 0.3, [shrieker4Pos[0], shrieker4Pos[1], shrieker4Pos[2] + 1.2]],
+  [lastSec, lastCam.tgt],
 ];
-const LENS: Key[] = [[0, firstCam.lens], [3.4 * FPS, firstCam.lens], [(liuJumpSec + 0.6) * FPS, 22], [(stompSec + 0.1) * FPS, 30], [(shriekSec + 0.3) * FPS, 32], [lastFrame, lastCam.lens]];
-export const camera = (f: number): Cam => ({ pos: sampleV(CAM_POS, f) as V3, tgt: sampleV(CAM_TGT, f) as V3, lens: sample(LENS, f) });
+const LENS: Key[] = [[0, firstCam.lens], [3.4, firstCam.lens], [liuJumpSec + 0.6, 22], [stompSec + 0.1, 30], [shriekSec + 0.3, 32], [lastSec, lastCam.lens]];
+export const camera = (t: number): Cam => ({ pos: sampleV(CAM_POS, t) as V3, tgt: sampleV(CAM_TGT, t) as V3, lens: sample(LENS, t) });

@@ -1,11 +1,11 @@
-// 第 7 章第 2 场两段共用的「戏」：李樱的动作、羊毛、箱子、感测体和尖啸、传送石粒子、远景对齐第 1 场的哪一刻。纯函数，输入场内帧 sf（见 时间线.ts）。
+// 第 7 章第 2 场两段共用的「戏」：李樱的动作、羊毛、箱子、感测体和尖啸、传送石粒子、远景对齐第 1 场的哪一刻。纯函数，输入场内秒 s（见 时间线.ts）。
 // 机位各段自己定（各段 编排.ts）。羊毛按 ../古城4x布局.ts 的名字（6-4-1～6-4-5 一路垫到 V，本场加 X），一跳是强者跳。
 import type { V3 } from '@engine/model/parts.tsx';
 import { type FigurePose } from '@库/角色/骨架.tsx';
 import { warpStoneUseParticles, teleportParticles } from '@库/物品/传送石.tsx';
 import type { ParticleSpawn } from '@库/特效/原版粒子.tsx';
 import { vibrationTravelTicks } from '@库/特效/振动粒子.tsx';
-import { FPS, airPose, landPose, mixPose, nearYaw, pivotStep, standAt, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { airPose, landPoseSec, mixPose, nearYaw, pivotStep, standAt, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { placedWoolThrough, type ChestOpening, type AncientCity4xWool } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as geom from './几何.ts';
 import * as timeline from './时间线.ts';
@@ -15,7 +15,6 @@ import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 const ramp = (s: number, a: number, b: number) => smoothstep01((s - a) / (b - a));
 const tickSec = 1 / 20;
-export const toSec = (sf: number) => sf / FPS;
 
 // ---------- 跳 ----------
 // V → X 的强者跳（时间线.ts 算好的：19.7 米、最高点比 V 高 3 格、1.26 秒）
@@ -24,17 +23,18 @@ export const landSec = timeline.landSec;
 export const padWoolTime = landSec - 0.22; // 落地前 0.22 秒往落脚处垫羊毛（同 古城戏.ts 的 PLACE_BEFORE）
 
 // ---------- 羊毛 ----------
-// 场景里已经有的（6-4-1～6-4-5 一路垫到 V），X 落地前 2 帧从小长到整块（同 6-4-5）
+// 场景里已经有的（6-4-1～6-4-5 一路垫到 V），X 落地前 1/12 秒从小长到整块（同 6-4-5）
 const placedWool: AncientCity4xWool[] = placedWoolThrough('V');
-export const wool = (sf: number): { placed: AncientCity4xWool[]; 长: { w: AncientCity4xWool; k: number }[] } => {
-  const k = (toSec(sf) - padWoolTime) * FPS / 2;
+const woolGrowSec = 1 / 12;
+export const wool = (s: number): { placed: AncientCity4xWool[]; 长: { w: AncientCity4xWool; k: number }[] } => {
+  const k = (s - padWoolTime) / woolGrowSec;
   if (k >= 1) return { placed: [...placedWool, 'X'], 长: [] };
   return { placed: placedWool, 长: k >= 0 ? [{ w: 'X', k }] : [] };
 };
 
 // ---------- 箱子 ----------
 // 开 #240：开盖、已开贴图都由画布按 模型/物品/箱子.tsx 算
-export const chestOpeningAt = (sf: number): ChestOpening => ({ chestId: geom.chest.id, 开: timeline.lidOpenSec, closeSec: timeline.lidCloseSec, 秒: toSec(sf) });
+export const chestOpeningAt = (s: number): ChestOpening => ({ chestId: geom.chest.id, 开: timeline.lidOpenSec, closeSec: timeline.lidCloseSec, 秒: s });
 
 // ---------- 振动链（同 6-4-2/编排.ts 的写法） ----------
 // 两遍：开箱（container_open）、关箱（container_close），都从箱子中心发。感测体只在不激活（激活后 30 + 10 刻以外）时收；
@@ -83,9 +83,9 @@ export const reactivateSecs = soundChain.reactivateSecs; // 关箱那一遍
 export const latestActiveSec = (i: number, sec: number) => (sec >= reactivateSecs[i] ? reactivateSecs[i] : activateSecs[i]);
 export const shriek = soundChain.shriek; // 开盖后约 8 刻：(−956, −47, 229) 4 刻激活 → (−955, −50, 226) 再 4 刻
 export const responseSec = shriek.t + timeline.shriekResponseSec; // 段3末之前不演回应
-if (timeline.sceneFrames - 1 >= responseSec * FPS) throw new Error('7-2-2至3 拍到了尖啸体的回应（黑暗、第二只监守者），要么缩短，要么把回应演出来');
+if (timeline.sceneLastSec >= responseSec) throw new Error('7-2-2至3 拍到了尖啸体的回应（黑暗、第二只监守者），要么缩短，要么把回应演出来');
 // 感测体触须的钟（只管不激活时那 32 刻一圈的慢摆；整体加 32 秒免得出现负数）
-export const sensorClock = (sf: number) => toSec(sf) + 32;
+export const sensorClock = (s: number) => s + 32;
 
 // ---------- 李樱 ----------
 export type LiYingState = { pose: FigurePose; 在: boolean; teleportStone: boolean };
@@ -175,8 +175,7 @@ const alertPose = (sec: number): FigurePose => {
   return turning ? { ...pivotStep(pose, (sec - turning.g.t - BODY_LAG) / BODY_DUR, turning.d > 0), squash: pose.squash } : pose;
 };
 
-export const liYingStateAt = (sf: number): LiYingState => {
-  const sec = toSec(sf);
+export const liYingStateAt = (sec: number): LiYingState => {
   // 开场就朝着远景站着看，不演转过去（用户 10-19：「没有必要加一个多余的转身」）；头跟着远处的打斗微微左右动
   if (sec < timeline.turnBackStart) {
     // 站着别定格（用户 10-13）：呼吸，身子一起一伏、手慢半拍；转回身之前收掉，和转身、蹲的姿势接得上
@@ -195,24 +194,23 @@ export const liYingStateAt = (sf: number): LiYingState => {
     return { pose, 在: true, teleportStone: false };
   }
   // 转回东南、蹲、跳
-  const frame = sf;
-  if (frame < leap.f0) {
+  if (sec < leap.f0) {
     const yaw = lerp(gazeYaw, turnBackYaw, ramp(sec, timeline.turnBackStart, timeline.turnBackEnd));
     if (sec < timeline.crouchStart) return { pose: standAt(geom.roofFeet, yaw, 0, lerp(gazeHeadPitch, -14, ramp(sec, timeline.turnBackStart, timeline.turnBackEnd))), 在: true, teleportStone: false };
     const crouchProgress = (sec - timeline.crouchStart) / (timeline.takeoffSec - timeline.crouchStart);
     return { pose: takeoffPose(geom.roofFeet, yaw, crouchProgress), 在: true, teleportStone: false };
   }
-  if (frame < leap.f1) return { pose: { ...airPose(leap, frame), yaw: turnBackYaw }, 在: true, teleportStone: false };
+  if (sec < leap.f1) return { pose: { ...airPose(leap, sec), yaw: turnBackYaw }, 在: true, teleportStone: false };
   const sinceLand = sec - landSec;
   if (sinceLand < timeline.landSquatSec) {
     const yaw = lerp(turnBackYaw, openChestYaw, ramp(sinceLand, 0, timeline.landSquatSec));
-    return { pose: landPose(geom.chestFrontFeet, yaw, sinceLand * FPS, timeline.landSquatSec * FPS), 在: true, teleportStone: false };
+    return { pose: landPoseSec(geom.chestFrontFeet, yaw, sinceLand, timeline.landSquatSec), 在: true, teleportStone: false };
   }
   if (sec < timeline.teleportSec) {
     // 落地蹲完接开箱姿势：头 0.15 秒从蹲的姿势混过去；感测体再咔嗒一响就混进警觉的姿势（0.25 秒）
     const openPose = openChestPose(Math.min(sec, alertSec));
     const blend = ramp(sinceLand, timeline.landSquatSec, timeline.landSquatSec + 0.15);
-    const settled = blend < 1 ? mixPose(landPose(geom.chestFrontFeet, openChestYaw, timeline.landSquatSec * FPS, timeline.landSquatSec * FPS), openPose, blend) : openPose;
+    const settled = blend < 1 ? mixPose(landPoseSec(geom.chestFrontFeet, openChestYaw, timeline.landSquatSec, timeline.landSquatSec), openPose, blend) : openPose;
     const w = ramp(sec, alertSec, alertSec + 0.25);
     const alert = alertPose(sec);
     const pose = w > 0 ? { ...mixPose(settled, alert, w), squash: lerp(settled.squash, alert.squash, w), armRYaw: (alert.armRYaw ?? 0) * w } : settled;
@@ -230,5 +228,5 @@ export const teleportAwayParticles: ParticleSpawn[] = teleportParticles(geom.che
 //   所以镜 Jade 正好卡这段：Jade 里是护盾挡它拍、黄叛两支风矢钉上它（血跟着掉）。
 // 两场共用古城4x 原点，坐标不用换算。
 export const wideTimeStart = T71.shieldT - 0.55;
-export const wideTime = (sf: number) => wideTimeStart + toSec(sf);
-if (wideTime((timeline.jadeShotEndSec) * FPS) > K71.sceneEndT) throw new Error('7-2-1 镜 Jade 拍到了第 1 场之后（第 3 场）的时刻，SceneActors 只管第 1 场');
+export const wideTime = (s: number) => wideTimeStart + s;
+if (wideTime(timeline.jadeShotEndSec) > K71.sceneEndT) throw new Error('7-2-1 镜 Jade 拍到了第 1 场之后（第 3 场）的时刻，SceneActors 只管第 1 场');

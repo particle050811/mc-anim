@@ -1,7 +1,7 @@
-// 7-4-2 又一只的画面：编排.ts 的人、马、四只监守者、感测体振动链和机位按帧画出来。场景同 7-4-1（古城4x画布，块按镜头取，见 编排.ts 的 块于；
+// 7-4-2 又一只的画面：编排.ts 的人、马、四只监守者、感测体振动链和机位按段内秒画出来。场景同 7-4-1（古城4x画布，块按镜头取，见 编排.ts 的 块于；
 // 城心这一块和北墙外的石龛 #213 和老城一模一样），夜视光照。
 // 镜 1 从 7-4-1 硬切过来、剧情时刻接着它末帧往下走（白烟、马身上的附魔字母照 7-4-1 那一份）；镜 2～4 是再硬切到北墙外石龛的那一场。
-// 编排的帧是 1/24 秒一格，按秒换算；声音照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 声音.tsx。
+// 声音照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { definePicture } from '@engine/段/段画面.tsx';
@@ -36,40 +36,39 @@ const HIDE: number[][] = choreo.sensors.flatMap(([x, y, z]) => {
 });
 const woolBlocks = placedWoolThrough('V');
 // 马身上的附魔字母：镜 2～4 用本段秒数另起一份（位置跟着马走）；第 k 刻出生在那一刻马的位置（不取整到格）
-const horseParticles = steedParticles((k) => choreo.horseState((k / 20) * choreo.FPS).p, 0, choreo.END / choreo.FPS, 7421);
+const horseParticles = steedParticles((k) => choreo.horseState(k / 20).p, 0, choreo.durSec, 7421);
 
-export const AnotherOnePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam }) => {
+export const AnotherOnePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, cam }) => {
   const { width, height } = useVideoConfig();
-  const shot = choreo.shotIndex(frame);
-  const horse = choreo.horseState(frame);
-  const t = frame / choreo.FPS;
+  const shot = choreo.shotIndex(sec);
+  const horse = choreo.horseState(sec);
   return (
-    <AncientCity4xCanvas 段="7-4-2" cam={cam ?? choreo.camera(frame)} width={width} height={height} hide={HIDE} chestOpening={choreo.chestOpenAt(frame)} wool={woolBlocks}>
+    <AncientCity4xCanvas 段="7-4-2" cam={cam ?? choreo.camera(sec)} width={width} height={height} hide={HIDE} chestOpening={choreo.chestOpenAt(sec)} wool={woolBlocks}>
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-        <SpectralSteed 秒={shot === 1 ? choreo.T12(frame) : t} walkCycle={horse.walkCycle} headYaw={horse.headYaw} headPitch={horse.headPitch} rearAmount={horse.rear?.horse} hasRider />
+        <SpectralSteed 秒={shot === 1 ? choreo.T12(sec) : sec} walkCycle={horse.walkCycle} headYaw={horse.headYaw} headPitch={horse.headPitch} rearAmount={horse.rear?.horse} hasRider />
       </group>
-      <LiuXinzhong pose={choreo.liuXinzhongPose(frame)} />
-      <HuangPan pose={choreo.huangPanPose(frame)} />
+      <LiuXinzhong pose={choreo.liuXinzhongPose(sec)} />
+      <HuangPan pose={choreo.huangPanPose(sec)} />
       {shot === 1 ? (
-        <VanillaParticles spawns={islandParticles} 秒={choreo.T12(frame)} />
+        <VanillaParticles spawns={islandParticles} 秒={choreo.T12(sec)} />
       ) : (
         <>
-          <VanillaParticles spawns={horseParticles} 秒={t} />
+          <VanillaParticles spawns={horseParticles} 秒={sec} />
           {choreo.sensors.map((b, i) => (
-            <SculkSensor key={i} p={choreo.blockBottomCenter(b)} 秒={choreo.sensorClock(frame)} secSinceActive={t - choreo.activateSecs[i]} seed={i + 1} />
+            <SculkSensor key={i} p={choreo.blockBottomCenter(b)} 秒={choreo.sensorClock(sec)} secSinceActive={sec - choreo.activateSecs[i]} seed={i + 1} />
           ))}
           {choreo.vibrations.map((v, i) => (
-            <VibrationSignal key={i} from={v.from} to={v.to} sec={t - v.t} 帧={i * 3} />
+            <VibrationSignal key={i} from={v.from} to={v.to} sec={sec - v.t} 帧={i * 3} />
           ))}
           {choreo.wardens.map((w, i) => {
-            const emergeSec = choreo.emergeSecAt(w, frame);
+            const emergeSec = choreo.emergeSecAt(w, sec);
             return (
               <React.Fragment key={i}>
-                <ShriekRings p={w.shriekP} sec={t - w.shriekSec} />
+                <ShriekRings p={w.shriekP} sec={sec - w.shriekSec} />
                 {emergeSec >= 0 && (
                   <>
                     <group position={w.p} rotation={[0, 0, rad(w.yaw)]}>
-                      <Warden {...choreo.wardenState(w, frame)} />
+                      <Warden {...choreo.wardenState(w, sec)} />
                     </group>
                     <BlockCrumbs center={w.p} sec={emergeSec} perTick={15} durationSec={choreo.debrisSec} seed={7 + i} />
                   </>
@@ -83,6 +82,5 @@ export const AnotherOnePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame
   );
 };
 
-export const anotherOneFrameCount = choreo.END;
-export const AnotherOne: React.FC = () => <AnotherOnePicture f={useCurrentSec() * choreo.FPS} />;
+export const AnotherOne: React.FC = () => <AnotherOnePicture sec={useCurrentSec()} />;
 export default definePicture(seg, soundUrl, AnotherOne);

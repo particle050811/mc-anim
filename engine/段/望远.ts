@@ -6,11 +6,11 @@
 // - 画的时候读投影的（屏幕 AO、云、反推世界坐标）拿到的是望远的，和画出来的像素对得上；
 // - 画的时候要按原整帧算的，在下面逐个接管：阴影级联、屏幕 AO 的屏幕半径上限、点的大小、着色器里按屏幕像素求的导数。
 // 做不到的偏差见 docs/望远.md。
-import '../段/设置.ts';
+import './设置.ts';
 import { _roots, addAfterEffect, addEffect } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CascadedShadow } from '../light/级联阴影.ts';
-import { LevelParams } from './渲染级别.ts';
+import { LevelParams } from '../core/渲染级别.ts';
 
 /** pipeline/渲/望远.ts 里同一个名字。左、上、占：矩形左上角和宽占原帧的比例（高按原帧宽高比）；细一级、真值见下面 装 的末尾 */
 const envName = 'REMOTION_ANIM_TELE';

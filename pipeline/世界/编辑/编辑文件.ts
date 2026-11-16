@@ -11,7 +11,7 @@ import { parse } from 'smol-toml';
 import { readAssetLock, resolveAsset } from '../../资产/资产锁.ts';
 import type { BlockKnowledge } from '../体素库.ts';
 import { worldDir } from '../声明.ts';
-import { parseCommand, CommandError, type EditStep } from './命令.ts';
+import { parseCommand, CommandError, type EditStep } from './编辑命令.ts';
 import { BlockTableIndex, StateSyntaxError } from './方块状态.ts';
 import { readStructure, type Structure } from './结构.ts';
 

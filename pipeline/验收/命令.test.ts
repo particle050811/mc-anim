@@ -34,7 +34,7 @@ vi.mock('../渲/段产物.ts', async (importOriginal) => {
   };
 });
 vi.mock('../渲/设置.ts', async (actual) => ({ ...(await actual<typeof import('../渲/设置.ts')>()), masterSize: () => [320, 180] }));
-vi.mock('../渲/渲段.ts', () => ({ renderSegments: async (allFlag: unknown, segments: { 键: string }[]) => (renderCalls.push(segments.map((s) => s.键)), []) }));
+vi.mock('../出片/渲段.ts', () => ({ renderSegments: async (allFlag: unknown, segments: { 键: string }[]) => (renderCalls.push(segments.map((s) => s.键)), []) }));
 // 并排图写到临时数据根，不写主检出的 预览/
 vi.mock('../预览/预览.ts', async (actual) => ({
   ...(await actual<typeof import('../预览/预览.ts')>()),

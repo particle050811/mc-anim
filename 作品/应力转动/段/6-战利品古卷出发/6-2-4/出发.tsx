@@ -24,22 +24,19 @@ import { BaseIslandTerrain } from '../../../地点/基地小岛.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import * as choreo from './编排.ts';
 import { rad } from '@engine/core/数学.ts';
-// 编排.ts 的帧号是 1/24 秒一格
-const perSec = 24;
-
-// 九胡坐稳、搂住李樱的腰就开口（用户 10-17：出发时给九胡一句，场与场之间不冷场）
-export const lineCues = [{ id: '6-2-4-九胡-导航', 帧: choreo.beats.seated + 4 }];
+// 九胡坐稳、搂住李樱的腰就开口（用户 10-17：出发时给九胡一句，场与场之间不冷场）；帧 写段内秒（mouthAt 每秒给 1）
+export const lineCues = [{ id: '6-2-4-九胡-导航', 帧: choreo.beats.seated + 4 / 24 }];
 
 export const SetOff: React.FC = () => {
-  const frame = useCurrentSec() * perSec;
+  const t = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const cam = choreo.camera(frame);
-  const broomState = choreo.broom(frame);
-  const riders = choreo.riders(frame);
-  const ly = choreo.liyingOnFoot(frame);
-  const jh = choreo.jiuhuOnFoot(frame);
-  const cp = choreo.compass(frame);
-  const jiuhuMouth = mouthAt(lineCues, '九胡', frame);
+  const cam = choreo.camera(t);
+  const broomState = choreo.broom(t);
+  const riders = choreo.riders(t);
+  const ly = choreo.liyingOnFoot(t);
+  const jh = choreo.jiuhuOnFoot(t);
+  const cp = choreo.compass(t);
+  const jiuhuMouth = mouthAt(lineCues, '九胡', t, 1);
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
@@ -50,7 +47,7 @@ export const SetOff: React.FC = () => {
           <FlightSky camPos={cam.pos} />
           <BaseIslandTerrain camPos={cam.pos} />
           <group position={choreo.ROOM.origin} rotation={[0, 0, rad(choreo.ROOM.heading)]}>
-            <BaseWorkshop t={frame / 24} exterior={false} />
+            <BaseWorkshop t={t} exterior={false} />
             {broomState.appear > 0 && (
               <RideBroom
                 pos={broomState.位置}

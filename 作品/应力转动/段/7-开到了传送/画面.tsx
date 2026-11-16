@@ -20,24 +20,22 @@ import * as choreo from './编排.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
-export const gotItTeleportFrameCount = choreo.frameCount;
-
 // 箱盖开满竖起来的上沿（模型/物品/箱子.tsx 的 CHEST.开满盖沿高），窗口下沿就贴在这
 const lidTop = G4(chest722.block[0] + 0.5, chest722.block[1] + CHEST.lidOpenRimHeight, chest722.block[2] + 0.5);
 // 箱盖中点落在窗口宽度的这个比例处（0.5 是正中）：他站在箱子右边，窗口往左让开他的脸
 const WIN_ANCHOR_X = 0.75;
 
-const ChestUiLayer: React.FC<{ frame: number }> = ({ frame }) => {
+const ChestUiLayer: React.FC<{ sec: number }> = ({ sec }) => {
   const { width, height } = useVideoConfig();
-  const ui = choreo.chestUi(frame);
+  const ui = choreo.chestUi(sec);
   if (ui.visibility <= 0) return null;
-  const win = chestWindowOverLid(lidTop, choreo.camera(frame), WIN_ANCHOR_X, width, height);
+  const win = chestWindowOverLid(lidTop, choreo.camera(sec), WIN_ANCHOR_X, width, height);
   const s = win.s;
   const [tx, ty] = slotPos(choreo.tomeSlot);
   const lineStart: [number, number] = [win.x + (tx + 8) * s, win.y + (ty - 1) * s];
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      <ChestScreen s={s} x={win.x} y={win.y} title="箱子" visibility={ui.visibility} chest={ui.chest} hovered={ui.hovered} t={frame / choreo.FPS} />
+      <ChestScreen s={s} x={win.x} y={win.y} title="箱子" visibility={ui.visibility} chest={ui.chest} hovered={ui.hovered} t={sec} />
       <div style={{ opacity: ui.calloutOpacity * ui.visibility }}>
         <PonderCallout
           s={s}
@@ -54,11 +52,11 @@ const ChestUiLayer: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 export const GotItTeleport: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS;
+  const sec = useCurrentSec();
   return (
     <>
-      <ScenePicture sf={choreo.sf(frame)} cam={choreo.camera(frame)} mouth={mouthAt(choreo.lines, '李樱', frame, choreo.FPS)} />
-      <ChestUiLayer frame={frame} />
+      <ScenePicture s={choreo.sceneSec(sec)} cam={choreo.camera(sec)} mouth={mouthAt(choreo.mouthCues, '李樱', sec, 1)} />
+      <ChestUiLayer sec={sec} />
     </>
   );
 };

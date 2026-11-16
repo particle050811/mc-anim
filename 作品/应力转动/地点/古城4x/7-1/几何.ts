@@ -8,14 +8,13 @@ import { G4 } from '../../古城4x.tsx';
 import { vanilla, elite, baseSpeed, shieldPoint, scene71, wallTopLanding as wallEntry4x, wallJumpTakeoff, footOf, handoffs, huangPanPerch, type BlockPos } from '../布局.ts';
 import * as K649 from '../6-4-9/编排.ts';
 
-export const FPS = 24;
 export const floorZ = -1; // 场子地面（脚底 y −51）
 
 // ---------- 接 6-4-9 末帧 ----------
-export const handoffFrame649 = K649.END - 1;
+export const handoffSec649 = K649.lastSec; // 6-4-9 末帧（6-4-9 的段内秒）
 export const wardenStart: V3 = K649.WARDEN_AT; // 游戏 (−873.5, −51, 217.5)
 export const wardenStartYaw = K649.WARDEN_YAW; // 实体转角（正面朝 −Y 的模型绕 Z 转多少度）
-export const pursuersStart = K649.pursuers(handoffFrame649); // { 刘, 黄 } 的 FigurePose（loc、yaw 等）
+export const pursuersStart = K649.pursuersAt(handoffSec649); // { 刘, 黄 } 的 FigurePose（loc、yaw 等）
 
 // ---------- 速度、原版参数 ----------
 // 监守者跑 60 米/秒（用户 10-18 定的古城基准速度），起跑、刹车按默认的 `RAMP_SEC`；攻击冷却照原版 18 刻

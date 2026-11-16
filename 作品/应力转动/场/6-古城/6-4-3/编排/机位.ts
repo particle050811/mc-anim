@@ -9,7 +9,7 @@ import type { Cam } from '@engine/core/机位.ts';
 
 // 古城4x 机位对着方块数据逐帧核过（工具/挡箭/机位.ts 导出、机位核对.py 核）。
 const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({ pos: lerpV(a.pos, b.pos, k), tgt: lerpV(a.tgt, b.tgt, k), lens: a.lens + (b.lens - a.lens) * k });
-const segmentProgress = (g: number, g0: number, g1: number) => Math.min(1, Math.max(0, (g - g0) / Math.max(1, g1 - g0)));
+const segmentProgress = (g: number, g0: number, g1: number) => Math.min(1, Math.max(0, (g - g0) / Math.max(1 / 24, g1 - g0)));
 const liYingChest: V3 = add(geom.FOOT, [0, 0, 1.2]);
 // 黄叛的本地坐标（右、前、上）→ 场景
 const besideHuangPan = (x: number, y: number, z: number): V3 => fromHuangPanLocal(x, y, z);
@@ -43,15 +43,15 @@ const followCamPose = (dist: number): Cam => {
 export const sideCamPos = add(geom.deflectPoint, [0, -9, 3.15]);
 export const sideTarget = lerpV(geom.deflectPoint, liYingChest, 0.35);
 // 刹住：箭的程从 `弹开程` − 8 到 − 1.5（时钟 1/12 慢到 1/500），机位从跟拍挪到侧面、焦距 18 → 30。
-// 挪多少按画面时间走 smoothstep：慢放刚开始箭一帧还走两三米，按箭的程走头两帧镜头会甩出 5 米。弹开后镜头不跟箭抬（用户 10-10），看点留在李樱身前
+// 挪多少按画面时间走 smoothstep：慢放刚开始箭 1/24 秒还走两三米，按箭的程走头 1/12 秒镜头会甩出 5 米。弹开后镜头不跟箭抬（用户 10-10），看点留在李樱身前
 const brakeStartDist = geom.deflectDist - 8;
 const brakeEndDist = geom.deflectDist - 1.5;
-const brakeStartFrame = timeline.frameFractional(geom.shootTime + geom.arrowArriveTime(brakeStartDist));
-const brakeEndFrame = timeline.frameFractional(geom.shootTime + geom.arrowArriveTime(brakeEndDist));
+const brakeStartSec = timeline.secFractional(geom.shootTime + geom.arrowArriveTime(brakeStartDist));
+const brakeEndSec = timeline.secFractional(geom.shootTime + geom.arrowArriveTime(brakeEndDist));
 const followCam = (storyTime: number): Cam => {
   const arrowState = geom.arrowState(storyTime);
   const dist = arrowState.阶段 === '来' ? Math.max(0, geom.incomingArrowDist(storyTime - geom.shootTime)) : geom.deflectDist;
-  const brakeWeight = smoothstep01((timeline.frameFractional(storyTime) - brakeStartFrame) / (brakeEndFrame - brakeStartFrame));
+  const brakeWeight = smoothstep01((timeline.secFractional(storyTime) - brakeStartSec) / (brakeEndSec - brakeStartSec));
   const followPose = followCamPose(Math.min(dist, brakeEndDist));
   const camPos = lerpV(followPose.pos, sideCamPos, brakeWeight);
   return { pos: camPos, tgt: lerpV(followPose.tgt, sideTarget, brakeWeight), lens: 18 + 12 * brakeWeight };
@@ -81,15 +81,16 @@ export const bowCloseupCams: Cam[] = (() => {
     { pos: add(add(add(foot, forward, 0.9), right, -2.2), [0, 0, 1], 1.5), tgt: lerpV(geom.nockPoint, geom.drawHand, 0.5), lens: 40 },
   ];
 })();
-// 按剧情时间给机位（6-4-3b 的跟拍按剧情时间走，各个时钟的版本都能用）；g 是主方案的全局帧（可以带小数）
-export const camera = (globalFrame: number): Cam => {
-  const cutFrames = timeline.cutFrames;
-  const t = storySecAt(globalFrame);
-  if (globalFrame < cutFrames.A2) return lerpCam(A1a, A1b, segmentProgress(globalFrame, 0, cutFrames.A2));
-  if (globalFrame < cutFrames.A3) return lerpCam(A2a, A2b_, segmentProgress(globalFrame, cutFrames.A2, cutFrames.A3));
+// 按剧情时间给机位（6-4-3b 的跟拍按剧情时间走，各个时钟的版本都能用）；g 是主方案的画面秒。
+// 切点落在输出帧上，比较时留 1e-9 秒余量：正好落在那一帧时算后一个镜头
+export const camera = (g: number): Cam => {
+  const cutSecs = timeline.cutSecs;
+  const t = storySecAt(g);
+  if (g < cutSecs.A2 - 1e-9) return lerpCam(A1a, A1b, segmentProgress(g, 0, cutSecs.A2));
+  if (g < cutSecs.A3 - 1e-9) return lerpCam(A2a, A2b_, segmentProgress(g, cutSecs.A2, cutSecs.A3));
   if (t < timeline.cuts.B1) return A3;
   if (t < timeline.cuts.C1) return followCam(t);
-  if (globalFrame < cutFrames.C2) return lerpCam(C1a, C1b, segmentProgress(globalFrame, cutFrames.C1, cutFrames.C2));
-  if (globalFrame < cutFrames.C3) return lerpCam(C2a, C2b, segmentProgress(globalFrame, cutFrames.C2, cutFrames.C3));
-  return lerpCam(C3a, C3b, smoothstep01(segmentProgress(globalFrame, cutFrames.C3, timeline.totalFrames)));
+  if (g < cutSecs.C2 - 1e-9) return lerpCam(C1a, C1b, segmentProgress(g, cutSecs.C1, cutSecs.C2));
+  if (g < cutSecs.C3 - 1e-9) return lerpCam(C2a, C2b, segmentProgress(g, cutSecs.C2, cutSecs.C3));
+  return lerpCam(C3a, C3b, smoothstep01(segmentProgress(g, cutSecs.C3, timeline.totalSec)));
 };

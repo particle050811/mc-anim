@@ -12,7 +12,7 @@ import { workAssetLockPath, bytesPath, readAssetLock } from '../资产/资产锁
 import { dataRoot as configDataRoot } from '../环境/配置.ts';
 import { parseDecl, type WorldDecl } from '../世界/声明.ts';
 import { toRecord, recordCovers, type VisibleRecord } from '../世界/烘焙/可见.ts';
-import type { CheckReport, CheckContext } from './上下文.ts';
+import type { CheckReport, CheckContext } from '../源码/上下文.ts';
 
 type Box = { from: number[]; to: number[] };
 type FlattenArea = { x0: number; z0: number; nx: number; nz: number };

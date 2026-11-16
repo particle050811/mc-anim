@@ -7,7 +7,7 @@ import { writeNbt, type NbtLabel } from '../nbt.ts';
 import { blockAt } from '../列段.ts';
 import { RegionSource } from '../区域源.ts';
 import { makeWorld } from '../测试夹具.ts';
-import { volume } from './命令.ts';
+import { volume } from './编辑命令.ts';
 import { parseEdits, EditFileError } from './编辑文件.ts';
 import { EditApplier } from './套用.ts';
 import { readStructure, transformState } from './结构.ts';

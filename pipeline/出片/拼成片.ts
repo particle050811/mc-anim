@@ -1,4 +1,4 @@
-// 拼成片：anim film 唯一的出片路（决策/0014）。缺的段先渲（渲/渲段.ts：每段已是成片的一截，叠层、字幕在段里，按成片参数压好），这里只接不重压（用户 11-05 定「母版 = 成片切片」）。
+// 拼成片：anim film 唯一的出片路（决策/0014）。缺的段先渲（渲段.ts：每段已是成片的一截，叠层、字幕在段里，按成片参数压好），这里只接不重压（用户 11-05 定「母版 = 成片切片」）。
 //   选的段要是清单里挨着的一串（单独一段、一个核对段也行），不挨着的先照样渲完，再拒绝接；
 //   画面：ffmpeg concat 直接拷流（各段同一套编码参数、都从关键帧起）；
 //   声音：各段的 wav（和画面同一遍出，长度就是段长）按样本截、接，整片一个固定增益拉到 −16 LUFS + 限幅，压 AAC 量真峰值，超了压低限幅重做（照旧 成片.ts）；
@@ -13,16 +13,16 @@ import { workName } from '../环境/作品.ts';
 import { lowPriority, runCmd, runCapture } from '../环境/子进程.ts';
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { atomicWrite } from '../渲/母版.ts';
-import { renderSegments } from '../渲/渲段.ts';
+import { renderSegments } from './渲段.ts';
 import { filmProfile } from '../渲/设置.ts';
 import { probeDurationSec, videoInfo } from '../渲/探测.ts';
 import { utcTime, utcMonthDayTime, type RunRecord } from '../运行记录/记录.ts';
 import { stageTiming } from '../运行记录/阶段.ts';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
-import { unnormalizedFile, concatUnnormalized } from './交付.ts';
-import { shareAudioKbps, compressShareAudio, encodeShareVersion, measureLoudness } from './成片.ts';
-import { placeFilmSubtitles } from './段字幕.ts';
-import { srt, subtitleTableTsv } from './字幕.ts';
+import { unnormalizedFile, concatUnnormalized } from '../合成/交付.ts';
+import { shareAudioKbps, compressShareAudio, encodeShareVersion, measureLoudness } from '../合成/成片.ts';
+import { placeFilmSubtitles } from '../合成/段字幕.ts';
+import { srt, subtitleTableTsv } from '../合成/字幕.ts';
 
 const targetLoudness = -16;
 const truePeakLimit = -1;

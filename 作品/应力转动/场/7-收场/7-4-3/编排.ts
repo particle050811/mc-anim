@@ -1,4 +1,4 @@
-// 7-4-3 报告：时间轴、机位、人的姿势，纯函数，输入帧号 f（0 起，24 帧/秒）。画面在 画面.tsx，声音在 声音.tsx。
+// 7-4-3 报告：时间轴、机位、人的姿势，纯函数，输入段内秒。画面在 画面.tsx，声音在 声音.tsx。
 // 戏（正篇/07-监守者之怒/脚本规划.md 7-4-3）：刘心忠、黄叛从竖井跳回边城坑口（坑口.ts）；刘心忠在城门边的卫兵室用原版书与笔写报告
 //   （「地下古城」「贼人已死于怪物之手」），写完合上（原版「署名」= 变成成书、改不了），递给卫兵。
 // 屋：模型/场景/边城室内.tsx 的 城门卫兵室（用户 10-19 定：在城门边，窗外是城门和城墙，不再看坑），城外导入地形不画（城墙挡着）。
@@ -25,8 +25,7 @@ import type { Cam } from '@engine/core/机位.ts';
 
 const bookPageData = bookPageJson as unknown as { 页: string[][]; 页码: string; 数字: string };
 
-export const FPS = 24;
-export const shot1End = 78; // 坑口 3.25 秒
+export const shot1End = 3.25; // 坑口
 
 // ---------- 坐标 ----------
 export const roomToWorld = (localPos: number[]): V3 => {
@@ -46,20 +45,20 @@ export const bookOnDesk: V3 = [6.45, -2.5, guardRoom.deskTopZ];
 export const bookYaw = 90;
 const deskBookMatrix = new THREE.Matrix4().makeTranslation(...bookOnDesk).multiply(new THREE.Matrix4().makeRotationZ((bookYaw * Math.PI) / 180));
 
-// 书页镜里右页写到第几个字（左页早写好了）：右页从第 0 个字写起，一个字 2.5 帧（用户 10-20 嫌写得慢，要快一点）；写完「贼人已死于怪物之手。」停 12 帧，
-// 落款一个字 2 帧，落款后停 36 帧给观众读完两页（用户 10-19：落款后约 1 秒以上；字写得快了、边写边读的工夫少了，停得比 1 秒再长一点）
+// 书页镜里右页写到第几个字（左页早写好了）：右页从第 0 个字写起，一个字 2.5/24 秒（用户 10-20 嫌写得慢，要快一点）；写完「贼人已死于怪物之手。」停 0.5 秒，
+// 落款一个字 1/12 秒，落款后停 1.5 秒给观众读完两页（用户 10-19：落款后约 1 秒以上；字写得快了、边写边读的工夫少了，停得比 1 秒再长一点）
 const rightPageChars = pageCharCount(bookPages[1]);
 const thiefLineChars = [...bookPages[1].lines.slice(0, 3).join('')].length; // 前三行的字数（第三行是「贼人已死于怪物之手。」）
 const writing = (() => {
-  const start = shot1End + 6;
-  const thiefLineEnd = start + Math.round(2.5 * thiefLineChars);
-  const pauseEnd = thiefLineEnd + 12;
-  const signatureEnd = pauseEnd + 2 * (rightPageChars - thiefLineChars);
+  const start = shot1End + 0.25;
+  const thiefLineEnd = start + (2.5 / 24) * thiefLineChars;
+  const pauseEnd = thiefLineEnd + 0.5;
+  const signatureEnd = pauseEnd + (rightPageChars - thiefLineChars) / 12;
   return { start, thiefLineEnd, pauseEnd, signatureEnd };
 })();
-export const shot2End = writing.signatureEnd + 36; // 书页
-export const END = shot2End + 78; // 递 3.25 秒
-export const charCounts = (frame: number): [number, number] => {
+export const shot2End = writing.signatureEnd + 1.5; // 书页
+export const END = Math.round((shot2End + 3.25) * 60) / 60; // 递；段尾落到帧上（段长是整帧）
+export const charCounts = (sec: number): [number, number] => {
   const k = sample(
     [
       [writing.start, 0, 'linear'],
@@ -67,49 +66,33 @@ export const charCounts = (frame: number): [number, number] => {
       [writing.pauseEnd, thiefLineChars, 'linear'],
       [writing.signatureEnd, rightPageChars],
     ] as Key[],
-    frame,
+    sec,
   );
   return [999, Math.floor(k)];
 };
-export const isWriting = (f: number) => (f >= writing.start && f < writing.thiefLineEnd) || (f >= writing.pauseEnd && f < writing.signatureEnd);
-// 右页第 i 个字从哪一帧起笔、哪一帧写完（同 charCounts）
-const charSpan = (i: number): [number, number] => {
-  const [f0, f1, i0, i1] = i < thiefLineChars ? [writing.start, writing.thiefLineEnd, 0, thiefLineChars] : [writing.pauseEnd, writing.signatureEnd, thiefLineChars, rightPageChars];
-  const per = (f1 - f0) / (i1 - i0);
-  return [f0 + (i - i0) * per, f0 + (i - i0 + 1) * per];
-};
-// 笔在纸上写的一截一截（声音.tsx 照着放写字声）：右页一行一截，从这一行第一个字起笔到最后一个字写完；空行不算，落款连中间的空格算一截
-export const writingRuns = (): [number, number][] => {
-  let first = 0;
-  return bookPages[1].lines.flatMap((line) => {
-    const n = [...line].length;
-    const run: [number, number][] = line.trim() ? [[charSpan(first)[0], charSpan(first + n - 1)[1]]] : [];
-    first += n;
-    return run;
-  });
-};
+export const isWriting = (sec: number) => (sec >= writing.start && sec < writing.thiefLineEnd) || (sec >= writing.pauseEnd && sec < writing.signatureEnd);
 
-// 递书镜（镜头 3）里的时刻：段内帧 = shot2End + s
+// 递书镜（镜头 3）里的时刻：段内秒 = shot2End + s
 const at = (s: number) => shot2End + s;
-const ramp = (f: number, f0: number, f1: number) => smoothstep01((f - f0) / (f1 - f0));
+const ramp = (t: number, t0: number, t1: number) => smoothstep01((t - t0) / (t1 - t0));
 // 合书（0～1，书.tsx 的 合）：右手按住左页靠书脊的近角往上一掀（贴着掀到 0.2），手接着往上一挑，左页跟在手后面立起来，过了竖直自己倒下去（越倒越快）
-const pinchStart = at(8);
-export const pinchEnd = at(11);
-const flickEnd = at(15);
-export const bookLandFrame = at(19);
-export const closeBook = (f: number) => {
-  if (f < pinchEnd) return 0.2 * ramp(f, pinchStart, pinchEnd);
-  if (f < flickEnd) return 0.2 + 0.4 * Math.min(1, (f - pinchEnd) / (flickEnd - pinchEnd));
-  const u = Math.min(1, (f - flickEnd) / (bookLandFrame - flickEnd));
+const pinchStart = at(1 / 3);
+const pinchEnd = at(11 / 24);
+const flickEnd = at(0.625);
+const bookLandSec = at(19 / 24);
+export const closeBook = (t: number) => {
+  if (t < pinchEnd) return 0.2 * ramp(t, pinchStart, pinchEnd);
+  if (t < flickEnd) return 0.2 + 0.4 * Math.min(1, (t - pinchEnd) / (flickEnd - pinchEnd));
+  const u = Math.min(1, (t - flickEnd) / (bookLandSec - flickEnd));
   return 0.6 + 0.4 * u * u;
 };
-// 拿起（手和书的相对位置从这一帧定住）、交到卫兵手上（从这一帧起书跟着卫兵的手）
-export const pickFrame = at(26);
-export const handoffFrame = at(48);
-const handoffHeld = at(40); // 刘心忠把书递到、举住的那一帧；卫兵在这之后才上前把手伸到书底下
-const handoffReached = at(44); // 卫兵上前托到书的那一帧
+// 拿起（手和书的相对位置从这一刻定住）、交到卫兵手上（从这一刻起书跟着卫兵的手）
+const pickSec = at(13 / 12);
+const handoffSec = at(2);
+const handoffHeld = at(5 / 3); // 刘心忠把书递到、举住的那一刻；卫兵在这之后才上前把手伸到书底下
+const handoffReached = at(11 / 6); // 卫兵上前托到书的那一刻
 // 原版「署名」：书与笔连笔一起变成成书，羽毛不还回来，所以递书镜里手上、桌上都没有羽毛
-export const holdingQuill = (f: number) => f < shot2End;
+const holdingQuill = (t: number) => t < shot2End;
 
 // ---------- 刘心忠 ----------
 // 坐：脚底原点往下挪到坐面减一截大腿（髋在脚底上方 12 像素，刘心忠 1.95 格高 → 0.73 格），`ground` 0；两腿前抬 50°（原版骑乘 ~81°，压低免得大腿、膝盖顶到桌板底下）。
@@ -117,11 +100,11 @@ export const holdingQuill = (f: number) => f < shot2End;
 //   手要碰到桌面、书面，只能在离肩约 0.6 格的地方（胳膊从肩往手往上斜，下沿才不压到桌沿）——书就摆在那儿（`bookOnDesk`）。右手用逆解（模型/角色/手臂逆解.ts），
 //   由手臂抬角、左右摆加胸口扭转凑；身子坐直（一前倾肩膀就低下去，胸口顶到桌沿）。左手垂在身侧不上桌（左手上桌也只能压在书或桌沿上）。
 const liuHeight = 1.95;
-export const liuYaw = (_f: number) => 90; // 面朝西；卫兵就站在书桌正西，递书不用转身
+const liuYaw = 90; // 面朝西；卫兵就站在书桌正西，递书不用转身
 const hipHeight = (12 / 32) * liuHeight;
-const seated = (frame: number, lean: number): FigurePose => ({
+const seated = (lean: number): FigurePose => ({
   ...standPose([guardRoom.chair[0] - 0.25, guardRoom.chair[1], guardRoom.chair[2] - hipHeight]), // 坐在椅子前沿，好够到书
-  yaw: liuYaw(frame),
+  yaw: liuYaw,
   ground: 0,
   pitch: -lean,
   legR: 50,
@@ -204,34 +187,35 @@ const handGui = (k: number): [number, number] => {
   const lineStart = [charPos(bookPages[1], 0)[0], y1];
   return u < 0.5 ? mix([x0, y0], lineStart, u * 2) : mix(lineStart, [x1, y1], u * 2 - 1);
 };
-// 写字：右手对着正在写的那个字走、停在这一行下面（不盖住写好的字），小幅来回。目标点放在纸上方 0.45 格：胳膊得往上斜、留够余量从书的近边上面过去（贴着书边逆解会在相邻帧之间跳），
+// 写字：右手对着正在写的那个字走、停在这一行下面（不盖住写好的字），小幅来回。目标点放在纸上方 0.45 格：胳膊得往上斜、留够余量从书的近边上面过去（贴着书边逆解会在相邻时刻之间跳），
 // 够不着的字（上面几行）手就停在够得着的最远处，在没字的下半页上方，由逆解自己定
-const handK = (frame: number) =>
+const handK = (t: number) =>
   sample(
     [
       [writing.start, 0, 'linear'],
       [writing.thiefLineEnd, thiefLineChars, 'const'],
-      [writing.thiefLineEnd + 4, thiefLineChars, 'linear'],
+      [writing.thiefLineEnd + 1 / 6, thiefLineChars, 'linear'],
       [writing.pauseEnd, thiefLineChars + 0.5, 'linear'],
       [writing.signatureEnd, rightPageChars],
     ] as Key[],
-    frame,
+    t,
   );
-const writingHand = (frame: number): V3 => {
-  // 手走到第几个字（同 charCounts，只是停顿那 16 帧里手挪到落款那一行行首：k 的 .5 是「下一行行首」，见 `handGui`），前后 4 帧取平均，换行时手是顺过去的
-  const window = Array.from({ length: 9 }, (_, j) => handGui(handK(frame + j - 4)));
+// 手位取平均的取样：前后各 4 个、1/24 秒一个（沿用 24 帧网格时的取样）
+const handSamplesPerSec = 24;
+const writingHand = (t: number): V3 => {
+  // 手走到第几个字（同 charCounts，只是停顿那 1/3 秒里手挪到落款那一行行首：k 的 .5 是「下一行行首」，见 `handGui`），前后 1/6 秒取平均，换行时手是顺过去的
+  const window = Array.from({ length: 9 }, (_, j) => handGui(handK(t + (j - 4) / handSamplesPerSec)));
   const gx = window.reduce((a, p) => a + p[0], 0) / window.length;
   const gy = window.reduce((a, p) => a + p[1], 0) / window.length;
-  const t = frame / FPS;
-  const on = isWriting(frame) ? 1 : 0;
+  const on = isWriting(t) ? 1 : 0;
   const local: V3 = [(gx + 4) * guiPixel + on * 0.006 * Math.sin(t * 9.1), pageHeight / 2 - (gy + 14) * guiPixel + on * 0.005 * Math.sin(t * 5.3 + 0.7), paperThick + 0.45];
   return rightPagePoint(local);
 };
 // 身子不动（坐直、右肩往前扭一点），只动右臂
-const writingPose = (frame: number): FigurePose => {
-  const on = isWriting(frame) ? 1 : 0;
-  const base = { ...seated(frame, 0), twist: 10, headPitch: -30, headYaw: on * 4 * Math.sin((frame / FPS) * 1.7) };
-  return reachFigure(base, liuHeight, 'R', handEdge, writingHand(frame), [['armR', 2e-4], ['armRYaw', 2e-4]]);
+const writingPose = (t: number): FigurePose => {
+  const on = isWriting(t) ? 1 : 0;
+  const base = { ...seated(0), twist: 10, headPitch: -30, headYaw: on * 4 * Math.sin(t * 1.7) };
+  return reachFigure(base, liuHeight, 'R', handEdge, writingHand(t), [['armR', 2e-4], ['armRYaw', 2e-4]]);
 };
 
 // 递书镜：右手要到的地方（屋里坐标）。开头停在写完的地方 → 按住左页靠书脊的近角 → 贴着掀起一点、再往上一挑（左页跟在手后面立起来，手一直在它前头）→
@@ -244,44 +228,44 @@ const withdrawPoint: V3 = [6.95, -2.25, 1.62];
 const handoffPoint: V3 = [6.7, -2.33, 1.42]; // 举高一点：卫兵的胳膊从桌面上方伸过来托，胳膊下沿要高过桌面
 const raisedBack: V3 = [6.9, -2.25, 1.45];
 const restOnDesk: V3 = [6.68, -2.3, guardRoom.deskTopZ + 0.012];
-const rightHandTarget = (f: number): V3 => {
+const rightHandTarget = (t: number): V3 => {
   const pinch0 = leftPagePoint(pinchOnLeftPage, 0);
-  if (f < pinchStart) {
+  if (t < pinchStart) {
     // 从写字的地方挪过去，中间抬高一点，不擦着书页
-    const k = ramp(f, at(2), pinchStart);
+    const k = ramp(t, at(1 / 12), pinchStart);
     const p = lerpV(writingHand(shot2End), pinch0, k);
     return [p[0], p[1], p[2] + 0.06 * Math.sin(Math.PI * k)];
   }
-  if (f < pinchEnd) return leftPagePoint(pinchOnLeftPage, closeBook(f));
-  if (f < flickEnd) return lerpV(leftPagePoint(pinchOnLeftPage, 0.2), flickPoint, ramp(f, pinchEnd, flickEnd));
-  if (f < bookLandFrame) return lerpV(flickPoint, withdrawPoint, ramp(f, flickEnd, bookLandFrame));
+  if (t < pinchEnd) return leftPagePoint(pinchOnLeftPage, closeBook(t));
+  if (t < flickEnd) return lerpV(leftPagePoint(pinchOnLeftPage, 0.2), flickPoint, ramp(t, pinchEnd, flickEnd));
+  if (t < bookLandSec) return lerpV(flickPoint, withdrawPoint, ramp(t, flickEnd, bookLandSec));
   const grip = applyTo(deskBookMatrix, pinchOnClosedBook);
-  if (f < pickFrame) {
-    const k = ramp(f, bookLandFrame, pickFrame);
+  if (t < pickSec) {
+    const k = ramp(t, bookLandSec, pickSec);
     const p = lerpV(withdrawPoint, grip, k);
     return [p[0], p[1], p[2] + 0.08 * Math.sin(Math.PI * k)];
   }
   const lifted: V3 = [grip[0] + 0.02, grip[1], grip[2] + 0.2];
-  if (f < at(32)) return lerpV(grip, lifted, ramp(f, pickFrame, at(32)));
-  if (f < handoffFrame + 4) return lerpV(lifted, handoffPoint, ramp(f, at(31), handoffHeld));
-  if (f < handoffFrame + 12) return lerpV(handoffPoint, raisedBack, ramp(f, handoffFrame + 4, handoffFrame + 12));
-  return lerpV(raisedBack, restOnDesk, ramp(f, handoffFrame + 12, handoffFrame + 20));
+  if (t < at(4 / 3)) return lerpV(grip, lifted, ramp(t, pickSec, at(4 / 3)));
+  if (t < handoffSec + 1 / 6) return lerpV(lifted, handoffPoint, ramp(t, at(31 / 24), handoffHeld));
+  if (t < handoffSec + 0.5) return lerpV(handoffPoint, raisedBack, ramp(t, handoffSec + 1 / 6, handoffSec + 0.5));
+  return lerpV(raisedBack, restOnDesk, ramp(t, handoffSec + 0.5, handoffSec + 5 / 6));
 };
-const shot3Pose = (f: number): FigurePose => {
+const shot3Pose = (t: number): FigurePose => {
   const base: FigurePose = {
-    ...seated(f, 0),
-    headPitch: sample([[at(0), -30, 'linear'], [at(34), -30], [at(44), -8, 'linear'], [handoffFrame + 10, -8], [handoffFrame + 22, -20]] as Key[], f),
-    headYaw: sample([[at(0), 0], [at(4), -6, 'linear'], [at(14), -6], [at(20), 0]] as Key[], f), // 掀页时头跟着手往左页看一点
+    ...seated(0),
+    headPitch: sample([[at(0), -30, 'linear'], [at(17 / 12), -30], [at(11 / 6), -8, 'linear'], [handoffSec + 5 / 12, -8], [handoffSec + 11 / 12, -20]] as Key[], t),
+    headYaw: sample([[at(0), 0], [at(1 / 6), -6, 'linear'], [at(7 / 12), -6], [at(5 / 6), 0]] as Key[], t), // 掀页时头跟着手往左页看一点
   };
-  return reachFigure(base, liuHeight, 'R', handEdge, rightHandTarget(f), bodyParams, deskPenalty(f < bookLandFrame ? 'open' : f < pickFrame ? 'closed' : 'none'));
+  return reachFigure(base, liuHeight, 'R', handEdge, rightHandTarget(t), bodyParams, deskPenalty(t < bookLandSec ? 'open' : t < pickSec ? 'closed' : 'none'));
 };
-const liuPoses = new Map<number, FigurePose>(); // 书拿在手上要反复用前面帧的姿势
-export const liuPose = (frame: number): FigurePose => {
-  let pose = liuPoses.get(frame);
-  if (!pose) liuPoses.set(frame, (pose = frame < shot2End ? writingPose(frame) : shot3Pose(frame)));
+const liuPoses = new Map<number, FigurePose>(); // 书拿在手上要反复用前面时刻的姿势
+const liuPose = (t: number): FigurePose => {
+  let pose = liuPoses.get(t);
+  if (!pose) liuPoses.set(t, (pose = t < shot2End ? writingPose(t) : shot3Pose(t)));
   return pose;
 };
-export const liuXinzhongState = (frame: number) => ({ pose: liuPose(frame), holdingQuill: holdingQuill(frame) });
+export const liuXinzhongState = (t: number) => ({ pose: liuPose(t), holdingQuill: holdingQuill(t) });
 // 匠师之杖靠在椅子后面东北墙角（本地坐标：杖尖点地，杖头往东北斜靠在墙上）
 export const staffPos: V3 = [7.72, -1.28, 0];
 
@@ -290,27 +274,27 @@ export const staffPos: V3 = [7.72, -1.28, 0];
 // 再往前一步到桌边、托住递过来的书的远端；接到以后托着书退回一步，再收到胸前，头先、身子随后转向东墙的门（从书桌南头绕过去），往南挪一步
 export const guardPos: V3 = [5.6, -2.1, 0]; // 上前一步站到的地方；x 由 `guardReach` 定（胳膊抬平正好托到书），这里是大约位置（给声音用）
 const guardStepLength = 0.3;
-export const guardSteps: [number, number][] = [
-  [at(35), handoffReached], // 上前
-  [handoffFrame + 3, handoffFrame + 12], // 退回
-  [END - 12, END], // 往南
+const guardSteps: [number, number][] = [
+  [at(35 / 24), handoffReached], // 上前
+  [handoffSec + 0.125, handoffSec + 0.5], // 退回
+  [END - 0.5, END], // 往南
 ];
-const guardYaw = (f: number) => sample([[END - 18, 84], [END - 2, 42]] as Key[], f);
-const guardPosAt = (f: number): V3 => {
-  const x = guardReach().x - guardStepLength * (1 - ramp(f, ...guardSteps[0]) + ramp(f, ...guardSteps[1]));
-  const south = ramp(f, ...guardSteps[2]);
+const guardYaw = (t: number) => sample([[END - 0.75, 84], [END - 1 / 12, 42]] as Key[], t);
+const guardPosAt = (t: number): V3 => {
+  const x = guardReach().x - guardStepLength * (1 - ramp(t, ...guardSteps[0]) + ramp(t, ...guardSteps[1]));
+  const south = ramp(t, ...guardSteps[2]);
   return [x + 0.05 * south, guardPos[1] - 0.35 * south, 0];
 };
 const guardWorldAt = (pos: V3, yaw: number) => new THREE.Matrix4().makeTranslation(...pos).multiply(new THREE.Matrix4().makeRotationZ((yaw * Math.PI) / 180));
-const guardWorldMatrix = (f: number) => guardWorldAt(guardPosAt(f), guardYaw(f));
+const guardWorldMatrix = (t: number) => guardWorldAt(guardPosAt(t), guardYaw(t));
 // 右臂坐标系里托书的那一点：胸甲袖子（每边比手臂凸 1 像素）手背一面的末端（举平时这一面朝上）
 const guardPalm: V3 = [-1, 11, -3];
 // 书的本地点 → 屋里坐标（书在刘心忠手上时）
-const bookPoint = (f: number, local: V3): V3 => {
-  const v = new THREE.Vector3(...local).applyMatrix4(liuBookMatrix(f));
+const bookPoint = (t: number, local: V3): V3 => {
+  const v = new THREE.Vector3(...local).applyMatrix4(liuBookMatrix(t));
   return [v.x, v.y, v.z];
 };
-// 卫兵托住书的远端（西边，书的 +Y）底面：手伸到这里，交书那一帧起书跟着他的手
+// 卫兵托住书的远端（西边，书的 +Y）底面：手伸到这里，交书那一刻起书跟着他的手
 const farEdgeUnder: V3 = [0.19, closedBookBox.max[1] - 0.03, -0.02]; // 低 2 厘米：胳膊方盒的棱比手背中线高一点
 // 抬平的右臂转角 + 上前一步站到的 x：一起解，手背正好顶在书的远端底下（只解胳膊的话够得太长、手穿进书里）
 let guardReachCache: { arm: number[]; x: number } | null = null;
@@ -328,34 +312,34 @@ const guardReach = () => {
 };
 // 右臂转角（弧度，卫兵.tsx 的 rightArm）：垂手晃 → 一步外抬平（`guardReach`，上前一步正好托到书）→ 接到书退回一步以后托着书往怀里收（书底一直高过桌面）
 const chestHold = [-1.55, -0.35, 0];
-export const guardRightArm = (f: number): number[] => {
-  const rest = guardRestArm(f / FPS);
+const guardRightArm = (t: number): number[] => {
+  const rest = guardRestArm(t);
   const reach = guardReach().arm;
-  const k1 = ramp(f, at(24), at(34));
-  const k2 = ramp(f, handoffFrame + 10, handoffFrame + 20);
+  const k1 = ramp(t, at(1), at(17 / 12));
+  const k2 = ramp(t, handoffSec + 5 / 12, handoffSec + 5 / 6);
   return rest.map((r, i) => r + (reach[i] - r) * k1 + (chestHold[i] - reach[i]) * k2);
 };
-export const guardState = (f: number) => ({
-  yaw: guardYaw(f),
-  headYaw: sample([[END - 22, 0], [END - 16, -30], [END - 2, -8]] as Key[], f), // 正 = 往左：头先往右（南）转
-  headPitch: sample([[at(20), -14], [at(40), -8], [END - 20, -8], [END - 10, 2]] as Key[], f),
-  pos: guardPosAt(f),
-  limbSwing: guardSteps.reduce((a, [f0, f1]) => a + ramp(f, f0, f1) * 6, 0),
-  stride: Math.max(...guardSteps.map(([f0, f1]) => Math.sin(Math.PI * ramp(f, f0, f1)) * 0.5)),
-  rightArm: guardRightArm(f),
+export const guardState = (t: number) => ({
+  yaw: guardYaw(t),
+  headYaw: sample([[END - 11 / 12, 0], [END - 2 / 3, -30], [END - 1 / 12, -8]] as Key[], t), // 正 = 往左：头先往右（南）转
+  headPitch: sample([[at(5 / 6), -14], [at(5 / 3), -8], [END - 5 / 6, -8], [END - 5 / 12, 2]] as Key[], t),
+  pos: guardPosAt(t),
+  limbSwing: guardSteps.reduce((a, [t0, t1]) => a + ramp(t, t0, t1) * 6, 0),
+  stride: Math.max(...guardSteps.map(([t0, t1]) => Math.sin(Math.PI * ramp(t, t0, t1)) * 0.5)),
+  rightArm: guardRightArm(t),
 });
 
 // ---------- 书拿在手上 ----------
 // 书（合上的那本，书.tsx 的 ClosedBook 坐标）在屋里的变换。拿起前摊在桌上；拿起以后跟着刘心忠的右手；交书以后跟着卫兵的右臂
-const liuHand = (f: number) => new THREE.Matrix4().copy(handMatrix(liuPose(f), liuHeight, 'R'));
+const liuHand = (t: number) => new THREE.Matrix4().copy(handMatrix(liuPose(t), liuHeight, 'R'));
 let liuGripCache: THREE.Matrix4 | null = null;
-const liuGrip = () => (liuGripCache ??= new THREE.Matrix4().copy(liuHand(pickFrame)).invert().multiply(deskBookMatrix));
-const liuBookMatrix = (f: number) => (f < pickFrame ? deskBookMatrix.clone() : liuHand(Math.min(f, handoffFrame)).multiply(liuGrip()));
-const guardArmWorld = (f: number) => guardWorldMatrix(f).multiply(guardRightArmMatrix(guardRightArm(f)));
+const liuGrip = () => (liuGripCache ??= new THREE.Matrix4().copy(liuHand(pickSec)).invert().multiply(deskBookMatrix));
+const liuBookMatrix = (t: number) => (t < pickSec ? deskBookMatrix.clone() : liuHand(Math.min(t, handoffSec)).multiply(liuGrip()));
+const guardArmWorld = (t: number) => guardWorldMatrix(t).multiply(guardRightArmMatrix(guardRightArm(t)));
 let guardGripCache: THREE.Matrix4 | null = null;
-const guardGrip = () => (guardGripCache ??= guardArmWorld(handoffFrame).invert().multiply(liuBookMatrix(handoffFrame)));
-export const bookMatrix = (f: number): THREE.Matrix4 => (f < handoffFrame ? liuBookMatrix(f) : guardArmWorld(f).multiply(guardGrip()));
-export const bookOnHand = (f: number) => f >= pickFrame;
+const guardGrip = () => (guardGripCache ??= guardArmWorld(handoffSec).invert().multiply(liuBookMatrix(handoffSec)));
+export const bookMatrix = (t: number): THREE.Matrix4 => (t < handoffSec ? liuBookMatrix(t) : guardArmWorld(t).multiply(guardGrip()));
+export const bookOnHand = (t: number) => t >= pickSec;
 
 // ---------- 镜头 ----------
 const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({
@@ -373,12 +357,12 @@ const shot2bCam: Cam = { pos: [pageCenter[0] - 0.1, pageCenter[1], pageCenter[2]
 // 递书：北墙下高处往南俯看，两人隔着书桌一左一右（卫兵在西、刘心忠在东），书在中间；背后是南墙。机位比两人的头高，卫兵离墙近也不会挡半个画面
 const shot3aCam: Cam = { pos: [6.4, -1.25, 2.45], tgt: [6.4, -2.8, 1.0], lens: 16 };
 const shot3bCam: Cam = { pos: [6.4, -1.3, 2.42], tgt: [6.4, -2.8, 1.02], lens: 16.5 };
-export const localCam = (frame: number): Cam => {
-  if (frame < shot2End) return lerpCam(shot2aCam, shot2bCam, ramp(frame, shot1End, shot2End));
-  return lerpCam(shot3aCam, shot3bCam, ramp(frame, shot2End, END));
+const localCam = (t: number): Cam => {
+  if (t < shot2End) return lerpCam(shot2aCam, shot2bCam, ramp(t, shot1End, shot2End));
+  return lerpCam(shot3aCam, shot3bCam, ramp(t, shot2End, END));
 };
-export const camAt = (frame: number): Cam => {
-  if (frame < shot1End) return pitCam(frame);
-  const local = localCam(frame);
+export const camAt = (t: number): Cam => {
+  if (t < shot1End) return pitCam(t);
+  const local = localCam(t);
   return { pos: roomToWorld(local.pos), tgt: roomToWorld(local.tgt), lens: local.lens, roll: local.roll };
 };

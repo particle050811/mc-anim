@@ -1,7 +1,7 @@
 // 6-4-6 追来、6-4-7 贪功两段共用的追兵戏（古城4x）：二人从传送门一路强者跳过来、落进场子、站住说话，6-4-7 刘心忠一跳踩下去。
-// 两段和 6-4-5 一条时钟：追兵钟 τ = 秒，从 6-4-5 第 0 帧起。6-4-5 → 6-4-6 → 6-4-7 都是硬切、不共用帧（用户 10-18 定的段界规矩），后一段第 0 帧是前一段末帧的下一刻：
-//   6-4-6 第 f 帧 τ = (6-4-5 帧数 + 砍头 + f) / 24；6-4-7 第 f 帧 τ = (6-4-5 帧数 + 砍头 + 6-4-6 帧数 + f) / 24。
-//   砍头：6-4-6 开头 14 帧二人在城心大殿里、巷子的洞顶把他们整个挡住（机位怎么挪都看不到），用户 10-19 让挪机位或删挡的，这里直接从他们出来那一刻起；那 14 帧追兵在画外。
+// 两段和 6-4-5 一条时钟：追兵钟 τ = 秒，从 6-4-5 第 0 秒起。6-4-5 → 6-4-6 → 6-4-7 都是硬切、不共用帧（用户 10-18 定的段界规矩），后一段 0 秒是前一段末帧的下一帧：
+//   6-4-6 第 t 秒 τ = 6-4-5 段长 + 砍头 + t；6-4-7 第 t 秒 τ = 6-4-5 段长 + 砍头 + 6-4-6 段长 + t。
+//   砍头：6-4-6 开头 7/12 秒二人在城心大殿里、巷子的洞顶把他们整个挡住（机位怎么挪都看不到），用户 10-19 让挪机位或删挡的，这里直接从他们出来那一刻起；那 7/12 秒追兵在画外。
 // 地点、落点、离地都在 ../古城4x布局.ts（`pursuerPath`、`liuXinzhongPursuitPath`、`pursuerStops`、`liuXinzhongStompPoint`、`huangPanLanding647`、`shrieks.第三次` / `第四次`、`handoffs.pursuerStart` / `六四八首`）。
 //
 // 戏：
@@ -16,7 +16,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { walkPose } from '../../../角色/追兵.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
-import { crouchPose, landPose, mixPose, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { crouchPose, landPoseSec, mixPose, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import * as K3 from '../6-4-3/编排.ts';
 import * as K645 from '../6-4-5/编排.ts';
 import {
@@ -24,18 +24,19 @@ import {
   shrieks, allWool, footOf, withHang, type BlockPos, type Jump,
 } from '../../../地点/古城4x/布局.ts';
 import { buildEliteRoute, eliteAirPose } from './走位.ts';
+import { segFps } from '@engine/段/段定义.ts';
 import { computeChain, cellKey } from './振动链.ts';
 
-export const FPS = 24;
-// ---------- 段长、时钟 ----------
+// ---------- 段长、时钟（秒） ----------
 // 黄叛那句说完只留 0.4 秒（站着不动）；第三、四次尖啸隔 10.9 秒（> 10 秒冷却，振动链在下面自己核）
-export const headTrim646 = 14;
-export const frameCount646 = 278;
-export const frameCount647 = 157; // 末帧 = 第四次尖啸后 1.0 秒
-export const τ646 = (f: number) => (K645.frameCount + headTrim646 + f) / FPS;
-export const τ647 = (f: number) => (K645.frameCount + headTrim646 + frameCount646 + f) / FPS;
+export const headTrim646 = 7 / 12;
+export const durationSec646 = 139 / 12;
+// 6-4-7 末帧在第 6.5 秒（= 第四次尖啸后 1.0 秒），段长再多一帧（原来是 157/24，多的是 1/24 秒一格，用户 11-16 定不留 1/24 秒的格）
+export const durationSec647 = 6.5 + 1 / segFps;
+export const τ646 = (t: number) => K645.durationSec + headTrim646 + t;
+export const τ647 = (t: number) => K645.durationSec + headTrim646 + durationSec646 + t;
 export const startSec647 = τ647(0);
-const endSec647 = τ647(frameCount647 - 1);
+const endSec647 = τ647(durationSec647 - 1 / segFps); // 6-4-7 末帧
 
 // ---------- 6-4-6：两路强者跳 ----------
 export const huangRoute = buildEliteRoute(pursuerPath, pursuerApexHeights, handoffs.pursuerStart.relSec645, pursuerStops.黄, '黄');
@@ -50,25 +51,26 @@ const stompDelay = (Math.floor(dist(liuXinzhongStompPoint, cellCenter(shrieks.fo
 export const stompSec = fourthShriekSec - stompDelay;
 const liuStompJumpRaw = eliteLeap(footOf(pursuerStops.刘), liuXinzhongStompPoint, liuXinzhongStompApex);
 // 踩的这一跳顶点停得最久（`withHang` 第 4 档），落下来最快、最重；跟跳停得短
-export const liuStompJump: Jump = withHang(eliteLeap(footOf(pursuerStops.刘), liuXinzhongStompPoint, liuXinzhongStompApex, (stompSec - liuStompJumpRaw.T) * FPS, FPS), 4);
+// f0、f1 是追兵钟的秒（每秒 1 格）
+export const liuStompJump: Jump = withHang(eliteLeap(footOf(pursuerStops.刘), liuXinzhongStompPoint, liuXinzhongStompApex, stompSec - liuStompJumpRaw.T), 4);
 // 黄叛：比第四次晚一点落地（冷却里），蹲 0.25 秒，再起步往西走、到末帧正好 1.6 米/秒走到 衔接.六四八首.黄
 const huangWalkSec = (2 * dist(huangPanLanding647, handoffs.handoffTo648.黄)) / handoffs.handoffTo648.walkSpeed; // 从 0 匀加速到 1.6 米/秒走完这一截
 const huangLandSec = endSec647 - huangWalkSec - elite.landingSquatSec;
 const huangJumpRaw = eliteLeap(footOf(pursuerStops.黄), huangPanLanding647, liuXinzhongStompApex);
-export const huangFollowJump: Jump = withHang(eliteLeap(footOf(pursuerStops.黄), huangPanLanding647, liuXinzhongStompApex, (huangLandSec - huangJumpRaw.T) * FPS, FPS), 2);
+export const huangFollowJump: Jump = withHang(eliteLeap(footOf(pursuerStops.黄), huangPanLanding647, liuXinzhongStompApex, huangLandSec - huangJumpRaw.T), 2);
 // 刘心忠：重重一踩，蹲 0.2 秒，然后同样匀加速走到 衔接.六四八首.刘
 const liuCrouchSec = 0.2;
 const liuWalkSec = (2 * dist(liuXinzhongStompPoint, handoffs.handoffTo648.刘)) / handoffs.handoffTo648.walkSpeed;
 const liuWalkStartSec = endSec647 - liuWalkSec;
 
 // ---------- 振动链（两段一起算） ----------
-const cooldownUntil = (K3.shriek ? K3.shriek.t - K3.storySecAt(K645.startGlobalFrame) : -99) + vanilla.warningCooldownSec; // 第二次尖啸（6-4-3 挥刀）的冷却
+const cooldownUntil = (K3.shriek ? K3.shriek.t - K3.storySecAt(K645.startGlobalSec) : -99) + vanilla.warningCooldownSec; // 第二次尖啸（6-4-3 挥刀）的冷却
 export const chain = computeChain(
   [
     ...huangRoute.vibrations,
     ...liuRoute.vibrations,
     { 名: '刘心忠踩', t: stompSec, p: liuXinzhongStompPoint },
-    { 名: '黄叛跟跳落地', t: huangFollowJump.f1 / FPS, p: huangFollowJump.p1 },
+    { 名: '黄叛跟跳落地', t: huangFollowJump.f1, p: huangFollowJump.p1 },
   ],
   cooldownUntil,
   Object.values(allWool),
@@ -87,16 +89,17 @@ const walk = (loc: V3, yaw: number, phase: number, amp: number) => walkPose(loc,
 const west = yawTo(-1, 0);
 // 6-4-7：站定 → 起跳蓄力 → 空中 → 落地蹲 → 匀加速往西走（相位按走过的路，每米 4 弧度，同 6-4-8）
 const pose647 = (τ: number, leap: Jump, crouchSec: number, walkStartSec: number, target: V3, standPose: FigurePose, crouchDepth = 1): FigurePose => {
-  const frame = τ * FPS;
-  if (frame < leap.f0 - elite.takeoffCrouchSec * FPS) return standPose;
-  if (frame < leap.f0) return mixPose(standPose, takeoffPose(leap.p0, leap.yaw, (frame - (leap.f0 - elite.takeoffCrouchSec * FPS)) / (elite.takeoffCrouchSec * FPS)), Math.min(1, (frame - (leap.f0 - elite.takeoffCrouchSec * FPS)) / 3));
-  if (frame < leap.f1) return eliteAirPose(leap, frame);
-  const sinceLand = τ - leap.f1 / FPS;
+  const crouchStart = leap.f0 - elite.takeoffCrouchSec;
+  // 站姿 1/8 秒混进蓄力
+  if (τ < crouchStart) return standPose;
+  if (τ < leap.f0) return mixPose(standPose, takeoffPose(leap.p0, leap.yaw, (τ - crouchStart) / elite.takeoffCrouchSec), Math.min(1, (τ - crouchStart) / (1 / 8)));
+  if (τ < leap.f1) return eliteAirPose(leap, τ);
+  const sinceLand = τ - leap.f1;
   if (τ < walkStartSec || sinceLand < crouchSec) {
     const k = Math.min(1, sinceLand / Math.max(crouchSec, 0.01));
     const depth = crouchDepth * (k < 0.3 ? 0.7 + 0.3 * (k / 0.3) : 1 - 0.6 * ((k - 0.3) / 0.7));
     const yaw = leap.yaw + (west - leap.yaw) * Math.min(1, sinceLand / 0.5);
-    return sinceLand < crouchSec ? landPose(leap.p1, leap.yaw, sinceLand * FPS, crouchSec * FPS, 0.4) : crouchPose(leap.p1, yaw, Math.max(0, depth), 0);
+    return sinceLand < crouchSec ? landPoseSec(leap.p1, leap.yaw, sinceLand, crouchSec, 0.4) : crouchPose(leap.p1, yaw, Math.max(0, depth), 0);
   }
   // 匀加速：路程 = ½ a u²，到末帧速度 = 步速
   const walkElapsed = τ - walkStartSec;
@@ -110,11 +113,11 @@ const pose647 = (τ: number, leap: Jump, crouchSec: number, walkStartSec: number
   return walk(loc, west, walkDist * 4, Math.min(1, speed / 1.0));
 };
 export const huangPanPose = (τ: number, standPose?: (loc: V3, yaw: number) => FigurePose): FigurePose => {
-  if (τ < huangFollowJump.f0 / FPS - elite.takeoffCrouchSec) return huangRoute.pose(τ, standPose);
-  return pose647(τ, huangFollowJump, elite.landingSquatSec, huangFollowJump.f1 / FPS + elite.landingSquatSec, handoffs.handoffTo648.黄, huangRoute.pose(huangFollowJump.f0 / FPS - elite.takeoffCrouchSec, standPose));
+  if (τ < huangFollowJump.f0 - elite.takeoffCrouchSec) return huangRoute.pose(τ, standPose);
+  return pose647(τ, huangFollowJump, elite.landingSquatSec, huangFollowJump.f1 + elite.landingSquatSec, handoffs.handoffTo648.黄, huangRoute.pose(huangFollowJump.f0 - elite.takeoffCrouchSec, standPose));
 };
 export const liuXinzhongPose = (τ: number, standPose?: (loc: V3, yaw: number) => FigurePose): FigurePose => {
-  if (τ < liuStompJump.f0 / FPS - elite.takeoffCrouchSec) return liuRoute.pose(τ, standPose);
-  return pose647(τ, liuStompJump, liuCrouchSec, liuWalkStartSec, handoffs.handoffTo648.刘, liuRoute.pose(liuStompJump.f0 / FPS - elite.takeoffCrouchSec, standPose), 1.15);
+  if (τ < liuStompJump.f0 - elite.takeoffCrouchSec) return liuRoute.pose(τ, standPose);
+  return pose647(τ, liuStompJump, liuCrouchSec, liuWalkStartSec, handoffs.handoffTo648.刘, liuRoute.pose(liuStompJump.f0 - elite.takeoffCrouchSec, standPose), 1.15);
 };
 export { west as west };

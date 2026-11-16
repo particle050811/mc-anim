@@ -19,8 +19,8 @@ const lookAtCeiling = (() => {
 const freezeSec = geom.deflect + 0.25; // 看见闪光（光一下就到）+ 反应 0.25 秒
 // 弓的贴图照原版换：1.2 秒开始拉（pulling），pull 按拉了几秒涨（1 秒拉满），2.6 秒放箭后换回 bow
 const drawStartSec = 1.2;
-export const huangpan = (globalFrame: number): { pose: FigurePose; bow: BowTexture } => {
-  const t = storySecAt(globalFrame);
+export const huangpan = (g: number): { pose: FigurePose; bow: BowTexture } => {
+  const t = storySecAt(g);
   const draw = smoothstep01((t - drawStartSec) / 0.4);
   let pose = drawBowPose(geom.huangPanFeet, geom.huangPanFacing, 0, geom.huangPanPitch, draw);
   if (draw <= 0) pose = { ...standPose(geom.huangPanFeet), yaw: geom.huangPanFacing, headPitch: geom.huangPanPitch, armL: 8, armLRoll: 4, armR: 12, armRRoll: 6, elbowR: 15 };
@@ -53,8 +53,8 @@ const liuLookAtLiYing = (() => {
   const toLiYing = sub(add(geom.FOOT, [0, 0, 1.2]), add(geom.liuXinzhongFoot, [0, 0, 1.7]));
   return { yaw: yawTo(toLiYing[0], toLiYing[1]), pitch: (Math.atan2(toLiYing[2], Math.hypot(toLiYing[0], toLiYing[1])) * 180) / Math.PI };
 })();
-export const liuxinzhong = (globalFrame: number): FigurePose => {
-  const t = storySecAt(globalFrame);
+export const liuxinzhong = (g: number): FigurePose => {
+  const t = storySecAt(g);
   const leanIn = smoothstep01((t - geom.deflect - 0.3) / 0.4);
   return { ...standPose(geom.liuXinzhongFoot), yaw: liuLookAtLiYing.yaw, headPitch: liuLookAtLiYing.pitch + 12 * leanIn, pitch: 4 * leanIn, armR: 18, armRRoll: 4, armL: 6, armLRoll: 4, elbowL: 10 };
 };

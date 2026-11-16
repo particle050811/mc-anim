@@ -1,7 +1,7 @@
-// 7-4-1 风筝的画面：戏.ts 里剧情时刻 T 的状态按 编排.ts 的机位画出来（T = 编排.ts 的 剧情T(f)）。场景是放大 4 倍的新城（6-4-1/古城画面.tsx 的 古城4x画布），李樱一路垫的羊毛（到 V）。
+// 7-4-1 风筝的画面：戏.ts 里剧情时刻 T 的状态按 编排.ts 的机位画出来（T = 编排.ts 的 storyT(sec)）。场景是放大 4 倍的新城（6-4-1/古城画面.tsx 的 古城4x画布），李樱一路垫的羊毛（到 V）。
 // 特效全用现成的，画法同 ../7-3/画面.tsx：苦力怕迫击炮（头、尾烟、爆炸粒子、放大的冲击波环）、监守者音波粒子、幽灵马的附魔字母；
 //   风矢同 6-4-3（每一支都有弓前鼓风机虚影和风道，../7-1/弓前风扇.tsx；1000 米/秒的箭），身上插的箭跟着身子走、倒下时跟着倒；死后 1 秒白烟。
-// 编排的帧是 1/24 秒一格，按秒换算；声音、台词照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 声音.tsx。
+// 声音、台词照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { definePicture } from '@engine/段/段画面.tsx';
@@ -40,18 +40,20 @@ const particles: ParticleSpawn[] = (() => {
   return out;
 })();
 
-export const KitePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam }) => {
+// 刘心忠说话时头随字轻点（withTalkNod）：句子的 帧 写段内秒，每秒给 1
+const nodCues = choreo.lines.map(({ id, startSec }) => ({ id, 帧: startSec }));
+export const KitePicture: React.FC<{ sec: number; cam?: Cam }> = ({ sec, cam }) => {
   const { width, height } = useVideoConfig();
-  const T = choreo.storyT(frame);
+  const T = choreo.storyT(sec);
   const horse = play.horseState(T);
   const warden = play.wardenState(T);
   const huangPan = play.huangPanState(T);
   return (
-    <AncientCity4xCanvas 段="7-4-1" cam={cam ?? choreo.camera(frame)} width={width} height={height} wool={woolBlocks}>
+    <AncientCity4xCanvas 段="7-4-1" cam={cam ?? choreo.camera(sec)} width={width} height={height} wool={woolBlocks}>
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
         <SpectralSteed 秒={T} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
       </group>
-      <LiuXinzhong pose={withTalkNod(choreo.liuXinzhongPose(frame), choreo.lines.map(({ id, 开口帧: speechStartFrame }) => ({ id, 帧: speechStartFrame })), '刘心忠', frame)} />
+      <LiuXinzhong pose={withTalkNod(choreo.liuXinzhongPose(sec), nodCues, '刘心忠', sec, 1)} />
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
         {/* 跑起来往前扑（同 7-3） */}
         <group rotation={[rad(warden.forwardLean), 0, 0]}>
@@ -77,6 +79,5 @@ export const KitePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam 
   );
 };
 
-export const kiteFrameCount = choreo.END;
-export const Kite: React.FC = () => <KitePicture f={useCurrentSec() * choreo.FPS} />;
+export const Kite: React.FC = () => <KitePicture sec={useCurrentSec()} />;
 export default definePicture(seg, soundUrl, Kite);

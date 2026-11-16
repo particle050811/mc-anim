@@ -1,7 +1,7 @@
 // 九胡：林道上被甩开的跑法，S3 起被传送进迷宫后顺通道跑向中心（6-1-3 接着用同一路线）。
 import { track } from '@engine/anim/anim.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { FPS, S3, END, real, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
+import { S3, END, real, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
 import { makeTrail, trailOn } from './折线.ts';
 import { START_L } from './李樱.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
@@ -9,21 +9,21 @@ import { smoothstep01 } from '@engine/core/数学.ts';
 // ---------- 九胡：晚 1 秒起跑，10 米/秒，被远远甩开；S3 她已被传送进迷宫 ----------
 // 用户 10-01：酒狐有跟随主人的设定，主人走远会被瞬移过去，所以最后直接出现在迷宫里；下一段 6-1-3 她跑到中心，二人从中心起飞。
 const JH_OFF = -0.6; // 起跑时站在李樱左手边
-export const JH_GO = GO + 20;
-const V_JH = 10 / FPS;
-const JH_ACC = 10;
-export const jhDist = (frame: number) => {
-  const realFrame = real(frame);
-  return realFrame <= JH_GO ? 0 : realFrame <= JH_GO + JH_ACC ? (V_JH * (realFrame - JH_GO) ** 2) / (2 * JH_ACC) : (V_JH * JH_ACC) / 2 + V_JH * (realFrame - JH_GO - JH_ACC);
+export const JH_GO = GO + 20 / 24;
+const V_JH = 10;
+const JH_ACC = 10 / 24;
+export const jhDist = (t: number) => {
+  const realT = real(t);
+  return realT <= JH_GO ? 0 : realT <= JH_GO + JH_ACC ? (V_JH * (realT - JH_GO) ** 2) / (2 * JH_ACC) : (V_JH * JH_ACC) / 2 + V_JH * (realT - JH_GO - JH_ACC);
 };
 export const JH_STRIDE = 2.8; // 一个周期（两步）跑 2.8 格：10 米/秒下每秒 3.6 个周期
-export const jiuhu = (frame: number) => {
-  if (frame >= S3) return jiuhuMaze(frame - S3);
-  const dist = jhDist(frame);
+export const jiuhu = (t: number) => {
+  if (t >= S3) return jiuhuMaze(t - S3);
+  const dist = jhDist(t);
   const laneDist = START_L - dist;
   const ph = (2 * Math.PI * dist) / JH_STRIDE;
-  const run = track([[JH_GO, 0], [JH_GO + 4, 1]], frame);
-  const land = 1 - smoothstep01((frame - 1) / 6);
+  const run = track([[JH_GO, 0], [JH_GO + 4 / 24, 1]], t);
+  const land = 1 - smoothstep01((t - 1 / 24) / (6 / 24));
   const swing = 52 * Math.sin(ph) * run;
   const hop = Math.abs(Math.sin(ph));
   const pose: FigurePose = {
@@ -54,15 +54,15 @@ export const JH_MAZE_PTS: [number, number, number][] = [
   [0.1, -3.6, 0], // 停下的地方
 ];
 const JH_MAZE = makeTrail(JH_MAZE_PTS);
-// 时间 t = 传送后过了几帧（6-1-2 的 S3 那一帧是 0；6-1-3 的第 0 帧接 6-1-2 末帧，t = MAZE_T612）
-const MZ_LOOK = 4; // 刚被传送过来，站着愣 4 帧（看一眼中心的方向）
-const MZ_ACC = 8; // 8 帧加到 10 米/秒
-const MZ_DEC = 12; // 刹车用 12 帧，滑出 2.5 格，正好停在路线终点
-const MZ_CRUISE = (JH_MAZE.len - (V_JH * MZ_ACC) / 2 - (V_JH * MZ_DEC) / 2) / V_JH; // 全速跑几帧
-export const MAZE_T612 = END - 1 - S3;
+// 时间 t = 传送后过了几秒（6-1-2 的 S3 那一刻是 0；6-1-3 的第 0 秒接着 6-1-2 段尾，t = MAZE_T612）
+const MZ_LOOK = 4 / 24; // 刚被传送过来，站着愣 4 格（看一眼中心的方向）
+const MZ_ACC = 8 / 24; // 1/3 秒加到 10 米/秒
+const MZ_DEC = 0.5; // 刹车用 0.5 秒，滑出 2.5 格，正好停在路线终点
+const MZ_CRUISE = (JH_MAZE.len - (V_JH * MZ_ACC) / 2 - (V_JH * MZ_DEC) / 2) / V_JH; // 全速跑几秒
+export const MAZE_T612 = END - S3;
 export const MAZE_ARRIVE = MZ_LOOK + MZ_ACC + MZ_CRUISE + MZ_DEC;
-// 开跑 4 帧后边跑边喊「等等我啊，狗修金Sama！」（用户 10-20：从她开始跑的这个镜头就喊），一口气连读下来，刹车前说完；说进 6-1-3 的后半截那边接着放
-export const MAZE_SHOUT = MZ_LOOK + 4;
+// 开跑 4 格后边跑边喊「等等我啊，狗修金Sama！」（用户 10-20：从她开始跑的这个镜头就喊），一口气连读下来，刹车前说完；说进 6-1-3 的后半截那边接着放
+export const MAZE_SHOUT = MZ_LOOK + 4 / 24;
 export const mazeDist = (t: number) => {
   const elapsed = t - MZ_LOOK;
   if (elapsed <= 0) return 0;
@@ -78,12 +78,12 @@ export const jiuhuMaze = (t: number) => {
   const [x, y, dir] = mazeAt(dist);
   const ph = (2 * Math.PI * dist) / JH_STRIDE;
   const elapsed = t - MZ_LOOK;
-  const run = smoothstep01(elapsed / 3) * (1 - smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.4) / (MZ_DEC * 0.6)));
-  const brake = smoothstep01((elapsed - MZ_ACC - MZ_CRUISE) / 4) * (1 - smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC) / 6));
-  const stopped = smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.6) / 8);
+  const run = smoothstep01(elapsed / (3 / 24)) * (1 - smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.4) / (MZ_DEC * 0.6)));
+  const brake = smoothstep01((elapsed - MZ_ACC - MZ_CRUISE) / (4 / 24)) * (1 - smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC) / (6 / 24)));
+  const stopped = smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.6) / (8 / 24));
   const swing = 52 * Math.sin(ph) * run;
   const hop = Math.abs(Math.sin(ph));
-  const look = 1 - smoothstep01(elapsed / 4);
+  const look = 1 - smoothstep01(elapsed / (4 / 24));
   const pose: FigurePose = {
     loc: [x, y, 0.18 * hop * run],
     pitch: -14 * run + 10 * brake,
@@ -98,5 +98,5 @@ export const jiuhuMaze = (t: number) => {
     armLRoll: 10 * stopped,
     yaw: dir - 90,
   };
-  return { pose, gait: ph / (2 * Math.PI), run, bend: 0, tail: ph / 2 + 0.25 * Math.max(0, elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC) };
+  return { pose, gait: ph / (2 * Math.PI), run, bend: 0, tail: ph / 2 + 6 * Math.max(0, elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC) }; // 停下后尾巴每秒摆 6（原来每格 0.25）
 };

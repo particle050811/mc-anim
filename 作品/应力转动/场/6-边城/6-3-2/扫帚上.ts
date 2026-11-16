@@ -1,4 +1,4 @@
-// 6-3-2 思索开头：扫帚上的戏和镜头（编排，纯函数）。6-3 下坠共用时间线上 6-3-1 和 6-3-3 之间的窗口（负的全局帧，见 6-3-下坠/时间线.ts 的 `段表`），
+// 6-3-2 思索开头：扫帚上的戏和镜头（编排，纯函数）。6-3 下坠共用时间线上 6-3-1 和 6-3-3 之间的窗口（负的全局秒，见 6-3-下坠/时间线.ts 的 `段表`），
 // 画面是 6-3-下坠/画面.tsx 画的世界（悬停的扫帚、两个人、云和城），思索界面叠在上面（思索.tsx）。
 // 思索的底色不透明（用户 10-19），界面淡入的 `uiOpen` 秒以后扫帚这边就看不见了，所以这里只排开头：接 6-3-1 末帧的机位和姿势，
 //   镜头往右前方两人中景推，李樱回头看九胡、九胡仰脸，界面在推的途中淡入盖住。之后两人停在这个样子，不再演（台词由思索里的李樱配音）。
@@ -9,13 +9,12 @@ import { broomMatrix } from '@库/角色/骑扫帚.tsx';
 import { backToTown, type BackToTownState } from '../6-3-1/编排.ts';
 import * as choreo from '../../../地点/边城/6-3-下坠/编排.ts';
 import { segTable, physicalTime, start } from '../../../地点/边城/6-3-下坠/时间线.ts';
-import { FPS } from '../../../地点/边城/6-3-2/台词.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 const D2R = Math.PI / 180;
 
-const G0 = segTable['6-3-2'].起;
-const sec = (G: number) => (G - G0) / FPS;
+const T0 = segTable['6-3-2'].起;
+const sec = (globalSec: number) => globalSec - T0;
 
 // ---------- 时刻（段内秒数） ----------
 const cues632 = {
@@ -83,9 +82,9 @@ const camera = (t: number): choreo.Cam => {
 };
 
 // ---------- 一帧的全部覆盖量（只在 6-3-2 的帧上用，类型同 6-3-1） ----------
-export const onBroomState = (globalFrame: number): BackToTownState => {
-  const t = sec(globalFrame);
-  const physSec = physicalTime(globalFrame); // 负的：两人坐在扫帚上（扫帚的矩阵、髋都不变），只换头的姿势
+export const onBroomState = (globalSec: number): BackToTownState => {
+  const t = sec(globalSec);
+  const physSec = physicalTime(globalSec); // 负的：两人坐在扫帚上（扫帚的矩阵、髋都不变），只换头的姿势
   const ly = choreo.liYing(physSec);
   const jh = choreo.jiuhu(physSec);
   const pose = { ...ly.pose, loc: [...ly.pose.loc] as V3 };

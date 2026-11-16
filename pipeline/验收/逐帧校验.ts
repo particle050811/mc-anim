@@ -12,7 +12,7 @@ import { frameCheckDir } from '../环境/作品数据.ts';
 import { dataRoot } from '../环境/配置.ts';
 import type { SegInfo } from '../清单/清单.ts';
 import { passRenderGate } from '../闸/闸.ts';
-import { fillBytesAndReport } from '../资产/随仓库.ts';
+import { fillBytesAndReport } from '../分发/随仓库.ts';
 import { perGroupWithResourcePacks } from '../资产/资产锁.ts';
 import { estimateTiming, type RunRecord } from '../运行记录/记录.ts';
 import { recordPhase } from '../运行记录/阶段.ts';

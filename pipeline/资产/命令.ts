@@ -1,9 +1,9 @@
 // anim assets add <id> <文件>：把一件已在资产表登记的资产按 sha 放进 store/（私有的进 私有/），写进登记它那一侧的资产锁：
 // 共用表 assets/registry/ 登记的写 assets/资产锁/，作品资产表 <作品根>/资产表/ 登记的写 <作品根>/资产锁/（作品按 --work 选）。
 // 从旧项目批量导入走 M2 的导入工具；这里只管单件（自制的、新生成的）。
-// anim assets vendor [--check]：照 <作品根>/随仓库.toml 重写 <作品根>/字节/（随仓库发的字节，资产/随仓库.ts）；anim assets seed：把 字节/ 补进数据根 store/。
+// anim assets vendor [--check]：照 <作品根>/随仓库.toml 重写 <作品根>/字节/（随仓库发的字节，分发/随仓库.ts）；anim assets seed：把 字节/ 补进数据根 store/。
 // anim assets measure [--check]：早先入库的音频条目补 时长/峰值/响度（资产/补量.ts）。
-// anim assets pack [--upload]：照 <作品根>/随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json；anim assets pull：按发布锁下载进数据根（资产/发布.ts）。
+// anim assets pack [--upload]：照 <作品根>/随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json；anim assets pull：按发布锁下载进数据根（分发/发布.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Command } from '../cli/命令.ts';
@@ -12,14 +12,14 @@ import { listWorks, workName, workRoot } from '../环境/作品.ts';
 import { passGate } from '../闸/闸.ts';
 import { codeRoot, relativeToCodeRoot } from '../环境/路径.ts';
 import { dataRoot } from '../环境/配置.ts';
-import { CheckContext } from '../检查/上下文.ts';
-import { uploadRelease, packRelease, pullRelease, readReleaseManifest, releaseTableName } from './发布.ts';
-import { writeReleaseLock, readReleaseLock, releaseLockName } from './发布锁.ts';
-import { fillBytes, writeRepoBundle, computeRepoBundle, readRepoManifest, repoTableName, bytesDir } from './随仓库.ts';
+import { CheckContext } from '../源码/上下文.ts';
+import { uploadRelease, packRelease, pullRelease, readReleaseManifest, releaseTableName } from '../分发/发布.ts';
+import { writeReleaseLock, readReleaseLock, releaseLockName } from '../分发/发布锁.ts';
+import { fillBytes, writeRepoBundle, computeRepoBundle, readRepoManifest, repoTableName, bytesDir } from '../分发/随仓库.ts';
 import { libName, readAssetRegistryBoth } from './资产表.ts';
 import { workResourcePackTablePath, workResourcePackSelections, workAssetLockPath, importToStore, writeAssetLock, assetLockPath, readResourcePackSelection, readAssetLock, type LockEntry } from './资产锁.ts';
 import { withAudioMetadata } from './音频量.ts';
-import { buildResourcePackOverride } from './材质包.ts';
+import { buildResourcePackOverride } from '../取材/材质包.ts';
 import { fillAudioMetadata } from './补量.ts';
 
 /** 量音频：音频文件顺手量时长、峰值、响度写进锁（默认量，false 不量） */

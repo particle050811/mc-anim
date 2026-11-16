@@ -4,7 +4,7 @@ import type { Command } from '../cli/命令.ts';
 import { UsageError, parseArgs } from '../cli/参数.ts';
 import { selectSegs } from '../清单/清单.ts';
 import { renderLevels, type RenderLevel } from '../../engine/段/设置值.ts';
-import { assembleFilm } from './拼成片.ts';
+import { assembleFilm } from '../出片/拼成片.ts';
 import { checkSelectedSegCues, runCuesBeforeRender } from '../段框架/自动.ts';
 import { codeRoot } from '../环境/路径.ts';
 import path from 'node:path';
@@ -27,7 +27,7 @@ export const composeCommands: Record<string, Command> = {
       // 用户 11-06 定：子 Agent 在 worktree 里只出静帧，整段渲染由主 Agent 合并后 --low-priority 排；这里只提醒不拦（改渲染管线本身的活要真渲）
       if (codeRoot().includes(`${path.sep}mc-anim-wt${path.sep}`) && process.env.ANIM_PRIORITY !== 'low')
         console.error('== 提醒：在 worktree 里出片。子 Agent 看效果用 anim still；整段渲染留给主 Agent 合并后用 anim --low-priority film 排（CLAUDE.md 工作纪律）');
-      // 段缺的当场渲（每段就是成片的一截，渲/渲段.ts）；--rerender 全部重渲
+      // 段缺的当场渲（每段就是成片的一截，出片/渲段.ts）；--rerender 全部重渲
       await assembleFilm(segments, { 级别: level, 名: filmName, 范围: p.位置, rerender: p.toggles.has('--rerender'), 分享版: p.toggles.has('--share'), runRecord });
     },
   },

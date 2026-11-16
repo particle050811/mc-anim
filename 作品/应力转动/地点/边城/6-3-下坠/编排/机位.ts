@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { BORDER_TOWN } from '../../../边城轮廓.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
-import { cityDefense, impactSegFrame, segTable, physicalTime, start, yawVec } from '../时间线.ts';
+import { cityDefense, impactSegSec, segTable, physicalTime, start, yawVec, boundaryFrameSec } from '../时间线.ts';
 import { add, sub } from './工具.ts';
 import { groundZ, caveCeilingZ, ancientCityFloorZ } from './地面.ts';
 import { liYing, liYingShaft, maceHeadPos } from './李樱.ts';
@@ -29,8 +29,8 @@ const withDir = (pos: V3, d: V3, lens: number): Cam => ({ pos, tgt: add(pos, [d[
 
 // 6-3-4 城防（用户 10-13：先瞭望，听到声音回头，看到金光再拿望远镜细看）。几拍之间硬切（用户 10-13），世界和物理时间连续：
 // ① 瞭望（`切墙`，段首帧）：从 6-3-3 俯冲硬切到北城墙走道里侧上方，焦距 20 斜着往西北看，慢慢西移；下坠的嘈杂到这里一下安静（声音.tsx 按距离听不见）；
-// ② 回头（`察觉`）：同一镜头，4 号先回头，其余由近到远陆续回头；③ 见光（`回看`）：硬切到他们背后高处往下看背影，再顺着目光抬到天上，推到焦距 100，停 10 帧；
-// ④ 举镜（`举镜`）：硬切到城里一侧仰看一排人举镜的中景；⑤ 镜中（`镜中`）：切进望远镜（原版镜筒遮罩），10 帧里焦距 330 拉到 1000，跟着卫兵视线追李樱，段末硬切 6-3-5。
+// ② 回头（`察觉`）：同一镜头，4 号先回头，其余由近到远陆续回头；③ 见光（`回看`）：硬切到他们背后高处往下看背影，再顺着目光抬到天上，推到焦距 100，停 5/12 秒；
+// ④ 举镜（`举镜`）：硬切到城里一侧仰看一排人举镜的中景；⑤ 镜中（`镜中`）：切进望远镜（原版镜筒遮罩），5/12 秒里焦距 330 拉到 1000，跟着卫兵视线追李樱，段末硬切 6-3-5。
 const townOrigin = borderTownPos;
 const NORTH = BORDER_TOWN.d / 2;
 const WALK = BORDER_TOWN.h + 0.5; // 走道顶面（城的局部高度）
@@ -46,15 +46,15 @@ const LENS_FIND = 100;
 const LENS_WIDE = 18;
 // 望远镜倍率放宽到焦距 1000（竖直视角 1.15°，用户 10-03）：原版缩到 1/10（焦距约 165）时他只占画面高一成，认不出头朝下举锤。他占画面高三分之一上下，遮罩照旧是原版的
 const LENS_SCOPE = 1000;
-// 切进望远镜的变焦：330 拉到 1000，10 帧（不照慢放算）
-const SCOPE_IN = { startLens: 330, frames: 10 };
+// 切进望远镜的变焦：330 拉到 1000，5/12 秒（不照慢放算）
+const SCOPE_IN = { startLens: 330, sec: 5 / 12 };
 // 镜中瞄着李樱（脚到锤头）的正中：卫兵的 `aimPoint` 在髋往锤头 0.2 处，视角 1.15° 时偏差会让锤头贴到画面下沿，所以视线跟着变焦从卫兵视线挪到他正中
 const scopeCenter = (physSec: number): V3 => {
   const ly = liYing(physSec);
   const feet = new THREE.Vector3(0, 0, 0).applyMatrix4(ly.matrix);
   return lerpV([feet.x, feet.y, feet.z], maceHeadPos(ly), 0.5);
 };
-const scopeViewDir = (G: number, eye: { pos: V3; dir: V3 }, k: number) => slerpDir(eye.dir, norm(sub(scopeCenter(WG(G)), eye.pos)), k);
+const scopeViewDir = (globalSec: number, eye: { pos: V3; dir: V3 }, k: number) => slerpDir(eye.dir, norm(sub(scopeCenter(WG(globalSec)), eye.pos)), k);
 // 两个方向之间按球面插值（转大角度时不从中间穿过去）
 const slerpDir = (fromDir: V3, toDir: V3, k: number): V3 => {
   const va = new THREE.Vector3(...fromDir);
@@ -67,30 +67,30 @@ const lensLerp = (a: number, b: number, k: number) => Math.exp(lerp(Math.log(a),
 // ④ 举镜：一排人的中景，不给单个卫兵特写（用户 10-19：「给这个人一个特写是何意味」）。镜头悬在走道里沿往城里 3.5 米、略高于走道，往北微仰看 2～5 号和停在走道上的巡逻那个，
 // 他们朝南仰着头，陆续把望远镜举到眼前。巡逻的 5 号离镜头近，放在画面右边，不挡 4 号；整镜横着慢慢往西挪 1 米
 const ROW = { pos0: town(37.5, NORTH - 6.5, WALK + 0.4), pos1: town(36.5, NORTH - 6.5, WALK + 0.4), tgt: town(39, NORTH + 2, WALK + 2.0), lens: 24 };
-const cam634 = (globalFrame: number): Cam => {
-  if (globalFrame < cityDefense.回看) {
+const cam634 = (globalSec: number): Cam => {
+  if (globalSec < cityDefense.回看) {
     // ①② 开阔的中远景：整个瞭望、回头一个镜头，慢慢平移
-    const k = smoothstep01((globalFrame - cityDefense.cutToWall) / (cityDefense.回看 - cityDefense.cutToWall));
+    const k = smoothstep01((globalSec - cityDefense.cutToWall) / (cityDefense.回看 - cityDefense.cutToWall));
     const pos = lerpV(WIDE.pos0, WIDE.pos1, k);
     return withDir(pos, norm(sub(lerpV(WIDE.tgt0, WIDE.tgt1, k), pos)), WIDE.lens);
   }
-  if (globalFrame < cityDefense.raiseScope) {
+  if (globalSec < cityDefense.raiseScope) {
     // ③ 背后往下看一排仰着的头，前 1/5 停住，再顺着目光抬到天上的金光、推到 LENS_FIND，最后 1/4 停在金光上（看见了）
-    const g0 = cityDefense.回看 + Math.round(0.2 * (cityDefense.raiseScope - cityDefense.回看));
-    const g1 = cityDefense.raiseScope - Math.round(0.25 * (cityDefense.raiseScope - cityDefense.回看));
-    const k = smoothstep01((globalFrame - g0) / (g1 - g0));
-    const viewDir = slerpDir(norm(sub(rowTarget, HIGH)), norm(sub(aimPoint(WG(globalFrame)), HIGH)), k);
-    return withDir(HIGH, viewDir, lensLerp(LENS_WIDE, LENS_FIND, smoothstep01((globalFrame - g0 - 4) / (g1 - g0 - 2))));
+    const t0 = cityDefense.回看 + 0.2 * (cityDefense.raiseScope - cityDefense.回看);
+    const t1 = cityDefense.raiseScope - 0.25 * (cityDefense.raiseScope - cityDefense.回看);
+    const k = smoothstep01((globalSec - t0) / (t1 - t0));
+    const viewDir = slerpDir(norm(sub(rowTarget, HIGH)), norm(sub(aimPoint(WG(globalSec)), HIGH)), k);
+    return withDir(HIGH, viewDir, lensLerp(LENS_WIDE, LENS_FIND, smoothstep01((globalSec - t0 - 1 / 6) / (t1 - t0 - 1 / 12))));
   }
-  if (globalFrame < cityDefense.inScope) {
-    const k = smoothstep01((globalFrame - cityDefense.raiseScope) / (cityDefense.inScope - 1 - cityDefense.raiseScope));
+  if (globalSec < cityDefense.inScope) {
+    const k = smoothstep01((globalSec - cityDefense.raiseScope) / (cityDefense.inScope - boundaryFrameSec - cityDefense.raiseScope));
     const pos = lerpV(ROW.pos0, ROW.pos1, k);
     return withDir(pos, norm(sub(lerpV(ROW.tgt, add(ROW.tgt, [-1, 0, 0]), k), pos)), ROW.lens);
   }
-  const eye = guardEye(GUARD_I, globalFrame);
-  // ⑤ 望远镜里：镜头就在他右眼上；切进来时遮罩已经在，焦距 10 帧里拉到放宽的望远镜倍率，视线同时挪到李樱正中
-  const z = smoothstep01((globalFrame - cityDefense.inScope) / SCOPE_IN.frames);
-  return { ...withDir(eye.pos, scopeViewDir(globalFrame, eye, z), lensLerp(SCOPE_IN.startLens, LENS_SCOPE, z)), scope: 1 };
+  const eye = guardEye(GUARD_I, globalSec);
+  // ⑤ 望远镜里：镜头就在他右眼上；切进来时遮罩已经在，焦距 `SCOPE_IN.sec` 秒里拉到放宽的望远镜倍率，视线同时挪到李樱正中
+  const z = smoothstep01((globalSec - cityDefense.inScope) / SCOPE_IN.sec);
+  return { ...withDir(eye.pos, scopeViewDir(globalSec, eye, z), lensLerp(SCOPE_IN.startLens, LENS_SCOPE, z)), scope: 1 };
 };
 // 镜头离卫兵的身子（脚上 0.2 到头顶 1.9 米那一段）不到 1 米就不画他：望远镜里镜头在他眼睛上
 export const hiddenGuardIdx = (cam: number[]) => {
@@ -103,27 +103,27 @@ export const hiddenGuardIdx = (cam: number[]) => {
 };
 // 6-3-5：从望远镜硬切到他左侧（垂直于抡锤的那个竖直面：锤头在他前方、头顶之间来回，见 李樱.ts 的 `STRIKE`），跟着往下掉，一直慢慢推近到砸地。
 // 正侧面抡起、砸下的弧线在画面里整段看得清；锤在右手，从左边拍身子在压路机虚影前面，虚影不挡他（用户 10-19：「6-3-5 抡锤看不出来」）
-const cam635Rel = (globalFrame: number): Cam => {
-  const g0 = segTable['6-3-5'].起;
-  const progress = smoothstep01((globalFrame - g0) / (segTable['6-3-6'].起 + impactSegFrame - g0));
+const cam635Rel = (globalSec: number): Cam => {
+  const t0 = segTable['6-3-5'].起;
+  const progress = smoothstep01((globalSec - t0) / (segTable['6-3-6'].起 + impactSegSec - t0));
   const pos: V3 = lerpV(at([0, 0, 0], 0.5, -7, 0.6), at([0, 0, 0], 0.4, -5.6, 0.5), progress);
   return { pos, tgt: at([0, 0, 0], 0.5, 0, -0.6), lens: 28 };
 };
-const cam635 = (globalFrame: number): Cam => camAbs(cam635Rel(globalFrame), liYing(WG(globalFrame)).hip);
-// 6-3-6：撞击前同 6-3-5；撞上后镜头先停在地面上方 5 米、6 帧挪到坑口正上方，再追进竖井（他上方 6 米，略偏心免得正对竖直往下），
+const cam635 = (globalSec: number): Cam => camAbs(cam635Rel(globalSec), liYing(WG(globalSec)).hip);
+// 6-3-6：撞击前同 6-3-5；撞上后镜头先停在地面上方 5 米、0.25 秒挪到坑口正上方，再追进竖井（他上方 6 米，略偏心免得正对竖直往下），
 // 打穿洞顶后跟进古城，在古城地面上方 16 米缓缓停住，看他砸地、翻身站起
-const cam636 = (globalFrame: number): Cam => {
-  const g6 = segTable['6-3-6'].起;
-  const segFrame = globalFrame - g6;
+const cam636 = (globalSec: number): Cam => {
+  const t6 = segTable['6-3-6'].起;
+  const segSec = globalSec - t6;
   const shaft = liYingShaft();
-  const ly = liYing(WG(globalFrame)).hip;
-  if (segFrame <= impactSegFrame) return camAbs(cam635Rel(globalFrame), ly);
+  const ly = liYing(WG(globalSec)).hip;
+  if (segSec <= impactSegSec) return camAbs(cam635Rel(globalSec), ly);
   const center = shaftCellCenter();
-  const start = camAbs(cam635Rel(g6 + impactSegFrame), liYing(WG(g6 + impactSegFrame)).hip);
-  const kIn = smoothstep01((segFrame - impactSegFrame) / 6);
+  const start = camAbs(cam635Rel(t6 + impactSegSec), liYing(WG(t6 + impactSegSec)).hip);
+  const kIn = smoothstep01((segSec - impactSegSec) / 0.25);
   const hover = lerp(start.pos[2], groundZ + 5, kIn);
   const stopZ = ancientCityFloorZ + 16;
-  const gap = lerp(18, 6, smoothstep01((segFrame - impactSegFrame - 6) / 18));
+  const gap = lerp(18, 6, smoothstep01((segSec - impactSegSec - 0.25) / 0.75));
   // 往下追：取「悬在坑口」和「李樱上方 gap 米」里低的那个；快到停的高度时按指数贴近
   let zz = Math.min(hover, ly[2] + gap);
   const x = zz - stopZ;
@@ -134,15 +134,15 @@ const cam636 = (globalFrame: number): Cam => {
   const cam: Cam = { pos, tgt: look, lens: zz < caveCeilingZ ? 28 : lerp(start.lens, 22, kIn) };
   // 落地以后：镜头往东、往下退到离地 4 米（竖井这列往东几格从地面到洞顶都是空的），看点在他身上，往西斜着往下看他半蹲、起身、扭头。
   // 锤砸地前 0.05 秒就开始往下落、0.6 秒到位
-  const k = smoothstep01((WG(globalFrame) - shaft.landSec + 0.05) / 0.6);
+  const k = smoothstep01((WG(globalSec) - shaft.landSec + 0.05) / 0.6);
   if (k <= 0) return cam;
   const end: Cam = { pos: [center[0] + 4, center[1] - 0.5, ancientCityFloorZ + 4], tgt: [center[0] - 1, center[1], ancientCityFloorZ + 1.0], lens: 20 };
   // 砸地不震屏、不推焦（用户 10-18 嫌冲击镜头不好，全删）
   return { pos: lerpV(cam.pos, end.pos, k), tgt: lerpV(cam.tgt, end.tgt, k), lens: lerp(cam.lens, end.lens, k) };
 };
-export const camPose = (globalFrame: number): Cam => {
-  if (globalFrame < segTable['6-3-4'].起) return diveCam(globalFrame);
-  if (globalFrame < segTable['6-3-5'].起) return cam634(globalFrame);
-  if (globalFrame < segTable['6-3-6'].起) return cam635(globalFrame);
-  return cam636(globalFrame);
+export const camPose = (globalSec: number): Cam => {
+  if (globalSec < segTable['6-3-4'].起) return diveCam(globalSec);
+  if (globalSec < segTable['6-3-5'].起) return cam634(globalSec);
+  if (globalSec < segTable['6-3-6'].起) return cam635(globalSec);
+  return cam636(globalSec);
 };

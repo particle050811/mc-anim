@@ -7,13 +7,24 @@
 // - lens 是焦距（毫米），按 36 mm 宽的横向画幅换算：水平视角 = 2·atan(18 / lens)，three 要的竖直视角再按宽高比折。
 // - roll（度）在 lookAt 之后绕视线转：cam.rotateZ(+roll)，正 = 相机逆时针转、画面里的东西顺时针转。
 //   副本差别：作品/应力转动/地点/飞行镜头.tsx 是 rotateZ(−roll)；现有镜头的 roll 只填过 0 和 180，两种写法画出来一样。
-// 把回忆拼好给你的透视机位写成 { 眼, 看, 视角（竖直，度） }（engine/三渲二/机位.tsx 的 透视机位参数），用 转透视参数 / 从透视参数 换。
-import type { V3 } from '../model/parts.tsx';
-import type { PerspectiveRigParams } from '../三渲二/机位.tsx';
-import { gameToScene, gameFacingToScene, type Origin } from './坐标.ts';
+// 把回忆拼好给你的透视机位写成 { 眼, 看, 视角（竖直，度） }（PerspectiveRigParams：定义在这里，engine/三渲二/机位.tsx 转出；core 不引别的子目录），用 转透视参数 / 从透视参数 换。
+import { gameToScene, gameFacingToScene, type Origin, type V3 } from './坐标.ts';
 import { clamp01, hermite, lerp, lerpV, rad } from './数学.ts';
 
 export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
+
+/** 三渲二的透视机位参数（engine/三渲二/机位.tsx 照它摆 three 相机） */
+export type PerspectiveRigParams = {
+  种: '透视';
+  眼: V3;
+  看: V3;
+  /** 竖直视角（度），原版默认 70 */
+  fov?: number;
+  near?: number;
+  farPlane?: number;
+  /** 不给 = 画布宽 ÷ 画布高 */
+  aspectRatio?: number;
+};
 
 /** 横向画幅一半的宽（毫米）：36 mm 全画幅 */
 export const ASPECT_HALF_WIDTH = 18;

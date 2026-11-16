@@ -96,9 +96,9 @@ const lookoutPose = (i: number, physSec: number) => {
   const lookPitch = 5 + 6 * jitter(i, 1) + glanceShift(i, physSec, 4, 60); // 看远处：略低头几度
   return { bodyYaw: bodyYaw, 头: headYaw, pitch: lookPitch };
 };
-// 第 i 个卫兵在全局帧 G 的姿势
-export const guardPoseAt = (globalFrame: number, i: number): GuardPose => {
-  const physSec = physicalTime(globalFrame);
+// 第 i 个卫兵在全局秒 T 的姿势
+export const guardPoseAt = (globalSec: number, i: number): GuardPose => {
+  const physSec = physicalTime(globalSec);
   const offset = guardOffset(i, physSec);
   const walk = i === patrol.i ? patrolState(physSec) : { 步: 0, stride: 0 };
   const lookout = lookoutPose(i, physSec);
@@ -115,15 +115,15 @@ export const guardPoseAt = (globalFrame: number, i: number): GuardPose => {
   return { raiseSpyglass: scopeRaise, headPitch, pictureHeadPitch: headPitch + SCOPE_SHOWN_LOWER * scopeRaise, headYaw: headYaw, bodyTurn: bodyYaw, offset: offset, 步: walk.步, stride: walk.stride };
 };
 // 第 i 个卫兵的右眼（场景坐标）和视线方向（望远镜视野用）：头绕脖子转，右眼在头的转轴上方 3.375 像素、往前 4.5 像素、往右 1.5625 像素（同 卫兵.tsx 望远镜目镜端面的中心）
-export const guardEye = (i: number, globalFrame: number) => {
-  const pose = guardPoseAt(globalFrame, i);
+export const guardEye = (i: number, globalSec: number) => {
+  const pose = guardPoseAt(globalSec, i);
   const yaw = (pose.bodyTurn + pose.headYaw) * D2R;
   const pitchRad = -pose.headPitch * D2R;
   const fh: V3 = [-Math.sin(yaw), Math.cos(yaw), 0];
   const right: V3 = [Math.cos(yaw), Math.sin(yaw), 0];
   const dir: V3 = [fh[0] * Math.cos(pitchRad), fh[1] * Math.cos(pitchRad), Math.sin(pitchRad)];
   const up: V3 = [-fh[0] * Math.sin(pitchRad), -fh[1] * Math.sin(pitchRad), Math.cos(pitchRad)];
-  const neck = guardNeck(i, physicalTime(globalFrame));
+  const neck = guardNeck(i, physicalTime(globalSec));
   const pos: V3 = [0, 1, 2].map((k) => neck[k] + (up[k] * 3.375 + dir[k] * 4.5 + right[k] * 1.5625) * GUARD_PX) as V3;
   return { pos, dir, fh, right };
 };

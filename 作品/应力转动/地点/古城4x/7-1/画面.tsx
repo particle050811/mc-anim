@@ -52,8 +52,8 @@ export const shotDarknessFog = 48;
 const darknessEndT = timeline.segmentStartT('7-1-2');
 
 // 场时刻 t 的人、怪、马、护盾、箭、火把、风扇虚影、粒子（不含场景和黑暗）。7-2-1 李樱远望时也画这一份（用户 10-19 定：看到的必须是第 1 场同一刻）
-// 台词开口按场时刻排成帧（t × FPS），说话的人头随字轻点（src/lib/口型.ts 的 withTalkNod）
-const sceneLineCues = Object.entries(timeline.dialogue).map(([id, line]) => ({ id, 帧: line.t * timeline.FPS }));
+// 说话的人头随字轻点（库/角色/口型.ts 的 withTalkNod）；句子的 帧 写场时刻（秒），每秒给 1
+const sceneLineCues = Object.entries(timeline.dialogue).map(([id, line]) => ({ id, 帧: line.t }));
 export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
   const warden = play.wardenState(t);
   const huangPan = play.huangPanState(t);
@@ -73,8 +73,8 @@ export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
           </group>
         );
       })}
-      <LiuXinzhong pose={withTalkNod(play.liuXinzhongPose(t), sceneLineCues, '刘心忠', t * timeline.FPS)} />
-      <HuangPan pose={withTalkNod(huangPan.pose, sceneLineCues, '黄叛', t * timeline.FPS)} bow={huangPan.bow} />
+      <LiuXinzhong pose={withTalkNod(play.liuXinzhongPose(t), sceneLineCues, '刘心忠', t, 1)} />
+      <HuangPan pose={withTalkNod(huangPan.pose, sceneLineCues, '黄叛', t, 1)} bow={huangPan.bow} />
       {horse && (
         <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
           <SpectralSteed 秒={t} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider={t >= timeline.mountT} />
