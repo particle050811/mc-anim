@@ -73,6 +73,11 @@ public final class IdleQuit {
         return System.currentTimeMillis() - lastActivity >= limit;
     }
 
+    /** 有动作在跑，或最近 ms 内收到过请求（空闲限帧用，见 Throttle） */
+    static boolean activeWithin(long ms) {
+        return IN_FLIGHT.get() > 0 || System.currentTimeMillis() - lastActivity < ms;
+    }
+
     static void begin() {
         IN_FLIGHT.incrementAndGet();
         lastActivity = System.currentTimeMillis();

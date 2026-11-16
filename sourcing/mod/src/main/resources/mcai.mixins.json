@@ -34,7 +34,8 @@
     "SingleQuadParticleAccessor",
     "TextureSheetParticleAccessor",
     "AbstractSoundInstanceAccessor",
-    "MinecraftInvoker"
+    "MinecraftInvoker",
+    "MinecraftMixin"
   ],
   "injectors": {
     "defaultRequire": 1
