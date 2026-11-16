@@ -127,6 +127,7 @@ export const voxelClipMaterial = (materialClass: MaterialClass, waterMask = 0) =
 };
 /** 体素水的材质（远裁的也算）：真下界按它换熔岩 */
 export const isVoxelWater = (m: THREE.Material | undefined) => !!m && (m === mats.get('水') || m.userData.voxelWaterClip === true);
+// 别处把体素水换成自己的材质时（真下界换熔岩），换上去的标 userData.voxelWaterSwap = true：体素世界每帧照样先换回这一帧该用的那份水（远裁的丢法跟着镜头变），换的人再照它换
 // 着色器里认四分之一块：顶点的原始位置除回格（区段角上起 0～64），按面朝外的法线往里退半格认这一面归哪一格（落在两块交界上的侧面）
 const clipVert = `vLoc = transformed / ${posScale}.0;`;
 const clipFrag = `

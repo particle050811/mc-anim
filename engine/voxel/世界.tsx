@@ -352,9 +352,9 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
       (farDrop ? clipBatches : batches)[classNo]!.加(item, farPlants && item === entry.plants ? dirs.map((x, k) => x && k !== 6) : dirs, farDrop);
     }
     if (entry.water) {
-      // 换过别的材质的（真下界换成熔岩）不动
+      // 换过别的材质的不动，标了 voxelWaterSwap 的（真下界的熔岩）除外（材质.ts `isVoxelWater`）
       const waterMat = entry.water.material as THREE.Material[];
-      if (isVoxelWater(waterMat[0])) waterMat[0] = farDrop ? voxelClipMaterial('水', farDrop) : voxelMaterial('水');
+      if (isVoxelWater(waterMat[0]) || waterMat[0]?.userData.voxelWaterSwap === true) waterMat[0] = farDrop ? voxelClipMaterial('水', farDrop) : voxelMaterial('水');
       pickDirs(entry.water, entry.water.geometry.drawRange.count / 6 > drawAllMaxFaces ? facingDirs : allWithSkirts);
       if (entry.water.visible) group.add(entry.water);
     }
