@@ -92,15 +92,15 @@ export const findCodeExceptions = (c: CheckContext, report: CheckReport): CodeEx
       }
       const segments = typeof basis.segment === 'string' ? [basis.segment] : Array.isArray(basis.segment) ? (basis.segment as string[]) : null;
       if (typeof rule !== 'string' || !d || !ts.isObjectLiteralExpression(d) || (segments === null) === (typeof basis.scene !== 'string') || typeof basis.cause !== 'string') {
-        report.错(`例外 要写成 ${exceptionName}('规矩id', 值, { 段: '<段键>'（或段键数组）或 场: '<场键>', 原因: '…' })，规矩 id、段/场、原因都用字面量`, p, line);
+        report.错(`例外 要写成 ${exceptionName}('规矩id', 值, { segment: '<段键>'（或段键数组）或 scene: '<场键>', cause: '…' })，规矩 id、段/场、原因都用字面量`, p, line);
         return;
       }
       const match = /^作品\/[^/]+\/(段|场)\/([^/]+)\//.exec(p);
       if (!match) {
         if (!r2Temp.test(p)) report.错(`例外 只写在 ${c.workPath('段/')} 或 ${c.workPath('场/')} 里（共用代码不为某一段开口子）`, p, line);
       }
-      else if (match[1] === '段' && (segmentIsArray || basis.segment !== match[2])) report.错(`${c.workPath(`段/${match[2]}`)}/ 里的例外要写 段: '${match[2]}'`, p, line);
-      else if (match[1] === '场' && typeof basis.scene === 'string' && basis.scene !== match[2]) report.错(`${c.workPath(`场/${match[2]}`)}/ 里的例外写的是 场: '${basis.scene}'`, p, line);
+      else if (match[1] === '段' && (segmentIsArray || basis.segment !== match[2])) report.错(`${c.workPath(`段/${match[2]}`)}/ 里的例外要写 segment: '${match[2]}'`, p, line);
+      else if (match[1] === '场' && typeof basis.scene === 'string' && basis.scene !== match[2]) report.错(`${c.workPath(`场/${match[2]}`)}/ 里的例外写的是 scene: '${basis.scene}'`, p, line);
       if (segments) for (const segKey of segments) r.push({ rule: rule, segment: segKey, value: literalValue(b), file: p, 行: line });
       else r.push({ rule: rule, scene: basis.scene as string, value: literalValue(b), file: p, 行: line });
     });
@@ -224,7 +224,7 @@ export const ruleCheck = async (c: CheckContext, report: CheckReport) => {
       if ((typeof x.segment === 'string') === (typeof x.scene === 'string')) continue;
       if (codeExceptionByKey.has(ruleKey(id, x))) continue;
       const moved = x.segment !== undefined ? c.exists(c.workPath(`段/${x.segment}`)) : c.exists(c.workPath(`场/${x.scene}`)) || scenes.has(x.scene!);
-      if (moved) report.错(`规矩「${id}」登记了对 ${describeScope(x)} 的例外，代码里却没有 例外('${id}', …, { ${x.segment !== undefined ? '段' : '场'}: '${x.segment ?? x.scene}', … })`, path);
+      if (moved) report.错(`规矩「${id}」登记了对 ${describeScope(x)} 的例外，代码里却没有 ${exceptionName}('${id}', …, { ${x.segment !== undefined ? 'segment' : 'scene'}: '${x.segment ?? x.scene}', … })`, path);
       else report.待(`规矩「${id}」对 ${describeScope(x)} 的例外（${describeScope(x)} 还没搬）`, path);
     }
   }

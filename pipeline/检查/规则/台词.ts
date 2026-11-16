@@ -66,9 +66,10 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
     const fullSha = lockEntry.sha256;
     const shaPrefixMatches = (s: string | undefined) => typeof s === 'string' && s.length >= 12 && fullSha.startsWith(s);
     if (!shaPrefixMatches(t.finishedSha)) report.错(`${displayName}：成品sha ${t.finishedSha ?? '（没写）'} 和资产锁里 ${t.voice} 的 ${fullSha.slice(0, 12)} 对不上：配音换过，表没跟上`, path);
-    for (const k of ['lip', 'lipManual'] as const) {
+    // 报错里照旧说中文名，盘上键是英文
+    for (const [k, label] of [['lip', '口型'], ['lipManual', '口型手修']] as const) {
       const v = t[k];
-      if (v && !shaPrefixMatches(v.finishedSha)) report.错(`${displayName}：${k} 是对着成品 ${v.finishedSha ?? '（没写）'} 做的，现在的成品是 ${fullSha.slice(0, 12)}：配音换了，${k} 过期（anim voice lip）`, path);
+      if (v && !shaPrefixMatches(v.finishedSha)) report.错(`${displayName}：${label} 是对着成品 ${v.finishedSha ?? '（没写）'} 做的，现在的成品是 ${fullSha.slice(0, 12)}：配音换了，${label} 过期（anim voice lip）`, path);
     }
   }
 

@@ -21,7 +21,7 @@ describe('材质包按段选进各段自己的指纹', () => {
   const makeSeg = (segKey: string): SegInfo => {
     const segDir = path.join(workRoot, segKey);
     fs.mkdirSync(segDir, { recursive: true });
-    fs.writeFileSync(path.join(segDir, '画面.ts'), `import image from 'asset:${smokeBlockPath}';\nexport default ['${segKey}', image];\n`);
+    fs.writeFileSync(path.join(segDir, '画面.ts'), `import 图 from 'asset:${smokeBlockPath}';\nexport default ['${segKey}', 图];\n`);
     fs.writeFileSync(path.join(segDir, '段.ts'), 'export default {};\n');
     return { key: segKey, serial: null, segmentName: segKey, 目录: segDir, 画面: path.join(segDir, '画面.ts'), segmentFile: path.join(segDir, '段.ts'), segment: { terrain: [], frameCount: 1, fps: 30, width: 16, height: 16 } } as unknown as SegInfo;
   };

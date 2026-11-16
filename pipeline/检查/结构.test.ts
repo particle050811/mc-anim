@@ -5,7 +5,7 @@ import { hardcodedProblem, layerOf, checkRendererEntry } from './规则/结构.t
 const twoScenes = {
   '作品/应力转动/清单.ts': [
     "export const manifest = [{ key: '7-甲', 章: 7 }, { key: '7-乙', 章: 7 }];",
-    "export const segDir = (key: string) => (key.startsWith('核对-') ? `核对/${key.slice(3)}` : `段/${key}`);",
+    "export const segDir = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
   '作品/应力转动/段/7-乙/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场二', sec: 5, width: 4, height: 4, terrain: [] });\n",
   '作品/应力转动/段/7-乙/画面.tsx': 'export default () => null;\n',
@@ -19,11 +19,11 @@ const twoWorks = (): FileTable => {
   const fileMap: FileTable = { 'engine/段/段定义.ts': segmentDefModule!, 'engine/段/按时取值.ts': valueAtTime!, 'engine/core/例外.ts': exception! };
   for (const workName of ['夹具甲', '夹具乙']) {
     Object.assign(fileMap, {
-      [`作品/${workName}/清单.ts`]: "export const manifest = [{ key: '1-开场', 章: 1 }];\nexport const segDir = (key: string) => `段/${key}`;\n",
+      [`作品/${workName}/清单.ts`]: "export const manifest = [{ key: '1-开场', 章: 1 }];\nexport const segDir = (键: string) => `段/${键}`;\n",
       [`作品/${workName}/段/1-开场/段.ts`]: "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '1-场一', sec: 24, width: 4, height: 4, terrain: [] });\n",
       [`作品/${workName}/段/1-开场/画面.tsx`]: 'export default () => null;\n',
       [`作品/${workName}/场/1-场一/末态.ts`]: 'export const 末态 = { x: 1 };\n',
-      [`作品/${workName}/角色.ts`]: 'export const character = 1;\n',
+      [`作品/${workName}/角色.ts`]: 'export const 角色 = 1;\n',
     });
   }
   return fileMap;
@@ -32,8 +32,8 @@ const twoWorks = (): FileTable => {
 describe('结构', () => {
   it('合规样例放行：段引自己场、场接上一场的 末态.ts、pipeline 引纯模块', async () => {
     const root = makeRepo(base(), twoScenes, {
-      '作品/应力转动/场/7-场二/时间线.ts': "import { 末态 } from '../7-场一/末态.ts';\nexport const start = 末态.x;\n",
-      '作品/应力转动/段/7-乙/画面.tsx': "import { start } from '../../场/7-场二/时间线.ts';\nimport { exception } from '@engine/core/例外.ts';\nexport default () => <div>{start}{exception('x', 1, { segment: '7-乙', cause: 'y' })}</div>;\n",
+      '作品/应力转动/场/7-场二/时间线.ts': "import { 末态 } from '../7-场一/末态.ts';\nexport const 起 = 末态.x;\n",
+      '作品/应力转动/段/7-乙/画面.tsx': "import { 起 } from '../../场/7-场二/时间线.ts';\nimport { exception } from '@engine/core/例外.ts';\nexport default () => <div>{起}{exception('x', 1, { segment: '7-乙', cause: 'y' })}</div>;\n",
       'pipeline/读.ts': "import { manifest } from '../作品/应力转动/清单.ts';\nimport 乙 from '../作品/应力转动/段/7-乙/段.ts';\nexport const n = [manifest, 乙];\n",
       '库/角色/甲.ts': "import { exception } from '../../engine/core/例外.ts';\nexport const 甲 = exception;\nexport const ns = 'http://www.w3.org/2000/svg';\n",
     });
@@ -49,7 +49,7 @@ describe('结构', () => {
       '作品/应力转动/段/7-甲/编排.ts': "import 看 from '../../核对/看看/画面.tsx';\nexport default 看;\n",
       '作品/应力转动/核对/看看/时间线.ts': 'export default 1;\n',
       '作品/应力转动/核对/再看/画面.tsx': "import 看 from '../看看/画面.tsx';\nimport 线 from '../看看/时间线.ts';\nexport default () => [看, 线];\n",
-      '作品/应力转动/场/7-场二/时间线.ts': "import { 布局 } from '../7-场一/布局.ts';\nexport const start = 布局;\n",
+      '作品/应力转动/场/7-场二/时间线.ts': "import { 布局 } from '../7-场一/布局.ts';\nexport const 起 = 布局;\n",
       'pipeline/读.ts': "import 画 from '../作品/应力转动/段/7-甲/画面.tsx';\nexport const n = 画;\n",
     });
     const v = (await runRule('structure', root)).violations.join('\n');
@@ -67,7 +67,7 @@ describe('结构', () => {
     const files = {
       '库/坏.ts': "import 没有 from './空.ts';\nexport const 坏 = 没有;\n",
       '库/空.ts': 'export const 空 = 1;\n',
-      '作品/应力转动/段/7-乙/画面.tsx': "import 甲 from '../7-甲/画面.tsx';\nimport image from 'asset:不存在/某件';\nexport default () => [甲, image];\n",
+      '作品/应力转动/段/7-乙/画面.tsx': "import 甲 from '../7-甲/画面.tsx';\nimport 图 from 'asset:不存在/某件';\nexport default () => [甲, 图];\n",
     };
     const result = (await runRule('structure', makeRepo(base(), twoScenes, files))).violations.join('\n');
     expect(result).toMatch(/打包失败，依赖图不全：库\/坏.ts:1/);
@@ -79,8 +79,8 @@ describe('结构', () => {
 
   it('纯模块闭包里有 react/remotion、asset: 都拦', async () => {
     const root = makeRepo(base(), {
-      '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nimport { frame } from './帮.ts';\nexport default defineSeg({ scene: '7-场一', sec: frame, width: 4, height: 4, terrain: [] });\n",
-      '作品/应力转动/段/7-甲/帮.ts': "import { interpolate } from 'remotion';\nimport image from 'asset:贴图/甲';\nexport const frame = 10;\nexport const x = [interpolate, image];\n",
+      '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nimport { 帧 } from './帮.ts';\nexport default defineSeg({ scene: '7-场一', sec: 帧, width: 4, height: 4, terrain: [] });\n",
+      '作品/应力转动/段/7-甲/帮.ts': "import { interpolate } from 'remotion';\nimport 图 from 'asset:贴图/甲';\nexport const 帧 = 10;\nexport const x = [interpolate, 图];\n",
     });
     const v = (await runRule('structure', root)).violations.join('\n');
     expect(v).toMatch(/纯模块的闭包里不能有 remotion：作品\/应力转动\/段\/7-甲\/段.ts → 作品\/应力转动\/段\/7-甲\/帮.ts → remotion/);
@@ -96,8 +96,8 @@ describe('结构', () => {
           "const 表 = { 甲: { 在: { sec: 1 }, basis: '说明' } };",
           "const 传 = { basis: 表.甲.basis ?? '', 又: 1 };",
           'const 传二 = { basis: 表.甲.basis };',
-          'export const char = 表.甲.basis;',
-          "export const 字二 = 表.甲['依据'];",
+          'export const 字 = 表.甲.basis;',
+          "export const 字二 = 表.甲['basis'];",
           'const { basis } = 表.甲;',
           'export default () => <div>{basis}{传.又}{传二.basis ? 1 : 0}</div>;',
           '',
@@ -125,13 +125,13 @@ describe('结构', () => {
       'engine/段/设置.ts': "import { getInputProps } from 'remotion';\nexport const 读 = () => getInputProps();\n",
       '作品/应力转动/段/7-甲/画面.tsx': [
         "import { getInputProps } from 'remotion';",
-        "import image from './图.png';",
+        "import 图 from './图.png';",
         'export const 乱 = Math.random() + Date.now();',
-        "export const lane = '/Users/particle/x.bin';",
+        "export const 路 = '/Users/particle/x.bin';",
         "export const 网 = 'http://192.168.1.5:8080/a';",
         "export const 目录 = assetDir({ './键.png': 0 });",
         "export const 藏 = { './混进来.png': 0 };",
-        'export default () => <img src={image} title={String(getInputProps())} />;',
+        'export default () => <img src={图} title={String(getInputProps())} />;',
       ].join('\n'),
       '作品/应力转动/段/7-甲/图.png': Buffer.from([0x89, 0x50]),
     });
@@ -153,9 +153,9 @@ describe('结构', () => {
         "import { exception } from '@engine/core/例外.ts';",
         "import { 路人 } from '@库/角色/路人.ts';",
         "import { 路人 as 同一个 } from '../../../../库/角色/路人.ts';",
-        "import { character } from '../../角色.ts';",
+        "import { 角色 } from '../../角色.ts';",
         "import { 末态 } from '../../场/1-场一/末态.ts';",
-        'export default () => <div>{String([exception, 路人, 同一个, character, 末态])}</div>;',
+        'export default () => <div>{String([exception, 路人, 同一个, 角色, 末态])}</div>;',
       ].join('\n'),
     };
     for (const work of ['夹具甲', '夹具乙']) {
@@ -166,10 +166,10 @@ describe('结构', () => {
   it('作品引别的作品一律拦：同名的段、场也拦，不再按段互引、场互引报；两个方向都查', async () => {
     const mutualRefs = {
       '作品/夹具甲/段/1-开场/画面.tsx': "import 乙 from '../../../夹具乙/段/1-开场/画面.tsx';\nexport default 乙;\n",
-      '作品/夹具甲/场/1-场一/时间线.ts': "import { 末态 } from '../../../夹具乙/场/1-场一/末态.ts';\nexport const start = 末态.x;\n",
-      '作品/夹具甲/角色.ts': "import { character } from '../夹具乙/角色.ts';\nexport { character };\n",
-      '作品/夹具甲/核对/看看/画面.tsx': "import { character } from '../../../夹具乙/角色.ts';\nexport default () => <div>{character}</div>;\n",
-      '作品/夹具乙/段/1-开场/画面.tsx': "import { character } from '../../../夹具甲/角色.ts';\nexport default () => <div>{character}</div>;\n",
+      '作品/夹具甲/场/1-场一/时间线.ts': "import { 末态 } from '../../../夹具乙/场/1-场一/末态.ts';\nexport const 起 = 末态.x;\n",
+      '作品/夹具甲/角色.ts': "import { 角色 } from '../夹具乙/角色.ts';\nexport { 角色 };\n",
+      '作品/夹具甲/核对/看看/画面.tsx': "import { 角色 } from '../../../夹具乙/角色.ts';\nexport default () => <div>{角色}</div>;\n",
+      '作品/夹具乙/段/1-开场/画面.tsx': "import { 角色 } from '../../../夹具甲/角色.ts';\nexport default () => <div>{角色}</div>;\n",
     };
     const violationText = (await runRule('structure', makeRepo(twoWorks(), mutualRefs), { work: '夹具甲' })).violations.join('\n');
     expect(violationText).toMatch(/作品不许引用别的作品：作品\/夹具甲\/段\/1-开场\/画面.tsx → 作品\/夹具乙\/段\/1-开场\/画面.tsx/);

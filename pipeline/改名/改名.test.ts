@@ -13,46 +13,46 @@ const files: Record<string, string> = {
     include: ['*.ts'],
   }),
   'a.ts': [
-    'export type variant = { sec: number; frame: number };',
-    'export const 造 = (sec: number): variant => ({ sec, frame: 2 });',
-    'const t: { 拍: number } | { sec: number } = { 拍: 1 };',
+    'export type 型 = { 秒: number; 帧: number };',
+    'export const 造 = (秒: number): 型 => ({ 秒, 帧: 2 });',
+    'const t: { 拍: number } | { 秒: number } = { 拍: 1 };',
     "export const 拍了 = '拍' in t ? t.拍 : 0;",
     'export const 表 = { 对视: 1, 摇铃: 2 } as const satisfies Record<string, number>;',
     "export const 接: string = '对视';",
     '',
   ].join('\n'),
   'b.ts': [
-    "import { 造, type variant } from './a.ts';",
-    'const { sec } = 造(1);',
+    "import { 造, type 型 } from './a.ts';",
+    'const { 秒 } = 造(1);',
     'const seconds = 3;',
-    'export const 和 = (x: variant) => x.sec + sec + seconds;',
+    'export const 和 = (x: 型) => x.秒 + 秒 + seconds;',
     '',
   ].join('\n'),
   // 先写成没有上下文类型的字面量、再当实参传：TS 改名不连，要按结构配对
   'd.ts': [
-    "import type { variant } from './a.ts';",
-    'const value = { sec: 1, frame: 2 };',
-    'const 收 = (x: variant) => x.frame;',
-    'export const result = 收(value);',
+    "import type { 型 } from './a.ts';",
+    'const 值 = { 秒: 1, 帧: 2 };',
+    'const 收 = (x: 型) => x.帧;',
+    'export const 结果 = 收(值);',
     '',
   ].join('\n'),
   // 类型守卫里 '秒' in t 的 t 是 object：按谓词的类型认
-  'e.ts': ["import type { variant } from './a.ts';", "export const 是型 = (t: object): t is variant => '秒' in t;", "export const 秒键: keyof variant & keyof { frame: number } | keyof variant = '秒';", ''].join('\n'),
+  'e.ts': ["import type { 型 } from './a.ts';", "export const 是型 = (t: object): t is 型 => '秒' in t;", "export const 秒键: keyof 型 & keyof { 帧: number } | keyof 型 = '秒';", ''].join('\n'),
   // 字符串里写的代码：代码里的字符串（句、止）不算标识符
   'f.ts': [
-    'export type 用 = { 在: number; basis: string; 句: number; 拍: number; end: number };',
+    'export type 用 = { 在: number; 依据: string; 句: number; 拍: number; 止: number };',
     'const 样本 = "const x = { 在: 1, 依据: `第${n}句` };";',
-    "export const generated = (name: string) => `export const ${name} = { 拍: '${name}.止' };` + 样本;",
+    "export const 生成 = (名: string) => `export const ${名} = { 拍: '${名}.止' };` + 样本;",
     '',
   ].join('\n'),
   // 正片事件那种写法：键从实参推出来（Record<K, …> 没有声明），再经展开、keyof typeof 注解、as
   'c.ts': [
     'const 解 = <K extends string>(t: Record<K, number>): Record<K, string> => ({}) as Record<K, string>;',
     'const 定 = { 甲事: 1 } as const satisfies Record<string, number>;',
-    'export const events = 解(定);',
-    'const 合 = { ...events };',
+    'export const 事件 = 解(定);',
+    'const 合 = { ...事件 };',
     'export const 全: Readonly<Record<keyof typeof 合, string>> = Object.fromEntries([]) as Record<keyof typeof 合, string>;',
-    'export const 用 = 全.甲事 + events.甲事;',
+    'export const 用 = 全.甲事 + 事件.甲事;',
     '',
   ].join('\n'),
 };
@@ -99,11 +99,11 @@ describe('改名工具', () => {
     expect(rep.written).toBe(true);
     const a = fs.readFileSync(path.join(root, 'a.ts'), 'utf8');
     const b = fs.readFileSync(path.join(root, 'b.ts'), 'utf8');
-    expect(a).toContain('export const make = (s: number): variant => ({ seconds: s, frame: 2 });');
+    expect(a).toContain('export const make = (s: number): 型 => ({ seconds: s, 帧: 2 });');
     expect(a).toContain("export const 接: string = 'gaze';");
-    expect(b).toContain('const { seconds: sec } = make(1);');
+    expect(b).toContain('const { seconds: 秒 } = make(1);');
     expect(b).toContain('x.seconds + 秒 + seconds');
-    expect(fs.readFileSync(path.join(root, 'd.ts'), 'utf8')).toContain('const value = { seconds: 1, frame: 2 };');
+    expect(fs.readFileSync(path.join(root, 'd.ts'), 'utf8')).toContain('const 值 = { seconds: 1, 帧: 2 };');
     expect(fs.readFileSync(path.join(root, 'e.ts'), 'utf8')).toContain("'seconds' in t");
     expect(fs.readFileSync(path.join(root, 'e.ts'), 'utf8')).toContain("| keyof 型 = 'seconds';");
   });

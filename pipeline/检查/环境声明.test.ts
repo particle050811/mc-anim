@@ -13,7 +13,7 @@ const engineFiles = (): FileTable => ({
 const envDeclFile = (body: string): FileTable => ({
   '作品/应力转动/段/7-甲/环境.ts': `import { defineEnvironment, defineEnvTrack } from '@engine/light/环境.ts';\nimport { overworld } from '@engine/light/维度.ts';\n${body}\n`,
 });
-const baseEnv = "{ 维度: overworld, 画法: '主世界', gameTime: 6000, lightSpec: { tier: '主世界' }, fog: { 种类: '无' }, cloud: { 种类: '无' } }";
+const baseEnv = "{ dimension: overworld, 画法: '主世界', gameTime: 6000, lightSpec: { tier: '主世界' }, fog: { 种类: '无' }, cloud: { 种类: '无' } }";
 
 describe('环境声明（加载）', () => {
   it('合法的描述、环境轨放行，环境.ts 算纯模块', async () => {
@@ -45,7 +45,7 @@ describe('环境声明（加载）', () => {
   });
 
   it('没有 export default', async () => {
-    const v = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export const env = ${baseEnv};`)))).violations.join('\n');
+    const v = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export const 环境 = ${baseEnv};`)))).violations.join('\n');
     expect(v).toMatch(/要 export default/);
   });
 });
