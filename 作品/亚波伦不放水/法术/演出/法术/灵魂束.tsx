@@ -43,7 +43,7 @@ const trailColor = hexColor(0xdafdff);
 const entityHeight = 0.3125;
 
 // AdditiveSpellParticle（AlphaProvider：alpha 恒 1）：摩擦 0.96、重力 −0.1（往上飘），贴图按年龄换；bullet_effect.json 的顺序是 7 → 1
-const hitParticleClass: ParticleClass = { 帧: [bulletEffect7Png, bulletEffect6Png, bulletEffect5Png, bulletEffect4Png, bulletEffect3Png, bulletEffect2Png, bulletEffect1Png].map(png), 选帧: '按年龄', 摩擦: 0.96, 重力: -0.1, 混合: '加色' };
+const hitParticleClass: ParticleClass = { frame: [bulletEffect7Png, bulletEffect6Png, bulletEffect5Png, bulletEffect4Png, bulletEffect3Png, bulletEffect2Png, bulletEffect1Png].map(png), 选帧: '按年龄', 摩擦: 0.96, 重力: -0.1, blend: '加色' };
 
 const hitParticles = (pos: Vec3, tick: number, seed: number): ParticleBirth[] => {
   const r = mulberry32(seed);
@@ -51,12 +51,12 @@ const hitParticles = (pos: Vec3, tick: number, seed: number): ParticleBirth[] =>
     const spawnPos: Vec3 = [pos[0] + r(), pos[1] + r(), pos[2] + r()];
     // 构造函数：super(…, 0.5 − 随机, yd, 0.5 − 随机) 过父类的随机化，再 yd × 0.2（给的 xd、zd 不是 0，水平不缩）。原版粒子初速 进出都是游戏坐标（y 竖直）
     const [vx, vy, vz] = vanillaParticleInitSpeed(r, 0.5 - r(), 0.225, 0.5 - r());
-    return { 刻: tick, 位: spawnPos, 速: [vx, -vz, vy * 0.2], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)), radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75, 种子: seed + i };
+    return { 刻: tick, 位: spawnPos, 速: [vx, -vz, vy * 0.2], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)), radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75, seed: seed + i };
   });
 };
 
 // SummonTrailParticle：getQuadSize = 大小 × clamp(年龄 ÷ 寿命 × 32, 0, 1)
-const flightParticleClass: ParticleClass = { 帧: [summonTrail0Png, summonTrail1Png, summonTrail2Png, summonTrail3Png].map(png), 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', 大小: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
+const flightParticleClass: ParticleClass = { frame: [summonTrail0Png, summonTrail1Png, summonTrail2Png, summonTrail3Png].map(png), 选帧: '按年龄', 摩擦: 0.96, blend: '半透明', size: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
 
 /** 第 1 刻到命中前，每刻在弹后面留一颗 */
 const flightParticles = (trajectory: (n: number) => Vec3, hitTick: number, seed: number): ParticleBirth[] =>
@@ -66,7 +66,7 @@ const flightParticles = (trajectory: (n: number) => Vec3, hitTick: number, seed:
     const randomOffset = () => (r() / 4) * (Math.floor(r() * 3) - 1);
     // 位置 − 速度：tick 里 travel 已经把速度更新成下一刻要走的那段
     const prevPoint = sub(trajectoryPos(trajectory, n), sub(trajectoryPos(trajectory, n + 1), trajectoryPos(trajectory, n)));
-    return { 刻: n, 位: [prevPoint[0] + randomOffset(), prevPoint[1] + randomOffset(), prevPoint[2] + 0.15], 寿命: 8, radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75 * 1.5, 种子: seed + n };
+    return { 刻: n, 位: [prevPoint[0] + randomOffset(), prevPoint[1] + randomOffset(), prevPoint[2] + 0.15], 寿命: 8, radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75 * 1.5, seed: seed + n };
   });
 
 const wrapAngle = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
@@ -78,7 +78,7 @@ const straighten = (targetAngle: number, tick: number) => {
   return angleAt(n) + (angleAt(n + 1) - angleAt(n)) * (tick - n);
 };
 
-const SoulBeam: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const SoulBeam: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const trajectory = soulBeamPath(from, target, options?.highSpeed);
   const hitTick = soulBeamHitTick(from, target, options?.highSpeed);
@@ -96,14 +96,14 @@ const SoulBeam: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: tar
         <>
           <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
             <group scale={[-1.25, -1.25, 1.25]}>
-              <ModelPart 模型={soulBoltModel} 图={projectileFrames[Math.floor(tick) % 3]!} 画法="发光" opacity={0.5} partPoses={{ bolt: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
+              <ModelPart model={soulBoltModel} image={projectileFrames[Math.floor(tick) % 3]!} 画法="发光" opacity={0.5} partPoses={{ bolt: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
             </group>
           </MinecraftSpace>
-          <Band points={[centerAt(tick), centerAt(tick - 8)]} halfWidthDir={[0, 0, 0.25]} 图={png(trailPng)} uValues={[u, u + 0.5]} repeat 色={trailColor} opacity={0.6} 混合="半透明" />
+          <Band points={[centerAt(tick), centerAt(tick - 8)]} halfWidthDir={[0, 0, 0.25]} image={png(trailPng)} uValues={[u, u + 0.5]} repeat 色={trailColor} opacity={0.6} blend="半透明" />
         </>
       )}
-      <TexturedParticles 类={flightParticleClass} spawns={flightParticles(trajectory, hitTick, seed)} 秒={sec} />
-      <TexturedParticles 类={hitParticleClass} spawns={hitParticles(hitPos, hitTick, seed)} 秒={sec} />
+      <TexturedParticles type={flightParticleClass} spawns={flightParticles(trajectory, hitTick, seed)} sec={sec} />
+      <TexturedParticles type={hitParticleClass} spawns={hitParticles(hitPos, hitTick, seed)} sec={sec} />
     </>
   );
 };

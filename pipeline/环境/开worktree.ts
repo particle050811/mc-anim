@@ -28,5 +28,5 @@ export const openWorktree = async (worktreeName: string, fromRef: string) => {
     fs.cpSync(path.join(mainDir, d), path.join(targetWorktreeDir, d), { recursive: true });
     carried.push(d);
   }
-  return { 目标: targetWorktreeDir, carried };
+  return { target: targetWorktreeDir, carried };
 };

@@ -6,8 +6,8 @@ import { manifest, segDir } from './清单.ts';
 export const registration = makeRegistry({
   manifest,
   segDir,
-  模块: {
-    段: import.meta.webpackContext('./段', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
-    核对: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
+  modules: {
+    segment: import.meta.webpackContext('./段', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
+    verify: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
   },
 });

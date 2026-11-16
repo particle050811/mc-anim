@@ -51,13 +51,13 @@ export const combineRoll = (bankDeg: number, bumpRoll: number) => {
 };
 // ---------- 主体 ----------
 export type Anchor = {
-  帧: number; // 全局帧（1/fps 秒）：从这一刻起扰动为 0
+  frame: number; // 全局帧（1/fps 秒）：从这一刻起扰动为 0
   止帧?: number; // 到这一帧（含）为止都是 0；不给就是单个点
   前?: number; // 之前渐变多少帧（默认 2 秒）；0 = 不渐变（只在起帧上有意义）
   后?: number; // 之后渐变多少帧（默认 2 秒）
 };
 export type RealFlightOptions = {
-  种子: number;
+  seed: number;
   起帧: number; // 全局帧，含
   止帧: number; // 全局帧，含
   distAt: (t: number) => number; // 物理时间（秒）→ 沿航线的里程（米），单调不减
@@ -66,20 +66,20 @@ export type RealFlightOptions = {
   anchors?: Anchor[];
   vertFloor?: (dist: number) => number; // 里程 → 竖直偏移的下限（米，一般为负）
   inputGain?: (dist: number) => number; // 里程 → 0～1，乘到漂移和阵风上（急弯里压掉）
-  参数?: DeepPartial<RealFlightParams>;
+  params?: DeepPartial<RealFlightParams>;
 };
 export type DisturbFrame = {
-  lateral: number; 竖: number; latVel: number; vertVel: number; latAccel: number; vertAccel: number;
+  lateral: number; vertical: number; latVel: number; vertVel: number; latAccel: number; vertAccel: number;
   heading: number; pitch: number; angularSpeed: number; bank: number;
-  bump: { pitch: number; roll: number; facing: number; 竖: number };
+  bump: { pitch: number; roll: number; facing: number; vertical: number };
   cameraAim: { lookHeading: number; pitch: number; relHeading: number; relPitch: number };
-  weight: number; 速度: number; s: number;
+  weight: number; speed: number; s: number;
 };
 
 // 锚点前后渐变的默认长度（秒）
 const DEFAULT_FADE_SEC = 2;
 export const realFlight = (opts: RealFlightOptions) => {
-  const params = deepMerge(defaultParams, opts.参数);
+  const params = deepMerge(defaultParams, opts.params);
   const fps = opts.fps ?? 1;
   const F2T = opts.frameToTime ?? ((F: number) => F / fps);
   const step = integStepSec;
@@ -100,8 +100,8 @@ export const realFlight = (opts: RealFlightOptions) => {
 
   // 锚点窗口（物理时间）：输出窗口 w、输入窗口 wIn（提前 输入提前 倍开始渐弱）
   const anchorWins = (opts.anchors ?? []).map((a) => ({
-    Ta: F2T(a.帧),
-    Tb: F2T(a.止帧 ?? a.帧),
+    Ta: F2T(a.frame),
+    Tb: F2T(a.止帧 ?? a.frame),
     r1: a.前 === undefined ? DEFAULT_FADE_SEC : a.前 / fps,
     r2: a.后 === undefined ? DEFAULT_FADE_SEC : a.后 / fps,
   }));
@@ -122,7 +122,7 @@ export const realFlight = (opts: RealFlightOptions) => {
   const sMax = Sg[halfSteps];
   const gMin = sMin + params.gust.windSpeed * T0;
   const gMax = sMax + params.gust.windSpeed * T1;
-  const seed = opts.种子 * 7919;
+  const seed = opts.seed * 7919;
   const latDrift = drydenField(seed + 1, (params.lateral.drift * Math.PI) / 180, params.lateral.driftScale, sMin, sMax, true, params.lateral.driftHighPass);
   const vertDrift = drydenField(seed + 2, (params.vertical.drift * Math.PI) / 180, params.vertical.driftScale, sMin, sMax, true, params.vertical.driftHighPass);
   const latGust = drydenField(seed + 3, tb.σv, tb.Lv, gMin, gMax);
@@ -327,27 +327,27 @@ export const realFlight = (opts: RealFlightOptions) => {
     // 锚点区间精确返回 0：物理时刻不落在格点上时边缘那格插值会漏出 1e-4 残差，首帧要和上一段末帧逐像素一样
     if (inAnchor(time)) {
       return {
-        lateral: 0, 竖: 0, latVel: 0, vertVel: 0, latAccel: 0, vertAccel: 0, heading: 0, pitch: 0, angularSpeed: 0, bank: bankAngle(0),
-        bump: { pitch: 0, roll: 0, facing: 0, 竖: 0 }, cameraAim: { lookHeading: 0, pitch: 0, relHeading: 0, relPitch: 0 },
-        weight: 0, 速度: Li(tV), s: Li(tS),
+        lateral: 0, vertical: 0, latVel: 0, vertVel: 0, latAccel: 0, vertAccel: 0, heading: 0, pitch: 0, angularSpeed: 0, bank: bankAngle(0),
+        bump: { pitch: 0, roll: 0, facing: 0, vertical: 0 }, cameraAim: { lookHeading: 0, pitch: 0, relHeading: 0, relPitch: 0 },
+        weight: 0, speed: Li(tV), s: Li(tS),
       };
     }
     const yawRate = Li(tPsiR);
     const heading = hermiteAt(tPsi, tPsiR), pitch = hermiteAt(tTh, tThR);
     const camHeading = hermiteAt(tCP, tCPv), camPitch = hermiteAt(tCT, tCTv);
     return {
-      lateral: hermiteAt(tY, tYv), 竖: hermiteAt(tZ, tZv), latVel: hermiteAt(tYv, tYa), vertVel: hermiteAt(tZv, tZa), latAccel: Li(tYa), vertAccel: Li(tZa),
+      lateral: hermiteAt(tY, tYv), vertical: hermiteAt(tZ, tZv), latVel: hermiteAt(tYv, tYa), vertVel: hermiteAt(tZv, tZa), latAccel: Li(tYa), vertAccel: Li(tZa),
       heading: heading, pitch: pitch, angularSpeed: yawRate, bank: bankAngle(yawRate),
-      bump: { pitch: hermiteAt(tB[0], tB[1]), roll: hermiteAt(tB[2], tB[3]), facing: hermiteAt(tB[4], tB[5]), 竖: hermiteAt(tB[6], tB[7]) },
+      bump: { pitch: hermiteAt(tB[0], tB[1]), roll: hermiteAt(tB[2], tB[3]), facing: hermiteAt(tB[4], tB[5]), vertical: hermiteAt(tB[6], tB[7]) },
       cameraAim: { lookHeading: camHeading, pitch: camPitch, relHeading: camHeading - heading, relPitch: camPitch - pitch },
-      weight: Li(tW), 速度: Li(tV), s: Li(tS),
+      weight: Li(tW), speed: Li(tV), s: Li(tS),
     };
   };
 
   // 按里程查偏移：里程表单调不减，二分找第一处 ≥ s 的步
   const offsetAtDist = (dist: number) => {
-    if (dist <= tS[0]) return { lateral: tY[0], 竖: tZ[0] };
-    if (dist >= tS[steps]) return { lateral: tY[steps], 竖: tZ[steps] };
+    if (dist <= tS[0]) return { lateral: tY[0], vertical: tZ[0] };
+    if (dist >= tS[steps]) return { lateral: tY[steps], vertical: tZ[steps] };
     let lo = 0, hi = steps;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
@@ -355,7 +355,7 @@ export const realFlight = (opts: RealFlightOptions) => {
       else hi = mid;
     }
     const frac = (dist - tS[lo]) / Math.max(1e-9, tS[hi] - tS[lo]);
-    return { lateral: tY[lo] + (tY[hi] - tY[lo]) * frac, 竖: tZ[lo] + (tZ[hi] - tZ[lo]) * frac };
+    return { lateral: tY[lo] + (tY[hi] - tY[lo]) * frac, vertical: tZ[lo] + (tZ[hi] - tZ[lo]) * frac };
   };
 
   return {
@@ -364,7 +364,7 @@ export const realFlight = (opts: RealFlightOptions) => {
     combineBank: (F: number, routeYawRate: number) => bankAngle(routeYawRate + sampleAt(F).angularSpeed),
     // 同一组选项换上竖直下限重算（为什么分两遍见文件头）；横向通道和下限无关
     withVertFloor: (f: (dist: number) => number) => realFlight({ ...opts, vertFloor: f }),
-    参数: params,
+    params: params,
     turbulence: tb,
     startSec: T0,
     stepCount: steps,

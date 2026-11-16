@@ -4,13 +4,13 @@ import fs from 'node:fs';
 import { parentPort } from 'node:worker_threads';
 
 const buf = Buffer.alloc(1 << 22);
-parentPort!.on('message', (m: { 文件: string; 后缀: string }) => {
+parentPort!.on('message', (m: { file: string; suffix: string }) => {
   const h = createHash('sha256');
-  const fd = fs.openSync(m.文件, 'r');
+  const fd = fs.openSync(m.file, 'r');
   try {
     for (let n; (n = fs.readSync(fd, buf, 0, buf.length, null)) > 0; ) h.update(buf.subarray(0, n));
   } finally {
     fs.closeSync(fd);
   }
-  parentPort!.postMessage(h.update(m.后缀).digest('hex'));
+  parentPort!.postMessage(h.update(m.suffix).digest('hex'));
 });

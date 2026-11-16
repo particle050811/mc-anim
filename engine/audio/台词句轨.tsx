@@ -4,16 +4,16 @@ import React, { useMemo } from 'react';
 import { makeLineTrack } from './台词轨.tsx';
 import type { LineCue } from './台词句.ts';
 
-export const LineCueTrack: React.FC<{ lineCues: readonly LineCue[]; 声音: Readonly<Record<string, string>>; 每秒?: number }> = ({ lineCues, 声音: sounds, 每秒: perSec = 24 }) => {
+export const LineCueTrack: React.FC<{ lineCues: readonly LineCue[]; sound: Readonly<Record<string, string>>; perSec?: number }> = ({ lineCues, sound: sounds, perSec: perSec = 24 }) => {
   // 句们常是现写的数组字面量：按内容记住，免得每帧换一个组件类型、音频重挂
-  const cacheKey = lineCues.map(({ 句: sentence }) => `${sentence.id}@${sentence.成品sha}:${sounds[sentence.id] ?? ''}`).join('|');
+  const cacheKey = lineCues.map(({ 句: sentence }) => `${sentence.id}@${sentence.finishedSha}:${sounds[sentence.id] ?? ''}`).join('|');
   const LineTrack = useMemo(() => {
-    const lineTable: Record<string, { 字: string; 角色: string; 段: string; 文件: string; 时长: number; 开口: number; 有声长: number }> = {};
+    const lineTable: Record<string, { char: string; character: string; segment: string; file: string; duration: number; mouthOpen: number; 有声长: number }> = {};
     for (const { 句: sentence } of lineCues) {
-      if (!sounds[sentence.id]) throw new Error(`台词句轨：没给 ${sentence.id} 的声音（import 'asset:${sentence.配音}'）`);
-      lineTable[sentence.id] = { 字: sentence.念, 角色: sentence.角色, 段: '', 文件: sentence.id, 时长: sentence.时长, 开口: sentence.开口, 有声长: sentence.有声长 };
+      if (!sounds[sentence.id]) throw new Error(`台词句轨：没给 ${sentence.id} 的声音（import 'asset:${sentence.voice}'）`);
+      lineTable[sentence.id] = { char: sentence.spoken, character: sentence.character, segment: '', file: sentence.id, duration: sentence.duration, mouthOpen: sentence.mouthOpen, 有声长: sentence.有声长 };
     }
     return makeLineTrack(lineTable, sounds).LineTrack;
   }, [cacheKey]); // 键 已经概括了 句们、声音
-  return <LineTrack 每秒={perSec} lines={lineCues.map(({ 句: sentence, 帧: frame, 音量: volume }) => ({ id: sentence.id, 帧: frame, ...(volume === undefined ? {} : { 音量: volume }) }))} />;
+  return <LineTrack perSec={perSec} lines={lineCues.map(({ 句: sentence, frame: frame, 音量: volume }) => ({ id: sentence.id, frame: frame, ...(volume === undefined ? {} : { 音量: volume }) }))} />;
 };

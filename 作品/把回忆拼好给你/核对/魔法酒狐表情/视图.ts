@@ -5,13 +5,13 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { magicalWineFoxExpressions, type MagicalWineFoxExpression } from '@库/角色/魔法酒狐动作.ts';
 
 export type View = {
-  名: string;
+  name: string;
   眼: V3;
   看: V3; // 机位对准的点
   fov: number; // 竖直视角（度）
   expression?: MagicalWineFoxExpression;
   blink?: number | 'auto';
-  秒?: number;
+  sec?: number;
   头?: '看玩家'; // 头转过来对准机位
   九胡?: boolean;
 };
@@ -25,11 +25,11 @@ const fromBehind = { 眼: [-1.6, 2.6, 1.7] as V3, 看: [0, 0.15, 0.4] as V3, fov
 const jiuHuFromBehind = { 眼: [-1.6, 2.6, 1.9] as V3, 看: [0, 0.15, 0.7] as V3, fov: 34, 九胡: true };
 
 export const views: readonly View[] = [
-  ...magicalWineFoxExpressions.map((expression) => ({ 名: `表情-${expression}`, ...closeup, expression })),
-  ...magicalWineFoxExpressions.map((expression) => ({ 名: `推到底-${expression}`, ...pushToEnd, expression })),
+  ...magicalWineFoxExpressions.map((expression) => ({ name: `表情-${expression}`, ...closeup, expression })),
+  ...magicalWineFoxExpressions.map((expression) => ({ name: `推到底-${expression}`, ...pushToEnd, expression })),
   // 眨眼：游戏曲线开头那一下，0 睁、0.0833 闭、0.25 睁；0.0417 闭一半看眉毛跟着下来；0.125 是曲线冲过头（夹成全闭）的地方
-  ...[0, 0.0417, 0.0833, 0.125, 0.25].map((sec) => ({ 名: `眨眼-${sec}秒`, ...closeup, expression: '无' as const, blink: 'auto' as const, 秒: sec })),
-  { 名: '难过-眨眼闭一半', ...closeup, expression: '难过', blink: 0.5 }, // 难过的眉毛转角和眨眼的眉毛位置要同时生效
-  ...[0, 0.5, 1, 1.5, 2, 2.5, 3].map((sec) => ({ 名: `尾巴-${sec}秒`, ...fromBehind, blink: 0, 秒: sec })),
-  ...[0, 0.5, 1, 1.5, 2, 2.5, 3].map((sec) => ({ 名: `九胡尾巴-${sec}秒`, ...jiuHuFromBehind, 秒: sec })),
+  ...[0, 0.0417, 0.0833, 0.125, 0.25].map((sec) => ({ name: `眨眼-${sec}秒`, ...closeup, expression: '无' as const, blink: 'auto' as const, sec: sec })),
+  { name: '难过-眨眼闭一半', ...closeup, expression: '难过', blink: 0.5 }, // 难过的眉毛转角和眨眼的眉毛位置要同时生效
+  ...[0, 0.5, 1, 1.5, 2, 2.5, 3].map((sec) => ({ name: `尾巴-${sec}秒`, ...fromBehind, blink: 0, sec: sec })),
+  ...[0, 0.5, 1, 1.5, 2, 2.5, 3].map((sec) => ({ name: `九胡尾巴-${sec}秒`, ...jiuHuFromBehind, sec: sec })),
 ];

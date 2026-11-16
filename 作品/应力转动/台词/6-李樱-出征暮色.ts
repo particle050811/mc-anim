@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 6c9af36c49d1），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-出征暮色（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 af0ce9d49fce），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-出征暮色（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-出征暮色",
-  "角色": "李樱",
-  "念": "是时候出征暮色了！",
-  "配音": "配音/6-李樱-出征暮色",
-  "成品sha": "9813a7c592a6",
-  "开口": 0,
+  "character": "李樱",
+  "spoken": "是时候出征暮色了！",
+  "voice": "配音/6-李樱-出征暮色",
+  "finishedSha": "9813a7c592a6",
+  "mouthOpen": 0,
   "有声长": 1.38,
-  "时长": 1.53,
+  "duration": 1.53,
   "文件秒数": 1.53,
-  "字": [
+  "char": [
     ["是",0.16,0.4],
     ["时",0.4,0.56],
     ["候",0.56,0.64],

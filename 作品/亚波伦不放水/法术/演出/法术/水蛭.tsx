@@ -21,7 +21,7 @@ const darkRed = hexColor(0xaa0000);
 const endColor = hexColor(0x00000a);
 const absorbLifeTicks = 10;
 
-const leech: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const leech: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const streams: React.ReactNode[] = [];
   const pieces: QuadItem[] = [];
@@ -29,7 +29,7 @@ const leech: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target
     const r = mulberry32(seed * 7919 + n);
     const age = tick - n;
     const scatterPoint: Vec3 = [from[0] + (r() * 2 - 1) * 0.6, from[1] + (r() * 2 - 1) * 0.6, from[2]];
-    streams.push(<GatherStream key={n} 从={[target[0], target[1], target[2] + 0.9]} 到={scatterPoint} age={age} 寿命={gatherLifetime(r())} 色={darkRed} />);
+    streams.push(<GatherStream key={n} 从={[target[0], target[1], target[2] + 0.9]} dest={scatterPoint} age={age} 寿命={gatherLifetime(r())} 色={darkRed} />);
     for (let i = 0; i < 8; i++) {
       const spawnPoint: Vec3 = [target[0] + (r() * 2 - 1) * 0.6, target[1] + (r() * 2 - 1) * 0.6, target[2] + r() * 1.8];
       const channelOffset = [0.875 + r() * 0.25, 0.875 + r() * 0.25, 0.875 + r() * 0.25];
@@ -44,7 +44,7 @@ const leech: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target
   return (
     <>
       {streams}
-      <QuadGroup 图={diamondImg} 项={pieces} 混合="镂空" />
+      <QuadGroup image={diamondImg} items={pieces} blend="镂空" />
     </>
   );
 };

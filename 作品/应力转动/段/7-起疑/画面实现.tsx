@@ -40,8 +40,8 @@ export const SuspicionPicture: React.FC<{ sec: number }> = ({ sec }) => {
           <hemisphereLight args={['#cfe0f5', '#5a4a3a', 0.38]} position={[0, 0, 1]} />
           <RoomLights
             lights={[
-              ...lordStudy.lanterns.map((p) => ({ p: choreo.roomToWorld(p), 强: 2.0 })),
-              { p: choreo.roomToWorld(lordStudy.candle), 强: 1.2 },
+              ...lordStudy.lanterns.map((p) => ({ p: choreo.roomToWorld(p), strength: 2.0 })),
+              { p: choreo.roomToWorld(lordStudy.candle), strength: 1.2 },
             ]}
           />
           <group position={borderTownPos}>

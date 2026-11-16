@@ -31,13 +31,13 @@ describe('杖尖盘位姿', () => {
   it('盘上点、盘格位置：第 0 圈第 0 格朝正上，离圆心 45 GUI 像素；没弹开的圈返回 null', () => {
     const disc = staffTipPlatePose(staff, { facing: { faceCamera: { pos: [1, -8, 5], tgt: [1, 2, 5] } } });
     expectNear(discPoint(disc, 0.1, 10, -20), [2, 2, 7]);
-    const { 项: items } = arrangeWheel({});
-    const firstSlot = items.find((p) => p.ring === 0 && p.格 === 0)!;
+    const { items: items } = arrangeWheel({});
+    const firstSlot = items.find((p) => p.ring === 0 && p.cell === 0)!;
     const outerRing = items.find((p) => p.ring === 2)!;
-    const pos = discCellPos(disc, 0.02, { 刻: 2.5, openClose: { rotSpeed: 0 } }, firstSlot.键)!;
+    const pos = discCellPos(disc, 0.02, { 刻: 2.5, openClose: { rotSpeed: 0 } }, firstSlot.key)!;
     expect(Math.hypot(pos[0] - 1, pos[2] - 5)).toBeCloseTo(0.9, 6);
     expect(pos[2]).toBeGreaterThan(5);
-    expect(discCellPos(disc, 0.02, { 刻: 2.5 }, outerRing.键)).toBeNull();
+    expect(discCellPos(disc, 0.02, { 刻: 2.5 }, outerRing.key)).toBeNull();
     expect(discCellPos(disc, 0.02, { 刻: 40 }, 'goety:没有这个')).toBeNull();
   });
 });

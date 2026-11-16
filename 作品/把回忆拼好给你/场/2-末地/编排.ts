@@ -19,14 +19,14 @@ const segMainCutEventFrames = (segKey: string) => segmentFrames(segmentWindow(se
 const segKey = '2-抢龙蛋';
 export const events = segMainCutEventFrames(segKey);
 const segWindow = segmentWindow(segKey);
-export const frameCount = segWindow.帧数;
+export const frameCount = segWindow.frameCount;
 /** 段内帧 → 歌曲帧（颗粒的种子取它，核对段的静帧同一颗粒） */
 export const toSongFrame = (f: number) => segWindow.起帧 + f;
 /** 段内帧 → 歌上的秒（她眨眼、尾巴按它走） */
 export const songSec = (f: number) => (segWindow.起帧 + f) / fps;
 /** 段内帧 → 游戏刻（段首 0） */
 export const frameToTick = (f: number) => (f * 20) / fps;
-const beatFrames = beatGrid.拍长 * fps;
+const beatFrames = beatGrid.beatSec * fps;
 /** 两张骨骼表按转角、位置插值（一边没有的当 0） */
 const lerpBonePose = (a: pose.BoneTable, b: pose.BoneTable, t: number): pose.BoneTable => {
   const r: pose.BoneTable = {};
@@ -52,11 +52,11 @@ export const youWaveAt = (f: number): number | null => {
 const leadFrames = params.lookEggLeadSec * fps;
 export const youEyePos = (): V3 => [params.you.位[0], params.you.位[1], pose.youEyeHeight];
 
-export type YouState = { loc: V3; yaw: number; 看: V3; wave: number | null; 秒: number };
+export type YouState = { loc: V3; yaw: number; 看: V3; wave: number | null; sec: number };
 /** 你一直站着：看她，点蛋前转头看蛋，蛋没了、她摔下去以后再看回她 */
 export const YouState = (f: number): YouState => {
-  const lookAt = f >= events.clickEgg - leadFrames && (f - events.pounceMiss) / fps < legacyFrameSec(2) ? cellCenter(params.eggSpots.起) : herHeadPos(f);
-  return { loc: params.you.位, yaw: params.you.facing, 看: lookAt, wave: youWaveAt(f), 秒: songSec(f) };
+  const lookAt = f >= events.clickEgg - leadFrames && (f - events.pounceMiss) / fps < legacyFrameSec(2) ? cellCenter(params.eggSpots.start) : herHeadPos(f);
+  return { loc: params.you.位, yaw: params.you.facing, 看: lookAt, wave: youWaveAt(f), sec: songSec(f) };
 };
 
 // ---------- 她 ----------
@@ -70,7 +70,7 @@ export type LiYingState = {
   看?: [number, number];
   skeleton: pose.BoneTable;
   blink: number | 'auto';
-  秒?: number;
+  sec?: number;
 };
 
 /** 蹬地压低了没有：扑起前 蹬地秒 起 */
@@ -86,7 +86,7 @@ const flyPos = (t: number): V3 => {
 };
 const flyTilt = (t: number) => {
   const k = clamp01(t / pose.pounceTilt.turnDone);
-  return lerp(pose.pounceTilt.起, pose.pounceTilt.flatAngleDeg, 1 - (1 - k) ** 2);
+  return lerp(pose.pounceTilt.start, pose.pounceTilt.flatAngleDeg, 1 - (1 - k) ** 2);
 };
 
 /** 原版实体下落：每刻先按速度走，再 v = (v − 0.08) × 0.98（LivingEntity.travel），刻与刻之间线性插值（渲染的 partialTick）。返回第 刻 刻掉了多少格 */
@@ -156,7 +156,7 @@ export const LiYingState = (f: number): LiYingState => {
       pose: standPose(params.liYing.herPronePos),
       poseName: pose.crouchState,
       expression: '认出你',
-      lookAt: cellCenter(params.eggSpots.起),
+      lookAt: cellCenter(params.eggSpots.start),
       skeleton: {
         ...pose.prone,
         Root: { pos: [0, 0, 2.3], rot: [0, params.wiggleButt.转 * w, 0] },
@@ -164,15 +164,15 @@ export const LiYingState = (f: number): LiYingState => {
         Tail: { rot: [pose.prone.Tail!.rot![0]!, params.wiggleButt.tailSwing * w, 0] },
       },
       blink: 'auto',
-      秒: sec,
+      sec: sec,
     };
   }
-  if (f < events.pounceStart) return { pose: standPose(params.liYing.herPronePos), poseName: pose.crouchState, expression: '大笑', lookAt: cellCenter(params.eggSpots.起), skeleton: pose.kickPose, blink: 0, 秒: sec };
+  if (f < events.pounceStart) return { pose: standPose(params.liYing.herPronePos), poseName: pose.crouchState, expression: '大笑', lookAt: cellCenter(params.eggSpots.start), skeleton: pose.kickPose, blink: 0, sec: sec };
   const headPos = herHeadPos(f);
   if (f < events.landOnEgg) {
     const t = flyProgress(f);
     const tilt = flyTilt(t);
-    const skeleton = { ...pose.pounce, Head: raiseHead(tilt, waistAngleOf(pose.pounce), headPos, cellCenter(params.eggSpots.起)) };
+    const skeleton = { ...pose.pounce, Head: raiseHead(tilt, waistAngleOf(pose.pounce), headPos, cellCenter(params.eggSpots.start)) };
     return { pose: standPose(flyPos(t), tilt, lerp(params.liYing.facing, params.liYing.herProneYaw, t)), poseName: '静站', expression: '大笑', skeleton, blink: 0 };
   }
   if (f < events.clickEgg) {
@@ -180,23 +180,23 @@ export const LiYingState = (f: number): LiYingState => {
     const k = clamp01((f - events.landOnEgg) / fps / params.landBounceSec);
     const tilt = -90 + Math.sin(Math.PI * k) * pose.landBounce;
     const skeleton = { ...pose.onEggPose, Head: raiseHead(tilt, waistAngleOf(pose.onEggPose), headPos, youEyePos()) };
-    return { pose: standPose(params.liYing.herOnEggPos, tilt, params.liYing.herProneYaw), poseName: '静站', expression: '大笑', skeleton, blink: 0, 秒: sec };
+    return { pose: standPose(params.liYing.herOnEggPos, tilt, params.liYing.herProneYaw), poseName: '静站', expression: '大笑', skeleton, blink: 0, sec: sec };
   }
   if (f < events.sitUp) {
     // 蛋没了：照原版重力掉下去，身子从抱蛋摊成趴着；落地以后脸朝下趴着
     const z = fallHeight(f);
     const t = clamp01((preFallHeight - z) / (preFallHeight - params.liYing.flatHeight));
     const bodyPose = lerpBonePose(pose.onEggPose, pose.flatPose, t);
-    const skeleton = { ...bodyPose, Head: raiseHead(-90, waistAngleOf(bodyPose), headPos, cellCenter(params.eggSpots.起, 0)) };
-    return { pose: standPose([flatPos[0], flatPos[1], z], -90, params.liYing.herProneYaw), poseName: '静站', expression: '惊讶', skeleton, blink: 0, 秒: sec };
+    const skeleton = { ...bodyPose, Head: raiseHead(-90, waistAngleOf(bodyPose), headPos, cellCenter(params.eggSpots.start, 0)) };
+    return { pose: standPose([flatPos[0], flatPos[1], z], -90, params.liYing.herProneYaw), poseName: '静站', expression: '惊讶', skeleton, blink: 0, sec: sec };
   }
   // 坐起来（TLM 的待命坐）：一下切过去，身子半朝镜头，抬头冲你噘嘴，一直到段尾
-  return { pose: standPose(params.liYing.herSitPos, 0, params.liYing.seatYaw), poseName: '坐', expression: '难过', 看: params.liYing.poutLook, skeleton: {}, blink: 'auto', 秒: sec };
+  return { pose: standPose(params.liYing.herSitPos, 0, params.liYing.seatYaw), poseName: '坐', expression: '难过', 看: params.liYing.poutLook, skeleton: {}, blink: 'auto', sec: sec };
 };
 
 // ---------- 龙蛋 ----------
 /** 龙蛋在哪一格：点一下之前在 起，点完在 一 */
-export const eggCell = (f: number): readonly [number, number, number] => (f < events.clickEgg ? params.eggSpots.起 : params.eggSpots.一);
+export const eggCell = (f: number): readonly [number, number, number] => (f < events.clickEgg ? params.eggSpots.start : params.eggSpots.一);
 
 /** Java Random（LegacyRandomSource）的 nextFloat 序列 */
 export const javaRandom = (seed: number) => {
@@ -223,10 +223,10 @@ const makeTeleportParticles = (frame: number, oldPos: readonly number[], newPos:
     const x = lerp(newPos[0]!, oldPos[0]!, d0) + (r() - 0.5) + 0.5;
     const y = lerp(newPos[2]!, oldPos[2]!, d0) + r() - 0.5;
     const z = lerp(newZ, oldZ, d0) + (r() - 0.5) + 0.5;
-    return { 种: 'portal' as const, 刻: frameToTick(frame), p: [x, -z, y] as V3, v: [fx, -fz, fy] as V3, 种子: seed * 1000 + n };
+    return { kind: 'portal' as const, 刻: frameToTick(frame), p: [x, -z, y] as V3, v: [fx, -fz, fy] as V3, seed: seed * 1000 + n };
   });
 };
-export const teleportParticles: ParticleSpawn[] = makeTeleportParticles(events.clickEgg, params.eggSpots.起, params.eggSpots.一, 5);
+export const teleportParticles: ParticleSpawn[] = makeTeleportParticles(events.clickEgg, params.eggSpots.start, params.eggSpots.一, 5);
 
 /** 出口传送门：传送门方块的格（原点格四周 5×5 去掉四角和中间柱子，EndPodiumFeature 的 closerThan 2.5） */
 export const portalCells: readonly (readonly [number, number])[] = (() => {
@@ -240,8 +240,8 @@ export const portalCells: readonly (readonly [number, number])[] = (() => {
 export const cameraRig = (f: number) => {
   const k = clamp01(f / (frameCount - 1));
   const t = k * k * (3 - 2 * k);
-  return { 种: '透视' as const, 眼: lerpV(params.cameraRig.eyeStart, params.cameraRig.eyeEnd, t), 看: lerpV(params.cameraRig.lookStart, params.cameraRig.lookEnd, t), fov: params.cameraRig.fov };
+  return { kind: '透视' as const, 眼: lerpV(params.cameraRig.eyeStart, params.cameraRig.eyeEnd, t), 看: lerpV(params.cameraRig.lookStart, params.cameraRig.lookEnd, t), fov: params.cameraRig.fov };
 };
 /** 第 4 句末盖满画面的那道浪（场/2-海上/浪.tsx 的 进）接着往上退：段首 1（盖满），照第 4 句涌上来的速度（浪起 到第 5 句起那一段走完 0 → 1）退到 2，露出末地 */
-const surgeLegFrames = segWindow.起帧 - mainCutEvents.waveRises.帧;
+const surgeLegFrames = segWindow.起帧 - mainCutEvents.waveRises.frame;
 export const surgeIn = (f: number) => Math.min(2, 1 + f / surgeLegFrames);

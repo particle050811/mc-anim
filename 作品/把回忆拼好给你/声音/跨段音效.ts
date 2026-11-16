@@ -5,42 +5,42 @@ import type { AssetCue } from '@engine/段/段定义.ts';
 import { fps } from '../分镜/时间.ts';
 
 /** 按本作品的帧写的资产 cue：帧、帧数是段内帧，增益可以一帧一个，淡出是帧数 */
-export type FrameCue = Omit<AssetCue, '秒' | '长秒' | '增益' | 'fadeOutSec'> & { 帧: number; 帧数: number; 增益?: number | readonly number[]; fadeOutFrames?: number };
+export type FrameCue = Omit<AssetCue, 'sec' | '长秒' | '增益' | 'fadeOutSec'> & { frame: number; frameCount: number; 增益?: number | readonly number[]; fadeOutFrames?: number };
 
 /** 按帧写的 cue → 段.ts 的 cue（秒；一帧一个的增益写成每秒 fps 个的逐格增益） */
-export const toAssetCue = ({ 帧: startFrame, 帧数: frameCount, 增益: gain, fadeOutFrames, ...rest }: FrameCue): AssetCue => ({
+export const toAssetCue = ({ frame: startFrame, frameCount: frameCount, 增益: gain, fadeOutFrames, ...rest }: FrameCue): AssetCue => ({
   ...rest,
-  秒: startFrame / fps,
+  sec: startFrame / fps,
   长秒: frameCount / fps,
-  ...(gain === undefined ? {} : typeof gain === 'number' ? { 增益: gain } : { 增益: { 每秒: fps, 值: gain } }),
+  ...(gain === undefined ? {} : typeof gain === 'number' ? { 增益: gain } : { 增益: { perSec: fps, value: gain } }),
   ...(fadeOutFrames === undefined ? {} : { fadeOutSec: fadeOutFrames / fps }),
 });
 
 export type SongSound = {
-  资产: string;
-  名: string;
+  asset: string;
+  name: string;
   /** 文件头落在哪个歌曲帧（整数） */
   起帧: number;
   /** 放几帧（不给就放满文件：ceil(时长秒 × fps)） */
-  帧数?: number;
-  时长秒: number;
+  frameCount?: number;
+  durationSec: number;
   /** 歌曲帧 → 增益 */
   增益: (songFrame: number) => number;
 };
 
 /** 这个声音在段窗口 [起秒, 止秒)（歌上的秒，落在帧上）里的那一截 cue；完全不在窗口里给 null */
 export const clipToSegment = (windowSec: { startSec: number; endSec: number }, cue: SongSound): AssetCue | null => {
-  if (!Number.isInteger(cue.起帧)) throw new Error(`${cue.名} 的起帧要是整数：${cue.起帧}`);
+  if (!Number.isInteger(cue.起帧)) throw new Error(`${cue.name} 的起帧要是整数：${cue.起帧}`);
   const span = { 起帧: Math.round(windowSec.startSec * fps), 止帧: Math.round(windowSec.endSec * fps) };
-  const endFrame = cue.起帧 + (cue.帧数 ?? Math.ceil(cue.时长秒 * fps));
+  const endFrame = cue.起帧 + (cue.frameCount ?? Math.ceil(cue.durationSec * fps));
   const a = Math.max(cue.起帧, span.起帧);
   const b = Math.min(endFrame, span.止帧);
   if (b <= a) return null;
   return toAssetCue({
-    帧: a - span.起帧,
-    资产: cue.资产,
-    名: cue.名,
-    帧数: b - a,
+    frame: a - span.起帧,
+    asset: cue.asset,
+    name: cue.name,
+    frameCount: b - a,
     ...(a > cue.起帧 ? { 入点秒: (a - cue.起帧) / fps } : {}),
     增益: Array.from({ length: b - a }, (_, i) => Math.round(cue.增益(a + i) * 1e6) / 1e6),
   });

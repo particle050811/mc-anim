@@ -26,8 +26,8 @@ import oldAtlasPng from 'asset:贴图/物品/断曜流光.旧版';
 import oldIconPng from 'asset:贴图/物品/断曜流光.旧版.图标';
 
 const appearanceTable = {
-  旧版: { 模型: oldModelData as unknown as BlockModelData, atlas: oldAtlasPng, icon: oldIconPng },
-  新版: { 模型: newModelData as unknown as BlockModelData, atlas: newAtlasPng, icon: newIconPng },
+  旧版: { model: oldModelData as unknown as BlockModelData, atlas: oldAtlasPng, icon: oldIconPng },
+  新版: { model: newModelData as unknown as BlockModelData, atlas: newAtlasPng, icon: newIconPng },
 } as const;
 
 /** 各自 valettein_normal.json 的 display（旧版 = models/item/transform/ 下那份） */
@@ -60,7 +60,7 @@ export const Valettein: FC<{ appearance?: EquipAppearance; glintSec?: number }> 
   if (glowEffect && enchanted) glowEffect.setGlintSec(glintSec);
   return (
     <group rotation={[-Math.PI / 2, 0, 0]}>
-      <BlockModel data={appearanceTable[appearance].模型} atlas={png(appearanceTable[appearance].atlas)} part="剑" patch={glowEffect?.patch} />
+      <BlockModel data={appearanceTable[appearance].model} atlas={png(appearanceTable[appearance].atlas)} part="剑" patch={glowEffect?.patch} />
     </group>
   );
 };

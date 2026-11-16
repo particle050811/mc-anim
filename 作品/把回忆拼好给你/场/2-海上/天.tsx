@@ -17,20 +17,20 @@ const tileSize = 8;
 const sunBodyStart = 12;
 const sunBodyLength = 8;
 /** 本体外的硬边光圈：每圈一个贴图像素宽，颜色 = 原版光晕紧挨本体那一格 × 亮（同 地点/天空.tsx 的 光圈） */
-const halo: readonly { 宽: number; bright: number }[] = [
-  { 宽: 1, bright: 1 },
-  { 宽: 1, bright: 0.5 },
+const halo: readonly { width: number; bright: number }[] = [
+  { width: 1, bright: 1 },
+  { width: 1, bright: 0.5 },
 ];
 
 export type SunsetSkyProps = {
-  机: Perspective;
+  machine: Perspective;
   /** 游戏刻（太阳的位置） */
   刻: number;
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
 };
 
-export const SunsetSky: React.FC<SunsetSkyProps> = ({ 机: rig, 刻: tick, 宽: width, 高: height }) => {
+export const SunsetSky: React.FC<SunsetSkyProps> = ({ machine: rig, 刻: tick, width: width, height: height }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = width * filmScale;
   const H = height * filmScale;
@@ -79,7 +79,7 @@ export const SunsetSky: React.FC<SunsetSkyProps> = ({ 机: rig, 刻: tick, 宽: 
     const haloIndex = ((sunBodyStart * k - 1) * tex.w + 16 * k) * 4;
     const color = [tex.px[haloIndex]!, tex.px[haloIndex + 1]!, tex.px[haloIndex + 2]!];
     let inset = 0;
-    for (const { 宽: w, bright: brightness } of halo) {
+    for (const { width: w, bright: brightness } of halo) {
       const t = w * m;
       ctx.fillStyle = `rgb(${color.map((c) => Math.round(c * brightness)).join(',')})`;
       // 上下左右四条，互不重叠（lighter 是叠加，重叠的地方会更亮）

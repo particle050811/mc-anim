@@ -30,10 +30,10 @@ describe('新作品', () => {
     expect(written.map((f) => path.relative(workRoot, f)).sort()).toEqual(
       ['index.ts', '注册.tsx', '清单.ts', '段/说明.md', '核对/起步/段.ts', '核对/起步/画面.tsx', '核对/起步/声音表.生成.ts', '核对/起步/声音地址.生成.ts'].sort(),
     );
-    expect(readText(workRoot, '核对/起步/声音表.生成.ts')).toBe(soundTableText({ 资产: {}, 台词: {} }));
+    expect(readText(workRoot, '核对/起步/声音表.生成.ts')).toBe(soundTableText({ asset: {}, lines: {} }));
     expect(readText(workRoot, '核对/起步/声音地址.生成.ts')).toBe(soundUrlText([], {}));
     const seg = (await freshExec(path.join(workRoot, '核对/起步/段.ts'), codeRoot())).default as SegmentDef;
-    expect([seg.秒, seg.宽, seg.高, seg.声音]).toEqual([2, 1280, 720, undefined]);
+    expect([seg.sec, seg.width, seg.height, seg.sound]).toEqual([2, 1280, 720, undefined]);
     const manifestModule = await freshExec(path.join(workRoot, '清单.ts'), codeRoot());
     expect((manifestModule.segDir as (k: string) => string)('核对-起步')).toBe('核对/起步');
     // 还没有正片段时 段/ 也在（注册.tsx 的 webpackContext('./段') 要它），占位文件不会被注册.tsx 的正则当成段
@@ -51,12 +51,12 @@ describe('新段', () => {
   it('正片段：建场时间线、段目录，排进清单；同场第二段共用时间线', async () => {
     newWork(tempDir, '试作');
     const workRoot = path.join(tempDir, '作品', '试作');
-    newSegment(workRoot, '1-开门', { 场: '1-门口' });
-    newSegment(workRoot, '1-进门', { 场: '1-门口', 起: '结束', 止: '结束' });
+    newSegment(workRoot, '1-开门', { scene: '1-门口' });
+    newSegment(workRoot, '1-进门', { scene: '1-门口', start: '结束', end: '结束' });
     expect(fs.existsSync(path.join(workRoot, '场/1-门口/时间线.ts'))).toBe(true);
     expect(readText(workRoot, '清单.ts')).toMatch(/\{ 键: '核对-起步', 章: '核对' \},\n  \{ 键: '1-开门', 章: 1 \},\n  \{ 键: '1-进门', 章: 1 \},\n\];/);
     const seg = (await freshExec(path.join(workRoot, '段/1-开门/段.ts'), codeRoot())).default as SegmentDef & { sceneWindow: unknown };
-    expect([seg.秒, seg.sceneWindow]).toEqual([3, { startSec: 0, endSec: 3 }]);
+    expect([seg.sec, seg.sceneWindow]).toEqual([3, { startSec: 0, endSec: 3 }]);
     // 段键只在目录名和清单里
     expect(readText(workRoot, '段/1-开门/段.ts')).not.toContain('1-开门');
     expect(readText(workRoot, '段/1-开门/画面.tsx')).not.toContain('1-开门');
@@ -65,22 +65,22 @@ describe('新段', () => {
   it('老场（只有 defineSeg 写的老段、没有场时间线）：用 continueOldSeg 摆上老段，新段接在最后一个老段后面，老段文件不动', async () => {
     newWork(tempDir, '试作');
     const workRoot = path.join(tempDir, '作品', '试作');
-    const legacySegText = (durSec: number) => `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '1-老场', 秒: ${durSec}, 宽: 1280, 高: 720, 地形: [] });\n`;
+    const legacySegText = (durSec: number) => `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '1-老场', sec: ${durSec}, width: 1280, height: 720, terrain: [] });\n`;
     for (const [k, n] of [['1-老一', 1.25], ['1-老二', 0.75]] as const) {
       fs.mkdirSync(path.join(workRoot, '段', k), { recursive: true });
       fs.writeFileSync(path.join(workRoot, '段', k, '段.ts'), legacySegText(n));
     }
-    const frameSize = { 宽: 1280, 高: 720 };
-    const written = newSegment(workRoot, '1-新', { 场: '1-老场', legacySegs: [{ 键: '1-老一', 秒: 1.25, ...frameSize }, { 键: '1-老二', 秒: 0.75, ...frameSize }] });
+    const frameSize = { width: 1280, height: 720 };
+    const written = newSegment(workRoot, '1-新', { scene: '1-老场', legacySegs: [{ key: '1-老一', sec: 1.25, ...frameSize }, { key: '1-老二', sec: 0.75, ...frameSize }] });
     expect(written.map((f) => path.relative(workRoot, f))).toContain('场/1-老场/时间线.ts');
     expect(readText(workRoot, '场/1-老场/时间线.ts')).toMatch(/export default continueOldSeg\(/);
     expect(usesContinueOldSeg(readText(workRoot, '场/1-老场/时间线.ts'))).toBe(true); // anim check 认得出这条线，才会核抄的段长
     expect(readText(workRoot, '场/1-老场/时间线.ts')).not.toMatch(/import .*段\.ts/);
     const seg = (await freshExec(path.join(workRoot, '段/1-新/段.ts'), codeRoot())).default as SegmentDef & { sceneWindow: unknown };
-    expect([seg.场, seg.秒, seg.sceneWindow]).toEqual(['1-老场', 3, { startSec: 2, endSec: 5 }]);
+    expect([seg.scene, seg.sec, seg.sceneWindow]).toEqual(['1-老场', 3, { startSec: 2, endSec: 5 }]);
     expect(readText(workRoot, '段/1-老一/段.ts')).toBe(legacySegText(1.25));
     // 同场再加一段：认得 continueOldSeg 做的时间线
-    newSegment(workRoot, '1-再新', { 场: '1-老场', 起: '结束', 止: '结束' });
+    newSegment(workRoot, '1-再新', { scene: '1-老场', start: '结束', end: '结束' });
   });
 
   it('参数不对、老写法的时间线：报错不写', () => {
@@ -89,8 +89,8 @@ describe('新段', () => {
     expect(() => newSegment(workRoot, '开门', {})).toThrow(/段键/);
     expect(() => newSegment(workRoot, '1-开门', {})).toThrow(/--scene/);
     fs.mkdirSync(path.join(workRoot, '场/1-老'), { recursive: true });
-    fs.writeFileSync(path.join(workRoot, '场/1-老/时间线.ts'), 'export const 事件 = {};\n');
-    expect(() => newSegment(workRoot, '1-开门', { 场: '1-老' })).toThrow(/defineSceneTimeline/);
+    fs.writeFileSync(path.join(workRoot, '场/1-老/时间线.ts'), 'export const events = {};\n');
+    expect(() => newSegment(workRoot, '1-开门', { scene: '1-老' })).toThrow(/defineSceneTimeline/);
     expect(fs.existsSync(path.join(workRoot, '段/1-开门'))).toBe(false);
     newSegment(workRoot, '核对-试声', {});
     expect(() => newSegment(workRoot, '核对-试声', {})).toThrow(/已经有了/);
@@ -98,6 +98,6 @@ describe('新段', () => {
 
   it('清单加一段：找不到数组、重复键报错', () => {
     expect(() => addSegToManifest('const x = 1;', '1-a', 1)).toThrow(/找不到/);
-    expect(() => addSegToManifest("export const manifest = [\n  { 键: '1-a', 章: 1 },\n];", '1-a', 1)).toThrow(/已经有/);
+    expect(() => addSegToManifest("export const manifest = [\n  { key: '1-a', 章: 1 },\n];", '1-a', 1)).toThrow(/已经有/);
   });
 });

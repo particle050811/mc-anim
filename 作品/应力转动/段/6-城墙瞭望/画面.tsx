@@ -8,6 +8,6 @@ import segment from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 import { segPlaySec } from '../../地点/边城/6-3-下坠/时间线.ts';
 
-const cuts = [{ 段: '6-3-4', picture: CityWatch, 从: 0, 到: segPlaySec('6-3-4') }];
+const cuts = [{ segment: '6-3-4', picture: CityWatch, 从: 0, dest: segPlaySec('6-3-4') }];
 
-export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} 每秒={1} />);
+export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} perSec={1} />);

@@ -17,7 +17,7 @@ export const measureAudioFile = (file: string): AudioInfo => measureAudio(file);
 export const knownAudioMeasure = (entry: LockEntry | undefined, dataRoot?: string): AudioInfo | undefined => {
   if (!entry) return undefined;
   const e = entry as MeasuredEntry;
-  if (typeof e.时长 === 'number') return { 时长: e.时长, ...(e.峰值 !== undefined ? { 峰值: e.峰值 } : {}), ...(e.响度 !== undefined ? { 响度: e.响度 } : {}) };
+  if (typeof e.duration === 'number') return { duration: e.duration, ...(e.peakDb !== undefined ? { peakDb: e.peakDb } : {}), ...(e.loudness !== undefined ? { loudness: e.loudness } : {}) };
   if (!dataRoot) return undefined;
   const cachePath = cacheLocation(entry, dataRoot);
   return fs.existsSync(cachePath) ? (JSON.parse(fs.readFileSync(cachePath, 'utf8')) as AudioInfo) : undefined;

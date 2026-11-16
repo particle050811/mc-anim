@@ -55,7 +55,7 @@ describe('弯折', () => {
   const triangles = vertexTableToTriangles(boxVertices());
 
   it('角是 0 时原样返回', () => {
-    const { 上: upper, 下: lower, bridge } = bend(triangles, { cut: 6, hingeZ: 1, 角: 0 });
+    const { 上: upper, 下: lower, bridge } = bend(triangles, { cut: 6, hingeZ: 1, angle: 0 });
     expect(upper).toEqual(triangles);
     expect(lower).toHaveLength(0);
     expect(bridge).toHaveLength(0);
@@ -68,7 +68,7 @@ describe('弯折', () => {
     ['肘 90 度（往前折）', 4, -1, -90],
     ['铰链在正中 60 度', 6, 0, 60],
   ])('%s：合起来是封闭的壳，上半节不过关节', (caseName, cut, hingeZ, angleDeg) => {
-    const { 上: upper, 下: lower, bridge } = bend(triangles, { cut, hingeZ, 角: (angleDeg * Math.PI) / 180 });
+    const { 上: upper, 下: lower, bridge } = bend(triangles, { cut, hingeZ, angle: (angleDeg * Math.PI) / 180 });
     expect(openEdgeCount(triangles)).toBe(0);
     expect(openEdgeCount([...upper, ...lower, ...bridge])).toBe(0);
     expect(bridge.length).toBeGreaterThan(0);
@@ -76,7 +76,7 @@ describe('弯折', () => {
   });
 
   it('下半节绕铰链转过去：脚底中心到了该到的地方', () => {
-    const { 下: lower } = bend(triangles, { cut: 6, hingeZ: 1, 角: Math.PI / 2 });
+    const { 下: lower } = bend(triangles, { cut: 6, hingeZ: 1, angle: Math.PI / 2 });
     // 原来 y = 12 的脚底面转 90 度后在 z = 铰z + 6 = 7 的平面上
     const bottomTris = lower.filter((triangle) => triangle.every((v) => Math.abs(v.p[2]! - 7) < 1e-6));
     expect(bottomTris.length).toBeGreaterThan(0);

@@ -20,9 +20,9 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
   const path = lineTablePath(c);
   const parsedContent = await readContent(c);
   if (!c.exists(path)) {
-    const segmentsWithLines = '错误' in parsedContent ? [] : parsedContent.segments.filter((s) => s.definition?.声音?.some((cue) => cue.台词 !== undefined));
-    if (segmentsWithLines.length) report.错(`没有 ${path}，${segmentsWithLines.map((s) => s.键).join('、')} 却有台词 cue`);
-    else report.跳过.push(`没有 ${path}，段里也没有台词 cue`);
+    const segmentsWithLines = 'errors' in parsedContent ? [] : parsedContent.segments.filter((s) => s.definition?.sound?.some((cue) => cue.lines !== undefined));
+    if (segmentsWithLines.length) report.错(`没有 ${path}，${segmentsWithLines.map((s) => s.key).join('、')} 却有台词 cue`);
+    else report.skipped.push(`没有 ${path}，段里也没有台词 cue`);
     return;
   }
   const lineTable = readLineTable(c, report);
@@ -33,7 +33,7 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
   const entryMap = new Map<string, LineEntry>();
   for (const t of lineTable) {
     const displayName = `台词「${String(t.id)}」`;
-    if (typeof t.id !== 'string' || typeof t.角色 !== 'string' || typeof t.文本 !== 'string' || !t.id || !t.角色 || !t.文本) {
+    if (typeof t.id !== 'string' || typeof t.character !== 'string' || typeof t.text !== 'string' || !t.id || !t.character || !t.text) {
       report.错(`${displayName}：id、角色、文本都要写`, path);
       continue;
     }
@@ -41,34 +41,34 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
     entryMap.set(t.id, t);
     const m = /^(\d+)-([^-\s]+)-(\S+)$/.exec(t.id);
     if (!m) report.错(`${displayName}：id 要是 <章>-<角色>-<短名>`, path);
-    else if (m[2] !== t.角色) report.错(`${displayName}：id 里的角色「${m[2]}」和 角色 字段「${t.角色}」不一致`, path);
-    for (const x of findOldNameClashes(oldName, t.id)) report.错(`${displayName} 撞了旧名表第 ${x.行} 行的旧名（${x.类别}）：旧名永不复用`, path);
+    else if (m[2] !== t.character) report.错(`${displayName}：id 里的角色「${m[2]}」和 角色 字段「${t.character}」不一致`, path);
+    for (const x of findOldNameClashes(oldName, t.id)) report.错(`${displayName} 撞了旧名表第 ${x.行} 行的旧名（${x.category}）：旧名永不复用`, path);
     if (t.未用 !== undefined && typeof t.未用 !== 'boolean') report.错(`${displayName}：未用 只能写 true 或 false`, path);
-    if (t.字幕位置 !== undefined && !subtitlePositions.includes(t.字幕位置)) report.错(`${displayName}：字幕位置 只能是 ${subtitlePositions.join('、')}（不写是 下）`, path);
-    if (t.念 !== undefined && (typeof t.念 !== 'string' || !t.念)) {
+    if (t.subtitlePosition !== undefined && !subtitlePositions.includes(t.subtitlePosition)) report.错(`${displayName}：字幕位置 只能是 ${subtitlePositions.join('、')}（不写是 下）`, path);
+    if (t.spoken !== undefined && (typeof t.spoken !== 'string' || !t.spoken)) {
       report.错(`${displayName}：念 要写非空的字（交给 TTS、对口型的字）`, path);
       continue;
     }
-    if (t.开口 !== undefined && !(typeof t.开口 === 'number' && Number.isFinite(t.开口) && t.开口 >= 0)) report.错(`${displayName}：开口 是配音文件里第几秒开口，要写不小于 0 的数`, path);
-    if (t.配音 === undefined) {
-      if (t.文本哈希 || t.成品sha || t.口型 || t.口型手修 || t.开口 !== undefined) report.错(`${displayName}：没写 配音，却写了 文本哈希/成品sha/口型/开口`, path);
+    if (t.mouthOpen !== undefined && !(typeof t.mouthOpen === 'number' && Number.isFinite(t.mouthOpen) && t.mouthOpen >= 0)) report.错(`${displayName}：开口 是配音文件里第几秒开口，要写不小于 0 的数`, path);
+    if (t.voice === undefined) {
+      if (t.textHash || t.finishedSha || t.lip || t.lipManual || t.mouthOpen !== undefined) report.错(`${displayName}：没写 配音，却写了 文本哈希/成品sha/口型/开口`, path);
       continue;
     }
-    if (t.开口 === undefined) report.错(`${displayName}：有配音就要写 开口（配音文件里第几秒开口，cue 的帧对的是它）`, path);
-    const lockEntry = assetLock[t.配音];
+    if (t.mouthOpen === undefined) report.错(`${displayName}：有配音就要写 开口（配音文件里第几秒开口，cue 的帧对的是它）`, path);
+    const lockEntry = assetLock[t.voice];
     if (!lockEntry) {
-      report.错(`${displayName}：配音「${t.配音}」不在资产锁里（先登记、入库）`, path);
+      report.错(`${displayName}：配音「${t.voice}」不在资产锁里（先登记、入库）`, path);
       continue;
     }
-    if (t.文本哈希 !== voiceTextHash(t)) {
-      report.错(`${displayName}：文本哈希 ${t.文本哈希 ?? '（没写）'} 和现在念的字（念，没写就是文本：${voiceTextHash(t)}）对不上：念的字改过，配音过期，要重配（anim voice gen 出候选、anim voice use 定稿）或把文本改回去；只改字幕、念法不变的写 念 = 原来的字`, path);
+    if (t.textHash !== voiceTextHash(t)) {
+      report.错(`${displayName}：文本哈希 ${t.textHash ?? '（没写）'} 和现在念的字（念，没写就是文本：${voiceTextHash(t)}）对不上：念的字改过，配音过期，要重配（anim voice gen 出候选、anim voice use 定稿）或把文本改回去；只改字幕、念法不变的写 念 = 原来的字`, path);
     }
     const fullSha = lockEntry.sha256;
     const shaPrefixMatches = (s: string | undefined) => typeof s === 'string' && s.length >= 12 && fullSha.startsWith(s);
-    if (!shaPrefixMatches(t.成品sha)) report.错(`${displayName}：成品sha ${t.成品sha ?? '（没写）'} 和资产锁里 ${t.配音} 的 ${fullSha.slice(0, 12)} 对不上：配音换过，表没跟上`, path);
-    for (const k of ['口型', '口型手修'] as const) {
+    if (!shaPrefixMatches(t.finishedSha)) report.错(`${displayName}：成品sha ${t.finishedSha ?? '（没写）'} 和资产锁里 ${t.voice} 的 ${fullSha.slice(0, 12)} 对不上：配音换过，表没跟上`, path);
+    for (const k of ['lip', 'lipManual'] as const) {
       const v = t[k];
-      if (v && !shaPrefixMatches(v.成品sha)) report.错(`${displayName}：${k} 是对着成品 ${v.成品sha ?? '（没写）'} 做的，现在的成品是 ${fullSha.slice(0, 12)}：配音换了，${k} 过期（anim voice lip）`, path);
+      if (v && !shaPrefixMatches(v.finishedSha)) report.错(`${displayName}：${k} 是对着成品 ${v.finishedSha ?? '（没写）'} 做的，现在的成品是 ${fullSha.slice(0, 12)}：配音换了，${k} 过期（anim voice lip）`, path);
     }
   }
 
@@ -79,7 +79,7 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
     for (const id of lineFileIds) if (!entryMap.has(id)) report.错(`${lineDir}/${id}.ts：${path} 里没有这一句（删掉，或把这句写回 ${path}）`, `${lineDir}/${id}.ts`);
     for (const t of entryMap.values()) {
       const f = `${lineDir}/${t.id}.ts`;
-      const lockEntry = t.配音 === undefined ? undefined : assetLock[t.配音];
+      const lockEntry = t.voice === undefined ? undefined : assetLock[t.voice];
       if (!lockEntry) {
         if (lineFileIds.has(t.id)) report.错(`台词「${t.id}」没有可用的配音，却有句模块`, f);
         continue;
@@ -99,22 +99,22 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
     }
   }
 
-  if ('错误' in parsedContent) return;
+  if ('errors' in parsedContent) return;
   const usedBy = new Map<string, string[]>();
   let prevSegOpenLines = new Set<string>();
   for (const s of parsedContent.segments) {
     if (s.章 === '核对') continue;
     const openedInSegment = new Set<string>();
-    for (const cue of s.definition?.声音 ?? []) {
-      if (cue.台词 === undefined) continue;
-      if (!entryMap.has(cue.台词)) report.错(`${s.键} 第 ${cue.秒} 秒的台词「${cue.台词}」不在 ${path} 里`, s.段文件);
+    for (const cue of s.definition?.sound ?? []) {
+      if (cue.lines === undefined) continue;
+      if (!entryMap.has(cue.lines)) report.错(`${s.key} 第 ${cue.sec} 秒的台词「${cue.lines}」不在 ${path} 里`, s.segmentFile);
       if (cue.接上段) {
         // 只认本段或上一段真开口的（台词落点.ts 的 台词头们 不往前追两段）
-        if (!openedInSegment.has(cue.台词) && !prevSegOpenLines.has(cue.台词)) report.错(`${s.键} 第 ${cue.秒} 秒的台词「${cue.台词}」标了 接上段，本段前面和清单里上一段都没有它开口`, s.段文件);
+        if (!openedInSegment.has(cue.lines) && !prevSegOpenLines.has(cue.lines)) report.错(`${s.key} 第 ${cue.sec} 秒的台词「${cue.lines}」标了 接上段，本段前面和清单里上一段都没有它开口`, s.segmentFile);
         continue;
       }
-      openedInSegment.add(cue.台词);
-      (usedBy.get(cue.台词) ?? usedBy.set(cue.台词, []).get(cue.台词)!).push(s.键);
+      openedInSegment.add(cue.lines);
+      (usedBy.get(cue.lines) ?? usedBy.set(cue.lines, []).get(cue.lines)!).push(s.key);
     }
     prevSegOpenLines = openedInSegment;
   }

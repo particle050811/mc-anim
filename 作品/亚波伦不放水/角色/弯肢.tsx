@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { type EntityCube, entityCubeFaces } from '@engine/model/实体模型.tsx';
 import { trianglesToArrays, bend, type Triangle, type Vertex } from './弯折.ts';
 
-export type BendLayer = { 键: string; triangles: readonly Triangle[]; material: THREE.Material };
+export type BendLayer = { key: string; triangles: readonly Triangle[]; material: THREE.Material };
 
 /** 方盒 → 三角（顶点、贴图坐标照 EntityModel 的 cubeFaces；绕向和法线对上，同 实体模型.tsx 的 partGeometry） */
 export const boxTriangles = (boxCubes: readonly EntityCube[], textureWidth: number, textureHeight: number): Triangle[] => {
@@ -22,9 +22,9 @@ export const boxTriangles = (boxCubes: readonly EntityCube[], textureWidth: numb
   return triangles;
 };
 
-const LimbLayer: React.FC<{ triangles: readonly Triangle[]; material: THREE.Material; cut: number; hingeZ: number; 角: number }> = ({ triangles, material, cut, hingeZ, 角: bendAngle }) => {
+const LimbLayer: React.FC<{ triangles: readonly Triangle[]; material: THREE.Material; cut: number; hingeZ: number; angle: number }> = ({ triangles, material, cut, hingeZ, angle: bendAngle }) => {
   const geometry = useMemo(() => {
-    const { 上: upper, 下: lower, bridge } = bend(triangles, { cut, hingeZ, 角: bendAngle });
+    const { 上: upper, 下: lower, bridge } = bend(triangles, { cut, hingeZ, angle: bendAngle });
     const { 位置: positions, normals, uv } = trianglesToArrays([upper, lower, bridge]);
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -37,10 +37,10 @@ const LimbLayer: React.FC<{ triangles: readonly Triangle[]; material: THREE.Mate
 };
 
 /** 切、铰z、角：见 弯折.ts（角是弧度，正 = 下半节往 +z 折）。层：要折的面；上节、下节：不折、整块跟着上半节或下半节走的东西 */
-export const BendLimb: React.FC<{ cut: number; hingeZ: number; 角: number; 层: readonly BendLayer[]; upperPart?: React.ReactNode; lowerPart?: React.ReactNode }> = ({ cut, hingeZ, 角: bendAngle, 层: layers, upperPart, lowerPart }) => (
+export const BendLimb: React.FC<{ cut: number; hingeZ: number; angle: number; layers: readonly BendLayer[]; upperPart?: React.ReactNode; lowerPart?: React.ReactNode }> = ({ cut, hingeZ, angle: bendAngle, layers: layers, upperPart, lowerPart }) => (
   <>
     {layers.map((l) => (
-      <LimbLayer key={l.键} triangles={l.triangles} material={l.material} cut={cut} hingeZ={hingeZ} 角={bendAngle} />
+      <LimbLayer key={l.key} triangles={l.triangles} material={l.material} cut={cut} hingeZ={hingeZ} angle={bendAngle} />
     ))}
     {upperPart}
     {lowerPart && (

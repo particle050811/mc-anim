@@ -39,7 +39,7 @@ describe('遮密', () => {
     expect(maskCommand(['--why', 'pass 3: 通过', 'https://a.b/c:d', 'author: 张三'])).toBe('--why pass 3: 通过 https://a.b/c:d author: 张三');
   });
   it('进日志的字段和键都遮；发起者的命令走逐项遮', () => {
-    recordSchedulerEvent(dir, '决定', { 为什么: 'DB_PASS=fake-1 https://u:fake-2@h/x', 发起: readCaller({ ANIM_ROUTE: 'token=fake-3' }, ['node', '--cookie', 'sid fake-4'], dir, false), cookie: 'fake-5', db_pwd: 'fake-6' });
+    recordSchedulerEvent(dir, '决定', { why: 'DB_PASS=fake-1 https://u:fake-2@h/x', initiator: readCaller({ ANIM_ROUTE: 'token=fake-3' }, ['node', '--cookie', 'sid fake-4'], dir, false), cookie: 'fake-5', db_pwd: 'fake-6' });
     expect(JSON.stringify(readSchedulerEvents(dir))).not.toContain('fake');
   });
 });
@@ -67,8 +67,8 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
   it.each(maskCases)('%s：argv 只换凭据，日志再次遮密不吞后续参数', (caseName, argv, expected) => {
     expect(maskCommand(argv)).toBe(expected);
     const initiator = readCaller({}, argv, dir, false);
-    recordSchedulerEvent(dir, '决定', { 发起: initiator });
-    expect((readSchedulerEvents(dir)[0]!.发起 as { 命令: string }).命令).toBe(expected);
+    recordSchedulerEvent(dir, '决定', { initiator: initiator });
+    expect((readSchedulerEvents(dir)[0]!.initiator as { command: string }).command).toBe(expected);
   });
   it.each([
     ['x-api-key fakeA', 'x-api-key [已遮蔽]'],
@@ -86,8 +86,8 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
     ['curl -u user:x; sort -u a && mkdir -p b', 'curl -u [已遮蔽]; sort -u a && mkdir -p b'],
   ])('文本与字段：%s', (raw, expected) => {
     expect(maskSecret(raw)).toBe(expected);
-    recordSchedulerEvent(dir, '决定', { 命令: raw });
-    expect(readSchedulerEvents(dir)[0]!.命令).toBe(expected);
+    recordSchedulerEvent(dir, '决定', { command: raw });
+    expect(readSchedulerEvents(dir)[0]!.command).toBe(expected);
   });
   it.each([
     ['x-api-key'], ['x-api-keyframe', '3'], ['x-api-key-path', '文档'], ['api-key', '说明'],
@@ -108,8 +108,8 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
   ])('不误遮 argv：%j', (...argv) => {
     const raw = argv.join(' ');
     expect(maskCommand(argv)).toBe(raw);
-    recordSchedulerEvent(dir, '决定', { 发起: readCaller({}, argv, dir, false) });
-    expect((readSchedulerEvents(dir)[0]!.发起 as { 命令: string }).命令).toBe(raw);
+    recordSchedulerEvent(dir, '决定', { initiator: readCaller({}, argv, dir, false) });
+    expect((readSchedulerEvents(dir)[0]!.initiator as { command: string }).command).toBe(raw);
   });
   it.each([
     'x-api-key', 'x-api-keyframe 3', 'x-api-key-path 文档', 'api-key 说明',
@@ -122,8 +122,8 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
     'anim sched note --why mysql -u root -pX', 'printf "%s" "curl -u user:x"',
   ])('不误遮文本：%s', raw => {
     expect(maskSecret(raw)).toBe(raw);
-    recordSchedulerEvent(dir, '决定', { 命令: raw });
-    expect(readSchedulerEvents(dir)[0]!.命令).toBe(raw);
+    recordSchedulerEvent(dir, '决定', { command: raw });
+    expect(readSchedulerEvents(dir)[0]!.command).toBe(raw);
   });
 });
 
@@ -131,27 +131,27 @@ describe('行超长', () => {
   const makeInitiator = () => ({ ...readCaller({}, ['node', 'anim', 'sched', 'note', '字'.repeat(180)], '/数据/'.repeat(30), false) });
   it('决定、为什么 各 400 字加完整 谁、发起：全文保留，只丢快照', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    recordSchedulerEvent(dir, '决定', { 谁: makeInitiator(), 发起: makeInitiator(), 看到: { 人工: '看'.repeat(50), 摘要: '负载1', 队: Array(3).fill({ 票: '票'.repeat(100) }) }, 决定: '决'.repeat(400), 为什么: '因'.repeat(400), 机: { 负载: 1 } });
+    recordSchedulerEvent(dir, '决定', { who: makeInitiator(), initiator: makeInitiator(), observed: { 人工: '看'.repeat(50), digest: '负载1', queue: Array(3).fill({ ticket: '票'.repeat(100) }) }, decision: '决'.repeat(400), why: '因'.repeat(400), machine: { load: 1 } });
     const [record] = readSchedulerEvents(dir);
     expect(errorSpy.mock.calls.flat().join()).toContain('已压缩');
     errorSpy.mockRestore();
     expect(Buffer.byteLength(JSON.stringify(record))).toBeLessThan(4096);
-    expect(record).toMatchObject({ 决定: '决'.repeat(400), 为什么: '因'.repeat(400), 截断: true, 看到: `${'看'.repeat(50)}；负载1` });
-    expect((record!.谁 as { pid: number }).pid).toBe(process.pid);
+    expect(record).toMatchObject({ decision: '决'.repeat(400), why: '因'.repeat(400), 截断: true, observed: `${'看'.repeat(50)}；负载1` });
+    expect((record!.who as { pid: number }).pid).toBe(process.pid);
   });
   it('还放不下就截前缀，不落到只剩时间的最小行', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const longTextLength = '字'.repeat(400);
-    recordSchedulerEvent(dir, '决定', { 谁: makeInitiator(), 发起: makeInitiator(), 看到: { 人工: longTextLength, 摘要: longTextLength }, 决定: longTextLength, 为什么: longTextLength });
-    recordSchedulerEvent(dir, '决定', { 谁: makeInitiator(), 决定: '决', 为什么: '因', extraFields: Object.fromEntries(Array.from({ length: 40 }, (_, i) => ['字段' + i, longTextLength])) });
+    recordSchedulerEvent(dir, '决定', { who: makeInitiator(), initiator: makeInitiator(), observed: { 人工: longTextLength, digest: longTextLength }, decision: longTextLength, why: longTextLength });
+    recordSchedulerEvent(dir, '决定', { who: makeInitiator(), decision: '决', why: '因', extraFields: Object.fromEntries(Array.from({ length: 40 }, (_, i) => ['字段' + i, longTextLength])) });
     errorSpy.mockRestore();
     const [firstRow, secondRow] = readSchedulerEvents(dir);
     for (const record of [firstRow!, secondRow!]) {
       expect(Buffer.byteLength(JSON.stringify(record))).toBeLessThan(4096);
-      expect(record.谁).toBeTruthy();
-      expect(String(record.决定).startsWith(record === firstRow ? '字' : '决')).toBe(true);
+      expect(record.who).toBeTruthy();
+      expect(String(record.decision).startsWith(record === firstRow ? '字' : '决')).toBe(true);
     }
-    expect(String(firstRow!.决定)).toMatch(/…$/);
+    expect(String(firstRow!.decision)).toMatch(/…$/);
     expect(secondRow!.其他).toBeUndefined();
   });
 });
@@ -204,12 +204,12 @@ describe('生产路径与文本命令边界返修', () => {
     const argv = ['/usr/local/bin/node', '/x/pipeline/cli/main.ts', 'sched', 'note', '--why', raw, '--decision', '排错'];
     const initiator = readCaller({}, argv, dir, false);
     const command = [...argv.slice(0, 5), expected, ...argv.slice(6)].join(' ');
-    expect(initiator.命令).toBe(command);
-    expect(maskSecret(initiator.命令)).toBe(command);
-    recordSchedulerEvent(dir, '决定', { 发起: initiator, 为什么: raw });
+    expect(initiator.command).toBe(command);
+    expect(maskSecret(initiator.command)).toBe(command);
+    recordSchedulerEvent(dir, '决定', { initiator: initiator, why: raw });
     const record = readSchedulerEvents(dir)[0]!;
-    expect((record.发起 as { 命令: string }).命令).toBe(command);
-    expect(record.为什么).toBe(expected);
+    expect((record.initiator as { command: string }).command).toBe(command);
+    expect(record.why).toBe(expected);
     expect(JSON.stringify(record)).not.toContain('fake');
     expect(maskCommand(['anim', '--why', raw])).toBe(`anim --why ${expected}`);
     expect(maskSecret(`anim --why "${raw}"`)).toBe(`anim --why "${expected}"`);
@@ -275,10 +275,10 @@ describe('截断与空格头返修', () => {
   ])('中文说明和分隔符不遮：%s', s => {
     expect(maskSecret(s)).toBe(s);
     expect(maskCommand(['anim', '--why', s])).toBe(`anim --why ${s}`);
-    recordSchedulerEvent(dir, '决定', { 发起: readCaller({}, ['node', '/x/main.ts', '--why', s], dir, false), 为什么: s });
+    recordSchedulerEvent(dir, '决定', { initiator: readCaller({}, ['node', '/x/main.ts', '--why', s], dir, false), why: s });
     const record = readSchedulerEvents(dir)[0]!;
-    expect(record.为什么).toBe(s);
-    expect((record.发起 as { 命令: string }).命令).toBe(`node /x/main.ts --why ${s}`);
+    expect(record.why).toBe(s);
+    expect((record.initiator as { command: string }).command).toBe(`node /x/main.ts --why ${s}`);
   });
   it.each(['x-api-key fakeA 是测试值', '缺 x-api-key fakeA 是测试值', 'x-api-key "fakeA 是测试值"'])('只看第一个值词：%s', s => {
     expect(maskSecret(s)).not.toContain('fakeA');

@@ -14,7 +14,7 @@ const cloneTree = (sourcePath: string, destPath: string) => {
   else fs.cpSync(sourcePath, destPath, { recursive: true, preserveTimestamps: true });
 };
 
-export type Sandbox = { 根: string; 服务端: string; 存档: string };
+export type Sandbox = { root: string; server: string; save: string };
 
 const newSandboxDir = (displayName: string, root: string) => {
   const dir = path.join(root, `${utcMonthDayTime(Date.now())}-${displayName}`);
@@ -37,7 +37,7 @@ const cloneServer = (serverDir: string, destPath: string) => {
 export const makeNewWorldSandbox = (serverDir: string, saveName: string, displayName: string, root = dataPath('run', '沙盒')): Sandbox => {
   const dir = newSandboxDir(displayName, root);
   cloneServer(serverDir, path.join(dir, '服务端'));
-  return { 根: dir, 服务端: path.join(dir, '服务端'), 存档: path.join(dir, saveName) };
+  return { root: dir, server: path.join(dir, '服务端'), save: path.join(dir, saveName) };
 };
 
 export const makeSandbox = (serverDir: string, saveDir: string, displayName: string, root = dataPath('run', '沙盒')): Sandbox => {
@@ -47,5 +47,5 @@ export const makeSandbox = (serverDir: string, saveDir: string, displayName: str
   const world = path.join(dir, path.basename(saveDir));
   cloneTree(saveDir, world);
   fs.rmSync(path.join(world, 'session.lock'), { force: true });
-  return { 根: dir, 服务端: server, 存档: world };
+  return { root: dir, server: server, save: world };
 };

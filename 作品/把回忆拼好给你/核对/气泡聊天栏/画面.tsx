@@ -27,13 +27,13 @@ const picture: React.FC = () => {
     <AbsoluteFill style={{ background: '#808080' }}>
       {v.bubbles.map((b, i) => (
         <React.Fragment key={i}>
-          <MaidBubble 锚={{ x: b.锚[0], y: b.锚[1] }} 缩放={b.缩放} 文字={b.字} 字体={pixelFont} popProgress={b.popProgress} bottomStyle={b.bottomStyle} 位置={b.位置} />
+          <MaidBubble 锚={{ x: b.锚[0], y: b.锚[1] }} scale={b.scale} 文字={b.char} 字体={pixelFont} popProgress={b.popProgress} bottomStyle={b.bottomStyle} 位置={b.位置} />
           <div style={{ position: 'absolute', left: b.锚[0] - 1, top: b.锚[1] - 1, width: 2, height: 2, background: '#ff2020' }} />
         </React.Fragment>
       ))}
-      {v.chatScale !== undefined && <PixelChatBar lines={chatLines(v.chatStartTicks ?? [0, 0, 0, 0, 0])} 刻={v.chatTick ?? 0} 缩放={v.chatScale} 字体={pixelFont} 宽={aspect.宽} 高={aspect.高} />}
+      {v.chatScale !== undefined && <PixelChatBar lines={chatLines(v.chatStartTicks ?? [0, 0, 0, 0, 0])} 刻={v.chatTick ?? 0} scale={v.chatScale} 字体={pixelFont} width={aspect.width} height={aspect.height} />}
       <div style={{ position: 'absolute', right: 20, top: 16, fontFamily: uiFontFamily, fontSize: 20, color: '#f2f2f2', textShadow: '0 1px 3px #000' }}>
-        核对-气泡聊天栏 · {v.名}
+        核对-气泡聊天栏 · {v.name}
       </div>
       <div style={{ position: 'absolute', right: 20, top: 44, fontFamily: uiFontFamily, fontSize: 14, color: '#e0e0e0', textShadow: '0 1px 3px #000' }}>
         聊天绿 {extraChatColors.green} · 黄 {yellow} · 红点是气泡锚点

@@ -6,7 +6,7 @@ import { sampleSkeleton, playTo, type BedrockAnimation } from '@engine/anim/基�
 /** 变量表：v.s、v.f（molang3）、L1～L13 的弹簧常数（parallel3 时间线）、tail 目标和 L13_P0… 弹簧输出（稳态） */
 export const tailSteadyVars = (animations: Readonly<Record<string, BedrockAnimation>>, sec: number): Record<string, number | string> => {
   const variables: Record<string, number | string> = {};
-  const options = { 环境: { 变量: variables }, 口径: 'TLM' } as const;
+  const options = { env: { 变量: variables }, 口径: 'TLM' } as const;
   playTo(animations.parallel3!, 0.5, 0.01, options);
   sampleSkeleton(animations.pre_parallel2!, 0, options); // molang3 排在 molang2 后面，第一遍才给 v.s、v.f
   const [K1, K2, K3] = ['l13_k1', 'l13_k2', 'l13_k3'].map((k) => variables[k] as number);

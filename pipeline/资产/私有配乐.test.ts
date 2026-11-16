@@ -16,7 +16,7 @@ const putFile = (dataRoot: string, storage: 'store' | '私有', content: string)
 
 describe('私有配乐', () => {
   const id = '配乐/某歌';
-  const makeSegment = (durSec: number, inSec = 0) => ({ 段: { 声音: [{ 秒: 0, 资产: id, 名: '歌', 长秒: durSec, 入点秒: inSec }, { 秒: 0.1, 资产: '音效/甲', 名: '甲', 长秒: 0.3 }] } });
+  const makeSegment = (durSec: number, inSec = 0) => ({ segment: { sound: [{ sec: 0, asset: id, name: '歌', 长秒: durSec, 入点秒: inSec }, { sec: 0.1, asset: '音效/甲', name: '甲', 长秒: 0.3 }] } });
 
   it('静音 wav：48 kHz 单声道 16 位，秒数向上取整，数据全零', () => {
     const b = silentWav(1.2);
@@ -30,14 +30,14 @@ describe('私有配乐', () => {
 
   it('数据根里没有：写一份盖住所有 cue 的静音并报出来；补上字节后换成原样字节；只认私有库里 配乐/ 开头的', () => {
     const dataRoot = tmp('私有配乐');
-    const entry: LockEntry = { sha256: sha('歌的字节'), 后缀: '.m4a', 大小: 12, 库: '私有' };
-    const assetLock: AssetLock = { [id]: entry, '音效/甲': { sha256: 'a'.repeat(64), 后缀: '.ogg', 大小: 1, 库: 'store' } };
+    const entry: LockEntry = { sha256: sha('歌的字节'), suffix: '.m4a', size: 12, lib: '私有' };
+    const assetLock: AssetLock = { [id]: entry, '音效/甲': { sha256: 'a'.repeat(64), suffix: '.ogg', size: 1, lib: 'store' } };
     const targetPath = path.join(privateMusicDir(dataRoot), '配乐', '某歌');
 
-    expect(segPrivateMusic(makeSegment(2).段, assetLock, dataRoot)).toEqual({ [id]: missingMarker });
+    expect(segPrivateMusic(makeSegment(2).segment, assetLock, dataRoot)).toEqual({ [id]: missingMarker });
     // 两段：2 秒从 0 秒起、1 秒从 2.5 秒起 → 盖到 3.5 秒，多留 1 秒取整 = 5 秒
     const missing = preparePrivateMusic([makeSegment(2), makeSegment(1, 2.5)], assetLock, dataRoot);
-    expect(missing).toEqual([{ id, 秒: 5, expectedPath: path.join(dataRoot, '私有', entry.sha256.slice(0, 2), entry.sha256) }]);
+    expect(missing).toEqual([{ id, sec: 5, expectedPath: path.join(dataRoot, '私有', entry.sha256.slice(0, 2), entry.sha256) }]);
     expect(fs.readFileSync(targetPath).equals(silentWav(4.5))).toBe(true);
     const mtimeBefore = fs.statSync(targetPath).mtimeMs;
     expect(preparePrivateMusic([makeSegment(2), makeSegment(1, 2.5)], assetLock, dataRoot)).toHaveLength(1);
@@ -45,10 +45,10 @@ describe('私有配乐', () => {
 
     putFile(dataRoot, '私有', '歌的字节');
     fs.chmodSync(path.join(dataRoot, '私有', entry.sha256.slice(0, 2), entry.sha256), 0o444);
-    expect(segPrivateMusic(makeSegment(2).段, assetLock, dataRoot)).toEqual({ [id]: entry.sha256 });
+    expect(segPrivateMusic(makeSegment(2).segment, assetLock, dataRoot)).toEqual({ [id]: entry.sha256 });
     expect(preparePrivateMusic([makeSegment(2)], assetLock, dataRoot)).toEqual([]);
     expect(fs.readFileSync(targetPath, 'utf8')).toBe('歌的字节');
     // 公开的配乐不走这里（照常打进包）
-    expect(segPrivateMusic(makeSegment(2).段, { ...assetLock, [id]: { ...entry, 库: 'store' } }, dataRoot)).toEqual({});
+    expect(segPrivateMusic(makeSegment(2).segment, { ...assetLock, [id]: { ...entry, lib: 'store' } }, dataRoot)).toEqual({});
   });
 });

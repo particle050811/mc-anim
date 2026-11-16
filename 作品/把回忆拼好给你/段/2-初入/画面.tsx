@@ -27,7 +27,7 @@ import soundUrl from './声音地址.生成.ts';
 import { useSnappedFrame } from '../../当前帧.ts';
 
 const startFrame = segmentWindow('2-初入').起帧;
-const width = aspect.宽, height = aspect.高;
+const width = aspect.width, height = aspect.height;
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
 
 const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
@@ -40,20 +40,20 @@ const picture: React.FC = () => {
   const songFrame = startFrame + useSnappedFrame();
   const tone = gradeAt(songFrame);
   const sample = youAt(songFrame);
-  const youPose = stevePose(sample.feet, sample.facing, { sec: sample.秒, limbSwing: sample.swing, stride: sample.stride, headPitch: sample.头 });
+  const youPose = stevePose(sample.feet, sample.facing, { sec: sample.sec, limbSwing: sample.swing, stride: sample.stride, headPitch: sample.头 });
   const { q } = drillInProgress(songFrame);
   const alpha = drillInAlpha(q);
   return (
     <>
-      <FilmPost grade={tone.grade} 种子={songFrame}>
+      <FilmPost grade={tone.grade} seed={songFrame}>
         {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
         <shadingScope.Provider value={{ shading: shadingBySeg['2-初入'], shadingScene: newWorldShadingScene }}>
-          <NewWorld cameraRig={shotAt(songFrame)} 你={youPose} tint={tone.tint} 刻={skyTickAt(songFrame)} section={{ pit: notDug, peeled: peeledRows(songFrame) }} 宽={width} 高={height} />
+          <NewWorld cameraRig={shotAt(songFrame)} 你={youPose} tint={tone.tint} 刻={skyTickAt(songFrame)} section={{ pit: notDug, peeled: peeledRows(songFrame) }} width={width} height={height} />
         </shadingScope.Provider>
         {songFrame < drillDone && (
-          <SelectWorld 状态={{ framing: drillInFraming(q), pointAt: 0, selected: true, frameCursor: false, cursor: null, iconMap: oldIcon, iconSeeThrough: (i, j) => threshold(i, j) < alpha }} 宽={width} 高={height} />
+          <SelectWorld state={{ framing: drillInFraming(q), pointAt: 0, selected: true, frameCursor: false, cursor: null, iconMap: oldIcon, iconSeeThrough: (i, j) => threshold(i, j) < alpha }} width={width} height={height} />
         )}
-        <PixelChatBar lines={chatLines} 刻={chatTickAt(songFrame)} 缩放={chatOverlay.缩放} 字体={pixelFont} 宽={width} 高={height} chatWidth={line15ChatWidth} />
+        <PixelChatBar lines={chatLines} 刻={chatTickAt(songFrame)} scale={chatOverlay.scale} 字体={pixelFont} width={width} height={height} chatWidth={line15ChatWidth} />
         <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.outlineColor }} />
       </FilmPost>
     </>

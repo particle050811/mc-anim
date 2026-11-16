@@ -16,14 +16,14 @@ export type BowWindFan = {
   windStop: number; // 不再出新风的场时刻
   rotSpeedRpm: number; // rpm（风道长度照 ductLength 按边长缩）
   fastForward: number;
-  种子: number;
+  seed: number;
 };
 const fanQuat = (d: V3) => new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(d[0], d[1], d[2]));
 
 export const BowFans: React.FC<{ t: number; fans: BowWindFan[] }> = ({ t, fans }) => {
   const airflow = fans.flatMap((fan) =>
     scatterDuct({
-      种子: fan.种子,
+      seed: fan.seed,
       storyTime: t,
       sideLength: fan.sideLength,
       outlet: fan.mouth,
@@ -32,14 +32,14 @@ export const BowFans: React.FC<{ t: number; fans: BowWindFan[] }> = ({ t, fans }
       maxDist: ductLength(fan.rotSpeedRpm) * fan.sideLength,
       fastForward: fan.fastForward,
       spawnDist: [0, 0.5 * fan.sideLength],
-      起: fan.spinStart + 0.05,
-      止: fan.windStop,
+      start: fan.spinStart + 0.05,
+      end: fan.windStop,
     }),
   );
   return (
     <>
       {fans.map((fan) => (
-        <group key={fan.种子} position={fan.心} quaternion={fanQuat(fan.dir)} scale={fan.sideLength}>
+        <group key={fan.seed} position={fan.心} quaternion={fanQuat(fan.dir)} scale={fan.sideLength}>
           <EncasedFan spin={(t - fan.spinStart) * 720 * (fan.rotSpeedRpm / 256)} thickBlades ghost opacity={0.55 * fan.visibility} />
         </group>
       ))}

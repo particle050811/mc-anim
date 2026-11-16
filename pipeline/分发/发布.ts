@@ -20,7 +20,7 @@ import { computeRepoBundle } from './随仓库.ts';
 import { terrainDir, readReleaseLock, missingAttachmentCount, type ReleaseLock, type Attachment } from './发布锁.ts';
 
 export const releaseTableName = '随发布.toml';
-export type ReleaseManifest = { 仓库: string; 标签: string; 段: string[] };
+export type ReleaseManifest = { repo: string; label: string; segment: string[] };
 
 /** GitHub 一个 Release 附件要小于 2 GiB */
 export const attachmentLimitBytes = 2 * 1024 ** 3;
@@ -29,10 +29,10 @@ export const attachmentLimitBytes = 2 * 1024 ** 3;
 export const readReleaseManifest = (text: string): ReleaseManifest => {
   const d = parse(text) as Record<string, unknown>;
   const expectedShape = `${releaseTableName} 要写 "仓库" = "<owner>/<repo>"、"标签" = "<tag>"、"段" = ["<段键或章>", …]`;
-  if (typeof d.仓库 !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(d.仓库)) throw new Error(expectedShape);
-  if (typeof d.标签 !== 'string' || !/^[\x21-\x7e]+$/.test(d.标签)) throw new Error(`${expectedShape}（标签只用 ASCII）`);
-  if (!Array.isArray(d.段) || !d.段.length || d.段.some((x) => typeof x !== 'string' || !x)) throw new Error(expectedShape);
-  return { 仓库: d.仓库, 标签: d.标签, 段: d.段 as string[] };
+  if (typeof d.repo !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(d.repo)) throw new Error(expectedShape);
+  if (typeof d.label !== 'string' || !/^[\x21-\x7e]+$/.test(d.label)) throw new Error(`${expectedShape}（标签只用 ASCII）`);
+  if (!Array.isArray(d.segment) || !d.segment.length || d.segment.some((x) => typeof x !== 'string' || !x)) throw new Error(expectedShape);
+  return { repo: d.repo, label: d.label, segment: d.segment as string[] };
 };
 
 const sha = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
@@ -50,36 +50,36 @@ const streamSha256 = (f: string) =>
       .on('error', reject);
   });
 
-type TerrainRecord = { 版本: string; 清单sha256?: string; 文件数?: number; 大小?: number };
+type TerrainRecord = { version: string; manifestSha256?: string; fileCount?: number; size?: number };
 const readTerrainTable = (): Record<string, TerrainRecord> =>
-  (JSON.parse(fs.readFileSync(path.join(codeRoot(), 'assets', '地形版本.json'), 'utf8')) as { 包?: Record<string, TerrainRecord> }).包 ?? {};
+  (JSON.parse(fs.readFileSync(path.join(codeRoot(), 'assets', '地形版本.json'), 'utf8')) as { pack?: Record<string, TerrainRecord> }).pack ?? {};
 
-export type ExpectedRelease = { 字节: string[]; 私有库字节: string[]; 地形: { 包: string; 版本: string }[]; 段数: number; privateFiles: string[]; issues: string[] };
+export type ExpectedRelease = { bytes: string[]; privateLibBytes: string[]; terrain: { pack: string; version: string }[]; 段数: number; privateFiles: string[]; issues: string[] };
 
 /** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节、私有/ 库里可见性不是私有的字节（可见性私有的不发），加段声明的地形包 */
 export const computeExpectedRelease = async (c: CheckContext, releaseTable: ReleaseManifest): Promise<ExpectedRelease> => {
-  const bundleSet = await computeRepoBundle(c, releaseTable.段);
+  const bundleSet = await computeRepoBundle(c, releaseTable.segment);
   const terrainTable = readTerrainTable();
   const issues = [...bundleSet.issues];
-  const terrainPacks = bundleSet.地形.flatMap((pack) => {
+  const terrainPacks = bundleSet.terrain.flatMap((pack) => {
     const v = terrainTable[pack];
     if (!v) {
       issues.push(`地形包 ${pack} 没在 assets/地形版本.json 登记`);
       return [];
     }
-    return [{ 包: pack, 版本: v.版本 }];
+    return [{ pack: pack, version: v.version }];
   });
-  return { 字节: [...bundleSet.files.keys()].sort(), 私有库字节: [...bundleSet.privateLibItems.keys()].sort(), 地形: terrainPacks, 段数: bundleSet.segKeys.length, privateFiles: bundleSet.privateFiles, issues };
+  return { bytes: [...bundleSet.files.keys()].sort(), privateLibBytes: [...bundleSet.privateLibItems.keys()].sort(), terrain: terrainPacks, 段数: bundleSet.segKeys.length, privateFiles: bundleSet.privateFiles, issues };
 };
 
 /** 发布锁和现算的对不上的地方（anim check 用）；空就是一致 */
 export const compareReleaseLock = (releaseLock: ReleaseLock | undefined, expected: ExpectedRelease, releaseTable: ReleaseManifest): string[] => {
   if (!releaseLock) return ['没有 发布锁.json'];
   const r: string[] = [];
-  if (releaseLock.仓库 !== releaseTable.仓库 || releaseLock.标签 !== releaseTable.标签) r.push(`发布锁是 ${releaseLock.仓库}@${releaseLock.标签}，${releaseTableName} 写的是 ${releaseTable.仓库}@${releaseTable.标签}`);
+  if (releaseLock.repo !== releaseTable.repo || releaseLock.label !== releaseTable.label) r.push(`发布锁是 ${releaseLock.repo}@${releaseLock.label}，${releaseTableName} 写的是 ${releaseTable.repo}@${releaseTable.label}`);
   for (const [kindLabel, lockedIds, expectedShas] of [
-    ['', releaseLock.附件.flatMap((a) => a.字节 ?? []), expected.字节],
-    ['私有/ 库的', releaseLock.附件.flatMap((a) => a.私有库字节 ?? []), expected.私有库字节],
+    ['', releaseLock.attachments.flatMap((a) => a.bytes ?? []), expected.bytes],
+    ['私有/ 库的', releaseLock.attachments.flatMap((a) => a.privateLibBytes ?? []), expected.privateLibBytes],
   ] as const) {
     const locked = new Set(lockedIds);
     const missing = expectedShas.filter((s) => !locked.has(s));
@@ -87,8 +87,8 @@ export const compareReleaseLock = (releaseLock: ReleaseLock | undefined, expecte
     if (missing.length) r.push(`发布锁少 ${missing.length} 件${kindLabel}字节`);
     if (unneeded.length) r.push(`发布锁多 ${unneeded.length} 件${kindLabel}字节（段现在用不到）`);
   }
-  const expectedNames = [bytesAttachmentName(expected.字节, expected.私有库字节), ...expected.地形.map((x) => terrainAttachmentName(x.版本))].sort();
-  const lockNames = releaseLock.附件.map((a) => a.名).sort();
+  const expectedNames = [bytesAttachmentName(expected.bytes, expected.privateLibBytes), ...expected.terrain.map((x) => terrainAttachmentName(x.version))].sort();
+  const lockNames = releaseLock.attachments.map((a) => a.name).sort();
   if (expectedNames.join() !== lockNames.join()) r.push(`附件该是 ${expectedNames.join('、')}，发布锁里是 ${lockNames.join('、')}`);
   return r;
 };
@@ -108,7 +108,7 @@ const packTar = async (tarPath: string, baseDir: string, fileList: string[]) => 
   }
   const byteSize = fs.statSync(tarPath).size;
   if (byteSize >= attachmentLimitBytes) throw new Error(`${tarPath} 有 ${(byteSize / 1e9).toFixed(2)} GB，超过 GitHub 附件上限 2 GiB（要分卷，还没做）`);
-  return { sha256: await streamSha256(tarPath), 大小: byteSize };
+  return { sha256: await streamSha256(tarPath), size: byteSize };
 };
 
 export const releaseDir = (dataRoot: string) => path.join(dataRoot, 'cache', '发布');
@@ -118,27 +118,27 @@ export const packRelease = async (c: CheckContext, releaseTable: ReleaseManifest
   const expected = await computeExpectedRelease(c, releaseTable);
   if (expected.issues.length) throw new Error(`算不出该发的：\n  ${expected.issues.join('\n  ')}`);
   const prevLock = readReleaseLock(workRoot);
-  const oldAttachments = new Map(prevLock && prevLock.仓库 === releaseTable.仓库 && prevLock.标签 === releaseTable.标签 ? prevLock.附件.map((a) => [a.名, a]) : []);
+  const oldAttachments = new Map(prevLock && prevLock.repo === releaseTable.repo && prevLock.label === releaseTable.label ? prevLock.attachments.map((a) => [a.name, a]) : []);
   const dir = releaseDir(dataRoot);
   fs.mkdirSync(dir, { recursive: true });
   const attachments: Attachment[] = [];
   const newPacks: string[] = [];
 
-  const bytesAttachment = bytesAttachmentName(expected.字节, expected.私有库字节);
+  const bytesAttachment = bytesAttachmentName(expected.bytes, expected.privateLibBytes);
   const oldAttachment = oldAttachments.get(bytesAttachment);
   if (oldAttachment) attachments.push(oldAttachment);
   else {
-    const fileList = [...expected.字节.map((s) => `store/${s.slice(0, 2)}/${s}`), ...expected.私有库字节.map((s) => `私有/${s.slice(0, 2)}/${s}`)];
+    const fileList = [...expected.bytes.map((s) => `store/${s.slice(0, 2)}/${s}`), ...expected.privateLibBytes.map((s) => `私有/${s.slice(0, 2)}/${s}`)];
     const missing = fileList.filter((p) => !fs.existsSync(path.join(dataRoot, p)));
     if (missing.length) throw new Error(`数据根缺 ${missing.length} 件要发的字节（${missing.slice(0, 3).join('、')}…），这台机器打不了`);
     const tarPath = path.join(dir, bytesAttachment);
-    console.log(`打 ${bytesAttachment}：${expected.字节.length + expected.私有库字节.length} 件字节`);
-    attachments.push({ 名: bytesAttachment, ...(await packTar(tarPath, dataRoot, fileList)), 字节: expected.字节, ...(expected.私有库字节.length ? { 私有库字节: expected.私有库字节 } : {}) });
+    console.log(`打 ${bytesAttachment}：${expected.bytes.length + expected.privateLibBytes.length} 件字节`);
+    attachments.push({ name: bytesAttachment, ...(await packTar(tarPath, dataRoot, fileList)), bytes: expected.bytes, ...(expected.privateLibBytes.length ? { privateLibBytes: expected.privateLibBytes } : {}) });
     newPacks.push(tarPath);
   }
 
   const terrainTable = readTerrainTable();
-  for (const { 包: pack, 版本: version } of expected.地形) {
+  for (const { pack: pack, version: version } of expected.terrain) {
     const terrainAttachName = terrainAttachmentName(version);
     const oldTerrain = oldAttachments.get(terrainAttachName);
     if (oldTerrain) {
@@ -149,30 +149,30 @@ export const packRelease = async (c: CheckContext, releaseTable: ReleaseManifest
     if (!fs.existsSync(sourceDir)) throw new Error(`数据根没有地形包 ${pack}/${version}，这台机器打不了`);
     const actual = await packManifest(sourceDir);
     const v = terrainTable[pack]!;
-    if (actual.清单sha256 !== v.清单sha256) throw new Error(`地形包 ${pack}/${version} 和 assets/地形版本.json 记的清单指纹不一致，先 anim check --deep`);
+    if (actual.manifestSha256 !== v.manifestSha256) throw new Error(`地形包 ${pack}/${version} 和 assets/地形版本.json 记的清单指纹不一致，先 anim check --deep`);
     const tarPath = path.join(dir, terrainAttachName);
-    console.log(`打 ${terrainAttachName}：地形包 ${pack}，${actual.文件数} 个文件 ${(actual.大小 / 1e9).toFixed(2)} GB`);
+    console.log(`打 ${terrainAttachName}：地形包 ${pack}，${actual.fileCount} 个文件 ${(actual.size / 1e9).toFixed(2)} GB`);
     const fileNames = fs.readdirSync(sourceDir).sort();
-    attachments.push({ 名: terrainAttachName, ...(await packTar(tarPath, sourceDir, fileNames)), 地形: { 包: pack, 版本: version } });
+    attachments.push({ name: terrainAttachName, ...(await packTar(tarPath, sourceDir, fileNames)), terrain: { pack: pack, version: version } });
     newPacks.push(tarPath);
   }
-  return { releaseLock: { 仓库: releaseTable.仓库, 标签: releaseTable.标签, 附件: attachments } satisfies ReleaseLock, newPacks, expected };
+  return { releaseLock: { repo: releaseTable.repo, label: releaseTable.label, attachments: attachments } satisfies ReleaseLock, newPacks, expected };
 };
 
 /** --upload：没有这个 Release 就建，再传 Release 上还没有的附件（本机 cache/发布/ 里要有） */
 export const uploadRelease = async (releaseLock: ReleaseLock, dataRoot: string) => {
-  const viewResult = tryRun(['gh', 'release', 'view', releaseLock.标签, '--repo', releaseLock.仓库, '--json', 'assets', '--jq', '.assets[].name']);
-  if (viewResult.退出码 !== 0) {
+  const viewResult = tryRun(['gh', 'release', 'view', releaseLock.label, '--repo', releaseLock.repo, '--json', 'assets', '--jq', '.assets[].name']);
+  if (viewResult.exitCode !== 0) {
     if (!/release not found/i.test(viewResult.stderr)) throw new Error(`gh release view 失败（装了 gh、gh auth login 了吗）：${viewResult.stderr.trim()}`);
-    await runCmd(['gh', 'release', 'create', releaseLock.标签, '--repo', releaseLock.仓库, '--title', releaseLock.标签, '--notes', '渲片用的字节和地形包，anim assets pull 按 <作品根>/发布锁.json 下载、核 sha、解进数据根。']);
+    await runCmd(['gh', 'release', 'create', releaseLock.label, '--repo', releaseLock.repo, '--title', releaseLock.label, '--notes', '渲片用的字节和地形包，anim assets pull 按 <作品根>/发布锁.json 下载、核 sha、解进数据根。']);
   }
-  const remoteNames = new Set(viewResult.退出码 === 0 ? viewResult.stdout.split('\n').filter(Boolean) : []);
-  for (const a of releaseLock.附件) {
-    if (remoteNames.has(a.名)) continue;
-    const f = path.join(releaseDir(dataRoot), a.名);
-    if (!fs.existsSync(f) || fs.statSync(f).size !== a.大小) throw new Error(`${a.名} 不在 ${releaseDir(dataRoot)}（或大小不对），这台机器传不了`);
-    console.log(`传 ${a.名}（${(a.大小 / 1e6).toFixed(0)} MB）`);
-    await runCmd(['gh', 'release', 'upload', releaseLock.标签, f, '--repo', releaseLock.仓库]);
+  const remoteNames = new Set(viewResult.exitCode === 0 ? viewResult.stdout.split('\n').filter(Boolean) : []);
+  for (const a of releaseLock.attachments) {
+    if (remoteNames.has(a.name)) continue;
+    const f = path.join(releaseDir(dataRoot), a.name);
+    if (!fs.existsSync(f) || fs.statSync(f).size !== a.size) throw new Error(`${a.name} 不在 ${releaseDir(dataRoot)}（或大小不对），这台机器传不了`);
+    console.log(`传 ${a.name}（${(a.size / 1e6).toFixed(0)} MB）`);
+    await runCmd(['gh', 'release', 'upload', releaseLock.label, f, '--repo', releaseLock.repo]);
   }
 };
 
@@ -198,21 +198,21 @@ const attachmentNotUploaded = (url: string) =>
 
 /** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 默认取 ANIM_GITHUB_MIRROR（github.com 或加速站前缀），测试换成本地服务 */
 export const pullRelease = async (releaseLock: ReleaseLock, dataRoot: string, downloadRoot = config('github下载根').replace(/\/+$/, '')) => {
-  const missing = releaseLock.附件.filter((a) => missingAttachmentCount(a, dataRoot) > 0);
+  const missing = releaseLock.attachments.filter((a) => missingAttachmentCount(a, dataRoot) > 0);
   if (!missing.length) {
-    console.log(`${releaseLock.附件.length} 个附件的东西数据根里都有`);
+    console.log(`${releaseLock.attachments.length} 个附件的东西数据根里都有`);
     return;
   }
-  console.log(`要下 ${missing.length} 个附件，共 ${(missing.reduce((s, a) => s + a.大小, 0) / 1e9).toFixed(2)} GB（${releaseLock.仓库} 的 Release ${releaseLock.标签}）`);
+  console.log(`要下 ${missing.length} 个附件，共 ${(missing.reduce((s, a) => s + a.size, 0) / 1e9).toFixed(2)} GB（${releaseLock.repo} 的 Release ${releaseLock.label}）`);
   const dir = releaseDir(dataRoot);
   fs.mkdirSync(dir, { recursive: true });
   const terrainTable = readTerrainTable();
   for (const a of missing) {
-    const f = path.join(dir, a.名);
-    if (!(fs.existsSync(f) && fs.statSync(f).size === a.大小 && (await streamSha256(f)) === a.sha256)) {
-      const url = `${downloadRoot}/${releaseLock.仓库}/releases/download/${encodeURIComponent(releaseLock.标签)}/${encodeURIComponent(a.名)}`;
-      if (await attachmentNotUploaded(url)) throw new Error(`Release ${releaseLock.标签} 上没有 ${a.名}（${releaseLock.仓库}，HTTP 404）：发布锁比 Release 新，这份代码 pack 过但附件还没传。要在打包的那台机器上 anim assets pack --upload，传完才能用`);
-      console.log(`下 ${a.名}（${(a.大小 / 1e6).toFixed(0)} MB）`);
+    const f = path.join(dir, a.name);
+    if (!(fs.existsSync(f) && fs.statSync(f).size === a.size && (await streamSha256(f)) === a.sha256)) {
+      const url = `${downloadRoot}/${releaseLock.repo}/releases/download/${encodeURIComponent(releaseLock.label)}/${encodeURIComponent(a.name)}`;
+      if (await attachmentNotUploaded(url)) throw new Error(`Release ${releaseLock.label} 上没有 ${a.name}（${releaseLock.repo}，HTTP 404）：发布锁比 Release 新，这份代码 pack 过但附件还没传。要在打包的那台机器上 anim assets pack --upload，传完才能用`);
+      console.log(`下 ${a.name}（${(a.size / 1e6).toFixed(0)} MB）`);
       const tmp = `${f}.下载中`;
       // -C - 断点续传：上回没下完的接着下。走代理时连接会半路断（Windows 上见过 schannel「server closed abruptly」），
       // curl 的 --retry 默认不重试这种，加 --retry-all-errors；整个 curl 失败了再从断点接着跑几次
@@ -228,31 +228,31 @@ export const pullRelease = async (releaseLock: ReleaseLock, dataRoot: string, do
       const actualSha = await streamSha256(tmp);
       if (actualSha !== a.sha256) {
         fs.rmSync(tmp, { force: true });
-        throw new Error(`${a.名} 下下来的 sha256 是 ${actualSha.slice(0, 12)}，发布锁记的是 ${a.sha256.slice(0, 12)}（Release 上的附件被换过？重跑一次）`);
+        throw new Error(`${a.name} 下下来的 sha256 是 ${actualSha.slice(0, 12)}，发布锁记的是 ${a.sha256.slice(0, 12)}（Release 上的附件被换过？重跑一次）`);
       }
       fs.renameSync(tmp, f);
     }
-    const unpackDir = path.join(dir, `解开-${a.名}-${process.pid}`);
+    const unpackDir = path.join(dir, `解开-${a.name}-${process.pid}`);
     fs.rmSync(unpackDir, { recursive: true, force: true });
     fs.mkdirSync(unpackDir, { recursive: true });
     try {
       await runCmd(['tar', '-xf', f, '-C', unpackDir], { quiet: true });
-      if (a.地形) {
-        const { 包: pack, 版本: version } = a.地形;
+      if (a.terrain) {
+        const { pack: pack, version: version } = a.terrain;
         const v = terrainTable[pack];
         const actual = await packManifest(unpackDir);
-        if (!v || actual.清单sha256 !== v.清单sha256 || actual.文件数 !== v.文件数 || actual.大小 !== v.大小) throw new Error(`${a.名} 解开的地形包 ${pack}/${version} 和 assets/地形版本.json 记的不一致`);
+        if (!v || actual.manifestSha256 !== v.manifestSha256 || actual.fileCount !== v.fileCount || actual.size !== v.size) throw new Error(`${a.name} 解开的地形包 ${pack}/${version} 和 assets/地形版本.json 记的不一致`);
         const targetTerrainDir = terrainDir(dataRoot, pack, version);
         fs.mkdirSync(path.dirname(targetTerrainDir), { recursive: true });
         if (!fs.existsSync(targetTerrainDir)) fs.renameSync(unpackDir, targetTerrainDir);
-        console.log(`  地形包 ${pack}/${version}：${actual.文件数} 个文件`);
+        console.log(`  地形包 ${pack}/${version}：${actual.fileCount} 个文件`);
       } else {
         let copied = 0;
-        const parts = [...(a.字节 ?? []).map((s) => ['store', s] as const), ...(a.私有库字节 ?? []).map((s) => ['私有', s] as const)];
+        const parts = [...(a.bytes ?? []).map((s) => ['store', s] as const), ...(a.privateLibBytes ?? []).map((s) => ['私有', s] as const)];
         for (const [storage, s] of parts) {
           const sourcePath = path.join(unpackDir, storage, s.slice(0, 2), s);
-          if (!fs.existsSync(sourcePath)) throw new Error(`${a.名} 里没有 ${storage}/${s}`);
-          if ((await streamSha256(sourcePath)) !== s) throw new Error(`${a.名} 里 ${s.slice(0, 12)} 的内容 sha256 和文件名对不上`);
+          if (!fs.existsSync(sourcePath)) throw new Error(`${a.name} 里没有 ${storage}/${s}`);
+          if ((await streamSha256(sourcePath)) !== s) throw new Error(`${a.name} 里 ${s.slice(0, 12)} 的内容 sha256 和文件名对不上`);
           if (placeInLib(sourcePath, dataRoot, s, storage)) copied++;
         }
         console.log(`  ${parts.length} 件字节，新放进数据根 ${copied} 件`);

@@ -11,16 +11,16 @@ import { lineVolume } from './混音.ts';
 import { useFrameRate } from '../段/时间.tsx';
 
 export type LineEntry = { 字: string; 角色: string; 段: string; 文件: string | null; 时长: number; 开口: number; 有声长: number };
-export type LineCue = { id: string; 帧: number; 音量?: number };
+export type LineCue = { id: string; frame: number; 音量?: number };
 
 /** 台词表：资产 数据/配音/台词表 的内容；wav们：台词表里的 文件 名 → 打包后的地址 */
 export const makeLineTrack = (rawLineTable: unknown, wavs: Readonly<Record<string, string>>) => {
   const lineTable = rawLineTable as Record<string, LineEntry>;
-  const LineTrack: React.FC<{ lines: LineCue[]; 每秒?: number }> = ({ lines: lines, 每秒: perSec = 24 }) => {
+  const LineTrack: React.FC<{ lines: LineCue[]; perSec?: number }> = ({ lines: lines, perSec: perSec = 24 }) => {
     const fps = useFrameRate();
     return (
       <>
-        {lines.map(({ id, 帧: lineFrame, 音量: volume = 1 }) => {
+        {lines.map(({ id, frame: lineFrame, 音量: volume = 1 }) => {
           const entry = lineTable[id];
           if (!entry?.文件) throw new Error(`台词表里没有 ${id} 的副本`);
           const fileStartFrame = (lineFrame / perSec - entry.开口) * fps; // 文件开头（Composition 帧，带小数）

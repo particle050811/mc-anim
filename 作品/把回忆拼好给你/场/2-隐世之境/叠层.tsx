@@ -16,17 +16,17 @@ import { coverChatBox } from './封面.ts';
 type PerspectiveRigSpec = { 眼: V3; 看: V3; fov: number };
 
 /** 气泡挂在哪、多大：锚 = 名牌点（脚底 + 女仆气泡锚高）投到页面上的位置（页面像素）；缩放 = 一个气泡像素在锚点处几个成片像素，四舍五入 */
-export const bubblePlacement = (rig: PerspectiveRigSpec = doorwayRig, feet: V3 = liYing.feet, width: number = aspect.宽, height: number = aspect.高) => {
-  const cam = makePerspectiveCamera({ 眼: zUpToThree(rig.眼), 看: zUpToThree(rig.看), fov: rig.fov, 宽: width, 高: height });
+export const bubblePlacement = (rig: PerspectiveRigSpec = doorwayRig, feet: V3 = liYing.feet, width: number = aspect.width, height: number = aspect.height) => {
+  const cam = makePerspectiveCamera({ 眼: zUpToThree(rig.眼), 看: zUpToThree(rig.看), fov: rig.fov, width: width, height: height });
   const p = projectToPage(cam, zUpToThree([feet[0], feet[1], feet[2] + bubbleAnchorHeight()]), width, height);
-  return { 锚: { x: p.x, y: p.y }, 缩放: Math.max(1, Math.round(p.pxPerCell * bubblePixelSize * filmScale)), inFront: p.inFront };
+  return { 锚: { x: p.x, y: p.y }, scale: Math.max(1, Math.round(p.pxPerCell * bubblePixelSize * filmScale)), inFront: p.inFront };
 };
 
 /** 她头顶的气泡。文字默认 参数 的 气泡字；弹出见 库/界面/女仆气泡.tsx */
 export const ReunionBubble: React.FC<{ 文字?: string; cameraRig?: PerspectiveRigSpec; feet?: V3; popProgress?: number }> = ({ 文字: text = bubbleText, cameraRig = doorwayRig, feet = liYing.feet, popProgress }) => {
-  const { 锚: anchor, 缩放: scale, inFront } = bubblePlacement(cameraRig, feet);
+  const { 锚: anchor, scale: scale, inFront } = bubblePlacement(cameraRig, feet);
   if (!inFront) return null;
-  return <MaidBubble 锚={anchor} 缩放={scale} 文字={text} 字体={pixelFont} popProgress={popProgress} />;
+  return <MaidBubble 锚={anchor} scale={scale} 文字={text} 字体={pixelFont} popProgress={popProgress} />;
 };
 
 const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
@@ -39,7 +39,7 @@ export const CoverChatLine: React.FC<{ 文字?: string; 色?: string; layout?: t
   layout = coverChatLayout,
   verticalBar = true,
 }) => {
-  const s = layout.缩放;
+  const s = layout.scale;
   if (!Number.isInteger(s) || s < 1) throw new Error(`封面聊天行的缩放要是正整数（成片像素），给的是 ${s}`);
   const ref = useRef<HTMLCanvasElement>(null);
   const rowWidth = pixelFont.textWidth(text) + 8;
@@ -51,10 +51,10 @@ export const CoverChatLine: React.FC<{ 文字?: string; 色?: string; layout?: t
     ctx.fillStyle = `rgba(0,0,0,${a.bottomAlpha / 255})`;
     ctx.fillRect(0, 0, rowWidth * s, 9 * s);
     if (verticalBar) {
-      ctx.fillStyle = `rgba(${systemBarColor.join(',')},${a.字 / 255})`;
+      ctx.fillStyle = `rgba(${systemBarColor.join(',')},${a.char / 255})`;
       ctx.fillRect(0, 0, 2 * s, 9 * s);
     }
-    pixelFont.draw(ctx, text, { x: 0, y: 0 }, 4, 1, color, s, { shadow: true, opacity: a.字 });
+    pixelFont.draw(ctx, text, { x: 0, y: 0 }, 4, 1, color, s, { shadow: true, opacity: a.char });
   });
   const b = coverChatBox(pixelFont.textWidth(text), layout);
   // 画布往下多 1 个界面像素，给字的阴影

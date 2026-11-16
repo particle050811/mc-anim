@@ -6,10 +6,10 @@ import { defineSeg } from '@engine/段/段定义.ts';
 import { fps, aspect } from '../../分镜/时间.ts';
 
 export default defineSeg({
-  场: '核对',
+  scene: '核对',
   // 三个视图，一个一帧（60 帧一秒）
-  秒: 3 / fps,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  sec: 3 / fps,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
 });

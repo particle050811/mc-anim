@@ -15,11 +15,11 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-const memoryReading = (freePercent: number): MemReading => ({ 总: 100, 空闲: freePercent, 空闲百分比: freePercent, 交换区总: 0, 交换区已用: 0 });
+const memoryReading = (freePercent: number): MemReading => ({ grandTotal: 100, free: freePercent, freePercent: freePercent, swapTotal: 0, swapUsed: 0 });
 
 /** 假环境：睡就是把时钟往前拨；读数按序列给，给完了停在最后一个 */
-const fakeEnv = (o: { memory?: (MemReading | null)[]; 负载?: (number | null)[]; 起?: number } = {}) => {
-  let now = o.起 ?? 1_000_000_000_000;
+const fakeEnv = (o: { memory?: (MemReading | null)[]; load?: (number | null)[]; start?: number } = {}) => {
+  let now = o.start ?? 1_000_000_000_000;
   const sleepLog: number[] = [];
   const sequence = <T>(xs: T[], fallback: T) => {
     let i = 0;
@@ -31,7 +31,7 @@ const fakeEnv = (o: { memory?: (MemReading | null)[]; 负载?: (number | null)[]
     memFloor: 20,
     readPressure: () => 1,
     readMemory: sequence(o.memory ?? [], memoryReading(80) as MemReading | null),
-    load1Min: sequence(o.负载 ?? [], 0 as number | null),
+    load1Min: sequence(o.load ?? [], 0 as number | null),
     coreCount: () => 10,
     nowMs: () => now,
     sleep: async (ms) => {
@@ -41,34 +41,34 @@ const fakeEnv = (o: { memory?: (MemReading | null)[]; 负载?: (number | null)[]
     },
     queueIntervalMs: 5,
   };
-  return { 环境: env, sleepLog, now: () => now };
+  return { env: env, sleepLog, now: () => now };
 };
 const noPrompt = () => {};
 const lastPassSec = () => Number(fs.readFileSync(path.join(dir, '上次放行'), 'utf8').trim());
 
 describe('放行闸', () => {
   it('离上次放行不满 60 秒就等，满了才放；放行时间写成现在', async () => {
-    const e = fakeEnv();e.环境.queueIntervalMs=10_000;
+    const e = fakeEnv();e.env.queueIntervalMs=10_000;
     fs.writeFileSync(path.join(dir, '上次放行'), `${Math.floor(e.now() / 1000) - 30}\n`);
     const hints: string[] = [];
-    expect(await passGate(async () => 'ok', (s) => hints.push(s), e.环境)).toBe('ok');
+    expect(await passGate(async () => 'ok', (s) => hints.push(s), e.env)).toBe('ok');
     expect(e.sleepLog.reduce((a,b)=>a+b,0)).toBe(30_000);
     expect(lastPassSec()).toBe(Math.floor(e.now() / 1000));
     expect(hints.filter((s) => s.startsWith('等资源'))).toHaveLength(1);
   });
 
   it('1 分钟负载不低于核数 × 0.8 就等（10 核上限 8）', async () => {
-    const e = fakeEnv({ 负载: [9, 8, 7.9] });
-    await passGate(async () => {}, noPrompt, e.环境);
+    const e = fakeEnv({ load: [9, 8, 7.9] });
+    await passGate(async () => {}, noPrompt, e.env);
     expect(e.sleepLog).toHaveLength(2);
   });
 
   it('空闲内存低于下限就等；读不到负载（Windows）、读不到内存都不卡', async () => {
-    const e = fakeEnv({ memory: [memoryReading(10), memoryReading(19), memoryReading(20)], 负载: [null] });
-    await passGate(async () => {}, noPrompt, e.环境);
+    const e = fakeEnv({ memory: [memoryReading(10), memoryReading(19), memoryReading(20)], load: [null] });
+    await passGate(async () => {}, noPrompt, e.env);
     expect(e.sleepLog).toHaveLength(2);
-    const f = fakeEnv({ memory: [null], 负载: [null], 起: e.now() + 60_000 });
-    await passGate(async () => {}, noPrompt, f.环境);
+    const f = fakeEnv({ memory: [null], load: [null], start: e.now() + 60_000 });
+    await passGate(async () => {}, noPrompt, f.env);
     expect(f.sleepLog).toHaveLength(0);
   });
 
@@ -76,7 +76,7 @@ describe('放行闸', () => {
     const e = fakeEnv();
     await passGate(async () => {
       expect(fs.existsSync(path.join(dir, '放行.lock'))).toBe(false);
-    }, noPrompt, e.环境);
+    }, noPrompt, e.env);
   });
 
   it('懒放行闸：不调用就不过闸，调用几次都只过一次', async () => {
@@ -101,18 +101,18 @@ describe('渲染闸', () => {
     await passRenderGate(async () => {
       expect(holderPid(lockPath)).toBe(process.pid);
       expect(process.env[ancestorLockEnv]).toBe(String(process.pid));
-    }, noPrompt, e.环境);
+    }, noPrompt, e.env);
     expect(fs.existsSync(lockPath)).toBe(false);
     expect(process.env[ancestorLockEnv]).toBeUndefined();
-    await expect(passRenderGate(async () => { throw new Error('渲坏了'); }, noPrompt, e.环境)).rejects.toThrow('渲坏了');
+    await expect(passRenderGate(async () => { throw new Error('渲坏了'); }, noPrompt, e.env)).rejects.toThrow('渲坏了');
     expect(fs.existsSync(lockPath)).toBe(false);
   });
 
   it('只等内存，不看负载、不看上次放行', async () => {
-    const e = fakeEnv({ 负载: [100], memory: [memoryReading(5), memoryReading(15), memoryReading(25)] });
+    const e = fakeEnv({ load: [100], memory: [memoryReading(5), memoryReading(15), memoryReading(25)] });
     fs.writeFileSync(path.join(dir, '上次放行'), `${Math.floor(e.now() / 1000)}\n`);
     const hints: string[] = [];
-    await passRenderGate(async () => {}, (s) => hints.push(s), e.环境);
+    await passRenderGate(async () => {}, (s) => hints.push(s), e.env);
     expect(e.sleepLog).toEqual([5, 5]);
     expect(hints.some((s) => s.startsWith('渲染等内存'))).toBe(true);
     expect(hints.at(-1)).toMatch(/^放行渲染/);
@@ -122,9 +122,9 @@ describe('渲染闸', () => {
     const e = fakeEnv();
     const callOrder: string[] = [];
     let releaseFirst!: () => void;
-    const firstGate = passRenderGate(() => new Promise<void>((r) => { callOrder.push('甲开始'); releaseFirst = () => { callOrder.push('甲结束'); r(); }; }), noPrompt, e.环境);
+    const firstGate = passRenderGate(() => new Promise<void>((r) => { callOrder.push('甲开始'); releaseFirst = () => { callOrder.push('甲结束'); r(); }; }), noPrompt, e.env);
     await new Promise((r) => setTimeout(r, 30));
-    const secondGate = passRenderGate(async () => { callOrder.push('乙开始'); }, noPrompt, e.环境);
+    const secondGate = passRenderGate(async () => { callOrder.push('乙开始'); }, noPrompt, e.env);
     await new Promise((r) => setTimeout(r, 30));
     expect(callOrder).toEqual(['甲开始']);
     releaseFirst();

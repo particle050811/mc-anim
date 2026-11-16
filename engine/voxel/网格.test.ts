@@ -35,11 +35,11 @@ const mockTable = vi.hoisted(() => {
         'test:dirt_turned': [4 + 8 + 16, null, 7],
       },
     },
-    群系色: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } },
+    biomeColor: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } },
   };
 });
 vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: mockTable.blockTable }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: mockTable.群系色 }));
+vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: mockTable.biomeColor }));
 
 const { buildSectionMesh, groupCount } = await import('./网格.ts');
 const { voxelFromState } = await import('./真实方块表.ts');
@@ -59,10 +59,10 @@ const makeSectionGrid = (n: number, nz: number, valueAt: (x: number, y: number, 
     { v: leaf!, c: [119, 171, 47] as [number, number, number] },
     { v: water!, c: [63, 118, 228] as [number, number, number] },
   ];
-  return { nx, ny: nx, nz, 格: 1, 原点: [0, 0, 0], vox, palette };
+  return { nx, ny: nx, nz, cell: 1, origin: [0, 0, 0], vox, palette };
 };
 /** 第 g 组（0～5：+x -x +y -y +z -z）有几个面 */
-const groupFaceCount = (faceGroup: { 段: number[] }, g: number) => faceGroup.段[g + 1]! - faceGroup.段[g]!;
+const groupFaceCount = (faceGroup: { segment: number[] }, g: number) => faceGroup.segment[g + 1]! - faceGroup.segment[g]!;
 
 describe('区段网格', () => {
   it('一整层石头（apron 也是）：顶面并成一块，侧面贴着 apron 的进裙边（四组各并成一块）', () => {
@@ -70,7 +70,7 @@ describe('区段网格', () => {
     expect(groupFaceCount(m.实心, 4)).toBe(1);
     for (const g of [0, 1, 2, 3]) expect(groupFaceCount(m.实心, g)).toBe(0);
     for (const g of [7, 8, 9, 10]) expect(groupFaceCount(m.实心, g)).toBe(1);
-    expect(m.实心.段.length).toBe(groupCount + 1);
+    expect(m.实心.segment.length).toBe(groupCount + 1);
   });
   it('贴图、染色不同的面不合并；挨着的同种方块之间的面剔掉', () => {
     // 核心里一半石头一半泥土，上面一块草方块
@@ -88,7 +88,7 @@ describe('区段网格', () => {
       const m = buildSectionMesh(grid, false);
       const out: { z: number; x0: number; x1: number; uv: number[] }[] = [];
       for (const g of [m.实心, m.花草])
-        for (let f = g.段[4]!; f < g.段[5]!; f++) {
+        for (let f = g.segment[4]!; f < g.segment[5]!; f++) {
           const z = g.pos[f * 12 + 2]! / 64;
           if (z <= 1) continue;
           const xs = [0, 1, 2, 3].map((c) => g.pos[f * 12 + c * 3]! / 64);
@@ -124,9 +124,9 @@ describe('区段网格', () => {
       const m = buildSectionMesh(makeSectionGrid(5, 4, valueAt), coarse);
       for (const materialKind of ['实心', '镂空', '实心树叶', '水', '花草'] as const) {
         const faceGroup = m[materialKind];
-        jsonLines.push(JSON.stringify({ 粗: coarse, 材: materialKind, n: faceGroup.n, 段: faceGroup.段, pos: Array.from(faceGroup.pos), uv: Array.from(faceGroup.uv), tex: Array.from(faceGroup.tex), col: Array.from(faceGroup.col) }));
+        jsonLines.push(JSON.stringify({ coarse: coarse, material: materialKind, n: faceGroup.n, segment: faceGroup.segment, pos: Array.from(faceGroup.pos), uv: Array.from(faceGroup.uv), tex: Array.from(faceGroup.tex), col: Array.from(faceGroup.col) }));
       }
-      jsonLines.push(JSON.stringify({ 粗: coarse, 面数: m.面数 }));
+      jsonLines.push(JSON.stringify({ coarse: coarse, faceCount: m.faceCount }));
     }
     await expect(`[\n${jsonLines.join(',\n')}\n]\n`).toMatchFileSnapshot('./金样/网格.json');
   });

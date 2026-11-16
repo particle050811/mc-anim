@@ -13,10 +13,10 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 export default defineSpellMeta({
   id: 'smack_stone',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // SmackStoneSpell：BASALT_PLACE；命中 BASALT_BREAK 音高 2
-  声音: [
-    { 资产: '音效/block.basalt.place.1', 秒: 0 },
-    { 资产: '音效/block.basalt.break.1', 秒: 0, fromHit: true, 音高: 2 },
+  sound: [
+    { asset: '音效/block.basalt.place.1', sec: 0 },
+    { asset: '音效/block.basalt.break.1', sec: 0, fromHit: true, 音高: 2 },
   ],
 });

@@ -17,7 +17,7 @@ const baseEnv = "{ 维度: overworld, 画法: '主世界', gameTime: 6000, light
 
 describe('环境声明（加载）', () => {
   it('合法的描述、环境轨放行，环境.ts 算纯模块', async () => {
-    const { violations, report } = await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default defineEnvTrack({ base: ${baseEnv}, keyframes: [{ 帧: 0, 时刻: 0 }, { 帧: 9, 时刻: 18000 }] });`)));
+    const { violations, report } = await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default defineEnvTrack({ base: ${baseEnv}, keyframes: [{ frame: 0, 时刻: 0 }, { frame: 9, 时刻: 18000 }] });`)));
     expect(violations).toEqual([]);
     expect(report.infoLines.join('\n')).toMatch(/查了 1 份环境声明，1 份合法/);
   });
@@ -38,14 +38,14 @@ describe('环境声明（加载）', () => {
   });
 
   it('关键帧超出段的帧数、顺序反了', async () => {
-    const outOfRange = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 3, 雨: 1 }, { 帧: 600, 雨: 0 }] };`)))).violations.join('\n');
+    const outOfRange = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ frame: 3, 雨: 1 }, { frame: 600, 雨: 0 }] };`)))).violations.join('\n');
     expect(outOfRange).toMatch(/关键帧 600 不在段里（段长 10 秒，一秒 60 帧共 600 帧）/);
-    const failureMessage = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 5, 雨: 1 }, { 帧: 2, 雨: 0 }] };`)))).violations.join('\n');
+    const failureMessage = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ frame: 5, 雨: 1 }, { frame: 2, 雨: 0 }] };`)))).violations.join('\n');
     expect(failureMessage).toMatch(/从小到大/);
   });
 
   it('没有 export default', async () => {
-    const v = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export const 环境 = ${baseEnv};`)))).violations.join('\n');
+    const v = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export const env = ${baseEnv};`)))).violations.join('\n');
     expect(v).toMatch(/要 export default/);
   });
 });

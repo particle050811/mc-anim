@@ -23,7 +23,7 @@ describe('私有作品', () => {
     writeFile(root, '作品/私乙/.gitignore', '临时/\n');
     writeFile(root, '作品/私乙/临时/x.ts');
     git(path.join(root, '作品', '私乙'), 'init', '-q');
-    const fileList = new CheckContext(root).文件();
+    const fileList = new CheckContext(root).file();
     expect(fileList).toEqual(expect.arrayContaining(['作品/公开/清单.ts', '作品/私甲/清单.ts', '作品/私乙/清单.ts']));
     expect(fileList).not.toContain('作品/私乙/临时/x.ts');
     expect(fileList.filter((p) => p.includes('.git/'))).toEqual([]);

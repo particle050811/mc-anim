@@ -86,9 +86,9 @@ const seg2EndT = towerStopT + 0.04;
 const seg3EndT = leap3LandT + 0.45;
 const frames = sceneFrames(1 / 60);
 export const segments = [
-  { id: '7-3-1', 名: '墙头', startFrame: 0, lastFrame: frames.frameAt(seg1EndT) - 1 },
-  { id: '7-3-2', 名: '上塔', startFrame: frames.frameAt(seg1EndT), lastFrame: frames.frameAt(seg2EndT) - 1 },
-  { id: '7-3-3', 名: '音波', startFrame: frames.frameAt(seg2EndT), lastFrame: frames.frameAt(seg3EndT) },
+  { id: '7-3-1', name: '墙头', startFrame: 0, lastFrame: frames.frameAt(seg1EndT) - 1 },
+  { id: '7-3-2', name: '上塔', startFrame: frames.frameAt(seg1EndT), lastFrame: frames.frameAt(seg2EndT) - 1 },
+  { id: '7-3-3', name: '音波', startFrame: frames.frameAt(seg2EndT), lastFrame: frames.frameAt(seg3EndT) },
 ];
 export type SegmentId = '7-3-1' | '7-3-2' | '7-3-3';
 const segmentOf = (segId: SegmentId) => segments.find((s) => s.id === segId)!;

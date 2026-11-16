@@ -21,11 +21,11 @@ const picture: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <RetreatPicture
-        帧={frame}
-        种子={frame}
+        frame={frame}
+        seed={frame}
         shading={shadingBySeg['2-归隐']}
         realShading={shadingBySeg['2-归隐/现实']}
-        叠层={
+        overlay={
           <>
             <RuneLyric lines={lyrics.upperLines} 样式={{ ...runeLyricDefault, outlineColor: leftToneAt(frame).outlineColor }} />
             <RuneLyric lines={lyrics.lowerLines} 样式={{ ...line15RuneStyle, outlineColor: leftToneAt(frame).outlineColor }} />

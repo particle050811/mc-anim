@@ -5,15 +5,15 @@ import type { OrthoRigParams } from '@engine/三渲二/机位.tsx';
 import { filmScale } from '@engine/三渲二/像素.ts';
 
 /** 取景：中心 = 画面中心对着的剖面上的 [x, z]（格）；每格 = 一格在成片 2560×1440 上占几个像素（= 16N）；推拉 = N 带小数（同正交机位的 推拉） */
-export type SideFraming = { 中心: readonly [number, number]; pxPerCell: number; dolly?: boolean };
+export type SideFraming = { center: readonly [number, number]; pxPerCell: number; dolly?: boolean };
 
 /** 侧取景 → 三渲二正交机位参数（给 三渲二画布 的 机位） */
 export const sideRig = (framing: SideFraming, topDepth: number): OrthoRigParams => ({
-  种: '正交',
+  kind: '正交',
   N: framing.pxPerCell / 16,
   ...(framing.dolly ? { dolly: true } : {}),
   topDepth,
-  看: [framing.中心[0], 0, framing.中心[1]],
+  看: [framing.center[0], 0, framing.center[1]],
   facing: '北',
 });
 
@@ -21,7 +21,7 @@ export const sideRig = (framing: SideFraming, topDepth: number): OrthoRigParams 
 export const sideProjection = (framing: SideFraming, pageWidth: number, pageHeight: number, topDepth = 0) => {
   const oblique = topDepth / (framing.pxPerCell / 16);
   return (x: number, z: number, y = 0) => ({
-    x: pageWidth / 2 + ((x - framing.中心[0]) * framing.pxPerCell) / filmScale,
-    y: pageHeight / 2 - ((z + oblique * y - framing.中心[1]) * framing.pxPerCell) / filmScale,
+    x: pageWidth / 2 + ((x - framing.center[0]) * framing.pxPerCell) / filmScale,
+    y: pageHeight / 2 - ((z + oblique * y - framing.center[1]) * framing.pxPerCell) / filmScale,
   });
 };

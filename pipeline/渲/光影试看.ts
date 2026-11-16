@@ -49,7 +49,7 @@ export const applyShadingTrial =
     return { ...c, plugins: [...(c.plugins ?? []), new ShadingPreviewPlugin(baseCanvasPath(), trialCanvasPath())] };
   };
 
-export type ShadingConfig = { 名: string; 值: string };
+export type ShadingConfig = { name: string; value: string };
 
 /** --shading 的值：分号隔开的几份，每份是预设名或 JSON（JSON 里写 名 当文件名后缀，没写用 预设 的名字） */
 export const parseShading = (v: string): ShadingConfig[] =>
@@ -58,9 +58,9 @@ export const parseShading = (v: string): ShadingConfig[] =>
     .map((s) => s.trim())
     .filter(Boolean)
     .map((s) => {
-      if (!s.startsWith('{')) return { 名: s, 值: JSON.stringify({ preset: s }) };
-      const o = JSON.parse(s) as { 名?: string; preset?: string | { 名?: string } };
-      const shadingPresetName = o.名 ?? (typeof o.preset === 'string' ? o.preset : o.preset?.名) ?? '关';
+      if (!s.startsWith('{')) return { name: s, value: JSON.stringify({ preset: s }) };
+      const o = JSON.parse(s) as { name?: string; preset?: string | { name?: string } };
+      const shadingPresetName = o.name ?? (typeof o.preset === 'string' ? o.preset : o.preset?.name) ?? '关';
       if (/[<>:"/\\|?*]/.test(shadingPresetName)) throw new Error(`光影配置的名字要能当文件名：${shadingPresetName}`);
-      return { 名: shadingPresetName, 值: s };
+      return { name: shadingPresetName, value: s };
     });

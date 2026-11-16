@@ -20,7 +20,7 @@ import { rad } from '../../engine/core/数学.ts';
 const bookGuiTex = png(bookGuiPng);
 export const featherTex = png(featherPng);
 const paperRect = { x: 20, y: 1, w: 146, h: 180 };
-const textArea = { x: 16, y: 31, 宽: 114, maxLines: 14 };
+const textArea = { x: 16, y: 31, width: 114, maxLines: 14 };
 const pageNumAnchor = { x: 128, y: 17 };
 // 一个界面像素在三维里多大（格）：一页 0.365 × 0.45 格，两页摊开 0.73 格宽，和上身差不多（原版讲台上的书约 0.75 格）
 export const guiPixel = 0.0025;

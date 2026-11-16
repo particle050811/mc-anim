@@ -10,7 +10,7 @@ import { drillInWarm, drillInProgress } from '../../场/2-选择世界/编排.ts
 import { skyTickAt, cameraRigAt } from '../../场/2-新世界/编排.ts';
 
 /** 钻完那一刻（歌曲帧，可以带小数）：从这一刻起没有选择世界界面了，整屏是新世界 */
-export const drillDone = mainCutEvents.drumBeatClick.帧 + drillIn.秒 * fps;
+export const drillDone = mainCutEvents.drumBeatClick.frame + drillIn.sec * fps;
 
 /** 新世界的镜头 */
 export const shotAt = (songFrame: number) => cameraRigAt(drillInProgress(songFrame).p, songFrame);

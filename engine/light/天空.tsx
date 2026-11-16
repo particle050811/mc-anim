@@ -185,15 +185,15 @@ const useWaterSky = (bands: [number, string][] | null, specifiedSec?: number) =>
 };
 // 没挂 `SkyDome` 的画布（6-1-1 海岛：天是背景色）也要给水面写天色和时间，不然水反射的是 `waterSky` 的默认灰蓝、波纹不动
 // 秒：水面波纹定在这一刻（不给就跟当前秒走）
-export const OverworldWaterSky: React.FC<{ 秒?: number }> = ({ 秒: sec }) => {
+export const OverworldWaterSky: React.FC<{ sec?: number }> = ({ sec: sec }) => {
   useWaterSky(null, sec);
   return null;
 };
 
 // 余晖：暮色天空在太阳（sun）那一侧加的黄昏余晖（色、强 0～1），给 null 就没有；天色：换掉 `TWILIGHT.sky`（条数一样）。
 // twilight 时不给 余晖、sun 就按 lib/光照配比.ts 的 `twilightDusk`、`twilightSunDir`
-const duskAfterglow = twilightDusk && { 色: twilightDusk.afterglow, 强: twilightDusk.afterglowStrength, skyColors: twilightDusk.skyColors };
-export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: boolean; afterglow?: { 色: string; 强: number; skyColors?: [number, string][] } | null }> = ({
+const duskAfterglow = twilightDusk && { 色: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength, skyColors: twilightDusk.skyColors };
+export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: boolean; afterglow?: { 色: string; strength: number; skyColors?: [number, string][] } | null }> = ({
   sun: sunProp,
   twilight = false,
   afterglow: afterglowProp,
@@ -211,7 +211,7 @@ export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: bool
           top: { value: new THREE.Color(SKY.top) },
           horizon: { value: new THREE.Color(SKY.horizon) },
           glow: { value: new THREE.Color(twilight && afterglow ? afterglow.色 : SKY.sunGlow) },
-          glowK: { value: twilight && afterglow ? afterglow.强 : 0 },
+          glowK: { value: twilight && afterglow ? afterglow.strength : 0 },
           sunDir: { value: new THREE.Vector3(...sun).normalize() },
           band: { value: (afterglow?.skyColors ?? TWILIGHT.sky).map(([, color]) => new THREE.Color(color)) },
           at: { value: (afterglow?.skyColors ?? TWILIGHT.sky).map(([elev]) => elev) },
@@ -220,7 +220,7 @@ export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: bool
         userData: { rasterDepth: true },
         fragmentShader: skyShader(twilight),
       }),
-    [sun[0], sun[1], sun[2], twilight, afterglow?.色, afterglow?.强],
+    [sun[0], sun[1], sun[2], twilight, afterglow?.色, afterglow?.strength],
   );
   const atmoMat = useMemo(() => (twilight ? null : atmoSkyMaterial()), [twilight]);
   useEffect(() => () => atmoMat?.dispose(), [atmoMat]);

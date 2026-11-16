@@ -48,7 +48,7 @@ const particleDefs = {
   gone: { textures: ['goety:frost_1', 'goety:nope'] },
   smoke: { textures: ['generic_1', 'minecraft:generic_0'] },
 };
-const lockEntry = (sha: string, suffix: string) => ({ sha256: sha.repeat(64).slice(0, 64), 大小: 1, 库: 'store' as const, 后缀: suffix });
+const lockEntry = (sha: string, suffix: string) => ({ sha256: sha.repeat(64).slice(0, 64), size: 1, lib: 'store' as const, suffix: suffix });
 
 const makeLocks = (): SideLocks => {
   const sharedLock: AssetLock = { '贴图/特效/粒子/generic_0': lockEntry('0', '.png'), '贴图/特效/粒子/generic_1': lockEntry('1', '.png'), '贴图/特效/粒子/lava': lockEntry('l', '.png') };
@@ -84,16 +84,16 @@ describe('粒子帧', () => {
   it('照 textures 顺序出帧，重复的贴图只 import 一次；同组优先；不写命名空间是 minecraft', () => {
     const r = computeParticleFrames('goety:frost', assetLock, sourceTable, '/代码', '/作品/甲', readText);
     if (isError(r)) throw new Error(r.错);
-    expect(r.帧).toEqual(['贴图/法术/goety/particle/frost_1', '贴图/法术/goety/particle/frost_2', '贴图/法术/goety/particle/frost_1']);
-    expect(r.文本).toContain('[frame0, frame1, frame0].map(png)');
-    expect(r.文本.match(/^import frame/gm)).toHaveLength(2);
-    expect(r.文件).toBe(path.join('/作品/甲', '粒子帧', 'goety', 'frost.ts'));
-    expect(readGeneratedHeader(r.文本)?.definition).toBe('数据/法术/goety/particles/frost');
+    expect(r.frame).toEqual(['贴图/法术/goety/particle/frost_1', '贴图/法术/goety/particle/frost_2', '贴图/法术/goety/particle/frost_1']);
+    expect(r.text).toContain('[frame0, frame1, frame0].map(png)');
+    expect(r.text.match(/^import frame/gm)).toHaveLength(2);
+    expect(r.file).toBe(path.join('/作品/甲', '粒子帧', 'goety', 'frost.ts'));
+    expect(readGeneratedHeader(r.text)?.definition).toBe('数据/法术/goety/particles/frost');
     const b = computeParticleFrames('goety:burning', assetLock, sourceTable, '/代码', '/作品/甲', readText);
-    expect(!isError(b) && b.帧).toEqual(['贴图/法术/minecraft/particle/lava']);
+    expect(!isError(b) && b.frame).toEqual(['贴图/法术/minecraft/particle/lava']);
     const s = computeParticleFrames('minecraft:smoke', assetLock, sourceTable, '/代码', '/作品/甲', readText);
-    expect(!isError(s) && s.帧).toEqual(['贴图/特效/粒子/generic_1', '贴图/特效/粒子/generic_0']);
-    expect(parseParticleName('frost')).toEqual({ namespaceName: 'minecraft', 名: 'frost' });
+    expect(!isError(s) && s.frame).toEqual(['贴图/特效/粒子/generic_1', '贴图/特效/粒子/generic_0']);
+    expect(parseParticleName('frost')).toEqual({ namespaceName: 'minecraft', name: 'frost' });
   });
 
   it('贴图没登记、定义没登记、同一张对上字节不同的几件都报错', () => {
@@ -112,13 +112,13 @@ describe('粒子帧', () => {
     const workRoot = path.join(root, '作品', '甲');
     const r = computeParticleFrames('goety:frost', assetLock, sourceTable, root, workRoot, readText);
     if (isError(r)) throw new Error(r.错);
-    fs.mkdirSync(path.dirname(r.文件), { recursive: true });
-    fs.writeFileSync(r.文件, r.文本);
+    fs.mkdirSync(path.dirname(r.file), { recursive: true });
+    fs.writeFileSync(r.file, r.text);
     expect(checkParticleFrames(root, workRoot, assetLock, sourceTable, readText)).toEqual([]);
     expect(checkParticleFrames(root, workRoot, assetLock, sourceTable, () => { throw new Error('不在'); })).toEqual([]);
-    fs.writeFileSync(r.文件, r.文本.replace('[frame0, frame1, frame0]', '[frame0, frame1]'));
+    fs.writeFileSync(r.file, r.text.replace('[frame0, frame1, frame0]', '[frame0, frame1]'));
     expect(checkParticleFrames(root, workRoot, assetLock, sourceTable, readText)[0]?.[1]).toContain('不一样');
-    fs.writeFileSync(r.文件, r.文本);
+    fs.writeFileSync(r.file, r.text);
     const changedLock = { ...assetLock, 作品: { ...assetLock.作品, '数据/法术/goety/particles/frost': lockEntry('c', '.json') } };
     expect(checkParticleFrames(root, workRoot, changedLock, sourceTable, readText)[0]?.[1]).toContain('换了字节');
     fs.rmSync(root, { recursive: true, force: true });

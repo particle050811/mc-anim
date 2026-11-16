@@ -7,15 +7,15 @@ import { FogCloud } from './爆.tsx';
 import { ArrowShape } from './箭形.tsx';
 import type { ArrowRainShot } from './落雨.ts';
 
-export const ArrowRainGroup: React.FC<{ projectiles: readonly ArrowRainShot[]; 秒: number; 图: Png; fogColor: RgbColor; 种子: number }> = ({ projectiles, 秒: sec, 图: image, fogColor, 种子: seed }) => {
+export const ArrowRainGroup: React.FC<{ projectiles: readonly ArrowRainShot[]; sec: number; image: Png; fogColor: RgbColor; seed: number }> = ({ projectiles, sec: sec, image: image, fogColor, seed: seed }) => {
   const tick = sec * 20;
   return (
     <>
       {projectiles.map((projectile, i) => {
         const t = tick - projectile.launchTick;
-        return t >= 0 && t < projectile.flightTick ? <ArrowShape key={i} 位={trajectoryPos(projectile.trajectory, t)} dir={trajectoryDir(projectile.trajectory, t)} 图={image} /> : null;
+        return t >= 0 && t < projectile.flightTick ? <ArrowShape key={i} 位={trajectoryPos(projectile.trajectory, t)} dir={trajectoryDir(projectile.trajectory, t)} image={image} /> : null;
       })}
-      <FogCloud spawns={projectiles.map((projectile, i) => ({ 刻: projectile.launchTick, 位: projectile.spawnPos, 色: fogColor, 尺寸: 1.5, 速: 6, 种子: seed * 101 + i }))} 刻={tick} />
+      <FogCloud spawns={projectiles.map((projectile, i) => ({ 刻: projectile.launchTick, 位: projectile.spawnPos, 色: fogColor, 尺寸: 1.5, 速: 6, seed: seed * 101 + i }))} 刻={tick} />
     </>
   );
 };

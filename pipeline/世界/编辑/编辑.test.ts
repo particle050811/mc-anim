@@ -60,9 +60,9 @@ const parseEdit = (text: string) => parseEdits(text, '/x/测试.编辑.toml', kn
 describe('编辑文件', () => {
   it('命令一行一条、# 开头的不算、前面的 / 可写可不写', () => {
     const e = parseEdit(`"说明" = "试"\n[["步"]]\n"说明" = "铺"\n"命令" = """\n# 注释\n/fill 0 60 0 2 60 2 stone\nsetblock 1 61 1 minecraft:oak_log[axis=y]\n"""\n[["步"]]\n"命令" = ["setblock 0 0 0 air"]`);
-    expect(e.步.map((s) => s.种)).toEqual(['fill', 'setblock', 'setblock']);
-    expect(e.步[0]!.出处).toBe('测试.编辑.toml 第 1 步');
-    expect(e.说明).toBe('试');
+    expect(e.step.map((s) => s.kind)).toEqual(['fill', 'setblock', 'setblock']);
+    expect(e.step[0]!.provenance).toBe('测试.编辑.toml 第 1 步');
+    expect(e.note).toBe('试');
     expect(e.sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 
@@ -71,7 +71,7 @@ describe('编辑文件', () => {
     expect(() => parseEdit(`[["步"]]\n"命令" = "setblock 0 0 0 oak_log[axis=w]"`)).toThrow(/axis 不能是 w（方块表里有：x、y、z）/);
     expect(() => parseEdit(`[["步"]]\n"命令" = "setblock 0 0 0 oak_log[color=red]"`)).toThrow(/没有属性 color/);
     // 方块表不导的、不影响外观的属性照写
-    expect(parseEdit(`[["步"]]\n"命令" = "setblock 0 0 0 oak_stairs[facing=east,waterlogged=true]"`).步).toHaveLength(1);
+    expect(parseEdit(`[["步"]]\n"命令" = "setblock 0 0 0 oak_stairs[facing=east,waterlogged=true]"`).step).toHaveLength(1);
     expect(() => parseEdit(`[["步"]]\n"命令" = "setblock ~ 0 0 stone"`)).toThrow(/绝对坐标/);
     expect(() => parseEdit(`[["步"]]\n"命令" = "setblock 0 0 0 #minecraft:logs"`)).toThrow(/方块标签/);
     expect(() => parseEdit(`[["步"]]\n"命令" = "clone 0 0 0 3 3 3 1 1 1"`)).toThrow(/重叠/);
@@ -84,11 +84,11 @@ describe('编辑文件', () => {
 
   it('结构：原版 .nbt 和 Sponge v3 .schem 都读得出', () => {
     const a = readStructure(vanillaStructureBytes);
-    expect(a.大小).toEqual([2, 1, 1]);
-    expect(a.格).toEqual(['minecraft:oak_log[axis=x]', null]);
+    expect(a.size).toEqual([2, 1, 1]);
+    expect(a.cell).toEqual(['minecraft:oak_log[axis=x]', null]);
     const b = readStructure(spongeStructureBytes);
     expect(b.格式).toBe('schem3');
-    expect(b.格).toEqual(['minecraft:stone', 'minecraft:glass']);
+    expect(b.cell).toEqual(['minecraft:stone', 'minecraft:glass']);
   });
 
   it('方块状态跟着转：facing、axis', () => {
@@ -127,9 +127,9 @@ describe('套用', () => {
     const e = parseEdit(text);
     const editApplier = new EditApplier(e, new RegionSource(path.join(dir, 'region'), '1', null));
     const regionSource = new RegionSource(path.join(dir, 'region'), '1', null, (r) => editApplier.applyEdits(r));
-    return { region: regionSource.区域(0, 0)!, editApplier };
+    return { region: regionSource.region(0, 0)!, editApplier };
   };
-  const blockState = (r: ReturnType<typeof applyEdits>['region'], x: number, y: number, z: number) => blockAt(r, x, y, z)?.状态;
+  const blockState = (r: ReturnType<typeof applyEdits>['region'], x: number, y: number, z: number) => blockAt(r, x, y, z)?.state;
 
   it('fill、setblock、过滤替换按顺序套；没碰到的格不动', () => {
     const { region } = applyEdits(`[["步"]]\n"命令" = ["fill 2 58 2 4 62 4 glass", "fill 2 50 2 4 62 4 dirt replace stone", "setblock 3 70 3 oak_log[axis=y]", "setblock 3 70 3 stone keep"]`);
@@ -138,7 +138,7 @@ describe('套用', () => {
     expect(blockState(region, 2, 49, 2)).toBe('minecraft:stone');
     expect(blockState(region, 3, 70, 3)).toBe('minecraft:oak_log[axis=y]'); // keep 不换非空气
     expect(blockState(region, 5, 60, 5)).toBe('minecraft:grass_block[snowy=false]');
-    expect(blockAt(region, 3, 70, 3)!.群系).toBe('minecraft:plains');
+    expect(blockAt(region, 3, 70, 3)!.biome).toBe('minecraft:plains');
   });
 
   it('hollow：外壳是方块、里面掏空', () => {
@@ -168,20 +168,20 @@ describe('套用', () => {
   it('没被碰到的区域原样返回同一个对象', () => {
     const e = parseEdit(`[["步"]]\n"命令" = "setblock 600 61 0 stone"`);
     const regionSource = new RegionSource(path.join(dir, 'region'), '1', null);
-    const r = regionSource.区域(0, 0)!;
+    const r = regionSource.region(0, 0)!;
     expect(new EditApplier(e, regionSource).applyEdits(r)).toBe(r);
   });
 
   it('碰到没生成的区块：跳过并警告', () => {
     const { region, editApplier } = applyEdits(`[["步"]]\n"命令" = "fill 30 61 30 40 61 40 stone"`);
     expect(blockState(region, 30, 61, 30)).toBeUndefined();
-    expect([...editApplier.警告].join()).toMatch(/区块没生成/);
+    expect([...editApplier.warnings].join()).toMatch(/区块没生成/);
   });
 
   it('clone 的源在没生成的区块：一步只警告一条，不复制', () => {
     const { region, editApplier } = applyEdits(`[["步"]]\n"命令" = "clone 0 61 20 9 62 29 0 70 0"`);
     expect(blockState(region, 0, 70, 0)).toBe('minecraft:air');
-    expect([...editApplier.警告]).toEqual(['测试.编辑.toml 第 1 步：clone 的源有 100 列区块没生成（第一列在 (0, 20)），按没有方块处理（不复制）']);
+    expect([...editApplier.warnings]).toEqual(['测试.编辑.toml 第 1 步：clone 的源有 100 列区块没生成（第一列在 (0, 20)），按没有方块处理（不复制）']);
   });
 });
 
@@ -207,9 +207,9 @@ describe('重放', () => {
   it('生成 execute in 前缀的命令、结构展开成 fill/setblock、sh 脚本', () => {
     const e = parseEdit(`[["步"]]\n"命令" = ["fill 0 0 0 99 9 99 stone", "place template 石玻.schem 8 61 8"]`);
     const r = buildReplay(e, 'minecraft:overworld');
-    expect(r.命令.every((c) => c.startsWith('execute in minecraft:overworld run '))).toBe(true);
-    expect(r.命令.at(-2)).toBe('execute in minecraft:overworld run setblock 8 61 8 minecraft:stone');
-    expect(r.命令.at(-1)).toBe('execute in minecraft:overworld run setblock 9 61 8 minecraft:glass');
+    expect(r.command.every((c) => c.startsWith('execute in minecraft:overworld run '))).toBe(true);
+    expect(r.command.at(-2)).toBe('execute in minecraft:overworld run setblock 8 61 8 minecraft:stone');
+    expect(r.command.at(-1)).toBe('execute in minecraft:overworld run setblock 9 61 8 minecraft:glass');
     expect(r.loads[0]).toBe('execute in minecraft:overworld run forceload add 0 0 111 111');
     const sh = buildReplayScript(r, '测试');
     expect(sh).toContain(`"$ANIM" mcai batch`);

@@ -60,7 +60,7 @@ const WhiteItem: React.FC<{ layers: ItemLayer[]; 色: string }> = ({ layers, 色
 
 /** 柱顶一样材料（物、亮两样；化成光以后归 光.tsx 画）。亮色 = 变白那一下的颜色 */
 export const PillarTopItem: React.FC<{ floatState: Extract<FloatState, { kind: '物' | '亮' }>; brightColor: string }> = ({ floatState, brightColor }) => {
-  const layers = materialLayers[floatState.名]!;
+  const layers = materialLayers[floatState.name]!;
   return (
     <group position={floatState.p} rotation={[0, 0, rad(floatState.转)]}>
       <group rotation={itemSceneRotation}>

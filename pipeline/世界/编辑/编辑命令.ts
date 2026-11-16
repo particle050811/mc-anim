@@ -9,13 +9,13 @@ import { parseState, canonicalState, type BlockState } from './方块状态.ts';
 import { rotations, mirrorModes, transformPos, type Rotation, type Mirror, type Structure } from './结构.ts';
 
 export type Box = { x1: number; y1: number; z1: number; x2: number; y2: number; z2: number };
-type CommonFields = { 原文: string; 出处: string; 盒: Box };
+type CommonFields = { 原文: string; provenance: string; boxes: Box };
 export type EditStep = CommonFields &
   (
-    | { 种: 'fill'; 状态: string; stateText: string; fillMode: 'replace' | 'keep' | 'hollow' | 'outline'; filterState?: BlockState; filterText?: string }
-    | { 种: 'setblock'; 状态: string; stateText: string; fillMode: 'replace' | 'keep' }
-    | { 种: 'clone'; 源: Box; offset: [number, number, number]; maskMode: 'replace' | 'masked' | 'filtered'; filterState?: BlockState; isMove: boolean }
-    | { 种: 'place'; structureName: string; 结构: Structure; 位置: [number, number, number]; rotation: Rotation; mirror: Mirror }
+    | { kind: 'fill'; state: string; stateText: string; fillMode: 'replace' | 'keep' | 'hollow' | 'outline'; filterState?: BlockState; filterText?: string }
+    | { kind: 'setblock'; state: string; stateText: string; fillMode: 'replace' | 'keep' }
+    | { kind: 'clone'; 源: Box; offset: [number, number, number]; maskMode: 'replace' | 'masked' | 'filtered'; filterState?: BlockState; isMove: boolean }
+    | { kind: 'place'; structureName: string; 结构: Structure; 位置: [number, number, number]; rotation: Rotation; mirror: Mirror }
   );
 
 export class CommandError extends Error {}
@@ -81,12 +81,12 @@ export const parseCommand = (raw: string, source: string, env: ParseEnv): EditSt
       const mode = w[8] ?? 'replace';
       if (mode === 'replace') {
         takeRest(9, 1);
-        return { 种: 'fill', 原文: raw, 出处: source, 盒: box, 状态: s.canonical, stateText: w[7]!, fillMode: 'replace', filterState: w[9] ? stateParam(w[9], raw, env).parsed : undefined, filterText: w[9] };
+        return { kind: 'fill', 原文: raw, provenance: source, boxes: box, state: s.canonical, stateText: w[7]!, fillMode: 'replace', filterState: w[9] ? stateParam(w[9], raw, env).parsed : undefined, filterText: w[9] };
       }
       takeRest(9, 0);
-      if (mode === 'destroy') return { 种: 'fill', 原文: raw, 出处: source, 盒: box, 状态: s.canonical, stateText: w[7]!, fillMode: 'replace' };
+      if (mode === 'destroy') return { kind: 'fill', 原文: raw, provenance: source, boxes: box, state: s.canonical, stateText: w[7]!, fillMode: 'replace' };
       if (mode !== 'keep' && mode !== 'hollow' && mode !== 'outline') throw new CommandError(`${raw}：fill 的模式只认 replace、keep、hollow、outline、destroy`);
-      return { 种: 'fill', 原文: raw, 出处: source, 盒: box, 状态: s.canonical, stateText: w[7]!, fillMode: mode };
+      return { kind: 'fill', 原文: raw, provenance: source, boxes: box, state: s.canonical, stateText: w[7]!, fillMode: mode };
     }
     case 'setblock': {
       const p = coord(1);
@@ -94,7 +94,7 @@ export const parseCommand = (raw: string, source: string, env: ParseEnv): EditSt
       const mode = w[5] ?? 'replace';
       takeRest(6, 0);
       if (mode !== 'replace' && mode !== 'keep' && mode !== 'destroy') throw new CommandError(`${raw}：setblock 的模式只认 replace、keep、destroy`);
-      return { 种: 'setblock', 原文: raw, 出处: source, 盒: boxOf(p, p), 状态: s.canonical, stateText: w[4]!, fillMode: mode === 'keep' ? 'keep' : 'replace' };
+      return { kind: 'setblock', 原文: raw, provenance: source, boxes: boxOf(p, p), state: s.canonical, stateText: w[4]!, fillMode: mode === 'keep' ? 'keep' : 'replace' };
     }
     case 'clone': {
       if (w[1] === 'from' || w[1] === 'to') throw new CommandError(`${raw}：不支持跨维度 clone（编辑层只管本世界这个维度）`);
@@ -115,7 +115,7 @@ export const parseCommand = (raw: string, source: string, env: ParseEnv): EditSt
       const offset: [number, number, number] = [endPos[0]! - srcBox.x1, endPos[1]! - srcBox.y1, endPos[2]! - srcBox.z1];
       const target: Box = { x1: srcBox.x1 + offset[0], y1: srcBox.y1 + offset[1], z1: srcBox.z1 + offset[2], x2: srcBox.x2 + offset[0], y2: srcBox.y2 + offset[1], z2: srcBox.z2 + offset[2] };
       if (moveMode === 'normal' && intersects(srcBox, target)) throw new CommandError(`${raw}：源和目标重叠，游戏里 normal 会拒绝（要重叠写 force 或 move）`);
-      return { 种: 'clone', 原文: raw, 出处: source, 盒: moveMode === 'move' ? unionBox(srcBox, target) : target, 源: srcBox, offset, maskMode, filterState, isMove: moveMode === 'move' };
+      return { kind: 'clone', 原文: raw, provenance: source, boxes: moveMode === 'move' ? unionBox(srcBox, target) : target, 源: srcBox, offset, maskMode, filterState, isMove: moveMode === 'move' };
     }
     case 'place': {
       if (w[1] !== 'template') throw new CommandError(`${raw}：place 只支持 place template（摆结构文件）`);
@@ -128,7 +128,7 @@ export const parseCommand = (raw: string, source: string, env: ParseEnv): EditSt
       if (!mirrorModes.includes(m)) throw new CommandError(`${raw}：镜像只认 ${mirrorModes.join('、')}`);
       takeRest(8, 0);
       const structure = env.getStructure(structName);
-      const [sx, sy, sz] = structure.大小;
+      const [sx, sy, sz] = structure.size;
       const corners = [transformPos(0, 0, r, m), transformPos(sx - 1, 0, r, m), transformPos(0, sz - 1, r, m), transformPos(sx - 1, sz - 1, r, m)];
       const box: Box = {
         x1: position[0] + Math.min(...corners.map((c) => c[0])),
@@ -138,7 +138,7 @@ export const parseCommand = (raw: string, source: string, env: ParseEnv): EditSt
         y1: position[1],
         y2: position[1] + sy - 1,
       };
-      return { 种: 'place', 原文: raw, 出处: source, 盒: box, structureName: structName, 结构: structure, 位置: position, rotation: r, mirror: m };
+      return { kind: 'place', 原文: raw, provenance: source, boxes: box, structureName: structName, 结构: structure, 位置: position, rotation: r, mirror: m };
     }
     default:
       throw new CommandError(`${raw}：编辑层只认 fill、setblock、clone、place template`);

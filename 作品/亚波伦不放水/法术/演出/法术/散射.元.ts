@@ -26,10 +26,10 @@ export default defineSpellMeta({
   长秒: (mineDetonateTick + 40) / 20,
   // SoundUtil.playRedstoneMineLoad（三颗各响一遍，这里记一遍）：BOMB_LOAD（音高 1.2～1.5）、REDSTONE_GOLEM_ELECTRIC_SPARKS（音高 2）、BOMB_SPAWN（音高 1.3～1.6）；
   // finalizeExplosion：REDSTONE_EXPLODE（音量 4、音高约 0.7）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.bomb_load', 秒: 0, 音高: 1.35 },
-    { 资产: '音效/诡厄巫法/goety.redstone_golem_electric_sparks.1', 秒: 0, 音高: 2 },
-    { 资产: '音效/诡厄巫法/goety.bomb_spawn.1', 秒: 0, 音高: 1.45 },
-    { 资产: '音效/诡厄巫法/goety.redstone_explode.1', 秒: mineDetonateTick / 20, 音量: 4, 音高: 0.7 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.bomb_load', sec: 0, 音高: 1.35 },
+    { asset: '音效/诡厄巫法/goety.redstone_golem_electric_sparks.1', sec: 0, 音高: 2 },
+    { asset: '音效/诡厄巫法/goety.bomb_spawn.1', sec: 0, 音高: 1.45 },
+    { asset: '音效/诡厄巫法/goety.redstone_explode.1', sec: mineDetonateTick / 20, 音量: 4, 音高: 0.7 },
   ],
 });

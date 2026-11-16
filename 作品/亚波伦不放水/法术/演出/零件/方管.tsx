@@ -10,7 +10,7 @@ import { faceMaterial, type FaceMaterialOptions } from './材质.ts';
 
 type Vec2 = readonly [number, number];
 /** 一个四边形：四个角（场景坐标，绕一圈）和各角的贴图坐标 [u, v] */
-export type QuadVerts = { 点: readonly [Vec3, Vec3, Vec3, Vec3]; uv: readonly [Vec2, Vec2, Vec2, Vec2] };
+export type QuadVerts = { points: readonly [Vec3, Vec3, Vec3, Vec3]; uv: readonly [Vec2, Vec2, Vec2, Vec2] };
 
 const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 /** 轴线的局部坐标：右（水平）、上（轴线水平时就是竖直朝上） */
@@ -25,13 +25,13 @@ const noDepthCache = new WeakMap<THREE.Material, THREE.Material>();
 export const SquareTubeFaces: React.FC<
   FaceMaterialOptions & {
     quads: readonly QuadVerts[];
-    图: Png | null;
+    image: Png | null;
     /** 不做深度测试（magicBeam）：被挡住也照画 */
     noDepthTest?: boolean;
     /** 同一处叠几层时的先后（three 的 renderOrder），大的后画 */
     序?: number;
   }
-> = ({ quads, 图: image, noDepthTest, 序: renderIndex = 0, ...materialOpts }) => {
+> = ({ quads, image: image, noDepthTest, 序: renderIndex = 0, ...materialOpts }) => {
   const cacheKey = JSON.stringify(quads);
   const geo = useMemo(() => {
     const positions: number[] = [];
@@ -39,7 +39,7 @@ export const SquareTubeFaces: React.FC<
     const idx: number[] = [];
     quads.forEach((face, i) => {
       for (let k = 0; k < 4; k++) {
-        positions.push(...face.点[k]!);
+        positions.push(...face.points[k]!);
         uv.push(...face.uv[k]!);
       }
       idx.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
@@ -76,7 +76,7 @@ export const squareTubeFace = (startPos: Vec3, end: Vec3, halfWidth: number, opt
   const farEnd = (p: Vec3): Vec3 => (opts.taper ? end : addVec(p, extent));
   const uvCoord = (across: number, vertical: number): Vec2 => (opts.alongAxis === 'v' ? [across, vertical] : [vertical, across]);
   const face = (a: Vec3, b: Vec3): QuadVerts => ({
-    点: [a, farEnd(a), farEnd(b), b],
+    points: [a, farEnd(a), farEnd(b), b],
     uv: [uvCoord(0, opts.lengthStart), uvCoord(0, opts.lengthEnd), uvCoord(1, opts.lengthEnd), uvCoord(1, opts.lengthStart)],
   });
   return [face(cornerPoint(-1, 1), cornerPoint(-1, -1)), face(cornerPoint(1, 1), cornerPoint(1, -1)), face(cornerPoint(-1, 1), cornerPoint(1, 1)), face(cornerPoint(-1, -1), cornerPoint(1, -1))];

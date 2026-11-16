@@ -26,8 +26,8 @@ const fogColorAt = (tick: number) => lerpV(hexToRgb(nightSky.horizon), hexToRgb(
 // ---------- 地形的雾 ----------
 
 const fogUniforms = {
-  mcFogStart: { value: terrainFog.起 },
-  mcFogEnd: { value: terrainFog.止 },
+  mcFogStart: { value: terrainFog.start },
+  mcFogEnd: { value: terrainFog.end },
   mcFogColor: { value: new THREE.Vector3(...hexToRgb(fogColor)) },
 };
 
@@ -70,7 +70,7 @@ const makeMaterial = (c: MatKind) => {
 
 const buildMeshes = (blocks: readonly PlacedBlock[], biome: string, name: string): THREE.Mesh[] => {
   if (!blocks.length) return [];
-  const buffers = assembleBuffers(blocks, { 群系: biome });
+  const buffers = assembleBuffers(blocks, { biome: biome });
   const out: THREE.Mesh[] = [];
   for (const c of ['实心', '镂空'] as const) {
     const b = buffers[c];
@@ -138,13 +138,13 @@ export const skyColorAt = (θ: number, bright = 1): RgbColor => {
 };
 
 /** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线仰角取色；再把地平线以上的星星加上去（原版 SRC_ALPHA、ONE：加 星亮²，这里乘 星.亮倍；不吃雾） */
-const PerspectiveSky: React.FC<{ cameraRig: CameraRigFrame; 刻: number; 宽: number; 高: number }> = ({ cameraRig, 刻: tick, 宽: width, 高: height }) => {
+const PerspectiveSky: React.FC<{ cameraRig: CameraRigFrame; 刻: number; width: number; height: number }> = ({ cameraRig, 刻: tick, width: width, height: height }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const drawWidth = width * filmScale, drawHeight = height * filmScale;
   useLayoutEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const cam = makeRigCamera({ 种: '透视', ...cameraRig }, width, height, 1);
+    const cam = makeRigCamera({ kind: '透视', ...cameraRig }, width, height, 1);
     const nx = Math.ceil(drawWidth / skyCellPx), ny = Math.ceil(drawHeight / skyCellPx);
     const small = document.createElement('canvas');
     small.width = nx;
@@ -173,7 +173,7 @@ const PerspectiveSky: React.FC<{ cameraRig: CameraRigFrame; 刻: number; 宽: nu
         v.set(x, z, -y);
         if (v.dot(forward) <= 0) continue;
         v.add(cam.position).project(cam);
-        const n = Math.max(starField.starCellPx, Math.round(((2 * s.半边) / starField.距离) * pixelsPerRad / skyCellPx));
+        const n = Math.max(starField.starCellPx, Math.round(((2 * s.halfSide) / starField.距离) * pixelsPerRad / skyCellPx));
         const cx = Math.round((((v.x + 1) / 2) * drawWidth) / skyCellPx - n / 2), cy = Math.round((((1 - v.y) / 2) * drawHeight) / skyCellPx - n / 2);
         for (let dy = 0; dy < n; dy++)
           for (let dx = 0; dx < n; dx++) {
@@ -204,19 +204,19 @@ export type NewWorldParams = {
   刻: number;
   /** 剖面：坑挖到哪一步、坑和镜头之间撤了几排（地形.ts） */
   section: { pit: PitState; peeled: number };
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** 剖面里的东西（裂纹、掉落物、粒子……）：原点在 剖面原点（坑那一格南面的中点），x 东、y 北、z 上 */
   children?: React.ReactNode;
 };
 
 /** 铺满画面的新世界（天 + 地形 + 你），放在 position 不是 static 的容器里，自己贴左上角；整片后期、聊天栏、歌词由段套 */
-export const NewWorld: React.FC<NewWorldParams> = ({ cameraRig, 你: you, tint, 刻: tick, section, 宽: width, 高: height, children }) => {
+export const NewWorld: React.FC<NewWorldParams> = ({ cameraRig, 你: you, tint, 刻: tick, section, width: width, height: height, children }) => {
   fogUniforms.mcFogColor.value.set(...fogColorAt(tick));
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, overflow: 'hidden' }}>
-      <PerspectiveSky cameraRig={cameraRig} 刻={tick} 宽={width} 高={height} />
-      <ToonCanvas 宽={width} 高={height} cameraRig={{ 种: '透视', ...cameraRig, farPlane: 640 }} tint={tint} style={{ position: 'absolute', left: 0, top: 0 }}>
+      <PerspectiveSky cameraRig={cameraRig} 刻={tick} width={width} height={height} />
+      <ToonCanvas width={width} height={height} cameraRig={{ kind: '透视', ...cameraRig, farPlane: 640 }} tint={tint} style={{ position: 'absolute', left: 0, top: 0 }}>
         <Terrain pit={section.pit} peeled={section.peeled} />
         {you && <Steve pose={you} />}
         {children && <group position={[...sectionOrigin]}>{children}</group>}

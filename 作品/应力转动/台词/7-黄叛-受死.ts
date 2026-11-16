@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 2b7d1f2d4176），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-黄叛-受死（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 88e8932fa3c9），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-黄叛-受死（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "7-黄叛-受死",
-  "角色": "黄叛",
-  "念": "怪物受死！",
-  "配音": "配音/7-黄叛-受死",
-  "成品sha": "ac93750e337f",
-  "开口": 0.03,
+  "character": "黄叛",
+  "spoken": "怪物受死！",
+  "voice": "配音/7-黄叛-受死",
+  "finishedSha": "ac93750e337f",
+  "mouthOpen": 0.03,
   "有声长": 0.827,
-  "时长": 1.007,
+  "duration": 1.007,
   "文件秒数": 1.007,
-  "字": [
+  "char": [
     ["怪",0,0.24],
     ["物",0.24,0.32],
     ["受",0.32,0.48],

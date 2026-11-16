@@ -13,13 +13,13 @@ const grainFreq = 0.65;
 // 噪声取灰度、绕 0.5 拉开 2 倍，alpha 置 1（分形噪声的 alpha 也是噪声，不置 1 会透）
 const grainMatrix = [...[0, 1, 2].flatMap(() => [2 / 3, 2 / 3, 2 / 3, 0, -0.5]), 0, 0, 0, 0, 1].join(' ');
 
-export type PageRect = { left: number; 上: number; 宽: number; 高: number };
+export type PageRect = { left: number; 上: number; width: number; height: number };
 
 /** 整页挖掉这几块的裁剪路径（evenodd：外框一圈、每块一圈） */
 const cutoutPath = (rects: readonly PageRect[]) =>
-  `path(evenodd, '${['M-1 -1 H100000 V100000 H-1 Z', ...rects.map((r) => `M${r.left} ${r.上} h${r.宽} v${r.高} h${-r.宽} Z`)].join(' ')}')`;
+  `path(evenodd, '${['M-1 -1 H100000 V100000 H-1 Z', ...rects.map((r) => `M${r.left} ${r.上} h${r.width} v${r.height} h${-r.width} Z`)].join(' ')}')`;
 
-export const FilmPost: React.FC<{ grade?: Grade | null; 种子?: number; grainYield?: readonly PageRect[]; children: React.ReactNode }> = ({ grade: t, 种子: seed, grainYield, children }) => {
+export const FilmPost: React.FC<{ grade?: Grade | null; seed?: number; grainYield?: readonly PageRect[]; children: React.ReactNode }> = ({ grade: t, seed: seed, grainYield, children }) => {
   // 默认种子是第几个输出帧（秒 × Composition 帧率）：颗粒一个输出帧换一次（SVG 的 seed 会截成整数，按秒给就一秒才换一次）
   const currentFrame = Math.round(useCurrentSec() * useVideoConfig().fps);
   const frame = seed ?? currentFrame;

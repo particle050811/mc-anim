@@ -92,14 +92,14 @@ export const decodeTileHeader = (raw: Uint8Array): Uint32Array => {
 };
 
 export type PackageInfo = {
-  版本: number;
-  维度: string; // 暮色 / 主世界
-  原点: [number, number, number]; // [ox, oy, oz]，见文件头
-  状态: string[]; // 方块状态表，状态[0] = "minecraft:air"
-  群系: string[];
+  version: number;
+  dimension: string; // 暮色 / 主世界
+  origin: [number, number, number]; // [ox, oy, oz]，见文件头
+  state: string[]; // 方块状态表，状态[0] = "minecraft:air"
+  biome: string[];
   // 粗高度图：格 米一格，覆盖 [x0, x0 + 格·nx) × [y0, y0 + 格·ny)（场景坐标）；高 是 base64 的 Int16（小端，按 (y, x) 排），
   // 每格是格里最高那块方块的顶（场景 z，含树冠、水面），−32768 = 这一格没有数据
-  粗高度: { 格: number; x0: number; y0: number; nx: number; ny: number; 高: string };
+  coarseHeight: { cell: number; x0: number; y0: number; nx: number; ny: number; height: string };
 };
 
 // 一个区段的数据（编码前 / 解码后、换成体素块之前）；解码（engine/voxel/区段解码.ts）出来的四个数组同一块缓冲
@@ -116,14 +116,14 @@ export type SectionData = {
 };
 
 // 包里的状态号、群系号 → 体素值、染色（每个包建一次）
-export type PackTable = { 值: Uint16Array; 色: (stateIdx: number, biomeIdx: number) => PaletteEntry['c'] };
-export const buildPackTables = (info: Pick<PackageInfo, '状态' | '群系'>): PackTable => {
-  const voxelByState = Uint16Array.from(info.状态, (s) => voxelFromState(s));
+export type PackTable = { value: Uint16Array; 色: (stateIdx: number, biomeIdx: number) => PaletteEntry['c'] };
+export const buildPackTables = (info: Pick<PackageInfo, 'state' | 'biome'>): PackTable => {
+  const voxelByState = Uint16Array.from(info.state, (s) => voxelFromState(s));
   const { t, C: tintRoutes } = buildTintTable();
-  const globalBiome = info.群系.map(biomeIndex);
+  const globalBiome = info.biome.map(biomeIndex);
   const { tint: TINT } = blockProps;
   return {
-    值: voxelByState,
+    value: voxelByState,
     色: (stateIdx, biomeIdx) => {
       const tintRoute = TINT[voxelByState[stateIdx]];
       if (!tintRoute || biomeIdx === noBiome) return [255, 255, 255];
@@ -140,7 +140,7 @@ export const sectionToVoxels = (data: SectionData, tables: PackTable): VoxelGrid
   const palette: PaletteEntry[] = [];
   for (let idx = 0; idx < data.palette.length; idx += 2) {
     const st = data.palette[idx];
-    palette.push({ v: tables.值[st], c: tables.色(st, data.palette[idx + 1]) });
+    palette.push({ v: tables.value[st], c: tables.色(st, data.palette[idx + 1]) });
   }
   const vox = new Uint16Array(cols * cols * data.nz);
   let run = 0;
@@ -153,23 +153,23 @@ export const sectionToVoxels = (data: SectionData, tables: PackTable): VoxelGrid
       z = z0;
     }
   }
-  return { nx: cols, ny: cols, nz: data.nz, 格: cellM, 原点: [data.i * sectionCells * cellM, data.j * sectionCells * cellM, data.kBottom * cellM], vox, palette: palette };
+  return { nx: cols, ny: cols, nz: data.nz, cell: cellM, origin: [data.i * sectionCells * cellM, data.j * sectionCells * cellM, data.kBottom * cellM], vox, palette: palette };
 };
 
 // ---------- 粗高度图 ----------
 // 给 lib/地形跟随.ts（航线下面的地面）和 lib/体素/区段.ts 的 选区段（地物顶）同步查，体积小，可以直接打进包里
-export type CoarseHeightMap = { 格: number; x0: number; y0: number; nx: number; ny: number; 高: Int16Array };
-export const decodeCoarseHeight = (info: Pick<PackageInfo, '粗高度'>): CoarseHeightMap => {
-  const { 格: cellM, x0, y0, nx, ny, 高: heightsB64 } = info.粗高度;
+export type CoarseHeightMap = { cell: number; x0: number; y0: number; nx: number; ny: number; height: Int16Array };
+export const decodeCoarseHeight = (info: Pick<PackageInfo, 'coarseHeight'>): CoarseHeightMap => {
+  const { cell: cellM, x0, y0, nx, ny, height: heightsB64 } = info.coarseHeight;
   const bytes = Uint8Array.from(atob(heightsB64), (ch) => ch.charCodeAt(0));
-  return { 格: cellM, x0, y0, nx, ny, 高: new Int16Array(bytes.buffer, 0, nx * ny) };
+  return { cell: cellM, x0, y0, nx, ny, height: new Int16Array(bytes.buffer, 0, nx * ny) };
 };
 // 场景坐标 (x, y) 那一格里最高那块方块的顶（场景 z）；没有数据是 −Infinity（地形跟随取最高时不算它；选区段 用时 lib/体素/导入地形.ts 换成 0，见那里）
 export const coarseHeightAt = (heightMap: CoarseHeightMap, x: number, y: number) => {
-  const col = Math.floor((x - heightMap.x0) / heightMap.格);
-  const row = Math.floor((y - heightMap.y0) / heightMap.格);
+  const col = Math.floor((x - heightMap.x0) / heightMap.cell);
+  const row = Math.floor((y - heightMap.y0) / heightMap.cell);
   if (col < 0 || row < 0 || col >= heightMap.nx || row >= heightMap.ny) return -Infinity;
-  const height = heightMap.高[row * heightMap.nx + col];
+  const height = heightMap.height[row * heightMap.nx + col];
   return height === -32768 ? -Infinity : height;
 };
 // 粗高度图的指纹（FNV-1a，范围和每一格的值）：导入范围变了它就变。交界修正（工具/导入/交界.ts）记下算时的指纹，
@@ -179,15 +179,15 @@ export const coarseHeightFingerprint = (heightMap: CoarseHeightMap) => {
   const mix = (value: number) => {
     hash = Math.imul(hash ^ (value & 0xffff), 0x01000193);
   };
-  for (const value of [heightMap.格, heightMap.x0, heightMap.y0, heightMap.nx, heightMap.ny]) mix(value), mix(value >> 16);
-  for (let k = 0; k < heightMap.高.length; k++) mix(heightMap.高[k]);
+  for (const value of [heightMap.cell, heightMap.x0, heightMap.y0, heightMap.nx, heightMap.ny]) mix(value), mix(value >> 16);
+  for (let k = 0; k < heightMap.height.length; k++) mix(heightMap.height[k]);
   return (hash >>> 0).toString(16).padStart(8, '0');
 };
 // 包里有没有这个区段：核心范围里有一格粗高度有数据就有（烘焙时区段核心有一列数据就写，粗高度格对齐区段边界，两边一致）
 export const hasSection = (heightMap: CoarseHeightMap, section: SectionId) => {
   const sizeM = sectionCells * 2 ** section.L;
-  const a0 = Math.max(0, (section.i * sizeM - heightMap.x0) / heightMap.格), a1 = Math.min(heightMap.nx, (section.i * sizeM + sizeM - heightMap.x0) / heightMap.格);
-  const b0 = Math.max(0, (section.j * sizeM - heightMap.y0) / heightMap.格), b1 = Math.min(heightMap.ny, (section.j * sizeM + sizeM - heightMap.y0) / heightMap.格);
-  for (let row = b0; row < b1; row++) for (let col = a0; col < a1; col++) if (heightMap.高[row * heightMap.nx + col] !== -32768) return true;
+  const a0 = Math.max(0, (section.i * sizeM - heightMap.x0) / heightMap.cell), a1 = Math.min(heightMap.nx, (section.i * sizeM + sizeM - heightMap.x0) / heightMap.cell);
+  const b0 = Math.max(0, (section.j * sizeM - heightMap.y0) / heightMap.cell), b1 = Math.min(heightMap.ny, (section.j * sizeM + sizeM - heightMap.y0) / heightMap.cell);
+  for (let row = b0; row < b1; row++) for (let col = a0; col < a1; col++) if (heightMap.height[row * heightMap.nx + col] !== -32768) return true;
   return false;
 };

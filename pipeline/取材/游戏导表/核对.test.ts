@@ -64,18 +64,18 @@ describe('方块表核对', () => {
       附加: { 不画: [] },
     };
     const r = checkBlocks(exported, handWritten);
-    expect(r.对上).toBe(6);
+    expect(r.matched).toBe(6);
     expect(r.面.几何微差).toBe(1); // bars：防 z 冲突的小偏移
     expect(r.面.只差uv).toBe(1);
     expect(r.面.一致).toBe(2); // stone 只差起头角；grass 面一样、标志和染色不同
     expect(r.面.贴图不同).toBe(1); // dirt：手写写成了 stone
     expect(r.面.几何不同).toBe(1); // slab
     expect(r.只在手写的方块).toEqual(['minecraft:gone']);
-    expect(r.标志不同['类']).toEqual({ 数: 1, 组合: { 'cutout→translucent': 1 }, 例: ['minecraft:grass'] });
+    expect(r.标志不同['type']).toEqual({ 数: 1, 组合: { 'cutout→translucent': 1 }, examples: ['minecraft:grass'] });
     expect(r.染色不同.组合).toEqual({ 'grass→#123456': 1 });
     expect(r.多出的状态.数).toBe(2);
     expect(r.多出的状态.按命名空间).toEqual({ minecraft: 1, mymod: 1 });
-    expect(r.只在导出的方块.例).toEqual(['mymod:thing']);
+    expect(r.只在导出的方块.examples).toEqual(['mymod:thing']);
     expect(reportText(undefined, r)).toContain('面：一致 2');
   });
 });
@@ -106,6 +106,6 @@ describe('群系色核对', () => {
   it('现行规则在采样点上和游戏比', () => {
     const colorRule = { grass: (b: string, x: number) => (b === 'minecraft:swamp' && x === 0 ? 0x4c763c : b === 'minecraft:swamp' ? 0x000001 : 0x91bd59), foliage: (b: string) => (b === 'minecraft:swamp' ? 0x6a7039 : 0x77ab2f), 水: (b: string) => (b === 'minecraft:swamp' ? 0x617b64 : 0x3f76e4) };
     const r = checkBiomes(exported, handWritten, colorRule);
-    expect(r.规则核对).toEqual([{ 群系: 'minecraft:swamp', 项: '草', 点数: 2, 不同: 1, 例: [{ x: 100, z: 100, 规则: '#000001', 游戏: '#6a7039' }] }]);
+    expect(r.规则核对).toEqual([{ 群系: 'minecraft:swamp', items: '草', 点数: 2, 不同: 1, examples: [{ x: 100, z: 100, policy: '#000001', 游戏: '#6a7039' }] }]);
   });
 });

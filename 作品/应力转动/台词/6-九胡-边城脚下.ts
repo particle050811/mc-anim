@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 5fd0bda19dfb），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-边城脚下（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 bfac8ff899de），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-边城脚下（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-九胡-边城脚下",
-  "角色": "九胡",
-  "念": "狗修金要找的古城，就在这座边城的脚下。",
-  "配音": "配音/6-九胡-边城脚下",
-  "成品sha": "ddf1d4b9e5b6",
-  "开口": 0.03,
+  "character": "九胡",
+  "spoken": "狗修金要找的古城，就在这座边城的脚下。",
+  "voice": "配音/6-九胡-边城脚下",
+  "finishedSha": "ddf1d4b9e5b6",
+  "mouthOpen": 0.03,
   "有声长": 3.263,
-  "时长": 3.443,
+  "duration": 3.443,
   "文件秒数": 3.444,
-  "字": [
+  "char": [
     ["狗",0,0.16],
     ["修",0.16,0.4],
     ["金",0.4,0.56],

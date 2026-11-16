@@ -5,7 +5,7 @@ import { nameProblem, caseConflict, structNonAscii } from './规则/平台.ts';
 describe('平台', () => {
   it('合规样例放行：实体名用中文、shell: false、Python 用列表参数', async () => {
     const root = makeRepo(base(), {
-      'pipeline/环境/起.ts': "import { spawnSync } from 'node:child_process';\nexport const 起 = () => spawnSync('git', ['status'], { shell: false });\n",
+      'pipeline/环境/起.ts': "import { spawnSync } from 'node:child_process';\nexport const start = () => spawnSync('git', ['status'], { shell: false });\n",
       'py/srpy/起.py': "import subprocess\n# 别写 shell=True\nsubprocess.run(['git', 'status'], shell=False, encoding='utf-8')\n",
       'pipeline/指纹/说明.ts': "import spawn from 'cross-spawn';\nimport { execFileSync } from 'node:child_process';\nexport const x = (a: string[]) => [spawn('git', a), execFileSync('git', ['status']), /x/.exec('x')];\n",
       '作品/应力转动/认可/darwin-arm64/核对-冒烟.toml': '',
@@ -27,7 +27,7 @@ describe('平台', () => {
       'pipeline/坏.ts': [
         "import { exec, execSync, execSync as 同步, spawnSync, execFile } from 'node:child_process';",
         "import * as cp from 'child_process';",
-        "import 起 from 'cross-spawn';",
+        "import start from 'cross-spawn';",
         "execSync('ls -la | wc -l');",
         "exec('rm -rf x');",
         "同步('ls');",
@@ -62,8 +62,8 @@ describe('平台', () => {
 
   it('只差大小写的文件和目录（Mac 上造不出来，查纯函数）', () => {
     expect(caseConflict(['a/Readme.md', 'a/readme.md', 'b/X/1.ts', 'b/x/2.ts', 'c/1.ts', 'c/2.ts'])).toEqual([
-      { 文件: 'a/readme.md', existing: 'a/Readme.md', isFile: true },
-      { 文件: 'b/x/2.ts', existing: 'b/X', isFile: false },
+      { file: 'a/readme.md', existing: 'a/Readme.md', isFile: true },
+      { file: 'b/x/2.ts', existing: 'b/X', isFile: false },
     ]);
     expect(caseConflict(['作品/应力转动/段/6-斩娜迦/段.ts', '作品/应力转动/段/6-斩娜迦/画面.tsx'])).toEqual([]);
   });

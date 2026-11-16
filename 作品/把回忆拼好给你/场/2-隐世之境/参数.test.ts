@@ -41,7 +41,7 @@ const hasTable = !!fontLockEntry && fs.existsSync(bytesPath(fontLockEntry));
 describe.skipIf(!hasTable)('封面构图', () => {
   const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(fontLockEntry!), 'utf8')), '字体/把回忆拼好给你/像素字');
   const [W, H] = [1280, 720];
-  const cam = makePerspectiveCamera({ 眼: zUpToThree([cameraRig.feet[0], cameraRig.feet[1], cameraRig.feet[2] + 1.62]), 看: zUpToThree(cameraRig.看), fov: cameraRig.fov, 宽: W, 高: H });
+  const cam = makePerspectiveCamera({ 眼: zUpToThree([cameraRig.feet[0], cameraRig.feet[1], cameraRig.feet[2] + 1.62]), 看: zUpToThree(cameraRig.看), fov: cameraRig.fov, width: W, height: H });
   const projectAt = (z: number) => projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], z]), W, H);
 
   it('封面聊天行在 4:3 里、底边 20% 上面，像素格是整数', () => {

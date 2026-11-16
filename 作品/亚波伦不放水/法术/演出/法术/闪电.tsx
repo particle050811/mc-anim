@@ -31,7 +31,7 @@ const makeBolts = (seed: number): { bolts: { startTick: number; shapeSeed: numbe
   return { bolts, endTick: lightningMaxTicks };
 };
 
-const Lightning: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const Lightning: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const { bolts: flashes, endTick } = makeBolts(seed);
   if (tick >= endTick) return null;

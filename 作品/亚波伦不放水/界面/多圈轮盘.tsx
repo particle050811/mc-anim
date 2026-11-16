@@ -71,7 +71,7 @@ const itemImage = (focusKey: string): Png | null => {
 };
 
 /** 排盘里图标对照表（物品/聚晶图标.ts）没有的聚晶键 */
-export const missingIcons = (options: ArrangeOptions = {}): string[] => arrangeWheel(options).项.flatMap((item) => (itemImage(item.键) ? [] : [item.键]));
+export const missingIcons = (options: ArrangeOptions = {}): string[] => arrangeWheel(options).items.flatMap((item) => (itemImage(item.key) ? [] : [item.key]));
 
 const withAlpha = (color: string, opacity: number) => `rgba(${parseInt(color.slice(1, 3), 16)},${parseInt(color.slice(3, 5), 16)},${parseInt(color.slice(5, 7), 16)},${opacity})`;
 
@@ -82,13 +82,13 @@ export const drawMultiRingWheel = (canvasPos: CanvasPos, ringParams: MultiRingPa
   if (ringParams.刻 < 0) return;
   const ringShape = ringParams.ringShape ?? defaultRingShape;
   const ringOpen = { ...defaultOpenClose, ...ringParams.openClose };
-  const { cellsPerRing, 项: items } = arrangeWheel(ringParams);
+  const { cellsPerRing, items: items } = arrangeWheel(ringParams);
   const ringCount = cellsPerRing.length;
   const ringStates = cellsPerRing.map((_, k) => (ringParams.closeTick === undefined ? RingState(k, ringParams.刻, ringShape, ringOpen) : retractRingState(k, ringParams.刻, ringParams.closeTick, ringCount, ringShape, ringOpen)));
   if (!ringStates[0]) return;
 
   const backdropMode = ringParams.backdropMode ?? '原大';
-  if (backdropMode === '原大') drawBackdrop(canvasPos, png(focusWheelPng), ringStates[0]!.进度);
+  if (backdropMode === '原大') drawBackdrop(canvasPos, png(focusWheelPng), ringStates[0]!.progress);
   else if (backdropMode === '随外圈') drawBackdrop(canvasPos, png(focusWheelPng), (ringRadius(ringCount - 1, ringShape).outerRadius / (radialWheelConst.fullInnerRadius * radialWheelConst.outerInnerRatio)) * Math.min(1, ringParams.刻 / openDoneTick(ringCount, ringOpen)));
 
   const byRing: WheelItem[][] = cellsPerRing.map(() => []);
@@ -103,11 +103,11 @@ export const drawMultiRingWheel = (canvasPos: CanvasPos, ringParams: MultiRingPa
       ringState.内,
       ringState.outerRadius,
       byRing[k]!.map((item, i) => {
-        const { 起: startAngle, 止: end } = cellRange(i, n);
-        const isBright = !ringState.animating && (typeof ringParams.selectedId === 'string' ? item.键 === ringParams.selectedId : !!ringParams.selectedId?.includes(item.键));
-        const flash = ringState.animating ? 0 : (ringParams.flash?.[item.键] ?? 0);
+        const { start: startAngle, end: end } = cellRange(i, n);
+        const isBright = !ringState.animating && (typeof ringParams.selectedId === 'string' ? item.key === ringParams.selectedId : !!ringParams.selectedId?.includes(item.key));
+        const flash = ringState.animating ? 0 : (ringParams.flash?.[item.key] ?? 0);
         const color = flash > 0 ? flashColor(flash) : isBright ? argbColor(radialWheelConst.hoverColor) : ringParams.colorBySchool ? withAlpha(schoolColor[item.法.school], ringParams.schoolAlpha ?? 0.4) : argbColor(radialWheelConst.底色);
-        return { 起: startAngle + ringState.angleRad, 止: end + ringState.angleRad, 色: color };
+        return { start: startAngle + ringState.angleRad, end: end + ringState.angleRad, 色: color };
       }),
     );
   });
@@ -118,14 +118,14 @@ export const drawMultiRingWheel = (canvasPos: CanvasPos, ringParams: MultiRingPa
     if (!exitState && (!ringState || ringState.animating)) return;
     const n = cellsPerRing[k]!;
     byRing[k]!.forEach((item, i) => {
-      const itemTexture = itemImage(item.键);
+      const itemTexture = itemImage(item.key);
       if (!itemTexture) return;
-      const flash = ringParams.flash?.[item.键] ?? 0;
+      const flash = ringParams.flash?.[item.key] ?? 0;
       const brightness = item.inReveal ? (flash > 0 ? sparkleLevel(flash) : 1) : (ringParams.dimLevel ?? 0.35);
       if (exitState) {
         const angle = cellRange(i, n).中 + ringRotation(k, ringParams.刻, ringOpen) + exitState.roll;
         const r = ringRadius(k, ringShape).iconRadius * exitState.ratio;
-        const side = radialWheelConst.iconEdge * exitState.缩放;
+        const side = radialWheelConst.iconEdge * exitState.scale;
         drawPixelImage(canvasPos, itemTexture, r * Math.cos(angle) - side / 2, r * Math.sin(angle) - side / 2, side, side, { brightness });
         return;
       }
@@ -139,9 +139,9 @@ export const drawMultiRingWheel = (canvasPos: CanvasPos, ringParams: MultiRingPa
   const hubKey = ringParams.centerIcon === undefined ? defaultCenter : ringParams.centerIcon;
   const hubMove = isMoveOut && ringStates[0]!.animating ? moveOutState(0, ringParams.刻, ringOpen) : null;
   const centerImage = hubKey && (!ringStates[0]!.animating || hubMove) ? itemImage(hubKey) : null;
-  const hubSize = radialWheelConst.iconEdge * (ringParams.centerScale ?? 1) * (hubMove?.缩放 ?? 1);
+  const hubSize = radialWheelConst.iconEdge * (ringParams.centerScale ?? 1) * (hubMove?.scale ?? 1);
   if (centerImage) drawPixelImage(canvasPos, centerImage, -hubSize / 2, -hubSize / 2, hubSize, hubSize);
 };
 
 /** 屏幕上的多圈轮盘：圆心在容器正中；s 是 GUI 缩放（见 库/界面/径向轮盘.tsx） */
-export const MultiRingWheel: React.FC<MultiRingParams & { 宽: number; 高: number; s: number }> = ({ 宽: width, 高: height, s, ...ringParams }) => <WheelCanvas 宽={width} 高={height} s={s} draw={(canvasPos) => drawMultiRingWheel(canvasPos, ringParams)} />;
+export const MultiRingWheel: React.FC<MultiRingParams & { width: number; height: number; s: number }> = ({ width: width, height: height, s, ...ringParams }) => <WheelCanvas width={width} height={height} s={s} draw={(canvasPos) => drawMultiRingWheel(canvasPos, ringParams)} />;

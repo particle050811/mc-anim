@@ -4,9 +4,9 @@ import type { SegmentDef } from '../../engine/段/段定义.ts';
 import type { LineEntry } from '../配音/台词表.ts';
 import type { CheckContext, CheckReport } from './上下文.ts';
 
-export type ManifestLine = { 键: string; 章: number | '核对'; 集?: number };
-export type SegItem = ManifestLine & { 目录: string; 段文件: string; definition?: SegmentDef; 错误?: string };
-export type ParsedContent = { segments: SegItem[]; sceneOrder: string[] } | { 错误: string };
+export type ManifestLine = { key: string; 章: number | '核对'; 集?: number };
+export type SegItem = ManifestLine & { 目录: string; segmentFile: string; definition?: SegmentDef; errors?: string };
+export type ParsedContent = { segments: SegItem[]; sceneOrder: string[] } | { errors: string };
 
 const contentCache = new WeakMap<CheckContext, Promise<ParsedContent>>();
 
@@ -15,28 +15,28 @@ export const readContent = (c: CheckContext): Promise<ParsedContent> => {
   if (!r) {
     r = (async (): Promise<ParsedContent> => {
       const manifestPath = c.workPath('清单.ts');
-      if (!c.exists(manifestPath)) return { 错误: `没有 ${manifestPath}` };
+      if (!c.exists(manifestPath)) return { errors: `没有 ${manifestPath}` };
       const m = await c.loadModule(manifestPath);
-      if (!m.模块) return { 错误: `${manifestPath} 执行出错：${m.错误}` };
-      const manifestRows = m.模块.manifest as ManifestLine[] | undefined;
-      const segDir = m.模块.segDir as ((segKey: string) => string) | undefined;
-      if (!Array.isArray(manifestRows) || typeof segDir !== 'function') return { 错误: `${manifestPath} 要导出 manifest 数组和 segDir 函数` };
+      if (!m.modules) return { errors: `${manifestPath} 执行出错：${m.errors}` };
+      const manifestRows = m.modules.manifest as ManifestLine[] | undefined;
+      const segDir = m.modules.segDir as ((segKey: string) => string) | undefined;
+      if (!Array.isArray(manifestRows) || typeof segDir !== 'function') return { errors: `${manifestPath} 要导出 manifest 数组和 segDir 函数` };
       const segments: SegItem[] = [];
       for (const t of manifestRows) {
-        const absSegDir = c.workPath(segDir(t.键));
+        const absSegDir = c.workPath(segDir(t.key));
         const segFile = `${absSegDir}/段.ts`;
-        const item: SegItem = { ...t, 目录: absSegDir, 段文件: segFile };
-        if (!c.exists(segFile)) item.错误 = `缺 ${segFile}`;
+        const item: SegItem = { ...t, 目录: absSegDir, segmentFile: segFile };
+        if (!c.exists(segFile)) item.errors = `缺 ${segFile}`;
         else {
           const d = await c.loadModule(segFile);
-          if (!d.模块) item.错误 = `${segFile} 执行出错：${d.错误}`;
-          else if (!d.模块.default) item.错误 = `${segFile} 没有 export default defineSeg(...)`;
-          else item.definition = d.模块.default as SegmentDef;
+          if (!d.modules) item.errors = `${segFile} 执行出错：${d.errors}`;
+          else if (!d.modules.default) item.errors = `${segFile} 没有 export default defineSeg(...)`;
+          else item.definition = d.modules.default as SegmentDef;
         }
         segments.push(item);
       }
       const sceneOrder: string[] = [];
-      for (const s of segments) if (s.definition && s.definition.场 !== '核对' && !sceneOrder.includes(s.definition.场)) sceneOrder.push(s.definition.场);
+      for (const s of segments) if (s.definition && s.definition.scene !== '核对' && !sceneOrder.includes(s.definition.scene)) sceneOrder.push(s.definition.scene);
       return { segments, sceneOrder };
     })();
     contentCache.set(c, r);
@@ -47,7 +47,7 @@ export const readContent = (c: CheckContext): Promise<ParsedContent> => {
 /** 所查作品的 段/、场/、核对/ 下实际有的目录名 */
 export const listExistingDirs = (c: CheckContext, layerKind: '段' | '场' | '核对') => {
   const dirPrefix = c.workPath(`${layerKind}/`);
-  return [...new Set(c.文件().filter((p) => p.startsWith(dirPrefix) && p.slice(dirPrefix.length).includes('/')).map((p) => p.slice(dirPrefix.length).split('/')[0]!))].sort();
+  return [...new Set(c.file().filter((p) => p.startsWith(dirPrefix) && p.slice(dirPrefix.length).includes('/')).map((p) => p.slice(dirPrefix.length).split('/')[0]!))].sort();
 };
 
 export const lineTablePath = (c: CheckContext) => c.workPath('台词.toml');
@@ -56,7 +56,7 @@ export const readLineTable = (c: CheckContext, report?: CheckReport): LineEntry[
   const path = lineTablePath(c);
   if (!c.exists(path)) return null;
   try {
-    return ((c.readToml(path)!['台词'] ?? []) as LineEntry[]);
+    return ((c.readToml(path)!['lines'] ?? []) as LineEntry[]);
   } catch (e) {
     report?.错(`TOML 解析失败：${(e as Error).message.split('\n')[0]}`, path);
     return null;

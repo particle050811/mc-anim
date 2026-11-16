@@ -14,7 +14,7 @@ import { expectedVersion, browserLocation } from '../渲/浏览器.ts';
 import { tryRun } from './子进程.ts';
 import { installDeps, openWorktree } from './开worktree.ts';
 
-type CheckResult = { 项: string; 过: boolean; required: boolean; 说明: string };
+type CheckResult = { items: string; 过: boolean; required: boolean; note: string };
 
 const isWritable = (dir: string) => {
   try {
@@ -35,7 +35,7 @@ const installedVersion = (pkg: string): string | null => {
 
 export const healthCheck = (): CheckResult[] => {
   const r: CheckResult[] = [];
-  const addCheck = (checkItem: string, ok: boolean, note: string, required = true) => r.push({ 项: checkItem, 过: ok, required, 说明: note });
+  const addCheck = (checkItem: string, ok: boolean, note: string, required = true) => r.push({ items: checkItem, 过: ok, required, note: note });
 
   const wantedNode = fs.readFileSync(path.join(codeRoot(), '.nvmrc'), 'utf8').trim();
   addCheck('Node', process.versions.node.split('.')[0] === wantedNode, `${process.version}（.nvmrc 要 ${wantedNode}）`);
@@ -47,11 +47,11 @@ export const healthCheck = (): CheckResult[] => {
   // pnpm 版本照 package.json 的 packageManager（用户 11-06 定换 pnpm）；corepack enable 后会自动用这一版
   const wantedPnpm = String(pkg.packageManager ?? '').replace(/^pnpm@/, '');
   const havePnpm = tryRun(['pnpm', '--version']);
-  addCheck('pnpm', havePnpm.退出码 === 0 && havePnpm.stdout.trim() === wantedPnpm, havePnpm.退出码 === 0 ? `${havePnpm.stdout.trim()}（要 ${wantedPnpm}）` : `没装（要 ${wantedPnpm}：corepack enable，或 npm i -g pnpm@${wantedPnpm}）`);
+  addCheck('pnpm', havePnpm.exitCode === 0 && havePnpm.stdout.trim() === wantedPnpm, havePnpm.exitCode === 0 ? `${havePnpm.stdout.trim()}（要 ${wantedPnpm}）` : `没装（要 ${wantedPnpm}：corepack enable，或 npm i -g pnpm@${wantedPnpm}）`);
 
   for (const tool of ['ffmpeg', 'ffprobe'] as const) {
     const v = tryRun([config(tool), '-version']);
-    addCheck(tool, v.退出码 === 0, v.退出码 === 0 ? v.stdout.split('\n')[0]! : `跑不起来：${config(tool)}（装上或设 ANIM_${tool.toUpperCase()}）`);
+    addCheck(tool, v.exitCode === 0, v.exitCode === 0 ? v.stdout.split('\n')[0]! : `跑不起来：${config(tool)}（装上或设 ANIM_${tool.toUpperCase()}）`);
   }
   const encoderTable = tryRun([config('ffmpeg'), '-hide_banner', '-encoders']).stdout;
   const hasEncoder = (encoderName: string) => new RegExp(`\\s${encoderName}\\s`).test(encoderTable);
@@ -64,7 +64,7 @@ export const healthCheck = (): CheckResult[] => {
   }
 
   const uv = tryRun(['uv', '--version']);
-  addCheck('uv', uv.退出码 === 0, uv.退出码 === 0 ? uv.stdout.trim() : '没装（Python 叶子工具要用；见 https://docs.astral.sh/uv/）', false);
+  addCheck('uv', uv.exitCode === 0, uv.exitCode === 0 ? uv.stdout.trim() : '没装（Python 叶子工具要用；见 https://docs.astral.sh/uv/）', false);
 
   // 子目录不在只提示：用到时各处自己建（从 GitHub 拉下来的新机器上，交付、基线、archive 渲之前都不在，用户 11-13 要照文档能一路走通）
   for (const subdir of ['store', '私有', 'terrain', 'cache', '交付', 'run', '基线', 'archive']) {
@@ -78,7 +78,7 @@ export const healthCheck = (): CheckResult[] => {
   try {
     const workRoots = listWorks();
     const work = currentWork();
-    addCheck('作品', true, `${[...workRoots].map(([name, workRoot]) => `${name}（${path.relative(codeRoot(), workRoot) || '.'}）`).join('、')}；现在选的是 ${work.名}`);
+    addCheck('作品', true, `${[...workRoots].map(([name, workRoot]) => `${name}（${path.relative(codeRoot(), workRoot) || '.'}）`).join('、')}；现在选的是 ${work.name}`);
   } catch (e) {
     addCheck('作品', false, (e as Error).message, false);
   }
@@ -90,8 +90,8 @@ export const healthCheck = (): CheckResult[] => {
       const releaseLock = readReleaseLock(workRoot);
       if (!releaseLock) continue;
       hasReleaseLock = true;
-      const missing = releaseLock.附件.filter((a) => missingAttachmentCount(a, dataPath()) > 0);
-      addCheck(`素材·${name}`, missing.length === 0, missing.length ? `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件里有 ${missing.length} 个还没下（anim --work ${name} assets pull）` : `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件都在数据根`, false);
+      const missing = releaseLock.attachments.filter((a) => missingAttachmentCount(a, dataPath()) > 0);
+      addCheck(`素材·${name}`, missing.length === 0, missing.length ? `Release ${releaseLock.label} 的 ${releaseLock.attachments.length} 个附件里有 ${missing.length} 个还没下（anim --work ${name} assets pull）` : `Release ${releaseLock.label} 的 ${releaseLock.attachments.length} 个附件都在数据根`, false);
     }
   } catch {
     // 作品目录有问题上面「作品」一项已经报了
@@ -118,25 +118,25 @@ export const healthCheck = (): CheckResult[] => {
 
 export const envCommands: Record<string, Command> = {
   env: {
-    用法: 'env',
-    说明: '列出本机配置的值和来源（环境变量 > anim.local.toml > 默认）',
+    usage: 'env',
+    note: '列出本机配置的值和来源（环境变量 > anim.local.toml > 默认）',
     noRecord: true,
     跑: async (args) => {
       parseArgs(args, {});
-      const { 值: values, localFile } = allConfig();
+      const { value: values, localFile } = allConfig();
       console.log(`代码根：${codeRoot()}\n主检出：${mainCheckout()}\n本地配置：${localFile ?? '（没有 anim.local.toml）'}\n`);
-      for (const [configKey, v] of Object.entries(values)) console.log(`${configKey}：${v.值}\n    取自${v.来源}；环境变量 ${v.变量}，anim.local.toml 键 ${v.键}。${v.说明}`);
+      for (const [configKey, v] of Object.entries(values)) console.log(`${configKey}：${v.value}\n    取自${v.source}；环境变量 ${v.变量}，anim.local.toml 键 ${v.key}。${v.note}`);
     },
   },
   doctor: {
-    用法: 'doctor',
-    说明: '体检：Node、依赖版本、ffmpeg、编码器、git 设置、数据根、资产字节',
+    usage: 'doctor',
+    note: '体检：Node、依赖版本、ffmpeg、编码器、git 设置、数据根、资产字节',
     跑: async (args, runRecord) => {
       parseArgs(args, {});
       const r = healthCheck();
-      for (const x of r) console.log(`${x.过 ? '✓' : x.required ? '✗' : '!'} ${x.项}：${x.说明}`);
+      for (const x of r) console.log(`${x.过 ? '✓' : x.required ? '✗' : '!'} ${x.items}：${x.note}`);
       const failed = r.filter((x) => !x.过 && x.required);
-      for (const x of r.filter((x) => !x.过)) runRecord.log(x.required ? '错误' : '警告', `${x.项}：${x.说明}`);
+      for (const x of r.filter((x) => !x.过)) runRecord.log(x.required ? '错误' : '警告', `${x.items}：${x.note}`);
       console.log(failed.length ? `\n${failed.length} 项必需的没过` : '\n必需项全过');
       return failed.length ? 1 : 0;
     },
@@ -145,13 +145,13 @@ export const envCommands: Record<string, Command> = {
 
 export const worktreeCommands: Record<string, Command> = {
   wt: {
-    用法: 'wt new <名> [--from <分支>]',
-    说明: '开 worktree（../mc-anim-wt/<名>，新分支 <名>，默认从 main）并备好依赖：pnpm install --frozen-lockfile（从全机共用的 store 克隆或硬链接，几秒）；不进 Git 的 .claude/skills 复制过去。并行任务、子 Agent 开 worktree 都用它',
+    usage: 'wt new <name> [--from <branch>]',
+    note: '开 worktree（../mc-anim-wt/<名>，新分支 <名>，默认从 main）并备好依赖：pnpm install --frozen-lockfile（从全机共用的 store 克隆或硬链接，几秒）；不进 Git 的 .claude/skills 复制过去。并行任务、子 Agent 开 worktree 都用它',
     跑: async (args) => {
-      const p = parseArgs(args, { 值: ['--from'] });
-      if (p.位置[0] !== 'new' || p.位置.length !== 2) throw new UsageError('用法：anim wt new <名> [--from <分支>]');
-      const r = await openWorktree(p.位置[1]!, p.值['--from'] ?? 'main');
-      console.log(`${r.目标}\n依赖：${installDeps.join(' ')}${r.carried.length ? `；带过去：${r.carried.join('、')}` : ''}`);
+      const p = parseArgs(args, { value: ['--from'] });
+      if (p.位置[0] !== 'new' || p.位置.length !== 2) throw new UsageError('usage：anim wt new <name> [--from <branch>]');
+      const r = await openWorktree(p.位置[1]!, p.value['--from'] ?? 'main');
+      console.log(`${r.target}\n依赖：${installDeps.join(' ')}${r.carried.length ? `；带过去：${r.carried.join('、')}` : ''}`);
     },
   },
 };

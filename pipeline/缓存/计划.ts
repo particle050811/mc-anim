@@ -23,8 +23,8 @@ export type ReclaimClass = (typeof reclaimKinds)[number];
 
 export type ReclaimOptions = {
   /** 母版、去重只看这几部作品；空是全部（cache/ 下有、代码里没有的作品整个留着） */
-  作品: string[];
-  类: ReadonlySet<ReclaimClass>;
+  work: string[];
+  type: ReadonlySet<ReclaimClass>;
   recentDays: number;
   draftDays: number;
   webpackDays: number;
@@ -34,7 +34,7 @@ export type ReclaimOptions = {
 // 列段重解存档要几分钟到几十分钟，留得比草稿久
 export const defaultDays = { recent: 2, draftDays: 14, webpack: 3, columnSeg: 90 };
 
-export type WebpackRootPlan = { 根: string; currentVersion: string | null; entryList: WithReasons<WebpackEntry>[] };
+export type WebpackRootPlan = { root: string; currentVersion: string | null; entryList: WithReasons<WebpackEntry>[] };
 export type ReclaimPlan = {
   media: WithReasons<MediaFile>[];
   tempFiles: WithReasons<PlainFile>[];
@@ -45,11 +45,11 @@ export type ReclaimPlan = {
   staging: WithReasons<DirEntry>[];
   打包: WithReasons<DirEntry>[];
   /** 认得、但不自动删的（只报大小和用途） */
-  reportOnly: { 位置: string; 用途: string; 大小: number }[];
+  reportOnly: { 位置: string; purpose: string; size: number }[];
   /** 只报告不删 */
   unknownGroups: { 位置: string; entryList: DirEntry[] }[];
-  dedupePlan: { 组: DedupGroup[]; ledger: DedupLedger; canDedupe: boolean; sha: ShaCache['统计'] } | null;
-  警告: string[];
+  dedupePlan: { group: DedupGroup[]; ledger: DedupLedger; canDedupe: boolean; sha: ShaCache['stats'] } | null;
+  warnings: string[];
 };
 
 /**
@@ -94,24 +94,24 @@ const installedRemotionVersion = (checkout: string): string | null => {
   }
 };
 
-const keptMedia = (plan: ReclaimPlan) => plan.media.filter((f) => f.理由.length);
+const keptMedia = (plan: ReclaimPlan) => plan.media.filter((f) => f.reason.length);
 const pendingDeleteByInode = (plan: ReclaimPlan) => {
   const m = new Map<string, number>();
-  for (const f of plan.media) if (!f.理由.length) m.set(f.inode, (m.get(f.inode) ?? 0) + 1);
+  for (const f of plan.media) if (!f.reason.length) m.set(f.inode, (m.get(f.inode) ?? 0) + 1);
   return m;
 };
 
 export const computeReclaimPlan = async (o: ReclaimOptions, onProgress: (s: string) => void = () => {}): Promise<ReclaimPlan> => {
-  const plan: ReclaimPlan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, 警告: [] };
-  const warn = (s: string) => plan.警告.push(s);
-  const isWanted = (c: ReclaimClass) => o.类.has(c);
+  const plan: ReclaimPlan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] };
+  const warn = (s: string) => plan.warnings.push(s);
+  const isWanted = (c: ReclaimClass) => o.type.has(c);
 
   if (isWanted('母版') || isWanted('残留') || isWanted('去重')) {
     const knownWorks = listWorks();
     // 只认目录：Finder 会在这里留 .DS_Store
     const masterRoot = dataPath('cache', '母版');
     const cacheEntries = new Set(fs.existsSync(masterRoot) ? fs.readdirSync(masterRoot, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) : []);
-    const targetWorks = o.作品.length ? o.作品 : [...new Set([...knownWorks.keys(), ...cacheEntries])].sort();
+    const targetWorks = o.work.length ? o.work : [...new Set([...knownWorks.keys(), ...cacheEntries])].sort();
     const keep = new KeepSet();
     // 自足的交付、有认可参考的认可不再钉（用户 10-30 定「这个未来用不到的就删」）
     addDelivery(keep, dataPath('交付'), dataRoot(), warn, { unpin: true });
@@ -120,7 +120,7 @@ export const computeReclaimPlan = async (o: ReclaimOptions, onProgress: (s: stri
       const workRoot = knownWorks.get(work);
       if (!workRoot) {
         warn(`cache/ 下有作品「${work}」，代码里没有这部作品（私有的没登记、或在别的分支上），它的母版整个留着`);
-        keep.addDir(dataPath('cache', '母版', work), { 类: '算不出', 说明: '代码里没有这部作品' });
+        keep.addDir(dataPath('cache', '母版', work), { type: '算不出', note: '代码里没有这部作品' });
         continue;
       }
       addApprovals(keep, workRoot, (segKey) => masterDir(segKey, work), warn, { unpin: true, referenceFile: referenceFileLookup(work) });
@@ -130,17 +130,17 @@ export const computeReclaimPlan = async (o: ReclaimOptions, onProgress: (s: stri
       const mediaScan = scanMedia(dataPath('cache', '母版', work), '母版', work, { now: o.now });
       if (isWanted('母版') || isWanted('去重')) plan.media.push(...planMedia(mediaScan.media, keep, { now: o.now, recentDays: o.recentDays }));
       if (isWanted('残留')) plan.tempFiles.push(...planTemp(mediaScan.tempFiles, o.now));
-      if (mediaScan.unknownFiles.length) plan.unknownGroups.push({ 位置: `cache/母版/${work}`, entryList: mediaScan.unknownFiles.map((f) => ({ ...f, 名: path.relative(dataPath('cache', '母版', work), f.路径) })) });
+      if (mediaScan.unknownFiles.length) plan.unknownGroups.push({ 位置: `cache/母版/${work}`, entryList: mediaScan.unknownFiles.map((f) => ({ ...f, name: path.relative(dataPath('cache', '母版', work), f.path) })) });
     }
     // 只要了去重、没要删的那一种：那一种的都按留算
-    plan.media = plan.media.map((f) => (isWanted(f.种) || f.理由.length ? f : { ...f, 理由: [{ 类: '算不出' as const, 说明: `这次没选 ${f.种}` }] }));
+    plan.media = plan.media.map((f) => (isWanted(f.kind) || f.reason.length ? f : { ...f, reason: [{ type: '算不出' as const, note: `这次没选 ${f.kind}` }] }));
   }
 
   if (isWanted('残留')) plan.打包 = scanBundles(o.now);
   if (isWanted('残留')) plan.staging = planStaging(scanStaging(stagingRoot(), config('主机')), o.now);
   if (isWanted('草稿')) plan.drafts = planDrafts(listDir(draftRoot()), { now: o.now, days: o.draftDays });
   // 区域源 读时记用过；按区域 sha 寻址，一个文件一个文件算
-  if (isWanted('列段')) plan.columnSegs = planDrafts(listDir(dataPath('cache', '列段')).flatMap((d) => listDir(d.路径)), { now: o.now, days: o.columnSegDays });
+  if (isWanted('列段')) plan.columnSegs = planDrafts(listDir(dataPath('cache', '列段')).flatMap((d) => listDir(d.path)), { now: o.now, days: o.columnSegDays });
 
   if (isWanted('webpack')) {
     for (const checkout of allCheckouts()) {
@@ -148,14 +148,14 @@ export const computeReclaimPlan = async (o: ReclaimOptions, onProgress: (s: stri
       if (!fs.existsSync(webpackCacheDir)) continue;
       const currentVersion = installedRemotionVersion(checkout);
       const webpackScan = scanWebpack(webpackCacheDir, currentVersion);
-      plan.webpack.push({ 根: webpackCacheDir, currentVersion, entryList: planWebpack(webpackScan.entryList, { currentVersion, now: o.now, days: o.webpackDays, keepPerEnv: listWorks().size }) });
+      plan.webpack.push({ root: webpackCacheDir, currentVersion, entryList: planWebpack(webpackScan.entryList, { currentVersion, now: o.now, days: o.webpackDays, keepPerEnv: listWorks().size }) });
       if (webpackScan.unknownEntries.length) plan.unknownGroups.push({ 位置: webpackCacheDir, entryList: webpackScan.unknownEntries });
     }
   }
 
   for (const [posDir, purpose] of Object.entries(reportOnlyDirs)) {
     const p = path.join(dataRoot(), ...posDir.split('/'));
-    if (fs.existsSync(p)) plan.reportOnly.push({ 位置: posDir, 用途: purpose, 大小: dirSize(p) });
+    if (fs.existsSync(p)) plan.reportOnly.push({ 位置: posDir, purpose: purpose, size: dirSize(p) });
   }
   plan.unknownGroups.push({ 位置: 'run', entryList: unrecognizedEntries(runDir(), runKnownNames) }, { 位置: 'cache', entryList: unrecognizedEntries(dataPath('cache'), cacheKnownNames) });
   plan.unknownGroups = plan.unknownGroups.filter((x) => x.entryList.length);
@@ -165,27 +165,27 @@ export const computeReclaimPlan = async (o: ReclaimOptions, onProgress: (s: stri
     const shaCache = new ShaCache(shaCacheFile(), dataRoot());
     // 克隆不了的平台连 sha 也不算：同大小的有几十 GB，算了也只是报个做不了的数
     if (canClone()) {
-      const dupGroups = await findDuplicates(keptMedia(plan), ledger, relativeDataKey, { 进度: onProgress, extraDeletes: pendingDeleteByInode(plan), shaCache: shaCache });
+      const dupGroups = await findDuplicates(keptMedia(plan), ledger, relativeDataKey, { progress: onProgress, extraDeletes: pendingDeleteByInode(plan), shaCache: shaCache });
       shaCache.存();
-      plan.dedupePlan = { 组: dupGroups, ledger, canDedupe: true, sha: shaCache.统计 };
-    } else plan.dedupePlan = { 组: [], ledger, canDedupe: false, sha: shaCache.统计 };
+      plan.dedupePlan = { group: dupGroups, ledger, canDedupe: true, sha: shaCache.stats };
+    } else plan.dedupePlan = { group: [], ledger, canDedupe: false, sha: shaCache.stats };
   }
   return plan;
 };
 
-export type ExecResult = { deletedCount: number; deletedSize: number; 跳过: string[]; failed: string[]; cloneCount: number; cloneSavedBytes: number };
+export type ExecResult = { deletedCount: number; deletedSize: number; skipped: string[]; failed: string[]; cloneCount: number; cloneSavedBytes: number };
 
 const dayMs = 24 * 3600 * 1000;
 
 /** 照计划删、克隆。删之前再看一眼：文件这会儿又被改过（近期天数内）就跳过；去重在删完以后按现状重找一遍（sha 用账本里的，不重算） */
 export const runReclaim = async (plan: ReclaimPlan, o: Pick<ReclaimOptions, 'recentDays' | 'draftDays' | 'webpackDays' | 'columnSegDays'>, now = Date.now()): Promise<ExecResult> => {
-  const r: ExecResult = { deletedCount: 0, deletedSize: 0, 跳过: [], failed: [], cloneCount: 0, cloneSavedBytes: 0 };
+  const r: ExecResult = { deletedCount: 0, deletedSize: 0, skipped: [], failed: [], cloneCount: 0, cloneSavedBytes: 0 };
   const removeFile = (p: string, byteSize: number, isRecent: (modifiedAt: number) => boolean, recursive: boolean) => {
     try {
       if (!fs.existsSync(p)) return;
       const modifiedAt = recursive ? latestModifiedAt(p, 3) : fs.statSync(p).mtimeMs;
       if (isRecent(modifiedAt)) {
-        r.跳过.push(`${p}（刚改过）`);
+        r.skipped.push(`${p}（刚改过）`);
         return;
       }
       fs.rmSync(p, { recursive: recursive, force: true, maxRetries: 3 });
@@ -196,29 +196,29 @@ export const runReclaim = async (plan: ReclaimPlan, o: Pick<ReclaimOptions, 'rec
     }
   };
   const withinDays = (days: number) => (modifiedAt: number) => now - modifiedAt < days * dayMs;
-  for (const f of plan.media) if (!f.理由.length) removeFile(f.路径, f.大小, withinDays(o.recentDays), false);
-  const psOutput = plan.打包.some(d => !d.理由.length) ? 读进程() : '';
-  for (const d of plan.打包) if (!d.理由.length) {
+  for (const f of plan.media) if (!f.reason.length) removeFile(f.path, f.size, withinDays(o.recentDays), false);
+  const psOutput = plan.打包.some(d => !d.reason.length) ? 读进程() : '';
+  for (const d of plan.打包) if (!d.reason.length) {
     try {
-      const st = fs.lstatSync(d.路径, { throwIfNoEntry: false });
+      const st = fs.lstatSync(d.path, { throwIfNoEntry: false });
       if (!st) continue;
-      if (!st.isDirectory()) { r.跳过.push(`${d.路径}（不再是打包目录）`); continue; }
-      const reasons = bundleKeepReasons({ 路径: d.路径, 改于: latestModifiedAt(d.路径, 3) }, now, psOutput);
-      if (reasons.length) { r.跳过.push(`${d.路径}（${reasons.map(x => x.说明).join('、')}）`); continue; }
-      removeBundles(d.路径);
+      if (!st.isDirectory()) { r.skipped.push(`${d.path}（不再是打包目录）`); continue; }
+      const reasons = bundleKeepReasons({ path: d.path, modifiedAt: latestModifiedAt(d.path, 3) }, now, psOutput);
+      if (reasons.length) { r.skipped.push(`${d.path}（${reasons.map(x => x.note).join('、')}）`); continue; }
+      removeBundles(d.path);
       r.deletedCount++;
-      r.deletedSize += d.大小;
-    } catch (e) { r.failed.push(`${d.路径}：${(e as Error).message}`); }
+      r.deletedSize += d.size;
+    } catch (e) { r.failed.push(`${d.path}：${(e as Error).message}`); }
   }
-  for (const f of plan.tempFiles) if (!f.理由.length) removeFile(f.路径, f.大小, withinDays(1), false);
+  for (const f of plan.tempFiles) if (!f.reason.length) removeFile(f.path, f.size, withinDays(1), false);
   // 计划算完到删之间可能有人开始烘焙同一个包：删前再看一眼锁
-  for (const d of plan.staging) if (!d.理由.length) removeFile(d.路径, d.大小, (modifiedAt) => withinDays(1)(modifiedAt) || isLockHeld(`${d.路径}.写入.lock`, config('主机')), true);
-  for (const d of plan.drafts) if (!d.理由.length) removeFile(d.路径, d.大小, withinDays(o.draftDays), true);
-  for (const d of plan.columnSegs) if (!d.理由.length) removeFile(d.路径, d.大小, withinDays(o.columnSegDays), false);
-  for (const w of plan.webpack) for (const e of w.entryList) if (!e.理由.length) removeFile(e.路径, e.大小, e.哈希 === null ? () => false : withinDays(o.webpackDays), true);
-  if (plan.dedupePlan?.canDedupe && plan.dedupePlan.组.length) {
+  for (const d of plan.staging) if (!d.reason.length) removeFile(d.path, d.size, (modifiedAt) => withinDays(1)(modifiedAt) || isLockHeld(`${d.path}.写入.lock`, config('主机')), true);
+  for (const d of plan.drafts) if (!d.reason.length) removeFile(d.path, d.size, withinDays(o.draftDays), true);
+  for (const d of plan.columnSegs) if (!d.reason.length) removeFile(d.path, d.size, withinDays(o.columnSegDays), false);
+  for (const w of plan.webpack) for (const e of w.entryList) if (!e.reason.length) removeFile(e.path, e.size, e.hash === null ? () => false : withinDays(o.webpackDays), true);
+  if (plan.dedupePlan?.canDedupe && plan.dedupePlan.group.length) {
     const shaCache = new ShaCache(shaCacheFile(), dataRoot());
-    const dupGroups = await findDuplicates(keptMedia(plan).filter((f) => fs.existsSync(f.路径)), plan.dedupePlan.ledger, relativeDataKey, { shaCache: shaCache });
+    const dupGroups = await findDuplicates(keptMedia(plan).filter((f) => fs.existsSync(f.path)), plan.dedupePlan.ledger, relativeDataKey, { shaCache: shaCache });
     const d = executeDedup(dupGroups, plan.dedupePlan.ledger, relativeDataKey);
     r.cloneCount = d.cloneCount;
     r.cloneSavedBytes = d.省;

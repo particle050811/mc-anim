@@ -43,17 +43,17 @@ const fixed = (p: V3) => () => p;
 const cuts = [startT, s2 - 0.45, s3 - 0.45, s4 - 0.45, s5 - 0.45, timeline.impossibleT - 0.05];
 const shots: SpeedRampShot[] = [
   // 拍 1：监守者东北脚下仰拍，恼鬼从黄台那边俯冲下来，黄叛在台上拉弓
-  { 起: cuts[0], cam: drift(cuts[0], cuts[1], [-146.2, 23.6, 0.4], [-146.6, 23.2, 0.4], between(fixed(contactOf(s1)), huangHead, 0.4), 16) },
+  { start: cuts[0], cam: drift(cuts[0], cuts[1], [-146.2, 23.6, 0.4], [-146.6, 23.2, 0.4], between(fixed(contactOf(s1)), huangHead, 0.4), 16) },
   // 拍 2：监守者东北半高处，下面它拍从北边冲来的那只，上面黄台上的黄叛蹲下蹬地往南跳走（机位再往南，接触点会被黄台北沿挡住）
-  { 起: cuts[1], cam: drift(cuts[1], cuts[2], [-144.5, 22.5, 4.5], [-144.8, 22.2, 4.4], between(fixed(contactOf(s2)), huangHead, 0.42), 16) },
+  { start: cuts[1], cam: drift(cuts[1], cuts[2], [-144.5, 22.5, 4.5], [-144.8, 22.2, 4.4], between(fixed(contactOf(s2)), huangHead, 0.42), 16) },
   // 拍 3：监守者北边半高处往南仰看，近处它拍从西边冲来的那只，远处半空的黄叛在最高点回身朝这边放火把箭（南边、东边机位都被黄台、南台挡住）
-  { 起: cuts[2], cam: drift(cuts[2], cuts[3], [-149.0, 29.0, 4.0], [-149.3, 28.7, 4.1], between(wardenChest, huangHead, 0.3), 15) },
+  { start: cuts[2], cam: drift(cuts[2], cuts[3], [-149.0, 29.0, 4.0], [-149.3, 28.7, 4.1], between(wardenChest, huangHead, 0.3), 15) },
   // 拍 4：监守者东北贴地，它边往东南走边拍，南台顶上的黄叛在后面放箭
-  { 起: cuts[3], cam: drift(cuts[3], cuts[4], [-143.0, 22.6, 0.8], [-142.8, 22.4, 0.8], between(fixed(contactOf(s4)), huangHead, 0.3), 16) },
+  { start: cuts[3], cam: drift(cuts[3], cuts[4], [-143.0, 22.6, 0.8], [-142.8, 22.4, 0.8], between(fixed(contactOf(s4)), huangHead, 0.3), 16) },
   // 拍 5：刘心忠身后越肩，最后一只在远处被拍飞
-  { 起: cuts[4], cam: drift(cuts[4], cuts[5], [-133.4, -2.2, 8.3], [-133.6, -2.0, 8.2], between(liuHead, fixed(contactOf(s5)), 0.75), 28) },
+  { start: cuts[4], cam: drift(cuts[4], cuts[5], [-133.4, -2.2, 8.3], [-133.6, -2.0, 8.2], between(liuHead, fixed(contactOf(s5)), 0.75), 28) },
   // 刘心忠侧面：「一百级的恼鬼……」，监守者掉头朝他扑过来，南台顶上黄叛伸手
-  { 起: cuts[5], cam: drift(cuts[5], endT, [-129.4, 4.2, 7.7], [-129.8, 4.0, 7.6], between(liuHead, wardenChest, 0.45), 20) },
+  { start: cuts[5], cam: drift(cuts[5], endT, [-129.4, 4.2, 7.7], [-129.8, 4.0, 7.6], between(liuHead, wardenChest, 0.45), 20) },
 ];
 export const camera = buildCameraRig(speedRamp, shots);
 export const shotIndex = (sec: number) => cuts.filter((c) => timeAt(sec) >= c).length - 1;

@@ -16,7 +16,7 @@ const buildLightGeometry = (surfaces: readonly { 面: LitSurface; 条: LightStri
   for (const { 面: face, 条: strips } of surfaces)
     for (const c of strips) {
       const b = pos.length / 3;
-      if (face.种 === '竖') {
+      if (face.kind === '竖') {
         const y = face.y - surfaceOffset;
         pos.push(c.a0, y, c.b0, c.a1, y, c.b0, c.a1, y, c.b1, c.a0, y, c.b1);
       } else {

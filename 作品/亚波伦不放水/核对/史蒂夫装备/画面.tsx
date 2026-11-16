@@ -62,7 +62,7 @@ const newArmorIcons = [divineHelmetPng, divineChestplatePng, divineLeggingsPng, 
 const oldArmorIcons = [oldDivineHelmetPng, oldDivineChestplatePng, oldDivineLeggingsPng, oldDivineBootsPng];
 
 // 上排旧版带附魔光效，中排旧版原图，下排新版原图
-const IconRow: React.FC<{ 秒: number }> = ({ 秒: sec }) => (
+const IconRow: React.FC<{ sec: number }> = ({ sec: sec }) => (
   <>
     {oldArmorIcons.map((iconImgUri, i) => (
       <React.Fragment key={i}>
@@ -99,7 +99,7 @@ const picture: React.FC = () => {
   const bottomBackground = v.darkBg ? '#0c0c10' : '#5a5e66';
   return (
     <AbsoluteFill style={{ background: bottomBackground }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: false }}>
         <color attach="background" args={[bottomBackground]} />
         <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -110,21 +110,21 @@ const picture: React.FC = () => {
             <meshStandardMaterial color={v.darkBg ? '#15151a' : '#8a8f98'} />
           </mesh>
           {v.onlyItem === '图标' ? (
-            <IconRow 秒={v.秒} />
+            <IconRow sec={v.sec} />
           ) : v.onlyItem === '剑模型' ? (
             <Upright x={0} scale={2}>
               <ItemDisplay t={valetteinDisplay[appearance].gui}>
-                <Valettein appearance={appearance} glintSec={v.秒} />
+                <Valettein appearance={appearance} glintSec={v.sec} />
               </ItemDisplay>
             </Upright>
           ) : (
-            <EquippedSteve pose={stevePose([0, 0, 0], 180, { sec: v.秒, holdR: holdSword })} 秒={v.秒} equipment={v.equipment} />
+            <EquippedSteve pose={stevePose([0, 0, 0], 180, { sec: v.sec, holdR: holdSword })} sec={v.sec} equipment={v.equipment} />
           )}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

@@ -3,44 +3,44 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     },
     "音效/entity.player.splash.high_speed": {
-      "时长": 3.026667,
-      "峰值": 0.1,
-      "响度": -16.9,
+      "duration": 3.026667,
+      "peakDb": 0.1,
+      "loudness": -16.9,
       "sha": "23465cd6325f"
     },
     "音效/把回忆拼好给你/entity.boat.paddle_water.1": {
-      "时长": 0.901333,
-      "峰值": -21.9,
-      "响度": -40.7,
+      "duration": 0.901333,
+      "peakDb": -21.9,
+      "loudness": -40.7,
       "sha": "bad9396e5d3c"
     },
     "音效/把回忆拼好给你/entity.boat.paddle_water.2": {
-      "时长": 0.850667,
-      "峰值": -23.1,
-      "响度": -38.7,
+      "duration": 0.850667,
+      "peakDb": -23.1,
+      "loudness": -38.7,
       "sha": "9c9dcd0edb8f"
     },
     "音效/把回忆拼好给你/entity.boat.paddle_water.3": {
-      "时长": 1.001333,
-      "峰值": -19.4,
-      "响度": -36.1,
+      "duration": 1.001333,
+      "peakDb": -19.4,
+      "loudness": -36.1,
       "sha": "9190aec97afa"
     },
     "音效/把回忆拼好给你/entity.boat.paddle_water.4": {
-      "时长": 1.037333,
-      "峰值": -26.7,
-      "响度": -41.8,
+      "duration": 1.037333,
+      "peakDb": -26.7,
+      "loudness": -41.8,
       "sha": "0c785a74ee0b"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

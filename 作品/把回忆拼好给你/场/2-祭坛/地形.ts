@@ -12,11 +12,11 @@ import { oakTree, cherryTree } from '../../地点/原版树.ts';
 /** 世界格 (i, j) 原来的地面高（出生点 0）。和 场/2-新世界/地形.ts 的 地面高 差在没加远山（第 1 句那边后加的，这边没跟；祭坛离出生点 129 格，在远山 起 70 格以外） */
 export const originalGroundHeight = (i: number, j: number): number => Math.round(plainsUndulation(i, j) + mountainHeightAt(i, j));
 
-const toWorld = (x: number, y: number): [number, number] => [x + altarPos.世界[0], y + altarPos.世界[1]];
+const toWorld = (x: number, y: number): [number, number] => [x + altarPos.world[0], y + altarPos.world[1]];
 
 /** 局部 (x, y) 离压平的那块有多远（格，在里面是 0） */
 const distFromPlatform = (x: number, y: number) => {
-  const p = altarPos.平台;
+  const p = altarPos.platform;
   const dx = Math.max(p.west - (x + 0.5), 0, x + 0.5 - p.east);
   const dy = Math.max(p.south - (y + 0.5), 0, y + 0.5 - p.north);
   return Math.hypot(dx, dy);
@@ -26,24 +26,24 @@ const distFromPlatform = (x: number, y: number) => {
 export const groundHeight = (x: number, y: number): number => {
   const [i, j] = toWorld(x, y);
   const rawHeight = originalGroundHeight(i, j) - altarPos.ground;
-  const t = smoothstep(0, altarPos.平台.fadeDist, distFromPlatform(x, y));
+  const t = smoothstep(0, altarPos.platform.fadeDist, distFromPlatform(x, y));
   return Math.round(rawHeight * t);
 };
 
 /** 铺的范围（局部）：镜头一直朝北看，只铺前方一扇，同 场/2-新世界/参数.ts 地形范围 的做法 */
 export const paved = (x: number, y: number): boolean => {
-  const r = altarPos.范围;
+  const r = altarPos.bounds;
   if (y < r.south) return false;
   if (Math.abs(x + 0.5 - r.fanCenter[0]) > r.fanWidth + (y - r.fanCenter[1]) * r.fanSpread) return false;
   return Math.hypot(x + 0.5 - r.rangeCenter[0], y + 0.5 - r.rangeCenter[1]) <= r.radius;
 };
 
-type Tree = { x: number; y: number; 种: '橡' | '樱'; 高: number; 种子: number };
+type Tree = { x: number; y: number; kind: '橡' | '樱'; height: number; seed: number };
 
 /** 樱花林里的树、平原上的橡树（地点/新世界地形.ts，换成局部格），离平台 让树 格以内的不种（树冠会伸进祭坛、挡镜头） */
 export const trees = (): Tree[] =>
   groveTrees()
-    .map((t) => ({ x: t.i - altarPos.世界[0], y: t.j - altarPos.世界[1], 种: t.种, 高: t.高, 种子: t.种子 }))
+    .map((t) => ({ x: t.i - altarPos.world[0], y: t.j - altarPos.world[1], kind: t.kind, height: t.height, seed: t.seed }))
     .filter((t) => distFromPlatform(t.x, t.y) >= altarPos.treeClearance);
 
 /** 平台上不长东西的地方：祭坛圈里、柱子和鸟居脚下、你站的地方、镜头底下那一条（镜头前面几格的草会大得糊住画面下沿） */
@@ -69,21 +69,21 @@ export const AltarTerrainBlocks = (): AltarTerrainBlocks => {
     occupied.add(k);
     (inForest ? out.cherryGrove : out.plains).push(b);
   };
-  const r = altarPos.范围;
+  const r = altarPos.bounds;
   const treeTable = trees();
   const treeKeys = new Set(treeTable.map((t) => `${t.x},${t.y}`));
   for (const t of treeTable) {
     if (!paved(t.x, t.y)) continue;
     const z0 = groundHeight(t.x, t.y);
-    const placer = makePlacer(t.种 === '樱');
+    const placer = makePlacer(t.kind === '樱');
     const placeAboveGround = (b: PlacedBlock) => {
       if (b.位[2] >= groundHeight(b.位[0], b.位[1])) placer(b);
     };
     // 橡树叶去角的散列按世界格算（和第 1 句同一棵树长得一样），放的时候换回局部格；樱花树的随机只看种子，直接在局部格长
-    if (t.种 === '橡') {
+    if (t.kind === '橡') {
       const [ti, tj] = toWorld(t.x, t.y);
-      oakTree({ i: ti, j: tj, 高: t.高, 种子: t.种子 }, z0, (b) => placeAboveGround({ ...b, 位: [b.位[0] - altarPos.世界[0], b.位[1] - altarPos.世界[1], b.位[2]] }));
-    } else cherryTree({ i: t.x, j: t.y, 高: t.高, 种子: t.种子 }, z0, placeAboveGround);
+      oakTree({ i: ti, j: tj, height: t.height, seed: t.seed }, z0, (b) => placeAboveGround({ ...b, 位: [b.位[0] - altarPos.world[0], b.位[1] - altarPos.world[1], b.位[2]] }));
+    } else cherryTree({ i: t.x, j: t.y, height: t.height, seed: t.seed }, z0, placeAboveGround);
   }
   for (let y = r.south; y <= r.north; y++)
     for (let x = r.west; x <= r.east; x++) {
@@ -94,23 +94,23 @@ export const AltarTerrainBlocks = (): AltarTerrainBlocks => {
       const h = groundHeight(x, y);
       let bottom = h;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) bottom = Math.min(bottom, groundHeight(x + dx, y + dy));
-      placer({ 状态: treeKeys.has(`${x},${y}`) ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [x, y, h - 1] });
-      for (let k = h - 2; k >= bottom - 1; k--) placer({ 状态: h - 1 - k > 3 ? 'minecraft:stone' : 'minecraft:dirt', 位: [x, y, k] });
+      placer({ state: treeKeys.has(`${x},${y}`) ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [x, y, h - 1] });
+      for (let k = h - 2; k >= bottom - 1; k--) placer({ state: h - 1 - k > 3 ? 'minecraft:stone' : 'minecraft:dirt', 位: [x, y, k] });
       if (treeKeys.has(`${x},${y}`)) continue;
       if (distFromPlatform(x, y) === 0 && isEmptyAbove(x, y)) continue;
       if (Math.hypot(x, y) > r.plantRadius && !inForest) continue;
       const u = hash2(i, j, 11);
       if (inForest) {
-        if (u < cherryGrove.petalClusterRate) placer({ 状态: `minecraft:pink_petals[facing=${petalFacing[Math.floor(hash2(i, j, 12) * 4)]},flower_amount=${1 + Math.floor(hash2(i, j, 13) * 4)}]`, 位: [x, y, h] });
-        else if (u < cherryGrove.petalClusterRate + 0.12) placer({ 状态: 'minecraft:grass', 位: [x, y, h] });
+        if (u < cherryGrove.petalClusterRate) placer({ state: `minecraft:pink_petals[facing=${petalFacing[Math.floor(hash2(i, j, 12) * 4)]},flower_amount=${1 + Math.floor(hash2(i, j, 13) * 4)}]`, 位: [x, y, h] });
+        else if (u < cherryGrove.petalClusterRate + 0.12) placer({ state: 'minecraft:grass', 位: [x, y, h] });
         continue;
       }
       const grassDensity = plainsParams.grassRate * (0.55 + 0.9 * Math.max(0, fbm(fineNoise, i + 300, j, 14, 2) + 0.3));
-      if (u < plainsParams.flowerRate) placer({ 状态: plainsFlower(i, j), 位: [x, y, h] });
+      if (u < plainsParams.flowerRate) placer({ state: plainsFlower(i, j), 位: [x, y, h] });
       else if (u < plainsParams.flowerRate + grassDensity * plainsParams.tallGrassShare) {
-        placer({ 状态: 'minecraft:tall_grass[half=lower]', 位: [x, y, h] });
-        placer({ 状态: 'minecraft:tall_grass[half=upper]', 位: [x, y, h + 1] });
-      } else if (u < plainsParams.flowerRate + grassDensity) placer({ 状态: 'minecraft:grass', 位: [x, y, h] });
+        placer({ state: 'minecraft:tall_grass[half=lower]', 位: [x, y, h] });
+        placer({ state: 'minecraft:tall_grass[half=upper]', 位: [x, y, h + 1] });
+      } else if (u < plainsParams.flowerRate + grassDensity) placer({ state: 'minecraft:grass', 位: [x, y, h] });
     }
   return out;
 };

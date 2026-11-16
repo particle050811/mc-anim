@@ -3,14 +3,14 @@
 import type { CheckReport, CheckContext } from '../源码/上下文.ts';
 
 export const oldNameKinds = ['场号', '段号', 'Composition', '拍号', '段名', '台词', '已删段', '已删台词'] as const;
-export type OldNameRow = { 类别: string; oldName: string; newKey: string; 备注: string; 行: number };
+export type OldNameRow = { category: string; oldName: string; newKey: string; remark: string; 行: number };
 
 export const oldNameTablePath = (c: CheckContext) => c.workPath('旧名.tsv');
 
 export const readOldNames = (c: CheckContext, report?: CheckReport): OldNameRow[] => {
   const path = oldNameTablePath(c);
   if (!c.exists(path)) {
-    report?.跳过.push(`没有 ${path}，不查旧名`);
+    report?.skipped.push(`没有 ${path}，不查旧名`);
     return [];
   }
   const lines = c.读(path).split('\n');
@@ -25,7 +25,7 @@ export const readOldNames = (c: CheckContext, report?: CheckReport): OldNameRow[
     if (!(oldNameKinds as readonly string[]).includes(category)) report?.错(`类别「${category}」不认识（能用：${oldNameKinds.join('、')}）`, path, lineNo);
     if (!oldName) report?.错('旧名是空的', path, lineNo);
     if (!newKey && !category.startsWith('已删')) report?.错(`${category} 要写新键（删掉的用 已删段、已删台词）`, path, lineNo);
-    r.push({ 类别: category, oldName, newKey, 备注: note, 行: lineNo });
+    r.push({ category: category, oldName, newKey, remark: note, 行: lineNo });
   });
   return r;
 };
@@ -35,4 +35,4 @@ export const findOldNameClashes = (oldNameRows: OldNameRow[], oldName: string, n
 
 /** 段名撞了哪些旧段名（段名、已删段两类，按去掉「<章>-」的名字比） */
 export const findOldSegNameClashes = (oldNameRows: OldNameRow[], segmentName: string, segKey: string) =>
-  oldNameRows.filter((x) => (x.类别 === '段名' || x.类别 === '已删段') && x.oldName.replace(/^\d+-/, '') === segmentName && x.newKey !== segKey);
+  oldNameRows.filter((x) => (x.category === '段名' || x.category === '已删段') && x.oldName.replace(/^\d+-/, '') === segmentName && x.newKey !== segKey);

@@ -17,7 +17,7 @@ import entangleVinesPng from 'asset:贴图/法术/goety/entity/projectiles/entan
 const entangleVinesModel = getModel(entangleVinesModelData, 'EntangleVinesModel');
 const [burstAnim, holdAnim, burrowAnim] = [getAnim(entangleVinesAnims, 'BURST'), getAnim(entangleVinesAnims, 'HOLD'), getAnim(entangleVinesAnims, 'BURROW')];
 
-const entangle: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target }) => {
+const entangle: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target }) => {
   const tick = sec * 20;
   if (tick < vineEmergeTick || tick >= vineVanishTick) return null;
   const partPoses =
@@ -27,7 +27,7 @@ const entangle: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target })
       <group rotation={[0, degToRad(90), 0]}>
         <group scale={[-1, -1, 1]}>
           <group position={[0, -1.45, 0]}>
-            <ModelPart 模型={entangleVinesModel} 图={png(entangleVinesPng)} partPoses={partPoses} />
+            <ModelPart model={entangleVinesModel} image={png(entangleVinesPng)} partPoses={partPoses} />
           </group>
         </group>
       </group>

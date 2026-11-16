@@ -9,7 +9,7 @@ import { clamp01 } from '@engine/core/数学.ts';
 const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 
 /** 寻风之铃（音效/万法皆通/wind_seeking_bell）：文件 2.07 秒，开头 0.04 秒近乎静音，铃一响就到 −13 dBFS 上下、0.5 秒最响（−6）、两秒里慢慢收 */
-export const bellFile = { onsetSec: 0.04, 时长秒: 2.069 } as const;
+export const bellFile = { onsetSec: 0.04, durationSec: 2.069 } as const;
 /** 铃声增益：一个数，整声都一样 */
 export const bellSoundGain = 0.35;
 
@@ -18,23 +18,23 @@ export const windSoundParams = { 增益: 0.6, fadeInSec: 0.25, fadeOutSec: 0.35 
 
 /** 铃声：起音落在摇铃那一帧 */
 export const bellSound: SongSound = {
-  资产: '音效/万法皆通/wind_seeking_bell',
-  名: '寻风之铃',
-  起帧: mainCutEvents.ringBell.帧 - Math.round(bellFile.onsetSec * fps),
-  时长秒: bellFile.时长秒,
+  asset: '音效/万法皆通/wind_seeking_bell',
+  name: '寻风之铃',
+  起帧: mainCutEvents.ringBell.frame - Math.round(bellFile.onsetSec * fps),
+  durationSec: bellFile.durationSec,
   增益: () => bellSoundGain,
 };
 
-const windStart = mainCutEvents.ringBell.帧;
-const windEnd = toSongFrame(mainCutEvents.windClears.秒 + windSoundParams.fadeOutSec);
+const windStart = mainCutEvents.ringBell.frame;
+const windEnd = toSongFrame(mainCutEvents.windClears.sec + windSoundParams.fadeOutSec);
 
 /** 风声：摇铃那一帧起，转场后淡完 */
 export const windSound: SongSound = {
-  资产: '音效/item.elytra.flying',
-  名: '樱花风',
+  asset: '音效/item.elytra.flying',
+  name: '樱花风',
   起帧: windStart,
-  帧数: windEnd - windStart,
-  时长秒: 10.22,
+  frameCount: windEnd - windStart,
+  durationSec: 10.22,
   增益: (frame) => {
     const fadeIn = clamp01((frame - windStart + 1) / (windSoundParams.fadeInSec * fps));
     const fadeOut = clamp01((windEnd - frame) / (windSoundParams.fadeOutSec * fps));

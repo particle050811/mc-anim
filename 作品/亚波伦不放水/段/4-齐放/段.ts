@@ -17,28 +17,28 @@ const peakDb = -18;
 const roundRobin = (prefix: string, n: number, i: number) => `${prefix}.${(i % n) + 1}`;
 
 export default windowSeg(timeline, {
-  起: 'wheelOpenDone',
-  止: 'volleyDone',
-  地形: [realNetherPack],
+  start: 'wheelOpenDone',
+  end: 'volleyDone',
+  terrain: [realNetherPack],
   soundTable,
-  声音: ({ 放: play, 秒: durSec }) => {
+  sound: ({ 放: play, sec: durSec }) => {
     if (Math.abs(durSec - actDur) > 1 / 60) throw new Error(`齐放段长 ${durSec} 秒和 齐放拍.ts 的幕长 ${actDur} 对不上`);
     return [
       // 她：开幕杖往前一顶、第一轮离手（结界的施放声就是使徒这一声，游戏里她起手放炼狱）
-      play('音效/诡厄巫法/goety.apostle_cast_spell.1', castStart, { 峰值: mainPeakDb, 名: '齐放' }),
+      play('音效/诡厄巫法/goety.apostle_cast_spell.1', castStart, { peakDb: mainPeakDb, name: '齐放' }),
       // 她每一下冲：一声破风
-      ...dashRanges.map((c, i) => play(roundRobin('音效/诡厄巫法/goety.heavy_woosh', 5, i), c.起, { 峰值: peakDb, 名: `冲${i + 1}` })),
+      ...dashRanges.map((c, i) => play(roundRobin('音效/诡厄巫法/goety.heavy_woosh', 5, i), c.start, { peakDb: peakDb, name: `冲${i + 1}` })),
       // 每一发的起手、出手、飞行、命中（场/1-台地/齐放声.ts）
-      ...massCastSounds().map((x) => play(x.资产, x.秒, { 峰值: x.峰值, 名: x.名, ...(x.速率 ? { 速率: x.速率 } : {}) })),
+      ...massCastSounds().map((x) => play(x.asset, x.sec, { peakDb: x.peakDb, name: x.name, ...(x.速率 ? { 速率: x.速率 } : {}) })),
       // 索命劈中（打击停顿 16 帧的开头）：雷霆、闪电劈，游戏里两个一起响；同一刻晋升之环炸开，照不死图腾响 item.totem.use
-      play('音效/诡厄巫法/goety.thunderbolt.1', killingPause.起, { 峰值: mainPeakDb, 名: '索命' }),
-      play('音效/entity.lightning_bolt.impact.1', killingPause.起, { 峰值: mainPeakDb, 名: '索命-劈' }),
-      play('音效/item.totem.use', totemSec - actStart, { 峰值: mainPeakDb, 名: '图腾' }),
+      play('音效/诡厄巫法/goety.thunderbolt.1', killingPause.start, { peakDb: mainPeakDb, name: '索命' }),
+      play('音效/entity.lightning_bolt.impact.1', killingPause.start, { peakDb: mainPeakDb, name: '索命-劈' }),
+      play('音效/item.totem.use', totemSec - actStart, { peakDb: mainPeakDb, name: '图腾' }),
       // 他：挨打（0.5 秒里挨几下只响一下，同变红）、挥剑
-      ...takenHitsWorld.map((h, i) => play(roundRobin('音效/entity.player.hurt', 3, i), h.秒, { 峰值: h.重 ? mainPeakDb : peakDb, 名: `挨打${i + 1}` })),
-      ...swingWorldTimes.map((c, i) => play(roundRobin('音效/entity.player.attack.sweep', 7, i), c, { 峰值: peakDb, 名: `挥剑${i + 1}` })),
+      ...takenHitsWorld.map((h, i) => play(roundRobin('音效/entity.player.hurt', 3, i), h.sec, { peakDb: h.重 ? mainPeakDb : peakDb, name: `挨打${i + 1}` })),
+      ...swingWorldTimes.map((c, i) => play(roundRobin('音效/entity.player.attack.sweep', 7, i), c, { peakDb: peakDb, name: `挥剑${i + 1}` })),
       // 结界：罩严后人在火里，原版每刻烧人响 block.fire.ambient；他死就停
-      play('音效/block.fire.ambient', coverFullSec, { 响度: -26, 循环: true, 长秒: deathTime - coverFullSec, 名: '结界火' }),
+      play('音效/block.fire.ambient', coverFullSec, { loudness: -26, 循环: true, 长秒: deathTime - coverFullSec, name: '结界火' }),
     ];
   },
 });

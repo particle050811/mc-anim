@@ -21,12 +21,12 @@ export type AxisValue = number | MolangExpr;
 export type Vec3Value = readonly [AxisValue, AxisValue, AxisValue];
 export type AnimKeyframe = {
   /** 秒 */
-  时: number;
+  timestamp: number;
   前: Vec3Value;
   后: Vec3Value;
   interpolation: InterpMode;
   /** GeckoLib 4 的缓动名和参数（只在 '通用' 口径起作用） */
-  easing?: { 名: string; 参数?: number[] };
+  easing?: { name: string; params?: number[] };
   /** Blockbench 的 bezier 手柄，相对本关键帧的 [时间, 值]，逐轴 */
   handles?: { leftHandle: readonly [number, number][]; right: readonly [number, number][] };
 };
@@ -34,7 +34,7 @@ export type Channel = 'rotation' | 'position' | 'scale';
 export const channelNames: readonly Channel[] = ['rotation', 'position', 'scale'];
 export type SkeletonTrack = Partial<Record<Channel, readonly AnimKeyframe[]>>;
 export type BedrockAnimation = {
-  名: string;
+  name: string;
   循环: LoopMode;
   /** animation_length 原文（秒）；没写是 undefined，长度按口径推（见 动画长度） */
   lengthSec?: number;
@@ -45,7 +45,7 @@ export type BedrockAnimation = {
   loopDelaySec?: AxisValue;
   /** 骨骼按文件里的顺序：Molang 里的赋值按这个顺序执行 */
   skeleton: Readonly<Record<string, SkeletonTrack>>;
-  timeline: readonly { 时: number; 句: readonly MolangExpr[] }[];
+  timeline: readonly { timestamp: number; 句: readonly MolangExpr[] }[];
 };
 
 export type SkeletonPose = { rot?: number[]; pos?: number[]; scale?: number | number[] };
@@ -82,7 +82,7 @@ const parseInterpolation = (x: unknown): InterpMode => (x === 'catmullrom' || x 
 const parseKeyframe = (time: number, v: unknown, posLabel: string, precision: Precision): AnimKeyframe => {
   if (!isObject(v)) {
     const value = parseVector(v as RawValue, posLabel, precision);
-    return { 时: time, 前: value, 后: value, interpolation: 'linear' };
+    return { timestamp: time, 前: value, 后: value, interpolation: 'linear' };
   }
   // 只有 post 时当成 pre 用（TLM 如此）；pre、post 都没有时是 { vector, easing } 写法
   const preRaw = v.pre ?? v.post ?? v.vector;
@@ -90,9 +90,9 @@ const parseKeyframe = (time: number, v: unknown, posLabel: string, precision: Pr
   const pre = parseVector(preRaw, posLabel, precision);
   const post = postRaw === preRaw ? pre : parseVector(postRaw, posLabel, precision);
   const lerpMode = String(v.lerp_mode ?? v.easing ?? 'linear').toLowerCase();
-  const keyframe: AnimKeyframe = { 时: time, 前: pre, 后: post, interpolation: parseInterpolation(lerpMode) };
+  const keyframe: AnimKeyframe = { timestamp: time, 前: pre, 后: post, interpolation: parseInterpolation(lerpMode) };
   if (typeof v.easing === 'string' && parseInterpolation(lerpMode) === 'linear' && v.easing !== 'linear') {
-    keyframe.easing = { 名: v.easing, 参数: Array.isArray(v.easingArgs) ? v.easingArgs.map(Number) : undefined };
+    keyframe.easing = { name: v.easing, params: Array.isArray(v.easingArgs) ? v.easingArgs.map(Number) : undefined };
   }
   const parseHandle = (t: unknown, val: unknown, fallback: number): [number, number][] =>
     [0, 1, 2].map((i) => [Number(Array.isArray(t) ? t[i] : (t ?? fallback)), Number(Array.isArray(val) ? val[i] : (val ?? 0))]);
@@ -111,7 +111,7 @@ const parseChannel = (v: unknown, posLabel: string, precision: Precision): AnimK
       if (!Number.isFinite(time)) throw new Error(`动画：${posLabel} 的时间写法不认识：${k}`);
       return parseKeyframe(time, kv, `${posLabel}@${k}`, precision);
     })
-    .sort((a, b) => a.时 - b.时);
+    .sort((a, b) => a.timestamp - b.timestamp);
 };
 
 const parseLoop = (x: unknown): LoopMode => (x === true ? 'loop' : x === 'hold_on_last_frame' ? 'hold' : 'once');
@@ -131,11 +131,11 @@ export const parseAnimationFile = (animFile: unknown, convention: Convention = d
       skeleton[boneName] = boneTrack;
     }
     const timeline = Object.entries(isObject(a.timeline) ? a.timeline : {})
-      .map(([k, v]) => ({ 时: Number.parseFloat(k), 句: (Array.isArray(v) ? v : [v]).map((s) => compile(String(s))) }))
-      .sort((x, y) => x.时 - y.时);
+      .map(([k, v]) => ({ timestamp: Number.parseFloat(k), 句: (Array.isArray(v) ? v : [v]).map((s) => compile(String(s))) }))
+      .sort((x, y) => x.timestamp - y.timestamp);
     const lengthSec = a.animation_length === undefined ? undefined : Number(a.animation_length);
     anims[animName] = {
-      名: animName,
+      name: animName,
       循环: parseLoop(a.loop),
       lengthSec,
       animTimeUpdate: a.anim_time_update === undefined ? undefined : compile(String(a.anim_time_update)),
@@ -162,10 +162,10 @@ export const animLength = (anim: BedrockAnimation, convention: Convention = defa
     for (const keyframes of Object.values(boneTrack)) {
       if (!keyframes?.length) continue;
       const keyframe = convention === 'TLM' ? keyframes[keyframes.length - 2] : keyframes[keyframes.length - 1];
-      animLengthSec = Math.max(animLengthSec, keyframe?.时 ?? 0);
+      animLengthSec = Math.max(animLengthSec, keyframe?.timestamp ?? 0);
     }
   }
-  if (convention === '通用') for (const { 时: time } of anim.timeline) animLengthSec = Math.max(animLengthSec, time);
+  if (convention === '通用') for (const { timestamp: time } of anim.timeline) animLengthSec = Math.max(animLengthSec, time);
   return animLengthSec > 0 ? animLengthSec : Infinity;
 };
 
@@ -173,14 +173,14 @@ export const animLength = (anim: BedrockAnimation, convention: Convention = defa
  * 播放了 秒 秒时的动画时间（q.anim_time）。loop 按长度取余；once 到头就停（停止：骨骼不再由这段动画给，TLM 里会慢慢回到原位）。
  * hold_on_last_frame：TLM 的 GeckoLib 3 分支没有特别处理（isRepeatingAfterEnd 是 false），和 once 一样停；'通用' 停在末帧
  */
-export const animTime = (anim: BedrockAnimation, sec: number, convention: Convention = defaultProfile): { 时: number; stopped: boolean } => {
+export const animTime = (anim: BedrockAnimation, sec: number, convention: Convention = defaultProfile): { timestamp: number; stopped: boolean } => {
   const t = Math.max(0, sec);
   const animLengthSec = animLength(anim, convention);
-  if (!Number.isFinite(animLengthSec)) return { 时: t, stopped: false };
-  if (anim.循环 === 'loop') return { 时: animLengthSec > 0 ? t % animLengthSec : 0, stopped: false };
-  if (t < animLengthSec) return { 时: t, stopped: false };
-  if (anim.循环 === 'hold' && convention === '通用') return { 时: animLengthSec, stopped: false };
-  return { 时: animLengthSec, stopped: true };
+  if (!Number.isFinite(animLengthSec)) return { timestamp: t, stopped: false };
+  if (anim.循环 === 'loop') return { timestamp: animLengthSec > 0 ? t % animLengthSec : 0, stopped: false };
+  if (t < animLengthSec) return { timestamp: t, stopped: false };
+  if (anim.循环 === 'hold' && convention === '通用') return { timestamp: animLengthSec, stopped: false };
+  return { timestamp: animLengthSec, stopped: true };
 };
 
 // ---- 取样 ----
@@ -193,15 +193,15 @@ const evalVector = (v: Vec3Value, env: MolangEnv): [number, number, number] => [
  */
 export const sampleChannel = (keyframes: readonly AnimKeyframe[], t: number, env: MolangEnv = {}, convention: Convention = defaultProfile): [number, number, number] => {
   const n = keyframes.length;
-  const i = keyframes.findIndex((k) => k.时 > t);
+  const i = keyframes.findIndex((k) => k.timestamp > t);
   if (i === 0) {
     const firstKeyframe = keyframes[0]!;
-    return evalVector(convention === 'TLM' && t / firstKeyframe.时 > 0.99999 ? firstKeyframe.后 : firstKeyframe.前, env);
+    return evalVector(convention === 'TLM' && t / firstKeyframe.timestamp > 0.99999 ? firstKeyframe.后 : firstKeyframe.前, env);
   }
   if (i < 0) return evalVector(keyframes[n - 1]!.后, env);
   const a = keyframes[i - 1]!;
   const b = keyframes[i]!;
-  const u = (t - a.时) / (b.时 - a.时);
+  const u = (t - a.timestamp) / (b.timestamp - a.timestamp);
   if (convention === 'TLM') {
     if (u < 1e-5) return evalVector(a.后, env);
     if (u > 0.99999) return evalVector(b.后, env);
@@ -219,12 +219,12 @@ export const sampleChannel = (keyframes: readonly AnimKeyframe[], t: number, env
       return [0, 1, 2].map((j) =>
         bezier(
           t,
-          { t: a.时, v: startVec[j]!, rightHandle: a.handles?.right[j] ?? [0.1, 0] },
-          { t: b.时, v: end[j]!, leftHandle: b.handles?.leftHandle[j] ?? [-0.1, 0] },
+          { t: a.timestamp, v: startVec[j]!, rightHandle: a.handles?.right[j] ?? [0.1, 0] },
+          { t: b.timestamp, v: end[j]!, leftHandle: b.handles?.leftHandle[j] ?? [-0.1, 0] },
         ),
       ) as [number, number, number];
     }
-    const e = applyEasing(b.easing?.名, u, b.easing?.参数);
+    const e = applyEasing(b.easing?.name, u, b.easing?.params);
     return startVec.map((x, j) => lerp(x, end[j]!, e)) as [number, number, number];
   }
   return startVec.map((x, j) => lerp(x, end[j]!, u)) as [number, number, number];
@@ -232,7 +232,7 @@ export const sampleChannel = (keyframes: readonly AnimKeyframe[], t: number, env
 
 export type PlayOptions = {
   /** Molang 环境；q.anim_time 由播放器填，其他查询、变量表、外部名字由调用方给 */
-  环境?: MolangEnv;
+  env?: MolangEnv;
   口径?: Convention;
 };
 
@@ -241,7 +241,7 @@ const withAnimTime = (env: MolangEnv, time: number): MolangEnv => ({ ...env, que
 /** 动画时间 时（秒，已经按循环折算过）的全部骨骼。骨骼、通道按文件顺序求值（Molang 赋值有先后） */
 export const sampleSkeleton = (anim: BedrockAnimation, time: number, options: PlayOptions = {}): SkeletonTable => {
   const convention = options.口径 ?? defaultProfile;
-  const env = withAnimTime(applyProfile(options.环境 ?? {}, convention), time);
+  const env = withAnimTime(applyProfile(options.env ?? {}, convention), time);
   const poses: SkeletonTable = {};
   for (const [boneName, boneTrack] of Object.entries(anim.skeleton)) {
     const pose: SkeletonPose = {};
@@ -265,43 +265,43 @@ const MAX_LOOP_ITER = 100000;
  * 等开播时 等待 是 true（这段动画不给骨骼）；两遍之间的 loop_delay 里停在末帧（anim_time = 长度）。
  * 这两处「等的时候给什么姿势」是推断的，没在游戏里核过（docs/新生物.md）。求值时 q.anim_time 是 0（开播前）或长度（每遍末）
  */
-export const animProgress = (anim: BedrockAnimation, sec: number, options: PlayOptions = {}): { 时: number; stopped: boolean; 等待: boolean } => {
+export const animProgress = (anim: BedrockAnimation, sec: number, options: PlayOptions = {}): { timestamp: number; stopped: boolean; waiting: boolean } => {
   const convention = options.口径 ?? defaultProfile;
-  if (convention === 'TLM' || (anim.startDelaySec === undefined && anim.loopDelaySec === undefined)) return { ...animTime(anim, sec, convention), 等待: false };
-  const env = applyProfile(options.环境 ?? {}, convention);
+  if (convention === 'TLM' || (anim.startDelaySec === undefined && anim.loopDelaySec === undefined)) return { ...animTime(anim, sec, convention), waiting: false };
+  const env = applyProfile(options.env ?? {}, convention);
   const startSec = anim.startDelaySec === undefined ? 0 : getValue(anim.startDelaySec, withAnimTime(env, 0));
-  if (sec < startSec) return { 时: 0, stopped: false, 等待: true };
+  if (sec < startSec) return { timestamp: 0, stopped: false, waiting: true };
   const t = sec - startSec;
   const animLengthSec = animLength(anim, convention);
   const loopDelaySec = anim.loopDelaySec;
-  if (anim.循环 !== 'loop' || loopDelaySec === undefined || !Number.isFinite(animLengthSec)) return { ...animTime(anim, t, convention), 等待: false };
+  if (anim.循环 !== 'loop' || loopDelaySec === undefined || !Number.isFinite(animLengthSec)) return { ...animTime(anim, t, convention), waiting: false };
   if (typeof loopDelaySec === 'number') {
     const totalSec = animLengthSec + Math.max(0, loopDelaySec);
-    if (!(totalSec > 0)) return { 时: 0, stopped: false, 等待: false };
-    return { 时: Math.min(t % totalSec, animLengthSec), stopped: false, 等待: false };
+    if (!(totalSec > 0)) return { timestamp: 0, stopped: false, waiting: false };
+    return { timestamp: Math.min(t % totalSec, animLengthSec), stopped: false, waiting: false };
   }
   let startTime = 0;
   for (let i = 0; i < MAX_LOOP_ITER; i++) {
-    if (t < startTime + animLengthSec) return { 时: t - startTime, stopped: false, 等待: false };
+    if (t < startTime + animLengthSec) return { timestamp: t - startTime, stopped: false, waiting: false };
     const d = Math.max(0, getValue(loopDelaySec, withAnimTime(env, animLengthSec)));
-    if (t < startTime + animLengthSec + d || animLengthSec + d <= 0) return { 时: animLengthSec, stopped: false, 等待: false };
+    if (t < startTime + animLengthSec + d || animLengthSec + d <= 0) return { timestamp: animLengthSec, stopped: false, waiting: false };
     startTime += animLengthSec + d;
   }
-  throw new Error(`动画「${anim.名}」：loop_delay 推了 ${MAX_LOOP_ITER} 遍还没到 ${sec} 秒`);
+  throw new Error(`动画「${anim.name}」：loop_delay 推了 ${MAX_LOOP_ITER} 遍还没到 ${sec} 秒`);
 };
 
 /** 播放了 秒 秒时的骨骼（不带 anim_time_update、时间线；要这两样用 推进）。停了、还在 start_delay 里就是空表 */
-export const sampleAnim = (anim: BedrockAnimation, sec: number, options: PlayOptions = {}): { skeleton: SkeletonTable; 时: number; stopped: boolean } => {
-  const { 时: time, stopped, 等待: waiting } = animProgress(anim, sec, options);
-  return { skeleton: stopped || waiting ? {} : sampleSkeleton(anim, time, options), 时: time, stopped };
+export const sampleAnim = (anim: BedrockAnimation, sec: number, options: PlayOptions = {}): { skeleton: SkeletonTable; timestamp: number; stopped: boolean } => {
+  const { timestamp: time, stopped, waiting: waiting } = animProgress(anim, sec, options);
+  return { skeleton: stopped || waiting ? {} : sampleSkeleton(anim, time, options), timestamp: time, stopped };
 };
 
 // ---- 逐步推进（anim_time_update、时间线） ----
-export type PlayState = { readonly 时: number; readonly stopped: boolean; readonly started: boolean };
-export const initialPlayState: PlayState = { 时: 0, stopped: false, started: false };
+export type PlayState = { readonly timestamp: number; readonly stopped: boolean; readonly started: boolean };
+export const initialPlayState: PlayState = { timestamp: 0, stopped: false, started: false };
 
 const runTimeline = (anim: BedrockAnimation, fromTime: number, endTime: number, includeStart: boolean, env: MolangEnv) => {
-  for (const { 时: time, 句: expressions } of anim.timeline) if ((includeStart ? time >= fromTime : time > fromTime) && time <= endTime) for (const s of expressions) evaluate(s, env);
+  for (const { timestamp: time, 句: expressions } of anim.timeline) if ((includeStart ? time >= fromTime : time > fromTime) && time <= endTime) for (const s of expressions) evaluate(s, env);
 };
 
 /**
@@ -311,21 +311,21 @@ const runTimeline = (anim: BedrockAnimation, fromTime: number, endTime: number, 
 export const advance = (anim: BedrockAnimation, playState: PlayState, dt: number, options: PlayOptions = {}): PlayState => {
   if (playState.stopped) return playState;
   const convention = options.口径 ?? defaultProfile;
-  const baseCaliber = applyProfile(options.环境 ?? {}, convention);
+  const baseCaliber = applyProfile(options.env ?? {}, convention);
   const animLengthSec = animLength(anim, convention);
   if (!playState.started) runTimeline(anim, 0, 0, true, withAnimTime(baseCaliber, 0));
-  const prevTime = playState.时;
+  const prevTime = playState.timestamp;
   const env = { ...baseCaliber, query: { ...baseCaliber.query, anim_time: prevTime, delta_time: dt } };
   let nextTime = anim.animTimeUpdate ? evaluate(anim.animTimeUpdate, env) : prevTime + dt;
   runTimeline(anim, prevTime, Math.min(nextTime, animLengthSec), false, withAnimTime(baseCaliber, nextTime));
-  if (nextTime < animLengthSec) return { 时: nextTime, stopped: false, started: true };
+  if (nextTime < animLengthSec) return { timestamp: nextTime, stopped: false, started: true };
   if (anim.循环 === 'loop') {
     nextTime = animLengthSec > 0 ? nextTime % animLengthSec : 0;
     runTimeline(anim, 0, nextTime, true, withAnimTime(baseCaliber, nextTime));
-    return { 时: nextTime, stopped: false, started: true };
+    return { timestamp: nextTime, stopped: false, started: true };
   }
-  if (anim.循环 === 'hold' && convention === '通用') return { 时: animLengthSec, stopped: false, started: true };
-  return { 时: animLengthSec, stopped: true, started: true };
+  if (anim.循环 === 'hold' && convention === '通用') return { timestamp: animLengthSec, stopped: false, started: true };
+  return { timestamp: animLengthSec, stopped: true, started: true };
 };
 
 /** 从头按固定步长推进到 秒 秒（最后一步补齐零头），返回状态。时间线驱动的变量（弹簧之类）要这样一步步算 */

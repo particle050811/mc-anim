@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 883571cce8a7），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-沉淀（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 b30518c2d718），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-沉淀（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-沉淀",
-  "角色": "李樱",
-  "念": "接下来，还有哪些地方可以沉淀呢？",
-  "配音": "配音/6-李樱-沉淀",
-  "成品sha": "8858a925a964",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "接下来，还有哪些地方可以沉淀呢？",
+  "voice": "配音/6-李樱-沉淀",
+  "finishedSha": "8858a925a964",
+  "mouthOpen": 0.03,
   "有声长": 2.458,
-  "时长": 2.638,
+  "duration": 2.638,
   "文件秒数": 2.638,
-  "字": [
+  "char": [
     ["接",0.16,0.32],
     ["下",0.32,0.48],
     ["来",0.48,0.8],

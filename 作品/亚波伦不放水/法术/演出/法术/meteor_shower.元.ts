@@ -27,10 +27,10 @@ const duration = (unusedStart: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'meteor_shower',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // MeteorShowerSpell：每轮 GHAST_SHOOT 音量 2；命中爆炸 GENERIC_EXPLODE（只挂了第一颗）
-  声音: [
-    ...Array.from({ length: meteorRounds }, (_, k) => ({ 资产: '音效/entity.ghast.shoot', 秒: (k * meteorGapTicks) / 20, 音量: 2 })),
-    { 资产: '音效/entity.generic.explode.1', 秒: 0, fromHit: true, 音量: 4 },
+  sound: [
+    ...Array.from({ length: meteorRounds }, (_, k) => ({ asset: '音效/entity.ghast.shoot', sec: (k * meteorGapTicks) / 20, 音量: 2 })),
+    { asset: '音效/entity.generic.explode.1', sec: 0, fromHit: true, 音量: 4 },
   ],
 });

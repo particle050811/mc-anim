@@ -60,29 +60,29 @@ const distPastSpeed = (s0: number, dir: 1 | -1, minSpeed: number) => {
   return dist;
 };
 // 起、止：画面秒；前、后：渐变秒
-export type AnchorSeg = { 名: string; 起: number; 止: number; 前: number; 后: number };
+export type AnchorSeg = { name: string; start: number; end: number; 前: number; 后: number };
 export const trackAnchors: AnchorSeg[] = (() => {
-  const anchors: AnchorSeg[] = [{ 名: '6-1-3 末帧', 起: 0, 止: 0, 前: 0, 后: startFadeSec }];
+  const anchors: AnchorSeg[] = [{ name: '6-1-3 末帧', start: 0, end: 0, 前: 0, 后: startFadeSec }];
   ORDER.forEach((bossName, i) => {
     const isLast = i === ORDER.length - 1;
     const anchor: AnchorSeg = {
-      名: isLast ? `${placeName(bossName)} + 降落` : placeName(bossName),
-      起: secAtDist(distPastSpeed(markDist(`${bossName}.前`), -1, anchorSpeed)),
-      止: isLast ? totalLength : secAtDist(distPastSpeed(markDist(`${bossName}.后`), 1, anchorSpeed)),
+      name: isLast ? `${placeName(bossName)} + 降落` : placeName(bossName),
+      start: secAtDist(distPastSpeed(markDist(`${bossName}.前`), -1, anchorSpeed)),
+      end: isLast ? totalLength : secAtDist(distPastSpeed(markDist(`${bossName}.后`), 1, anchorSpeed)),
       前: anchorFadeSec,
       后: anchorFadeSec,
     };
     const prevAnchor = anchors[anchors.length - 1];
-    if (anchor.起 - prevAnchor.止 < prevAnchor.后 + anchor.前) {
-      prevAnchor.止 = anchor.止;
-      prevAnchor.名 = `${prevAnchor.名} + ${anchor.名}`;
+    if (anchor.start - prevAnchor.end < prevAnchor.后 + anchor.前) {
+      prevAnchor.end = anchor.end;
+      prevAnchor.name = `${prevAnchor.name} + ${anchor.name}`;
       prevAnchor.后 = anchor.后;
     } else anchors.push(anchor);
   });
   return anchors;
 })();
-const toAnchorPoints = (a: AnchorSeg[]): Anchor[] => a.map(({ 起: start, 止: end, 前: fadeBefore, 后: fadeAfter }) => ({ 帧: start, 止帧: end, 前: fadeBefore, 后: fadeAfter }));
-const rawFlight = realFlight({ 种子: realFlightSeed, 起帧: 0, 止帧: totalLength, fps: 1, distAt: routeDist, frameToTime: physicalTime, anchors: toAnchorPoints(trackAnchors), 参数: realFlightParams });
+const toAnchorPoints = (a: AnchorSeg[]): Anchor[] => a.map(({ start: start, end: end, 前: fadeBefore, 后: fadeAfter }) => ({ frame: start, 止帧: end, 前: fadeBefore, 后: fadeAfter }));
+const rawFlight = realFlight({ seed: realFlightSeed, 起帧: 0, 止帧: totalLength, fps: 1, distAt: routeDist, frameToTime: physicalTime, anchors: toAnchorPoints(trackAnchors), params: realFlightParams });
 const DQ = 2;
 const NQ = Math.ceil(routeLength / DQ);
 const offsetX = new Float64Array(NQ + 1);

@@ -14,29 +14,29 @@ const events = segMainCutEventFrames(segKey);
 /** 文件实长（秒，ffprobe 量的），cue 不超过段尾 */
 const oarSoundDurSec: Readonly<Record<number, number>> = { 1: 0.901, 2: 0.851, 3: 1.001, 4: 1.037, 5: 1.213, 6: 1.051, 7: 0.8, 8: 0.901 };
 const waveSoundDurSec = 3.027;
-const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
+const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.frameCount - startFrame);
 
 // 划桨水声：原版桨转过 π/4 的那一刻两支桨各放一声（编排.ts 的 桨声秒们）
 const oarSounds: FrameCue[] = oarSoundSecs().flatMap((sec, i) => {
   const startFrame = Math.round(sec * fps) - segWindow.起帧;
   return oarSoundFiles[i % oarSoundFiles.length]!.map((n, j) => ({
-    帧: startFrame,
-    资产: `音效/把回忆拼好给你/entity.boat.paddle_water.${n}`,
-    名: `桨声${i + 1}${j ? '右' : '左'}`,
-    帧数: clampFramesToSegEnd(startFrame, oarSoundDurSec[n]!),
+    frame: startFrame,
+    asset: `音效/把回忆拼好给你/entity.boat.paddle_water.${n}`,
+    name: `桨声${i + 1}${j ? '右' : '左'}`,
+    frameCount: clampFramesToSegEnd(startFrame, oarSoundDurSec[n]!),
     增益: oarSoundGain,
   }));
 });
 
-const waveSound: FrameCue = { 帧: events.waveRises, 资产: '音效/entity.player.splash.high_speed', 名: '浪', 帧数: clampFramesToSegEnd(events.waveRises, waveSoundDurSec), 增益: waveSoundGain, fadeOutFrames: Math.round(waveSoundFadeSec * fps) };
+const waveSound: FrameCue = { frame: events.waveRises, asset: '音效/entity.player.splash.high_speed', name: '浪', frameCount: clampFramesToSegEnd(events.waveRises, waveSoundDurSec), 增益: waveSoundGain, fadeOutFrames: Math.round(waveSoundFadeSec * fps) };
 
 export default defineSeg({
-  场: '2-海上',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-海上',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
   // 原声：固定增益；段在一串歌中间，不淡入
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }, ...oarSounds.map(toAssetCue), toAssetCue(waveSound)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: originalGain }, ...oarSounds.map(toAssetCue), toAssetCue(waveSound)],
 });

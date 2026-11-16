@@ -16,11 +16,11 @@ const vanillaRandom = (seed: number) => {
 };
 
 /** 一颗星：方向（原版坐标 x 东、y 上、z 南，单位向量，天球还没转）、半边长（格，离眼睛 星.距离 格） */
-export type Star = { dir: readonly [number, number, number]; 半边: number };
+export type Star = { dir: readonly [number, number, number]; halfSide: number };
 
 /** createStars：1500 次各取三个 −1～1 和一个半边长，落在单位球壳里（0.01 < 长² < 1）的才算一颗，再取一个自转角（这里不画转角，只把随机数取掉） */
 export const starList: readonly Star[] = (() => {
-  const r = vanillaRandom(starField.种子);
+  const r = vanillaRandom(starField.seed);
   const out: Star[] = [];
   for (let n = 0; n < starField.starCount; n++) {
     const x = r.nextFloat() * 2 - 1, y = r.nextFloat() * 2 - 1, z = r.nextFloat() * 2 - 1;
@@ -28,7 +28,7 @@ export const starList: readonly Star[] = (() => {
     const lenSq = x * x + y * y + z * z;
     if (!(lenSq < 1 && lenSq > 0.01)) continue;
     const k = 1 / Math.sqrt(lenSq);
-    out.push({ dir: [x * k, y * k, z * k], 半边: halfSide });
+    out.push({ dir: [x * k, y * k, z * k], halfSide: halfSide });
     r.nextDouble();
   }
   return out;

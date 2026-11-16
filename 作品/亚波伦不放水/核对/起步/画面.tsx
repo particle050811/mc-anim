@@ -5,6 +5,6 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 段: thisSegment } = useSeg(seg);
-  return <AbsoluteFill style={{ background: '#000', color: '#fff', fontSize: 48, justifyContent: 'center', alignItems: 'center' }}>{`${sec.toFixed(2)} / ${thisSegment.秒} 秒`}</AbsoluteFill>;
+  const { sec: sec, segment: thisSegment } = useSeg(seg);
+  return <AbsoluteFill style={{ background: '#000', color: '#fff', fontSize: 48, justifyContent: 'center', alignItems: 'center' }}>{`${sec.toFixed(2)} / ${thisSegment.sec} 秒`}</AbsoluteFill>;
 });

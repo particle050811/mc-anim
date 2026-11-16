@@ -28,7 +28,7 @@ export type CrashWatchdog = {
   /** 崩了就是原文，没崩是 null */
   原文: () => string | null;
   /** 跑 fn；fn 出错时浏览器崩过，就换成 页面崩溃（带原文） */
-  包: <T>(fn: () => Promise<T>) => Promise<T>;
+  pack: <T>(fn: () => Promise<T>) => Promise<T>;
 };
 
 /**
@@ -69,7 +69,7 @@ export const openBrowserWithWatchdog = async <B>(launch: () => Promise<B>, exePa
     browser,
     watchdog: {
       原文: () => raw,
-      包: async (fn) => {
+      pack: async (fn) => {
         try {
           return await fn();
         } catch (e) {

@@ -18,7 +18,7 @@ const lifetime = 16;
 const friction = 0.86;
 
 // 一颗爱心的出生：刻 = 出生时刻；p = 出生位置；种子 = 这颗自己的随机数
-export type HeartSpawn = { 刻: number; p: V3; 种子: number };
+export type HeartSpawn = { 刻: number; p: V3; seed: number };
 
 // 驯服那一下的 7 颗。脚：实体脚底中心；宽、高：碰撞箱；刻：驯服那一刻
 export const tamingHearts = (feet: V3, width: number, height: number, tick: number, seed: number): HeartSpawn[] => {
@@ -26,7 +26,7 @@ export const tamingHearts = (feet: V3, width: number, height: number, tick: numb
   return Array.from({ length: 7 }, (_, i) => ({
     刻: tick,
     p: [feet[0] + width * (2 * rand() - 1), feet[1] + width * (2 * rand() - 1), feet[2] + height * rand() + 0.5] as V3,
-    种子: seed * 389 + i,
+    seed: seed * 389 + i,
   }));
 };
 
@@ -34,7 +34,7 @@ export const tamingHearts = (feet: V3, width: number, height: number, tick: numb
 export const heartStateAt = (spawn: HeartSpawn, tick: number): { p: V3; half: number } | null => {
   const τ = tick - spawn.刻;
   if (τ < 0 || τ >= lifetime + 1) return null;
-  const rand = mulberry32(spawn.种子 * 2654435761 + 31);
+  const rand = mulberry32(spawn.seed * 2654435761 + 31);
   const half = 0.1 * (rand() * 0.5 + 0.5) * 2 * 1.5;
   const [gx, gy, gz] = particleInitVel(rand, 0, 0, 0);
   // 游戏坐标（y 朝上、z 朝南）换成场景坐标

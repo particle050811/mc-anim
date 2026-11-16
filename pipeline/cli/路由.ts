@@ -16,7 +16,7 @@ export type RouteOptions = {
   commandTable: Record<string, Command>;
   /** 测试换成不写盘的 */
   newRecord?: (commandName: string, args: string[]) => RunRecord;
-  输出?: Output;
+  output?: Output;
   /** ANIM_DEBUG=1 和 --debug 一样 */
   env?: NodeJS.ProcessEnv;
 };
@@ -31,10 +31,10 @@ export const takeDebugArgs = (args: readonly string[]): { debug: boolean; rest: 
 /** 低优先（用户 11-06 定：子 Agent 只出静帧，整段渲染由主 Agent 合并后用 --low-priority 排，给静帧让路）：
  *  取走 --low-priority，设 ANIM_PRIORITY=low，这条命令和它起的子进程过闸都排在普通票后面（闸/票.ts 领票） */
 export const lowPriorityEnv = 'ANIM_PRIORITY';
-export const takeLowPriorityArgs = (args: readonly string[]): { 低优先: boolean; rest: string[] } => {
+export const takeLowPriorityArgs = (args: readonly string[]): { lowPriority: boolean; rest: string[] } => {
   const sepIndex = args.indexOf('--');
   const head = sepIndex < 0 ? args : args.slice(0, sepIndex);
-  return { 低优先: head.includes('--low-priority'), rest: [...head.filter((a) => a !== '--low-priority'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
+  return { lowPriority: head.includes('--low-priority'), rest: [...head.filter((a) => a !== '--low-priority'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
 };
 
 const builtinErrors = [TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError];
@@ -65,10 +65,10 @@ export const isExpectedError = (e: unknown, root = codeRoot()): boolean => {
 };
 
 export const helpText = (commandTable: Record<string, Command>) =>
-  ['用法：anim [--work <名>] [--debug] [--low-priority] <命令> [参数]\n', ...Object.values(commandTable).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
+  ['用法：anim [--work <名>] [--debug] [--low-priority] <命令> [参数]\n', ...Object.values(commandTable).map((c) => `  anim ${c.usage}\n      ${c.note}`)].join('\n');
 
 /** 一条命令的帮助：自带的详细帮助，没有就是 用法 和 说明 */
-export const commandHelp = (c: Command) => c.help?.() ?? `用法：anim ${c.用法}\n      ${c.说明}`;
+export const commandHelp = (c: Command) => c.help?.() ?? `用法：anim ${c.usage}\n      ${c.note}`;
 
 /** 子命令后面带了 --help 或 -h（-- 之后的不算）：段键、段名都不以 - 开头，不会和选择器撞 */
 export const wantsHelp = (args: readonly string[]) => {
@@ -78,8 +78,8 @@ export const wantsHelp = (args: readonly string[]) => {
 
 /** 跑一条 anim 命令，返回退出码 */
 export const runCommandLine = async (argv: readonly string[], o: RouteOptions): Promise<number> => {
-  const sink = o.输出 ?? { log: (s) => console.log(s), error: (s) => console.error(s) };
-  const { 低优先: lowPriority, rest: withoutLowPriority } = takeLowPriorityArgs(argv);
+  const sink = o.output ?? { log: (s) => console.log(s), error: (s) => console.error(s) };
+  const { lowPriority: lowPriority, rest: withoutLowPriority } = takeLowPriorityArgs(argv);
   if (lowPriority) process.env[lowPriorityEnv] = 'low';
   const { debug: addedDebug, rest: withoutDebug } = takeDebugArgs(withoutLowPriority);
   const debug = addedDebug || o.env?.ANIM_DEBUG === '1';
@@ -87,8 +87,8 @@ export const runCommandLine = async (argv: readonly string[], o: RouteOptions): 
   let parsed: ReturnType<typeof parseWorkArg>;
   try {
     parsed = parseWorkArg(withoutDebug);
-    setSpecifiedWork(parsed.作品);
-    if (parsed.作品) currentWork();
+    setSpecifiedWork(parsed.work);
+    if (parsed.work) currentWork();
   } catch (e) {
     sink.error((e as Error).message);
     return 2;
@@ -110,8 +110,8 @@ export const runCommandLine = async (argv: readonly string[], o: RouteOptions): 
     return 0;
   }
   const runRecord = (o.newRecord ?? ((n, a) => new RunRecord(n, a)))(commandName, args);
-  const task = !c.noRecord && !o.newRecord && /^(still|bench|verify|film|extract|world|mcai|voice|cache|batch)$/.test(commandName) ? openTask(resolveSchedulerEnv(), {种:commandName,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>runRecord.结束(code)) : null;
-  if(task)runRecord.任务=task.info.任务;
+  const task = !c.noRecord && !o.newRecord && /^(still|bench|verify|film|extract|world|mcai|voice|cache|batch)$/.test(commandName) ? openTask(resolveSchedulerEnv(), {kind:commandName,purpose:process.env.ANIM_PURPOSE??'未声明'}, code=>runRecord.endedAt(code)) : null;
+  if(task)runRecord.task=task.info.task;
   let code = 1, errorText: string | undefined;
   try {
     code = (await c.跑(args, runRecord)) ?? 0;
@@ -123,7 +123,7 @@ export const runCommandLine = async (argv: readonly string[], o: RouteOptions): 
       sink.error(errorMessage);
       code = 2;
     } else if (e instanceof UsageError) {
-      sink.error(`${errorMessage}\n用法：anim ${c.用法}`);
+      sink.error(`${errorMessage}\n用法：anim ${c.usage}`);
       code = 2;
     } else {
       sink.error(debug || !isExpectedError(e) ? (stack ?? errorMessage) : `✗ ${errorMessage}`);
@@ -131,9 +131,9 @@ export const runCommandLine = async (argv: readonly string[], o: RouteOptions): 
     }
     if (debug && stack && (e instanceof WorkSelectError || e instanceof UsageError)) sink.error(stack);
     // 上面已打过，不经 记录.记 再打一遍；调用栈总记下
-    runRecord.事件.push({ 时间: utcTime(), 级别: '错误', 文本: errorMessage, ...(stack ? { 调用栈: stack } : {}) });
+    runRecord.events.push({ time: utcTime(), level: '错误', text: errorMessage, ...(stack ? { stack: stack } : {}) });
   }
-  if(task)task.结束(code,undefined,errorText);
-  else if (!c.noRecord) runRecord.结束(code);
+  if(task)task.endedAt(code,undefined,errorText);
+  else if (!c.noRecord) runRecord.endedAt(code);
   return code;
 };

@@ -43,17 +43,17 @@ describe.skipIf(!boneModel)('袍摆让腿', () => {
   });
 
   it('忘情牛肉面每 1/60 秒：腿不穿出袍子，各组甩的角度逐帧连续', () => {
-    let prevAngles: ReturnType<typeof hemYieldLeg>['角'] | undefined;
+    let prevAngles: ReturnType<typeof hemYieldLeg>['angle'] | undefined;
     const maxAngles = { 前: 0, 后: 0, 左: 0, 右: 0 };
     let maxJump = 0;
     for (let f = 0; f <= Math.ceil(onePassSec * 60); f++) {
       const r = hemYieldLeg(g, noodleDancePose(f / 60));
       if (r.remain) expect.fail(`第 ${f} 帧还有点露在外面：${JSON.stringify(hemPierceDetails(g, noodleDancePose(f / 60)))}`);
       for (const k of ['前', '后', '左', '右'] as const) {
-        maxAngles[k] = Math.max(maxAngles[k], r.角[k]);
-        if (prevAngles) maxJump = Math.max(maxJump, Math.abs(r.角[k] - prevAngles[k]));
+        maxAngles[k] = Math.max(maxAngles[k], r.angle[k]);
+        if (prevAngles) maxJump = Math.max(maxJump, Math.abs(r.angle[k] - prevAngles[k]));
       }
-      prevAngles = r.角;
+      prevAngles = r.angle;
     }
     expect(maxJump).toBeLessThan(8);
   });

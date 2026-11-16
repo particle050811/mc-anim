@@ -1,24 +1,24 @@
 // 女仆气泡和像素聊天栏的核对视图（纯数据，段.ts 也读）：一帧一个视图，叠在中性灰底上。
 // 缩放都是成片像素（2560×1440）：气泡 3（奇数，看半像素的 unihex 点怎么落）和 6；聊天栏 3 和 6（原版 1440p 自动 GUI 缩放是 6）。
 // 气泡的锚点画一个红点，看尾巴尖和锚点的关系。聊天行的刻从 0 起，年龄 = 刻 − 起刻。
-export type BubblePlacement = { 字: string; 锚: [number, number]; 缩放: number; popProgress?: number; bottomStyle?: 'type1' | 'type2'; 位置?: '中' | '左' | '右' };
-export type View = { 名: string; bubbles: BubblePlacement[]; chatScale?: number; chatTick?: number; chatStartTicks?: number[] };
+export type BubblePlacement = { char: string; 锚: [number, number]; scale: number; popProgress?: number; bottomStyle?: 'type1' | 'type2'; 位置?: '中' | '左' | '右' };
+export type View = { name: string; bubbles: BubblePlacement[]; chatScale?: number; chatTick?: number; chatStartTicks?: number[] };
 
 export const bubbleTexts = ['˃ʍ˂', '( •́ _ •̀)', '(✿◠‿◠)', '您的手艺，一如既往呢'] as const;
 
-const bubbleRow = (scale: number, y: number): BubblePlacement[] => bubbleTexts.map((text, i) => ({ 字: text, 锚: [170 + i * 300, y], 缩放: scale }));
+const bubbleRow = (scale: number, y: number): BubblePlacement[] => bubbleTexts.map((text, i) => ({ char: text, 锚: [170 + i * 300, y], scale: scale }));
 
 export const views: readonly View[] = [
-  { 名: '气泡 3、聊天栏 3', bubbles: bubbleRow(3, 200), chatScale: 3, chatTick: 0 },
-  { 名: '气泡 6、聊天栏 6', bubbles: bubbleRow(6, 220), chatScale: 6, chatTick: 0 },
+  { name: '气泡 3、聊天栏 3', bubbles: bubbleRow(3, 200), chatScale: 3, chatTick: 0 },
+  { name: '气泡 6、聊天栏 6', bubbles: bubbleRow(6, 220), chatScale: 6, chatTick: 0 },
   {
-    名: '变体：弹出 1/6～6/6（演绎）、左右排、type1',
+    name: '变体：弹出 1/6～6/6（演绎）、左右排、type1',
     bubbles: [
-      ...[1, 2, 3, 4, 5, 6].map((n, i): BubblePlacement => ({ 字: '˃ʍ˂', 锚: [110 + i * 190, 170], 缩放: 6, popProgress: n / 6 })),
-      { 字: '(✿◠‿◠)', 锚: [300, 420], 缩放: 6, 位置: '左' },
-      { 字: '(✿◠‿◠)', 锚: [640, 420], 缩放: 6, 位置: '右' },
-      { 字: '˃ʍ˂', 锚: [1080, 420], 缩放: 6, bottomStyle: 'type1' },
+      ...[1, 2, 3, 4, 5, 6].map((n, i): BubblePlacement => ({ char: '˃ʍ˂', 锚: [110 + i * 190, 170], scale: 6, popProgress: n / 6 })),
+      { char: '(✿◠‿◠)', 锚: [300, 420], scale: 6, 位置: '左' },
+      { char: '(✿◠‿◠)', 锚: [640, 420], scale: 6, 位置: '右' },
+      { char: '˃ʍ˂', 锚: [1080, 420], scale: 6, bottomStyle: 'type1' },
     ],
   },
-  { 名: '聊天栏淡出：各行年龄 0、100、185、190、195（缩放 6）', bubbles: [], chatScale: 6, chatTick: 195, chatStartTicks: [195, 95, 10, 5, 0] },
+  { name: '聊天栏淡出：各行年龄 0、100、185、190、195（缩放 6）', bubbles: [], chatScale: 6, chatTick: 195, chatStartTicks: [195, 95, 10, 5, 0] },
 ];

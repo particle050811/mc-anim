@@ -16,7 +16,7 @@ import blockDataJson from 'asset:碎块/镜头/6-4-6/振动方块';
 const blockData = blockDataJson as unknown as { 感测体: number[][]; 尖啸体: number[][]; 羊毛: number[][] };
 
 type VibrationEvent = { 名: string; t: number; p: V3 }; // p：场景坐标（脚底）
-export type Vibration = { from: V3; to: V3; t: number; 到: number; 收: string };
+export type Vibration = { from: V3; to: V3; t: number; dest: number; 收: string };
 const tickSec = 1 / 20;
 const posKey = (b: number[]) => b.join(',');
 const cellCenter = ([x, y, z]: number[]): V3 => G4(x + 0.5, y + 0.5, z + 0.5);
@@ -59,7 +59,7 @@ export const computeChain = (events: VibrationEvent[], cooldownUntil: number, pl
       const distance = dist(event.p, to);
       if (distance > vanilla.vibrationRange || event.t < (busyUntil.get(posKey(sensor)) ?? -Infinity) || isOccluded(event.p, to, placedSet)) continue;
       const arriveSec = event.t + Math.floor(distance) * tickSec;
-      vibrations.push({ from: event.p, to, t: event.t, 到: arriveSec, 收: `感测体 ${posKey(sensor)}（${event.名}）` });
+      vibrations.push({ from: event.p, to, t: event.t, dest: arriveSec, 收: `感测体 ${posKey(sensor)}（${event.名}）` });
       busyUntil.set(posKey(sensor), arriveSec + 40 * tickSec);
       activatedAt.set(posKey(sensor), arriveSec);
       clicks.push({ b: sensor, t: arriveSec });
@@ -85,7 +85,7 @@ export const computeChain = (events: VibrationEvent[], cooldownUntil: number, pl
   const silentReceipts: ChainResult['silentReceipts'] = [];
   let cooldownEnd = cooldownUntil;
   for (const receipt of receipts) {
-    vibrations.push({ from: receipt.from, to: cellCenter(receipt.shrieker), t: receipt.emitT, 到: receipt.t, 收: `尖啸体 ${posKey(receipt.shrieker)}` });
+    vibrations.push({ from: receipt.from, to: cellCenter(receipt.shrieker), t: receipt.emitT, dest: receipt.t, 收: `尖啸体 ${posKey(receipt.shrieker)}` });
     if (receipt.t >= cooldownEnd) {
       shrieks.push({ block: receipt.shrieker, p: G4(receipt.shrieker[0] + 0.5, receipt.shrieker[1], receipt.shrieker[2] + 0.5), t: receipt.t });
       cooldownEnd = receipt.t + vanilla.warningCooldownSec;

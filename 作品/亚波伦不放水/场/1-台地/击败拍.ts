@@ -11,10 +11,10 @@ import { slowExtraSec } from './开盘拍.ts';
 import timeline from './时间线.ts';
 import { dashProgress, steveFoot, eyeHeight, act5StartPos } from './齐放拍.ts';
 
-const events = timeline.事件;
+const events = timeline.events;
 /** 本幕开头（编排的钟，现身后几秒的世界秒，比片上慢第 2 幕的 慢放多出）：他死的那一刻 */
-export const actStart = events.volleyDone.秒 - events.yaBoLunAppears.秒 - slowExtraSec;
-export const actDur = events.defeatDone.秒 - events.volleyDone.秒;
+export const actStart = events.volleyDone.sec - events.yaBoLunAppears.sec - slowExtraSec;
+export const actDur = events.defeatDone.sec - events.volleyDone.sec;
 export const secAt = (s: number) => actStart + s;
 
 /** 七版：第 5 幕开头在现身后 19.45 秒，5-03 从第 5 幕第 5.3 秒起、长 2.3 秒 */
@@ -97,7 +97,7 @@ if (Math.hypot(...yaBoLunPos(actStart).map((x, i) => x - act5StartPos[i]!)) > 1e
 export const dropSeed = 3;
 const itemClear = 1.2;
 {
-  const drops = deathDropTrack(steveFoot, steveDropCount, dropSeed, { 眼高: eyeHeight }).map((x) => x.路[x.路.length - 1]!);
+  const drops = deathDropTrack(steveFoot, steveDropCount, dropSeed, { 眼高: eyeHeight }).map((x) => x.lane[x.lane.length - 1]!);
   for (let k = 0; k <= 10; k++) {
     const p = yaBoLunPos(landSec + (yaBoLunBeats.glideSec * k) / 10);
     const nearDist = Math.min(...drops.map((q) => Math.hypot(q[0] - p[0], q[1] - p[1])));
@@ -106,8 +106,8 @@ const itemClear = 1.2;
 }
 
 // ── 死亡界面的光标（GUI 像素，界面 640 × 360，幕内秒）：打开时原版把鼠标放在窗口正中；20 刻后按钮能按，移到「重生」上，幕末前点下去 ──
-export const cursorMove = { 起: [320, 180] as const, 到: [326, 170] as const, moveStart: 1.1, moveSec: 0.35, 点: 1.9 };
+export const cursorMove = { start: [320, 180] as const, dest: [326, 170] as const, moveStart: 1.1, moveSec: 0.35, points: 1.9 };
 export const cursorAt = (actSec: number): readonly [number, number] => {
   const u = smoothstep01(clamp01((actSec - cursorMove.moveStart) / cursorMove.moveSec));
-  return [lerp(cursorMove.起[0], cursorMove.到[0], u), lerp(cursorMove.起[1], cursorMove.到[1], u)];
+  return [lerp(cursorMove.start[0], cursorMove.dest[0], u), lerp(cursorMove.start[1], cursorMove.dest[1], u)];
 };

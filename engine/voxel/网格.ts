@@ -20,8 +20,8 @@ const FACES = faceTable;
 // 一组面（同一种材质）：每个顶点 位置 xyz（相对体素块原点、以格为单位 × 64，Int16）、uv（× 16，Int16）、
 // 贴图（底层号 + 4096 × 乘染色 + 8192 × 随机转；叠加层，65535 = 没有；另一面的贴图号 + 4096 × 乘染色：侧面存这块方块的顶面、顶面存它的侧面，65535 = 没有，远处两面按它混成一样的颜色，见 lib/体素/材质.ts 的 台阶并色；空着）、颜色（染色 rgb，sRGB 字节；第 4 个字节空着，顶点属性按 4 字节对齐）。
 // 面按朝向排好：段[g]～段[g + 1] 是第 g 组（+x -x +y -y +z -z 不沿轴，再是 +x -x +y -y 的裙边，见文件头）
-export type FaceGroup = { n: number; pos: Int16Array; uv: Int16Array; tex: Uint16Array; col: Uint8Array; 段: number[] };
-export type SectionMesh = { 实心: FaceGroup; 镂空: FaceGroup; 实心树叶: FaceGroup; 水: FaceGroup; 花草: FaceGroup; 面数: number };
+export type FaceGroup = { n: number; pos: Int16Array; uv: Int16Array; tex: Uint16Array; col: Uint8Array; segment: number[] };
+export type SectionMesh = { 实心: FaceGroup; 镂空: FaceGroup; 实心树叶: FaceGroup; 水: FaceGroup; 花草: FaceGroup; faceCount: number };
 export const posScale = 64;
 export const groupCount = 11;
 export const skirtGroupStart = 7; // 第 裙边起 + d 组是朝 d（0～3：+x -x +y -y）的裙边
@@ -71,7 +71,7 @@ class FaceBuffer {
 }
 const packFaceGroup = (bs: FaceBuffer[]): FaceGroup => {
   const faceCount = bs.reduce((s, b) => s + b.n, 0);
-  const out: FaceGroup = { n: faceCount, pos: new Int16Array(faceCount * 12), uv: new Int16Array(faceCount * 8), tex: new Uint16Array(faceCount * 16), col: new Uint8Array(faceCount * 16), 段: [0] };
+  const out: FaceGroup = { n: faceCount, pos: new Int16Array(faceCount * 12), uv: new Int16Array(faceCount * 8), tex: new Uint16Array(faceCount * 16), col: new Uint8Array(faceCount * 16), segment: [0] };
   let at = 0;
   for (const buffer of bs) {
     if (buffer.n) {
@@ -81,7 +81,7 @@ const packFaceGroup = (bs: FaceBuffer[]): FaceGroup => {
       out.col.set(buffer.col.subarray(0, buffer.n * 16), at * 16);
     }
     at += buffer.n;
-    out.段.push(at);
+    out.segment.push(at);
   }
   return out;
 };
@@ -182,10 +182,10 @@ const belowMask = FULL[STONE] | (LEAF[STONE] << 1) | (CLS[STONE] === 3 ? 4 : 0);
 // 体素块给了 `水面`（海面的场景 z）时，跨着最上一格海水的那一格，液体顶面一律画在 水面 − 1 + h（和第 0 级一样高），各级海面齐平；
 // 不给就照旧（湖、河这些不在海面上的水也照旧，粗格子里不知道真实水面在哪）
 const liquidTop = (voxels: VoxelGrid, k: number, modelHeight: number) => {
-  if (voxels.waterLevel === undefined || voxels.格 === 1) return k + modelHeight;
-  const z0 = voxels.原点[2] + k * voxels.格;
-  if (!(z0 <= voxels.waterLevel - 1 && voxels.waterLevel - 1 < z0 + voxels.格)) return k + modelHeight;
-  return (voxels.waterLevel - 1 + modelHeight - voxels.原点[2]) / voxels.格;
+  if (voxels.waterLevel === undefined || voxels.cell === 1) return k + modelHeight;
+  const z0 = voxels.origin[2] + k * voxels.cell;
+  if (!(z0 <= voxels.waterLevel - 1 && voxels.waterLevel - 1 < z0 + voxels.cell)) return k + modelHeight;
+  return (voxels.waterLevel - 1 + modelHeight - voxels.origin[2]) / voxels.cell;
 };
 
 // 实心树叶：树叶画成实心（粗级）
@@ -263,8 +263,8 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
         // 花草按位置水平偏移（OffsetType.XZ，±0.25 格）
         let dx = 0, dy = 0;
         if (OFFS[voxel]) {
-          dx = Math.round((hash3(i + voxels.原点[0], j + voxels.原点[1], 7) - 0.5) * 0.5 * posScale) / posScale;
-          dy = Math.round((hash3(i + voxels.原点[0], j + voxels.原点[1], 8) - 0.5) * 0.5 * posScale) / posScale;
+          dx = Math.round((hash3(i + voxels.origin[0], j + voxels.origin[1], 7) - 0.5) * 0.5 * posScale) / posScale;
+          dy = Math.round((hash3(i + voxels.origin[0], j + voxels.origin[1], 8) - 0.5) * 0.5 * posScale) / posScale;
         }
         for (let face = 0; face < nf; face++) {
           const faceOff = face * faceStride;
@@ -373,7 +373,7 @@ export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): Secti
       }
     }
   const groups = bufs.map(packFaceGroup);
-  return { 实心: groups[0], 镂空: groups[1], 实心树叶: groups[2], 水: groups[3], 花草: groups[4], 面数: groups.reduce((s, x) => s + x.n, 0) };
+  return { 实心: groups[0], 镂空: groups[1], 实心树叶: groups[2], 水: groups[3], 花草: groups[4], faceCount: groups.reduce((s, x) => s + x.n, 0) };
 };
 
 // 一组面里，从镜头看得到正面的那几组朝向：盒子 [x0, y0, z0, x1, y1, z1] 是这块网格的范围（场景坐标）。

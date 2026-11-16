@@ -25,14 +25,14 @@ export type CloudInput = {
   depthTexture: THREE.Texture;
   /** 主画面（取不透明度） */
   mainPicture: THREE.Texture;
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** 云合成到这里（全分辨率，画面值、预乘） */
-  目标: THREE.WebGLRenderTarget;
+  target: THREE.WebGLRenderTarget;
   config: CloudConfig;
-  场: CloudScene;
-  海平面: number;
-  秒: number;
+  scene: CloudScene;
+  seaLevel: number;
+  sec: number;
   /** 太阳本体在画布上的方块（像素，左下角 x、y，宽，高）；没有给 null */
   sunBox: readonly [number, number, number, number] | null;
   /** 离屏图和复用状态各用各的（水面反射的云另画一张小图，和主画面那张不来回挤掉） */
@@ -134,20 +134,20 @@ const newPass = (material: THREE.Material) => {
 };
 
 type Resource = {
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   halfRes: boolean;
   cloudTarget: THREE.WebGLRenderTarget;
   spareTargets: [THREE.WebGLRenderTarget, THREE.WebGLRenderTarget];
   轮: number;
-  键: string;
+  key: string;
 };
 
 const camera = new THREE.OrthographicCamera();
-const programs = new Map<string, { material: THREE.ShaderMaterial; 场: THREE.Scene }>();
-const prepared = new Map<boolean, { material: THREE.ShaderMaterial; 场: THREE.Scene }>();
-let compositePass: { material: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
-let upscalePass: { material: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
+const programs = new Map<string, { material: THREE.ShaderMaterial; scene: THREE.Scene }>();
+const prepared = new Map<boolean, { material: THREE.ShaderMaterial; scene: THREE.Scene }>();
+let compositePass: { material: THREE.ShaderMaterial; scene: THREE.Scene } | null = null;
+let upscalePass: { material: THREE.ShaderMaterial; scene: THREE.Scene } | null = null;
 const resources = new Map<string, Resource>();
 
 const getPrepared = (halfRes: boolean) => {
@@ -163,7 +163,7 @@ const getPrepared = (halfRes: boolean) => {
       depthWrite: false,
       toneMapped: false,
     });
-    p = { material, 场: newPass(material) };
+    p = { material, scene: newPass(material) };
     prepared.set(halfRes, p);
   }
   return p;
@@ -185,7 +185,7 @@ const getComposite = () => {
     depthWrite: false,
     toneMapped: false,
   });
-  return (compositePass = { material, 场: newPass(material) });
+  return (compositePass = { material, scene: newPass(material) });
 };
 const getUpscale = () => {
   if (upscalePass) return upscalePass;
@@ -198,11 +198,11 @@ const getUpscale = () => {
     depthWrite: false,
     toneMapped: false,
   });
-  return (upscalePass = { material, 场: newPass(material) });
+  return (upscalePass = { material, scene: newPass(material) });
 };
 
 const getProgram = (e: ExpandedConfig) => {
-  const halfRes = e.quality.分辨率 === 0.5;
+  const halfRes = e.quality.resolution === 0.5;
   const shaderSource = cloudFragment(e.layers, cloudSpaceMult, e.quality.dither, halfRes);
   let p = programs.get(shaderSource);
   if (!p) {
@@ -243,7 +243,7 @@ const getProgram = (e: ExpandedConfig) => {
       depthWrite: false,
       toneMapped: false,
     });
-    p = { material, 场: newPass(material) };
+    p = { material, scene: newPass(material) };
     programs.set(shaderSource, p);
   }
   return p;
@@ -266,13 +266,13 @@ const newOffscreen = (w: number, h: number) =>
 const placeResources = (width: number, height: number, halfRes: boolean, slotName: string) => {
   const w = halfRes ? Math.ceil(width / 2) : width, h = halfRes ? Math.ceil(height / 2) : height;
   const resource = resources.get(slotName);
-  if (resource && resource.宽 === width && resource.高 === height && resource.halfRes === halfRes) return resource;
+  if (resource && resource.width === width && resource.height === height && resource.halfRes === halfRes) return resource;
   if (resource) {
     resource.cloudTarget.dispose();
     resource.spareTargets[0].dispose();
     resource.spareTargets[1].dispose();
   }
-  const freshResource: Resource = { 宽: width, 高: height, halfRes, cloudTarget: newOffscreen(w, h), spareTargets: [newOffscreen(w, h), newOffscreen(w, h)], 轮: 0, 键: '' };
+  const freshResource: Resource = { width: width, height: height, halfRes, cloudTarget: newOffscreen(w, h), spareTargets: [newOffscreen(w, h), newOffscreen(w, h)], 轮: 0, key: '' };
   resources.set(slotName, freshResource);
   return freshResource;
 };
@@ -317,11 +317,11 @@ const getBlueNoiseTexture = () => {
 export const shouldDrawClouds = (x: CloudInput): boolean => {
   const tex = atmosphere.clouds;
   if (!tex || !atmosphere.sky || x.config.开 === false) return false;
-  const e = expandCloud(x.config, x.海平面);
+  const e = expandCloud(x.config, x.seaLevel);
   if (!e.layers.length) return false;
   const { gl, camera: cam } = x;
-  const halfRes = e.quality.分辨率 === 0.5;
-  const r = placeResources(x.宽, x.高, halfRes, x.槽 ?? '主');
+  const halfRes = e.quality.resolution === 0.5;
+  const r = placeResources(x.width, x.height, halfRes, x.槽 ?? '主');
   const w = r.cloudTarget.width, h = r.cloudTarget.height;
   const p = getProgram(e);
   const u = p.material.uniforms;
@@ -336,24 +336,24 @@ export const shouldDrawClouds = (x: CloudInput): boolean => {
   u.pcWorleyS!.value = tex.worleySwirley;
   cameraPos.setFromMatrixPosition(cam.matrixWorld);
   (u.pcCamXZ!.value as THREE.Vector2).set(S * cameraPos.x, S * cameraPos.z);
-  u.pcCamR!.value = 6371e3 + S * (cameraPos.y - e.海平面);
+  u.pcCamR!.value = 6371e3 + S * (cameraPos.y - e.seaLevel);
   const sunY = atmosphere.sun[2]!;
   u.pcDay!.value = dayFactor(sunY);
-  for (const [uniformName, v] of Object.entries(layerValues(e, sunY, x.秒, (hh) => atmoLightAt(hh)))) setValue(u, uniformName, v);
+  for (const [uniformName, v] of Object.entries(layerValues(e, sunY, x.sec, (hh) => atmoLightAt(hh)))) setValue(u, uniformName, v);
   (u.pcNear!.value as THREE.Vector2).set(S * aroundCamera[0], S * aroundCamera[1]);
-  const c = x.场.hole;
+  const c = x.scene.hole;
   (u.pcClear!.value as THREE.Vector4).set(c ? S * c[0] : 0, c ? -S * c[1] : 0, c ? S * c[2] : 0, c ? S * c[3] : 0);
-  const g = x.场.brightness;
-  (u.pcGlow!.value as THREE.Vector4).set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.radius : 1, g ? g.强 : 0);
+  const g = x.scene.brightness;
+  (u.pcGlow!.value as THREE.Vector4).set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.radius : 1, g ? g.strength : 0);
   if (g) (u.pcGlowCol!.value as THREE.Color).setStyle(g.色, THREE.LinearSRGBColorSpace);
   u.pcAddN!.value = 0;
   u.atmoSky!.value = atmosphere.sky;
   if (e.quality.dither === '蓝噪声') u.tBlue!.value = getBlueNoiseTexture();
-  (u.uSize!.value as THREE.Vector2).set(x.宽, x.高);
+  (u.uSize!.value as THREE.Vector2).set(x.width, x.height);
   (u.uInvProj!.value as THREE.Matrix4).copy(cam.projectionMatrixInverse);
   (u.uCamWorld!.value as THREE.Matrix4).copy(cam.matrixWorld);
   u.uLogFar!.value = Math.log2(cam.far + 1);
-  u.uExposure!.value = e.exposure * (x.场.exposureMult ?? 1);
+  u.uExposure!.value = e.exposure * (x.scene.exposureMult ?? 1);
 
   // 复用的键：着色器、所有 uniform 的值、天色图、尺寸（镜头矩阵在 uniform 里）。横条位置、准备图是这一遍自己摆的，不算输入（算进去就每帧都对不上）
   const values: unknown[] = [p.material.fragmentShader.length, atmosphere.skyKey, w, h, x.sunBox];
@@ -367,8 +367,8 @@ export const shouldDrawClouds = (x: CloudInput): boolean => {
     else values.push(k, val);
   }
   const cacheKey = JSON.stringify(values) + sourceKey(p);
-  const reusable = e.quality.reuse && cacheKey === r.键;
-  if (e.layers[0]?.算法 === 'Photon积云') bakeSun(gl, p.material, cacheKey);
+  const reusable = e.quality.reuse && cacheKey === r.key;
+  if (e.layers[0]?.algorithm === 'Photon积云') bakeSun(gl, p.material, cacheKey);
 
   const autoClear = gl.autoClear;
   gl.autoClear = false;
@@ -384,8 +384,8 @@ export const shouldDrawClouds = (x: CloudInput): boolean => {
   const sb = x.sunBox;
   (pu.uSun!.value as THREE.Vector4).set(sb ? sb[0] : 0, sb ? sb[1] : 0, sb ? sb[2] : 0, sb ? sb[3] : 0);
   gl.setRenderTarget(nowTarget);
-  gl.render(pr.场, camera);
-  r.键 = cacheKey;
+  gl.render(pr.scene, camera);
+  r.key = cacheKey;
 
   // 2. 步进
   u.tPrep!.value = nowTarget.texture;
@@ -393,23 +393,23 @@ export const shouldDrawClouds = (x: CloudInput): boolean => {
   const glc = gl.getContext();
   for (let i = 0; i < stripCount; i++) {
     (u.uStrip!.value as THREE.Vector2).set(-1 + (2 * i) / stripCount, -1 + (2 * (i + 1)) / stripCount);
-    gl.render(p.场, camera);
+    gl.render(p.scene, camera);
     glc.flush();
   }
 
   // 3. 合成到目标
-  gl.setRenderTarget(x.目标);
+  gl.setRenderTarget(x.target);
   if (halfRes) {
     const m = getUpscale();
     m.material.uniforms.tCloud!.value = r.cloudTarget.texture;
     m.material.uniforms.tPrep!.value = nowTarget.texture;
     m.material.uniforms.tDepth!.value = x.depthTexture;
-    gl.render(m.场, camera);
+    gl.render(m.scene, camera);
   } else {
     const m = getComposite();
     m.material.uniforms.tCloud!.value = r.cloudTarget.texture;
     m.material.uniforms.tDepth!.value = x.depthTexture;
-    gl.render(m.场, camera);
+    gl.render(m.scene, camera);
   }
   gl.autoClear = autoClear;
   return true;
@@ -423,6 +423,6 @@ export const precompileClouds = (gl: THREE.WebGLRenderer, config: CloudConfig, s
   if (config.开 === false) return Promise.resolve();
   const e = expandCloud(config, seaLevel);
   if (!e.layers.length) return Promise.resolve();
-  const scenes = [getProgram(e).场, getPrepared(e.quality.分辨率 === 0.5).场, e.quality.分辨率 === 0.5 ? getUpscale().场 : getComposite().场];
+  const scenes = [getProgram(e).scene, getPrepared(e.quality.resolution === 0.5).scene, e.quality.resolution === 0.5 ? getUpscale().scene : getComposite().scene];
   return Promise.all(scenes.map((s) => gl.compileAsync(s, camera))).then(() => undefined);
 };

@@ -89,7 +89,7 @@ export const wardenState = (t: number) => {
   return {
     p: track.p,
     entityYaw: yaw + 180,
-    秒: gameTime,
+    sec: gameTime,
     walkCycle: { legPhase: track.legPhase, amplitude: Math.min(1, track.v / 5.7) }, // 摆幅同 7-3（原版 5.7 米/秒是 1）；站着 0（7-3 接着这条相位走）
     forwardLean: wardenLean(t),
     攻击: attackSec,

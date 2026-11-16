@@ -51,17 +51,17 @@ const between = (from: V3, a: V3, b: V3, w: number): V3 => {
   return addOffset(from, lerpV(da, db, w));
 };
 const shot1Pos = (t: number) => lerpV(addOffset(horseAtFire, [-2.6, 14.0, -1.2]), addOffset(horseAtFire, [-2.6, 12.6, -1.5]), smoothstep01((t - cuts[0]) / (cuts[1] - cuts[0])));
-const shots: { 起: number; cam: (t: number) => Cam }[] = [
+const shots: { start: number; cam: (t: number) => Cam }[] = [
   {
-    起: cuts[0],
+    start: cuts[0],
     cam: (t) => ({ pos: shot1Pos(t), tgt: between(shot1Pos(t), play.liuEye(t), play.wardenChest(t), 0.5), lens: 17 }),
   },
   {
-    起: cuts[1],
+    start: cuts[1],
     cam: (t) => ({ pos: addOffset(timeline.slideEnd, [timeline.knockDir[0] * 5, timeline.knockDir[1] * 5 - 4, 2.4]), tgt: horseChest(t), lens: 16 }),
   },
   {
-    起: cuts[2],
+    start: cuts[2],
     cam: (t) => ({ pos: G4(-816.5, -48.5, 202.5) as V3, tgt: horseChest(t), lens: 16 }),
   },
 ];

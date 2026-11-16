@@ -28,7 +28,7 @@ const ringCells = (radius: number): [number, number][] => {
 };
 const offsets = [...ringCells(3), ...ringCells(6)];
 
-const BlazeRise: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const BlazeRise: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const r = mulberry32(seed * 7919 + 31);
   const pillarEmbers: ParticleBirth[] = [];
   const flameColumn: ParticleBirth[] = [];
@@ -37,26 +37,26 @@ const BlazeRise: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 
     // 游戏 (x, z 南) → 场景 (x, −z)
     const pillarBase: Vec3 = [target[0] + dx, target[1] - dz, target[2]];
     for (let t = 0; t < blazeWarmupTick; t++) {
-      pillarEmbers.push({ 刻: t, 位: [pillarBase[0] + (r() - 0.5) * 0.5, pillarBase[1] + (r() - 0.5) * 0.5, pillarBase[2] + 0.5], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: bigFireLifetime, radius: defaultRadius(r) * 3, 种子: 1 });
+      pillarEmbers.push({ 刻: t, 位: [pillarBase[0] + (r() - 0.5) * 0.5, pillarBase[1] + (r() - 0.5) * 0.5, pillarBase[2] + 0.5], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: bigFireLifetime, radius: defaultRadius(r) * 3, seed: 1 });
     }
     for (let t = 0; t < blazeWarmupTick + blazeEruptTick; t++) {
       for (let k = 0; k < 4; k++) {
         const a = r() * Math.PI * 2;
         const d = Math.sqrt(r());
         const lifetime = Math.floor(8 / (r() * 0.8 + 0.2)) + 4;
-        groundFlames.push({ 刻: t, 位: [pillarBase[0] + Math.cos(a) * d, pillarBase[1] + Math.sin(a) * d, pillarBase[2]], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: lifetime, radius: 0.1 * (r() * 0.5 + 0.5) * 2, 种子: 1 });
+        groundFlames.push({ 刻: t, 位: [pillarBase[0] + Math.cos(a) * d, pillarBase[1] + Math.sin(a) * d, pillarBase[2]], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: lifetime, radius: 0.1 * (r() * 0.5 + 0.5) * 2, seed: 1 });
       }
     }
     for (let t = blazeWarmupTick; t < blazeWarmupTick + blazeEruptTick; t++) {
       if (t % 5 !== 0) continue;
-      flameColumn.push({ 刻: t, 位: [pillarBase[0], pillarBase[1], pillarBase[2] + 0.5], 速: [0, 0, 0.5], 寿命: 10 + Math.floor(r() * 20), radius: 1, 种子: 1 });
+      flameColumn.push({ 刻: t, 位: [pillarBase[0], pillarBase[1], pillarBase[2] + 0.5], 速: [0, 0, 0.5], 寿命: 10 + Math.floor(r() * 20), radius: 1, seed: 1 });
     }
   }
   return (
     <>
-      <TexturedParticles 类={groundFireClass} spawns={pillarEmbers} 秒={sec} />
-      <TexturedParticles 类={burningClass} spawns={groundFlames} 秒={sec} />
-      <TexturedParticles 类={fieryPillarClass} spawns={flameColumn} 秒={sec} />
+      <TexturedParticles type={groundFireClass} spawns={pillarEmbers} sec={sec} />
+      <TexturedParticles type={burningClass} spawns={groundFlames} sec={sec} />
+      <TexturedParticles type={fieryPillarClass} spawns={flameColumn} sec={sec} />
     </>
   );
 };

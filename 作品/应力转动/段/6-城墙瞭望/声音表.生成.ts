@@ -3,38 +3,38 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/item.elytra.flying": {
-      "时长": 10.220333,
-      "峰值": -12.3,
-      "响度": -24.9,
+      "duration": 10.220333,
+      "peakDb": -12.3,
+      "loudness": -24.9,
       "sha": "0f51f0fd6647"
     },
     "音效/item.spyglass.use.1": {
-      "时长": 0.629271,
-      "峰值": -14.2,
-      "响度": -32.3,
+      "duration": 0.629271,
+      "peakDb": -14.2,
+      "loudness": -32.3,
       "sha": "28b93002ee6a"
     },
     "音效/item.spyglass.use.2": {
-      "时长": 0.629271,
-      "峰值": -14.2,
-      "响度": -32.3,
+      "duration": 0.629271,
+      "peakDb": -14.2,
+      "loudness": -32.3,
       "sha": "28b93002ee6a"
     },
     "音效/item.spyglass.use.3": {
-      "时长": 0.629271,
-      "峰值": -14.2,
-      "响度": -32.3,
+      "duration": 0.629271,
+      "peakDb": -14.2,
+      "loudness": -32.3,
       "sha": "28b93002ee6a"
     },
     "音效/item.spyglass.use.4": {
-      "时长": 0.629271,
-      "峰值": -14.2,
-      "响度": -32.3,
+      "duration": 0.629271,
+      "peakDb": -14.2,
+      "loudness": -32.3,
       "sha": "28b93002ee6a"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

@@ -217,8 +217,8 @@ export const profileLookup = (points: ProfilePoint[]) => {
       const { i, k } = locate(along);
       return ps[i].γ + (ps[i + 1].γ - ps[i].γ) * k;
     },
-    起: ps[0],
-    止: ps[ps.length - 1],
+    start: ps[0],
+    end: ps[ps.length - 1],
   };
 };
 // 二分：f 在 [lo, hi] 两头异号时找零点

@@ -59,7 +59,7 @@ export const knownCoreEdges: { from: string; to: string; why: string }[] = [
   {
     from: 'engine/core/拼段.tsx',
     to: 'engine/段/时间.tsx',
-    why: '拼段要按秒换帧，用的是段框架的 useFrameRate，按职责该放 engine/段/；引它的 5 个段和 6-1 的 分段.tsx 正在别的分支上改第 6、7 章，等那边合并后把 拼段.tsx 搬进 engine/段/、改掉这几处 import，删掉这一条',
+    why: '拼段要按秒换帧，用的是段框架的 useFrameRate，按职责该放 engine/segment/；引它的 5 个段和 6-1 的 分段.tsx 正在别的分支上改第 6、7 章，等那边合并后把 拼段.tsx 搬进 engine/segment/、改掉这几处 import，删掉这一条',
   },
 ];
 
@@ -130,7 +130,7 @@ export const checkLayering = async (c: CheckContext, report: CheckReport) => {
   const depGraph = await c.depGraph();
   const sceneOrder = await readSceneOrder(c);
   for (const [from, edges] of graph.edges) {
-    const valueTargets = new Set((depGraph.edges.get(from) ?? []).map((e) => e.到));
+    const valueTargets = new Set((depGraph.edges.get(from) ?? []).map((e) => e.dest));
     for (const e of edges) {
       if (e.kind !== 'type' || valueTargets.has(e.to)) continue;
       const issue = edgeIssue(c, from, e.to, sceneOrder, true);

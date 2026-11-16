@@ -24,24 +24,24 @@ const remotionEntry = () => {
 
 export const previewCommands: Record<string, Command> = {
   preview: {
-    用法: `preview new <主题> | preview clean [--apply] [--days ${previewKeepDays}]`,
-    说明:
+    usage: `preview new <主题> | preview clean [--apply] [--days ${previewKeepDays}]`,
+    note:
       'new：在主检出的 预览/ 下建 <UTC 月日-时分>-<主题>/，打印路径；主题以「工作-」开头的是中间稿，建在数据根 run/草稿/ 下。每次 new 先顺手清理一遍。' +
       'clean：预览里超过天数的夹只留文字（说明、表格）挪进数据根 archive/预览/，图、视频、声音删掉，Git 管的文件按路径引用的照留；archive/预览/ 里的只留文字；草稿删按日期起名、超过 cache gc 草稿天数的。默认只打印',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { toggles: ['--apply'], 值: ['--days'] });
+      const p = parseArgs(args, { toggles: ['--apply'], value: ['--days'] });
       if (p.位置[0] === 'clean' && p.位置.length === 1) {
-        const days = p.值['--days'] === undefined ? previewKeepDays : Number(p.值['--days']);
+        const days = p.value['--days'] === undefined ? previewKeepDays : Number(p.value['--days']);
         if (!Number.isFinite(days) || days < 0) throw new UsageError('--days 要非负的数');
         const { plan, drafts } = planDefaultCleanup(Date.now(), days);
-        for (const x of plan) console.log(`${x.archiveTo ? '归档' : '瘦身'}  ${x.名}：留 ${x.留.length} 个文字，删 ${x.removed.length} 个（${(x.removed.reduce((n, f) => n + f.大小, 0) / 1024 / 1024).toFixed(0)} MB）`);
-        for (const d of drafts) console.log(`删草稿  ${d.名}（${(d.大小 / 1024 / 1024).toFixed(0)} MB）`);
+        for (const x of plan) console.log(`${x.archiveTo ? '归档' : '瘦身'}  ${x.name}：留 ${x.留.length} 个文字，删 ${x.removed.length} 个（${(x.removed.reduce((n, f) => n + f.size, 0) / 1024 / 1024).toFixed(0)} MB）`);
+        for (const d of drafts) console.log(`删草稿  ${d.name}（${(d.size / 1024 / 1024).toFixed(0)} MB）`);
         if (!plan.length && !drafts.length) return console.log('没有要清理的');
         if (!p.toggles.has('--apply')) return console.log('只打印了；加 --apply 才动手');
         console.log(cleanupSummary(executeCleanup(plan, drafts)));
         return;
       }
-      if (p.位置[0] !== 'new' || p.位置.length !== 2 || p.toggles.size || Object.keys(p.值).length) throw new UsageError('要 anim preview new <主题> 或 anim preview clean [--apply] [--days N]');
+      if (p.位置[0] !== 'new' || p.位置.length !== 2 || p.toggles.size || Object.keys(p.value).length) throw new UsageError('要 anim preview new <主题> 或 anim preview clean [--apply] [--days N]');
       // 清理出错不挡建预览
       try {
         const { plan, drafts } = planDefaultCleanup();
@@ -51,13 +51,13 @@ export const previewCommands: Record<string, Command> = {
         console.error(`!! 预览清理没做成（预览照建）：${(e as Error).message}`);
       }
       const dir = newPreviewDir(p.位置[1]!);
-      runRecord.产物.push(dir);
+      runRecord.artifacts.push(dir);
       console.log(dir);
     },
   },
   studio: {
-    用法: 'studio [<remotion studio 的参数…>]',
-    说明: '开 Remotion Studio 在浏览器里预览所选作品（入口 <作品根>/index.ts，打包规则读 remotion.config.ts），参数原样转给 remotion studio',
+    usage: 'studio [<remotion studio 的参数…>]',
+    note: '开 Remotion Studio 在浏览器里预览所选作品（入口 <作品根>/index.ts，打包规则读 remotion.config.ts），参数原样转给 remotion studio',
     noRecord: true,
     passThrough: true,
     // remotion.config.ts 在 Remotion CLI 进程里求值，靠 ANIM_WORK 知道是哪部作品（资产锁、求解入口按它取）。

@@ -3,37 +3,37 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/7-刘心忠-不可能": {
-      "时长": 2.57,
-      "峰值": -1.5,
-      "响度": -18.7,
+      "duration": 2.57,
+      "peakDb": -1.5,
+      "loudness": -18.7,
       "sha": "e60ae48f1663"
     },
     "音效/block.deepslate.fall.2": {
-      "时长": 0.913375,
-      "峰值": -7.1,
-      "响度": -31,
+      "duration": 0.913375,
+      "peakDb": -7.1,
+      "loudness": -31,
       "sha": "11895f18bea0"
     },
     "音效/entity.vex.death.2": {
-      "时长": 1.386667,
-      "峰值": -7.5,
-      "响度": -20.5,
+      "duration": 1.386667,
+      "peakDb": -7.5,
+      "loudness": -20.5,
       "sha": "e7bde881c60d"
     },
     "音效/entity.warden.attack_impact.1": {
-      "时长": 0.906604,
-      "峰值": -5.5,
-      "响度": -22.5,
+      "duration": 0.906604,
+      "peakDb": -5.5,
+      "loudness": -22.5,
       "sha": "e67f8b6cacb4"
     }
   },
-  "台词": {
+  "lines": {
     "7-刘心忠-不可能": {
-      "配音": "配音/7-刘心忠-不可能",
-      "开口": 0.03,
-      "时长": 2.57,
+      "voice": "配音/7-刘心忠-不可能",
+      "mouthOpen": 0.03,
+      "duration": 2.57,
       "上段开口秒": -0.442
     }
   }

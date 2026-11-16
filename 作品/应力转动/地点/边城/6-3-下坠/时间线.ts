@@ -62,26 +62,26 @@ const unsharedSegs: SegmentName[] = ['6-3-4', '6-3-5'];
 const segmentTitles: Record<SegmentName, string> = { '6-3-1': '又回到边城', '6-3-2': '思索', '6-3-3': '俯冲', '6-3-4': '城防', '6-3-5': '举锤', '6-3-6': '砸穿' };
 const anchorSegment: SegmentName = '6-3-3'; // 这一段的起点是全局秒 0
 const buildSegmentTable = () => {
-  const t = {} as Record<SegmentName, { 起: number; 止: number; 名: string; refVideo: boolean }>;
+  const t = {} as Record<SegmentName, { start: number; end: number; name: string; refVideo: boolean }>;
   const anchorIdx = segmentNames.indexOf(anchorSegment);
   let cursorSec = 0;
   for (let i = anchorIdx; i < segmentNames.length; i++) {
     const seg = segmentNames[i];
     if (i > anchorIdx && unsharedSegs.includes(seg)) cursorSec += boundaryFrameSec;
-    t[seg] = { 起: cursorSec, 止: cursorSec + segSpanSec[seg], 名: segmentTitles[seg], refVideo: true };
-    cursorSec = t[seg].止;
+    t[seg] = { start: cursorSec, end: cursorSec + segSpanSec[seg], name: segmentTitles[seg], refVideo: true };
+    cursorSec = t[seg].end;
   }
   cursorSec = 0;
   for (let i = anchorIdx - 1; i >= 0; i--) {
     const seg = segmentNames[i];
-    t[seg] = { 起: cursorSec - segSpanSec[seg], 止: cursorSec, 名: segmentTitles[seg], refVideo: true };
-    cursorSec = t[seg].起;
+    t[seg] = { start: cursorSec - segSpanSec[seg], end: cursorSec, name: segmentTitles[seg], refVideo: true };
+    cursorSec = t[seg].start;
   }
   // 对象按段的先后排（Object.keys 的顺序给同步表、台词落点用）
   return Object.fromEntries(segmentNames.map((s) => [s, t[s]])) as typeof t;
 };
 export const segTable = buildSegmentTable();
-export const segSpan = (seg: SegmentName) => segTable[seg].止 - segTable[seg].起;
+export const segSpan = (seg: SegmentName) => segTable[seg].end - segTable[seg].start;
 // 一段在拼段里放多长（秒）：段长加上段界那一帧
 export const segPlaySec = (seg: SegmentName) => segSpan(seg) + boundaryFrameSec;
 export const impactSegSec = 0.125; // 6-3-6 段内 0.125 秒锤头砸到地面（剪的时候按它对齐）
@@ -91,13 +91,13 @@ export const impactSegSec = 0.125; // 6-3-6 段内 0.125 秒锤头砸到地面�
 // 卫兵动作按物理时间排（编排/卫兵.ts），回头、见光、举镜各拍的长照那些时刻在各拍时钟下算出
 const cityDefenseMarks = () => {
   const beatLen = cityDefenseBeats;
-  let cursorSec = segTable['6-3-4'].起;
+  let cursorSec = segTable['6-3-4'].start;
   const cutToWall = cursorSec;
   const notice = (cursorSec += beatLen.lookout);
   const glanceBack = (cursorSec += beatLen.turnBack);
   const raiseScope = (cursorSec += beatLen.seeLight);
   const inScope = (cursorSec += beatLen.raiseScope);
-  return { cutToWall: cutToWall, notice: notice, 回看: glanceBack, raiseScope: raiseScope, inScope: inScope };
+  return { cutToWall: cutToWall, notice: notice, rewatch: glanceBack, raiseScope: raiseScope, inScope: inScope };
 };
 export const cityDefense = cityDefenseMarks();
 
@@ -131,18 +131,18 @@ export const blower = { topSpeed: 360, maxAccel: 250, timeConst: 0.4, 开: tick.
 
 // ---------- 时钟 ----------
 // 关键点 [全局秒, 倍率]，相邻两点平滑过渡，只管 6-3-4 末帧以前（6-3-5、6-3-6 原速，从撞击时刻倒推，见 `物理时间`）
-export const bulletTime = exception('不放慢', { guard: 0.3, raiseScope: 0.24, telescope: 0.1 }, { 段: '6-城墙瞭望', 原因: '用户 10-05 要慢放才看得清，10-19 去慢放时单留这段' });
+export const bulletTime = exception('不放慢', { guard: 0.3, raiseScope: 0.24, telescope: 0.1 }, { segment: '6-城墙瞭望', cause: '用户 10-05 要慢放才看得清，10-19 去慢放时单留这段' });
 const CLOCK: [number, number][] = [
-  [segTable['6-3-1'].起, 1],
+  [segTable['6-3-1'].start, 1],
   // 听见、回头：子弹时间 0.3；看见金光时再慢一点，举镜也按这个慢放
   [cityDefense.notice - 1 / 3, 1],
   [cityDefense.notice + 1 / 6, bulletTime.guard],
-  [cityDefense.回看, bulletTime.guard],
-  [(cityDefense.回看 + cityDefense.raiseScope) / 2, bulletTime.raiseScope],
+  [cityDefense.rewatch, bulletTime.guard],
+  [(cityDefense.rewatch + cityDefense.raiseScope) / 2, bulletTime.raiseScope],
   [cityDefense.inScope - boundaryFrameSec, bulletTime.raiseScope], // 切进望远镜前的最后一帧还是举镜的慢放
   // 切进望远镜：镜中追着他
   [cityDefense.inScope, bulletTime.telescope],
-  [segTable['6-3-4'].止, bulletTime.telescope],
+  [segTable['6-3-4'].end, bulletTime.telescope],
 ];
 const clockAt = (globalSec: number) => {
   for (let i = 1; i < CLOCK.length; i++) {
@@ -154,7 +154,7 @@ const clockAt = (globalSec: number) => {
 };
 // 积分表：每 1/192 秒一格，从 T = 0（物理时间 `刻`.俯冲起）到 6-3-5 首帧（6-3-4 末帧往后半帧也要算）
 const clockSamplesPerSec = 192;
-const T5 = segTable['6-3-5'].起;
+const T5 = segTable['6-3-5'].start;
 let W_TAB: number[] | null = null;
 const wTab = () => {
   if (W_TAB) return W_TAB;
@@ -249,7 +249,7 @@ export const impactTime = () => W_IMP;
 let W_NEG: number[] | null = null;
 const wNeg = () => {
   if (W_NEG) return W_NEG;
-  const stepCount = Math.ceil(-segTable['6-3-1'].起 * clockSamplesPerSec - 1e-9);
+  const stepCount = Math.ceil(-segTable['6-3-1'].start * clockSamplesPerSec - 1e-9);
   W_NEG = [0];
   for (let i = 1; i <= stepCount; i++) W_NEG.push(W_NEG[i - 1] - clockAt(-(i - 0.5) / clockSamplesPerSec) / clockSamplesPerSec);
   return W_NEG;
@@ -258,7 +258,7 @@ const wNeg = () => {
 // ---------- 全局秒 → 物理时间 ----------
 // 6-3-5 起（T ≥ `T5`）是并行的另一边：原速，按撞击时刻倒推（6-3-6 段内 `撞击段内秒` 砸地）；0 ≤ T < `T5` 积分时钟；T < 0 扫帚上，见 `wNeg`
 export const physicalTime = (globalSec: number): number => {
-  if (globalSec >= T5) return impactTime() + (globalSec - segTable['6-3-6'].起 - impactSegSec);
+  if (globalSec >= T5) return impactTime() + (globalSec - segTable['6-3-6'].start - impactSegSec);
   if (globalSec < 0) {
     const negTable = wNeg();
     const x = -globalSec * clockSamplesPerSec;
@@ -274,11 +274,11 @@ export const physicalTime = (globalSec: number): number => {
 export const clampedClock = (T: number) => (T >= T5 ? 1 : clockAt(T));
 // 物理时间 → 全局秒：两边各自单调。`城墙这边` = true 只在 6-3-4 末帧以前找（城墙上、俯冲、更早），否则物理时间在城墙结束以后的落在 6-3-5 起那边。
 // 0 ～ `刻`.俯冲起 之间（跃出、翻身，没上画面）都落在 T = 0
-export const wallEndPhysicalTime = () => physicalTime(segTable['6-3-4'].止 + boundaryFrameSec / 2);
+export const wallEndPhysicalTime = () => physicalTime(segTable['6-3-4'].end + boundaryFrameSec / 2);
 export const globalSec = (physSec: number, onWallSide = physSec <= wallEndPhysicalTime()): number => {
   if (!onWallSide) return T5 + (physSec - physicalTime(T5));
-  let lo = segTable['6-3-1'].起 - 2;
-  let hi = segTable['6-3-4'].止 + boundaryFrameSec / 2;
+  let lo = segTable['6-3-1'].start - 2;
+  let hi = segTable['6-3-4'].end + boundaryFrameSec / 2;
   for (let k = 0; k < 60; k++) {
     const mid = (lo + hi) / 2;
     if (physicalTime(mid) < physSec) lo = mid;
@@ -286,9 +286,9 @@ export const globalSec = (physSec: number, onWallSide = physSec <= wallEndPhysic
   }
   return (lo + hi) / 2;
 };
-export const segStartPhysicalTime = (seg: SegmentName) => physicalTime(segTable[seg].起);
+export const segStartPhysicalTime = (seg: SegmentName) => physicalTime(segTable[seg].start);
 // 全局秒属于哪一段（段首算这一段）
 export const segAt = (globalSec: number): SegmentName => {
   const order: SegmentName[] = ['6-3-6', '6-3-5', '6-3-4', '6-3-3', '6-3-2', '6-3-1'];
-  return order.find((s) => globalSec >= segTable[s].起) ?? '6-3-1';
+  return order.find((s) => globalSec >= segTable[s].start) ?? '6-3-1';
 };

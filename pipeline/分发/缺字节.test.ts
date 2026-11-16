@@ -7,10 +7,10 @@ import type { DepGraph } from '../源码/上下文.ts';
 import type { AssetLock } from '../资产/资产锁.ts';
 
 const assetLock: AssetLock = {
-  '截图/私': { sha256: 'a'.repeat(64), 后缀: '.png', 大小: 1, 库: '私有' },
-  '截图/私有在': { sha256: 'b'.repeat(64), 后缀: '.png', 大小: 1, 库: '私有' },
-  '模型/提取缺': { sha256: 'c'.repeat(64), 后缀: '.json', 大小: 1, 库: 'store' },
-  '贴图/公在': { sha256: 'd'.repeat(64), 后缀: '.png', 大小: 1, 库: 'store' },
+  '截图/私': { sha256: 'a'.repeat(64), suffix: '.png', size: 1, lib: '私有' },
+  '截图/私有在': { sha256: 'b'.repeat(64), suffix: '.png', size: 1, lib: '私有' },
+  '模型/提取缺': { sha256: 'c'.repeat(64), suffix: '.json', size: 1, lib: 'store' },
+  '贴图/公在': { sha256: 'd'.repeat(64), suffix: '.png', size: 1, lib: 'store' },
 };
 const makeRoot = () => {
   const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-缺字节-'));
@@ -57,7 +57,7 @@ describe('缺字节', () => {
   });
 
   it('闭包碰到缺字节的段入口（画面、叠层）整个换成一渲就抛错的组件；段.ts、外壳换不了的单列；别的入口不动', () => {
-    const makeEdge = (target: string) => ({ 到: target, external: false });
+    const makeEdge = (target: string) => ({ dest: target, external: false });
     const depGraph: DepGraph = {
       edges: new Map([
         ['作品/甲/核对/三渲二/画面.tsx', [makeEdge('库/角色/九胡.tsx')]],
@@ -70,15 +70,15 @@ describe('缺字节', () => {
         ['库/界面/公.ts', []],
         ['库/界面/像素字.ts', []],
       ]),
-      资产: new Map([
+      asset: new Map([
         ['库/角色/九胡.tsx', ['模型/九胡', '贴图/九胡']],
         ['库/界面/公.ts', ['贴图/公']],
         ['库/界面/像素字.ts', ['字体/像素字']],
       ]),
-      错误: [],
+      errors: [],
     };
     const r = pickMissingBytesEntry(depGraph, '作品/甲', new Set(['模型/九胡', '贴图/九胡', '字体/像素字']));
-    expect([...r.换]).toEqual([
+    expect([...r.replaced]).toEqual([
       ['作品/甲/核对/三渲二/画面.tsx', ['模型/九胡', '贴图/九胡']],
       ['作品/甲/段/1-丙/叠层-字.tsx', ['字体/像素字']],
     ]);
@@ -86,7 +86,7 @@ describe('缺字节', () => {
 
     const repoRoot = makeRoot();
     const workDir = path.join(repoRoot, '仓库', '作品', '甲');
-    const plugin = new MissingBytePlaceholderPlugin(assetLock, repoRoot, new Map([[path.join(workDir, '核对', '三渲二', '画面.tsx'), { 名: '作品/甲/核对/三渲二/画面.tsx', ids: ['模型/九胡'] }]]));
+    const plugin = new MissingBytePlaceholderPlugin(assetLock, repoRoot, new Map([[path.join(workDir, '核对', '三渲二', '画面.tsx'), { name: '作品/甲/核对/三渲二/画面.tsx', ids: ['模型/九胡'] }]]));
     const replacedPath = runResolve(plugin, './三渲二/画面.tsx', path.join(workDir, '核对'));
     expect(replacedPath).toContain(path.join('cache', '缺字节', '入口-'));
     const m = evaluate(replacedPath);

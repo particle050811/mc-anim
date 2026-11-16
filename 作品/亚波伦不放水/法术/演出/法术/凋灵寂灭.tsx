@@ -31,7 +31,7 @@ import soul9Png from 'asset:贴图/法术/minecraft/particle/soul_9';
 import soul10Png from 'asset:贴图/法术/minecraft/particle/soul_10';
 import { mulberry32 } from '@engine/core/数学.ts';
 
-const soulParticleClass: ParticleClass = { 帧: [soul0Png, soul1Png, soul2Png, soul3Png, soul4Png, soul5Png, soul6Png, soul7Png, soul8Png, soul9Png, soul10Png].map(png), 选帧: '按年龄', 重力: 0, 摩擦: 0.96, 混合: '半透明' };
+const soulParticleClass: ParticleClass = { frame: [soul0Png, soul1Png, soul2Png, soul3Png, soul4Png, soul5Png, soul6Png, soul7Png, soul8Png, soul9Png, soul10Png].map(png), 选帧: '按年龄', 重力: 0, 摩擦: 0.96, blend: '半透明' };
 
 const vertexShaderSource = `
 #include <common>
@@ -116,7 +116,7 @@ void main() {
 }
 `;
 
-const LightBeam: React.FC<{ 起: Vec3; end: Vec3; 进度: number; 种子: number }> = ({ 起: startPos, end, 进度: progress, 种子: seed }) => {
+const LightBeam: React.FC<{ start: Vec3; end: Vec3; progress: number; seed: number }> = ({ start: startPos, end, progress: progress, seed: seed }) => {
   const { geo, mat } = useMemo(() => {
     // 圆柱沿局部 +Y，底在原点、高 1、半径 1（长度和半径在着色器里乘）
     const g = new THREE.CylinderGeometry(1, 1, 1, 24, 1, false);
@@ -140,7 +140,7 @@ const LightBeam: React.FC<{ 起: Vec3; end: Vec3; 进度: number; 种子: number
   return <mesh geometry={geo} material={mat} position={[startPos[0], startPos[1], startPos[2]]} quaternion={q} frustumCulled={false} />;
 };
 
-const WitherAnnihilate: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const WitherAnnihilate: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const landing = annihilateLandPoint(target);
   const dir = unitVec(sub(landing, from));
@@ -148,19 +148,19 @@ const WitherAnnihilate: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目
   const smokeSpawns: ParticleSpawn[] = [];
   for (let i = 1, k = 0; i < distance; i += 0.5, k++) {
     const p = addVec(from, scaleVec(dir, i));
-    smokeSpawns.push({ 种: 'smoke', 刻: 1, p: [p[0], p[1], p[2]], v: [0, 0, 0], 种子: seed * 211 + k });
+    smokeSpawns.push({ kind: 'smoke', 刻: 1, p: [p[0], p[1], p[2]], v: [0, 0, 0], seed: seed * 211 + k });
   }
   const r = mulberry32(seed * 7919 + 17);
   const soulCount = 18 + Math.floor(r() * 7) + 10;
   const souls: ParticleBirth[] = scatterServer(landing, soulCount, [0, 0, 0.02], 0.12, seed + 3).map((spawn, i) => {
     const rand = mulberry32(seed * 131 + i);
-    return { 刻: 0, 位: spawn.位, 速: spawn.速, 寿命: Math.floor(4 / (rand() * 0.9 + 0.1)), radius: 0.1 * (rand() * 0.5 + 0.5) * 2 * 1.5, 种子: i };
+    return { 刻: 0, 位: spawn.位, 速: spawn.速, 寿命: Math.floor(4 / (rand() * 0.9 + 0.1)), radius: 0.1 * (rand() * 0.5 + 0.5) * 2 * 1.5, seed: i };
   });
   return (
     <>
-      {tick < annihilationBeamTicks && <LightBeam 起={from} end={landing} 进度={tick / annihilationBeamTicks} 种子={seed} />}
-      <VanillaParticles spawns={smokeSpawns} 秒={sec} />
-      <TexturedParticles 类={soulParticleClass} spawns={souls} 秒={sec} />
+      {tick < annihilationBeamTicks && <LightBeam start={from} end={landing} progress={tick / annihilationBeamTicks} seed={seed} />}
+      <VanillaParticles spawns={smokeSpawns} sec={sec} />
+      <TexturedParticles type={soulParticleClass} spawns={souls} sec={sec} />
     </>
   );
 };

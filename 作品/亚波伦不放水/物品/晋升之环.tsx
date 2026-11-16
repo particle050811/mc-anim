@@ -56,7 +56,7 @@ const buildGeometry = () => {
 };
 
 /** 挂在人形模型 head 部件上（EntityModel 的 attach.head，部件坐标：模型像素、y 朝下、正面 −z）。秒：自转的时钟 */
-export const AscensionHalo: FC<{ 秒: number }> = ({ 秒: sec }) => {
+export const AscensionHalo: FC<{ sec: number }> = ({ sec: sec }) => {
   const geometry = useMemo(buildGeometry, []);
   return (
     <group position={[0, -12, 5]} rotation={[0.7854, 0, 0]}>

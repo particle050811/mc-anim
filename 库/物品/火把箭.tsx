@@ -47,7 +47,7 @@ export const torchArrowFlames = (pathAt: (tick: number) => V3, t0: number, t1: n
     for (let i = 0; i < 6; i++) {
       const pos: V3 = [currPos[0] - (delta[0] * i) / 6 + (rand() - 0.5) * 0.1, currPos[1] - (delta[1] * i) / 6 + (rand() - 0.5) * 0.1, currPos[2] - (delta[2] * i) / 6 + (rand() - 0.5) * 0.1];
       const vel: V3 = [(rand() - 0.5) * 0.03 - delta[0] * 0.08, (rand() - 0.5) * 0.03 - delta[1] * 0.08, (rand() - 0.5) * 0.03 - delta[2] * 0.08];
-      out.push({ 种: 'flame', 刻: k, p: pos, v: vel, 种子: seed * 7 + k * 6 + i });
+      out.push({ kind: 'flame', 刻: k, p: pos, v: vel, seed: seed * 7 + k * 6 + i });
     }
   }
   return out;
@@ -83,8 +83,8 @@ export const torchParticles = (flamePos: V3, chance: number, t0: number, t1: num
   const out: ParticleSpawn[] = [];
   for (let k = Math.ceil(t0); k <= t1; k++) {
     if (rand() >= chance) continue;
-    out.push({ 种: 'smoke', 刻: k, p: flamePos, 种子: seed * 17 + k * 2 });
-    out.push({ 种: 'flame', 刻: k, p: flamePos, 种子: seed * 17 + k * 2 + 1 });
+    out.push({ kind: 'smoke', 刻: k, p: flamePos, seed: seed * 17 + k * 2 });
+    out.push({ kind: 'flame', 刻: k, p: flamePos, seed: seed * 17 + k * 2 + 1 });
   }
   return out;
 };

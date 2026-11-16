@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 1a7f9745ee96），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-熔炼温度（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 7d3e06ac4564），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-熔炼温度（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-熔炼温度",
-  "角色": "李樱",
-  "念": "炙热的液体可以提供更高的熔炼温度。",
-  "配音": "配音/6-李樱-熔炼温度",
-  "成品sha": "23a251a03533",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "炙热的液体可以提供更高的熔炼温度。",
+  "voice": "配音/6-李樱-熔炼温度",
+  "finishedSha": "23a251a03533",
+  "mouthOpen": 0.03,
   "有声长": 2.508,
-  "时长": 2.674,
+  "duration": 2.674,
   "文件秒数": 2.674,
-  "字": [
+  "char": [
     ["炙",0.16,0.32],
     ["热",0.32,0.4],
     ["的",0.4,0.48],

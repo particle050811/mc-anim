@@ -16,18 +16,18 @@ import { WorkSelectError } from '../环境/作品.ts';
 export const ruleNames = ['types', 'structure', 'layers', 'manifest', 'load', 'lines', 'assets', 'rules', 'platform', 'dupes', 'time', 'idents'] as const;
 export type RuleKind = (typeof ruleNames)[number];
 
-export type Issue = { 文件?: string; 行?: number; 文本: string };
+export type Issue = { file?: string; 行?: number; text: string };
 
 export class CheckReport {
   violations: Issue[] = [];
-  待迁移: Issue[] = [];
-  跳过: string[] = [];
+  pendingMigration: Issue[] = [];
+  skipped: string[] = [];
   infoLines: string[] = [];
   错(messageText: string, file?: string, lineNo?: number) {
-    this.violations.push({ 文本: messageText, 文件: file, 行: lineNo });
+    this.violations.push({ text: messageText, file: file, 行: lineNo });
   }
   待(messageText: string, file?: string) {
-    this.待迁移.push({ 文本: messageText, 文件: file });
+    this.pendingMigration.push({ text: messageText, file: file });
   }
 }
 
@@ -57,20 +57,20 @@ export const isPureModule = (p: string) =>
 /** 段、场、核对目录下的 环境.ts：<环境> 的描述或环境轨（engine/light/环境.ts），纯数据，anim check 照 环境声明.ts 查 */
 export const isEnvDecl = (p: string) => /^作品\/[^/]+\/(段|核对|场)\/[^/]+\/环境\.ts$/.test(p);
 
-export type Edge = { 到: string; external: boolean };
+export type Edge = { dest: string; external: boolean };
 export type DepGraph = {
   /** 文件 → 它静态 import 的东西（仓库内文件是相对路径，外部是包名或 node: 模块） */
   edges: Map<string, Edge[]>;
   /** 文件 → 它 import 的 asset: id */
-  资产: Map<string, string[]>;
-  错误: string[];
+  asset: Map<string, string[]>;
+  errors: string[];
 };
 
 /** 从入口们沿依赖图走到的全部仓库内文件 */
 export const closure = (depGraph: DepGraph, entries: string[]) => {
   const visited = new Set(entries);
   const queue = [...entries];
-  while (queue.length) for (const e of depGraph.edges.get(queue.shift()!) ?? []) if (!e.external && !visited.has(e.到)) visited.add(e.到), queue.push(e.到);
+  while (queue.length) for (const e of depGraph.edges.get(queue.shift()!) ?? []) if (!e.external && !visited.has(e.dest)) visited.add(e.dest), queue.push(e.dest);
   return visited;
 };
 
@@ -92,10 +92,10 @@ const looseAssetPlugin = (importRecord?: Map<string, string[]>): Plugin => ({
   },
 });
 
-export type LoadResult = { 模块?: Record<string, unknown>; 错误?: string };
+export type LoadResult = { modules?: Record<string, unknown>; errors?: string };
 
 export class CheckContext {
-  readonly 根: string;
+  readonly root: string;
   readonly deep: boolean;
   readonly dataRoot: string | undefined;
   /** 规矩表出处 M/ 的根；不给就用配置 记忆（ANIM_MEMORY） */
@@ -107,12 +107,12 @@ export class CheckContext {
   #workName?: string;
   #workPrivateCache?: boolean;
 
-  constructor(root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; 作品?: string } = {}) {
-    this.根 = fs.realpathSync(root);
+  constructor(root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; work?: string } = {}) {
+    this.root = fs.realpathSync(root);
     this.deep = options.depthCheck ?? false;
     this.dataRoot = options.dataRoot;
     this.memoryRoot = options.memoryRoot;
-    this.#workName = options.作品;
+    this.#workName = options.work;
   }
 
   /** 查的是哪部作品：给了就用；没给时 作品/ 下只有一部（有 清单.ts 的目录）就用它，否则报错 */
@@ -134,13 +134,13 @@ export class CheckContext {
   /** 作品/ 下、不是这次查的作品的文件 */
   isOtherWork = (p: string) => p.startsWith('作品/') && !p.startsWith(`${this.workDir}/`);
   /** 文件() 去掉别的作品的 */
-  workFiles = () => this.文件().filter((p) => !this.isOtherWork(p));
+  workFiles = () => this.file().filter((p) => !this.isOtherWork(p));
   /** 本作品私有：作品目录被 .gitignore 挡住（0004：作品默认公开，要私有的逐个挡）；根不在 git 里就当公开 */
   get isWorkPrivate(): boolean {
     if (this.#workPrivateCache === undefined) {
       try {
         // 末尾带 /，.gitignore 里只对目录生效的规则（/作品/<名>/、!/作品/<名>/）才对得上
-        execFileSync('git', ['-C', this.根, 'check-ignore', '-q', `${this.workDir}/`], { stdio: 'ignore' });
+        execFileSync('git', ['-C', this.root, 'check-ignore', '-q', `${this.workDir}/`], { stdio: 'ignore' });
         this.#workPrivateCache = true;
       } catch {
         this.#workPrivateCache = false;
@@ -149,10 +149,10 @@ export class CheckContext {
     return this.#workPrivateCache;
   }
 
-  absPath = (p: string) => path.join(this.根, ...p.split('/'));
+  absPath = (p: string) => path.join(this.root, ...p.split('/'));
   exists = (p: string) => fs.existsSync(this.absPath(p));
   读 = (p: string) => fs.readFileSync(this.absPath(p), 'utf8');
-  相对 = (abs: string) => path.relative(this.根, abs).split(path.sep).join('/');
+  相对 = (abs: string) => path.relative(this.root, abs).split(path.sep).join('/');
 
   /** dir（相对 根）下 git 跟踪的 + 没被忽略的新文件；dir 不是 git 仓库的根就返回 null */
   #listGitFiles(dir: string): string[] | null {
@@ -185,7 +185,7 @@ export class CheckContext {
    * 仓库里的文件（git 跟踪的 + 没被忽略的新文件）；不在 git 里就整个目录走一遍。
    * 作品/ 下被 .gitignore 挡住的私有作品（自己是 git 仓库或普通目录）也要查，按各自的根另列（方案批评补充二-1）。
    */
-  文件(): string[] {
+  file(): string[] {
     if (this.#cachedFiles) return this.#cachedFiles;
     let fileList = this.#listGitFiles('');
     if (!fileList) {
@@ -213,14 +213,14 @@ export class CheckContext {
    */
   depGraph(): Promise<DepGraph> {
     return (this.#graphCache ??= (async () => {
-      const depGraph: DepGraph = { edges: new Map(), 资产: new Map(), 错误: [] };
+      const depGraph: DepGraph = { edges: new Map(), asset: new Map(), errors: [] };
       const entries = this.codeFiles();
       if (!entries.length) return depGraph;
       const assetRecords = new Map<string, string[]>();
       const runBuild = (entryPoints: string[]) =>
         build({
           entryPoints: entryPoints,
-          absWorkingDir: this.根,
+          absWorkingDir: this.root,
           bundle: true,
           write: false,
           metafile: true,
@@ -230,7 +230,7 @@ export class CheckContext {
           jsx: 'automatic',
           packages: 'external',
           loader: { ...nonCodeLoaders, '.json': 'json' },
-          plugins: [esbuildAliasPlugin(this.根), looseAssetPlugin(assetRecords)],
+          plugins: [esbuildAliasPlugin(this.root), looseAssetPlugin(assetRecords)],
           logLevel: 'silent',
         });
       const collectEdges = (inputs: Record<string, { imports: { path: string; external?: boolean }[] }>) => {
@@ -241,14 +241,14 @@ export class CheckContext {
             fromFile,
             info.imports
               .filter((i) => !i.path.startsWith('anim-检查-资产:'))
-              .map((i) => (i.external ? { 到: i.path.startsWith('node:') ? i.path : pkgName(i.path), external: true } : { 到: i.path.split(path.sep).join('/'), external: false })),
+              .map((i) => (i.external ? { dest: i.path.startsWith('node:') ? i.path : pkgName(i.path), external: true } : { dest: i.path.split(path.sep).join('/'), external: false })),
           );
         }
       };
       const recordError = (e: unknown) => {
         const errs = (e as { errors?: { text: string; location?: { file: string; line: number } | null }[] }).errors;
         const messages = errs?.length ? errs.map((x) => (x.location ? `${x.location.file}:${x.location.line}：${x.text}` : x.text)) : [(e as Error).message];
-        for (const t of messages) if (!depGraph.错误.includes(t)) depGraph.错误.push(t);
+        for (const t of messages) if (!depGraph.errors.includes(t)) depGraph.errors.push(t);
       };
       try {
         collectEdges((await runBuild(entries)).metafile.inputs);
@@ -262,7 +262,7 @@ export class CheckContext {
           }
         }
       }
-      for (const [abs, ids] of assetRecords) depGraph.资产.set(this.相对(abs), [...new Set(ids)]);
+      for (const [abs, ids] of assetRecords) depGraph.asset.set(this.相对(abs), [...new Set(ids)]);
       return depGraph;
     })());
   }
@@ -275,23 +275,23 @@ export class CheckContext {
         try {
           const out = await build({
             entryPoints: [this.absPath(p)],
-            absWorkingDir: this.根,
+            absWorkingDir: this.root,
             bundle: true,
             write: false,
             platform: 'node',
             format: 'esm',
             jsx: 'automatic',
             loader: { ...nonCodeLoaders, '.json': 'json' },
-            plugins: [esbuildAliasPlugin(this.根), looseAssetPlugin()],
+            plugins: [esbuildAliasPlugin(this.root), looseAssetPlugin()],
             logLevel: 'silent',
           });
           this.#tmp ??= fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查-'));
           const file = path.join(this.#tmp, `${crypto.createHash('sha256').update(p).digest('hex').slice(0, 16)}.mjs`);
           fs.writeFileSync(file, out.outputFiles[0]!.text, 'utf8');
-          return { 模块: (await import(pathToFileURL(file).href)) as Record<string, unknown> };
+          return { modules: (await import(pathToFileURL(file).href)) as Record<string, unknown> };
         } catch (e) {
           const errs = (e as { errors?: { text: string }[] }).errors;
-          return { 错误: errs?.length ? errs.map((x) => x.text).join('；') : e instanceof Error ? e.message : String(e) };
+          return { errors: errs?.length ? errs.map((x) => x.text).join('；') : e instanceof Error ? e.message : String(e) };
         }
       })();
       this.#loadCache.set(p, r);

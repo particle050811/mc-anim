@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 ebe86737638c），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-又回到这里（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 b227a4f4ba25），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-又回到这里（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-又回到这里",
-  "角色": "李樱",
-  "念": "诶，我们怎么又回到这里了？",
-  "配音": "配音/6-李樱-又回到这里",
-  "成品sha": "db46cba8e699",
-  "开口": 0,
+  "character": "李樱",
+  "spoken": "诶，我们怎么又回到这里了？",
+  "voice": "配音/6-李樱-又回到这里",
+  "finishedSha": "db46cba8e699",
+  "mouthOpen": 0,
   "有声长": 1.846,
-  "时长": 1.996,
+  "duration": 1.996,
   "文件秒数": 1.996,
-  "字": [
+  "char": [
     ["诶",0.16,0.48],
     ["我",0.72,0.8],
     ["们",0.8,0.88],

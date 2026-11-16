@@ -12,11 +12,11 @@ export const target: Vec3 = [0, 0, 0];
 export const seed = 1;
 export const slotSec = 2;
 const halfSlotSec = slotSec / 2;
-export type CameraRig = { 名: '全景' | '近景'; 眼: Vec3; 看: Vec3; fov: number };
-const wideRig: CameraRig = { 名: '全景', 眼: [-5, -24, 5], 看: [-5, 0, 3.4], fov: 40 };
+export type CameraRig = { name: '全景' | '近景'; 眼: Vec3; 看: Vec3; fov: number };
+const wideRig: CameraRig = { name: '全景', 眼: [-5, -24, 5], 看: [-5, 0, 3.4], fov: 40 };
 /** 一格的尺寸（同 核对-法术演出 的 16:9），三格并排 */
-export const panelSize = { 宽: 960, 高: 540 } as const;
-export const aspect = { 宽: panelSize.宽 * 3, 高: panelSize.高 } as const;
+export const panelSize = { width: 960, height: 540 } as const;
+export const aspect = { width: panelSize.width * 3, height: panelSize.height } as const;
 
 /** 录过的法术；近距 = 近景离起点几格；起点高 = 手写演出把 起点 当成 施法者脚底 + 几格（自身为中心的两个都是 0.5），回放的脚底 = 起点 − 起点高 */
 export const recordedSpells = [
@@ -29,7 +29,7 @@ export interface View {
   slotIndex: number;
   startHeight: number;
   cameraRig: CameraRig;
-  秒: number;
+  sec: number;
   长秒: number;
 }
 
@@ -39,7 +39,7 @@ const entries = recordedSpells.map((x) => {
   return meta;
 });
 
-const closeRig = (distance: number): CameraRig => ({ 名: '近景', 眼: [castFrom[0], castFrom[1] - distance, castFrom[2] + distance * 0.15], 看: [castFrom[0], castFrom[1], castFrom[2] - 0.6], fov: 40 });
+const closeRig = (distance: number): CameraRig => ({ name: '近景', 眼: [castFrom[0], castFrom[1] - distance, castFrom[2] + distance * 0.15], 看: [castFrom[0], castFrom[1], castFrom[2] - 0.6], fov: 40 });
 
 export const slotCount = recordedSpells.length;
 
@@ -49,5 +49,5 @@ export const viewAt = (segSec: number): View => {
   const inSlotSec = Math.max(0, segSec - slotIndex * slotSec);
   const isSecondHalf = inSlotSec + 1e-9 >= halfSlotSec ? 1 : 0;
   const { 长秒: durSec } = spellDuration(meta, castFrom, target);
-  return { meta, slotIndex, startHeight: recordedSpells[slotIndex]!.startHeight, cameraRig: isSecondHalf ? closeRig(recordedSpells[slotIndex]!.closeDist) : wideRig, 秒: Math.min(1, Math.max(0, (inSlotSec - isSecondHalf * halfSlotSec) / halfSlotSec)) * durSec, 长秒: durSec };
+  return { meta, slotIndex, startHeight: recordedSpells[slotIndex]!.startHeight, cameraRig: isSecondHalf ? closeRig(recordedSpells[slotIndex]!.closeDist) : wideRig, sec: Math.min(1, Math.max(0, (inSlotSec - isSecondHalf * halfSlotSec) / halfSlotSec)) * durSec, 长秒: durSec };
 };

@@ -28,21 +28,21 @@ const targetLoudness = -16;
 const truePeakLimit = -1;
 const sampleRate = 48000;
 
-export const assembleFilm = async (segments: SegInfo[], opts: { 级别: RenderLevel; 名: string; 范围: string[]; rerender?: boolean; 分享版?: boolean; runRecord: RunRecord }) => {
+export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLevel; name: string; bounds: string[]; rerender?: boolean; shareVersion?: boolean; runRecord: RunRecord }) => {
   const startMs = Date.now();
   const allSegments = await loadAllSegments();
-  const timer = stageTiming(opts.runRecord.阶段, `film:${workName()}/${opts.名}:${opts.级别}`);
-  const outputs = await renderSegments(allSegments, segments, opts.级别, { rerender: opts.rerender, runRecord: opts.runRecord });
+  const timer = stageTiming(opts.runRecord.stage, `film:${workName()}/${opts.name}:${opts.level}`);
+  const outputs = await renderSegments(allSegments, segments, opts.level, { rerender: opts.rerender, runRecord: opts.runRecord });
   timer('渲段');
-  const skipped = segments.filter((s) => !outputs.some((r) => r.段 === s));
-  if (skipped.length) throw new Error(`${skipped.map((s) => s.键).join('、')} 没渲（本机没有区段包），接不成成片；别的段已渲好`);
+  const skipped = segments.filter((s) => !outputs.some((r) => r.segment === s));
+  if (skipped.length) throw new Error(`${skipped.map((s) => s.key).join('、')} 没渲（本机没有区段包），接不成成片；别的段已渲好`);
   for (let k = 1; k < outputs.length; k++) {
     const a = outputs[k - 1]!;
     const b = outputs[k]!;
-    if (a.outputStartFrame + a.outputFrames !== b.outputStartFrame) throw new Error(`${a.段.键} 和 ${b.段.键} 在清单里不挨着，接不成一条（各段已渲好；要成片的话范围要是清单里连续的一串段，或者一段一段出）`);
+    if (a.outputStartFrame + a.outputFrames !== b.outputStartFrame) throw new Error(`${a.segment.key} 和 ${b.segment.key} 在清单里不挨着，接不成一条（各段已渲好；要成片的话范围要是清单里连续的一串段，或者一段一段出）`);
   }
   const filmTier = filmProfile();
-  const dir = path.join(deliveryRoot(), `${utcMonthDayTime(startMs)}-${opts.名}`);
+  const dir = path.join(deliveryRoot(), `${utcMonthDayTime(startMs)}-${opts.name}`);
   if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --name）`);
   const workDir = path.join(dir, '_工作');
   fs.mkdirSync(workDir, { recursive: true });
@@ -52,7 +52,7 @@ export const assembleFilm = async (segments: SegInfo[], opts: { 级别: RenderLe
   const unnormalizedPath = path.join(dir, unnormalizedFile);
   // 每段管到下一段的声音起点为止（wav 是这段的输出窗，短了补静音）
   const sampleCounts = outputs.map((r, k) => Math.round(((outputs[k + 1]?.soundStartSec ?? r.soundEndSec) - r.soundStartSec) * sampleRate));
-  await concatUnnormalized(outputs.map((r) => r.声音), sampleCounts, unnormalizedPath);
+  await concatUnnormalized(outputs.map((r) => r.sound), sampleCounts, unnormalizedPath);
   const loudness = measureLoudness(unnormalizedPath);
   const silent = !Number.isFinite(loudness.lufs) || loudness.lufs < -70;
   if (silent) opts.runRecord.log('警告', `整片几乎没声音（${loudness.lufs} LUFS），不拉响度`);
@@ -78,62 +78,62 @@ export const assembleFilm = async (segments: SegInfo[], opts: { 级别: RenderLe
   // 画面：直接拷流接起来，和声音封进一个 mp4
   const concatListPath = path.join(workDir, '接.txt');
   fs.writeFileSync(concatListPath, outputs.map((r) => `file '${r.画面.replace(/'/g, "'\\''")}'\n`).join(''));
-  const filmPath = path.join(dir, `${opts.名}.mp4`);
+  const filmPath = path.join(dir, `${opts.name}.mp4`);
   const writingPath = path.join(workDir, '成片.写入中.mp4');
   await runCmd(lowPriority([ffmpeg, '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-i', finishedAudioPath, '-map', '0:v', '-map', '1:a', '-c', 'copy', '-movflags', '+faststart', writingPath]));
   const totalFrames = outputs.reduce((a, r) => a + r.outputFrames, 0);
-  const outputFrames = videoInfo(writingPath).帧数;
+  const outputFrames = videoInfo(writingPath).frameCount;
   if (outputFrames !== totalFrames) throw new Error(`成片 ${outputFrames} 帧，各段加起来是 ${totalFrames} 帧`);
   fs.renameSync(writingPath, filmPath);
   timer('接画面');
 
-  let shareInfo: { kbps: number; MB: number; truePeak: number; 限幅dBFS: number } | null = null;
-  const shareFile = path.join(dir, `${opts.名}-分享版1080p60.mp4`);
-  if (opts.分享版) {
+  let shareInfo: { kbps: number; MB: number; truePeak: number; limitDbfs: number } | null = null;
+  const shareFile = path.join(dir, `${opts.name}-分享版1080p60.mp4`);
+  if (opts.shareVersion) {
     const shareAudio = compressShareAudio(progress, margin, workDir);
-    shareInfo = { ...(await encodeShareVersion(filmPath, shareAudio.声音, shareFile)), truePeak: measureLoudness(shareFile).truePeak, 限幅dBFS: shareAudio.限幅dBFS };
+    shareInfo = { ...(await encodeShareVersion(filmPath, shareAudio.sound, shareFile)), truePeak: measureLoudness(shareFile).truePeak, limitDbfs: shareAudio.limitDbfs };
     if (shareInfo.truePeak > truePeakLimit) opts.runRecord.log('警告', `分享版真峰值 ${shareInfo.truePeak.toFixed(1)} dBTP，压低限幅 6 次还超过 ${truePeakLimit}`);
-    opts.runRecord.产物.push(shareFile);
+    opts.runRecord.artifacts.push(shareFile);
     timer('分享版');
   }
 
   // 表：拼接表、字幕表和 SRT（都是输出帧，换成本片从 0 起）
-  atomicWrite(path.join(dir, '拼接表.tsv'), '编号\t段\t画面指纹\t声音指纹\t帧数\t全片起帧\n' + outputs.map((r) => `${r.段.编号 ?? ''}\t${r.段.键}\t${r.画面指纹.指纹.slice(0, 16)}\t${r.声音指纹.指纹.slice(0, 16)}\t${r.outputFrames}\t${r.outputStartFrame - outputs[0]!.outputStartFrame}\n`).join(''));
+  atomicWrite(path.join(dir, '拼接表.tsv'), '编号\t段\t画面指纹\t声音指纹\t帧数\t全片起帧\n' + outputs.map((r) => `${r.segment.serial ?? ''}\t${r.segment.key}\t${r.pictureFingerprint.fingerprint.slice(0, 16)}\t${r.soundFingerprint.fingerprint.slice(0, 16)}\t${r.outputFrames}\t${r.outputStartFrame - outputs[0]!.outputStartFrame}\n`).join(''));
   const subtitles = placeFilmSubtitles(allSegments, filmTier.fps);
-  const filmStart = subtitles.起帧.get(segments[0]!.键)!;
+  const filmStart = subtitles.起帧.get(segments[0]!.key)!;
   const filmEnd = filmStart + totalFrames;
   const screens = subtitles.屏们.filter((p) => p.止帧 > filmStart && p.起帧 < filmEnd).map((p) => ({ ...p, 起帧: Math.max(0, p.起帧 - filmStart), 止帧: Math.min(filmEnd, p.止帧) - filmStart }));
-  const files: Record<string, string> = { 成片: path.basename(filmPath), 拼接表: '拼接表.tsv', 未拉响度: unnormalizedFile };
-  if (shareInfo) files.分享版 = path.basename(shareFile);
+  const files: Record<string, string> = { film: path.basename(filmPath), concatTable: '拼接表.tsv', unnormalizedAudio: unnormalizedFile };
+  if (shareInfo) files.shareVersion = path.basename(shareFile);
   if (screens.length) {
     atomicWrite(path.join(dir, '字幕表.tsv'), subtitleTableTsv(screens, filmTier.fps));
-    atomicWrite(path.join(dir, `${opts.名}.srt`), srt(screens, filmTier.fps));
-    Object.assign(files, { 字幕表: '字幕表.tsv', SRT: `${opts.名}.srt` });
+    atomicWrite(path.join(dir, `${opts.name}.srt`), srt(screens, filmTier.fps));
+    Object.assign(files, { subtitleTable: '字幕表.tsv', SRT: `${opts.name}.srt` });
   }
   const manifest = {
-    版本: 4,
-    作品: workName(),
-    名: opts.名,
-    范围: opts.范围,
-    级别: opts.级别,
-    开始: utcTime(startMs),
-    完成: utcTime(),
-    代码: commitStatus(),
-    主机: config('主机'),
-    成片档: filmTier.名,
-    帧率: filmTier.fps,
-    总帧数: totalFrames,
-    时长秒: probeDurationSec(filmPath),
-    响度: { 原LUFS: loudness.lufs, 增益dB: Number(gain.toFixed(2)), 限幅dBFS: Number((truePeakLimit - margin).toFixed(2)), 成片LUFS: finalSound.lufs, 真峰值dBTP: finalSound.truePeak },
-    段: outputs.map((r) => ({ 编号: r.段.编号, 键: r.段.键, 段文件: relativeToCodeRoot(r.段.段文件), 画面指纹: r.画面指纹.指纹, 声音指纹: r.声音指纹.指纹, 帧数: r.outputFrames, 全片起帧: r.outputStartFrame - outputs[0]!.outputStartFrame })),
-    字幕: { 屏数: screens.length },
-    分享版: shareInfo && { 视频kbps: shareInfo.kbps, 音频kbps: shareAudioKbps, MB: Number(shareInfo.MB.toFixed(2)), 限幅dBFS: Number(shareInfo.限幅dBFS.toFixed(2)), 真峰值dBTP: shareInfo.truePeak },
-    文件: files,
+    version: 4,
+    work: workName(),
+    name: opts.name,
+    bounds: opts.bounds,
+    level: opts.level,
+    startedAt: utcTime(startMs),
+    completed: utcTime(),
+    code: commitStatus(),
+    host: config('主机'),
+    filmProfile: filmTier.name,
+    fps: filmTier.fps,
+    totalFrameCount: totalFrames,
+    durationSec: probeDurationSec(filmPath),
+    loudness: { sourceLufs: loudness.lufs, gainDb: Number(gain.toFixed(2)), limitDbfs: Number((truePeakLimit - margin).toFixed(2)), filmLufs: finalSound.lufs, truePeakDbtp: finalSound.truePeak },
+    segment: outputs.map((r) => ({ serial: r.segment.serial, key: r.segment.key, segmentFile: relativeToCodeRoot(r.segment.segmentFile), pictureFingerprint: r.pictureFingerprint.fingerprint, soundFingerprint: r.soundFingerprint.fingerprint, frameCount: r.outputFrames, filmStartFrame: r.outputStartFrame - outputs[0]!.outputStartFrame })),
+    subtitles: { screenCount: screens.length },
+    shareVersion: shareInfo && { videoKbps: shareInfo.kbps, audioKbps: shareAudioKbps, MB: Number(shareInfo.MB.toFixed(2)), limitDbfs: Number(shareInfo.limitDbfs.toFixed(2)), truePeakDbtp: shareInfo.truePeak },
+    file: files,
   };
   atomicWrite(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   fs.rmSync(workDir, { recursive: true, force: true });
   timer('写表');
-  opts.runRecord.产物.push(filmPath);
-  console.log(`成片 ${filmPath}：${manifest.时长秒.toFixed(2)} 秒，${totalFrames} 帧，${finalSound.lufs.toFixed(1)} LUFS`);
-  return { dir, 成片: filmPath, manifest };
+  opts.runRecord.artifacts.push(filmPath);
+  console.log(`成片 ${filmPath}：${manifest.durationSec.toFixed(2)} 秒，${totalFrames} 帧，${finalSound.lufs.toFixed(1)} LUFS`);
+  return { dir, film: filmPath, manifest };
 };

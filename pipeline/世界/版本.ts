@@ -36,7 +36,7 @@ export const packManifest = async (dir: string) => {
     h.update(`${f.join('/')}\t${await fileSha(abs)}\n`, 'utf8');
     byteSize += fs.statSync(abs).size;
   }
-  return { 清单sha256: h.digest('hex'), 文件数: files.length, 大小: byteSize };
+  return { manifestSha256: h.digest('hex'), fileCount: files.length, size: byteSize };
 };
 
 /** 目录的内容指纹：目录里每个文件（不进子目录，跳过 . 开头的）按文件名 UTF-8 字节排序，逐个把「名 \0 sha256 \n」喂进 sha256，取前 12 位 */
@@ -85,26 +85,26 @@ export const release = (pack: string, dir: string) => {
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.renameSync(dir, dest);
   }
-  return { 版本: fingerprint, 目录: dest, existed };
+  return { version: fingerprint, 目录: dest, existed };
 };
 
-export type TerrainRecord = { 版本: string; 旧路径?: string; 来源: string; 许可: string; 可见性: string; 说明?: string; 文件数: number; 大小: number; 清单sha256: string };
+export type TerrainRecord = { version: string; oldPath?: string; source: string; license: string; visibility: string; note?: string; fileCount: number; size: number; manifestSha256: string };
 export const terrainTablePath = () => path.join(codeRoot(), 'assets', '地形版本.json');
-export const readTerrainTable = () => JSON.parse(fs.readFileSync(terrainTablePath(), 'utf8')) as { 说明: string; 包: Record<string, TerrainRecord> };
+export const readTerrainTable = () => JSON.parse(fs.readFileSync(terrainTablePath(), 'utf8')) as { note: string; pack: Record<string, TerrainRecord> };
 
 /** 这一版应登记成什么（不写文件）；同一版已登记就原样返回旧条目 */
-export const registerTerrainEntry = async (pack: string, version: string, defaults: Pick<TerrainRecord, '来源' | '许可' | '可见性'> & { 说明?: string }): Promise<TerrainRecord> => {
-  const prevEntry = readTerrainTable().包[pack];
-  if (prevEntry?.版本 === version) return prevEntry;
+export const registerTerrainEntry = async (pack: string, version: string, defaults: Pick<TerrainRecord, 'source' | 'license' | 'visibility'> & { note?: string }): Promise<TerrainRecord> => {
+  const prevEntry = readTerrainTable().pack[pack];
+  if (prevEntry?.version === version) return prevEntry;
   const actual = await packManifest(versionDir(pack, version));
-  return { 版本: version, 来源: defaults.来源, 许可: prevEntry?.许可 ?? defaults.许可, 可见性: prevEntry?.可见性 ?? defaults.可见性, ...(defaults.说明 ?? prevEntry?.说明 ? { 说明: defaults.说明 ?? prevEntry?.说明 } : {}), 文件数: actual.文件数, 大小: actual.大小, 清单sha256: actual.清单sha256 };
+  return { version: version, source: defaults.source, license: prevEntry?.license ?? defaults.license, visibility: prevEntry?.visibility ?? defaults.visibility, ...(defaults.note ?? prevEntry?.note ? { note: defaults.note ?? prevEntry?.note } : {}), fileCount: actual.fileCount, size: actual.size, manifestSha256: actual.manifestSha256 };
 };
 
 /** 写进 assets/地形版本.json（键顺序保持，新包加在末尾）；返回原来登记的版本 */
 export const registerTerrain = (pack: string, entry: TerrainRecord) => {
   const terrainTable = readTerrainTable();
-  const existingVersion = terrainTable.包[pack]?.版本;
-  terrainTable.包[pack] = entry;
+  const existingVersion = terrainTable.pack[pack]?.version;
+  terrainTable.pack[pack] = entry;
   fs.writeFileSync(terrainTablePath(), JSON.stringify(terrainTable, null, 2) + '\n');
   return existingVersion;
 };

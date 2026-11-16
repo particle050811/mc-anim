@@ -2,4 +2,4 @@
 // 11-06 改成秒（docs/决策/0015-原生60帧.md）：段长是旧 18 帧（24 帧一秒）往上取整到 1/60 秒，cue 的秒、长秒是旧帧数 ÷ 24 写到毫秒，逐格增益是旧的一帧一个值。
 import { defineSeg } from '@engine/段/段定义.ts';
 
-export default defineSeg({ 场: '6-古城', 秒: 0.75, 宽: 1280, 高: 720, 地形: [] });
+export default defineSeg({ scene: '6-古城', sec: 0.75, width: 1280, height: 720, terrain: [] });

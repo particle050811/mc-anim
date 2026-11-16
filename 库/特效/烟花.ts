@@ -30,7 +30,7 @@ export const fireworkDyeColors = {
 export type FireworkDye = keyof typeof fireworkDyeColors;
 
 export type Firework = {
-  名: string;
+  name: string;
   /** 火箭放出（第 0 刻）在歌上的秒 */
   launchSec: number;
   /** 移动几刻后炸（原版 寿命 + 1；Flight 0 的寿命 10～21，所以 11～22） */
@@ -41,7 +41,7 @@ export type Firework = {
   fireworkColors: readonly FireworkDye[];
   trail?: boolean;
   twinkle?: boolean;
-  种子: number;
+  seed: number;
 };
 
 const tickLenSec = 1 / 20;
@@ -73,7 +73,7 @@ const rng = (seed: number) => {
 type V3 = [number, number, number];
 /** 火箭每刻末的位置（第 0 项是放出的位置），共 飞刻 + 1 项；和每刻移动后的竖速 */
 export const rocketPath = (firework: Firework): { 位: V3[]; vertSpeed: number[] } => {
-  const g = rng(firework.种子 * 977 + 1);
+  const g = rng(firework.seed * 977 + 1);
   // triangle(0, 0.002297) = 0.002297 × (rand − rand)
   let vx = 0.002297 * (g.r() - g.r());
   let vy = 0.002297 * (g.r() - g.r());
@@ -213,7 +213,7 @@ const ballSparks = (firework: Firework, g: ReturnType<typeof rng>, burstCenter: 
 export const fireworkSparks = (firework: Firework, sec: number): Spark[] => {
   const τ = (sec - firework.launchSec) / tickLenSec;
   if (τ < 0) return [];
-  const g = rng(firework.种子 * 7919 + 3);
+  const g = rng(firework.seed * 7919 + 3);
   const out: Spark[] = [];
   const white: V3 = [1, 1, 1];
   // 火箭拖的白火花：第 k 刻移动后放出（k = 1…飞刻），速度 (高斯·0.05, −竖速·0.5, 高斯·0.05)
@@ -231,7 +231,7 @@ export const fireworkSparks = (firework: Firework, sec: number): Spark[] => {
   for (const [i, q] of sphereSparks.entries()) {
     const walked = Math.min(Math.floor(τ - q.spawnTick) + 1, q.寿命);
     const trails: Particle[] = [];
-    const positions = trace(q, walked, trails, rng(firework.种子 * 31 + i * 7919 + 17));
+    const positions = trace(q, walked, trails, rng(firework.seed * 31 + i * 7919 + 17));
     const spark = drawSpark(q, τ, positions);
     if (spark) out.push(spark);
     for (const t of trails) {
@@ -255,11 +255,11 @@ export const fireworkFlash = (firework: Firework, sec: number): { 心: V3; 刻: 
 export const sphereRadius = (ballSize: Firework['ballSize'], tick: number) => ((ballSize === '大球' ? 0.5 : 0.25) * (1 - sparkFriction ** tick)) / (1 - sparkFriction);
 
 /** 声音：放出（launch）、炸开（blast / large_blast，大球用 large）、闪烁的炸完 1 + 15 刻后噼啪（twinkle） */
-export const fireworkSounds = (firework: Firework): { 种: '发射' | '炸' | '大炸' | '噼啪'; 秒: number }[] => {
+export const fireworkSounds = (firework: Firework): { kind: '发射' | '炸' | '大炸' | '噼啪'; sec: number }[] => {
   const blastSec = burstSec(firework);
   return [
-    { 种: '发射', 秒: firework.launchSec },
-    { 种: firework.ballSize === '大球' ? '大炸' : '炸', 秒: blastSec },
-    ...(firework.twinkle ? [{ 种: '噼啪' as const, 秒: blastSec + 17 * tickLenSec }] : []),
+    { kind: '发射', sec: firework.launchSec },
+    { kind: firework.ballSize === '大球' ? '大炸' : '炸', sec: blastSec },
+    ...(firework.twinkle ? [{ kind: '噼啪' as const, sec: blastSec + 17 * tickLenSec }] : []),
   ];
 };

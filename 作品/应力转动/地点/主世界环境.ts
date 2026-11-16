@@ -15,13 +15,13 @@ const seaY = 63 - 64;
 export const overworldEnv = (o: { visibility: number; shadowFar?: number; photon?: boolean }): EnvDescription =>
   defineEnvironment(
     {
-      维度: overworld,
+      dimension: overworld,
       画法: '主世界',
       sun: SUN_OW,
       lightSpec: { tier: '主世界' },
       fog: { 种类: '指数平方', visibility: o.visibility },
       atmosphereFar: o.photon === false ? null : 40000,
-      cloud: o.photon === false ? { 种类: '无' } : { 种类: 'photon', 海平面: seaY, 加: [fallCloud], clearRect: townClear },
+      cloud: o.photon === false ? { 种类: '无' } : { 种类: 'photon', seaLevel: seaY, 加: [fallCloud], clearRect: townClear },
       shadow: o.shadowFar === undefined ? false : { far: o.shadowFar },
     },
     '主世界环境',

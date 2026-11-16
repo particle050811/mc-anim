@@ -39,11 +39,11 @@ export const odometer = (T: number) =>
 const frameSec = 1 / segFps;
 const lastWindowSec = 15 - frameSec;
 export const segmentTable = {
-  '6-2-5': { 起: 0, 止: endSec - lastWindowSec },
-  '6-2-6': { 起: endSec - lastWindowSec, 止: endSec },
+  '6-2-5': { start: 0, end: endSec - lastWindowSec },
+  '6-2-6': { start: endSec - lastWindowSec, end: endSec },
 } as const;
 export type SegmentName = keyof typeof segmentTable;
-export const segmentSpanSec = (segment: SegmentName) => segmentTable[segment].止 - segmentTable[segment].起;
+export const segmentSpanSec = (segment: SegmentName) => segmentTable[segment].end - segmentTable[segment].start;
 // 一段在拼段里放多长（秒）：段长加上末帧
 export const segmentPlaySec = (segment: SegmentName) => segmentSpanSec(segment) + frameSec;
 // 卡点（全局秒）：俯冲；穿云：俯冲到航点 W2 拉起；拉平：穿云后航线俯仰第一次回到 −3° 以上（降到巡航高度）；

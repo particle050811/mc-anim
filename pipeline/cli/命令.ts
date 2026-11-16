@@ -1,8 +1,8 @@
 import type { RunRecord } from '../运行记录/记录.ts';
 
 export type Command = {
-  用法: string;
-  说明: string;
+  usage: string;
+  note: string;
   跑: (args: string[], runRecord: RunRecord) => Promise<number | void>;
   /** anim env 这类只读、瞬间完成的命令不写运行记录 */
   noRecord?: boolean;

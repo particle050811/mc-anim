@@ -185,7 +185,7 @@ export const magicalWineFoxHatOffBones = (sec: number): Record<string, BonePose>
   };
 };
 
-type Toggle = { hat: boolean; backStaff: boolean; 秒: number };
+type Toggle = { hat: boolean; backStaff: boolean; sec: number };
 
 // 组装顺序：隐藏表 → 坐姿表 → 看向 → 法杖和环 → 帽子、背后法杖的开关 → 骨骼。
 // 表情、眨眼、尾巴（魔法酒狐动作.ts）该在坐姿表和看向之间；它们和后面几层不碰同一根骨骼，组件里跟 骨骼 一起传进来，效果一样。
@@ -193,7 +193,7 @@ const bonePose = (
   stancePose: '坐' | '站',
   gaze: [number, number] | undefined,
   skeleton: Record<string, BonePose> | undefined,
-  { hat, backStaff, 秒: sec }: Toggle,
+  { hat, backStaff, sec: sec }: Toggle,
 ): Record<string, BonePose> => ({
   ...magicalWineFoxHidden,
   ...(stancePose === '坐' ? magicalWineFoxSitBones : {}),
@@ -217,12 +217,12 @@ export const MagicalWineFox: React.FC<{
   rightHand?: React.ReactNode;
   expression?: MagicalWineFoxExpression;
   blink?: number | 'auto';
-  秒?: number;
+  sec?: number;
   hat?: boolean;
   backStaff?: boolean;
   glow?: boolean;
-}> = ({ pose, stancePose = '坐', 看: gaze, skeleton, rightHand, expression, blink = 'auto', 秒: sec, hat = true, backStaff = true, glow = true }) => {
-  const bones = bonePose(stancePose, gaze, { ...magicalWineFoxMotion({ stancePose, expression, blink, 秒: sec }), ...skeleton }, { hat, backStaff, 秒: sec ?? 0 });
+}> = ({ pose, stancePose = '坐', 看: gaze, skeleton, rightHand, expression, blink = 'auto', sec: sec, hat = true, backStaff = true, glow = true }) => {
+  const bones = bonePose(stancePose, gaze, { ...magicalWineFoxMotion({ stancePose, expression, blink, sec: sec }), ...skeleton }, { hat, backStaff, sec: sec ?? 0 });
   return (
     <group position={pose.loc as V3} rotation={[0, 0, rad(pose.yaw ?? 0)]}>
       <group rotation={[rad(pose.pitch), 0, 0]} scale={[1, 1, pose.squash]}>

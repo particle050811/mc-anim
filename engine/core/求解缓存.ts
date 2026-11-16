@@ -72,11 +72,11 @@ export const cachedSolve = <Result>(layer: string, keyParts: unknown[], compute:
   const fileName = `${hash64(layer + '|' + keyString(keyParts))}.json`;
   const cached = fetchTextSync(`求解/${fileName}`);
   try {
-    if (cached !== null) return decode(cached).值 as Result;
+    if (cached !== null) return decode(cached).value as Result;
   } catch {
     // 坏了就现算
   }
   const value = compute();
-  pendingWrites[fileName] = encode({ 层: layer, 值: value });
+  pendingWrites[fileName] = encode({ layers: layer, value: value });
   return value;
 };

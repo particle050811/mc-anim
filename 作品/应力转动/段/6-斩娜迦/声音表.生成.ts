@@ -3,115 +3,115 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/6-李樱-不值一提": {
-      "时长": 3.392,
-      "峰值": -3.4,
-      "响度": -18,
+      "duration": 3.392,
+      "peakDb": -3.4,
+      "loudness": -18,
       "sha": "ebfdf78e48fe"
     },
     "音效/block.chain.hit.2": {
-      "时长": 0.484375,
-      "峰值": -2.4,
-      "响度": -24.8,
+      "duration": 0.484375,
+      "peakDb": -2.4,
+      "loudness": -24.8,
       "sha": "307e0de8e074"
     },
     "音效/block.grass.step.1": {
-      "时长": 0.5,
-      "峰值": -23.9,
-      "响度": -38.6,
+      "duration": 0.5,
+      "peakDb": -23.9,
+      "loudness": -38.6,
       "sha": "2959b1742d6f"
     },
     "音效/block.grass.step.2": {
-      "时长": 0.609388,
-      "峰值": -21.5,
-      "响度": -39.1,
+      "duration": 0.609388,
+      "peakDb": -21.5,
+      "loudness": -39.1,
       "sha": "226e6e9270b4"
     },
     "音效/block.grass.step.3": {
-      "时长": 0.484376,
-      "峰值": -21.4,
-      "响度": -36.2,
+      "duration": 0.484376,
+      "peakDb": -21.4,
+      "loudness": -36.2,
       "sha": "6e06a73583c8"
     },
     "音效/block.grass.step.4": {
-      "时长": 0.53127,
-      "峰值": -21.9,
-      "响度": -38.1,
+      "duration": 0.53127,
+      "peakDb": -21.9,
+      "loudness": -38.1,
       "sha": "ba77cb905a84"
     },
     "音效/block.grass.step.5": {
-      "时长": 0.562517,
-      "峰值": -18.6,
-      "响度": -34.4,
+      "duration": 0.562517,
+      "peakDb": -18.6,
+      "loudness": -34.4,
       "sha": "21bd69b639eb"
     },
     "音效/block.grass.step.6": {
-      "时长": 0.546893,
-      "峰值": -24.7,
-      "响度": -37.8,
+      "duration": 0.546893,
+      "peakDb": -24.7,
+      "loudness": -37.8,
       "sha": "e7078d68311e"
     },
     "音效/block.portal.travel": {
-      "时长": 9.5,
-      "峰值": -0.7,
-      "响度": -13,
+      "duration": 9.5,
+      "peakDb": -0.7,
+      "loudness": -13,
       "sha": "2a78858744fa"
     },
     "音效/block.stone.step.1": {
-      "时长": 0.609388,
-      "峰值": -8.9,
-      "响度": -33.4,
+      "duration": 0.609388,
+      "peakDb": -8.9,
+      "loudness": -33.4,
       "sha": "e94a295a8764"
     },
     "音效/block.stone.step.6": {
-      "时长": 0.609388,
-      "峰值": -5.5,
-      "响度": -29.7,
+      "duration": 0.609388,
+      "peakDb": -5.5,
+      "loudness": -29.7,
       "sha": "2b65e1bdb942"
     },
     "音效/efn.whoosh_light_1": {
-      "时长": 0.8,
-      "峰值": -8.7,
-      "响度": -26.3,
+      "duration": 0.8,
+      "peakDb": -8.7,
+      "loudness": -26.3,
       "sha": "59556b7733a6"
     },
     "音效/epicfight.entity.hit.blade.1": {
-      "时长": 0.552154,
-      "峰值": -0.1,
-      "响度": -14.9,
+      "duration": 0.552154,
+      "peakDb": -0.1,
+      "loudness": -14.9,
       "sha": "b2f4851e2177"
     },
     "音效/item.trident.throw.2": {
-      "时长": 1.464,
-      "峰值": -3.1,
-      "响度": -22.1,
+      "duration": 1.464,
+      "peakDb": -3.1,
+      "loudness": -22.1,
       "sha": "8fd32459f6ef"
     },
     "音效/twilightforest.block.twilightforest.boss_chest.appear": {
-      "时长": 3.488,
-      "峰值": -4.6,
-      "响度": -22.9,
+      "duration": 3.488,
+      "peakDb": -4.6,
+      "loudness": -22.9,
       "sha": "96e683a5590c"
     },
     "音效/twilightforest.entity.twilightforest.naga.hurt.2": {
-      "时长": 0.692018,
-      "峰值": -7.9,
-      "响度": -18.8,
+      "duration": 0.692018,
+      "peakDb": -7.9,
+      "loudness": -18.8,
       "sha": "b71792658bd8"
     },
     "音效/twilightforest.entity.twilightforest.naga.hurt.3": {
-      "时长": 0.365578,
-      "峰值": 0.7,
-      "响度": -70,
+      "duration": 0.365578,
+      "peakDb": 0.7,
+      "loudness": -70,
       "sha": "63e2d40665de"
     }
   },
-  "台词": {
+  "lines": {
     "6-李樱-不值一提": {
-      "配音": "配音/6-李樱-不值一提",
-      "开口": 0.03,
-      "时长": 3.392
+      "voice": "配音/6-李樱-不值一提",
+      "mouthOpen": 0.03,
+      "duration": 3.392
     }
   }
 };

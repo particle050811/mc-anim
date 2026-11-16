@@ -82,7 +82,7 @@ const grassSideTexture = () => {
 
 /** 樱花林：在结构四周的环里按种子撒树（离结构至少 留空 格、彼此至少 间距 格），树下撒花簇 */
 const buildGrove = () => {
-  const { 种子: seed, fixedPoints, treeCount, innerBox, outerRadius, spacing, flowerClusterCount } = cherryGrove;
+  const { seed: seed, fixedPoints, treeCount, innerBox, outerRadius, spacing, flowerClusterCount } = cherryGrove;
   const r = mulberry32(seed);
   const roots: [number, number, number?][] = fixedPoints.map(([x, y, rootHeight]) => [x, y, rootHeight]);
   const [x0, y0, x1, y1] = innerBox;

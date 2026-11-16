@@ -3,26 +3,26 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     },
     "音效/把回忆拼好给你/entity.cat.hiss.1": {
-      "时长": 1.169,
-      "峰值": -0.4,
-      "响度": -13.3,
+      "duration": 1.169,
+      "peakDb": -0.4,
+      "loudness": -13.3,
       "sha": "ca87ec7af772"
     },
     "音效/把回忆拼好给你/entity.glow_item_frame.add_item.1": {
-      "时长": 0.092833,
-      "峰值": -4.3,
-      "响度": -70,
+      "duration": 0.092833,
+      "peakDb": -4.3,
+      "loudness": -70,
       "sha": "047c950cb8e0"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

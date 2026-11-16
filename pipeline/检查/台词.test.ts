@@ -8,11 +8,11 @@ const voiceSha = 'b'.repeat(64);
 const withVoice = {
   'assets/registry/配音.toml': ['[["资产"]]', 'id = "配音/7-李樱-五万血"', '"类别" = "配音"', '"来源" = "手工:TTS"', '"许可" = "MIT"', '"可见性" = "公开"'].join('\n'),
   'assets/资产锁.json': JSON.stringify({
-    '贴图/甲': { sha256: 'a'.repeat(64), 后缀: '.png', 大小: 3, 库: 'store' },
-    '配音/7-李樱-五万血': { sha256: voiceSha, 后缀: '.wav', 大小: 3, 库: 'store' },
+    '贴图/甲': { sha256: 'a'.repeat(64), suffix: '.png', size: 3, lib: 'store' },
+    '配音/7-李樱-五万血': { sha256: voiceSha, suffix: '.wav', size: 3, lib: 'store' },
   }),
   '作品/应力转动/段/7-甲/段.ts':
-    "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 2, 台词: '7-李樱-五万血' }] });\n",
+    "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sound: [{ sec: 2, lines: '7-李樱-五万血' }] });\n",
 };
 const linesFile = (lines: string[]) => ({ '作品/应力转动/台词.toml': ['[["台词"]]', ...lines].join('\n') });
 
@@ -47,7 +47,7 @@ describe('台词', () => {
       withVoice,
       {
         '作品/应力转动/段/7-甲/段.ts':
-          "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 2, 台词: '7-李樱-五万血' }, { 秒: 3, 台词: '7-李樱-没登记' }] });\n",
+          "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sound: [{ sec: 2, lines: '7-李樱-五万血' }, { sec: 3, lines: '7-李樱-没登记' }] });\n",
         '作品/应力转动/旧名.tsv': '类别\t旧名\t新键\t备注\n已删台词\t7-黄叛-受死\t\t\n',
       },
       linesFile([
@@ -75,15 +75,15 @@ describe('台词', () => {
   });
 
   it('开口、字幕位置的格式；每句只开口一次，接上段的后半截要接在本段或清单上一段的开口后面', async () => {
-    const makeSegSource = (soundsCode: string) => `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: ${soundsCode} });\n`;
+    const makeSegSource = (soundsCode: string) => `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sound: ${soundsCode} });\n`;
     const makeSentence = (id: string, speaker: string, extraLines: string[] = []) => [
       '[["台词"]]', `id = "${id}"`, `"角色" = "${speaker}"`, '"文本" = "五万血？"', '"配音" = "配音/7-李樱-五万血"',
       `"文本哈希" = "${textHash('五万血？')}"`, `"成品sha" = "${voiceSha.slice(0, 12)}"`, ...extraLines, '',
     ];
     const root = makeRepo(base(), withVoice, {
       '作品/应力转动/清单.ts': [
-        "export const manifest = [{ 键: '7-甲', 章: 7 }, { 键: '7-乙', 章: 7 }, { 键: '7-丙', 章: 7 }];",
-        "export const segDir = (键: string) => `段/${键}`;",
+        "export const manifest = [{ key: '7-甲', 章: 7 }, { key: '7-乙', 章: 7 }, { key: '7-丙', 章: 7 }];",
+        "export const segDir = (key: string) => `段/${key}`;",
       ].join('\n'),
       '作品/应力转动/段/7-甲/段.ts': makeSegSource("[{ 秒: 2, 台词: '7-李樱-五万血' }, { 秒: 5, 台词: '7-李樱-五万血', 接上段: true }]"),
       '作品/应力转动/段/7-乙/段.ts': makeSegSource("[{ 秒: 0, 台词: '7-李樱-五万血', 接上段: true }, { 秒: 1, 台词: '7-九胡-两次' }, { 秒: 6, 台词: '7-九胡-两次' }]"),
@@ -121,8 +121,8 @@ describe('台词', () => {
 
   it('有 台词/ 句模块目录的：有配音的每句要有句模块、跟得上表和成品、是工具写的原样，多出来的句模块也拦', async () => {
     const sentence: LineSentence = {
-      id: '7-李樱-五万血', 角色: '李樱', 念: '五万血？', 配音: '配音/7-李樱-五万血', 成品sha: voiceSha.slice(0, 12),
-      开口: 0.03, 有声长: 0.5, 时长: 0.68, 文件秒数: 0.68, 字: [['五', 0.03, 0.2]], 嘴: [[0, 'X'], [0.03, 'B'], [0.2, 'X']],
+      id: '7-李樱-五万血', character: '李樱', spoken: '五万血？', voice: '配音/7-李樱-五万血', finishedSha: voiceSha.slice(0, 12),
+      mouthOpen: 0.03, 有声长: 0.5, duration: 0.68, 文件秒数: 0.68, char: [['五', 0.03, 0.2]], 嘴: [[0, 'X'], [0.03, 'B'], [0.2, 'X']],
     };
     const makeLineTableFile = (lipSha: string) => linesFile([
       'id = "7-李樱-五万血"', '"角色" = "李樱"', '"文本" = "五万血？"', '"配音" = "配音/7-李樱-五万血"', '"开口" = 0.03',
@@ -132,7 +132,7 @@ describe('台词', () => {
     expect((await runRule('lines', cleanRepo)).violations).toEqual([]);
 
     const badRepo = makeRepo(base(), withVoice, makeLineTableFile('cccccccccccc'), {
-      '作品/应力转动/台词/7-李樱-五万血.ts': writeSentenceText({ ...sentence, 开口: 0.05 }).replace('"有声长": 0.5,', '"有声长": 0.6,'),
+      '作品/应力转动/台词/7-李樱-五万血.ts': writeSentenceText({ ...sentence, mouthOpen: 0.05 }).replace('"有声长": 0.5,', '"有声长": 0.6,'),
       '作品/应力转动/台词/7-李樱-删了.ts': writeSentenceText({ ...sentence, id: '7-李樱-删了' }),
     });
     const v = (await runRule('lines', badRepo)).violations.join('\n');

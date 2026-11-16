@@ -28,20 +28,20 @@ describe('环', () => {
     const secondFile = writeFile('乙.ts', "import { 甲 } from './甲.ts'; export const 乙 = () => (甲 ? 2 : 0);");
     const thirdMod = writeFile('入.ts', "import { 甲 } from './甲.ts'; export default 甲;");
     const r = await computeMerkle([moduleA, secondFile, thirdMod]);
-    expect(r.根[0]).toBe(r.根[1]);
-    expect(r.根[2]).not.toBe(r.根[0]);
-    expect((await computeMerkle([secondFile])).根[0]).toBe(r.根[0]);
+    expect(r.root[0]).toBe(r.root[1]);
+    expect(r.root[2]).not.toBe(r.root[0]);
+    expect((await computeMerkle([secondFile])).root[0]).toBe(r.root[0]);
     writeFile('乙.ts', "import { 甲 } from './甲.ts'; export const 乙 = () => (甲 ? 3 : 0);");
     const merkle = await computeMerkle([moduleA, secondFile, thirdMod]);
-    expect(merkle.根[0]).not.toBe(r.根[0]);
-    expect(merkle.根[2]).not.toBe(r.根[2]);
+    expect(merkle.root[0]).not.toBe(r.root[0]);
+    expect(merkle.root[2]).not.toBe(r.root[2]);
   });
 
   it('自己 import 自己也按环算，不死循环', async () => {
     const moduleA = writeFile('甲.ts', "import * as 我 from './甲.ts'; export const x = 1; export default 我;");
     const r = await computeMerkle([moduleA]);
-    expect(r.根[0]).toMatch(/^[0-9a-f]{64}$/);
-    expect(Object.keys(r.明细.模块)).toEqual([moduleA]);
+    expect(r.root[0]).toMatch(/^[0-9a-f]{64}$/);
+    expect(Object.keys(r.detail.modules)).toEqual([moduleA]);
   });
 });
 
@@ -49,25 +49,25 @@ describe('略过', () => {
   const skip = (importer: string, target: string) => path.basename(importer) === '注册.tsx' && path.basename(target) === '清单.ts';
 
   it('略过的边不进哈希、不进明细的模块；改清单不改根，改别处照样改', async () => {
-    writeFile('清单.ts', "import 图 from 'asset:核对/冒烟色块'; export const 清单 = ['甲']; export const 图片 = 图;");
+    writeFile('清单.ts', "import image from 'asset:核对/冒烟色块'; export const 清单 = ['甲']; export const 图片 = image;");
     writeFile('其他.ts', 'export const 其他 = 1;');
     const registrationFile = writeFile('注册.tsx', "import { 清单 } from './清单.ts'; import { 其他 } from './其他.ts'; export default [清单, 其他];");
     const r = await computeMerkle([registrationFile], { skip });
-    expect(Object.keys(r.明细.模块).sort()).toEqual([relPath(path.join(d, '其他.ts')), registrationFile].sort());
+    expect(Object.keys(r.detail.modules).sort()).toEqual([relPath(path.join(d, '其他.ts')), registrationFile].sort());
     // 资产照 esbuild 单独打包读到的记（略过的边也读），缺字节按它判
-    expect(r.明细.资产).toEqual({ '核对/冒烟色块': readAssetLock()['核对/冒烟色块']!.sha256 });
+    expect(r.detail.asset).toEqual({ '核对/冒烟色块': readAssetLock()['核对/冒烟色块']!.sha256 });
     writeFile('清单.ts', "export const 清单 = ['甲', '乙'];");
-    expect((await computeMerkle([registrationFile], { skip })).根[0]).toBe(r.根[0]);
+    expect((await computeMerkle([registrationFile], { skip })).root[0]).toBe(r.root[0]);
     writeFile('其他.ts', 'export const 其他 = 2;');
-    expect((await computeMerkle([registrationFile], { skip })).根[0]).not.toBe(r.根[0]);
+    expect((await computeMerkle([registrationFile], { skip })).root[0]).not.toBe(r.root[0]);
     // 不给略过就跟进去
-    expect(Object.keys((await computeMerkle([registrationFile])).明细.模块)).toContain(relPath(path.join(d, '清单.ts')));
+    expect(Object.keys((await computeMerkle([registrationFile])).detail.modules)).toContain(relPath(path.join(d, '清单.ts')));
   });
 });
 
 describe('一次建图', () => {
   it('按组取的结果（根、明细、键的顺序）和每组单独算一样', async () => {
-    writeFile('共用.ts', "import 图 from 'asset:核对/冒烟色块'; export const 共用 = 图;");
+    writeFile('共用.ts', "import image from 'asset:核对/冒烟色块'; export const 共用 = image;");
     writeFile('只甲.ts', "import 音 from 'asset:核对/冒烟音'; export const 只甲 = 音;");
     writeFile('图.png', Buffer.from([1, 2, 3]));
     writeFile('工人.ts', "import { 共用 } from './共用.ts'; export const 工 = 共用;");
@@ -75,13 +75,13 @@ describe('一次建图', () => {
     writeFile('注释工人.ts', "import x from './图.png'; export default x;");
     const moduleA = writeFile('甲.tsx', "import { 共用 } from './共用.ts'; import { 只甲 } from './只甲.ts'; export const w = () => new Worker(new URL('./工人.ts', import.meta.url)); export default [共用, 只甲];");
     const second = writeFile('乙.tsx', "import { 共用 } from './共用.ts';\n// new URL('./注释工人.ts', import.meta.url)\nexport default 共用;");
-    const nodeC = writeFile('丙.tsx', "import 图 from './图.png'; import { 只甲 } from './只甲.ts'; export default [图, 只甲];");
+    const nodeC = writeFile('丙.tsx', "import image from './图.png'; import { 只甲 } from './只甲.ts'; export default [image, 只甲];");
     const leafGroups = [[moduleA], [second], [nodeC], [moduleA, nodeC], [second, moduleA]];
     const merkleTree = await buildMerkleGraph(leafGroups.flat());
     for (const g of leafGroups) expect(JSON.stringify(merkleTree.取(g))).toBe(JSON.stringify(await computeMerkle(g)));
-    expect(Object.keys(merkleTree.取([second]).明细.模块)).toContain(relPath(path.join(d, '图.png')));
-    expect(Object.keys(merkleTree.取([second]).明细.资产)).toEqual(['核对/冒烟色块']);
-    expect(Object.keys(merkleTree.取([moduleA]).明细.资产)).toEqual(['核对/冒烟色块', '核对/冒烟音']);
+    expect(Object.keys(merkleTree.取([second]).detail.modules)).toContain(relPath(path.join(d, '图.png')));
+    expect(Object.keys(merkleTree.取([second]).detail.asset)).toEqual(['核对/冒烟色块']);
+    expect(Object.keys(merkleTree.取([moduleA]).detail.asset)).toEqual(['核对/冒烟色块', '核对/冒烟音']);
     expect(() => merkleTree.取([writeFile('不在图里.ts', 'export {}')])).toThrow(/不在建图时给的入口里/);
   });
 });

@@ -12,7 +12,7 @@ export type Visibility = (typeof visibilityValues)[number];
 
 /** 登记在哪一侧：共用 = assets/registry/，作品 = <作品根>/资产表/ */
 export type AssetSide = '共用' | '作品';
-export type AssetEntry = { id: string; 类别: string; 来源: string; 许可: string; 可见性: Visibility; 旧路径?: string; 说明?: string; 表: string; side: AssetSide };
+export type AssetEntry = { id: string; category: string; source: string; license: string; visibility: Visibility; oldPath?: string; note?: string; 表: string; side: AssetSide };
 
 export const assetRegistryDir = () => path.join(codeRoot(), 'assets', 'registry');
 export const workAssetRegistryDir = (workRoot: string) => path.join(workRoot, '资产表');
@@ -34,14 +34,14 @@ export const readAssetRegistry = (dir = assetRegistryDir(), side: AssetSide = '�
       issues.push(`${fileName}：TOML 解析失败：${(e as Error).message.split('\n')[0]}`);
       continue;
     }
-    for (const raw of (doc['资产'] ?? []) as Record<string, unknown>[]) {
+    for (const raw of (doc['asset'] ?? []) as Record<string, unknown>[]) {
       const e = { ...raw, 表: fileName, side } as AssetEntry;
       const posLabel = `${fileName} 的「${String(raw.id)}」`;
-      for (const k of ['id', '类别', '来源', '许可', '可见性'] as const) if (typeof e[k] !== 'string' || !e[k]) issues.push(`${posLabel}：缺 ${k}`);
+      for (const k of ['id', 'category', 'source', 'license', 'visibility'] as const) if (typeof e[k] !== 'string' || !e[k]) issues.push(`${posLabel}：缺 ${k}`);
       if (typeof e.id !== 'string') continue;
       if (!isValidId(e.id)) issues.push(`${posLabel}：id 要是 <类>/<名>，不含空格和 Windows 不许的字符`);
-      if (!visibilityValues.includes(e.可见性)) issues.push(`${posLabel}：可见性只能是 ${visibilityValues.join('、')}`);
-      if (typeof e.来源 === 'string' && !sourceFormat.test(e.来源)) issues.push(`${posLabel}：来源要写成 提取:<配方>@<jar sha256 前 12 位>[+…] / 手工:<说明> / 派生:<输入 sha>+<参数>`);
+      if (!visibilityValues.includes(e.visibility)) issues.push(`${posLabel}：可见性只能是 ${visibilityValues.join('、')}`);
+      if (typeof e.source === 'string' && !sourceFormat.test(e.source)) issues.push(`${posLabel}：来源要写成 提取:<配方>@<jar sha256 前 12 位>[+…] / 手工:<说明> / 派生:<输入 sha>+<参数>`);
       if (entryMap.has(e.id)) issues.push(`${posLabel}：id 和 ${entryMap.get(e.id)!.表} 里的重复`);
       entryMap.set(e.id, e);
     }

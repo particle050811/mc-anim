@@ -8,12 +8,12 @@ import { originalGain } from '../../场/2-选择世界/参数.ts';
 const clock = segClock('2-选择世界');
 
 export default defineSeg({
-  场: '2-选择世界',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-选择世界',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
   // 原声：片头从原声第 0 秒放起，原声开头本来就是从静里起，不另淡入
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: originalGain }],
 });

@@ -24,19 +24,19 @@ const sliceSpan = (speeds: readonly number[], startSec: number, endSec: number) 
   const reachFrame = sampleSeg.findIndex((v) => v >= 0.9 * peak);
   return { 峰: peak, accelFrames: reachFrame - openIndex + 1 };
 };
-const cueList = (seg: SegmentDef) => (seg.声音 ?? []).filter((c): c is AssetCue => c.资产 !== undefined);
+const cueList = (seg: SegmentDef) => (seg.sound ?? []).filter((c): c is AssetCue => c.asset !== undefined);
 const eventTime = (seg: SegmentDef, name: string) => {
-  const c = cueList(seg).find((x) => x.名 === name);
+  const c = cueList(seg).find((x) => x.name === name);
   if (!c) throw new Error(`没有 cue「${name}」`);
-  return c.秒;
+  return c.sec;
 };
 
 describe('第 4 幕 轰炸', () => {
   const speeds = frameSpeeds(qiFangShot.yaBoLunPos, qiFangShot.actStart, qiFangShot.actDur);
 
   it('她每一下冲峰值 20～30 格/秒、3 帧内到全速，冲完刹到 3 格/秒以下', () => {
-    const rushTable = qiFangShot.dashRanges.map((c) => ({ 起: c.起, ...sliceSpan(speeds, c.起 - 0.05, c.止 + 0.05), brakeEndSpeed: speeds[Math.round(c.止 * 60)]! }));
-    console.log('第 4 幕她的冲（幕内秒、峰值格/秒、几帧到全速、冲完那帧格/秒）', rushTable.map((x) => `${x.起.toFixed(2)}s ${x.峰.toFixed(1)} ${x.accelFrames}帧 ${x.brakeEndSpeed.toFixed(1)}`).join('；'));
+    const rushTable = qiFangShot.dashRanges.map((c) => ({ start: c.start, ...sliceSpan(speeds, c.start - 0.05, c.end + 0.05), brakeEndSpeed: speeds[Math.round(c.end * 60)]! }));
+    console.log('第 4 幕她的冲（幕内秒、峰值格/秒、几帧到全速、冲完那帧格/秒）', rushTable.map((x) => `${x.start.toFixed(2)}s ${x.峰.toFixed(1)} ${x.accelFrames}帧 ${x.brakeEndSpeed.toFixed(1)}`).join('；'));
     expect(rushTable.length).toBeGreaterThanOrEqual(3);
     for (const x of rushTable) {
       expect(x.峰).toBeGreaterThanOrEqual(20);
@@ -54,19 +54,19 @@ describe('第 4 幕 轰炸', () => {
   });
 
   it('打击停顿只停索命（16 帧）；停的那几帧她和他的钟不走', () => {
-    expect(qiFangShot.killingPause.秒 * 60).toBeCloseTo(16, 9);
+    expect(qiFangShot.killingPause.sec * 60).toBeCloseTo(16, 9);
     const expectedPos = qiFangShot.yaBoLunPos(qiFangShot.secAt(qiFangShot.killingSec));
     for (let f = 1; f <= 16; f++) expect(distance(qiFangShot.yaBoLunPos(qiFangShot.secAt(qiFangShot.killingSec + f * frameSec)), expectedPos)).toBeLessThan(1e-9);
     expect(distance(qiFangShot.yaBoLunPos(qiFangShot.secAt(qiFangShot.killingSec + 17 * frameSec)), expectedPos)).toBeGreaterThan(0);
     const p = qiFangShot.killingPause;
-    expect(qiFangShot.steveClock(p.起 + p.秒) - qiFangShot.steveClock(p.起)).toBeCloseTo(0, 9);
-    expect(qiFangShot.steveBackToWorld(qiFangShot.steveClock(p.起 + p.秒 + 0.1))).toBeCloseTo(p.起 + p.秒 + 0.1, 9);
+    expect(qiFangShot.steveClock(p.start + p.sec) - qiFangShot.steveClock(p.start)).toBeCloseTo(0, 9);
+    expect(qiFangShot.steveBackToWorld(qiFangShot.steveClock(p.start + p.sec + 0.1))).toBeCloseTo(p.start + p.sec + 0.1, 9);
   });
 
   it('连放：每种按游戏里戴晋升之环的间隔（周期刻）一直放到他死，第一轮在开幕 8 帧里；满附魔高速 5', () => {
     const reportTable: string[] = [];
     for (const item of qiFangShot.chainCastTable) {
-      const launchTimes = qiFangShot.castTable.filter((x) => x.id === item.id).map((x) => x.秒 - qiFangShot.actStart);
+      const launchTimes = qiFangShot.castTable.filter((x) => x.id === item.id).map((x) => x.sec - qiFangShot.actStart);
       expect(launchTimes.length).toBeGreaterThan(0);
       for (const cast of qiFangShot.castTable.filter((x) => x.id === item.id)) expect(cast.options?.highSpeed).toBe(5);
       if (item.id === 'killing') {
@@ -99,7 +99,7 @@ describe('第 4 幕 轰炸', () => {
     }
     expect(qiFangShot.deathTime).toBeCloseTo(qiFangShot.actDur, 9);
     const lastLandTime = Math.max(...Object.values(qiFangShot.ultimateLandTimes).map((x) => x!));
-    const guardShotTimes = qiFangShot.hitEvents.filter((h) => h.id === 'prisma_beam').map((h) => h.秒);
+    const guardShotTimes = qiFangShot.hitEvents.filter((h) => h.id === 'prisma_beam').map((h) => h.sec);
     expect(guardShotTimes.every((x) => x < lastLandTime)).toBe(true);
     expect(Object.keys(qiFangShot.cameraStart)).toEqual(['side', 'firstPerson']);
     expect(qiFangShot.totemSec - qiFangShot.actStart).toBeGreaterThan(qiFangShot.cameraStart.firstPerson + 0.2 - 1e-9);
@@ -108,7 +108,7 @@ describe('第 4 幕 轰炸', () => {
   });
 
   it('他挨打最多 0.5 秒一下，挥剑至少隔 0.45 秒、死前 0.15 秒起不挥', () => {
-    for (let i = 1; i < qiFangShot.takenHits.length; i++) expect(qiFangShot.takenHits[i]!.秒 - qiFangShot.takenHits[i - 1]!.秒).toBeGreaterThanOrEqual(0.5 - 1e-9);
+    for (let i = 1; i < qiFangShot.takenHits.length; i++) expect(qiFangShot.takenHits[i]!.sec - qiFangShot.takenHits[i - 1]!.sec).toBeGreaterThanOrEqual(0.5 - 1e-9);
     for (let i = 1; i < qiFangShot.swingTimes.length; i++) expect(qiFangShot.swingTimes[i]! - qiFangShot.swingTimes[i - 1]!).toBeGreaterThanOrEqual(0.45 - 1e-9);
     expect(qiFangShot.swingTimes[qiFangShot.swingTimes.length - 1]!).toBeLessThan(qiFangShot.steveClock(qiFangShot.deathTime) - 0.15);
   });
@@ -120,26 +120,26 @@ describe('第 4 幕 轰炸', () => {
   });
 
   it('声音：卡在导出的时刻上，都在段里；每一发（索命除外）离手那一帧有施放声', () => {
-    const segLengthSec = seg4.秒;
+    const segLengthSec = seg4.sec;
     expect(segLengthSec).toBeCloseTo(qiFangShot.actDur, 2);
     expect(eventTime(seg4, '齐放')).toBe(qiFangShot.castStart);
-    expect(eventTime(seg4, '索命')).toBeCloseTo(qiFangShot.killingPause.起, 9);
+    expect(eventTime(seg4, '索命')).toBeCloseTo(qiFangShot.killingPause.start, 9);
     expect(eventTime(seg4, '图腾')).toBeCloseTo(qiFangShot.totemSec - qiFangShot.actStart, 9);
     expect(eventTime(seg4, '结界火')).toBeCloseTo(qiFangShot.coverFullSec, 9);
-    qiFangShot.takenHitsWorld.forEach((h, i) => expect(eventTime(seg4, `挨打${i + 1}`)).toBe(h.秒));
+    qiFangShot.takenHitsWorld.forEach((h, i) => expect(eventTime(seg4, `挨打${i + 1}`)).toBe(h.sec));
     qiFangShot.swingWorldTimes.forEach((c, i) => expect(eventTime(seg4, `挥剑${i + 1}`)).toBe(c));
-    qiFangShot.dashRanges.forEach((c, i) => expect(eventTime(seg4, `冲${i + 1}`)).toBe(c.起));
+    qiFangShot.dashRanges.forEach((c, i) => expect(eventTime(seg4, `冲${i + 1}`)).toBe(c.start));
     // 施放声：同一个声音事件 0.1 秒里只留一个，所以按「有」查，不按条数
-    const casts = cueList(seg4).filter((c) => c.名.startsWith('施放-'));
+    const casts = cueList(seg4).filter((c) => c.name.startsWith('施放-'));
     for (const cast of qiFangShot.castTable) {
       if (cast.id === 'killing') continue;
-      const offset = cast.秒 - qiFangShot.actStart;
-      expect(casts.some((c) => c.名.startsWith(`施放-${cast.id}-`) && Math.abs(c.秒 - offset) < 1e-9) || casts.some((c) => Math.abs(c.秒 - offset) < 0.1)).toBe(true);
+      const offset = cast.sec - qiFangShot.actStart;
+      expect(casts.some((c) => c.name.startsWith(`施放-${cast.id}-`) && Math.abs(c.sec - offset) < 1e-9) || casts.some((c) => Math.abs(c.sec - offset) < 0.1)).toBe(true);
     }
-    const ownCues = cueList(seg4).filter((c) => !['战斗曲-齐放', '战斗曲'].includes(c.名));
+    const ownCues = cueList(seg4).filter((c) => !['战斗曲-齐放', '战斗曲'].includes(c.name));
     for (const c of ownCues) {
-      expect(c.秒).toBeGreaterThanOrEqual(0);
-      expect(c.秒).toBeLessThan(segLengthSec);
+      expect(c.sec).toBeGreaterThanOrEqual(0);
+      expect(c.sec).toBeLessThan(segLengthSec);
     }
     console.log(`第 4 幕 ${cueList(seg4).length} 条 cue，施放声 ${casts.length} 条`);
   });
@@ -152,7 +152,7 @@ describe('第 4 幕 轰炸', () => {
     expect(hurtTicks).toEqual(Array.from({ length: hurtTicks.length }, (_, i) => coverFullTick + i));
     expect(hurtTicks[hurtTicks.length - 1]!).toBe(Math.ceil(qiFangShot.steveClock(qiFangShot.deathTime) * 20) - 1);
     // 第一下打到他之前不歪
-    expect(qiFangShot.hurtTilt(Math.min(...qiFangShot.hitEvents.map((h) => h.秒)) - frameSec).tiltDeg).toBe(0);
+    expect(qiFangShot.hurtTilt(Math.min(...qiFangShot.hitEvents.map((h) => h.sec)) - frameSec).tiltDeg).toBe(0);
     // 罩严以后（第一人称那一镜）每一帧 7～14 度，挨着的三帧不一样
     const degrees = Array.from({ length: Math.floor((qiFangShot.deathTime - qiFangShot.cameraStart.firstPerson) * 60) }, (_, f) => qiFangShot.hurtTilt(qiFangShot.cameraStart.firstPerson + f * frameSec).tiltDeg);
     console.log(`第一人称受伤晃动：${Math.min(...degrees).toFixed(1)}～${Math.max(...degrees).toFixed(1)} 度，罩严前完整受伤 ${hurtsBefore.length} 下`);
@@ -161,7 +161,7 @@ describe('第 4 幕 轰炸', () => {
       expect(d).toBeLessThanOrEqual(14);
     }
     const hold = qiFangShot.killingPause;
-    const pausedDeg = Array.from({ length: 16 }, (_, f) => qiFangShot.hurtTilt(hold.起 + f * frameSec).tiltDeg);
+    const pausedDeg = Array.from({ length: 16 }, (_, f) => qiFangShot.hurtTilt(hold.start + f * frameSec).tiltDeg);
     expect(new Set(pausedDeg.map((d) => d.toFixed(9))).size).toBe(1);
     expect(new Set(degrees.slice(0, 3).map((d) => d.toFixed(6))).size).toBe(3);
     // 她在他正前方附近：hurtDir 在 90 度上下（往下点头为主）
@@ -169,16 +169,16 @@ describe('第 4 幕 轰炸', () => {
   });
 
   it('战斗曲 27.0 秒那一下砸在第一轮出手那一刻：两条在 齐放出手 首尾接上，前一条的入点跟着第 2 幕长短走', () => {
-    const events = timeline.事件;
-    expect(events.volleyCast.秒 - events.wheelOpenDone.秒).toBeCloseTo(qiFangShot.castStart, 9);
-    const battleSound = timeline.声音!.find((x) => x.名 === '战斗曲')!;
-    const battleCue = timeline.声音!.find((x) => x.名 === '战斗曲-齐放')!;
-    expect(battleSound.startSec).toBe(events.yaBoLunAppears.秒);
-    expect(battleSound.endSec).toBe(events.volleyCast.秒);
+    const events = timeline.events;
+    expect(events.volleyCast.sec - events.wheelOpenDone.sec).toBeCloseTo(qiFangShot.castStart, 9);
+    const battleSound = timeline.sound!.find((x) => x.name === '战斗曲')!;
+    const battleCue = timeline.sound!.find((x) => x.name === '战斗曲-齐放')!;
+    expect(battleSound.startSec).toBe(events.yaBoLunAppears.sec);
+    expect(battleSound.endSec).toBe(events.volleyCast.sec);
     expect(battleSound.入点秒! + battleSound.endSec! - battleSound.startSec).toBeCloseTo(27, 9);
-    expect(battleCue.startSec).toBe(events.volleyCast.秒);
+    expect(battleCue.startSec).toBe(events.volleyCast.sec);
     expect(battleCue.入点秒).toBe(27);
-    console.log(`战斗曲：现身 ${events.yaBoLunAppears.秒.toFixed(3)} 秒起从 ${battleSound.入点秒!.toFixed(3)} 秒放，${events.volleyCast.秒.toFixed(3)} 秒（齐放出手）接后一条`);
+    console.log(`战斗曲：现身 ${events.yaBoLunAppears.sec.toFixed(3)} 秒起从 ${battleSound.入点秒!.toFixed(3)} 秒放，${events.volleyCast.sec.toFixed(3)} 秒（齐放出手）接后一条`);
   });
 });
 
@@ -197,13 +197,13 @@ describe('第 5 幕 击败', () => {
   });
 
   it('声音：他死、收盘、俯冲、落地、点重生卡在导出的时刻上', () => {
-    expect(seg5.秒).toBeCloseTo(defeat.actDur, 2);
+    expect(seg5.sec).toBeCloseTo(defeat.actDur, 2);
     expect(eventTime(seg5, '他死')).toBe(0);
-    expect(eventTime(seg5, '点重生')).toBe(defeat.cursorMove.点);
+    expect(eventTime(seg5, '点重生')).toBe(defeat.cursorMove.points);
     expect(eventTime(seg5, '收盘')).toBe(defeat.yaBoLunBeats.retractStart);
     expect(eventTime(seg5, '俯冲')).toBe(defeat.yaBoLunBeats.descendStart);
     expect(eventTime(seg5, '落地')).toBeCloseTo(defeat.landSec - defeat.actStart, 9);
-    for (const c of cueList(seg5)) expect(c.秒).toBeLessThan(seg5.秒);
-    console.log('第 5 幕声音', [...cueList(seg5)].sort((a, b) => a.秒 - b.秒).map((c) => `${c.秒.toFixed(2)} ${c.名}`).join('；'));
+    for (const c of cueList(seg5)) expect(c.sec).toBeLessThan(seg5.sec);
+    console.log('第 5 幕声音', [...cueList(seg5)].sort((a, b) => a.sec - b.sec).map((c) => `${c.sec.toFixed(2)} ${c.name}`).join('；'));
   });
 });

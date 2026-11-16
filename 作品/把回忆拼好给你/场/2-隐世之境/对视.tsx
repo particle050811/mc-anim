@@ -58,15 +58,15 @@ const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 export const eyeContactEye: V3 = eyePos(eyeContactFoot);
 
 /** 这一帧的透视机位（形状同 engine/三渲二/机位.tsx 的 透视机位参数） */
-export const eyeContactRig = (edition: EyeContactVersion) => ({ 种: '透视' as const, 眼: eyeContactEye, 看: eyeContactFraming[edition].看, fov: eyeContactFov });
+export const eyeContactRig = (edition: EyeContactVersion) => ({ kind: '透视' as const, 眼: eyeContactEye, 看: eyeContactFraming[edition].看, fov: eyeContactFov });
 
 /** 她这一帧的姿势（脚底、身子朝向） */
 export const eyeContactPose: FigurePose = { ...standPose(liYing.feet), yaw: liYing.bodyFacing };
 
 /** 她这一帧的样子：站着（TLM 待机站姿）、身子侧着、头转过来看你（夹在 头转范围 上限）、认出你、睁着眼，右手举着月铃兰（拿花、铃兰.tsx） */
-export const LiYingEyeContact: React.FC<{ 秒?: number }> = ({ 秒: sec = eyeContactSec }) => {
+export const LiYingEyeContact: React.FC<{ sec?: number }> = ({ sec: sec = eyeContactSec }) => {
   const pose = eyeContactPose;
-  const p: MagicalWineFoxExProps = { pose, stancePose: '站', expression: '认出你', 看: liYingLookAt(eyeContactEye, pose), blink: 0, 秒: sec, rightHand: holdNothing };
+  const p: MagicalWineFoxExProps = { pose, stancePose: '站', expression: '认出你', 看: liYingLookAt(eyeContactEye, pose), blink: 0, sec: sec, rightHand: holdNothing };
   return <LiYingHoldingFlower p={p} />;
 };
 
@@ -84,10 +84,10 @@ export type HoldFlowerStart = { upperArm: readonly number[]; foreArm: readonly n
 
 /** 她和她手里的花：骨骼照 对视她骨骼 改（举：手举起来多少，0～1；起：举 = 0 时手在哪），花的握点放在改完以后的右手握持点上，正面朝 眼（不给 = 对视眼）。
  *  叠骨骼：改完以后再整条盖上去的骨骼（她笑、靠肩要歪头） */
-export const LiYingHoldingFlower: React.FC<{ p: MagicalWineFoxExProps; raiseAmount?: number; 起?: HoldFlowerStart; overlaySkeleton?: Record<string, BonePose>; 眼?: V3 }> = ({
+export const LiYingHoldingFlower: React.FC<{ p: MagicalWineFoxExProps; raiseAmount?: number; start?: HoldFlowerStart; overlaySkeleton?: Record<string, BonePose>; 眼?: V3 }> = ({
   p,
   raiseAmount = 1,
-  起: startPose,
+  start: startPose,
   overlaySkeleton,
   眼: eye = eyeContactEye,
 }) => {
@@ -129,11 +129,11 @@ export const eyeContactSkeleton = (p: MagicalWineFoxExProps, raiseAmount = 1, st
 };
 
 /** 三渲二画布里的东西（网格本地坐标，画布已经转好 Z 朝上）：布景不放灯（平涂不吃灯）、褪色（背景褪色参数），她不褪 */
-export const EyeContactScene: React.FC<{ 秒?: number }> = ({ 秒: sec = eyeContactSec }) => (
-  <BackgroundFade 参数={backgroundFadeParams}>
-    <HiddenLandReunionBackdrop 眼={eyeContactEye} 秒={sec} lighting={false} doorLightParams={eyeContactDoorLight}>
+export const EyeContactScene: React.FC<{ sec?: number }> = ({ sec: sec = eyeContactSec }) => (
+  <BackgroundFade params={backgroundFadeParams}>
+    <HiddenLandReunionBackdrop 眼={eyeContactEye} sec={sec} lighting={false} doorLightParams={eyeContactDoorLight}>
       <NoFade>
-        <LiYingEyeContact 秒={sec} />
+        <LiYingEyeContact sec={sec} />
       </NoFade>
     </HiddenLandReunionBackdrop>
   </BackgroundFade>
@@ -142,18 +142,18 @@ export const EyeContactScene: React.FC<{ 秒?: number }> = ({ 秒: sec = eyeCont
 /** 气泡挂在哪（页面像素）：高是她脚底正上方 对视气泡.锚高 那一点按这一版的机位投到画面上的高；
  *  横着，对视气泡.居中 的那几版（封面）挪到让盒子（不算尾巴）左右居中在画面正中，别的就在那一点正上方 */
 export const eyeContactBubbleAnchor = (edition: EyeContactVersion) => {
-  const { 宽: width, 高: height, 看: lookAt } = eyeContactFraming[edition];
-  const cam = makePerspectiveCamera({ 眼: zUpToThree(eyeContactEye), 看: zUpToThree(lookAt), fov: eyeContactFov, 宽: width, 高: height });
+  const { width: width, height: height, 看: lookAt } = eyeContactFraming[edition];
+  const cam = makePerspectiveCamera({ 眼: zUpToThree(eyeContactEye), 看: zUpToThree(lookAt), fov: eyeContactFov, width: width, height: height });
   const p = projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + eyeContactBubble.anchorHeight]), width, height);
   if (!eyeContactBubble.centered[edition]) return { x: p.x, y: p.y };
-  const bottomBox = maidBubbleGeom(eyeContactBubble.字[edition], pixelFont, eyeContactBubble.位置[edition]).bottomBox;
-  return { x: width / 2 - ((bottomBox.x + bottomBox.宽 / 2) * eyeContactBubble.缩放[edition]) / filmScale, y: p.y };
+  const bottomBox = maidBubbleGeom(eyeContactBubble.char[edition], pixelFont, eyeContactBubble.位置[edition]).bottomBox;
+  return { x: width / 2 - ((bottomBox.x + bottomBox.width / 2) * eyeContactBubble.scale[edition]) / filmScale, y: p.y };
 };
 
 /** 她头顶的气泡：按 对视气泡 里这一版的字、缩放、摆法画，锚点吸到一个气泡像素的格子上（从页面左上角数） */
 const EyeContactBubble: React.FC<{ 版: EyeContactVersion }> = ({ 版: edition }) => {
-  const s = eyeContactBubble.缩放[edition];
-  return <MaidBubble 锚={eyeContactBubbleAnchor(edition)} 缩放={s} anchorAlign={s} 文字={eyeContactBubble.字[edition]} 位置={eyeContactBubble.位置[edition]} 字体={pixelFont} />;
+  const s = eyeContactBubble.scale[edition];
+  return <MaidBubble 锚={eyeContactBubbleAnchor(edition)} scale={s} anchorAlign={s} 文字={eyeContactBubble.char[edition]} 位置={eyeContactBubble.位置[edition]} 字体={pixelFont} />;
 };
 
 /**
@@ -163,28 +163,28 @@ const EyeContactBubble: React.FC<{ 版: EyeContactVersion }> = ({ 版: edition }
 export const EyeContactPicture: React.FC<{
   版: EyeContactVersion;
   withPost?: boolean;
-  秒?: number;
-  bigText?: { 缩放: number; left: number; 下: number };
+  sec?: number;
+  bigText?: { scale: number; left: number; 下: number };
   showBubble?: boolean;
   showChat?: boolean;
-}> = ({ 版: edition, withPost = true, 秒: sec = eyeContactSec, bigText, showBubble: showBubble = true, showChat = true }) => {
-  const { 宽: width, 高: height } = eyeContactFraming[edition];
+}> = ({ 版: edition, withPost = true, sec: sec = eyeContactSec, bigText, showBubble: showBubble = true, showChat = true }) => {
+  const { width: width, height: height } = eyeContactFraming[edition];
   const t = palette[tone];
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, overflow: 'hidden' }}>
       <FilmPost grade={withPost ? t.grade : null}>
-        <ToonCanvas 宽={width} 高={height} cameraRig={eyeContactRig(edition)} {...canvasTone(tone)} tint={doorLightTint} glowRegions={reunionGlowRegions}>
-          <EyeContactScene 秒={sec} />
+        <ToonCanvas width={width} height={height} cameraRig={eyeContactRig(edition)} {...canvasTone(tone)} tint={doorLightTint} glowRegions={reunionGlowRegions}>
+          <EyeContactScene sec={sec} />
         </ToonCanvas>
         {showBubble && <EyeContactBubble 版={edition} />}
         {!showChat ? null : edition === '片' ? (
           <PixelChatBar
             lines={[{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }]}
             刻={chatAgeTick}
-            缩放={movieChatScale}
+            scale={movieChatScale}
             字体={pixelFont}
-            宽={width}
-            高={height}
+            width={width}
+            height={height}
             chatWidth={movieChatWidth}
           />
         ) : (

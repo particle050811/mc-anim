@@ -12,8 +12,8 @@ export const originalGain = 0.5;
  *  鼠标在 x 78～337（行宽居中到滚动条左边）、y 52～88 里算指着这一项（getEntryAtPosition），x < 行左 + 32 算指着图标；
  *  搜索框在 (宽/2 − 100, 22)，200 × 20，开界面时拿着焦点（setInitialFocus），字从框内 (4, 6) 起 */
 export const ui = {
-  宽: 427,
-  高: 240,
+  width: 427,
+  height: 240,
   listRange: { 上: 48, 下: 176 },
   行: { left: 80, topY: 52 },
   iconEdge: 32,
@@ -21,13 +21,13 @@ export const ui = {
   textY: [53, 64, 73] as const,
   selectedFrame: { left: 78, right: 348, 上: 50, 下: 86 },
   pointAt: { left: 78, right: 337, 上: 52, 下: 88 },
-  searchFrame: { x: 113, y: 22, 宽: 200, 高: 20 },
+  searchFrame: { x: 113, y: 22, width: 200, height: 20 },
 } as const;
 
 /** 原版颜色（ARGB 拆成 CSS）：存档名白、下两行 0x808080，都不带阴影；指着时图标上蒙 0xA0909090；选中框外圈白（列表拿着焦点）、里圈黑；
  *  搜索框拿着焦点白边、没有 0xA0A0A0 边，底黑，光标「_」0xE0E0E0 带阴影；泥土底上下两条乘 0.25、列表区乘 0.125，列表上下沿各 4 像素黑渐变 */
 export const colorPalette = {
-  名: '#ffffff',
+  name: '#ffffff',
   greyText: '#808080',
   pointingDim: 'rgba(144,144,144,0.6275)',
   selectedOuter: '#ffffff',
@@ -47,11 +47,11 @@ export const colorPalette = {
  *  重逢游玩：片尾回色时第二行换成这次重逢玩过的时间（核查 10-24：片尾还写着去年的日期；原版退出世界回到列表，上次游玩就是刚才）。
  *  第二年六月高考考完以后的那天晚上，日子和几点是 Agent 暂定 */
 export const save = {
-  名: '新的世界',
+  name: '新的世界',
   gameMode: '生存模式',
-  版本: '1.20.1',
-  lastPlayed: { 年: 2025, 月: 8, 日: 10, 时: 22, 分: 47 },
-  reunionPlayed: { 年: 2026, 月: 6, 日: 10, 时: 21, 分: 16 },
+  version: '1.20.1',
+  lastPlayed: { 年: 2025, month: 8, 日: 10, timestamp: 22, 分: 47 },
+  reunionPlayed: { 年: 2026, month: 6, 日: 10, timestamp: 21, 分: 16 },
 } as const;
 
 /** 一个界面像素几个成片像素。12：图标里的照片像素（64×64 画进 32 界面像素，半个界面像素）、存档名的汉字（Unifont，一个点半个界面像素）都是 6 个成片像素，
@@ -65,7 +65,7 @@ export const framingCenter = { x: 174, y: 82 } as const;
 /** 鼠标光标（经典箭头 12×19 个光标像素，一个光标像素半个界面像素 = 6 成片像素，和全片像素一样大）的箭头尖（界面像素）：
  *  从画外右下滑进来，先擦过那一行的字（图标上出灰的播放箭头），停在图标右下、播放箭头的右下边（箭头变蓝，光标不压播放箭头）。
  *  走法：开场光标入 → 开场光标到，缓入缓出 */
-export const cursor = { 起: { x: 290, y: 150 }, 停: { x: 104, y: 75 } } as const;
+export const cursor = { start: { x: 290, y: 150 }, 停: { x: 104, y: 75 } } as const;
 
 /** 搜索框光标闪：原版 EditBox 每刻 frame + 1，frame / 6 % 2 == 0 时画「_」（亮 6 刻、灭 6 刻） */
 export const flashTicks = 6;
@@ -73,7 +73,7 @@ export const flashTicks = 6;
 /** 钻进图标：开场鼓点起 秒 秒里有这个界面（24 fps 时 10 帧；最后 1/24 秒尺到 终尺，之后整屏新世界），尺从 尺 涨到 终尺（图标 32 界面像素铺满 2560 宽要 80），
  *  越往后越快（指数缩放再加缓入）。取景中心同时从 取景中心 挪到图标正中。图标里的照片从 透起 到 透满（钻入进度）一个照片像素一个照片像素地抖动透掉，
  *  露出垫在下面的新世界；中间几帧图标还没铺满，看得见新世界框在选中框的黑白边里（像钻进照片） */
-export const drillIn = { 秒: legacyFrameSec(10), endZoom: 84, easeIn: 1.6, alphaStart: 0.25, fullAlpha: 0.8 } as const;
+export const drillIn = { sec: legacyFrameSec(10), endZoom: 84, easeIn: 1.6, alphaStart: 0.25, fullAlpha: 0.8 } as const;
 
 /** 片尾：咔哒那一帧（片尾第一帧）整屏纯白，白光照第 11 句截图那一闪（场/2-门口/门口之夜参数.ts 照片版式 的 闪白秒，(1 − 秒/闪白秒)² 淡掉），闪白秒（24 fps 时 5 帧）就退，
  *  盖在界面和碎片上面。回色前界面去饱和（灰），回色时「啪」地回到第 0 镜的调子。
@@ -82,7 +82,7 @@ export const endWhite = { whiteFlashSec: legacyFrameSec(5) } as const;
 
 /** 片尾的镜头：开头钻进图标那条路（编排.ts 的 钻入取景）倒着走，从图标跟前（尺 起尺，图标占半个画面宽）往外拉回平常取景，先快后慢（缓出），秒 秒到位（24 fps 时 18 帧）。
  *  核查 10-24 要「从图标跟前往外拉，和开头钻进去反过来」。Agent 暂定 */
-export const endPullBack = { 秒: 0.75, startZoom: 40, easeOutPower: 2 } as const;
+export const endPullBack = { sec: 0.75, startZoom: 40, easeOutPower: 2 } as const;
 
 /** 片尾的碎片：新合照切成 碎块边 × 碎块边 照片像素的方块（64 / 16 = 4×4 = 16 块），从离图标中心 远 界面像素（横向拉宽 1.6 倍贴合宽画面）的地方飞进图标框，飞着时就是新照片的那一块。
  *  每块飞 飞秒（24 fps 时 16 帧），起飞在 [首秒, 首秒 + 错开秒] 里（按散列定死、连续取；原来落在 1/24 秒的整数倍上、分四批齐飞，用户 11-03「统统改成 60 帧」），一路跟着镜头拉回；开头 起倍 倍大、越飞越快（缓入）、到位时正好是图标里那一块，回色前一帧全部到位。

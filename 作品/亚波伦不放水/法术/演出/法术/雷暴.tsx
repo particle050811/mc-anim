@@ -24,7 +24,7 @@ const warningImg = png(aoeIndicatorPng);
 const thunderColor = hexColor(11660252);
 const white = hexColor(0xffffff);
 
-const Thunderstorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+const Thunderstorm: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
   const boltBase: Vec3 = [from[0], from[1], from[2] + 1.5];
   return (
@@ -38,16 +38,16 @@ const Thunderstorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标:
         const r = mulberry32(seed * 733 + i);
         return (
           <React.Fragment key={i}>
-            {!options?.noWarningRing && age >= 1 && age < stormWarnTicks && <GroundDecal 位={pos} 图={warningImg} radius={3 * (1 - (age - 1) / stormWarnTicks)} 色={white} opacity={0.25} lift={0.1} />}
+            {!options?.noWarningRing && age >= 1 && age < stormWarnTicks && <GroundDecal 位={pos} image={warningImg} radius={3 * (1 - (age - 1) / stormWarnTicks)} 色={white} opacity={0.25} lift={0.1} />}
             {strikeAge >= 0 && strikeAge < 12 && (
               <>
             <CircleBurst 位={pos} 刻={strikeAge} 色={thunderColor} 尺寸={3} 速={1} />
             <SphereBurst 位={pos} 刻={strikeAge} 色={thunderColor} 尺寸={3} 速={1} />
-            <ElectricArc 起={[pos[0], pos[1], pos[2] + 40]} end={pos} settings={arcPresets.lightningBolt} 刻={strikeAge} lifeTicks={10} 色={thunderColor} 种子={seed * 31 + i} />
-            <ElectricArc 起={boltBase} end={[boltBase[0], boltBase[1], boltBase[2] + 40]} settings={arcPresets.lightningBolt} 刻={strikeAge} lifeTicks={10} 色={thunderColor} 种子={seed * 37 + i} />
+            <ElectricArc start={[pos[0], pos[1], pos[2] + 40]} end={pos} settings={arcPresets.lightningBolt} 刻={strikeAge} lifeTicks={10} 色={thunderColor} seed={seed * 31 + i} />
+            <ElectricArc start={boltBase} end={[boltBase[0], boltBase[1], boltBase[2] + 40]} settings={arcPresets.lightningBolt} 刻={strikeAge} lifeTicks={10} 色={thunderColor} seed={seed * 37 + i} />
             {Array.from({ length: 16 }, (_, k) => {
               const end: Vec3 = [pos[0] + Math.floor(r() * 9 - 4) * r(), pos[1] + Math.floor(r() * 9 - 4) * r(), pos[2] + 1 + r()];
-              return <ElectricArc key={k} 起={[pos[0], pos[1], pos[2] + 1]} end={end} settings={arcPresets.shock} 刻={strikeAge} lifeTicks={12} 色={thunderColor} 种子={seed * 3001 + i * 20 + k} />;
+              return <ElectricArc key={k} start={[pos[0], pos[1], pos[2] + 1]} end={end} settings={arcPresets.shock} 刻={strikeAge} lifeTicks={12} 色={thunderColor} seed={seed * 3001 + i * 20 + k} />;
             })}
               </>
             )}

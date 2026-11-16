@@ -12,9 +12,9 @@ import type { DistantTask } from './任务.ts';
 
 const noHeight = -32768;
 const recordBytes = 14;
-type SampleHeader = { 方块名: string[]; 群系名: string[]; 群系温度?: number[]; 层: { 名: string; step: number; 块边: number; n: number; 块数: number }[]; 种子: string; 海平面: number };
+type SampleHeader = { 方块名: string[]; biomeNames: string[]; biomeTemps?: number[]; layers: { name: string; step: number; tileEdge: number; n: number; 块数: number }[]; seed: string; seaLevel: number };
 
-export type DistantPackResult = { 文件: Record<string, Buffer>; pointCounts: Record<string, number>; 群系: string[]; surfaceBlocks: string[]; 范围: [number, number, number, number] };
+export type DistantPackResult = { file: Record<string, Buffer>; pointCounts: Record<string, number>; biome: string[]; surfaceBlocks: string[]; bounds: [number, number, number, number] };
 
 // 差照 engine 的 distantTop 算，格式只有那一份；pipeline 不静态 import 渲染代码，按路径动态取（同 体素库.ts）
 const loadDistantMeshModule = (): Promise<typeof distantMeshModule> => import(pathToFileURL(path.join(codeRoot(), 'engine', 'voxel', '远景网格.ts')).href);
@@ -26,9 +26,9 @@ export const packDistant = async (tasks: DistantTask[]): Promise<DistantPackResu
     return { t, 头: sampleHeader };
   });
   // 合并的方块表、群系表（群系按名排序，地表按出现顺序）
-  const biomeNames = [...new Set(parts.flatMap((p) => p.头.群系名))].sort();
+  const biomeNames = [...new Set(parts.flatMap((p) => p.头.biomeNames))].sort();
   const biomeTemperature = new Map<string, number>();
-  for (const p of parts) p.头.群系温度?.forEach((v, i) => biomeTemperature.set(p.头.群系名[i], v));
+  for (const p of parts) p.头.biomeTemps?.forEach((v, i) => biomeTemperature.set(p.头.biomeNames[i], v));
   const missingTemps = biomeNames.filter((n) => !biomeTemperature.has(n));
   if (missingTemps.length) throw new Error(`这些群系没有温度（取样用的 mcai 太旧，重跑一份带 群系温度 的）：${missingTemps.join('、')}`);
   if (biomeNames.length > 255) throw new Error('群系超过 255 个');
@@ -42,25 +42,25 @@ export const packDistant = async (tasks: DistantTask[]): Promise<DistantPackResu
   };
 
   // 粗层：范围是各份粗层块的外包
-  const coarseTiles = parts.flatMap((p) => p.t.层.find((l) => l.名 === '粗')!.块.map((b) => ({ b, 块边: p.t.层.find((l) => l.名 === '粗')!.块边 })));
-  const step = parts[0].t.层.find((l) => l.名 === '粗')!.step;
+  const coarseTiles = parts.flatMap((p) => p.t.layers.find((l) => l.name === '粗')!.tile.map((b) => ({ b, tileEdge: p.t.layers.find((l) => l.name === '粗')!.tileEdge })));
+  const step = parts[0].t.layers.find((l) => l.name === '粗')!.step;
   const X0 = Math.min(...coarseTiles.map((c) => c.b[0])), Z0 = Math.min(...coarseTiles.map((c) => c.b[1]));
-  const X1 = Math.max(...coarseTiles.map((c) => c.b[0] + c.块边)), Z1 = Math.max(...coarseTiles.map((c) => c.b[1] + c.块边));
+  const X1 = Math.max(...coarseTiles.map((c) => c.b[0] + c.tileEdge)), Z1 = Math.max(...coarseTiles.map((c) => c.b[1] + c.tileEdge));
   const nx = (X1 - X0) / step + 1, nz = (Z1 - Z0) / step + 1;
   const heights = new Int16Array(nx * nz).fill(noHeight), biomeIndex = new Uint8Array(nx * nz), surface = new Uint8Array(nx * nz), crownTop = new Int16Array(nx * nz).fill(noHeight), crownBottom = new Int16Array(nx * nz).fill(noHeight);
 
   // 逐份逐层读点：回调拿 (方块 x, z, 记录 DataView, 偏移, 这一份的表)
   const readLayer = (layerName: string, perPoint: (x: number, z: number, v: DataView, o: number, sampleHeader: SampleHeader) => void) => {
     for (const { t, 头: sampleHeader } of parts) {
-      const l = t.层.find((q) => q.名 === layerName);
-      if (!l || !l.块.length) continue;
-      const hl = sampleHeader.层.find((q) => q.名 === layerName)!;
-      if (hl.块数 !== l.块.length || hl.step !== l.step || hl.块边 !== l.块边) throw new Error(`${t.出} 的 ${layerName} 层和任务对不上`);
+      const l = t.layers.find((q) => q.name === layerName);
+      if (!l || !l.tile.length) continue;
+      const hl = sampleHeader.layers.find((q) => q.name === layerName)!;
+      if (hl.块数 !== l.tile.length || hl.step !== l.step || hl.tileEdge !== l.tileEdge) throw new Error(`${t.出} 的 ${layerName} 层和任务对不上`);
       const buf = fs.readFileSync(`${t.出}.${layerName}.bin`);
       const n = hl.n;
-      if (buf.length !== l.块.length * n * n * recordBytes) throw new Error(`${t.出}.${layerName}.bin 长度不对`);
+      if (buf.length !== l.tile.length * n * n * recordBytes) throw new Error(`${t.出}.${layerName}.bin 长度不对`);
       const v = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-      l.块.forEach(([bx, bz], b) => {
+      l.tile.forEach(([bx, bz], b) => {
         for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) perPoint(bx + i * l.step, bz + j * l.step, v, ((b * n + j) * n + i) * recordBytes, sampleHeader);
       });
     }
@@ -74,40 +74,40 @@ export const packDistant = async (tasks: DistantTask[]): Promise<DistantPackResu
     const k = ((z - Z0) / step) * nx + (x - X0) / step;
     heights[k] = ground(v, o, x, z);
     surface[k] = blockIndex(sampleHeader.方块名[v.getUint16(o + 2, true)]);
-    biomeIndex[k] = biomeNames.indexOf(sampleHeader.群系名[v.getUint16(o + 4, true)]);
+    biomeIndex[k] = biomeNames.indexOf(sampleHeader.biomeNames[v.getUint16(o + 4, true)]);
     crownTop[k] = v.getInt16(o + 8, true);
     crownBottom[k] = v.getInt16(o + 10, true);
   });
   const missingIdx = heights.findIndex((h) => h === noHeight);
   if (missingIdx >= 0) throw new Error(`粗层有点没取样：(${X0 + (missingIdx % nx) * step}, ${Z0 + Math.floor(missingIdx / nx) * step})`);
 
-  const seed = parts[0].头.种子;
-  const seaLevel = parts[0].头.海平面;
-  const grid: DistantGrid = { packName: '', x0: X0, z0: Z0, step, nx, nz, 海平面: seaLevel, 高: heights, biomeIndex, 群系名: biomeNames, biomeTemperature: biomeNames.map((n) => biomeTemperature.get(n)!), 层: [] };
+  const seed = parts[0].头.seed;
+  const seaLevel = parts[0].头.seaLevel;
+  const grid: DistantGrid = { packName: '', x0: X0, z0: Z0, step, nx, nz, seaLevel: seaLevel, height: heights, biomeIndex, biomeNames: biomeNames, biomeTemperature: biomeNames.map((n) => biomeTemperature.get(n)!), layers: [] };
   const files: Record<string, Buffer> = {};
-  const pointCounts: Record<string, number> = { 粗: nx * nz };
+  const pointCounts: Record<string, number> = { coarse: nx * nz };
   // 加密层：差 = 取样 − 下面各层（含已加上的加密层）在这一点的 distantTop；同一块在几份里出现只算一次
   for (const [layerKey, layerName] of [['中', '中层'], ['细', '细带']] as const) {
     const chunks: [number, number][] = [];
     const blockOrdinals = new Map<string, number>();
     let layerStep = 0, tileEdge = 0;
     for (const { t } of parts) {
-      const l = t.层.find((q) => q.名 === layerKey);
+      const l = t.layers.find((q) => q.name === layerKey);
       if (!l) continue;
       layerStep = l.step;
-      tileEdge = l.块边;
-      for (const b of l.块) if (!blockOrdinals.has(`${b[0]},${b[1]}`)) blockOrdinals.set(`${b[0]},${b[1]}`, chunks.push(b) - 1);
+      tileEdge = l.tileEdge;
+      for (const b of l.tile) if (!blockOrdinals.has(`${b[0]},${b[1]}`)) blockOrdinals.set(`${b[0]},${b[1]}`, chunks.push(b) - 1);
     }
     if (!chunks.length) continue;
     const n = tileEdge / layerStep + 1;
     const diffDeltas = new Int16Array(chunks.length * n * n);
     // 按块顺序读（块的远边那一排点也存在本块里）
     for (const { t } of parts) {
-      const l = t.层.find((q) => q.名 === layerKey);
-      if (!l || !l.块.length) continue;
+      const l = t.layers.find((q) => q.name === layerKey);
+      if (!l || !l.tile.length) continue;
       const buf = fs.readFileSync(`${t.出}.${layerKey}.bin`);
       const v = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-      l.块.forEach(([bx, bz], b) => {
+      l.tile.forEach(([bx, bz], b) => {
         const targetOffset = blockOrdinals.get(`${bx},${bz}`)! * n * n;
         for (let j = 0; j < n; j++)
           for (let i = 0; i < n; i++) {
@@ -119,21 +119,21 @@ export const packDistant = async (tasks: DistantTask[]): Promise<DistantPackResu
           }
       });
     }
-    const meta = { 版本: 1, 层: layerName, 种子: seed, step: layerStep, 块边: tileEdge, n, 块: chunks };
-    grid.层.push(buildDetailLayer(layerKey, meta, diffDeltas));
+    const meta = { version: 1, layers: layerName, seed: seed, step: layerStep, tileEdge: tileEdge, n, tile: chunks };
+    grid.layers.push(buildDetailLayer(layerKey, meta, diffDeltas));
     files[`远景.${layerKey}.json`] = Buffer.from(JSON.stringify(meta));
     files[`远景.${layerKey}.bin.gz`] = gzipSync(Buffer.from(diffDeltas.buffer), { level: 9 });
     pointCounts[layerKey] = diffDeltas.length;
   }
-  files['远景.json'] = Buffer.from(JSON.stringify({ 版本: 1, 种子: seed, x0: X0, z0: Z0, step, nx, nz, 海平面: seaLevel, 群系名: biomeNames, 群系温度: grid.biomeTemperature, 地表名: surfaceNames }));
+  files['远景.json'] = Buffer.from(JSON.stringify({ version: 1, seed: seed, x0: X0, z0: Z0, step, nx, nz, seaLevel: seaLevel, biomeNames: biomeNames, biomeTemps: grid.biomeTemperature, surfaceNames: surfaceNames }));
   files['远景.高.bin.gz'] = gzipSync(Buffer.from(heights.buffer), { level: 9 });
   files['远景.群.bin.gz'] = gzipSync(Buffer.from(biomeIndex.buffer), { level: 9 });
   files['远景.地表.bin.gz'] = gzipSync(Buffer.from(surface.buffer), { level: 9 });
   files['远景.冠顶.bin.gz'] = gzipSync(Buffer.from(crownTop.buffer), { level: 9 });
   files['远景.冠底.bin.gz'] = gzipSync(Buffer.from(crownBottom.buffer), { level: 9 });
-  return { 文件: files, pointCounts, 群系: biomeNames, surfaceBlocks: surfaceNames, 范围: [X0, Z0, X1, Z1] };
+  return { file: files, pointCounts, biome: biomeNames, surfaceBlocks: surfaceNames, bounds: [X0, Z0, X1, Z1] };
 };
 
 export const writeToDir = (r: DistantPackResult, dir: string) => {
-  for (const [fileName, b] of Object.entries(r.文件)) fs.writeFileSync(path.join(dir, fileName), b);
+  for (const [fileName, b] of Object.entries(r.file)) fs.writeFileSync(path.join(dir, fileName), b);
 };

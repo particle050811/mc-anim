@@ -15,10 +15,10 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'electrocute',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // ElectrocuteSpell：SHOCK_CAST；命中 THUNDERBOLT
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.shock_cast.1', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.thunderbolt.1', 秒: 0, fromHit: true },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.shock_cast.1', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.thunderbolt.1', sec: 0, fromHit: true },
   ],
 });

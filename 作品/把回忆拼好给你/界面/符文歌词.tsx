@@ -54,8 +54,8 @@ const parseColor = (s: string) => {
 const intToRgb = (n: number) => [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
 
 type DotLayer = {
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** RGBA */
   px: Uint8ClampedArray<ArrayBuffer>;
   /** 1 = 字或符文（描边绕着它描） */
@@ -64,11 +64,11 @@ type DotLayer = {
   光: Float32Array;
 };
 
-const newLayer = (width: number, height: number): DotLayer => ({ 宽: width, 高: height, px: new Uint8ClampedArray(width * height * 4), 实: new Uint8Array(width * height), 光: new Float32Array(width * height) });
+const newLayer = (width: number, height: number): DotLayer => ({ width: width, height: height, px: new Uint8ClampedArray(width * height * 4), 实: new Uint8Array(width * height), 光: new Float32Array(width * height) });
 
 const drawDot = (pixelLayer: DotLayer, X: number, Y: number, c: readonly number[], light = 0) => {
-  if (X < 0 || Y < 0 || X >= pixelLayer.宽 || Y >= pixelLayer.高) return;
-  const k = Y * pixelLayer.宽 + X;
+  if (X < 0 || Y < 0 || X >= pixelLayer.width || Y >= pixelLayer.height) return;
+  const k = Y * pixelLayer.width + X;
   pixelLayer.px[k * 4] = c[0]!;
   pixelLayer.px[k * 4 + 1] = c[1]!;
   pixelLayer.px[k * 4 + 2] = c[2]!;
@@ -79,8 +79,8 @@ const drawDot = (pixelLayer: DotLayer, X: number, Y: number, c: readonly number[
 
 /** 只画在空着的地方（不盖字、符文和描边），a = 不透明度：光圈、火花用 */
 const paintDot = (pixelLayer: DotLayer, X: number, Y: number, c: readonly number[], a = 1) => {
-  if (X < 0 || Y < 0 || X >= pixelLayer.宽 || Y >= pixelLayer.高) return;
-  const k = Y * pixelLayer.宽 + X;
+  if (X < 0 || Y < 0 || X >= pixelLayer.width || Y >= pixelLayer.height) return;
+  const k = Y * pixelLayer.width + X;
   if (pixelLayer.px[k * 4 + 3]) return;
   pixelLayer.px[k * 4] = c[0]!;
   pixelLayer.px[k * 4 + 1] = c[1]!;
@@ -114,7 +114,7 @@ const glossAt = (X: number, Y: number, timeMs: number, out: number[]) => {
 
 /** 一个字拼齐那一下，字形外框四个角外 2 点各闪一个亮点：头 1/24 秒十字（5 点），之后只剩中心一点（24 fps 时第 1 帧十字、第 2 帧一点）。解后 是帧数 */
 const drawHighlight = (pixelLayer: DotLayer, glyphCell: PlacedChar, afterSolve: number, visible: (X: number, Y: number) => boolean, rgb: readonly number[]) => {
-  const points = glyphSource.hanChar(glyphCell.字).点;
+  const points = glyphSource.hanChar(glyphCell.char).points;
   const xs = points.map(([x]) => x);
   const ys = points.map(([, y]) => y);
   const left = Math.min(...xs) - 2;
@@ -133,12 +133,12 @@ const drawHighlight = (pixelLayer: DotLayer, glyphCell: PlacedChar, afterSolve: 
 /** 一块落定后这一帧怎么画：挪几点、什么颜色（关键词效果改它）；冰 = 刹那：1 闪（整块冰亮色、外一圈冰色），2 冰（冰色、朝上的点亮一档） */
 type BlockStyle = { dx: number; dy: number; 色: readonly number[]; ice?: 0 | 1 | 2 };
 
-type CharEntry = { 格: PlacedChar; pinyin: string; state: CharState; 时: { 起: number; end: number }; 种: number; chunks: readonly RuneBlock[] };
+type CharEntry = { cell: PlacedChar; pinyin: string; state: CharState; timestamp: { start: number; end: number }; kind: number; chunks: readonly RuneBlock[] };
 
 /** 贴片里的一点：相对左上角的整数位置、颜色、吃多少光泽、显现度（抖动阈值比它小才画） */
 type StampDot = readonly [number, number, readonly number[], number, number];
 /** 一张按成片像素贴的小图（飞着的符文、挪着的块、火花）：左上角在点格上的位置（带小数）、宽高（点）、点们、横向裁到哪（点）；空 = 火花（只画在空处） */
-type Stamp = { x: number; y: number; 宽: number; 高: number; patchPoints: StampDot[]; 界?: readonly [number, number]; 空?: true };
+type Stamp = { x: number; y: number; width: number; height: number; patchPoints: StampDot[]; 界?: readonly [number, number]; 空?: true };
 
 /** 画一个字的符文和已经落定的块：停着的块画进 层，飞着的符文放进 飞符们，挪着的块放进 动块们。块样 给关键词改落定以后的样子；调 = 时差的残影那一遍把所有颜色换成冷色 */
 const drawText = (
@@ -151,7 +151,7 @@ const drawText = (
   blockStyle: (k: number) => BlockStyle,
   toneFn?: (c: readonly number[]) => readonly number[],
 ) => {
-  const { 格: glyphCell, pinyin, state, 时: timeSpan, 种: seed, chunks } = glyph;
+  const { cell: glyphCell, pinyin, state, timestamp: timeSpan, kind: seed, chunks } = glyph;
   const runeRgb = parseColor(lyricStyle.runeColor);
   const flights = flyBlocks(chunks, pinyin, { ...timeSpan, 入: state.入 }, lyricStyle.flySec, seed);
   const clipRange = glyphCell.界;
@@ -163,19 +163,19 @@ const drawText = (
   flights.forEach((flight, k) => {
     const pos = flyPos(flight, f);
     if (!pos) return;
-    const pixelSize = (f - flight.起) / (flight.landTime - flight.起) < gatherFactor ? runeScale : 1;
+    const pixelSize = (f - flight.start) / (flight.landTime - flight.start) < gatherFactor ? runeScale : 1;
     const glyph = glyphSource.rune(flight.letter);
     const center = chunks[k]!.心;
     const c = runeRgb.map((v) => v * flight.brightness);
     const glyphColor = toneFn ? toneFn(c) : c;
-    const shown = (1 - state.出) * ((f - flight.起) / fps < legacyFrameSec(1) ? 0.5 : 1);
+    const shown = (1 - state.出) * ((f - flight.start) / fps < legacyFrameSec(1) ? 0.5 : 1);
     const patchPoints: StampDot[] = [];
-    for (const [x, y] of glyph.点) for (let sy = 0; sy < pixelSize; sy++) for (let sx = 0; sx < pixelSize; sx++) patchPoints.push([x * pixelSize + sx, y * pixelSize + sy, glyphColor, 1, shown]);
+    for (const [x, y] of glyph.points) for (let sy = 0; sy < pixelSize; sy++) for (let sx = 0; sx < pixelSize; sx++) patchPoints.push([x * pixelSize + sx, y * pixelSize + sy, glyphColor, 1, shown]);
     flyGlyphs.push({
-      x: glyphCell.x + center[0] + pos[0] - (glyph.宽 * pixelSize) / 2,
+      x: glyphCell.x + center[0] + pos[0] - (glyph.width * pixelSize) / 2,
       y: glyphCell.y + center[1] + pos[1] - 3.5 * pixelSize,
-      宽: glyph.宽 * pixelSize,
-      高: glyph.高 * pixelSize,
+      width: glyph.width * pixelSize,
+      height: glyph.height * pixelSize,
       patchPoints,
       ...(clipRange ? { 界: clipRange } : {}),
     });
@@ -188,14 +188,14 @@ const drawText = (
   // 挪着的块（离原位不是整点）不吸到点上，一块一张贴片（外面留一点给闪圈）；停着的画进 层
   const pieces = styles.map((s, k) => {
     if (!s || (Number.isInteger(s.dx) && Number.isInteger(s.dy))) return null;
-    const points = chunks[k]!.点;
+    const points = chunks[k]!.points;
     const x0 = Math.min(...points.map(([x]) => x)) - 1;
     const y0 = Math.min(...points.map(([, y]) => y)) - 1;
     const patch: Stamp = {
       x: glyphCell.x + x0 + s.dx,
       y: glyphCell.y + y0 + s.dy,
-      宽: Math.max(...points.map(([x]) => x)) + 2 - x0,
-      高: Math.max(...points.map(([, y]) => y)) + 2 - y0,
+      width: Math.max(...points.map(([x]) => x)) + 2 - x0,
+      height: Math.max(...points.map(([, y]) => y)) + 2 - y0,
       patchPoints: [],
       ...(clipRange ? { 界: clipRange } : {}),
     };
@@ -218,8 +218,8 @@ const drawText = (
     if (!s) return;
     const ringFx = s.ice === 1 ? parseColor(instantEffect.iceColor) : (f - flight.landTime) / fps < legacyFrameSec(1) ? flashRing : null;
     if (!ringFx) return;
-    const occupied = new Set(chunks[k]!.点.map(([x, y]) => `${x},${y}`));
-    for (const [x, y] of chunks[k]!.点)
+    const occupied = new Set(chunks[k]!.points.map(([x, y]) => `${x},${y}`));
+    for (const [x, y] of chunks[k]!.points)
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
         if (occupied.has(`${x + dx},${y + dy}`)) continue;
         stamp(k, s, x + dx, y + dy, ringFx);
@@ -230,8 +230,8 @@ const drawText = (
     if (!s) return;
     const justLanded = (f - flight.landTime) / fps < lyricStyle.flashSec;
     // 冰：笔画朝上露着的点亮一档（上面一点不是这个字的笔画）
-    const glyphDotSet = s.ice === 2 ? new Set(glyphSource.hanChar(glyphCell.字).点.map(([x, y]) => `${x},${y}`)) : null;
-    for (const [x, y] of chunks[k]!.点) {
+    const glyphDotSet = s.ice === 2 ? new Set(glyphSource.hanChar(glyphCell.char).points.map(([x, y]) => `${x},${y}`)) : null;
+    for (const [x, y] of chunks[k]!.points) {
       const c = s.ice === 1 ? parseColor(instantEffect.iceLightColor) : justLanded ? flashColor : glyphDotSet ? (glyphDotSet.has(`${x},${y - 1}`) ? parseColor(instantEffect.iceColor) : parseColor(instantEffect.iceLightColor)) : s.色;
       stamp(k, s, x, y, c);
     }
@@ -242,7 +242,7 @@ const drawText = (
 const drawOutline = (pixelLayer: DotLayer, outlineColor: string | null) => {
   if (!outlineColor) return;
   const c = parseColor(outlineColor);
-  const { 宽: width, 高: height, 实: filled } = pixelLayer;
+  const { width: width, height: height, 实: filled } = pixelLayer;
   for (let Y = 0; Y < height; Y++)
     for (let X = 0; X < width; X++) {
       if (filled[Y * width + X]) continue;
@@ -265,10 +265,10 @@ const drawOutline = (pixelLayer: DotLayer, outlineColor: string | null) => {
 const applyGloss = (pixelLayer: DotLayer, f: number, origin: readonly [number, number] = [0, 0]) => {
   const timeMs = (f / fps) * 1000;
   const g = [0, 0, 0];
-  for (let k = 0; k < pixelLayer.宽 * pixelLayer.高; k++) {
+  for (let k = 0; k < pixelLayer.width * pixelLayer.height; k++) {
     const s = pixelLayer.光[k]!;
     if (!s || !pixelLayer.实[k]) continue;
-    glossAt(origin[0] + (k % pixelLayer.宽), origin[1] + Math.floor(k / pixelLayer.宽), timeMs, g);
+    glossAt(origin[0] + (k % pixelLayer.width), origin[1] + Math.floor(k / pixelLayer.width), timeMs, g);
     for (let ch = 0; ch < 3; ch++) pixelLayer.px[k * 4 + ch] = pixelLayer.px[k * 4 + ch]! + s * g[ch]!;
   }
 };
@@ -276,11 +276,11 @@ const applyGloss = (pixelLayer: DotLayer, f: number, origin: readonly [number, n
 /** 点层里挑出实的点（字、符文、闪圈）或不实的点（描边、光圈、火花、残影）放进一块画布 */
 const pickDots = (pixelLayer: DotLayer, filled: boolean) => {
   const px = new Uint8ClampedArray(pixelLayer.px.length);
-  for (let k = 0; k < pixelLayer.宽 * pixelLayer.高; k++) if (!!pixelLayer.实[k] === filled) for (let ch = 0; ch < 4; ch++) px[k * 4 + ch] = pixelLayer.px[k * 4 + ch]!;
+  for (let k = 0; k < pixelLayer.width * pixelLayer.height; k++) if (!!pixelLayer.实[k] === filled) for (let ch = 0; ch < 4; ch++) px[k * 4 + ch] = pixelLayer.px[k * 4 + ch]!;
   const c = document.createElement('canvas');
-  c.width = pixelLayer.宽;
-  c.height = pixelLayer.高;
-  c.getContext('2d')!.putImageData(new ImageData(px, pixelLayer.宽, pixelLayer.高), 0, 0);
+  c.width = pixelLayer.width;
+  c.height = pixelLayer.height;
+  c.getContext('2d')!.putImageData(new ImageData(px, pixelLayer.width, pixelLayer.height), 0, 0);
   return c;
 };
 
@@ -291,7 +291,7 @@ const patchImage = (patch: Stamp, glyphScale: number, f: number, outlineColor: s
   const X0 = Math.floor(patch.x);
   const Y0 = Math.floor(patch.y);
   // 外面留一点给描边；小层原点在点格的 (X0 − 1, Y0 − 1)
-  const smallLayer = newLayer(patch.宽 + 2, patch.高 + 2);
+  const smallLayer = newLayer(patch.width + 2, patch.height + 2);
   for (const [x, y, c, light, shown] of patch.patchPoints) {
     const X = X0 + x;
     const Y = Y0 + y;
@@ -303,12 +303,12 @@ const patchImage = (patch: Stamp, glyphScale: number, f: number, outlineColor: s
   drawOutline(smallLayer, outlineColor);
   if (withGloss) applyGloss(smallLayer, f, [X0 - 1, Y0 - 1]);
   const pixelOffset = (v: number, v0: number) => (v0 - 1) * glyphScale + Math.round((v - v0) * glyphScale);
-  return { x: pixelOffset(patch.x, X0), y: pixelOffset(patch.y, Y0), 宽: smallLayer.宽 * glyphScale, 高: smallLayer.高 * glyphScale, outline: pickDots(smallLayer, false), fillPoints: pickDots(smallLayer, true) };
+  return { x: pixelOffset(patch.x, X0), y: pixelOffset(patch.y, Y0), width: smallLayer.width * glyphScale, height: smallLayer.height * glyphScale, outline: pickDots(smallLayer, false), fillPoints: pickDots(smallLayer, true) };
 };
 
 /** 把 影 垫在 层 底下：层 空着的点取 影 的点（时差的残影） */
 const drawUnderlay = (pixelLayer: DotLayer, shadowLayer: DotLayer) => {
-  for (let k = 0; k < pixelLayer.宽 * pixelLayer.高; k++) {
+  for (let k = 0; k < pixelLayer.width * pixelLayer.height; k++) {
     if (pixelLayer.px[k * 4 + 3] || !shadowLayer.px[k * 4 + 3]) continue;
     for (let ch = 0; ch < 4; ch++) pixelLayer.px[k * 4 + ch] = shadowLayer.px[k * 4 + ch]!;
   }
@@ -362,7 +362,7 @@ const drawHalo = (pixelLayer: DotLayer, points: readonly (readonly [number, numb
 /** 烟花的火花：原版 spark 贴图（8×8，一个贴图像素 = 一个点）乘火花色，只画在空处、按 透 抖动；一颗一张贴片，按成片像素贴。
  *  歌词是自己的点阵，点不随材质包变细：材质包的高清火花（16×16）隔 k 个取一个，还是 8×8 个点 */
 const drawSparks = (pixelLayer: DotLayer, glyphScale: number, sparks: Stamp[], center: readonly [number, number], startRing: readonly [number, number], f: number, allDoneFrame: number, seed: number, remain: number) => {
-  const isEmpty = (X: number, Y: number) => X < 0 || Y < 0 || X >= pixelLayer.宽 || Y >= pixelLayer.高 || !pixelLayer.px[(Y * pixelLayer.宽 + X) * 4 + 3];
+  const isEmpty = (X: number, Y: number) => X < 0 || Y < 0 || X >= pixelLayer.width || Y >= pixelLayer.height || !pixelLayer.px[(Y * pixelLayer.width + X) * 4 + 3];
   for (const s of fireworkSparks(f, allDoneFrame, seed, startRing)) {
     const tex: Png = png(sparkTextures[s.档]!);
     const k = tex.w / 8;
@@ -383,7 +383,7 @@ const drawSparks = (pixelLayer: DotLayer, glyphScale: number, sparks: Stamp[], c
         if (!(isEmpty(X, Y) && isEmpty(X + spanX, Y) && isEmpty(X, Y + spanY) && isEmpty(X + spanX, Y + spanY))) continue;
         patchPoints.push([x, y, [(tex.px[i]! * c[0]) / 255, (tex.px[i + 1]! * c[1]) / 255, (tex.px[i + 2]! * c[2]) / 255], 0, s.alpha * remain * a]);
       }
-    sparks.push({ x: x0, y: y0, 宽: 8, 高: 8, patchPoints, 空: true });
+    sparks.push({ x: x0, y: y0, width: 8, height: 8, patchPoints, 空: true });
   }
 };
 
@@ -396,7 +396,7 @@ const drawLine = (
   width: number,
   height: number,
   fadeOutFrame?: number,
-): { 层: DotLayer; glyphScale: number; flyGlyphs: Stamp[]; shadowFlyGlyphs: Stamp[]; movingBlocks: Stamp[]; sparks: Stamp[]; outlineColor: string | null } | null => {
+): { layers: DotLayer; glyphScale: number; flyGlyphs: Stamp[]; shadowFlyGlyphs: Stamp[]; movingBlocks: Stamp[]; sparks: Stamp[]; outlineColor: string | null } | null => {
   const lyricLine = lines[i]!;
   const mergedStyle = mergeStyle(baseStyle, lyricLine.版);
   if (!Number.isInteger(mergedStyle.glyphScale) || mergedStyle.glyphScale <= 0) throw new Error(`符文歌词的字点要是正整数：${mergedStyle.glyphScale}`);
@@ -409,13 +409,13 @@ const drawLine = (
   if (states.every((s) => s.出 >= 1) && (!lateStates || lateStates.every((s) => s.出 >= 1))) return null;
   const timeSpans = decodeTimeSpans(lyricLine, mergedStyle);
   const glyphs = layoutLine(glyphSource, lyricLine.text, mergedStyle, width, height, lyricLine.版).glyphs;
-  const chars: CharEntry[] = glyphs.map((glyphCell, j) => ({ 格: glyphCell, pinyin: lyricLine.pinyin[j]!, state: states[j]!, 时: timeSpans[j]!, 种: glyphSeed(lyricLine.序 ?? 0, j), chunks: splitBlocks(glyphCell.字, glyphSource.hanChar(glyphCell.字)) }));
+  const chars: CharEntry[] = glyphs.map((glyphCell, j) => ({ cell: glyphCell, pinyin: lyricLine.pinyin[j]!, state: states[j]!, timestamp: timeSpans[j]!, kind: glyphSeed(lyricLine.序 ?? 0, j), chunks: splitBlocks(glyphCell.char, glyphSource.hanChar(glyphCell.char)) }));
   const pixelLayer = newLayer(Math.ceil(width / mergedStyle.glyphScale), Math.ceil(height / mergedStyle.glyphScale));
-  const allDoneFrame = wordEffect ? Math.max(...timeSpans.slice(wordEffect.从, wordEffect.到 + 1).map((d) => d.end)) : Infinity;
+  const allDoneFrame = wordEffect ? Math.max(...timeSpans.slice(wordEffect.从, wordEffect.dest + 1).map((d) => d.end)) : Infinity;
   const textColor = parseColor(mergedStyle.textColor);
   const blockStyleFor = (j: number) => (k: number): BlockStyle => {
     if (!wordEffect || !inWord(wordEffect, j)) return { dx: 0, dy: 0, 色: textColor };
-    const seed = chars[j]!.种 * 8 + k;
+    const seed = chars[j]!.kind * 8 + k;
     switch (wordEffect.effect) {
       case '光明':
         return { dx: 0, dy: 0, 色: f >= allDoneFrame ? parseColor(brightEffect.textColor) : textColor };
@@ -423,11 +423,11 @@ const drawLine = (
         return { dx: 0, dy: 0, 色: f >= allDoneFrame && (f - allDoneFrame) / fps < firework.tintSec ? parseColor(firework.textColor) : textColor };
       case '刹那': {
         // 块的中心离整个词的中心多远（往哪边裂）
-        const wordCells = chars.slice(wordEffect.从, wordEffect.到 + 1).map((z) => z.格);
+        const wordCells = chars.slice(wordEffect.从, wordEffect.dest + 1).map((z) => z.cell);
         const centerX = (wordCells[0]!.x + wordCells[wordCells.length - 1]!.x + 16) / 2;
         const centerY = wordCells[0]!.y + 8;
         const runeBlock = chars[j]!.chunks[k]!;
-        const r = instantBlock(f, chars[j]!.时.end, wordEffect.shatterFrame, [chars[j]!.格.x + runeBlock.心[0] - centerX, chars[j]!.格.y + runeBlock.心[1] - centerY], seed);
+        const r = instantBlock(f, chars[j]!.timestamp.end, wordEffect.shatterFrame, [chars[j]!.cell.x + runeBlock.心[0] - centerX, chars[j]!.cell.y + runeBlock.心[1] - centerY], seed);
         return { dx: r.dx, dy: r.dy, 色: textColor, ice: r.ice };
       }
       case '放下': {
@@ -446,33 +446,33 @@ const drawLine = (
   drawOutline(pixelLayer, mergedStyle.outlineColor);
   applyGloss(pixelLayer, f);
   if (wordEffect) {
-    const words = chars.slice(wordEffect.从, wordEffect.到 + 1);
+    const words = chars.slice(wordEffect.从, wordEffect.dest + 1);
     const remain = 1 - states[wordEffect.从]!.出;
     if (wordEffect.effect === '光明') {
-      const points = words.flatMap((z) => glyphSource.hanChar(z.格.字).点.map(([x, y]) => [z.格.x + x, z.格.y + y] as const));
+      const points = words.flatMap((z) => glyphSource.hanChar(z.cell.char).points.map(([x, y]) => [z.cell.x + x, z.cell.y + y] as const));
       drawHalo(pixelLayer, points, brightTier(f, allDoneFrame), !!mergedStyle.outlineColor, states[wordEffect.从]!.shown);
     }
     if (wordEffect.effect === '烟花') {
-      const center: [number, number] = [(words[0]!.格.x + words[words.length - 1]!.格.x + 16) / 2, words[0]!.格.y + 8];
-      drawSparks(pixelLayer, mergedStyle.glyphScale, sparks, center, [(words[words.length - 1]!.格.x + 16 - words[0]!.格.x) / 2 + 1, 9], f, allDoneFrame, chars[wordEffect.从]!.种, remain);
+      const center: [number, number] = [(words[0]!.cell.x + words[words.length - 1]!.cell.x + 16) / 2, words[0]!.cell.y + 8];
+      drawSparks(pixelLayer, mergedStyle.glyphScale, sparks, center, [(words[words.length - 1]!.cell.x + 16 - words[0]!.cell.x) / 2 + 1, 9], f, allDoneFrame, chars[wordEffect.从]!.kind, remain);
     }
     if (lag !== null && lateStates) {
       // 残影另画一层：晚半拍的拼字（进场、符文、落定、退场都晚半拍），错开、一档实色冷蓝、不描边，再垫到本体底下
-      const shadowLayer = newLayer(pixelLayer.宽, pixelLayer.高);
+      const shadowLayer = newLayer(pixelLayer.width, pixelLayer.height);
       const coldColor = parseColor(timeLag.色);
       words.forEach((z, n) => {
         const j = wordEffect.从 + n;
-        const glyphCell = { ...z.格, x: z.格.x + timeLag.shadowOffset[0], y: z.格.y + timeLag.shadowOffset[1] };
-        drawText(shadowLayer, shadowFlyGlyphs, movingBlocks, { ...z, 格: glyphCell, state: lateStates[j]! }, lag, mergedStyle, () => ({ dx: 0, dy: 0, 色: textColor }), () => coldColor);
+        const glyphCell = { ...z.cell, x: z.cell.x + timeLag.shadowOffset[0], y: z.cell.y + timeLag.shadowOffset[1] };
+        drawText(shadowLayer, shadowFlyGlyphs, movingBlocks, { ...z, cell: glyphCell, state: lateStates[j]! }, lag, mergedStyle, () => ({ dx: 0, dy: 0, 色: textColor }), () => coldColor);
       });
       drawUnderlay(pixelLayer, shadowLayer);
     }
   }
-  return { 层: pixelLayer, glyphScale: mergedStyle.glyphScale, flyGlyphs, shadowFlyGlyphs, movingBlocks, sparks, outlineColor: mergedStyle.outlineColor };
+  return { layers: pixelLayer, glyphScale: mergedStyle.glyphScale, flyGlyphs, shadowFlyGlyphs, movingBlocks, sparks, outlineColor: mergedStyle.outlineColor };
 };
 
 /** 铺满画面，放在 position 不是 static 的容器里（如 AbsoluteFill）。行们按 入 从早到晚排 */
-export const RuneLyric: React.FC<{ lines: readonly RuneLyricLine[]; 样式: RuneLyricStyle; 收?: number; 帧?: number }> = ({ lines, 样式: lyricStyle, 收: fadeOutFrame, 帧: frame }) => {
+export const RuneLyric: React.FC<{ lines: readonly RuneLyricLine[]; 样式: RuneLyricStyle; 收?: number; frame?: number }> = ({ lines, 样式: lyricStyle, 收: fadeOutFrame, frame: frame }) => {
   const current = useSnappedFrame();
   const f = frame ?? current;
   const { width, height } = useVideoConfig();
@@ -494,15 +494,15 @@ export const RuneLyric: React.FC<{ lines: readonly RuneLyricLine[]; 样式: Rune
       const runes = r.flyGlyphs.map((patch) => patchImage(patch, r.glyphScale, f, r.outlineColor, true));
       const movingSprites = r.movingBlocks.map((patch) => patchImage(patch, r.glyphScale, f, r.outlineColor, false));
       type PatchImg = ReturnType<typeof patchImage>;
-      const drawPatch = (g: PatchImg, c: HTMLCanvasElement) => ctx.drawImage(c, g.x, g.y, g.宽, g.高);
-      const drawWholeLayer = (c: HTMLCanvasElement) => ctx.drawImage(c, 0, 0, r.层.宽 * r.glyphScale, r.层.高 * r.glyphScale);
+      const drawPatch = (g: PatchImg, c: HTMLCanvasElement) => ctx.drawImage(c, g.x, g.y, g.width, g.height);
+      const drawWholeLayer = (c: HTMLCanvasElement) => ctx.drawImage(c, 0, 0, r.layers.width * r.glyphScale, r.layers.height * r.glyphScale);
       // 叠法同都画在一层里：残影的符文 < 火花（只露在空处，先画的那颗在上）< 描边、光圈、残影的字 < 符文和挪着的块的描边 < 符文 < 字和闪圈 < 挪着的块
       for (const g of shadowRunes) drawPatch(g, g.fillPoints);
       for (const g of [...sparks].reverse()) drawPatch(g, g.outline);
-      drawWholeLayer(pickDots(r.层, false));
+      drawWholeLayer(pickDots(r.layers, false));
       for (const g of [...runes, ...movingSprites]) drawPatch(g, g.outline);
       for (const g of runes) drawPatch(g, g.fillPoints);
-      drawWholeLayer(pickDots(r.层, true));
+      drawWholeLayer(pickDots(r.layers, true));
       for (const g of movingSprites) drawPatch(g, g.fillPoints);
     });
   });

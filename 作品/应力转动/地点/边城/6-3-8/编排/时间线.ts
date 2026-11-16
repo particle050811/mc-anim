@@ -65,9 +65,9 @@ const onOutputFrame = (s: number) => Math.round(s * segFps) / segFps;
 export type SegmentName = '6-3-8' | '6-3-10';
 const pitShotStart = onOutputFrame(cues.cutToPit);
 const pitShotEnd = onOutputFrame(cues.seg10End);
-export const segmentTable: Record<SegmentName, { 起: number; 名: string }> = {
-  '6-3-8': { 起: 0, 名: '二人登场' },
-  '6-3-10': { 起: pitShotStart - fallSkipSec, 名: '追进竖井' },
+export const segmentTable: Record<SegmentName, { start: number; name: string }> = {
+  '6-3-8': { start: 0, name: '二人登场' },
+  '6-3-10': { start: pitShotStart - fallSkipSec, name: '追进竖井' },
 };
 // 6-3-10 末帧（7-收场 接它）的编排秒
 export const lastSec = pitShotEnd;
@@ -75,10 +75,10 @@ export const lastSec = pitShotEnd;
 // 台词落点（段内秒，开口那一刻；字幕组和 声音.tsx 都从这里取）。台词轨的落点 = 开口（第一个有声的时刻）
 export const lineStartSec = { huangPanReappears: cues.huangSpeaks };
 // 点头（`withTalkNod`）用的句子：帧 写段内秒，每秒给 1
-export const lineCuesBySegment: Record<SegmentName, { id: string; 帧: number }[]> = {
-  '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartSec.huangPanReappears }],
+export const lineCuesBySegment: Record<SegmentName, { id: string; frame: number }[]> = {
+  '6-3-8': [{ id: lineIds.huangPanReappears, frame: lineStartSec.huangPanReappears }],
   '6-3-10': [],
 };
 
 // 段内秒 → 编排秒 t
-export const toSec = (segment: SegmentName, sec: number) => (segment === '6-3-10' ? pitShotStart + sec : filmToChoreoSec(segmentTable[segment].起 + sec));
+export const toSec = (segment: SegmentName, sec: number) => (segment === '6-3-10' ? pitShotStart + sec : filmToChoreoSec(segmentTable[segment].start + sec));

@@ -17,7 +17,7 @@ const writeNewFile = (file: string, contentText: string, written: string[]) => {
 };
 
 const writeEmptySoundTable = (segDir: string, written: string[]) => {
-  writeNewFile(path.join(segDir, soundTableFile), soundTableText({ 资产: {}, 台词: {} }), written);
+  writeNewFile(path.join(segDir, soundTableFile), soundTableText({ asset: {}, lines: {} }), written);
   writeNewFile(path.join(segDir, soundUrlFile), soundUrlText([], {}), written);
 };
 
@@ -28,7 +28,7 @@ import { manifestTools } from '@engine/段/清单工具.ts';
 export type { ManifestEntry };
 
 export const manifest: readonly ManifestEntry[] = [
-  { 键: '${firstSeg}', 章: '核对' },
+  { key: '${firstSeg}', 章: '核对' },
 ];
 
 export const { segDir, segmentName, segmentCode } = manifestTools(manifest);
@@ -43,9 +43,9 @@ import { manifest, segDir } from './清单.ts';
 export const registration = makeRegistry({
   manifest,
   segDir,
-  模块: {
-    段: import.meta.webpackContext('./段', { recursive: true, regExp: /^\\.\\/[^/]+\\/(段\\.ts|画面\\.tsx|叠层[^/]*\\.tsx)$/ }),
-    核对: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\\.\\/[^/]+\\/(段\\.ts|画面\\.tsx|叠层[^/]*\\.tsx)$/ }),
+  modules: {
+    segment: import.meta.webpackContext('./段', { recursive: true, regExp: /^\\.\\/[^/]+\\/(segment\\.ts|画面\\.tsx|overlay[^/]*\\.tsx)$/ }),
+    verify: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\\.\\/[^/]+\\/(segment\\.ts|画面\\.tsx|overlay[^/]*\\.tsx)$/ }),
   },
 });
 `;
@@ -63,7 +63,7 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 段: thisSegment } = useSeg(seg);
+  const { sec: sec, segment: thisSegment } = useSeg(seg);
   return <AbsoluteFill style={{ background: '#000', color: '#fff', fontSize: 48, justifyContent: 'center', alignItems: 'center' }}>{\`\${sec.toFixed(2)} / \${thisSegment.秒} 秒\`}</AbsoluteFill>;
 });
 `;
@@ -85,9 +85,9 @@ export const newWork = (codeRoot: string, workName: string): string[] => {
 import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';
 import soundTable from './声音表.生成.ts';
 
-const timeline = defineSceneTimeline({ 场: '核对', 事件: { 开始: { 在: { 秒: 0 } }, 结束: { 在: { 秒: 2 } } } });
+const timeline = defineSceneTimeline({ scene: '核对', events: { startedAt: { 在: { sec: 0 } }, endedAt: { 在: { sec: 2 } } } });
 
-export default windowSeg(timeline, { 起: '开始', 止: '结束', soundTable });
+export default windowSeg(timeline, { start: '开始', end: '结束', soundTable });
 `,
     written,
   );
@@ -106,24 +106,24 @@ export const addSegToManifest = (text: string, segKey: string, chapter: number |
 };
 
 /** 本场已有的老段（defineSeg 写的，不是窗口段），清单顺序：段键、段长秒，有 场窗口 的带起秒；画幅不是默认的也带上 */
-export type SceneLegacySeg = { 键: string; 秒: number; startSec?: number; 宽: number; 高: number };
+export type SceneLegacySeg = { key: string; sec: number; startSec?: number; width: number; height: number };
 
 /** 老场的场时间线：老段的段长抄成数摆上来（engine/段/老段接续.ts；场不许 import 段），新段的起止事件接在最后一个老段后面 */
 const legacySceneTimelineTemplate = (scene: string, legacySegs: readonly SceneLegacySeg[], startEvent: string, endMark: string) => {
   const firstOldSeg = legacySegs[0]!;
-  const frameSizeLines = firstOldSeg.宽 !== 1280 || firstOldSeg.高 !== 720 ? [`  aspect: { 宽: ${firstOldSeg.宽}, 高: ${firstOldSeg.高} },`] : [];
+  const frameSizeLines = firstOldSeg.width !== 1280 || firstOldSeg.height !== 720 ? [`  aspect: { 宽: ${firstOldSeg.width}, 高: ${firstOldSeg.height} },`] : [];
   return `// ${scene} 的场时间线：本场的老段（defineSeg 写的）一个不改，段长抄过来按清单顺序首尾相接摆上，事件 <段键>.起、<段键>.止（engine/段/老段接续.ts）；
 // 新段（窗口段）从这条线取窗口，跨段的声音写在 声音 里（只放进新段，老段照旧）。抄的段长 anim check 和老段的 段.ts 对；老段中间有跳过的，给那一段写 startSec。纯模块。
 import { continueOldSeg } from '@engine/段/老段接续.ts';
 
 export default continueOldSeg({
-  场: '${scene}',
+  scene: '${scene}',
 ${frameSizeLines.join('\n')}${frameSizeLines.length ? '\n' : ''}  legacySegs: [
-${legacySegs.map((x) => `    { 键: '${x.键}', 秒: ${x.秒}${x.startSec !== undefined ? `, startSec: ${x.startSec}` : ''} },`).join('\n')}
+${legacySegs.map((x) => `    { 键: '${x.key}', 秒: ${x.sec}${x.startSec !== undefined ? `, startSec: ${x.startSec}` : ''} },`).join('\n')}
   ],
-  事件: {
-    ${startEvent}: { 在: { after: '${legacySegs.at(-1)!.键}.止' }, 依据: '暂定：接在本场最后一个老段后面' },
-    ${endMark}: { 在: { after: '${startEvent}', addSec: 3 }, 依据: '暂定' },
+  events: {
+    ${startEvent}: { 在: { after: '${legacySegs.at(-1)!.key}.止' }, basis: '暂定：接在本场最后一个老段后面' },
+    ${endMark}: { 在: { after: '${startEvent}', addSec: 3 }, basis: '暂定' },
   },
 });
 `;
@@ -133,22 +133,22 @@ ${legacySegs.map((x) => `    { 键: '${x.键}', 秒: ${x.秒}${x.startSec !== un
  * 在作品里加一个窗口段：段目录、段.ts、画面.tsx、空声音文件，排进清单末尾。场时间线没有就建一条：
  * 本场没有老段时两个事件、先给 3 秒；有老段（老段，命令里照清单找出来）时用 continueOldSeg 把它们摆上去，新段接在后面。
  */
-export const newSegment = (workRoot: string, segKey: string, o: { 场?: string; 起?: string; 止?: string; legacySegs?: readonly SceneLegacySeg[] }): string[] => {
+export const newSegment = (workRoot: string, segKey: string, o: { scene?: string; start?: string; end?: string; legacySegs?: readonly SceneLegacySeg[] }): string[] => {
   const verifyMatch = /^核对-(.+)$/.exec(segKey);
   const mainCut = /^(\d+)-(.+)$/.exec(segKey);
   if (!verifyMatch && !mainCut) throw new Error(`段键要是 <章>-<段名> 或 核对-<名>：${segKey}`);
   const segmentName = (verifyMatch ?? mainCut)![verifyMatch ? 1 : 2]!;
   if (!new RegExp(`^${nameChar}+$`).test(segmentName)) throw new Error(`段名「${segmentName}」只能用汉字、字母、数字`);
-  const startEvent = o.起 ?? '开始';
-  const endMark = o.止 ?? '结束';
+  const startEvent = o.start ?? '开始';
+  const endMark = o.end ?? '结束';
   const written: string[] = [];
   const segDir = path.join(workRoot, ...(verifyMatch ? ['核对', segmentName] : ['段', segKey]));
   if (fs.existsSync(segDir)) throw new Error(`${segDir} 已经有了`);
   let timelineImport: string;
   if (verifyMatch) {
-    timelineImport = `import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';\nimport soundTable from './声音表.生成.ts';\n\nconst timeline = defineSceneTimeline({ 场: '核对', 事件: { ${startEvent}: { 在: { 秒: 0 } }, ${endMark}: { 在: { 秒: 3 } } } });\n`;
+    timelineImport = `import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';\nimport soundTable from './声音表.生成.ts';\n\nconst timeline = defineSceneTimeline({ scene: '核对', events: { ${startEvent}: { 在: { sec: 0 } }, ${endMark}: { 在: { sec: 3 } } } });\n`;
   } else {
-    const scene = o.场;
+    const scene = o.scene;
     if (!scene) throw new Error('正片的段要给 --scene <场键>（同一场的段共用 场/<场键>/时间线.ts）');
     if (!new RegExp(`^\\d+-${nameChar}+$`).test(scene)) throw new Error(`场键要是 <章>-<场名>：${scene}`);
     const timelineFile = path.join(workRoot, '场', scene, '时间线.ts');
@@ -160,10 +160,10 @@ export const newSegment = (workRoot: string, segKey: string, o: { 场?: string; 
 import { defineSceneTimeline } from '@engine/段/窗口段.ts';
 
 export default defineSceneTimeline({
-  场: '${scene}',
-  事件: {
-    ${startEvent}: { 在: { 秒: 0 }, 依据: '暂定' },
-    ${endMark}: { 在: { 秒: 3 }, 依据: '暂定' },
+  scene: '${scene}',
+  events: {
+    ${startEvent}: { 在: { sec: 0 }, basis: '暂定' },
+    ${endMark}: { 在: { sec: 3 }, basis: '暂定' },
   },
 });
 `,
@@ -179,10 +179,10 @@ export default defineSceneTimeline({
     `// 段的窗口、声音 cue（放 音效和配乐、说 台词，每条只写一次；时长、峰值由 anim cues 生成进 声音表）。纯模块。
 ${timelineImport}
 export default windowSeg(timeline, {
-  起: '${startEvent}',
-  止: '${endMark}',
+  start: '${startEvent}',
+  end: '${endMark}',
   soundTable,
-  声音: () => [],
+  sound: () => [],
 });
 `,
     written,

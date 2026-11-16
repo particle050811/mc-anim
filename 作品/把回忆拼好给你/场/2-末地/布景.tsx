@@ -7,9 +7,9 @@ import { BlockAssembly, type PlacedBlock } from '@engine/model/方块拼搭.tsx'
 import { islandRadius, obsidianPillars } from './参数.ts';
 
 /** 黑曜石柱占的格（离中心格 距离² ≤ 半径² + 1，EndSpikeFeature 的 distToLowCornerSqr） */
-const pillarCells = obsidianPillars.flatMap(({ 中心: [ci, cj], radius, 高: pillarHeight }) => {
-  const r: { i: number; j: number; 高: number }[] = [];
-  for (let i = ci - radius; i <= ci + radius; i++) for (let j = cj - radius; j <= cj + radius; j++) if ((i - ci) ** 2 + (j - cj) ** 2 <= radius * radius + 1) r.push({ i, j, 高: pillarHeight });
+const pillarCells = obsidianPillars.flatMap(({ center: [ci, cj], radius, height: pillarHeight }) => {
+  const r: { i: number; j: number; height: number }[] = [];
+  for (let i = ci - radius; i <= ci + radius; i++) for (let j = cj - radius; j <= cj + radius; j++) if ((i - ci) ** 2 + (j - cj) ** 2 <= radius * radius + 1) r.push({ i, j, height: pillarHeight });
   return r;
 });
 
@@ -21,17 +21,17 @@ const groundBlocks = ((): PlacedBlock[] => {
       const d2 = i * i + j * j;
       if (d2 > islandRadius * islandRadius || pillarKeys.has(`${i},${j}`)) continue;
       if (d2 < 6.25) continue; // 传送门方块和柱子
-      r.push({ 状态: d2 < 12.25 ? 'minecraft:bedrock' : 'minecraft:end_stone', 位: [i, j, -1] });
+      r.push({ state: d2 < 12.25 ? 'minecraft:bedrock' : 'minecraft:end_stone', 位: [i, j, -1] });
     }
-  for (let k = -1; k <= 2; k++) r.push({ 状态: 'minecraft:bedrock', 位: [0, 0, k] });
+  for (let k = -1; k <= 2; k++) r.push({ state: 'minecraft:bedrock', 位: [0, 0, k] });
   // 原版方向 → 场景格：北 +j、南 −j、东 +i、西 −i
-  r.push({ 状态: 'minecraft:wall_torch[facing=north]', 位: [0, 1, 1] });
-  r.push({ 状态: 'minecraft:wall_torch[facing=south]', 位: [0, -1, 1] });
-  r.push({ 状态: 'minecraft:wall_torch[facing=east]', 位: [1, 0, 1] });
-  r.push({ 状态: 'minecraft:wall_torch[facing=west]', 位: [-1, 0, 1] });
+  r.push({ state: 'minecraft:wall_torch[facing=north]', 位: [0, 1, 1] });
+  r.push({ state: 'minecraft:wall_torch[facing=south]', 位: [0, -1, 1] });
+  r.push({ state: 'minecraft:wall_torch[facing=east]', 位: [1, 0, 1] });
+  r.push({ state: 'minecraft:wall_torch[facing=west]', 位: [-1, 0, 1] });
   // 黑曜石柱：从地面那层（k = −1）起，顶上一块基岩（末影水晶的底座，水晶已经被炸掉）
-  for (const { i, j, 高: pillarHeight } of pillarCells) for (let k = -1; k < pillarHeight; k++) r.push({ 状态: 'minecraft:obsidian', 位: [i, j, k] });
-  for (const { 中心: [ci, cj], 高: pillarHeight } of obsidianPillars) r.push({ 状态: 'minecraft:bedrock', 位: [ci, cj, pillarHeight] });
+  for (const { i, j, height: pillarHeight } of pillarCells) for (let k = -1; k < pillarHeight; k++) r.push({ state: 'minecraft:obsidian', 位: [i, j, k] });
+  for (const { center: [ci, cj], height: pillarHeight } of obsidianPillars) r.push({ state: 'minecraft:bedrock', 位: [ci, cj, pillarHeight] });
   return r;
 })();
 
@@ -40,9 +40,9 @@ export const EndSet: React.FC = () => <BlockAssembly blocks={groundBlocks} />;
 
 const eggBlockMap = new Map<string, PlacedBlock[]>();
 /** 龙蛋：格 (i, j, k) */
-export const DragonEgg: React.FC<{ 格: readonly [number, number, number] }> = ({ 格: cellPos }) => {
+export const DragonEgg: React.FC<{ cell: readonly [number, number, number] }> = ({ cell: cellPos }) => {
   const cacheKey = cellPos.join(',');
   let eggBlocks = eggBlockMap.get(cacheKey);
-  if (!eggBlocks) eggBlockMap.set(cacheKey, (eggBlocks = [{ 状态: 'minecraft:dragon_egg', 位: cellPos }]));
+  if (!eggBlocks) eggBlockMap.set(cacheKey, (eggBlocks = [{ state: 'minecraft:dragon_egg', 位: cellPos }]));
   return <BlockAssembly blocks={eggBlocks} />;
 };

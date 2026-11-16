@@ -1,18 +1,18 @@
-// 由 anim voice 生成（校验 757575bf8d16），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-李樱-五万血（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 44b15be89931），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-李樱-五万血（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "7-李樱-五万血",
-  "角色": "李樱",
-  "念": "五万血？！这我打个集贸啊！",
-  "配音": "配音/7-李樱-五万血",
-  "成品sha": "08eae572c6c6",
-  "开口": 0,
+  "character": "李樱",
+  "spoken": "五万血？！这我打个集贸啊！",
+  "voice": "配音/7-李樱-五万血",
+  "finishedSha": "08eae572c6c6",
+  "mouthOpen": 0,
   "有声长": 2.103,
-  "时长": 2.24,
+  "duration": 2.24,
   "文件秒数": 2.24,
   "手修": true,
-  "字": [
+  "char": [
     ["五",0.14,0.28],
     ["万",0.28,0.41],
     ["血",0.42,0.78],

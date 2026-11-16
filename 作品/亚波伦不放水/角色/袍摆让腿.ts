@@ -45,7 +45,7 @@ const boxRange = (bone: BedrockBone, c: BedrockCube): [THREE.Vector3, THREE.Vect
 };
 
 type SkirtPiece = {
-  骨: string;
+  bone: string;
   min: THREE.Vector3;
   max: THREE.Vector3;
   /** 片最薄的那个轴（0、1、2）、朝外是正还是负 */
@@ -54,12 +54,12 @@ type SkirtPiece = {
   /** 腿上的点最多能越过外表面多少（像素）：一般是 −外留；站着时就已经越过一点的片（左大腿根比左侧片宽约 0.1 像素），照站着时的放宽，站姿不改 */
   容: number;
 };
-type ClothGroup = { 名: string; hinges: string[]; 片们: SkirtPiece[] };
+type ClothGroup = { name: string; hinges: string[]; 片们: SkirtPiece[] };
 type LegBase = {
   表: ReadonlyMap<string, BedrockBone>;
   /** 祖先 坐标 ← 名 的骨骼坐标（名 坐标里的点乘上它得到 祖先 坐标） */
   相对: (ancestor: string, boneName: string, t: BoneTable) => THREE.Matrix4;
-  legPoints: readonly (readonly { 骨: string; 点: THREE.Vector3[] }[])[];
+  legPoints: readonly (readonly { bone: string; points: THREE.Vector3[] }[])[];
 };
 
 /** 这一刻腿在 Skirt 坐标里的采样点（腿不受袍摆影响，一帧算一次） */
@@ -68,7 +68,7 @@ const posedLegPoints = (prep: LegBase, t: BoneTable): THREE.Vector3[] => {
   // Skirt 和腿的共同祖先是 DownBody：都换到 DownBody 坐标再换进 Skirt
   const skirt = prep.相对('DownBody', 'Skirt', t).invert();
   for (const legPoints of prep.legPoints)
-    for (const { 骨: boneName, 点: points } of legPoints) {
+    for (const { bone: boneName, points: points } of legPoints) {
       const m = skirt.clone().multiply(prep.相对('DownBody', boneName, t));
       for (const p of points) worldPoints.push(p.clone().applyMatrix4(m));
     }
@@ -77,7 +77,7 @@ const posedLegPoints = (prep: LegBase, t: BoneTable): THREE.Vector3[] => {
 
 /** 腿上每个点越过这片外表面多少像素（点不在这片范围里给 −∞） */
 const pointOvershoots = (prep: LegBase, skirtPiece: SkirtPiece, t: BoneTable, points: readonly THREE.Vector3[]): number[] => {
-  const inv = prep.相对('Skirt', skirtPiece.骨, t).invert();
+  const inv = prep.相对('Skirt', skirtPiece.bone, t).invert();
   const face = skirtPiece.outerSign > 0 ? skirtPiece.max.getComponent(skirtPiece.axis) : skirtPiece.min.getComponent(skirtPiece.axis);
   const q = new THREE.Vector3();
   return points.map((p) => {
@@ -165,7 +165,7 @@ const prepareGeometry = (g: BoneModel) => {
               if (![i, j, k].some((v) => v === 0 || v === n)) continue;
               points.push(new THREE.Vector3(a.x + ((z.x - a.x) * i) / n, a.y + ((z.y - a.y) * j) / n, a.z + ((z.z - a.z) * k) / n));
             }
-        return { 骨: b.name, 点: points };
+        return { bone: b.name, points: points };
       }),
     ),
   );
@@ -185,21 +185,21 @@ const prepareGeometry = (g: BoneModel) => {
           const centerS = center.clone().applyMatrix4(m);
           // 腰的竖轴上同高的那一点：Skirt 坐标的原点在 Skirt 的 pivot (0, 23.85, 0.1)，DownBody 的竖轴在 x = 0、z = −0.1
           const axisPoint = new THREE.Vector3(0, centerS.y, -0.1).applyMatrix4(m.clone().invert());
-          return { 骨: b.name, min, max, axis, outerSign: center.getComponent(axis) > axisPoint.getComponent(axis) ? 1 : -1, 容: -outerMargin };
+          return { bone: b.name, min, max, axis, outerSign: center.getComponent(axis) > axisPoint.getComponent(axis) ? 1 : -1, 容: -outerMargin };
         }),
       );
   };
   const groups = {
-    前: { 名: '前', hinges: ['FrontSkirt'], 片们: skirtPieces(['FrontSkirt'], ['LeftSkirt2', 'RightSkirt2']) },
-    后: { 名: '后', hinges: ['BackSkirt'], 片们: skirtPieces(['BackSkirt'], ['LeftSkirt3', 'RightSkirt3']) },
-    左: { 名: '左', hinges: ['LeftSkirt', 'LeftSkirt2', 'LeftSkirt3', 'bone30', 'bone131'], 片们: skirtPieces(['LeftSkirt', 'LeftSkirt2', 'LeftSkirt3']) },
-    右: { 名: '右', hinges: ['RightSkirt', 'RightSkirt2', 'RightSkirt3', 'bone125', 'bone134'], 片们: skirtPieces(['RightSkirt', 'RightSkirt2', 'RightSkirt3']) },
+    前: { name: '前', hinges: ['FrontSkirt'], 片们: skirtPieces(['FrontSkirt'], ['LeftSkirt2', 'RightSkirt2']) },
+    后: { name: '后', hinges: ['BackSkirt'], 片们: skirtPieces(['BackSkirt'], ['LeftSkirt3', 'RightSkirt3']) },
+    左: { name: '左', hinges: ['LeftSkirt', 'LeftSkirt2', 'LeftSkirt3', 'bone30', 'bone131'], 片们: skirtPieces(['LeftSkirt', 'LeftSkirt2', 'LeftSkirt3']) },
+    右: { name: '右', hinges: ['RightSkirt', 'RightSkirt2', 'RightSkirt3', 'bone125', 'bone134'], 片们: skirtPieces(['RightSkirt', 'RightSkirt2', 'RightSkirt3']) },
   } satisfies Record<string, ClothGroup>;
   // 每根铰往外甩用哪个转角通道、正负：前后片绕 X，侧片、两角绕 Z；试转一度，这一串下摆那节离腰的竖轴远了就是往外
   const channels = new Map<string, { axis: 0 | 2; sign: 1 | -1 }>();
   for (const group of Object.values(groups))
     for (const hinge of group.hinges) {
-      const axis = group.名 === '前' || group.名 === '后' ? 0 : 2;
+      const axis = group.name === '前' || group.name === '后' ? 0 : 2;
       let bottomBone = boneMap.get(hinge)!;
       while (childrenByParent.get(bottomBone.name)?.length) bottomBone = childrenByParent.get(bottomBone.name)![0]!;
       const offAxis = (angle: number) => {
@@ -283,7 +283,7 @@ const minAngle = (prep: Prep, k: keyof Angles, t: BoneTable, angles: Angles, poi
  * 给合好的姿势表（动画 + 手摆的姿势），返回袍摆各骨骼要盖上去的姿势（只含改了的骨骼；转角加在表里原有的上面）、各组甩的角度、还剩几片被穿出。
  * 两侧和前后互相牵连（侧片副本挂在前后片下，两角跟着侧片张），轮流解几遍，直到都不穿或者解满 4 轮。
  */
-export const hemYieldLeg = (g: BoneModel, t: BoneTable): { bonePose: Record<string, BonePose>; 角: Angles; remain: number } => {
+export const hemYieldLeg = (g: BoneModel, t: BoneTable): { bonePose: Record<string, BonePose>; angle: Angles; remain: number } => {
   let prep = prepCache.get(g);
   if (!prep) prepCache.set(g, (prep = prepareGeometry(g)));
   const points = posedLegPoints(prep, t);
@@ -296,16 +296,16 @@ export const hemYieldLeg = (g: BoneModel, t: BoneTable): { bonePose: Record<stri
   const merged = compose(prep, t, angles);
   const bonePose: Record<string, BonePose> = {};
   for (const [boneName, p] of Object.entries(merged)) if (p !== t[boneName]) bonePose[boneName] = p;
-  return { bonePose, 角: angles, remain: remainingPokes() };
+  return { bonePose, angle: angles, remain: remainingPokes() };
 };
 
 /** 核对用：照 袍摆让腿 解出来的样子，列出还露在外面的腿上的点（哪一组、越过哪一片、越过多少像素、点在 Skirt 坐标里的位置） */
-export const hemPierceDetails = (g: BoneModel, t: BoneTable): { 组: string; 骨: string; overshoot: number; 点: number[] }[] => {
+export const hemPierceDetails = (g: BoneModel, t: BoneTable): { group: string; bone: string; overshoot: number; points: number[] }[] => {
   const r = hemYieldLeg(g, t);
   const prep = prepCache.get(g)!;
-  const merged = compose(prep, t, r.角);
+  const merged = compose(prep, t, r.angle);
   const points = posedLegPoints(prep, t);
-  return Object.values(prep.groups).flatMap((group) => exposedPoints(prep, group, merged, points).map(([i, j, v]) => ({ 组: group.名, 骨: group.片们[j]!.骨, overshoot: v, 点: points[i]!.toArray() })));
+  return Object.values(prep.groups).flatMap((group) => exposedPoints(prep, group, merged, points).map(([i, j, v]) => ({ group: group.name, bone: group.片们[j]!.bone, overshoot: v, points: points[i]!.toArray() })));
 };
 
 /** 测试用：祖先 坐标 ← 名 的骨骼坐标（本文件自己的骨骼算式，和 基岩正解.ts 对） */

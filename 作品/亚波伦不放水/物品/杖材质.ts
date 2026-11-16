@@ -131,12 +131,12 @@ iblIrradiance += PI * zhEnv(geometryNormal, 1.0);
   reflectedLight.directSpecular += zhGlow.rgb * zhAtt * zhNl * material.specularColorBlended * pow(saturate(dot(geometryNormal, zhHv)), zhSh) * (zhSh + 8.0) / 60.0;
 }`;
 
-export type CoreGlow = { 位: readonly [number, number, number]; 色: string; 强: number };
+export type CoreGlow = { 位: readonly [number, number, number]; 色: string; strength: number };
 
 /** 一款杖的四种料的材质。芯光：芯在杖空间（像素）哪里、什么颜色、多亮 */
 export const buildStaffMaterials = (coreLight: CoreGlow): Record<MaterialName, THREE.MeshStandardMaterial> => {
   const color = new THREE.Color(coreLight.色);
-  const glowUniform = { value: new THREE.Vector4(color.r, color.g, color.b, coreLight.强) };
+  const glowUniform = { value: new THREE.Vector4(color.r, color.g, color.b, coreLight.strength) };
   const positionUniform = { value: new THREE.Vector3(...coreLight.位) };
   const buildMaterial = (materialName: MaterialName) => {
     const m = materialTable[materialName];

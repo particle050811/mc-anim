@@ -18,7 +18,7 @@ export type DimensionInfo = {
   /** 原版方块云的高度（DimensionSpecialEffects 的 cloudLevel，世界 y）；NaN = 这个维度没有云；null = 没核对过 */
   cloudHeight: number | null;
   /** 数从哪来 */
-  出处: string;
+  provenance: string;
 };
 
 export const overworld: DimensionInfo = {
@@ -28,7 +28,7 @@ export const overworld: DimensionInfo = {
   ambient: 0,
   effect: 'minecraft:overworld',
   cloudHeight: 192,
-  出处: '1.20.1 DimensionTypes.bootstrap；云高 DimensionSpecialEffects$OverworldEffects',
+  provenance: '1.20.1 DimensionTypes.bootstrap；云高 DimensionSpecialEffects$OverworldEffects',
 };
 
 export const nether: DimensionInfo = {
@@ -39,7 +39,7 @@ export const nether: DimensionInfo = {
   ambient: 0.1,
   effect: 'minecraft:the_nether',
   cloudHeight: NaN,
-  出处: '1.20.1 DimensionTypes.bootstrap；云高 DimensionSpecialEffects$NetherEffects',
+  provenance: '1.20.1 DimensionTypes.bootstrap；云高 DimensionSpecialEffects$NetherEffects',
 };
 // 云高在模组注册 TwilightForestRenderInfo 时传入，没核对，记 null
 export const twilightForest: DimensionInfo = {
@@ -50,5 +50,5 @@ export const twilightForest: DimensionInfo = {
   ambient: 0,
   effect: 'twilightforest:renderer',
   cloudHeight: null,
-  出处: 'twilightforest-1.20.1-4.3.2508 data/twilightforest/dimension_type/twilight_forest_type.json',
+  provenance: 'twilightforest-1.20.1-4.3.2508 data/twilightforest/dimension_type/twilight_forest_type.json',
 };

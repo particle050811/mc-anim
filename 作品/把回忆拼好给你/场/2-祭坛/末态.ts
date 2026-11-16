@@ -12,7 +12,7 @@ const modelPixel = 0.65 / 16;
  *  坑：眼珠方块写的是 1.095 × 1.41 像素，但带 inflate −0.3，四边各缩 0.3，画出来只有 0.495 × 0.81 像素，正面也往里退 0.3 */
 export const eyeBall = {
   rightEye: [-0.0529, -(2.02358 - 0.3) * modelPixel, 1.2255] as [number, number, number],
-  高: (1.41 - 2 * 0.3) * modelPixel,
+  height: (1.41 - 2 * 0.3) * modelPixel,
   faceWidth: 6.3 * modelPixel,
 };
 
@@ -22,7 +22,7 @@ export const finalFov = 30;
  *  Agent 暂定：两句平分这一推（第 3 句从递蛋糕推到这里、第 4 句从这里推到「眼化日」，每 1/24 秒都放大 6% 上下），接缝上看不出换段 */
 export const finalFaceWidth = 0.25;
 /** 最后一帧镜头离她右眼眼珠正面多远（格），约 1.07 */
-export const finalDist = eyeBall.faceWidth / (finalFaceWidth * 2 * Math.tan((finalFov * Math.PI) / 360) * (aspect.宽 / aspect.高));
+export const finalDist = eyeBall.faceWidth / (finalFaceWidth * 2 * Math.tan((finalFov * Math.PI) / 360) * (aspect.width / aspect.height));
 
 /** 最后一帧的镜头：在右眼眼珠正前方（南边）末距 格，看着它 */
 export const endRig = {

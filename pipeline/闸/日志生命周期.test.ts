@@ -13,24 +13,24 @@ let dir:string;
 const children:ReturnType<typeof spawn>[]=[];
 beforeEach(()=>{dir=fs.mkdtempSync(path.join(os.tmpdir(),'anim-日志-'));});
 afterEach(async()=>{for(const c of children.splice(0)){if(c.exitCode===null&&c.signalCode===null){const p=once(c,'exit');c.kill('SIGKILL');await p;}}fs.rmSync(dir,{recursive:true,force:true});});
-const startChild=async()=>{const c=spawn(process.execPath,[path.join(import.meta.dirname,'fixtures/持锁子进程.ts'),dir],{stdio:['ignore','pipe','pipe']});children.push(c);let err='';c.stderr!.on('data',d=>err+=d);await new Promise<void>((resolve,reject)=>{c.stdout!.on('data',d=>{if(String(d).includes('ready'))resolve();});c.once('exit',()=>reject(Error(err)));});return {c,错误:()=>err};};
+const startChild=async()=>{const c=spawn(process.execPath,[path.join(import.meta.dirname,'fixtures/持锁子进程.ts'),dir],{stdio:['ignore','pipe','pipe']});children.push(c);let err='';c.stderr!.on('data',d=>err+=d);await new Promise<void>((resolve,reject)=>{c.stdout!.on('data',d=>{if(String(d).includes('ready'))resolve();});c.once('exit',()=>reject(Error(err)));});return {c,errors:()=>err};};
 it('SIGKILL 持有者 3 秒内回收，原持有者和崩溃只写一次',async()=>{
   const {c}=await startChild();const dead=once(c,'exit');c.kill('SIGKILL');await dead;
   const t=performance.now();await passRenderGate(async()=>{},()=>{}, {lockDir:dir,readMemory:()=>null,readPressure:()=>1,clearOrphans:()=>[]});
   expect(performance.now()-t).toBeLessThan(3000);
   const e=resolveSchedulerEnv({lockDir:dir});cleanCrashed(e);cleanCrashed(e);
-  const events=readSchedulerEvents(path.join(dir,'logs'));expect(events.filter(x=>x.事==='崩溃')).toHaveLength(1);
-  expect(JSON.stringify(events.find(x=>x.事==='回收死锁'))).toContain(String(c.pid));
+  const events=readSchedulerEvents(path.join(dir,'logs'));expect(events.filter(x=>x.event==='崩溃')).toHaveLength(1);
+  expect(JSON.stringify(events.find(x=>x.event==='回收死锁'))).toContain(String(c.pid));
 });
 it.each([['SIGTERM',143],['SIGHUP',129]] as const)('%s 清票放锁清临时文件并记耗时 %s',async(sig,code)=>{
-  const {c,错误: stderrText}=await startChild();const task=JSON.parse(fs.readFileSync(path.join(dir,'渲染.lock.信息.json'),'utf8')).任务;
-  fs.mkdirSync(path.join(dir,'指令'),{recursive:true});fs.writeFileSync(path.join(dir,'指令',task+'.json'),JSON.stringify({动作:'取消',为什么:'测试不重发'}));
+  const {c,errors: stderrText}=await startChild();const task=JSON.parse(fs.readFileSync(path.join(dir,'渲染.lock.信息.json'),'utf8')).task;
+  fs.mkdirSync(path.join(dir,'指令'),{recursive:true});fs.writeFileSync(path.join(dir,'指令',task+'.json'),JSON.stringify({动作:'取消',why:'测试不重发'}));
   const end=once(c,'exit');c.kill(sig);const [exitCode]=await end;expect(exitCode).toBe(code);
   expect(stderrText()).toContain('被调度取消：测试不重发，不要原样重发');
   expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(false);
   expect(fs.readdirSync(path.join(dir,'渲染.排队'))).toHaveLength(0);
   expect(fs.existsSync(path.join(dir,'本次.渲染中.mkv'))).toBe(false);
-  expect(readSchedulerEvents(path.join(dir,'logs')).filter(x=>x.事==='被杀')).toHaveLength(1);
+  expect(readSchedulerEvents(path.join(dir,'logs')).filter(x=>x.event==='被杀')).toHaveLength(1);
   expect(fs.readFileSync(path.join(dir,'耗时.tsv'),'utf8')).toContain(`\t${code}\t`);
 });
 it('8 进程各 1000 行 O_APPEND 全部可解析',async()=>{
@@ -40,8 +40,8 @@ it('8 进程各 1000 行 O_APPEND 全部可解析',async()=>{
 });
 it('白名单及命令遮密，不泄漏 token 类变量',()=>{
   const initiator=readCaller({CODEX_THREAD_ID:'abcdefgh999',CLAUDE_CODE_SESSION_ID:'claude',SECRET_TOKEN:'fake-env-secret',ANIM_ROUTE:'测试'},['node','script','--token','fake-argv-secret','password=fake-password'],dir,false);
-  recordSchedulerEvent(dir,'任务起',{发起: initiator,API_KEY:'fake-key'});
-  const text=JSON.stringify(readSchedulerEvents(dir));expect(text).not.toMatch(/fake-env-secret|fake-argv-secret|fake-password|fake-key/);expect(initiator.来源).toBe('codex');
+  recordSchedulerEvent(dir,'任务起',{initiator: initiator,API_KEY:'fake-key'});
+  const text=JSON.stringify(readSchedulerEvents(dir));expect(text).not.toMatch(/fake-env-secret|fake-argv-secret|fake-password|fake-key/);expect(initiator.source).toBe('codex');
 });
 it('孤儿清理只命中 Remotion headless 路径，不碰 Playwright',()=>{
   const ps='111 1 900 /x/node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell\n112 2 900 /x/node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell\n113 1 900 /x/ms-playwright/chrome-headless-shell\n114 1 900 /d/mc-anim-data/cache/浏览器/157.0.8080.0-remotion-v3/chrome-headless-shell-mac-arm64/chrome-headless-shell';

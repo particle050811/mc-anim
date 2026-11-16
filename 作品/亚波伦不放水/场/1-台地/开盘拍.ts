@@ -40,19 +40,19 @@ export const beats = {
 
 /** 慢放：片秒 起 开始 入 秒里减到 率，世界秒到 止 以后 出 秒里回到原速（速率对片秒线性变，世界钟一阶连续，不会一顿）。
  *  起 = 他从她脚底下冲过去那一下（冲二后 0.07 秒）；止 = 她刹住、盘张完以后 */
-export const slowMo = { 起: beats.dashSecondSec + 0.07, 入: 0.15, slowRate: 0.25, 止: 1.91, 出: 0.25 };
+export const slowMo = { start: beats.dashSecondSec + 0.07, 入: 0.15, slowRate: 0.25, end: 1.91, 出: 0.25 };
 
 // 速率 r(片秒)：起 之前 1；[起, 起 + 入] 线性降到 率；保持到 持止；[持止, 持止 + 出] 线性回 1
-const inEndWorld = slowMo.起 + (slowMo.入 * (1 + slowMo.slowRate)) / 2;
-const holdEndSec = slowMo.起 + slowMo.入 + (slowMo.止 - inEndWorld) / slowMo.slowRate;
+const inEndWorld = slowMo.start + (slowMo.入 * (1 + slowMo.slowRate)) / 2;
+const holdEndSec = slowMo.start + slowMo.入 + (slowMo.end - inEndWorld) / slowMo.slowRate;
 const slowExitEnd = holdEndSec + slowMo.出;
-const outEndWorld = slowMo.止 + (slowMo.出 * (1 + slowMo.slowRate)) / 2;
+const outEndWorld = slowMo.end + (slowMo.出 * (1 + slowMo.slowRate)) / 2;
 /** 慢放各段的片秒：开始减速、减完、开始回速、回完 */
-export const slowClipMarks = { 起: slowMo.起, decelEndSec: slowMo.起 + slowMo.入, returnStart: holdEndSec, returnEndSec: slowExitEnd };
+export const slowClipMarks = { start: slowMo.start, decelEndSec: slowMo.start + slowMo.入, returnStart: holdEndSec, returnEndSec: slowExitEnd };
 
 /** 幕内片秒 → 幕内世界秒 */
 export const toWorldSec = (s: number): number => {
-  const { 起: startSec, 入: easeInSec, slowRate, 出: easeOutSec } = slowMo;
+  const { start: startSec, 入: easeInSec, slowRate, 出: easeOutSec } = slowMo;
   if (s <= startSec) return s;
   if (s <= startSec + easeInSec) {
     const u = s - startSec;
@@ -61,15 +61,15 @@ export const toWorldSec = (s: number): number => {
   if (s <= holdEndSec) return inEndWorld + slowRate * (s - startSec - easeInSec);
   if (s <= slowExitEnd) {
     const u = s - holdEndSec;
-    return slowMo.止 + slowRate * u + ((1 - slowRate) * u * u) / (2 * easeOutSec);
+    return slowMo.end + slowRate * u + ((1 - slowRate) * u * u) / (2 * easeOutSec);
   }
   return outEndWorld + (s - slowExitEnd);
 };
 /** 幕内世界秒 → 幕内片秒（世界秒单调增，二分） */
 export const toClipSec = (w: number): number => {
-  if (w <= slowMo.起) return w;
+  if (w <= slowMo.start) return w;
   if (w >= outEndWorld) return slowExitEnd + (w - outEndWorld);
-  let [a, b] = [slowMo.起, slowExitEnd];
+  let [a, b] = [slowMo.start, slowExitEnd];
   for (let i = 0; i < 60; i++) {
     const m = (a + b) / 2;
     if (toWorldSec(m) < w) a = m;
@@ -79,7 +79,7 @@ export const toClipSec = (w: number): number => {
 };
 /** 这一刻世界钟走多快（世界秒每片秒） */
 export const slowRateAt = (s: number): number => {
-  const { 起: startSec, 入: easeInSec, slowRate } = slowMo;
+  const { start: startSec, 入: easeInSec, slowRate } = slowMo;
   if (s <= startSec || s >= slowExitEnd) return 1;
   if (s <= startSec + easeInSec) return 1 - ((1 - slowRate) * (s - startSec)) / easeInSec;
   if (s <= holdEndSec) return slowRate;

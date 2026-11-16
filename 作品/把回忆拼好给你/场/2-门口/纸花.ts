@@ -28,7 +28,7 @@ export type PieceKind = '纸' | '瓣';
  *  图 = 碎纸用 碎图们 的哪张（瓣：樱花贴图 0～11）；瓣 = 变成哪张樱花贴图（瓣：同 图）；转、翻 = 起始转几个 90°（碎纸只正着、倒着放，字行总是横的）、左右翻不翻；
  *  档 = 一个贴图像素几个成片像素；变 = 碎纸往下一档变的时刻（变档数 个，歌上的秒；瓣：空）；格们 = 碎纸第 0、1、2 档的样子（碎纸 → 两档中间形状；瓣：空） */
 export type PaperPiece = {
-  种: PieceKind;
+  kind: PieceKind;
   生: number;
   x0: number;
   y0: number;
@@ -44,7 +44,7 @@ export type PaperPiece = {
   phase: number;
   flipFreq: number;
   axis: '横' | '竖';
-  图: number;
+  image: number;
   petal: number;
   转: number;
   flip: boolean;
@@ -73,7 +73,7 @@ export const petalShape = (k: number): readonly string[] => (k < 6 ? ['.XX', 'XX
 export const tierCount = 4;
 
 export const paperParams = {
-  种子: 1424,
+  seed: 1424,
   /** 一个贴图像素几个成片像素：花瓣、近处的碎纸 20（同 特效/樱花风参数.ts 风流 的 2N 那档），远处的碎纸 10（同门口的方块贴图，一样的碎纸小一半，漫天里分出远近）。
    *  近处一片碎纸 3～5 格 = 30～50 页面像素，变成的樱花瓣 30 页面像素，同左屏的花瓣 */
   petalTier: 20,
@@ -103,7 +103,7 @@ export const paperParams = {
  *  1.1 秒过分屏线、过线时在画面 39% 高，到屋檐那么左（x 333）时在 52% 高——比那道弧末尾低 35 页面像素：进左屏斜 17°，那道弧末尾快拉平了（8°），
  *  斜一点才读得出「斜着往左下」，左屏的花瓣也是这个斜度（Agent 暂定） */
 export const windParams = {
-  起: [-0.15, 0.25] as const,
+  start: [-0.15, 0.25] as const,
   速: [-600, -40] as const,
   windRange: [0.75, 1.25] as const,
   delay: [0.2, 0.4] as const,
@@ -138,7 +138,7 @@ export const scatterPaper = {
   batchGap: 0.03,
   throwLag: 0.15,
   farChance: 0.35,
-  inbound: { 起: 0.03, full: 0.15, 止: 0.6, spawnRate: 80, farShare: 0.55, topChance: 0.75, topX: [640, 1240] as const, fallW: [330, 450] as const, 上: -30, 下: 250 },
+  inbound: { start: 0.03, full: 0.15, end: 0.6, spawnRate: 80, farShare: 0.55, topChance: 0.75, topX: [640, 1240] as const, fallW: [330, 450] as const, 上: -30, 下: 250 },
 } as const;
 
 /** 碎纸怎么变（用户 10-25「飘过去的时候 颜色和形状都渐渐变成樱花的样子」；主会话转述：一张一张看得出在变、按像素格一步步来）：
@@ -148,18 +148,18 @@ export const scatterPaper = {
 export const paperVariation = { startX: [600, 760] as const, paperAge: [0.45, 0.8] as const, tierSec: [0.15, 0.21] as const, paperSec: 0.3, endJitter: 0.25 } as const;
 
 /** 碎纸得在哪一刻以前全变成樱花瓣：合屏起（主会话转述用户 10-25 的意思：合成一整屏的时候飘着的已经都是樱花瓣），留 1/48 秒（24 fps 时半帧） */
-export const changeDoneSec = events.mergeScreenStart.秒 - 1 / 48;
+export const changeDoneSec = events.mergeScreenStart.sec - 1 / 48;
 
 /** 分屏的中线（页面 x）：合屏前，花瓣只在左边 */
 export const centerLine = retreatLayout.leftWidth;
 
 /** 合屏起：分屏线开始往右推，现实那半后面的花瓣跟着露出来 */
-export const mixStart = events.mergeScreenStart.秒;
+export const mixStart = events.mergeScreenStart.sec;
 
 /** 让开框：她按框、打框、取下合照、传送走那几拍（手按合照 前 0.1 秒到 合屏起），她和照片墙那一块（页面像素，合屏前的左屏）不让碎纸、花瓣挡着。
  *  框 = 照片墙（夏天四格加合照格）和取照时的她（站位左右各 0.6 格、2.2 格高，帽子、传送粒子都在里面），再往外放 留 页面像素 */
 export const stepAside = (() => {
-  const project = sideProjection({ 中心: [mergedScreenOffset, fullScreenShot.framing.中心[1]], pxPerCell: fullScreenShot.framing.pxPerCell }, 1280, 720, orthoTop);
+  const project = sideProjection({ center: [mergedScreenOffset, fullScreenShot.framing.center[1]], pxPerCell: fullScreenShot.framing.pxPerCell }, 1280, 720, orthoTop);
   const cells = [...photoWallCellPos.summer, photoWallCellPos.groupPhoto];
   const points = [
     ...cells.flatMap(([i, k]) => [project(i - 0.5, k, photoWallFaceY), project(i + 0.5, k + 1, photoWallFaceY)]),
@@ -172,28 +172,28 @@ export const stepAside = (() => {
     right: Math.max(...points.map((p) => p.x)) + margin,
     上: Math.min(...points.map((p) => p.y)) - margin,
     下: Math.max(...points.map((p) => p.y)) + margin,
-    起: events.handOnPhoto.秒 - 0.1,
-    止: events.mergeScreenStart.秒,
+    start: events.handOnPhoto.sec - 0.1,
+    end: events.mergeScreenStart.sec,
   };
 })();
 
 /** 花瓣从哪一刻起生（2-归隐 第一帧画面里已经飘满）到哪一刻（2-摇铃 转场）；生在画面上沿外 出发高 页面像素，右边多生一截（往左飘着进画） */
-const bornStart = events.splitSceneChange.秒 - 6;
-const bornEnd = events.windClears.秒;
+const bornStart = events.splitSceneChange.sec - 6;
+const bornEnd = events.windClears.sec;
 const startHeight = 48;
 const leftMargin = 40;
 const rightMargin = 400;
 const sampleRange = (a: readonly [number, number], r: () => number) => a[0] + r() * (a[1] - a[0]);
 const smoothstep = (u: number) => u * u * (3 - 2 * u);
 // ---------- 风 ----------
-const windRange = [events.paperDrifts.秒 + windParams.起[0], events.paperDrifts.秒 + windParams.起[1]] as const;
-const windFallRange = [events.turnToBell.秒, events.ringBell.秒] as const;
+const windRange = [events.paperDrifts.sec + windParams.start[0], events.paperDrifts.sec + windParams.start[1]] as const;
+const windFallRange = [events.turnToBell.sec, events.ringBell.sec] as const;
 
 /** 这一刻风刮得多大（0～1） */
 export const windForce = (t: number) => smoothstep(clamp01((t - windRange[0]) / (windRange[1] - windRange[0]))) * (1 - smoothstep(clamp01((t - windFallRange[0]) / (windFallRange[1] - windFallRange[0]))));
 
 /** 这一片从哪一刻起被风带（出发、起风哪个晚从哪个算，再落 迟 秒） */
-const gatherStart = (q: PaperPiece) => Math.max(q.生, events.paperDrifts.秒) + q.delay;
+const gatherStart = (q: PaperPiece) => Math.max(q.生, events.paperDrifts.sec) + q.delay;
 
 /** 这一刻这一片被风带得多紧（0～1）：揽起 以前 0，升 秒里缓到 1 */
 const gatherProgress = (q: PaperPiece, t: number) => smoothstep(clamp01((t - gatherStart(q)) / q.rise));
@@ -226,14 +226,14 @@ const windAmount = (q: PaperPiece, t: number) => {
 const travel = (v0: number, v: number, τ: number) => v * τ + (v0 - v) * paperParams.tugSec * (1 - Math.exp(-τ / paperParams.tugSec));
 
 /** 第几档（0 碎纸 … 变档数 樱花瓣）；花瓣一直是 变档数 */
-export const tierIndex = (q: PaperPiece, t: number) => (q.种 === '瓣' ? tierCount : q.tierSecs.filter((s) => s <= t).length);
+export const tierIndex = (q: PaperPiece, t: number) => (q.kind === '瓣' ? tierCount : q.tierSecs.filter((s) => s <= t).length);
 
 /** 碎纸的外框（页面像素，宽、高）；花瓣 3×3 */
-export const pieceFrame = (q: PaperPiece): { 宽: number; 高: number } => {
+export const pieceFrame = (q: PaperPiece): { width: number; height: number } => {
   const cellSize = q.档 / filmScale;
-  if (q.种 === '瓣') return { 宽: 3 * cellSize, 高: 3 * cellSize };
-  const imgRows = shardImages[q.图]!;
-  return { 宽: imgRows[0]!.length * cellSize, 高: imgRows.length * cellSize };
+  if (q.kind === '瓣') return { width: 3 * cellSize, height: 3 * cellSize };
+  const imgRows = shardImages[q.image]!;
+  return { width: imgRows[0]!.length * cellSize, height: imgRows.length * cellSize };
 };
 
 /** 一片在 t 时的外框左上角（页面像素，没吸整）；翻 = 翻面的余弦（碎纸：1 正面朝前、0 侧成一条线、负 背面朝前）；转 = 转几个 90°（樱花瓣一圈转四下，碎纸不转）；档 = 档位。
@@ -248,7 +248,7 @@ export const paperAt = (q: PaperPiece, t: number): { x: number; y: number; flipC
     x: q.x0 + travel(q.u, q.vx, τ) + q.windTake * windParams.速[0] * blow + q.swing * Math.sin(swayPhase),
     y: q.y0 + travel(q.w, q.vy, τ) + q.windTake * windParams.速[1] * blow + q.swing * windForce(t) * Math.cos(swayPhase),
     flipCos: Math.cos(2 * Math.PI * turns),
-    转: q.种 === '纸' && tier < tierCount - 1 ? q.转 : (q.转 + Math.floor(turns * 4)) % 4,
+    转: q.kind === '纸' && tier < tierCount - 1 ? q.转 : (q.转 + Math.floor(turns * 4)) % 4,
     档: tier,
   };
 };
@@ -257,19 +257,19 @@ export const paperAt = (q: PaperPiece, t: number): { x: number; y: number; flipC
  *  花瓣在她那边，分屏线左边才看得见（合屏时分屏线推过去，现实那半后面的花瓣跟着露出来） */
 export const isVisible = (q: PaperPiece, t: number): boolean => {
   if (t < q.生) return false;
-  return q.种 === '纸' || paperAt(q, t).x < splitLineX(t);
+  return q.kind === '纸' || paperAt(q, t).x < splitLineX(t);
 };
 
 /** 外框这一刻压不压着让开框 */
 const pressedAside = (q: PaperPiece, t: number) => {
   const { x, y } = paperAt(q, t);
   const k = pieceFrame(q);
-  return x + k.宽 > stepAside.left && x < stepAside.right && y + k.高 > stepAside.上 && y < stepAside.下;
+  return x + k.width > stepAside.left && x < stepAside.right && y + k.height > stepAside.上 && y < stepAside.下;
 };
 
 /** 让开框那几拍有没有挡着她（每 1/48 秒查一次，24 fps 时半帧） */
 export const blocksLiYing = (q: PaperPiece): boolean => {
-  for (let t = Math.max(stepAside.起, q.生); t < stepAside.止; t += 1 / 48) if (isVisible(q, t) && pressedAside(q, t)) return true;
+  for (let t = Math.max(stepAside.start, q.生); t < stepAside.end; t += 1 / 48) if (isVisible(q, t) && pressedAside(q, t)) return true;
   return false;
 };
 
@@ -279,8 +279,8 @@ const popsOutBehindLine = (q: PaperPiece): boolean => {
   let beforeLine = false;
   for (let t = q.生; t < mixStart; t += 1 / 48) {
     const { x, y } = paperAt(q, t);
-    if (y + pieceFrame(q).高 <= 0 || y >= 720) continue;
-    if (x + pieceFrame(q).宽 > centerLine) behindLine = true;
+    if (y + pieceFrame(q).height <= 0 || y >= 720) continue;
+    if (x + pieceFrame(q).width > centerLine) behindLine = true;
     if (x < centerLine) beforeLine = true;
   }
   return behindLine && beforeLine;
@@ -325,7 +325,7 @@ const makePiece = (
   const imgIdx = Math.floor(r() * (pieceKind === '纸' ? shardImages.length : 12));
   const petal = pieceKind === '纸' ? Math.floor(r() * 12) : imgIdx;
   return {
-    种: pieceKind,
+    kind: pieceKind,
     生: birthSec,
     x0,
     y0,
@@ -341,7 +341,7 @@ const makePiece = (
     phase: r(),
     flipFreq: sampleRange(p.flipFreq, r),
     axis: r() < 0.5 ? '横' : '竖',
-    图: imgIdx,
+    image: imgIdx,
     petal,
     转: pieceKind === '纸' ? 2 * Math.floor(r() * 2) : Math.floor(r() * 4),
     flip: r() < 0.5,
@@ -356,7 +356,7 @@ const varyPaper = (q: PaperPiece, r: () => number): PaperPiece => {
   const startX = sampleRange(paperVariation.startX, r);
   const age = sampleRange(paperVariation.paperAge, r);
   let d = sampleRange(paperVariation.tierSec, r);
-  const halfWidth = pieceFrame(q).宽 / 2;
+  const halfWidth = pieceFrame(q).width / 2;
   let passedAt = Infinity;
   for (let t = q.生; t < changeDoneSec; t += 1 / 96)
     if (paperAt(q, t).x + halfWidth <= startX) {
@@ -401,7 +401,7 @@ const thrownFromWindow = (r: () => number): PaperPiece[] =>
         const halfSize = (4.5 * tier) / filmScale / 2;
         const cx = a.x + r() * (b.x - a.x);
         const cy = a.y + r() * (b.y - a.y);
-        const q = makePiece('纸', events.paperDrifts.秒 + handful.delay + i * scatterPaper.batchGap, cx - halfSize, cy - halfSize, tier, r, [sampleRange(paperParams.throwU, r), sampleRange(paperParams.throwW, r)]);
+        const q = makePiece('纸', events.paperDrifts.sec + handful.delay + i * scatterPaper.batchGap, cx - halfSize, cy - halfSize, tier, r, [sampleRange(paperParams.throwU, r), sampleRange(paperParams.throwW, r)]);
         return { ...q, delay: q.delay + scatterPaper.throwLag };
       }),
     ).filter((q) => q !== null);
@@ -414,8 +414,8 @@ const inboundPieces = (r: () => number): PaperPiece[] => {
   const dt = 1 / 240;
   let spawnAccum = 0;
   let threshold = r();
-  for (let τ = s.起; τ < s.止; τ += dt) {
-    spawnAccum += s.spawnRate * Math.min(1, (τ - s.起) / (s.full - s.起)) * dt;
+  for (let τ = s.start; τ < s.end; τ += dt) {
+    spawnAccum += s.spawnRate * Math.min(1, (τ - s.start) / (s.full - s.start)) * dt;
     while (spawnAccum >= threshold) {
       spawnAccum -= threshold;
       threshold = 0.5 + r();
@@ -423,9 +423,9 @@ const inboundPieces = (r: () => number): PaperPiece[] => {
         const tier = r() < s.farShare ? paperParams.farTiers : paperParams.nearTier;
         if (r() < s.topChance) {
           const height = (5 * tier) / filmScale;
-          return makePiece('纸', events.paperDrifts.秒 + τ, sampleRange(s.topX, r), -height - 4, tier, r, [sampleRange(paperParams.vx, r), sampleRange(s.fallW, r)]);
+          return makePiece('纸', events.paperDrifts.sec + τ, sampleRange(s.topX, r), -height - 4, tier, r, [sampleRange(paperParams.vx, r), sampleRange(s.fallW, r)]);
         }
-        return makePiece('纸', events.paperDrifts.秒 + τ, 1280 + 4, sampleRange([s.上, s.下], r), tier, r);
+        return makePiece('纸', events.paperDrifts.sec + τ, 1280 + 4, sampleRange([s.上, s.下], r), tier, r);
       });
       if (q) out.push(q);
     }
@@ -457,7 +457,7 @@ let paperFlowerCache: PaperPiece[] | null = null;
 /** 全部的碎纸和花瓣（定死的种子，算一次）。碎纸先画远的、再画近的（近的压在远的上面），花瓣最后 */
 export const paperFlowers = (): readonly PaperPiece[] =>
   (paperFlowerCache ??= (() => {
-    const r = mulberry32(paperParams.种子 + 2);
+    const r = mulberry32(paperParams.seed + 2);
     const papers = [...thrownFromWindow(r), ...inboundPieces(r)].map((q) => varyPaper(q, r)).sort((a, b) => a.档 - b.档);
-    return [...papers, ...petalsFromSeed(paperParams.种子 + 1)];
+    return [...papers, ...petalsFromSeed(paperParams.seed + 1)];
   })());

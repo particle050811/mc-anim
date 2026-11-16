@@ -17,7 +17,7 @@ import { tick } from '../6-3-下坠/时间线.ts';
 type PoseField = 'pitch' | 'headPitch' | 'legR' | 'legL' | 'kneeR' | 'kneeL' | 'legRRoll' | 'legLRoll' | 'armR' | 'armL' | 'armRRoll' | 'armLRoll' | 'elbowR' | 'elbowL';
 // 关键值：数 = 绝对值；'起' = 原姿势在 刻.抡出（接得上前面）；'跃' = 原姿势在 刻.跃出（髋高不变）；'终' = 原来的末姿势（接得上 6-3-4）
 type KeyValue = number | '起' | '跃' | '终';
-type Track = { delay: number; 键: [w: number, v: KeyValue, interp?: Interp][] };
+type Track = { delay: number; key: [w: number, v: KeyValue, interp?: Interp][] };
 
 const startSec = tick.swingOut; // 1.2：锤刚抡到身前、双手握住
 const crouch = 1.42; // 收身蹲到底
@@ -30,31 +30,31 @@ const release = tick.flipDone; // 1.97：翻成头朝下，出手
 const recover = 2.24; // 回到下锤击架势（+ 最大延迟 0.035 = 2.275 秒，之后开抡）
 
 // 双臂：胸前 → 抡过头顶 → 脑后（冲过一点）→ 慢慢再往后拉 → 出手甩到头顶前方（冲过一点）停在 168
-const armKeys: Track['键'] = [[startSec, '起'], [crouch, 100], [settle, 97], [leap, 122], [1.62, 196, 'back'], [behind, 226], [spread, 230], [release, 236, 'back'], [recover, '终']];
-const elbowKeys: Track['键'] = [[startSec, '起'], [crouch, 58], [settle, 60], [leap, 42], [1.62, 20, 'back'], [behind, 48], [spread, 52], [release, 58, 'back'], [recover, '终']];
-const armRollKeys: Track['键'] = [[startSec, '起'], [settle, 26], [behind, 14], [release, 12], [recover, '终']];
+const armKeys: Track['key'] = [[startSec, '起'], [crouch, 100], [settle, 97], [leap, 122], [1.62, 196, 'back'], [behind, 226], [spread, 230], [release, 236, 'back'], [recover, '终']];
+const elbowKeys: Track['key'] = [[startSec, '起'], [crouch, 58], [settle, 60], [leap, 42], [1.62, 20, 'back'], [behind, 48], [spread, 52], [release, 58, 'back'], [recover, '终']];
+const armRollKeys: Track['key'] = [[startSec, '起'], [settle, 26], [behind, 14], [release, 12], [recover, '终']];
 const tracks: Record<PoseField, Track> = {
   // 腰先动：蹲时往前压，蹬直，空中后仰拉开，出手时先收回来
-  pitch: { delay: 0, 键: [[startSec, '起'], [crouch, -34], [settle, -34], [leap, '跃'], [straighten, -6], [spread, 16], [release, 20, 'back'], [recover, '终']] },
+  pitch: { delay: 0, key: [[startSec, '起'], [crouch, -34], [settle, -34], [leap, '跃'], [straighten, -6], [spread, 16], [release, 20, 'back'], [recover, '终']] },
   // 蹲时低头盯着城，空中抬头（头朝下的人抬头 = 看地面）
-  headPitch: { delay: 0.02, 键: [[startSec, '起'], [crouch, -38], [settle, -38], [leap, -28], [straighten, -6], [spread, 22], [release, 26], [recover, '终']] },
+  headPitch: { delay: 0.02, key: [[startSec, '起'], [crouch, -38], [settle, -38], [leap, -28], [straighten, -6], [spread, 22], [release, 26], [recover, '终']] },
   // 腿：再蹲深一点，跃出那一刻接回原值，蹬直以后右腿屈膝在前、左腿在后，两腿略张开
-  legR: { delay: 0, 键: [[startSec, '起'], [crouch, 84], [settle, 84], [leap, '跃'], [straighten, 6], [spread, 42], [release, 48], [recover, '终']] },
-  kneeR: { delay: 0, 键: [[startSec, '起'], [crouch, 128], [settle, 128], [leap, '跃'], [straighten, 4], [spread, 86], [release, 94], [recover, '终']] },
-  legL: { delay: 0, 键: [[startSec, '起'], [crouch, 84], [settle, 84], [leap, '跃'], [straighten, 4], [spread, -14], [release, -18], [recover, '终']] },
-  kneeL: { delay: 0, 键: [[startSec, '起'], [crouch, 128], [settle, 128], [leap, '跃'], [straighten, 4], [spread, 38], [release, 44], [recover, '终']] },
-  legRRoll: { delay: 0, 键: [[startSec, '起'], [leap, '跃'], [spread, -10], [release, -12], [recover, '终']] },
-  legLRoll: { delay: 0, 键: [[startSec, '起'], [leap, '跃'], [spread, -14], [release, -16], [recover, '终']] },
-  armR: { delay: 0.012, 键: armKeys },
-  armL: { delay: 0.012, 键: armKeys },
-  armRRoll: { delay: 0.012, 键: armRollKeys },
-  armLRoll: { delay: 0.012, 键: armRollKeys },
-  elbowR: { delay: 0.035, 键: elbowKeys },
-  elbowL: { delay: 0.035, 键: elbowKeys },
+  legR: { delay: 0, key: [[startSec, '起'], [crouch, 84], [settle, 84], [leap, '跃'], [straighten, 6], [spread, 42], [release, 48], [recover, '终']] },
+  kneeR: { delay: 0, key: [[startSec, '起'], [crouch, 128], [settle, 128], [leap, '跃'], [straighten, 4], [spread, 86], [release, 94], [recover, '终']] },
+  legL: { delay: 0, key: [[startSec, '起'], [crouch, 84], [settle, 84], [leap, '跃'], [straighten, 4], [spread, -14], [release, -18], [recover, '终']] },
+  kneeL: { delay: 0, key: [[startSec, '起'], [crouch, 128], [settle, 128], [leap, '跃'], [straighten, 4], [spread, 38], [release, 44], [recover, '终']] },
+  legRRoll: { delay: 0, key: [[startSec, '起'], [leap, '跃'], [spread, -10], [release, -12], [recover, '终']] },
+  legLRoll: { delay: 0, key: [[startSec, '起'], [leap, '跃'], [spread, -14], [release, -16], [recover, '终']] },
+  armR: { delay: 0.012, key: armKeys },
+  armL: { delay: 0.012, key: armKeys },
+  armRRoll: { delay: 0.012, key: armRollKeys },
+  armLRoll: { delay: 0.012, key: armRollKeys },
+  elbowR: { delay: 0.035, key: elbowKeys },
+  elbowL: { delay: 0.035, key: elbowKeys },
 };
 const fields = Object.keys(tracks) as PoseField[];
 
-let table: Record<PoseField, { delay: number; 键: Key[] }> | null = null;
+let table: Record<PoseField, { delay: number; key: Key[] }> | null = null;
 const fieldValue = (p: FigurePose, f: PoseField) => ((p as unknown as Record<string, number | undefined>)[f] ?? 0);
 
 // 旧：原来在 w 的姿势；旧在：原来任意时刻的姿势（6-3-下坠/编排.ts 的 blend(KEYS, …)）
@@ -62,14 +62,14 @@ export const releasePose = (physSec: number, oldPose: FigurePose, oldPoseAt: (ph
   if (physSec <= startSec) return oldPose;
   if (!table) {
     const refPoses = { 起: oldPoseAt(startSec), 跃: oldPoseAt(leap), 终: oldPoseAt(99) };
-    const built: Record<string, { delay: number; 键: Key[] }> = {};
+    const built: Record<string, { delay: number; key: Key[] }> = {};
     for (const field of fields) {
       const t = tracks[field];
-      built[field] = { delay: t.delay, 键: t.键.map(([k, keyValue, i]) => [k, typeof keyValue === 'number' ? keyValue : fieldValue(refPoses[keyValue], field), i] as Key) };
+      built[field] = { delay: t.delay, key: t.key.map(([k, keyValue, i]) => [k, typeof keyValue === 'number' ? keyValue : fieldValue(refPoses[keyValue], field), i] as Key) };
     }
     table = built as NonNullable<typeof table>;
   }
   const out: FigurePose = { ...oldPose, loc: [...oldPose.loc] };
-  for (const field of fields) (out as unknown as Record<string, number>)[field] = sampleLag(table![field].键, physSec, table![field].delay);
+  for (const field of fields) (out as unknown as Record<string, number>)[field] = sampleLag(table![field].key, physSec, table![field].delay);
   return out;
 };

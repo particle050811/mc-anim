@@ -14,13 +14,13 @@ const vr = mulberry32(7101);
 const vexSpawnOffsets: V3[] = Array.from({ length: vexCount }, () => [(vr() * 2 - 1) * 2, (vr() * 2 - 1) * 2, vr()]);
 // 散开的方向（场景角度，0 = 东，逆时针）、半径、离地，和冲出去的先后：挑成监守者每次冷却一好（0.9 秒）就正好有一只冲到胸口（用户 10-18 嫌缠斗像回合制，拍击不留空档），
 // 第一拍在 时间线.ts 的 `firstVexSwingT`。改了二人的跳或监守者的走位，拍t 会跟着变，要重挑（工具/追兵/7-1恼鬼挑参.ts）
-export type VexSpread = { 角: number; radius: number; 高: number };
+export type VexSpread = { angle: number; radius: number; height: number };
 export const vexSpread: VexSpread[] = [
-  { 角: 351, radius: 7.0, 高: 4.1 },
-  { 角: 163, radius: 3.8, 高: 5.6 },
-  { 角: 302, radius: 3.9, 高: 3.2 },
-  { 角: 150, radius: 6.3, 高: 5.9 },
-  { 角: 275, radius: 6.8, 高: 4.0 },
+  { angle: 351, radius: 7.0, height: 4.1 },
+  { angle: 163, radius: 3.8, height: 5.6 },
+  { angle: 302, radius: 3.9, height: 3.2 },
+  { angle: 150, radius: 6.3, height: 5.9 },
+  { angle: 275, radius: 6.8, height: 4.0 },
 ];
 export const chargeDelays = [0, 1.34, 1.13, 0.36, 1.49];
 type VexTick = { p: V3; v: V3; charge: boolean };
@@ -58,8 +58,8 @@ export const simulateVexes = (spread: VexSpread[], delays: number[], untilTick =
         if (!charging) target = vex.p;
         else if (vex.phase === 0) {
           const wardenPos = wardenAt(t).p;
-          const angle = (spread[i].角 * Math.PI) / 180;
-          target = [wardenPos[0] + spread[i].radius * Math.cos(angle), wardenPos[1] + spread[i].radius * Math.sin(angle), groundZ + spread[i].高];
+          const angle = (spread[i].angle * Math.PI) / 180;
+          target = [wardenPos[0] + spread[i].radius * Math.cos(angle), wardenPos[1] + spread[i].radius * Math.sin(angle), groundZ + spread[i].height];
           if (Math.hypot(target[0] - vex.p[0], target[1] - vex.p[1], target[2] - vex.p[2]) < 2.5) vex.phase = 1;
         } else if (vex.phase === 1) {
           target = wardenHeadPos(t);

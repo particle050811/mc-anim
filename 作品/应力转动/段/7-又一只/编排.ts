@@ -39,7 +39,7 @@ export const T12 = (sec: number) => T741End + sec + 1 / 60;
 // ---------- 开箱和振动链（镜 2） ----------
 export const lidOpenSec = shot1End + 0.75;
 // 刘心忠开 #213：开盖、已开贴图都由画布按 模型/物品/箱子.tsx 算（用户 10-20：「这边打开箱子以后 箱子应该变白」）
-export const chestOpenAt = (sec: number): ChestOpening => ({ chestId: geom.chest.chestId, 开: lidOpenSec, 秒: sec });
+export const chestOpenAt = (sec: number): ChestOpening => ({ chestId: geom.chest.chestId, 开: lidOpenSec, sec: sec });
 const tickSec = 1 / 20;
 const blockCenter = ([x, y, z]: V3): V3 => toScene(x + 0.5, y + 0.5, z + 0.5);
 export const blockBottomCenter = ([x, y, z]: V3): V3 => toScene(x + 0.5, y, z + 0.5);
@@ -78,10 +78,10 @@ export const sensorClock = (sec: number) => sec + 32;
 //   四个点都用 方块.py 的 can_stand(…, 3) 核过、离马和黄叛 3 格以上。格 = 脚底那一格（游戏坐标），画在格中心。
 // 叫的先后：第一声在最早收到咔嗒的那一刻，后面三声按 隔 错开（钻出也就错开同样的秒数）。
 const wardenPlans = [
-  { 名: '龛口东', shriekerIndex: 0, 格: [-704, -51, 196] as V3, gap: 0 }, // 原来那一只：龛口外东边的地上，比地台低两格
-  { 名: '箱前', shriekerIndex: 3, 格: [-711, -49, 197] as V3, gap: 0.6 }, // 龛里、箱子跟前（刘心忠刚伸手的地方），西墙头那个尖啸体召的
-  { 名: '马前', shriekerIndex: 2, 格: [-712, -49, 200] as V3, gap: 1.1 }, // 龛里西南角，马头前面不到 3 格
-  { 名: '南墙外', shriekerIndex: 1, 格: [-709, -51, 204] as V3, gap: 1.7 }, // 龛南墙外的地上，二人逃跑的路西边 5 米
+  { name: '龛口东', shriekerIndex: 0, cell: [-704, -51, 196] as V3, gap: 0 }, // 原来那一只：龛口外东边的地上，比地台低两格
+  { name: '箱前', shriekerIndex: 3, cell: [-711, -49, 197] as V3, gap: 0.6 }, // 龛里、箱子跟前（刘心忠刚伸手的地方），西墙头那个尖啸体召的
+  { name: '马前', shriekerIndex: 2, cell: [-712, -49, 200] as V3, gap: 1.1 }, // 龛里西南角，马头前面不到 3 格
+  { name: '南墙外', shriekerIndex: 1, cell: [-709, -51, 204] as V3, gap: 1.7 }, // 龛南墙外的地上，二人逃跑的路西边 5 米
 ];
 const firstShriekSec = Math.min(...wardenPlans.map((w) => chain.receivedSecs[w.shriekerIndex]));
 // 面朝二人中间（实体正面 −Y，转 θ + 90°）
@@ -90,11 +90,11 @@ export const wardens = wardenPlans.map((plan) => {
   const shriekSec = Math.max(chain.receivedSecs[plan.shriekerIndex], firstShriekSec + plan.gap);
   // 本段第几秒开始钻出：尖啸后 0.75 秒
   const emergeAt = shriekSec + 0.75;
-  const p = toScene(plan.格[0] + 0.5, plan.格[1], plan.格[2] + 0.5);
+  const p = toScene(plan.cell[0] + 0.5, plan.cell[1], plan.cell[2] + 0.5);
   // 游戏时间（驱动待机晃动、心跳发光）：让第一下心跳落在钻出后 1 秒（心跳整 2 秒一次，见 6-4-8 声音.tsx）
   const gameSecOffset = (((2 - ((31 + emergeAt) % 2)) % 2) + 2) % 2;
   return {
-    名: plan.名,
+    name: plan.name,
     p,
     shrieker: shriekers[plan.shriekerIndex],
     shriekP: blockBottomCenter(shriekers[plan.shriekerIndex]),
@@ -113,7 +113,7 @@ export const wardenState = (w: WardenPlan, sec: number) => {
   const t = emergeSecAt(w, sec);
   const emergeT = t * K8.emergeSpeedup;
   const tendril = t > K8.emergeDurationSec + 0.1 ? Math.max(0, 1 - (t - K8.emergeDurationSec - 0.1) / 0.5) : 0;
-  return { 秒: wardenGameSec(w, sec), 钻出: emergeT <= WARDEN.emergeSec ? Math.max(0, emergeT) : undefined, tendril: tendril, headYaw: 0, headPitch: emergeT > WARDEN.emergeSec ? 8 : 0 };
+  return { sec: wardenGameSec(w, sec), 钻出: emergeT <= WARDEN.emergeSec ? Math.max(0, emergeT) : undefined, tendril: tendril, headYaw: 0, headPitch: emergeT > WARDEN.emergeSec ? 8 : 0 };
 };
 const [wA, wB, wC] = wardens;
 

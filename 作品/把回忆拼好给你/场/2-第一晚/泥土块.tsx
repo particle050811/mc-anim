@@ -16,7 +16,7 @@ export const DirtBlock: React.FC = () => (
 
 /** 掉在地上的一块：中心 = 物品实体脚底往上 0.25 + 浮（ItemEntityRenderer 的 sin(刻/10 + 偏)·0.1 + 0.1，再加 ground 显示变换的 3/16 和缩放后的半格），
  *  绕竖轴转 转 弧度，边长 0.25 格（block/block.json 的 ground） */
-export const GroundDirt: React.FC<{ 位: readonly [number, number, number]; 转: number; 大小: number }> = ({ 位: pos, 转: rotationRad, 大小: size }) => (
+export const GroundDirt: React.FC<{ 位: readonly [number, number, number]; 转: number; size: number }> = ({ 位: pos, 转: rotationRad, size: size }) => (
   <group position={[pos[0], pos[1], pos[2]]} rotation={[0, 0, rotationRad]} scale={size}>
     <DirtBlock />
   </group>

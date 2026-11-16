@@ -33,12 +33,12 @@ const drawWidthPx = 1280;
 export const mergedScreenOffset = retreatLayout.leftWidth / cellPerPage / 2;
 
 /** 右屏（教学楼下）取景：x −4～4，地面线和左屏是同一条横线（像一个画面切成两半） */
-export const downstairsFraming = { 中心: [0, fullScreenShot.framing.中心[1]] as const, pxPerCell: 16 * downstairsCount };
+export const downstairsFraming = { center: [0, fullScreenShot.framing.center[1]] as const, pxPerCell: 16 * downstairsCount };
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /** 合屏到哪了（0～1，两头慢）：合屏起 那一帧 0 到 合屏到位 那一帧 1（按两头的帧算，不按拍上的秒：两头那一帧正好是分屏、整屏） */
-export const mergeProgress = (sec: number) => smoothstep(clamp01((sec * fps - events.mergeScreenStart.帧) / (events.mergeScreenDone.帧 - events.mergeScreenStart.帧)));
+export const mergeProgress = (sec: number) => smoothstep(clamp01((sec * fps - events.mergeScreenStart.frame) / (events.mergeScreenDone.frame - events.mergeScreenStart.frame)));
 
 /** 服务器那张整屏宽的画这一刻的取景中心 x（格）：合屏前 合屏前偏，合屏到位 0，两头都在整格上。
  *  挪的时候不吸：原来吸到一个贴图像素（1/16 格，10 成片像素），60 fps 下两头一帧挪 10 像素、一帧不挪，一顿一顿（用户 11-03「统统改成 60 帧」）；
@@ -79,8 +79,8 @@ export const gait = { periodCells: 2.67, legAmp: 38, armSwing: 24 } as const;
 
 /** 她这一刻走到哪（脚底 x）、走了几个步周期：走向照片墙 前在挂铃站位，到站以后停在取照站位 */
 export const walkTo = (frame: number): { x: number; cycles: number } => {
-  const startFrame = events.walkToPhotoWall.帧;
-  const endFrame = events.handOnPhoto.帧 - pressReachSec * fps;
+  const startFrame = events.walkToPhotoWall.frame;
+  const endFrame = events.handOnPhoto.frame - pressReachSec * fps;
   const span = photoStandPos - hangBellStandPos;
   const T = (endFrame - startFrame) / fps;
   const a = walkEaseSec;
@@ -128,10 +128,10 @@ export const groupPhotoHandheldScale = 1.6;
 /** 她传送走（她消失）：原版末影人瞬移的紫色传送粒子（库/特效/传送粒子.tsx 的 body 那种），一刻放 放几颗、放 放刻 刻，寿命乘 寿命（原版 2 秒多，收短，2-摇铃 你转向铃以前散完）、大小乘 大小。
  *  原版瞬移一下冒 128 颗（LivingEntity 实体事件 46），这里三刻共 120 颗；核查 10-24 静帧：原来 18 颗、2 倍大，只剩几个紫点，看不出她是传送走的。
  *  前刻：她消失 前几刻就开始冒（粒子刚冒出来很小，拍上才冒的话人没了那一帧画面里几乎没有粒子，像一刀剪掉） */
-export const teleport = { 放: 40, releaseTick: 3, preTick: 2, 寿命: 0.4, 大小: 3, 种子: 1438 } as const;
+export const teleport = { 放: 40, releaseTick: 3, preTick: 2, 寿命: 0.4, size: 3, seed: 1438 } as const;
 
 // ---------- 调子 ----------
 /** 左屏的调子：从第 13 句末（夏日白天往褪色插 0.2，分屏参数.ts 的 褪色程度 封顶）一路褪到 2-摇铃 开头那样（第15句.ts 的 回色.起：褪色往夏日白天回 1/3），
  *  合屏到位那一拍到，2-摇铃 再从这里回色 */
 export const fadeStart = 0.2;
-export const fadeEnd = 1 - colorBackRange.起;
+export const fadeEnd = 1 - colorBackRange.start;

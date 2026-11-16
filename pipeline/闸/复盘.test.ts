@@ -15,103 +15,103 @@ import { claimTicket } from './票.ts';
 let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-复盘-')); });
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
-const sequence = () => { const rows: SchedulerEvent[] = []; return { rows, add: (sec: number, eventName: string, x: Record<string, unknown> = {}) => { rows.push({ v: 1, 主机: 'h', 时: new Date(sec * 1000).toISOString(), 事: eventName, 锁: '渲染', ...x }); } }; };
-const fakeMachine = () => ({ 负载: 2, 核: 10, 闸: 40, 压力: 1, free: 1, 压缩: 1, swap: 0, 换出: 0, GPU: 0, 热: 0, 盘: 1e10, 孤儿: 0, 进程: '' });
-const parseParams = (xs: string[]) => parseArgs(xs, { 值: ['--why', '--saw', '--decision'], toggles: ['--kill-holder'] });
+const sequence = () => { const rows: SchedulerEvent[] = []; return { rows, add: (sec: number, eventName: string, x: Record<string, unknown> = {}) => { rows.push({ v: 1, host: 'h', timestamp: new Date(sec * 1000).toISOString(), event: eventName, lock: '渲染', ...x }); } }; };
+const fakeMachine = () => ({ load: 2, cores: 10, gate: 40, pressure: 1, free: 1, compressed: 1, swap: 0, swapOut: 0, GPU: 0, thermal: 0, disk: 1e10, orphans: 0, processes: '' });
+const parseParams = (xs: string[]) => parseArgs(xs, { value: ['--why', '--saw', '--decision'], toggles: ['--kill-holder'] });
 
 describe('等谁', () => {
   it('领票和拿锁按任务关联：改序不丢', () => {
     const { rows, add } = sequence();
-    add(0, '拿锁', { 票: 'a', 任务: 'A' }); add(1, '领票', { 票: 'b', 任务: 'B' }); add(5, '改序', { 任务: 'B', 票: 'b2', 原序: 'b', 新序: 'b2' }); add(100, '放锁', { 票: 'a', 任务: 'A', 持锁秒: 100 }); add(100, '拿锁', { 票: 'b2', 任务: 'B' });
-    expect(review(rows).等谁).toEqual({ 'B→A': 99 });
+    add(0, '拿锁', { ticket: 'a', task: 'A' }); add(1, '领票', { ticket: 'b', task: 'B' }); add(5, '改序', { task: 'B', ticket: 'b2', 原序: 'b', 新序: 'b2' }); add(100, '放锁', { ticket: 'a', task: 'A', lockHoldSec: 100 }); add(100, '拿锁', { ticket: 'b2', task: 'B' });
+    expect(review(rows).waitingOn).toEqual({ 'B→A': 99 });
   });
   it('分锁种：放行队列不算到渲染持锁者头上，等的是什么单列', () => {
     const { rows, add } = sequence();
-    add(0, '拿锁', { 票: 'a', 任务: 'A' }); add(1, '领票', { 票: 'p', 任务: 'P', 锁: '放行' }); add(2, '放行等起', { 票: 'p', 任务: 'P', 锁: '放行', 卡在: '间隔、负载' }); add(100, '拿锁', { 票: 'p', 任务: 'P', 锁: '放行' }); add(200, '放锁', { 票: 'a', 任务: 'A', 持锁秒: 200 });
+    add(0, '拿锁', { ticket: 'a', task: 'A' }); add(1, '领票', { ticket: 'p', task: 'P', lock: '放行' }); add(2, '放行等起', { ticket: 'p', task: 'P', lock: '放行', stuckOn: '间隔、负载' }); add(100, '拿锁', { ticket: 'p', task: 'P', lock: '放行' }); add(200, '放锁', { ticket: 'a', task: 'A', lockHoldSec: 200 });
     const r = review(rows);
-    expect(r.等谁).toEqual({});
+    expect(r.waitingOn).toEqual({});
     expect(r.未归因.分解).toEqual({ '放行卡在间隔、负载': 99 });
   });
   it('持锁者崩溃：关闭持锁区间，等它的算它，不算当前持锁，占锁算到最后心跳', () => {
     const { rows, add } = sequence();
-    add(0, '拿锁', { 票: 'a', 任务: 'A', 声明: { 用途: '产出' } }); add(1, '领票', { 票: 'b', 任务: 'B' });
-    add(100, '崩溃', { 任务: 'A', 票: 'a', 心跳: 30_000 }); add(100, '回收死锁', { 票: 'b', 任务: 'B', 原持有者: { pid: 1, 任务: 'A' } }); add(100, '拿锁', { 票: 'b', 任务: 'B' }); add(120, '放锁', { 票: 'b', 任务: 'B', 持锁秒: 20, 声明: { 用途: '产出' } });
+    add(0, '拿锁', { ticket: 'a', task: 'A', decl: { purpose: '产出' } }); add(1, '领票', { ticket: 'b', task: 'B' });
+    add(100, '崩溃', { task: 'A', ticket: 'a', heartbeat: 30_000 }); add(100, '回收死锁', { ticket: 'b', task: 'B', prevHolder: { pid: 1, task: 'A' } }); add(100, '拿锁', { ticket: 'b', task: 'B' }); add(120, '放锁', { ticket: 'b', task: 'B', lockHoldSec: 20, decl: { purpose: '产出' } });
     const r = review(rows);
-    expect(r.等谁).toEqual({ 'B→A': 99 });
+    expect(r.waitingOn).toEqual({ 'B→A': 99 });
     expect(r.等闸.其中已崩溃者秒).toBe(99);
     expect(r.当前持锁).toEqual([]);
     expect(r.占锁秒).toEqual({ 产出: 50 });
-    expect(r.被杀.map(x => x.事)).toEqual(['崩溃']);
+    expect(r.被杀.map(x => x.event)).toEqual(['崩溃']);
   });
   it('只有回收事件也关闭：在跑文件没了时崩溃事件写不出来', () => {
     const { rows, add } = sequence();
-    add(0, '拿锁', { 票: 'a', 任务: 'A' }); add(1, '领票', { 票: 'b', 任务: 'B' }); add(50, '回收死锁', { 票: 'b', 任务: 'B', 原持有者: { pid: 1 } }); add(50, '拿锁', { 票: 'b', 任务: 'B' });
+    add(0, '拿锁', { ticket: 'a', task: 'A' }); add(1, '领票', { ticket: 'b', task: 'B' }); add(50, '回收死锁', { ticket: 'b', task: 'B', prevHolder: { pid: 1 } }); add(50, '拿锁', { ticket: 'b', task: 'B' });
     const r = review(rows);
-    expect(r.等谁).toEqual({ 'B→A': 49 });
-    expect(r.当前持锁.map(x => x.任务)).toEqual(['B']);
+    expect(r.waitingOn).toEqual({ 'B→A': 49 });
+    expect(r.当前持锁.map(x => x.task)).toEqual(['B']);
   });
   it('旧闸挡路没有持锁记录：列进未归因并点名 pid，发起者分解也看得到', () => {
     const { rows, add } = sequence();
-    add(0, '领票', { 票: 'b', 任务: 'B' }); add(0, '排队', { 票: 'b', 任务: 'B', 等谁: 5067 }); add(600, '拿锁', { 票: 'b', 任务: 'B', 等锁秒: 600, 发起: { 来源: '人', 工作区: '主', 路: '' } });
+    add(0, '领票', { ticket: 'b', task: 'B' }); add(0, '排队', { ticket: 'b', task: 'B', waitingOn: 5067 }); add(600, '拿锁', { ticket: 'b', task: 'B', lockWaitSec: 600, initiator: { source: '人', workspace: '主', lane: '' } });
     const r = review(rows);
-    expect(r.等谁).toEqual({});
-    expect(r.等闸).toMatchObject({ 总秒: 600, 未归因秒: 600 });
+    expect(r.waitingOn).toEqual({});
+    expect(r.等闸).toMatchObject({ totalSec: 600, 未归因秒: 600 });
     expect(r.未归因.分解).toEqual({ '旧闸 #5067': 600 });
     expect(r.发起等秒).toEqual({ '人:/主/未声明路→未归因': 600 });
   });
   it('没有领票也没有等锁秒：列无等待数据，不静默丢', () => {
     const { rows, add } = sequence();
-    add(10, '拿锁', { 票: 'b', 任务: 'B' });
+    add(10, '拿锁', { ticket: 'b', task: 'B' });
     const r = review(rows);
     expect(r.未归因.无等待数据次).toBe(1);
-    expect(r.未归因.明细).toEqual([{ 任务: 'B', 锁: '渲染', 票: 'b', 原因: '无领票' }]);
+    expect(r.未归因.detail).toEqual([{ task: 'B', lock: '渲染', ticket: 'b', cause: '无领票' }]);
   });
   it('等锁秒是总量；等内存单算，不进未归因', () => {
     const { rows, add } = sequence();
-    add(0, '拿锁', { 票: 'a', 任务: 'A' }); add(10, '放锁', { 票: 'a', 任务: 'A', 持锁秒: 10 }); add(40, '拿锁', { 票: 'b', 任务: 'B', 等锁秒: 35, 等内存秒: 30 });
+    add(0, '拿锁', { ticket: 'a', task: 'A' }); add(10, '放锁', { ticket: 'a', task: 'A', lockHoldSec: 10 }); add(40, '拿锁', { ticket: 'b', task: 'B', lockWaitSec: 35, memoryWaitSec: 30 });
     const r = review(rows);
-    expect(r.等谁).toEqual({ 'B→A': 5 });
-    expect(r.等闸).toMatchObject({ 总秒: 35, 持锁者秒: 5, 内存秒: 30, 未归因秒: 0 });
+    expect(r.waitingOn).toEqual({ 'B→A': 5 });
+    expect(r.等闸).toMatchObject({ totalSec: 35, 持锁者秒: 5, 内存秒: 30, 未归因秒: 0 });
   });
   it('入选只定汇报哪些：领票在窗口外、挡路者不满足过滤，照样归因', () => {
     const { rows, add } = sequence();
-    add(0, '拿锁', { 票: 'a', 任务: 'A', 发起: { 路: '别的路' } }); add(1, '领票', { 票: 'b', 任务: 'B', 发起: { 路: '这路' } }); add(100, '放锁', { 票: 'a', 任务: 'A', 持锁秒: 100, 发起: { 路: '别的路' }, 声明: { 用途: '实验' } }); add(100, '拿锁', { 票: 'b', 任务: 'B', 发起: { 路: '这路' } });
-    const r = review(rows, { matches: x => (x.发起 as { 路?: string } | undefined)?.路 === '这路' && Date.parse(x.时) >= 50_000 });
-    expect(r.等谁).toEqual({ 'B→A': 99 });
+    add(0, '拿锁', { ticket: 'a', task: 'A', initiator: { lane: '别的路' } }); add(1, '领票', { ticket: 'b', task: 'B', initiator: { lane: '这路' } }); add(100, '放锁', { ticket: 'a', task: 'A', lockHoldSec: 100, initiator: { lane: '别的路' }, decl: { purpose: '实验' } }); add(100, '拿锁', { ticket: 'b', task: 'B', initiator: { lane: '这路' } });
+    const r = review(rows, { matches: x => (x.initiator as { lane?: string } | undefined)?.lane === '这路' && Date.parse(x.timestamp) >= 50_000 });
+    expect(r.waitingOn).toEqual({ 'B→A': 99 });
     expect(r.占锁秒).toEqual({});
   });
   it('没拿到锁就没了的等待和还在等的都列出来', () => {
     const { rows, add } = sequence();
-    add(1, '领票', { 票: 'k', 任务: 'K' }); add(10, '被杀', { 任务: 'K' }); add(11, '任务止', { 任务: 'K' }); add(20, '领票', { 票: 'w', 任务: 'W' });
+    add(1, '领票', { ticket: 'k', task: 'K' }); add(10, '被杀', { task: 'K' }); add(11, '任务止', { task: 'K' }); add(20, '领票', { ticket: 'w', task: 'W' });
     expect(review(rows, { now: 50_000 }).没等到).toEqual([
-      { 任务: 'K', 锁: '渲染', 票: 'k', 起: new Date(1000).toISOString(), 秒: 9, 结局: '被杀' },
-      { 任务: 'W', 锁: '渲染', 票: 'w', 起: new Date(20_000).toISOString(), 秒: 30, 结局: '未结束' },
+      { task: 'K', lock: '渲染', ticket: 'k', start: new Date(1000).toISOString(), sec: 9, 结局: '被杀' },
+      { task: 'W', lock: '渲染', ticket: 'w', start: new Date(20_000).toISOString(), sec: 30, 结局: '未结束' },
     ]);
   });
   it('等内存起后被杀：按结束事件计入并标未结束', () => {
     const { rows, add } = sequence();
-    add(0, '等内存起', { 票: 'b', 任务: 'B' }); add(8760, '被杀', { 任务: 'B' }); add(8760, '任务止', { 任务: 'B' }); add(9000, '等内存起', { 票: 'c', 任务: 'C' });
+    add(0, '等内存起', { ticket: 'b', task: 'B' }); add(8760, '被杀', { task: 'B' }); add(8760, '任务止', { task: 'B' }); add(9000, '等内存起', { ticket: 'c', task: 'C' });
     const r = review(rows, { now: 9100_000 });
     expect(r.等内存).toEqual({ B: 8760, C: 100 });
-    expect(r.等内存未结束).toEqual([expect.objectContaining({ 任务: 'B', 结局: '被杀', 秒: 8760 }), expect.objectContaining({ 任务: 'C', 结局: '未结束' })]);
+    expect(r.等内存未结束).toEqual([expect.objectContaining({ task: 'B', 结局: '被杀', sec: 8760 }), expect.objectContaining({ task: 'C', 结局: '未结束' })]);
   });
 });
 
 describe('告警到决定', () => {
   it('持锁告警对象是 任务/段，#pid 的决定落库带任务 id，配得上；改序不影响', () => {
     const e = resolveSchedulerEnv({ lockDir: dir, caller: readCaller({}, [], dir, false) }), q = path.join(dir, '渲染.排队');
-    const t = claimTicket(q, e.localHost, { 任务: '任务甲', 起: 0, 心跳: 0, 主机: e.localHost, 发起: e.caller, 声明: { 种: 'still' } }, Date.now());
-    recordSchedulerEvent(e.logDir, '告警', { 类: '排队长', 对象: '任务甲', 票: t.名, pid: process.pid });
-    const o = { 状态: () => readState(e, fakeMachine, false), 输出: () => {} };
+    const t = claimTicket(q, e.localHost, { task: '任务甲', start: 0, heartbeat: 0, host: e.localHost, initiator: e.caller, decl: { kind: 'still' } }, Date.now());
+    recordSchedulerEvent(e.logDir, '告警', { type: '排队长', subject: '任务甲', ticket: t.name, pid: process.pid });
+    const o = { state: () => readState(e, fakeMachine, false), output: () => {} };
     changeScheduler('first', `#${process.pid}`, parseParams(['--why', '插队']), e, o);
-    const decision = readSchedulerEvents(e.logDir).find(x => x.事 === '决定')!;
-    expect(decision).toMatchObject({ 任务: '任务甲', 票: t.名, 目标: `#${process.pid}` });
+    const decision = readSchedulerEvents(e.logDir).find(x => x.event === '决定')!;
+    expect(decision).toMatchObject({ task: '任务甲', ticket: t.name, target: `#${process.pid}` });
     expect(review(readSchedulerEvents(e.logDir)).告警到决定秒).toHaveLength(1);
   });
   it('升级连发时从最早那条算；配过的不再配；没指向谁的决定不进统计', () => {
     const { rows, add } = sequence();
-    add(0, '告警', { 对象: 'T/段', 次数: 1 }); add(60, '告警', { 对象: 'T/段', 次数: 2 }); add(100, '决定', { 任务: 'T', 决定: '取消' }); add(200, '决定', { 任务: 'T', 决定: '又一次' });
-    add(300, '告警', { 类: '负载', 对象: '机器' }); add(400, '决定', { 决定: '错开派活' }); add(500, '告警', { 对象: 'U' }); add(600, '决定', { 任务: 'V' }); add(700, '决定', { 目标: '机器', 决定: '记' });
+    add(0, '告警', { subject: 'T/段', attempts: 1 }); add(60, '告警', { subject: 'T/段', attempts: 2 }); add(100, '决定', { task: 'T', decision: '取消' }); add(200, '决定', { task: 'T', decision: '又一次' });
+    add(300, '告警', { type: '负载', subject: '机器' }); add(400, '决定', { decision: '错开派活' }); add(500, '告警', { subject: 'U' }); add(600, '决定', { task: 'V' }); add(700, '决定', { target: '机器', decision: '记' });
     expect(review(rows).告警到决定秒).toEqual([100, 400]);
   });
 });
@@ -122,8 +122,8 @@ describe('日志过滤', () => {
   const countLines = (s: string) => s ? s.split('\n').length : 0;
   it('--seg 先看事件顶层的段：告警的声明是任务手上那段，不能归错', async () => {
     const e = resolveSchedulerEnv({ lockDir: dir });
-    recordSchedulerEvent(e.logDir, '告警', { 任务: 'R', 段: '甲', 声明: { 段: '乙' } }, Date.now());
-    recordSchedulerEvent(e.logDir, '拿锁', { 任务: 'R', 声明: { 段: '乙' } }, Date.now());
+    recordSchedulerEvent(e.logDir, '告警', { task: 'R', segment: '甲', decl: { segment: '乙' } }, Date.now());
+    recordSchedulerEvent(e.logDir, '拿锁', { task: 'R', decl: { segment: '乙' } }, Date.now());
     const readLog = async (segmentKey: string) => { const lines: string[] = []; expect(await runScheduler(['log', '--seg', segmentKey, '--json'], e, (s) => lines.push(s))).toBe(0); return lines.join('\n'); };
     const outputA = await readLog('甲'), secondLog = await readLog('乙');
     expect(outputA).toContain('告警');expect(outputA).not.toContain('拿锁');
@@ -132,11 +132,11 @@ describe('日志过滤', () => {
   it('--route 同时查事件顶层的 路 和 发起.路', async () => {
     const e = makeSchedEnv();
     await runCmd(e, 'route', 'open', '纹理核对'); await runCmd(e, 'order', '纹理核对', '--yield', '产出优先');
-    recordSchedulerEvent(e.logDir, '拿锁', { 任务: 'T', 发起: { 路: '纹理核对' } });
-    recordSchedulerEvent(e.logDir, '拿锁', { 任务: 'U', 发起: { 路: '别的' } });
+    recordSchedulerEvent(e.logDir, '拿锁', { task: 'T', initiator: { lane: '纹理核对' } });
+    recordSchedulerEvent(e.logDir, '拿锁', { task: 'U', initiator: { lane: '别的' } });
     expect(countLines(await runCmd(e, 'log', '--route', '纹理核对'))).toBe(3);
   });
-  it('--from --to 按时刻比：只给日期的 --to 含当天；月-日和 --day 同格式；写错报用法错误', async () => {
+  it('--from --to 按时刻比：只给日期的 --to 含当天；month-日和 --day 同格式；写错报用法错误', async () => {
     const e = makeSchedEnv();
     for (const t of ['2026-10-31T23:59:00Z', '2026-11-01T08:00:00Z', '2026-11-02T00:00:00Z']) recordSchedulerEvent(e.logDir, '测试', {}, Date.parse(t));
     expect(countLines(await runCmd(e, 'log', '--to', '2026-11-01'))).toBe(2);
@@ -150,13 +150,13 @@ describe('日志过滤', () => {
   });
   it('review --day：前一天的领票也配得上；不在窗口里就没有当前持锁；持锁者已死不算', async () => {
     const e = makeSchedEnv();
-    const logEvent = (t: string, eventName: string, x: Record<string, unknown>) => recordSchedulerEvent(e.logDir, eventName, { 锁: '渲染', ...x }, Date.parse(t));
-    logEvent('2026-10-31T23:59:00Z', '拿锁', { 票: 'a', 任务: 'A' }); logEvent('2026-10-31T23:59:30Z', '领票', { 票: 'b', 任务: 'B' }); logEvent('2026-11-01T00:01:00Z', '放锁', { 票: 'a', 任务: 'A', 持锁秒: 120 }); logEvent('2026-11-01T00:01:00Z', '拿锁', { 票: 'b', 任务: 'B' });
+    const logEvent = (t: string, eventName: string, x: Record<string, unknown>) => recordSchedulerEvent(e.logDir, eventName, { lock: '渲染', ...x }, Date.parse(t));
+    logEvent('2026-10-31T23:59:00Z', '拿锁', { ticket: 'a', task: 'A' }); logEvent('2026-10-31T23:59:30Z', '领票', { ticket: 'b', task: 'B' }); logEvent('2026-11-01T00:01:00Z', '放锁', { ticket: 'a', task: 'A', lockHoldSec: 120 }); logEvent('2026-11-01T00:01:00Z', '拿锁', { ticket: 'b', task: 'B' });
     const r = JSON.parse(await runCmd(e, 'review', '--day', '11-01'));
-    expect(r.等谁).toEqual({ 'B→A': 90 });
+    expect(r.waitingOn).toEqual({ 'B→A': 90 });
     fs.writeFileSync(path.join(dir, '渲染.lock'), `${process.pid}\n`);
-    fs.writeFileSync(path.join(dir, '渲染.lock.信息.json'), JSON.stringify({ pid: process.pid, 票: 'b', 任务: 'B', 发起: e.caller, 声明: {}, 拿锁时: Date.now(), 心跳: Date.now(), 帧时: Date.now(), 已出帧: 0 }));
-    expect(JSON.parse(await runCmd(e, 'review')).当前持锁.map((x: { 任务: string }) => x.任务)).toEqual(['B']);
+    fs.writeFileSync(path.join(dir, '渲染.lock.信息.json'), JSON.stringify({ pid: process.pid, ticket: 'b', task: 'B', initiator: e.caller, decl: {}, lockAcquiredAt: Date.now(), heartbeat: Date.now(), frameTime: Date.now(), framesDone: 0 }));
+    expect(JSON.parse(await runCmd(e, 'review')).当前持锁.map((x: { task: string }) => x.task)).toEqual(['B']);
     expect(JSON.parse(await runCmd(e, 'review', '--day', '10-31')).当前持锁).toEqual([]);
     fs.writeFileSync(path.join(dir, '渲染.lock'), '99999998\n');
     expect(JSON.parse(await runCmd(e, 'review')).当前持锁).toEqual([]);

@@ -15,7 +15,7 @@ import { line8Photos } from '../../特效/照片画.ts';
 import { views } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
 
-const frame = mainCutEvents.hiss.帧;
+const frame = mainCutEvents.hiss.frame;
 const photoWall = photoWallCells(line8Photos);
 
 const picture: React.FC = () => {
@@ -23,8 +23,8 @@ const picture: React.FC = () => {
   // N = 6 不是 4 的倍数：地图画按 32 格画（特效/地图画.ts），天、太阳用 门口画布 的默认
   const shot = v.N6 ? { framing: n6Framing, photoWallEdge: 32 as const } : { ...line8Shot, photoWallEdge: 64 as const, arc: null };
   return (
-    <FilmPost grade={v.withPost ? line8Tone.grade : null} 种子={frame}>
-      <DoorCanvas doorOpen photoWall={photoWall} 远景={v.远景 && { clouds: line8Cloud(frame) }} tone={line8Tone} {...shot} 叠层={<PuffBubble framing={shot.framing} />}>
+    <FilmPost grade={v.withPost ? line8Tone.grade : null} seed={frame}>
+      <DoorCanvas doorOpen photoWall={photoWall} farView={v.farView && { clouds: line8Cloud(frame) }} tone={line8Tone} {...shot} overlay={<PuffBubble framing={shot.framing} />}>
         <PuffCharacter 你={v.你} />
       </DoorCanvas>
     </FilmPost>

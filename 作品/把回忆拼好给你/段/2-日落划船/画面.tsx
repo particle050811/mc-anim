@@ -22,7 +22,7 @@ const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, 
 // 眼睛特写是 2-祭坛召唤 那一镜接着推，光影跟它走（接缝上不跳）；海那块照本段的（海上.tsx）
 const eyeView = (g: number) => (
   <shadingScope.Provider value={{ shading: shadingBySeg['2-祭坛召唤'] }}>
-    <AltarPicture g={g} 机={eyeCameraRig(g)} />
+    <AltarPicture g={g} machine={eyeCameraRig(g)} />
   </shadingScope.Provider>
 );
 

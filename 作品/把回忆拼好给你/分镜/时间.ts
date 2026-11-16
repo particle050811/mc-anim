@@ -17,11 +17,11 @@ export const legacyFrameSec = (n: number) => n / 24;
 export const oneFrameSec = 1 / fps;
 
 /** 画幅 16:9，不做竖版（用户 10-22 定）：页面 1280×720，成片渲染时 scale 2 出 2560×1440 */
-export const aspect = { 宽: 1280, 高: 720 } as const;
+export const aspect = { width: 1280, height: 720 } as const;
 
 export const toSongFrame = (sec: number) => Math.round(sec * fps);
 /** 第 n 拍的秒数 */
-export const beatAt = (n: number) => beatGrid.firstBeat + beatGrid.拍长 * n;
+export const beatAt = (n: number) => beatGrid.firstBeat + beatGrid.beatSec * n;
 export const lineAt = (lineIndex: number): Sentence => {
   const s = sentences.find((x) => x.序 === lineIndex);
   if (!s) throw new Error(`配乐/网格.ts 里没有第 ${lineIndex} 句`);
@@ -32,20 +32,20 @@ export const lineAt = (lineIndex: number): Sentence => {
  *  句：第几句的 前导、起、止，开口 = 第一个出声的地方（有前导音取前导，没有取起）；
  *  接：表里另一个事件再往后几秒（负数往前） */
 export type Moment =
-  | { 秒: number }
+  | { sec: number }
   | { beat: number }
   | { measure: number }
-  | { 句: number; 点: '前导' | '起' | '止' | '开口' }
+  | { 句: number; points: '前导' | '起' | '止' | '开口' }
   | { after: string; addSec: number };
 
-export type EventDef = { 在: Moment; 依据: string };
+export type EventDef = { 在: Moment; basis: string };
 
 // 段里要卡的事件，各串按时间排。「暂定」「演绎」的是 Agent 排的，用户没看过；原版的寿命按 20 刻一秒换成秒
 // 依据和核查记录里写的「n 帧」都是 11-02 以前 24 fps 的帧（n/24 秒），换 60 fps 时没改字
 // 正片（章 2）的时刻照三稿逐句画面（预览/1024-0233-正片三版三稿-歌词与画面/00-说明.md）。三稿写的秒数是句起的写成句，落在网格拍上（差不到 0.01 秒）的写成拍。
 // 第 8 句：开口 = 句，25.67 = 第 60 拍 … 28.23 = 第 66 拍。第 13 句分屏：41.87 = 第 98 拍 … 44.42 = 第 104 拍。第 15 句：48.61 = 句起，49.96 = 第 117 拍
 
-export type SongEvent = { 秒: number; 帧: number; 依据: string };
+export type SongEvent = { sec: number; frame: number; basis: string };
 
 /** 这首歌的时间轴：拍、小节、句换成秒用 engine/段/歌网格.ts，resolveMoment、arrangeSegs 用 engine/段/时间线.ts */
 const songAxis: timeline.TimeAxis<SongMoment> = { fps, resolveTime: parseSongGrid(beatGrid, sentences) };
@@ -58,7 +58,7 @@ export const resolveEvents = <K extends string>(eventTable: Readonly<Record<K, E
   const r = {} as Record<K, SongEvent>;
   for (const eventName of Object.keys(eventTable) as K[]) {
     const sec = resolveMoment(eventTable[eventName].在, lookupTable, [eventName]);
-    r[eventName] = { 秒: sec, 帧: toSongFrame(sec), 依据: eventTable[eventName].依据 };
+    r[eventName] = { sec: sec, frame: toSongFrame(sec), basis: eventTable[eventName].basis };
   }
   return r;
 };
@@ -66,40 +66,40 @@ export const resolveEvents = <K extends string>(eventTable: Readonly<Record<K, E
 /** 每个事件在这一段里的段内帧（不在这段里的也照算，会是负数或不小于帧数） */
 export const segmentFrames = <K extends string>(startFrame: number, events: Readonly<Record<K, SongEvent>>): Record<K, number> => {
   const r = {} as Record<K, number>;
-  for (const eventName of Object.keys(events) as K[]) r[eventName] = events[eventName].帧 - startFrame;
+  for (const eventName of Object.keys(events) as K[]) r[eventName] = events[eventName].frame - startFrame;
   return r;
 };
 
 // ---------- 段窗口 ----------
 
 /** 段窗口的止：歌上的一个时刻、按画面长度给帧数（歌只是接着往下放），或 放完 = 原声最后一个整帧 */
-export type WindowEnd = Moment | { 帧数: number } | '放完';
+export type WindowEnd = Moment | { frameCount: number } | '放完';
 /** 串里第一段要写 起；后面的段不写就接上一段的止，写了就要正好等于上一段的止 */
-export type SegmentWindowDef = { 键: string; 起?: Moment; 止: WindowEnd; 依据: string };
+export type SegmentWindowDef = { key: string; start?: Moment; end: WindowEnd; basis: string };
 /** 一串：同一首歌上连着放的几段（歌在串里不切开） */
-export type SeriesDef = { 名: string; 时长: number; segments: readonly SegmentWindowDef[] };
-export type SegmentWindow = { 键: string; sequenceName: string; 起帧: number; 止帧: number; 帧数: number; 依据: string };
+export type SeriesDef = { name: string; duration: number; segments: readonly SegmentWindowDef[] };
+export type SegmentWindow = { key: string; sequenceName: string; 起帧: number; 止帧: number; frameCount: number; basis: string };
 
 /** 推出一串里每段的窗口（歌曲帧 [起帧, 止帧)），并查首尾相接、不重叠、不超出原声；接 去 表 里找 */
 export const arrangeSegs = (sequence: SeriesDef, eventTable: Readonly<Record<string, EventDef>> = {}): SegmentWindow[] =>
   timeline
-    .arrangeSegs({ 名: sequence.名, 时长: sequence.时长, segments: sequence.segments.map(({ 键: segKey, ...d }) => ({ 名: segKey, ...d })) }, eventTable, songAxis)
-    .map((w) => ({ 键: w.名, sequenceName: w.sequenceName, 起帧: w.起帧, 止帧: w.止帧, 帧数: w.帧数, 依据: w.依据 }));
+    .arrangeSegs({ name: sequence.name, duration: sequence.duration, segments: sequence.segments.map(({ key: segKey, ...d }) => ({ name: segKey, ...d })) }, eventTable, songAxis)
+    .map((w) => ({ key: w.name, sequenceName: w.sequenceName, 起帧: w.起帧, 止帧: w.止帧, frameCount: w.frameCount, basis: w.basis }));
 
 /** 段.ts 用：段长（秒，和本作品的帧数）、场窗口（秒）、起帧（歌曲帧，画面里换算用），和原声 cue 的 秒、长秒、入点秒（cue 的 资产、名、增益由段补上）。
  *  段.ts 只认秒（engine/段/段定义.ts）；本作品 60 帧一格，正好是段长对齐的格，换成秒不丢东西 */
 export const windowClock = (w: SegmentWindow) => ({
-  帧数: w.帧数,
+  frameCount: w.frameCount,
   起帧: w.起帧,
-  秒: w.帧数 / fps,
+  sec: w.frameCount / fps,
   sceneWindow: { startSec: w.起帧 / fps, endSec: w.止帧 / fps },
-  origTrack: { 秒: 0, 长秒: w.帧数 / fps, 入点秒: w.起帧 / fps },
+  origTrack: { sec: 0, 长秒: w.frameCount / fps, 入点秒: w.起帧 / fps },
 });
 
 /** 一串的按段键查法：只查这一串，别的串的段键报错（各串文件导出的 段窗口、段时钟） */
 export const chainLookup = (windows: readonly SegmentWindow[]) => {
   const segmentWindow = (segKey: string): SegmentWindow => {
-    const w = windows.find((x) => x.键 === segKey);
+    const w = windows.find((x) => x.key === segKey);
     if (!w) throw new Error(`分镜串「${windows[0]?.sequenceName}」里没有段 ${segKey} 的窗口`);
     return w;
   };

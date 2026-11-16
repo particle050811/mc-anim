@@ -18,7 +18,7 @@ export type RenderLevel = '视频' | '关键帧' | '预览';
 export type LevelParams = { pixel: number; far: number; dpr: number };
 const videoLevel: LevelParams = { pixel: 0.75, far: 24000, dpr: 1 };
 const previewLevel: LevelParams = { pixel: 3, far: 6000, dpr: 1 };
-const isPreview = (renderInput() as { 级别?: string }).级别 === '预览';
+const isPreview = (renderInput() as { level?: string }).level === '预览';
 export const LevelParams: Record<RenderLevel, LevelParams> = {
   视频: isPreview ? previewLevel : videoLevel,
   关键帧: { pixel: 0.375, far: 24000, dpr: 1 },

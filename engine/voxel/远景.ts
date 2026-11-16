@@ -80,7 +80,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
   const paddedCols = cells + 2;
   const XA = section.i * cells * cellM - cellM;
   const YA = section.j * cells * cellM - cellM;
-  const seaLevel = grid.海平面; // 63：y ≤ 62 是水
+  const seaLevel = grid.seaLevel; // 63：y ≤ 62 是水
   const waterZ = seaLevel - oy; // 场景 z：最上一格水（y 62）的上表面（主世界 −1）
   // ---- 色板 ----
   const palette: PaletteEntry[] = [{ v: 0, c: [255, 255, 255] }];
@@ -158,7 +158,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       const slope = Math.max(Math.abs(distantTop(grid, cx + slopeStep, cz) - distantTop(grid, cx - slopeStep, cz)), Math.abs(distantTop(grid, cx, cz + slopeStep) - distantTop(grid, cx, cz - slopeStep))) / (2 * slopeStep);
       // 暮色远景包里每个点有地表方块（暮色自己的地表规则算的），按群系同样的扭法取最近的点；主世界包没有，按群系定
       const point = grid.surface ? distantPoint(grid, cx, cz) : -1;
-      let surfaceName = point >= 0 ? grid.地表名![grid.surface![point]] : setup.surfaceBlock;
+      let surfaceName = point >= 0 ? grid.surfaceNames![grid.surface![point]] : setup.surfaceBlock;
       // 岸边：海、河群系里露出水面的列和水深不到 5 米的水底是沙（远景网格 32 米一格，海岸上的列常落在海群系里；照群系给砾石的话
       // 海岸是一道灰边，导入的同一段是沙滩、浅水沙底，交界俯看对出来的）
       if (surfaceName === gravel && oceanBiomes.has(biome) && groundY >= seaLevel - 5) surfaceName = sand;
@@ -263,7 +263,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       zmin = Math.min(zmin, col.groundTop - 4);
       zmax = Math.max(zmax, col.groundTop, col.waterTop, col.crownTop, col.plantTop);
     }
-  if (zmin === Infinity) return { nx: paddedCols, ny: paddedCols, nz: 1, 格: cellM, 原点: [XA + cellM, YA + cellM, 0], vox: new Uint16Array(paddedCols * paddedCols), palette: palette, waterLevel: waterZ };
+  if (zmin === Infinity) return { nx: paddedCols, ny: paddedCols, nz: 1, cell: cellM, origin: [XA + cellM, YA + cellM, 0], vox: new Uint16Array(paddedCols * paddedCols), palette: palette, waterLevel: waterZ };
   // ---- 开格子：第 k 格是场景 z ∈ [k·s, (k + 1)·s) ----
   const kmin = Math.floor(zmin / cellM);
   const kmax = Math.floor((zmax - 1) / cellM);
@@ -288,5 +288,5 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       vox[(k - kmin) * paddedCols * paddedCols + colIdx] = paletteIdx;
     }
   }
-  return { nx: paddedCols, ny: paddedCols, nz, 格: cellM, 原点: [XA + cellM, YA + cellM, kmin * cellM], vox, palette: palette, waterLevel: waterZ };
+  return { nx: paddedCols, ny: paddedCols, nz, cell: cellM, origin: [XA + cellM, YA + cellM, kmin * cellM], vox, palette: palette, waterLevel: waterZ };
 };

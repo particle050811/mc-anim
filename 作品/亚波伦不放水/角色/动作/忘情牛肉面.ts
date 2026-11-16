@@ -141,7 +141,7 @@ export { onePassSec };
  * [08 的秒数, 姿势, 说明]。拍子：第一段每 0.5 秒一下（单、单、双 ×2），第二段 3.5 秒起每 1.5 秒换一面，第三段 7.5、8.25 秒两次双手过头。
  * 标「看」的是 08 抽帧上看得清的，标「估」的是抽帧糊、被身子挡住或两帧之间补的。
  */
-export const timeline: readonly (readonly [秒: number, 姿势: DancePose, 说明: string])[] = [
+export const timeline: readonly (readonly [sec: number, 姿势: DancePose, note: string])[] = [
   [0, neutralPose, '看：并脚站，手垂在身前'],
   [0.25, raiseLeftBend, '看：叉开腿，胯顶右、上身倒左，左手举起肘还弯着'],
   [0.5, switchSidePose(1), '看：两手都在胸口高，左手还没全放下'],

@@ -36,7 +36,7 @@ export const HiddenLandReunionBackdrop: React.FC<{
   /** 眼睛在哪（交给门光，光带朝它转；布景不画光带） */
   眼?: V3;
   /** 歌上的秒（浮尘飘） */
-  秒?: number;
+  sec?: number;
   /** 换掉一楼现成的灯；false = 不放灯（三渲二平涂不受光） */
   lighting?: React.ReactNode | false;
   doorLight?: boolean;
@@ -44,7 +44,7 @@ export const HiddenLandReunionBackdrop: React.FC<{
   doorLightParams?: DoorLightParams;
   outsideView?: boolean;
   children?: React.ReactNode;
-}> = ({ 开: openAmount = doorOpen, 眼: eye = doorwayEye, 秒: sec = 0, lighting, doorLight: hasDoorLight = true, doorLightParams: lightParams = doorLightParams, outsideView = true, children }) => {
+}> = ({ 开: openAmount = doorOpen, 眼: eye = doorwayEye, sec: sec = 0, lighting, doorLight: hasDoorLight = true, doorLightParams: lightParams = doorLightParams, outsideView = true, children }) => {
   // 门没开到底时门扇斜在门洞里，光只从门扇外沿到门框那一截进来
   const opening = useMemo(() => openDoorOpening(entranceDoor, openAmount, lightDir(lightParams.azimuthDeg, lightParams.elevationDeg)), [openAmount, lightParams]);
   return (
@@ -53,7 +53,7 @@ export const HiddenLandReunionBackdrop: React.FC<{
       <HiddenWorldDoors 开={{ westDoor: openAmount }} />
       {outsideView && <OutsideCherryGrove />}
       {hasDoorLight && openAmount > 0 && opening && (
-        <DoorLight 参数={lightParams} opening={opening} ledges={doorLightSurfaces} 眼={eye} 秒={sec} brightness={openAmount} lightBand={false} />
+        <DoorLight params={lightParams} opening={opening} ledges={doorLightSurfaces} 眼={eye} sec={sec} brightness={openAmount} lightBand={false} />
       )}
       {children}
     </>
@@ -61,7 +61,7 @@ export const HiddenLandReunionBackdrop: React.FC<{
 };
 
 /** 封面帧的机位（透视，形状同三渲二的 透视机位参数）：你站在门口往屋里看 */
-export const doorwayRig = { 种: '透视' as const, 眼: doorwayEye, 看: cameraRig.看, fov: cameraRig.fov };
+export const doorwayRig = { kind: '透视' as const, 眼: doorwayEye, 看: cameraRig.看, fov: cameraRig.fov };
 
 /** 主厅点着的灯笼、蜡烛（[x0, y0, z0, x1, y1, z1]，网格本地，收紧到灯本身，见 地点/灯盒.ts）：三渲二平涂的 发光区 用，里面不乘整体色调 */
 export const reunionGlowRegions: readonly (readonly number[])[] = hallLamps.filter((l) => l.lit).map(lampBox);

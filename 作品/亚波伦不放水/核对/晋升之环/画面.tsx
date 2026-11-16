@@ -22,7 +22,7 @@ const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  const lift = v.pictureMode.类 === '戴' ? (v.pictureMode.lift ?? 0) : 0;
+  const lift = v.pictureMode.type === '戴' ? (v.pictureMode.lift ?? 0) : 0;
   cam.fov = v.fov;
   cam.near = 0.05;
   cam.far = 256;
@@ -35,31 +35,31 @@ const CameraRig: React.FC<{ v: View }> = ({ v }) => {
 };
 
 const Content: React.FC<{ v: View }> = ({ v }) => {
-  if (v.pictureMode.类 === '并排') {
+  if (v.pictureMode.type === '并排') {
     return (
       <>
         {sideBySide.variants.map((variant, i) => (
           // 环坐标（+Y 上、+Z 朝观众）→ 场景（Z 上、观众在南）：绕 X 转 +90 度
-          <group key={variant} position={[sideBySide.x[i]!, 0, sideBySide.高]} rotation={[Math.PI / 2, 0, 0]} scale={sideBySide.cellsPerPixel}>
-            <AscensionHalo variant={variant} 秒={v.ringSec} />
+          <group key={variant} position={[sideBySide.x[i]!, 0, sideBySide.height]} rotation={[Math.PI / 2, 0, 0]} scale={sideBySide.cellsPerPixel}>
+            <AscensionHalo variant={variant} sec={v.ringSec} />
           </group>
         ))}
       </>
     );
   }
-  if (v.pictureMode.类 === '单看') {
+  if (v.pictureMode.type === '单看') {
     return (
-      <group position={[0, 0, singleView.高]} rotation={[Math.PI / 2, 0, 0]} scale={singleView.cellsPerPixel}>
-        <AscensionHalo variant={v.pictureMode.variant} 秒={v.ringSec} />
+      <group position={[0, 0, singleView.height]} rotation={[Math.PI / 2, 0, 0]} scale={singleView.cellsPerPixel}>
+        <AscensionHalo variant={v.pictureMode.variant} sec={v.ringSec} />
       </group>
     );
   }
-  const { 谁: actor, variant, act, lift = 0 } = v.pictureMode;
+  const { who: actor, variant, act, lift = 0 } = v.pictureMode;
   const twoPeople = actor === '两人';
   return (
     <>
       {actor !== '史蒂夫' && (
-        <GirlYaBoLun pose={{ loc: [twoPeople ? twoPeoplePos.yaBoLun : 0, 0, twoPeople ? 0.6 : lift], yaw: 180 }} 秒={0.5} act={act === '悬停' ? hover : stand} holdWand={twoPeople} headRing={variant} ringSec={v.ringSec} />
+        <GirlYaBoLun pose={{ loc: [twoPeople ? twoPeoplePos.yaBoLun : 0, 0, twoPeople ? 0.6 : lift], yaw: 180 }} sec={0.5} act={act === '悬停' ? hover : stand} holdWand={twoPeople} headRing={variant} ringSec={v.ringSec} />
       )}
       {actor !== '亚波伦' && <RingedSteve pose={stevePose([twoPeople ? twoPeoplePos.steve : 0, 0, 0], 180)} mcLight={1} ring={variant} ringSec={v.ringSec} />}
     </>
@@ -71,8 +71,8 @@ const picture: React.FC = () => {
   const colorSet = baseColors[v.bottomBackground];
   return (
     <AbsoluteFill style={{ background: colorSet.background }}>
-      <div style={{ width: aspect.宽, height: aspect.高 }}>
-        <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <div style={{ width: aspect.width, height: aspect.height }}>
+        <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
           <color attach="background" args={[colorSet.background]} />
           {v.bottomBackground === '暗红' && <fog attach="fog" args={[colorSet.background, 30, 140]} />}
           <CameraRig v={v} />
@@ -88,8 +88,8 @@ const picture: React.FC = () => {
         </ThreeCanvas>
       </div>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
-        {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
+        <div>{v.name}</div>
+        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
       </div>
     </AbsoluteFill>
   );

@@ -8,7 +8,7 @@
 import { castSounds } from '../../法术/施放声.ts';
 import { castTable, bigCastIds, actStart, deathTime, spellSounds } from './齐放拍.ts';
 
-export type MassCastSound = { 资产: string; 秒: number; 峰值: number; 名: string; 速率?: number };
+export type MassCastSound = { asset: string; sec: number; peakDb: number; name: string; 速率?: number };
 
 /** 起手声、后面的：只有一声时的峰值（dBFS） */
 const startPeakDb = -14;
@@ -29,7 +29,7 @@ const eventName = (asset: string) => asset.slice(asset.lastIndexOf('/') + 1).rep
 const toDecibel = (volume: number) => 20 * Math.log10(Math.min(1, volume));
 const rates = [1, 0.94, 1.06, 0.97, 1.03];
 
-type GrassSprite = { 资产: string; 秒: number; 名: string; bottom: number; 速率: number; 重: boolean };
+type GrassSprite = { asset: string; sec: number; name: string; bottom: number; 速率: number; 重: boolean };
 
 export const massCastSounds = (): MassCastSound[] => {
   const grassFx: GrassSprite[] = [];
@@ -38,39 +38,39 @@ export const massCastSounds = (): MassCastSound[] => {
     const focusKey = colList[0]!;
     const k = usedCount.get(focusKey) ?? 0;
     usedCount.set(focusKey, k + 1);
-    return { 资产: colList[k % colList.length]!, 速率: rates[k % rates.length]! };
+    return { asset: colList[k % colList.length]!, 速率: rates[k % rates.length]! };
   };
   const countById = new Map<string, number>();
   for (const cast of castTable) {
-    const offset = cast.秒 - actStart;
+    const offset = cast.sec - actStart;
     if (offset >= deathTime) continue;
     const n = (countById.get(cast.id) ?? 0) + 1;
     countById.set(cast.id, n);
     if (cast.id !== 'killing') {
       const colList = castSounds[cast.id];
       if (!colList) throw new Error(`齐放：${cast.id} 没有施放声（法术/施放声.ts）`);
-      grassFx.push({ ...roundRobin(colList), 秒: offset, 名: `施放-${cast.id}-${n}`, bottom: startPeakDb + (bigCastIds.includes(cast.id) ? bigCastLift : 0), 重: false });
+      grassFx.push({ ...roundRobin(colList), sec: offset, name: `施放-${cast.id}-${n}`, bottom: startPeakDb + (bigCastIds.includes(cast.id) ? bigCastLift : 0), 重: false });
     }
     let kept = 0;
     spellSounds(cast).forEach((x, k) => {
-      if (isSolo(cast.id, x.资产) || kept >= followCap) return;
+      if (isSolo(cast.id, x.asset) || kept >= followCap) return;
       kept++;
-      grassFx.push({ 资产: x.资产, 秒: x.秒, 名: `${cast.id}-${n}-${k + 1}`, bottom: afterPeakDb + toDecibel(x.音量), 速率: x.音高, 重: heavySounds.includes(eventName(x.资产)) });
+      grassFx.push({ asset: x.asset, sec: x.sec, name: `${cast.id}-${n}-${k + 1}`, bottom: afterPeakDb + toDecibel(x.音量), 速率: x.音高, 重: heavySounds.includes(eventName(x.asset)) });
     });
   }
-  grassFx.sort((a, b) => a.秒 - b.秒);
+  grassFx.sort((a, b) => a.sec - b.sec);
   // 同一个声音事件挨得太近的只留先到的
   const lastSeen = new Map<string, number>();
   const remainingGrass = grassFx.filter((x) => {
-    const prevSec = lastSeen.get(eventName(x.资产));
-    if (prevSec !== undefined && x.秒 - prevSec < sameSoundGap) return false;
-    lastSeen.set(eventName(x.资产), x.秒);
+    const prevSec = lastSeen.get(eventName(x.asset));
+    if (prevSec !== undefined && x.sec - prevSec < sameSoundGap) return false;
+    lastSeen.set(eventName(x.asset), x.sec);
     return true;
   });
   return remainingGrass.map((x) => {
-    const n = remainingGrass.filter((y) => Math.abs(y.秒 - x.秒) <= simulWindowSec).length;
+    const n = remainingGrass.filter((y) => Math.abs(y.sec - x.sec) <= simulWindowSec).length;
     const levelDb = Math.max(floorDb, x.bottom - 10 * Math.log10(n));
     const peakDb = Math.round((x.重 ? Math.max(levelDb, secondTierDb) : levelDb) * 10) / 10;
-    return { 资产: x.资产, 秒: x.秒, 峰值: peakDb, 名: x.名, ...(x.速率 !== 1 ? { 速率: x.速率 } : {}) };
+    return { asset: x.asset, sec: x.sec, peakDb: peakDb, name: x.name, ...(x.速率 !== 1 ? { 速率: x.速率 } : {}) };
   });
 };

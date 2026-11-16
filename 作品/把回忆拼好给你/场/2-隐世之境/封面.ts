@@ -28,6 +28,6 @@ export const coverBoxFits = (W: number, H: number, b: Rect): boolean =>
 /** 封面版聊天行的黑条（页面像素）：照原版一行的样子，左边 2 像素系统竖条、字从 4 起，黑条贴着字收（右边也留 4），高 9（界面像素）。
  *  字宽是界面像素（像素字体的 字宽） */
 export const coverChatBox = (textWidth: number, layout = coverChatLayout): Rect => {
-  const halfScale = layout.缩放 / 2;
+  const halfScale = layout.scale / 2;
   return { x0: layout.left, y0: layout.下 - 9 * halfScale, x1: layout.left + (textWidth + 8) * halfScale, y1: layout.下 };
 };

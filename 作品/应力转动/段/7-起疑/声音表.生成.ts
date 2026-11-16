@@ -3,20 +3,20 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "音效/item.book.page_turn.2": {
-      "时长": 0.699773,
-      "峰值": -20.9,
-      "响度": -36.7,
+      "duration": 0.699773,
+      "peakDb": -20.9,
+      "loudness": -36.7,
       "sha": "d16bd1c1a420"
     },
     "音效/item.book.page_turn.3": {
-      "时长": 0.537483,
-      "峰值": -15.6,
-      "响度": -36.3,
+      "duration": 0.537483,
+      "peakDb": -15.6,
+      "loudness": -36.3,
       "sha": "4715e14e54c5"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

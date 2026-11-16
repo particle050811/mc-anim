@@ -38,7 +38,7 @@ describe('第 5 句的时间线（用户 10-24「画面转太快就删」：只�
     expect((events.clickEgg - events.landOnEgg) / fps).toBeGreaterThanOrEqual(legacyFrameSec(8));
     expect((events.photoEggPounce - events.landOnEgg) / fps).toBeGreaterThanOrEqual(params.landBounceSec);
     expect(events.photoEggPounce).toBeLessThan(events.clickEgg);
-    expect(eggCell(events.photoEggPounce)).toEqual(params.eggSpots.起);
+    expect(eggCell(events.photoEggPounce)).toEqual(params.eggSpots.start);
   });
 
   it('扑空（分镜.ts）和照原版重力算出来的落地差不到一帧；落地前她一直在往下掉', () => {
@@ -69,7 +69,7 @@ describe('第 5 句的时间线（用户 10-24「画面转太快就删」：只�
   });
 
   it('蛋：点之前在 起、点完在 一；两处都不在传送门上', () => {
-    expect(eggCell(events.clickEgg - 1)).toEqual(params.eggSpots.起);
+    expect(eggCell(events.clickEgg - 1)).toEqual(params.eggSpots.start);
     expect(eggCell(events.clickEgg)).toEqual(params.eggSpots.一);
     for (const [x, y] of Object.values(params.eggSpots)) expect(portalCells.some(([i, j]) => i === x && j === y)).toBe(false);
   });

@@ -20,19 +20,19 @@ const shakingSensors = sensorCells.filter((b) => chain.activatedAt.has(cellKey(b
 const hideBoxes = sensorHideBoxes(shakingSensors);
 
 // τ：追兵钟（秒，6-4-5 第 0 帧起）；段：6-4-6 还是 6-4-7（开过哪些箱子按它算）
-export const PursuerScene: React.FC<{ 段: '6-4-6' | '6-4-7'; τ: number; cam: Cam; liu: FigurePose; huang: FigurePose }> = ({ 段: segment, τ, cam, liu: liu, huang: huang }) => {
+export const PursuerScene: React.FC<{ segment: '6-4-6' | '6-4-7'; τ: number; cam: Cam; liu: FigurePose; huang: FigurePose }> = ({ segment: segment, τ, cam, liu: liu, huang: huang }) => {
   const { width, height } = useVideoConfig();
   const wool = K645.woolAt(τ);
   return (
-    <AncientCity4xCanvas 段={segment} cam={cam} width={width} height={height} hide={hideBoxes} wool={wool.wool} growingWool={wool.growingWool}>
+    <AncientCity4xCanvas segment={segment} cam={cam} width={width} height={height} hide={hideBoxes} wool={wool.wool} growingWool={wool.growingWool}>
       <LiYingWithBlade pose={K645.detourPose(τ)} />
       <LiuXinzhong pose={liu} />
       <HuangPan pose={huang} />
       {shakingSensors.map((b, i) => (
-        <SculkSensor key={i} p={sensorBaseCenter(b)} 秒={τ} secSinceActive={τ - chain.activatedAt.get(cellKey(b))!} seed={i + 1} />
+        <SculkSensor key={i} p={sensorBaseCenter(b)} sec={τ} secSinceActive={τ - chain.activatedAt.get(cellKey(b))!} seed={i + 1} />
       ))}
       {chain.vibrations.map((v, i) => (
-        <VibrationSignal key={i} from={v.from} to={v.to} sec={τ - v.t} 帧={i * 3} />
+        <VibrationSignal key={i} from={v.from} to={v.to} sec={τ - v.t} frame={i * 3} />
       ))}
       {chain.shrieks.map((s, i) => (
         <ShriekRings key={i} p={s.p} sec={τ - s.t} />

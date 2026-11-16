@@ -14,8 +14,8 @@ export default defineSpellMeta({
   id: 'overgrowth',
   长秒: (vineEmergeTick(7) + vineLifeTicks + vineRetractSpanTicks + 5) / 20,
   // QuickGrowingVine.burst / burrow：各一声（音量 2），8 根错开 1 刻，这里记头一根
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.quick_growing_vine_burst.1', 秒: vineEmergeTick(0) / 20, 音量: 2 },
-    { 资产: '音效/诡厄巫法/goety.quick_growing_vine_burrow.1', 秒: (vineEmergeTick(0) + vineLifeTicks) / 20, 音量: 2 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.quick_growing_vine_burst.1', sec: vineEmergeTick(0) / 20, 音量: 2 },
+    { asset: '音效/诡厄巫法/goety.quick_growing_vine_burrow.1', sec: (vineEmergeTick(0) + vineLifeTicks) / 20, 音量: 2 },
   ],
 });

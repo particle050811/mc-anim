@@ -14,10 +14,10 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 export default defineSpellMeta({
   id: 'sword',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // SwordSpell：DROWNED_SHOOT；命中 TRIDENT_HIT
-  声音: [
-    { 资产: '音效/entity.drowned.shoot.1', 秒: 0 },
-    { 资产: '音效/item.trident.hit.1', 秒: 0, fromHit: true },
+  sound: [
+    { asset: '音效/entity.drowned.shoot.1', sec: 0 },
+    { asset: '音效/item.trident.hit.1', sec: 0, fromHit: true },
   ],
 });

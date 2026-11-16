@@ -158,9 +158,9 @@ const newBodyMaterial = () =>
       uC2: { value: toVec3(hexToRgb(pillarLight.halo.色)) },
       uE: { value: new THREE.Vector2(pillarLight.core.brightness, pillarLight.里.brightness) },
       uA2: { value: new THREE.Vector2(...pillarLight.halo.alphas) },
-      uSt: { value: new THREE.Vector4(pillarLight.flow.速[0], pillarLight.flow.速[1], pillarLight.flow.长[0], pillarLight.flow.长[1]) },
+      uSt: { value: new THREE.Vector4(pillarLight.flow.速[0], pillarLight.flow.速[1], pillarLight.flow.length[0], pillarLight.flow.length[1]) },
       uDuty: { value: pillarLight.flow.duty },
-      uSp: { value: new THREE.Vector4(pillarLight.swirl.radius, pillarLight.swirl.ringHeight, pillarLight.swirl.ringsPerSec, pillarLight.swirl.宽) },
+      uSp: { value: new THREE.Vector4(pillarLight.swirl.radius, pillarLight.swirl.ringHeight, pillarLight.swirl.ringsPerSec, pillarLight.swirl.width) },
       uSpN: { value: pillarLight.swirl.strands },
     },
   });
@@ -289,13 +289,13 @@ const newQuadMaterial = (vertexShader: string, fragmentShader: string) =>
   });
 
 // ---------- 时刻 ----------
-const cueSecs = () => ({ circleStartSec: songSec(eventFrame('magicCircleUp')), 起: songSec(eventFrame('beamRises')), 拨: songSec(eventFrame('beamHitsCloud')), cloudBreakSec: songSec(eventFrame('cloudBreaks')), 退: songSec(eventFrame('beamFades')) });
+const cueSecs = () => ({ circleStartSec: songSec(eventFrame('magicCircleUp')), start: songSec(eventFrame('beamRises')), 拨: songSec(eventFrame('beamHitsCloud')), cloudBreakSec: songSec(eventFrame('cloudBreaks')), 退: songSec(eventFrame('beamFades')) });
 /** t0 起按 τ 秒衰减的一下（t0 之前 0） */
 const decay = (t: number, t0: number, τ: number) => (t < t0 ? 0 : Math.exp(-(t - t0) / τ));
 /** 拨 到 破云 顶着云越憋越粗越亮（进度平方），破云 那一下交给 涌.破云 */
 const charge = (t: number, s: ReturnType<typeof cueSecs>) => (t >= s.拨 && t < s.cloudBreakSec ? ((t - s.拨) / (s.cloudBreakSec - s.拨)) ** 2 : 0);
 const surge = (t: number, s: ReturnType<typeof cueSecs>, partKey: '粗' | '亮') =>
-  pillarLight.surge.起[partKey] * decay(t, s.起, pillarLight.surge.起.秒) + pillarLight.surge.拨[partKey] * decay(t, s.拨, pillarLight.surge.拨.秒) + pillarLight.surge.charge[partKey] * charge(t, s) + pillarLight.surge.cloudBreak[partKey] * decay(t, s.cloudBreakSec, pillarLight.surge.cloudBreak.秒);
+  pillarLight.surge.start[partKey] * decay(t, s.start, pillarLight.surge.start.sec) + pillarLight.surge.拨[partKey] * decay(t, s.拨, pillarLight.surge.拨.sec) + pillarLight.surge.charge[partKey] * charge(t, s) + pillarLight.surge.cloudBreak[partKey] * decay(t, s.cloudBreakSec, pillarLight.surge.cloudBreak.sec);
 
 // ---------- 光点、符文（glitter / sga 原版粒子贴图） ----------
 const atlasImg = vanillaParticleAtlas;
@@ -305,23 +305,23 @@ const particleColor = (k: number, whiteAmt: number): RGB3 => {
   const [a, b] = [hexToRgb(pillarLight.里.色), hexToRgb(pillarLight.halo.色)];
   return [0, 1, 2].map((j) => (b[j]! + (a[j]! - b[j]!) * whiteAmt) * k) as RGB3;
 };
-type FloatPoint = { 角: number; radius: number; 速: number; 转: number; lifetime: number; gap: number; offset: number; 高: number; 大: number; 种: number };
+type FloatPoint = { angle: number; radius: number; 速: number; 转: number; lifetime: number; gap: number; offset: number; height: number; 大: number; kind: number };
 const floatPoints: FloatPoint[] = (() => {
   const r = mulberry32(7301);
   return Array.from({ length: pillarLight.lightDot.数 }, () => ({
-    角: r() * Math.PI * 2,
+    angle: r() * Math.PI * 2,
     radius: 0.2 + r() * 0.95,
     速: 2.5 + r() * 6,
     转: (r() < 0.5 ? -1 : 1) * (1.2 + r() * 2.4),
     lifetime: 0.5 + r() * 0.7,
     gap: r() * 0.35,
     offset: r() * 1.0,
-    高: (r() - 0.35) * 1.4,
+    height: (r() - 0.35) * 1.4,
     大: pillarLight.lightDot.radiusRange[0] + r() * (pillarLight.lightDot.radiusRange[1] - pillarLight.lightDot.radiusRange[0]),
-    种: r(),
+    kind: r(),
   }));
 })();
-type Spark = { dir: V3; 速: number; lifetime: number; 大: number; 高: number; delay: number; 种: number };
+type Spark = { dir: V3; 速: number; lifetime: number; 大: number; height: number; delay: number; kind: number };
 const buildBursts = (seed: number, count: number, vertRange: number): Spark[] => {
   const r = mulberry32(seed);
   return Array.from({ length: count }, () => {
@@ -332,9 +332,9 @@ const buildBursts = (seed: number, count: number, vertRange: number): Spark[] =>
       速: 3 + r() * 5,
       lifetime: 0.35 + r() * 0.4,
       大: pillarLight.lightDot.radiusRange[0] + r() * (pillarLight.lightDot.radiusRange[1] - pillarLight.lightDot.radiusRange[0]),
-      高: r(),
+      height: r(),
       delay: r() * 0.06,
-      种: r(),
+      kind: r(),
     };
   });
 };
@@ -343,7 +343,7 @@ const breakSparks = buildBursts(912, 28, 1.4);
 const scatterSparks = buildBursts(913, 70, 0.9);
 const runeStates = (() => {
   const r = mulberry32(5507);
-  return Array.from({ length: pillarLight.rune.数 }, () => ({ 角: r() * Math.PI * 2, lifetime: 0.8 + r() * 0.5, gap: r() * 0.3, timeOffset: r() * 0.9, 字: Math.floor(r() * 26), brightness: 0.6 + r() * 0.4, 弯: (r() - 0.5) * 1.6 }));
+  return Array.from({ length: pillarLight.rune.数 }, () => ({ angle: r() * Math.PI * 2, lifetime: 0.8 + r() * 0.5, gap: r() * 0.3, timeOffset: r() * 0.9, char: Math.floor(r() * 26), brightness: 0.6 + r() * 0.4, turns: (r() - 0.5) * 1.6 }));
 })();
 /** 带阻力飞出去走了多远：速度按 e^(−k t) 减 */
 const dampedTravel = (v: number, t: number, k = 4) => (v * (1 - Math.exp(-k * t))) / k;
@@ -353,7 +353,7 @@ const makeParticles = (bottom: V3, t: number, s: ReturnType<typeof cueSecs>, alp
   const tick = Math.floor(t * 20);
   // 绕着往上飘的：光柱起 起一颗颗冒（同一颗按 命 + 隔 循环），光柱退 以后不再冒
   for (const [i, p] of floatPoints.entries()) {
-    const elapsed = t - s.起 - p.offset;
+    const elapsed = t - s.start - p.offset;
     if (elapsed < 0) continue;
     const cycle = p.lifetime + p.gap;
     const k = Math.floor(elapsed / cycle);
@@ -362,13 +362,13 @@ const makeParticles = (bottom: V3, t: number, s: ReturnType<typeof cueSecs>, alp
     const u = age / p.lifetime;
     // 原版烟花火花那样后半段一闪一闪（按游戏刻）
     if (u > 0.55 && (tick + i) % 3 === 0) continue;
-    const angle = p.角 + k * 2.39996 + p.转 * age;
+    const angle = p.angle + k * 2.39996 + p.转 * age;
     const radius = p.radius * (1 + 0.5 * age);
     out.push({
-      p: [bottom[0] + Math.cos(angle) * radius, bottom[1] + Math.sin(angle) * radius, bottom[2] + p.高 + p.速 * age + 2.5 * age * age],
+      p: [bottom[0] + Math.cos(angle) * radius, bottom[1] + Math.sin(angle) * radius, bottom[2] + p.height + p.速 * age + 2.5 * age * age],
       half: p.大,
       uv: glitterUv(7.99 - u * 8),
-      color: particleColor(1.1, p.种),
+      color: particleColor(1.1, p.kind),
       alpha: u > 0.75 ? (1 - u) / 0.25 : 1,
     });
   }
@@ -384,14 +384,14 @@ const makeParticles = (bottom: V3, t: number, s: ReturnType<typeof cueSecs>, alp
         p: [o[0] + b.dir[0] * travel, o[1] + b.dir[1] * travel, o[2] + b.dir[2] * travel + vertSpeed * age],
         half: b.大,
         uv: glitterUv(7.99 - u * 8),
-        color: particleColor(1.15, b.种),
+        color: particleColor(1.15, b.kind),
         alpha: u > 0.6 ? (1 - u) / 0.4 : 1,
       });
     }
   };
-  spawnBurst(startSparks, s.起, () => bottom, 0);
+  spawnBurst(startSparks, s.start, () => bottom, 0);
   spawnBurst(breakSparks, s.cloudBreakSec, () => bottom, 0.8);
-  spawnBurst(scatterSparks, s.退, (b) => [bottom[0] + b.dir[0] * 0.1, bottom[1] + b.dir[1] * 0.1, bottom[2] + b.高 * 34], 1.2);
+  spawnBurst(scatterSparks, s.退, (b) => [bottom[0] + b.dir[0] * 0.1, bottom[1] + b.dir[1] * 0.1, bottom[2] + b.height * 34], 1.2);
   // 阵边的符文往手上飞（附魔台那样：直线过去、带点弯），阵起 起，光柱退 以后不再冒
   if (circleSizeNow > 0) {
     const R = magicCircleRadius * 0.95 * circleSizeNow;
@@ -403,14 +403,14 @@ const makeParticles = (bottom: V3, t: number, s: ReturnType<typeof cueSecs>, alp
       const age = elapsed - k * cycle;
       if (age > g.lifetime || t - age > s.退) continue;
       const u = age / g.lifetime;
-      const angle = g.角 + k * 2.39996;
+      const angle = g.angle + k * 2.39996;
       const e = u * u * (3 - 2 * u);
-      const bend = Math.sin(Math.PI * u) * g.弯;
+      const bend = Math.sin(Math.PI * u) * g.turns;
       const [ox, oy] = [Math.cos(angle) * R, Math.sin(angle) * R];
       out.push({
         p: [bottom[0] + ox * (1 - e) - oy * 0.25 * bend, bottom[1] + oy * (1 - e) + ox * 0.25 * bend, 0.15 + (bottom[2] - 0.15) * e + 0.6 * Math.sin(Math.PI * u)],
         half: pillarLight.rune.halfSize,
-        uv: runes[(g.字 + k * 7) % 26]!,
+        uv: runes[(g.char + k * 7) % 26]!,
         color: particleColor(g.brightness, 0.6),
         alpha: Math.min(1, u * 5) * alpha,
       });
@@ -420,7 +420,7 @@ const makeParticles = (bottom: V3, t: number, s: ReturnType<typeof cueSecs>, alp
 };
 
 /** 光柱：底 = 柱底中心（她举着的手上面），顶 = 头的 z（光柱顶），透 = 不透明度（光柱透），帧 = 歌曲帧 */
-export const LightPillar: React.FC<{ bottom: V3; topY: number; alpha: number; 帧: number }> = ({ bottom, topY, alpha, 帧: frame }) => {
+export const LightPillar: React.FC<{ bottom: V3; topY: number; alpha: number; frame: number }> = ({ bottom, topY, alpha, frame: frame }) => {
   const bodyMaterial = useMemo(newBodyMaterial, []);
   const starMesh = useMemo(() => ({ g: squareGeometry(8), m: newQuadMaterial(starVert, starFragmentShader) }), []);
   const ring = useMemo(() => ({ g: squareGeometry(32), m: newQuadMaterial(ringVert, ringFragmentShader) }), []);
@@ -441,7 +441,7 @@ export const LightPillar: React.FC<{ bottom: V3; topY: number; alpha: number; �
   const hasPillar = topY > bottom[2] && alpha > 0;
 
   // 柱身
-  const thickScale = (0.55 + 0.45 * easeOutQuad((t - s.起) / pillarLight.swellSec)) * (1 + surge(t, s, '粗')) * (1 + 0.04 * Math.sin(2 * Math.PI * 9 * t)) * (1 - 0.85 * fadeAmount);
+  const thickScale = (0.55 + 0.45 * easeOutQuad((t - s.start) / pillarLight.swellSec)) * (1 + surge(t, s, '粗')) * (1 + 0.04 * Math.sin(2 * Math.PI * 9 * t)) * (1 - 0.85 * fadeAmount);
   const u = bodyMaterial.uniforms;
   u.uH!.value = topY - bottom[2];
   u.uR!.value = pillarLight.halo.haloRadius * 1.8;
@@ -455,13 +455,13 @@ export const LightPillar: React.FC<{ bottom: V3; topY: number; alpha: number; �
   // 手上的星、冲出去的光圈（朝镜头）
   const starList: [number[], number[]][] = [];
   if (circleSizeNow > 0 && alpha > 0) {
-    const starCharge = t < s.起 ? easeOutQuad((t - s.circleStartSec) / 0.4) * pillarLight.starBurst.starCharge * (1 + 0.15 * Math.sin(2 * Math.PI * 5 * t)) : 0;
-    const flash = t >= s.起 ? pillarLight.starBurst.armLen * (1 + 0.08 * Math.sin(2 * Math.PI * 6 * t)) + pillarLight.starBurst.flash[0] * decay(t, s.起, 0.12) + pillarLight.starBurst.flash[1] * decay(t, s.cloudBreakSec, 0.12) : 0;
+    const starCharge = t < s.start ? easeOutQuad((t - s.circleStartSec) / 0.4) * pillarLight.starBurst.starCharge * (1 + 0.15 * Math.sin(2 * Math.PI * 5 * t)) : 0;
+    const flash = t >= s.start ? pillarLight.starBurst.armLen * (1 + 0.08 * Math.sin(2 * Math.PI * 6 * t)) + pillarLight.starBurst.flash[0] * decay(t, s.start, 0.12) + pillarLight.starBurst.flash[1] * decay(t, s.cloudBreakSec, 0.12) : 0;
     const L = (starCharge + flash) * (1 - fadeAmount);
     if (L > 0.05) starList.push([[...bottom, L], [0, 0, pillarLight.starBurst.core * Math.min(1, L / 0.4), 1]]);
   }
-  for (const [t0, magnitude] of [[s.起, 1], [s.起 + 0.07, 0.65], [s.cloudBreakSec, 1.2], [s.cloudBreakSec + 0.07, 0.8]] as const) {
-    const p = (t - t0) / pillarLight.impact.手.秒;
+  for (const [t0, magnitude] of [[s.start, 1], [s.start + 0.07, 0.65], [s.cloudBreakSec, 1.2], [s.cloudBreakSec + 0.07, 0.8]] as const) {
+    const p = (t - t0) / pillarLight.impact.手.sec;
     if (p < 0 || p >= 1) continue;
     const R = 0.25 + (pillarLight.impact.手.endRadius * magnitude - 0.25) * easeOutQuad(p);
     starList.push([[...bottom, R + 0.2], [1, R, 0.14 - 0.1 * p, (1 - p) ** 1.5]]);
@@ -470,16 +470,16 @@ export const LightPillar: React.FC<{ bottom: V3; topY: number; alpha: number; �
 
   // 平躺的圈：地上扫过的、柱上往上走的
   const rings: [number[], number[]][] = [];
-  for (const t0 of [s.起, s.cloudBreakSec]) {
-    const p = (t - t0) / pillarLight.impact.ground.秒;
+  for (const t0 of [s.start, s.cloudBreakSec]) {
+    const p = (t - t0) / pillarLight.impact.ground.sec;
     if (p < 0 || p >= 1) continue;
     const R = 1 + (pillarLight.impact.ground.endRadius - 1) * easeOutQuad(p);
     rings.push([[bottom[0], bottom[1], 0.06, R + 0.3], [R, 0.35 - 0.25 * p, 0.75 * (1 - p) ** 2, 1]]);
   }
   if (hasPillar) {
     const { gapSec, 速: speed, radiusRange, fadeHeight } = pillarLight.ring;
-    for (let k = Math.floor((t - s.起 - 0.08) / gapSec); k >= 0; k--) {
-      const t0 = s.起 + 0.08 + k * gapSec;
+    for (let k = Math.floor((t - s.start - 0.08) / gapSec); k >= 0; k--) {
+      const t0 = s.start + 0.08 + k * gapSec;
       if (t0 > s.退) continue;
       const z = bottom[2] + 0.2 + speed * (t - t0);
       if (z > fadeHeight || rings.length >= 30) break;
@@ -522,8 +522,8 @@ const circle = (r: number) => {
   }
   return c;
 };
-export const GroundGlow: React.FC<{ 心: V3; 大小: number }> = ({ 心: center, 大小: size }) => {
-  const { 色: color, radiusList, 强: groundStrengths } = params.magicCircle.groundGlow;
+export const GroundGlow: React.FC<{ 心: V3; size: number }> = ({ 心: center, size: size }) => {
+  const { 色: color, radiusList, strength: groundStrengths } = params.magicCircle.groundGlow;
   if (size <= 0) return null;
   return (
     <group position={center}>

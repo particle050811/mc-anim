@@ -6,5 +6,5 @@ export default defineSpellMeta({
   长秒: 0.5, // 砸地墙寿命 10 刻
   hitSec: 0,
   // TemblorClapSpell.SpellResult：redstone_explode 音量 2
-  声音: [{ 资产: '音效/诡厄巫法/goety.redstone_explode.1', 秒: 0, 音量: 2 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.redstone_explode.1', sec: 0, 音量: 2 }],
 });

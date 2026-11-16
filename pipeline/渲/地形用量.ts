@@ -12,8 +12,8 @@ import { dataPath } from '../环境/配置.ts';
 import { atomicWrite } from './母版.ts';
 import { beforeClose } from './求解缓存收集.ts';
 
-export type PageUsage = Record<string, { 版本: string; 区段: string[] }>;
-export type TerrainUsageRecord = { 作品: string; 段: string; 指纹?: string; 已量帧: string; 包: PageUsage; 更新于: string };
+export type PageUsage = Record<string, { version: string; sections: string[] }>;
+export type TerrainUsageRecord = { work: string; segment: string; fingerprint?: string; measuredFrames: string; pack: PageUsage; updatedAt: string };
 
 export const terrainUsageFile = (work: string, segKey: string) => dataPath('run', '地形用量', work, `${segKey}.json`);
 
@@ -45,15 +45,15 @@ const sortSections = (sectionKeys: Iterable<string>) =>
   });
 
 /** 纯函数：旧记录并上一页的用量和这次量完的帧 */
-export const mergeUsage = (prevUsage: Omit<TerrainUsageRecord, '更新于'>, pageUsage: PageUsage, frames: Iterable<number> = []): Omit<TerrainUsageRecord, '更新于'> => {
-  const packs: PageUsage = { ...prevUsage.包 };
-  let measured = decodeFrameRanges(prevUsage.已量帧);
+export const mergeUsage = (prevUsage: Omit<TerrainUsageRecord, 'updatedAt'>, pageUsage: PageUsage, frames: Iterable<number> = []): Omit<TerrainUsageRecord, 'updatedAt'> => {
+  const packs: PageUsage = { ...prevUsage.pack };
+  let measured = decodeFrameRanges(prevUsage.measuredFrames);
   for (const [packName, nextUsage] of Object.entries(pageUsage)) {
     const oldEntry = packs[packName];
-    if (oldEntry && oldEntry.版本 !== nextUsage.版本) measured = [];
-    packs[packName] = { 版本: nextUsage.版本, 区段: sortSections([...(oldEntry?.版本 === nextUsage.版本 ? oldEntry.区段 : []), ...nextUsage.区段]) };
+    if (oldEntry && oldEntry.version !== nextUsage.version) measured = [];
+    packs[packName] = { version: nextUsage.version, sections: sortSections([...(oldEntry?.version === nextUsage.version ? oldEntry.sections : []), ...nextUsage.sections]) };
   }
-  return { ...prevUsage, 包: packs, 已量帧: encodeFrameRanges([...measured, ...frames]) };
+  return { ...prevUsage, pack: packs, measuredFrames: encodeFrameRanges([...measured, ...frames]) };
 };
 
 export const readTerrainUsage = (work: string, segKey: string): TerrainUsageRecord | null => {
@@ -61,8 +61,8 @@ export const readTerrainUsage = (work: string, segKey: string): TerrainUsageReco
   return fs.existsSync(f) ? (JSON.parse(fs.readFileSync(f, 'utf8')) as TerrainUsageRecord) : null;
 };
 
-const writeTerrainUsage = (work: string, segKey: string, r: Omit<TerrainUsageRecord, '更新于'>) => atomicWrite(terrainUsageFile(work, segKey), `${JSON.stringify({ ...r, 更新于: new Date().toISOString() })}\n`);
-const accumulate = (work: string, segKey: string, pageUsage: PageUsage, frames: Iterable<number> = []) => writeTerrainUsage(work, segKey, mergeUsage(readTerrainUsage(work, segKey) ?? { 作品: work, 段: segKey, 已量帧: '', 包: {} }, pageUsage, frames));
+const writeTerrainUsage = (work: string, segKey: string, r: Omit<TerrainUsageRecord, 'updatedAt'>) => atomicWrite(terrainUsageFile(work, segKey), `${JSON.stringify({ ...r, updatedAt: new Date().toISOString() })}\n`);
+const accumulate = (work: string, segKey: string, pageUsage: PageUsage, frames: Iterable<number> = []) => writeTerrainUsage(work, segKey, mergeUsage(readTerrainUsage(work, segKey) ?? { work: work, segment: segKey, measuredFrames: '', pack: {} }, pageUsage, frames));
 
 const warnOnly = (segKey: string, fn: () => void) => {
   try {
@@ -96,12 +96,12 @@ export const startWholeMeasure = (segKey: string, fingerprint: string, work = wo
   pendingFingerprints.set(`${work}/${segKey}`, fingerprint);
 };
 
-const collectPageExpr = `JSON.stringify({ 段: window.process?.env?.[${JSON.stringify(terrainUsageSegEnv)}] ?? null, 包: Object.fromEntries([...(window.terrainUsage ?? new Map())].map(([名, v]) => [名, { 版本: v.版本, 区段: [...v.区段] }])) })`;
+const collectPageExpr = `JSON.stringify({ segment: window.process?.env?.[${JSON.stringify(terrainUsageSegEnv)}] ?? null, pack: Object.fromEntries([...(window.terrainUsage ?? new Map())].map(([name, v]) => [name, { version: v.version, sections: [...v.sections] }])) })`;
 
 /** 接到浏览器上：之后每个页面关掉前收走它的用量。读 Composition 列表的页面没传段名，不记 */
 export const collectTerrainUsage = (browser: HeadlessBrowser) =>
   beforeClose(browser, inFlight, async (evaluate) => {
-    const { 段: workSegKey, 包: packs } = JSON.parse(await evaluate(collectPageExpr)) as { 段: string | null; 包: PageUsage };
+    const { segment: workSegKey, pack: packs } = JSON.parse(await evaluate(collectPageExpr)) as { segment: string | null; pack: PageUsage };
     if (!workSegKey || !Object.keys(packs).length) return;
     const slashIndex = workSegKey.indexOf('/');
     const [work, segKey] = [workSegKey.slice(0, slashIndex), workSegKey.slice(slashIndex + 1)];
@@ -111,7 +111,7 @@ export const collectTerrainUsage = (browser: HeadlessBrowser) =>
     warnOnly(segKey, () => {
       if (fingerprint) {
         pendingFingerprints.delete(workSegKey);
-        writeTerrainUsage(work, segKey, mergeUsage({ 作品: work, 段: segKey, 指纹: fingerprint, 已量帧: '', 包: {} }, packs, frames));
+        writeTerrainUsage(work, segKey, mergeUsage({ work: work, segment: segKey, fingerprint: fingerprint, measuredFrames: '', pack: {} }, packs, frames));
       } else accumulate(work, segKey, packs, frames);
     });
   });

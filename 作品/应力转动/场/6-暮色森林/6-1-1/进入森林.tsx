@@ -36,7 +36,7 @@ import { rad, mulberry32 } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
 // 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口是段内秒（cue 在 段/6-进入森林/段.ts）。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
-const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 / 24 }];
+const lineCues = [{ id: '6-1-1-李樱-出征暮色', frame: 4 / 24 }];
 // 台词口型：段内秒
 const liYingMouth = (choreoT: number) => mouthAt(lineCues, '李樱', choreo.segSec(choreoT), 1);
 
@@ -159,7 +159,7 @@ const TwilightForest: React.FC<{ t: number; sec: number }> = ({ t, sec }) => {
       <TwilightSunLight shadowFar={shadowFarFor(VIEW_FOG.far)} lightDir={courtyardLightDir} gain={courtyardLightGain} />
       <TwilightTerrain camPos={courtyardToWorld(choreo.camera(t).pos)} landmarks={nagaLandmarks} t={sec} shadowLightDir={courtyardLightDir} />
       <TwilightClouds sun={courtyardLightDir} />
-      <LandmarkPlacement 名="娜迦庭院">
+      <LandmarkPlacement name="娜迦庭院">
         {/* 暮色森林没有太阳：深蓝天、星星、地平线一圈薄荷绿，主光、天光、云都和 6-1-2 一样 */}
         <SkyDome twilight sun={courtyardLightDir} />
         {ly.visible && <LiYingSheathed pose={ly.pose} mouth={liYingMouth(t)} />}

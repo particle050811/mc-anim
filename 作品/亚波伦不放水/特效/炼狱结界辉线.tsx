@@ -126,7 +126,7 @@ export const cageGlowDefaults: CageGlowAppearance = {
 
 export type RevelationCageGlowProps = {
   /** 同 炼狱结界线框：只管转动，0 = 没转 */
-  秒: number;
+  sec: number;
   radiusFactor?: number;
   opacity?: number;
   appearance?: Partial<CageGlowAppearance>;
@@ -134,7 +134,7 @@ export type RevelationCageGlowProps = {
   thicknessScale?: number;
 };
 
-export const RevelationCageGlow: React.FC<RevelationCageGlowProps> = ({ 秒: sec, radiusFactor = revelationCageVanilla.radiusFactor, opacity = 1, appearance, thicknessScale = 1 }) => {
+export const RevelationCageGlow: React.FC<RevelationCageGlowProps> = ({ sec: sec, radiusFactor = revelationCageVanilla.radiusFactor, opacity = 1, appearance, thicknessScale = 1 }) => {
   const gl = useThree((s) => s.gl);
   // 画布尺寸变了要重取实际像素
   useThree((s) => s.size);
@@ -142,8 +142,8 @@ export const RevelationCageGlow: React.FC<RevelationCageGlowProps> = ({ 秒: sec
   const { hotspotScale, hotspotHaloScale } = resolved;
   const mesh = useMemo(() => {
     const { 顶点: vertices, edges } = cageEdgeTable();
-    const segments: { 起: readonly number[]; 止: readonly number[]; 档: readonly [number, number] }[] = edges.map(([a, b]) => ({ 起: vertices[a]!, 止: vertices[b]!, 档: [1, 1] }));
-    if (hotspotScale > 0) for (const p of vertices) segments.push({ 起: p, 止: p, 档: [hotspotScale, hotspotHaloScale] });
+    const segments: { start: readonly number[]; end: readonly number[]; 档: readonly [number, number] }[] = edges.map(([a, b]) => ({ start: vertices[a]!, end: vertices[b]!, 档: [1, 1] }));
+    if (hotspotScale > 0) for (const p of vertices) segments.push({ start: p, end: p, 档: [hotspotScale, hotspotHaloScale] });
     const pos: number[] = [];
     const end: number[] = [];
     const corner: number[] = [];
@@ -153,8 +153,8 @@ export const RevelationCageGlow: React.FC<RevelationCageGlowProps> = ({ 秒: sec
       // 沿线 4 排、每排 2 个顶点：起点帽沿、起点、终点、终点帽沿，连成 3 个四边形
       for (const [endSide, capSide] of [[0, 1], [0, 0], [1, 0], [1, 1]] as const) {
         for (const sign of [1, -1]) {
-          pos.push(...s.起);
-          end.push(...s.止);
+          pos.push(...s.start);
+          end.push(...s.end);
           corner.push(endSide, capSide, sign);
           grade.push(...s.档);
         }

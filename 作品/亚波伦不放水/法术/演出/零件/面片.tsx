@@ -18,7 +18,7 @@ export class QuadItem {
   declare private readonly brand: never;
   readonly 位: Vec3;
   /** 半边长（游戏的 quadSize）；半高不给 = 方的 */
-  readonly 半宽: number;
+  readonly halfWidth: number;
   readonly 色: RgbColor | undefined;
   /** [U0, V0, U1, V1]：画面左、上、右、下对应的贴图坐标；不给 = 整张 */
   readonly uv: readonly [number, number, number, number] | undefined;
@@ -28,7 +28,7 @@ export class QuadItem {
   readonly halfHeight: number | undefined;
   constructor(pos: Vec3, halfWidth: number, color: RgbColor | undefined, uv: readonly [number, number, number, number] | undefined, opacity: number | undefined, angleRad: number | undefined, halfHeight: number | undefined) {
     this.位 = pos;
-    this.半宽 = halfWidth;
+    this.halfWidth = halfWidth;
     this.色 = color;
     this.uv = uv;
     this.opacity = opacity;
@@ -99,7 +99,7 @@ void main() {
 
 const s2l = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 
-export const QuadGroup: React.FC<{ 图: Png; 项: readonly QuadItem[]; 混合?: Blend; depthWrite?: boolean }> = ({ 图: image, 项: items, 混合: blend = '镂空', depthWrite }) => {
+export const QuadGroup: React.FC<{ image: Png; items: readonly QuadItem[]; blend?: Blend; depthWrite?: boolean }> = ({ image: image, items: items, blend: blend = '镂空', depthWrite }) => {
   const count = items.length;
   const capacity = Math.max(16, 2 ** Math.ceil(Math.log2(Math.max(1, count))));
   const { mesh, geo } = useMemo(() => {
@@ -136,7 +136,7 @@ export const QuadGroup: React.FC<{ 图: Png; 项: readonly QuadItem[]; 混合?: 
   const colorAttr = geo.getAttribute('iColor') as THREE.InstancedBufferAttribute;
   items.forEach((it, i) => {
     centers.setXYZ(i, it.位[0], it.位[1], it.位[2]);
-    sizeAttribute.setXYZ(i, it.半宽, it.halfHeight ?? it.半宽, it.angleRad ?? 0);
+    sizeAttribute.setXYZ(i, it.halfWidth, it.halfHeight ?? it.halfWidth, it.angleRad ?? 0);
     const q = it.uv ?? [0, 0, 1, 1];
     uv.setXYZW(i, q[0], q[1], q[2], q[3]);
     const c = it.色 ?? [1, 1, 1];
@@ -149,18 +149,18 @@ export const QuadGroup: React.FC<{ 图: Png; 项: readonly QuadItem[]; 混合?: 
 };
 
 /** 单张面片 */
-export const Quad: React.FC<{ 图: Png; 位: Vec3; 半宽: number; halfHeight?: number; 色?: RgbColor; opacity?: number; angleRad?: number; uv?: readonly [number, number, number, number]; 混合?: Blend; depthWrite?: boolean }> = ({
-  图: image,
-  混合: blend,
+export const Quad: React.FC<{ image: Png; 位: Vec3; halfWidth: number; halfHeight?: number; 色?: RgbColor; opacity?: number; angleRad?: number; uv?: readonly [number, number, number, number]; blend?: Blend; depthWrite?: boolean }> = ({
+  image: image,
+  blend: blend,
   depthWrite,
   位: pos,
-  半宽: halfWidth,
+  halfWidth: halfWidth,
   halfHeight,
   色: color,
   opacity,
   angleRad,
   uv,
-}) => <QuadGroup 图={image} 项={[facePatch(pos, halfWidth, color, uv, opacity, angleRad, halfHeight)]} 混合={blend} depthWrite={depthWrite} />;
+}) => <QuadGroup image={image} items={[facePatch(pos, halfWidth, color, uv, opacity, angleRad, halfHeight)]} blend={blend} depthWrite={depthWrite} />;
 
 /** 序列帧：第 序号 帧（向下取整）；循环 = 超出从头再来，否则停在最后一帧 */
 export const sequenceFrame = <T,>(frames: readonly T[], index: number, loop = false): T => {

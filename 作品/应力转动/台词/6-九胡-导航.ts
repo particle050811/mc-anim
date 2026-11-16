@@ -1,18 +1,18 @@
-// 由 anim voice 生成（校验 49b92448d569），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-导航（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 f2bd5dcab958），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-导航（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-九胡-导航",
-  "角色": "九胡",
-  "念": "哔↗哔↘，九胡导航持续为您服务。",
-  "配音": "配音/6-九胡-导航",
-  "成品sha": "c6a806db3672",
-  "开口": 0.03,
+  "character": "九胡",
+  "spoken": "哔↗哔↘，九胡导航持续为您服务。",
+  "voice": "配音/6-九胡-导航",
+  "finishedSha": "c6a806db3672",
+  "mouthOpen": 0.03,
   "有声长": 2.852,
-  "时长": 3.032,
+  "duration": 3.032,
   "文件秒数": 3.032,
   "手修": true,
-  "字": [
+  "char": [
     ["哔",0.02,0.16],
     ["哔",0.48,0.64],
     ["九",0.92,1.11],

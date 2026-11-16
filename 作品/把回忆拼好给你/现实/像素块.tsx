@@ -37,19 +37,19 @@ export const useTexture = (make: () => THREE.Texture, deps: readonly unknown[]) 
 const unitPlane = new THREE.PlaneGeometry(1, 1);
 
 /** 一片朝南（−y）的正面：左下角在 (x, y, z)，宽 × 高 贴图像素，贴图上边朝上 */
-export const FrontFace: React.FC<{ x: number; y: number; z: number; 宽: number; 高: number; 图: THREE.Texture }> = ({ x, y, z, 宽: width, 高: height, 图: image }) => (
+export const FrontFace: React.FC<{ x: number; y: number; z: number; width: number; height: number; image: THREE.Texture }> = ({ x, y, z, width: width, height: height, image: image }) => (
   <mesh geometry={unitPlane} material={pixelMaterial(image)} position={[x + width / 2, y, z + height / 2]} rotation={[Math.PI / 2, 0, 0]} scale={[width, height, 1]} />
 );
 
 /** 一片朝上（+z）的顶面：前左角在 (x, y, z)，宽 × 深 贴图像素，贴图上边在北（远处） */
-export const TopFace: React.FC<{ x: number; y: number; z: number; 宽: number; depth: number; 图: THREE.Texture }> = ({ x, y, z, 宽: width, depth, 图: image }) => (
+export const TopFace: React.FC<{ x: number; y: number; z: number; width: number; depth: number; image: THREE.Texture }> = ({ x, y, z, width: width, depth, image: image }) => (
   <mesh geometry={unitPlane} material={pixelMaterial(image)} position={[x + width / 2, y + depth / 2, z]} scale={[width, depth, 1]} />
 );
 
 /** 一块盒子的正面和顶面：前左下角在 (x, y, z)，宽（x）× 深（y）× 高（z） */
-export const PixelBox: React.FC<{ x: number; y: number; z: number; 宽: number; depth: number; 高: number; 前: THREE.Texture; topTexture: THREE.Texture }> = ({ x, y, z, 宽: width, depth, 高: height, 前: front, topTexture }) => (
+export const PixelBox: React.FC<{ x: number; y: number; z: number; width: number; depth: number; height: number; 前: THREE.Texture; topTexture: THREE.Texture }> = ({ x, y, z, width: width, depth, height: height, 前: front, topTexture }) => (
   <>
-    <FrontFace x={x} y={y} z={z} 宽={width} 高={height} 图={front} />
-    <TopFace x={x} y={y} z={z + height} 宽={width} depth={depth} 图={topTexture} />
+    <FrontFace x={x} y={y} z={z} width={width} height={height} image={front} />
+    <TopFace x={x} y={y} z={z + height} width={width} depth={depth} image={topTexture} />
   </>
 );

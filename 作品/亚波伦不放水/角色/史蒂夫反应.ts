@@ -39,7 +39,7 @@ export type SteveState = {
   /** 头看向的点；偏出 50 度身子跟着转（原版）。不给 = 平视前方 */
   看?: V3;
   /** 时钟（秒）：两臂轻晃、挣扎的摆动 */
-  秒: number;
+  sec: number;
   /** 不给 = 剑 */
   rightHand?: RightHandItem;
   /** 不给 = 空 */
@@ -145,10 +145,10 @@ export const steveReaction = (state: SteveState): SteveReactionResult => {
   const struggleAmount = Math.min(1, Math.max(0, state.struggle ?? 0));
   // 挣扎：照走路的摆法原地摆腿（步幅 0.5 × 强度，约每秒一步），脚不挪
   const stride = state.走 ? state.走.stride : 0.5 * struggleAmount;
-  const swing = state.走 ? state.走.swing : stride * state.秒 * 20;
-  let pose = stevePose(state.位置, state.facing, { sec: state.秒, limbSwing: swing, stride: stride, holdR: rightHand !== '空', holdL: leftHand !== '空', crouch: state.sneak ?? 0 });
+  const swing = state.走 ? state.走.swing : stride * state.sec * 20;
+  let pose = stevePose(state.位置, state.facing, { sec: state.sec, limbSwing: swing, stride: stride, holdR: rightHand !== '空', holdL: leftHand !== '空', crouch: state.sneak ?? 0 });
   if (state.看) pose = steveLookAt(pose, state.看);
-  if (struggleAmount > 0) pose = { ...pose, twist: (pose.twist ?? 0) + Math.sin(state.秒 * Math.PI * 2 * 0.7) * 12 * struggleAmount };
+  if (struggleAmount > 0) pose = { ...pose, twist: (pose.twist ?? 0) + Math.sin(state.sec * Math.PI * 2 * 0.7) * 12 * struggleAmount };
   const backLean = state.hitReactSec === undefined ? 0 : leanBackEnvelope(state.hitReactSec, state.leanTiming?.peakSec, state.leanTiming?.restoreSec) * (state.backLeanDeg ?? 10);
   if (backLean > 0) pose = { ...pose, pitch: pose.pitch + backLean }; // FigurePose 的 pitch 负 = 前倾
   // 原版挥手只给空手、拿环的时候用；拿剑时由 加关节动作 照剑招摆
@@ -160,7 +160,7 @@ export const steveReaction = (state: SteveState): SteveReactionResult => {
     walkDir: state.走?.walkDir,
     跳: state.跳,
     struggleAmount,
-    秒: state.秒,
+    sec: state.sec,
     backLean: backLean / 10,
     holdRight: rightHand !== '空',
     holdLeft: leftHand !== '空',
@@ -174,7 +174,7 @@ export const steveReaction = (state: SteveState): SteveReactionResult => {
     ...(state.charge !== undefined ? { charge: state.charge } : {}),
   });
 
-  const tick = state.秒 * 20;
+  const tick = state.sec * 20;
   const armSwingL = Math.cos(swing * 0.6662) * stride;
   const editParts = (poses: Record<string, PartPose>): Record<string, PartPose> => {
     let parts = { ...poses };

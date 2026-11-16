@@ -55,10 +55,10 @@ export const readRecording = (x: unknown): SpellRecording => {
 export type RecordingReplayProps = {
   录制: SpellRecording;
   /** 出手后的秒 */
-  秒: number;
+  sec: number;
   /** 施法者脚底（录制的原点）；只有 起点 的宿主（法术演出属性）用 脚底 = 起点 − (0, 0, 起点高) */
   feet: Vec3;
-  目标: Vec3;
+  target: Vec3;
   /** 贴图名（如 goety:frost_1）→ 贴图；缺的不画，列在 缺贴图() */
   贴图: Readonly<Record<string, Png>>;
   animMode?: '轨' | '算';
@@ -78,7 +78,7 @@ const placement = (feet: Vec3, target: Vec3) => {
   else [fx, fy] = [fx / n, fy / n];
   return (forward: number, right: number, up: number): [number, number, number] => [feet[0] + forward * fx + right * fy, feet[1] + forward * fy - right * fx, feet[2] + up];
 };
-export const RecordingReplay: React.FC<RecordingReplayProps> = ({ 录制: recording, 秒: sec, feet, 目标: target, 贴图: textureMap, animMode = '轨', withPlaceholders = true }) => {
+export const RecordingReplay: React.FC<RecordingReplayProps> = ({ 录制: recording, sec: sec, feet, target: target, 贴图: textureMap, animMode = '轨', withPlaceholders = true }) => {
   const place = placement(feet, target);
   const tick = sec * 20;
   // 算 的路径只依赖录制本身（局部坐标），按录制缓存
@@ -92,8 +92,8 @@ export const RecordingReplay: React.FC<RecordingReplayProps> = ({ 录制: record
         : null,
     [recording, animMode],
   );
-  const batches = new Map<string, { 图: Png; 混合: Blend; 项: QuadItem[] }>();
-  const meshes: { 名: string; 混合: Blend; curRow: TrackRow; nextRow: TrackRow; f: number }[] = [];
+  const batches = new Map<string, { 图: Png; blend: Blend; items: QuadItem[] }>();
+  const meshes: { 名: string; blend: Blend; curRow: TrackRow; nextRow: TrackRow; f: number }[] = [];
   recording.粒子.forEach((p, k) => {
     const τ = tick - p.生;
     if (τ < 0) return;
@@ -108,7 +108,7 @@ export const RecordingReplay: React.FC<RecordingReplayProps> = ({ 录制: record
       const absFrame = p.生 + i;
       const j = p.网格轨.findIndex((r) => r[0] === absFrame);
       if (j < 0) return;
-      meshes.push({ 名: textureName, 混合: drawBlend(p.画法), curRow: p.网格轨[j]!, nextRow: p.网格轨[j + 1]?.[0] === absFrame + 1 ? p.网格轨[j + 1]! : p.网格轨[j]!, f });
+      meshes.push({ 名: textureName, blend: drawBlend(p.画法), curRow: p.网格轨[j]!, nextRow: p.网格轨[j + 1]?.[0] === absFrame + 1 ? p.网格轨[j + 1]! : p.网格轨[j]!, f });
       return;
     }
     if (textureName === undefined) return;
@@ -120,17 +120,17 @@ export const RecordingReplay: React.FC<RecordingReplayProps> = ({ 录制: record
     const blend = drawBlend(p.画法);
     const cacheKey = `${textureName}|${blend}`;
     let b = batches.get(cacheKey);
-    if (!b) batches.set(cacheKey, (b = { 图: image, 混合: blend, 项: [] }));
-    b.项.push(facePatch(place(localPos[0]!, localPos[1]!, localPos[2]!), lerp(trackRow[3]!, nextSample[3]!, f), [trackRow[4]!, trackRow[5]!, trackRow[6]!], undefined, trackRow[7]!, lerp(prev[8]!, trackRow[8]!, f)));
+    if (!b) batches.set(cacheKey, (b = { 图: image, blend: blend, items: [] }));
+    b.items.push(facePatch(place(localPos[0]!, localPos[1]!, localPos[2]!), lerp(trackRow[3]!, nextSample[3]!, f), [trackRow[4]!, trackRow[5]!, trackRow[6]!], undefined, trackRow[7]!, lerp(prev[8]!, trackRow[8]!, f)));
   });
   return (
     <>
       {[...batches.entries()].map(([cacheKey, b]) => (
-        <QuadGroup key={cacheKey} 图={b.图} 项={b.项} 混合={b.混合} />
+        <QuadGroup key={cacheKey} image={b.图} items={b.items} blend={b.blend} />
       ))}
       {meshes.map((m, n) => {
         const image = textureMap[m.名];
-        return image ? <RecordedMesh key={n} 图={image} 混合={m.混合} curRow={m.curRow} nextRow={m.nextRow} f={m.f} place={place} /> : null;
+        return image ? <RecordedMesh key={n} image={image} blend={m.blend} curRow={m.curRow} nextRow={m.nextRow} f={m.f} place={place} /> : null;
       })}
       {withPlaceholders &&
         recording.实体.map((e, n) => {
@@ -157,7 +157,7 @@ export const RecordingReplay: React.FC<RecordingReplayProps> = ({ 录制: record
 const s2l = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 
 /** 一刻录下的顶点（每 4 个一个方片），和下一刻的按分刻插值（顶点数不同就不插） */
-const RecordedMesh: React.FC<{ 图: Png; 混合: Blend; curRow: TrackRow; nextRow: TrackRow; f: number; place: ReturnType<typeof placement> }> = ({ 图: image, 混合: blend, curRow, nextRow, f, place }) => {
+const RecordedMesh: React.FC<{ image: Png; blend: Blend; curRow: TrackRow; nextRow: TrackRow; f: number; place: ReturnType<typeof placement> }> = ({ image: image, blend: blend, curRow, nextRow, f, place }) => {
   const count = Math.floor((curRow.length - 1) / 9);
   const sameLength = nextRow.length === curRow.length;
   const geo = useMemo(() => new THREE.BufferGeometry(), []);

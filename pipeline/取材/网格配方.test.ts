@@ -4,7 +4,7 @@ import { check } from './提取.ts';
 import { groupMeshes, meshSteps, meshOutput, missingMeshRecipes, fillMeshRecipeText, type MeshHeader } from './网格配方.ts';
 import { canRunDirectly, parseManifest } from './清单.ts';
 
-const lockEntry = (sha: string) => ({ sha256: sha.repeat(64), 大小: 1, 库: 'store' as const, 后缀: '.json' });
+const lockEntry = (sha: string) => ({ sha256: sha.repeat(64), size: 1, lib: 'store' as const, suffix: '.json' });
 const existingRecipe = `
 [["取材"]]
 "名称" = "小屋"
@@ -39,17 +39,17 @@ describe('地标网格配方反填', () => {
   const q = parseManifest(existingRecipe, '');
 
   it('只挑锁里有头、没有配方产出的；out 照资产表旧路径，产物只列锁里有的', () => {
-    const oldPathMap = new Map([['网格/城/东1/头', { 旧路径: '参考模型库/src/模型/场景/城-东1.网格.json' }]]);
-    const { 网格: meshes, unreadable } = missingMeshRecipes(q, [[assetLock, undefined]], oldPathMap, readHead);
+    const oldPathMap = new Map([['网格/城/东1/头', { oldPath: '参考模型库/src/模型/场景/城-东1.网格.json' }]]);
+    const { grid: meshes, unreadable } = missingMeshRecipes(q, [[assetLock, undefined]], oldPathMap, readHead);
     expect(unreadable).toEqual([]);
     expect(meshes.map((g) => g.meshName)).toEqual(['网格/城/东1', '网格/塔']);
-    expect(meshes[0]!.产物).toEqual({ '网格/城/东1/图集': 'src/模型/场景/城-东1.网格.png', '网格/城/东1/头': 'src/模型/场景/城-东1.网格.json', '网格/城/东1/顶点': 'src/模型/场景/城-东1.网格.bin' });
-    expect(meshes[1]!.产物).toEqual({ '网格/塔/头': 'src/模型/场景/塔.网格.json', '网格/塔/顶点': 'src/模型/场景/塔.网格.bin' });
+    expect(meshes[0]!.artifacts).toEqual({ '网格/城/东1/图集': 'src/模型/场景/城-东1.网格.png', '网格/城/东1/头': 'src/模型/场景/城-东1.网格.json', '网格/城/东1/顶点': 'src/模型/场景/城-东1.网格.bin' });
+    expect(meshes[1]!.artifacts).toEqual({ '网格/塔/头': 'src/模型/场景/塔.网格.json', '网格/塔/顶点': 'src/模型/场景/塔.网格.bin' });
     expect(meshOutput('网格/城/西/2')).toBe('src/模型/场景/城-西-2.网格');
   });
 
-  it('步骤：镜头切到维度、挪到范围上方，mesh 带 from/to/origin 和找到的标记；头里记了原样参数就照抄', () => {
-    const g = { meshName: '网格/城/东1', 头: meshHeaders.a!, 产物: { '网格/城/东1/头': 'src/x.网格.json' } };
+  it('steps：镜头切到维度、挪到范围上方，mesh 带 from/to/origin 和找到的标记；头里记了原样参数就照抄', () => {
+    const g = { meshName: '网格/城/东1', 头: meshHeaders.a!, artifacts: { '网格/城/东1/头': 'src/x.网格.json' } };
     expect(meshSteps(g)).toEqual([
       ['mcai', 'cam', 'pos=0,34,10', 'pitch=90', 'yaw=180', 'dim=minecraft:overworld'],
       ['mcai', 'mesh', 'from=-10,-60,0', 'to=9,4,19', 'origin=0,-50,10', 'mark=minecraft:chest,quark:ancient_chest', 'out=src/x.网格'],
@@ -58,28 +58,28 @@ describe('地标网格配方反填', () => {
   });
 
   it('按第一段分组成配方，文本能解析回来：不重导、要开游戏，--all 不选，--check 只查产物', () => {
-    const { 网格: meshes } = missingMeshRecipes(q, [[assetLock, undefined]], new Map(), readHead);
+    const { grid: meshes } = missingMeshRecipes(q, [[assetLock, undefined]], new Map(), readHead);
     const groups = groupMeshes(meshes, new Set(q.entryMap.keys()));
     expect([...groups.keys()]).toEqual(['城网格', '塔网格']);
     expect([...groupMeshes(meshes, new Set(['塔网格'])).keys()]).toEqual(['城网格', '塔网格（反填）']);
     const q2 = parseManifest(existingRecipe + fillMeshRecipeText(groups), '');
     const e = q2.entryMap.get('城网格')!;
-    expect(e.不重导).toMatch(/旧网格不重导/);
-    expect(e.要开游戏).toBe(true);
-    expect(e.步骤).toHaveLength(2);
+    expect(e.noReExtract).toMatch(/旧网格不重导/);
+    expect(e.needsGame).toBe(true);
+    expect(e.steps).toHaveLength(2);
     expect(canRunDirectly(e)).toBe(false);
     // 反填之后都有配方了
-    expect(missingMeshRecipes(q2, [[assetLock, undefined]], new Map(), readHead).网格).toEqual([]);
+    expect(missingMeshRecipes(q2, [[assetLock, undefined]], new Map(), readHead).grid).toEqual([]);
     const r = check(q2, [e], false, assetLock, '示例');
-    expect(r.不重导).toEqual(['城网格']);
+    expect(r.noReExtract).toEqual(['城网格']);
     expect(r.issues.filter((x) => !/字节不在库里/.test(x))).toEqual([]);
   });
 
   it('作品锁里的网格配方写「作品」；字节不在库里的报读不到', () => {
     const workLock: AssetLock = { '网格/院/头': lockEntry('b'), '网格/坏/头': lockEntry('9') };
-    const { 网格: meshes, unreadable } = missingMeshRecipes(q, [[{}, undefined], [workLock, '示例']], new Map(), readHead);
+    const { grid: meshes, unreadable } = missingMeshRecipes(q, [[{}, undefined], [workLock, '示例']], new Map(), readHead);
     expect(unreadable).toEqual(['网格/坏/头']);
     const q2 = parseManifest(fillMeshRecipeText(groupMeshes(meshes, new Set())), '');
-    expect(q2.entryMap.get('院网格')?.作品).toBe('示例');
+    expect(q2.entryMap.get('院网格')?.work).toBe('示例');
   });
 });

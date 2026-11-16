@@ -15,31 +15,31 @@ import { copyRule } from './规则/副本.ts';
 import { time } from './规则/时间.ts';
 import { hanIdentifierRule } from './规则/标识符.ts';
 
-export const ruleTable: Record<RuleKind, { 说明: string; 跑: (c: CheckContext, report: CheckReport) => Promise<void> | void }> = {
-  types: { 说明: 'tsc strict；Python 的 ruff、pyright；改到 mod 时编译 mod、跑暮色网格核对和游戏导表出表核对（test/twilight-grid-test.sh、game-data-test.sh）', 跑: typeCheck },
-  structure: { 说明: '分层、作品不互引、段不互引、不引核对、纯模块闭包、getInputProps、渲染代码的确定性、pipeline 渲染器统一入口与测试 mock', 跑: checkStructure },
-  layers: { 说明: 'pipeline 内部分层方向（含 import type）、engine/core 不引别的 engine 子目录、任何循环引用（engine、库、pipeline、作品，含只有类型的）、只有类型的引用也守渲染分层', 跑: checkLayering },
-  manifest: { 说明: '段目录和清单一一对应、段键段名合规唯一、不撞旧名、连续段接帧', 跑: checkManifest },
-  load: { 说明: '在 Node 里执行全部纯模块，断言都跑到；环境.ts 的声明（时刻、天气、档位、画法、关键帧）合法；作品的地形改动落在世界声明的保真范围里', 跑: checkLoad },
-  lines: { 说明: 'cue 的台词都登记、每句恰好开口一次（接上段的接在开口后面）、开口和字幕位置、文本哈希和成品 sha、口型绑定成品、句模块跟得上', 跑: checkLines },
-  assets: { 说明: '引用的 id 都登记、共用和作品两侧的表锁对得上、许可来源可见性齐全、公开构建无私有资产、角色包；--deep 逐个核 sha', 跑: checkAssets },
-  rules: { 说明: '例外 和 作品的 规矩.toml 双向对得上、默认值落点在、出处引用的记忆在', 跑: ruleCheck },
-  platform: { 说明: 'Windows 合法文件名、结构层 ASCII、不开 shell、不用 fcntl', 跑: checkPlatform },
-  dupes: { 说明: 'lerp、toThree、Cam 这类共用函数不许新写副本（import engine/core、库 的正本）；旧副本冻在 docs/副本表.tsv，只许减少', 跑: copyRule },
-  time: { 说明: '段、场、库的画面按秒写，不直接调 useCurrentFrame()（用 engine/段/时间.tsx），没有例外', 跑: time },
-  idents: { 说明: '代码里不新增中文标识符（字符串、注释、文件名不算）；现有的冻在 pipeline/检查/中文标识符基线.txt，只许减少', 跑: hanIdentifierRule },
+export const ruleTable: Record<RuleKind, { note: string; 跑: (c: CheckContext, report: CheckReport) => Promise<void> | void }> = {
+  types: { note: 'tsc strict；Python 的 ruff、pyright；改到 mod 时编译 mod、跑暮色网格核对和游戏导表出表核对（test/twilight-grid-test.sh、game-data-test.sh）', 跑: typeCheck },
+  structure: { note: '分层、作品不互引、段不互引、不引核对、纯模块闭包、getInputProps、渲染代码的确定性、pipeline 渲染器统一入口与测试 mock', 跑: checkStructure },
+  layers: { note: 'pipeline 内部分层方向（含 import type）、engine/core 不引别的 engine 子目录、任何循环引用（engine、lib、pipeline、work，含只有类型的）、只有类型的引用也守渲染分层', 跑: checkLayering },
+  manifest: { note: '段目录和清单一一对应、段键段名合规唯一、不撞旧名、连续段接帧', 跑: checkManifest },
+  load: { note: '在 Node 里执行全部纯模块，断言都跑到；环境.ts 的声明（时刻、天气、档位、画法、关键帧）合法；作品的地形改动落在世界声明的保真范围里', 跑: checkLoad },
+  lines: { note: 'cue 的台词都登记、每句恰好开口一次（接上段的接在开口后面）、开口和字幕位置、文本哈希和成品 sha、口型绑定成品、句模块跟得上', 跑: checkLines },
+  assets: { note: '引用的 id 都登记、共用和作品两侧的表锁对得上、许可来源可见性齐全、公开构建无私有资产、角色包；--deep 逐个核 sha', 跑: checkAssets },
+  rules: { note: '例外 和 作品的 规矩.toml 双向对得上、默认值落点在、出处引用的记忆在', 跑: ruleCheck },
+  platform: { note: 'Windows 合法文件名、结构层 ASCII、不开 shell、不用 fcntl', 跑: checkPlatform },
+  dupes: { note: 'lerp、toThree、Cam 这类共用函数不许新写副本（import engine/core、lib 的正本）；旧副本冻在 docs/副本表.tsv，只许减少', 跑: copyRule },
+  time: { note: '段、场、库的画面按秒写，不直接调 useCurrentFrame()（用 engine/段/时间.tsx），没有例外', 跑: time },
+  idents: { note: '代码里不新增中文标识符（字符串、注释、文件名不算）；现有的冻在 pipeline/检查/中文标识符基线.txt，只许减少', 跑: hanIdentifierRule },
 };
 
-export type CheckOptions = { 只?: readonly RuleKind[]; 快?: boolean; depthCheck?: boolean; dataRoot?: string; 作品?: string };
+export type CheckOptions = { 只?: readonly RuleKind[]; 快?: boolean; depthCheck?: boolean; dataRoot?: string; work?: string };
 
 export const runChecks = async (root: string, options: CheckOptions = {}): Promise<Map<RuleKind, CheckReport>> => {
-  const c = new CheckContext(root, { depthCheck: options.depthCheck, dataRoot: options.dataRoot, 作品: options.作品 });
+  const c = new CheckContext(root, { depthCheck: options.depthCheck, dataRoot: options.dataRoot, work: options.work });
   const reports = new Map<RuleKind, CheckReport>();
   try {
     for (const ruleName of ruleNames) {
       if (options.只?.length && !options.只.includes(ruleName)) continue;
       const report = new CheckReport();
-      if (options.快 && ruleName === 'types') report.跳过.push('--fast：不跑 tsc、ruff、pyright、gradle');
+      if (options.快 && ruleName === 'types') report.skipped.push('--fast：不跑 tsc、ruff、pyright、gradle');
       else {
         try {
           await ruleTable[ruleName].跑(c, report);

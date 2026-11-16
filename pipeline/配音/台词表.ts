@@ -5,38 +5,38 @@ import fs from 'node:fs';
 import { parse } from 'smol-toml';
 
 /** 台词.toml 的一行里 anim check、配音链都认的几项 */
-export type LineEntry = { id: string; 角色: string; 文本: string; 念?: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; 未用?: boolean };
-export type LipManual = { 成品sha?: string; 字?: [string, number, number][]; 注?: string };
+export type LineEntry = { id: string; character: string; text: string; spoken?: string; voice?: string; mouthOpen?: number; subtitlePosition?: string; textHash?: string; finishedSha?: string; lip?: { finishedSha?: string }; lipManual?: { finishedSha?: string }; 未用?: boolean };
+export type LipManual = { finishedSha?: string; char?: [string, number, number][]; annotation?: string };
 /** 一句的合成设置（都可选，覆盖 [配音] 和 [音色.<角色>]）。念：只交给 TTS 的字，和对口型的 念 不同时写（如数字写成读法，口型手修 却按字面标的） */
-export type SynthSettings = { 后端?: string; 念?: string; 参考?: string; 逐字稿?: string; 种子?: number[]; 语气参考?: string; 强度?: number; 不裁?: boolean; 参数?: Record<string, unknown> };
-export type VoiceLineRow = Omit<LineEntry, '口型手修'> & {
+export type SynthSettings = { backend?: string; spoken?: string; reference?: string; transcript?: string; seed?: number[]; toneRef?: string; intensity?: number; noTrim?: boolean; params?: Record<string, unknown> };
+export type VoiceLineRow = Omit<LineEntry, 'lipManual'> & {
   /** 交给 TTS、对口型的字（和字幕的 文本 不同时写，如数字写成读法、日语念法） */
-  念?: string;
+  spoken?: string;
   /** 中文（默认）、日语、英语、粤语 */
-  语言?: string;
+  language?: string;
   /** 这句的情境和语气（挑候选、给能按文字控制语气的后端） */
-  语气?: string;
-  口型手修?: LipManual;
-  合成?: SynthSettings;
+  tone?: string;
+  lipManual?: LipManual;
+  synth?: SynthSettings;
 };
-export type VoiceSettings = { 后端: string; 种子: number[]; 目标响度: number; 峰值上限: number; 许可: string; 可见性: string; 后端参数: Record<string, Record<string, unknown>> };
-export type Timbre = { 参考: string; 逐字稿: string };
-export type WorkLines = { 台词: VoiceLineRow[]; 配音: VoiceSettings; 音色: Record<string, Timbre> };
+export type VoiceSettings = { backend: string; seed: number[]; targetLoudness: number; peakCeilingDb: number; license: string; visibility: string; 后端参数: Record<string, Record<string, unknown>> };
+export type Timbre = { reference: string; transcript: string };
+export type WorkLines = { lines: VoiceLineRow[]; voice: VoiceSettings; timbre: Record<string, Timbre> };
 
 // 用户 10-31 定：统一默认 IndexTTS2 云端（本机模型占内存太多），调模型的事交给 image-flow（docs/决策/0009）
-export const defaultVoice: VoiceSettings = { 后端: 'image-flow', 种子: [1234, 20261010, 7, 42], 目标响度: -18, 峰值上限: -1.5, 许可: 'LicenseRef-待定', 可见性: '私有', 后端参数: {} };
+export const defaultVoice: VoiceSettings = { backend: 'image-flow', seed: [1234, 20261010, 7, 42], targetLoudness: -18, peakCeilingDb: -1.5, license: 'LicenseRef-待定', visibility: '私有', 后端参数: {} };
 
 /** 字的 sha256 前 12 位 */
 export const textHash = (text: string) => crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 12);
 
-export const spokenTextOf = (t: Pick<VoiceLineRow, '念' | '文本'>) => t.念 ?? t.文本;
+export const spokenTextOf = (t: Pick<VoiceLineRow, 'spoken' | 'text'>) => t.spoken ?? t.text;
 
 /** 台词.toml 的 文本哈希 该是的值：配音念的字（念，没写同 文本）的哈希。念的字改了对不上 = 配音过期；只改字幕时写 念 = 原来的字，哈希照旧对得上 */
-export const voiceTextHash = (t: Pick<VoiceLineRow, '念' | '文本'>) => textHash(spokenTextOf(t));
+export const voiceTextHash = (t: Pick<VoiceLineRow, 'spoken' | 'text'>) => textHash(spokenTextOf(t));
 
 export const parseWorkLines = (text: string): WorkLines => {
-  const d = parse(text) as { 台词?: VoiceLineRow[]; 配音?: Partial<VoiceSettings>; 音色?: Record<string, Timbre> };
-  return { 台词: d.台词 ?? [], 配音: { ...defaultVoice, ...(d.配音 ?? {}) }, 音色: d.音色 ?? {} };
+  const d = parse(text) as { lines?: VoiceLineRow[]; voice?: Partial<VoiceSettings>; timbre?: Record<string, Timbre> };
+  return { lines: d.lines ?? [], voice: { ...defaultVoice, ...(d.voice ?? {}) }, timbre: d.timbre ?? {} };
 };
 
 export const readWorkLines = (file: string): WorkLines | null => (fs.existsSync(file) ? parseWorkLines(fs.readFileSync(file, 'utf8')) : null);
@@ -120,8 +120,8 @@ export const editLineField = (text: string, id: string, fields: Record<string, T
   }
   const newText = lines.join('\n');
   // 按行改是为了不动注释和排版；改完整份重新解析，和「只改了这一句这几项」逐项比，对不上就不写（宁可报错也不弄坏人写的源）
-  const expected = parse(text) as { 台词?: Record<string, unknown>[] };
-  const line = expected.台词?.find((x) => x.id === id);
+  const expected = parse(text) as { lines?: Record<string, unknown>[] };
+  const line = expected.lines?.find((x) => x.id === id);
   if (!line) throw new Error(`台词.toml 里没有 id = "${id}" 这一句`);
   for (const [k, v] of Object.entries(fields)) {
     if (v === undefined) delete line[k];

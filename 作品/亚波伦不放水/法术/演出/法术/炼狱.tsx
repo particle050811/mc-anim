@@ -9,10 +9,10 @@ import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import meta, { revelationFlySec, revelationShrinkSec, revelationCoverSec } from './炼狱.元.ts';
 
-const Revelation: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => (
+const Revelation: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target }) => (
   <RevelationCagePerformance
-    秒={sec}
-    settings={{ ...cagePerformanceDefaults, flyOutSec: revelationFlySec, coverSec: revelationCoverSec, shrinkBurnSec: revelationShrinkSec, from: [from[0], from[1], from[2]], 目标: [target[0], target[1], target[2] + 0.9] }}
+    sec={sec}
+    settings={{ ...cagePerformanceDefaults, flyOutSec: revelationFlySec, coverSec: revelationCoverSec, shrinkBurnSec: revelationShrinkSec, from: [from[0], from[1], from[2]], target: [target[0], target[1], target[2] + 0.9] }}
   />
 );
 

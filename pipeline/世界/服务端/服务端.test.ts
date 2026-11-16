@@ -97,20 +97,20 @@ readline.createInterface({ input: process.stdin }).on('line', (l) => {
     const jar = path.join(root, 'Chunky-test.jar');
     fs.writeFileSync(jar, 'x');
     const logLines: string[] = [];
-    const s = await Server.起({ 目录: server, 存档: world, tempMods: [jar], onLine: (l) => logLines.push(l), 提示: () => {}, readyTimeoutSec: 20 });
+    const s = await Server.start({ 目录: server, save: world, tempMods: [jar], onLine: (l) => logLines.push(l), 提示: () => {}, readyTimeoutSec: 20 });
     expect(logLines.find((l) => l.startsWith('ARGS '))).toBe(`ARGS -Xmx12G ${ENCODING_ARGS.join(' ')} -jar server.jar nogui --universe ${root} --world 某世界 --port ${s.port}`);
     expect(logLines).toContain('MODS Chunky-test.jar');
     expect(fs.existsSync(path.join(server, '.anim-服务端.pid'))).toBe(true);
     s.发('chunky start');
-    expect(await s.等('收到 chunky start', 10)).toBe('收到 chunky start');
-    expect(await s.等('不会出现', 0.2)).toBeNull();
+    expect(await s.waits('收到 chunky start', 10)).toBe('收到 chunky start');
+    expect(await s.waits('不会出现', 0.2)).toBeNull();
     expect(await s.停()).toBe(0);
     expect(s.running).toBe(false);
     // 存档就在服务端目录下：不给 --universe（给了 Forge 会拒绝）
     fs.mkdirSync(path.join(server, '本地世界'));
     fs.writeFileSync(path.join(server, '本地世界', 'level.dat'), '');
     const lines: string[] = [];
-    const s2 = await Server.起({ 目录: server, 存档: path.join(server, '本地世界'), onLine: (l) => lines.push(l), 提示: () => {}, readyTimeoutSec: 20 });
+    const s2 = await Server.start({ 目录: server, save: path.join(server, '本地世界'), onLine: (l) => lines.push(l), 提示: () => {}, readyTimeoutSec: 20 });
     expect(lines.find((l) => l.startsWith('ARGS '))).toBe(`ARGS -Xmx12G ${ENCODING_ARGS.join(' ')} -jar server.jar nogui --world 本地世界 --port ${s2.port}`);
     await s2.停();
     expect(fs.readdirSync(path.join(server, 'mods'))).toEqual([]);

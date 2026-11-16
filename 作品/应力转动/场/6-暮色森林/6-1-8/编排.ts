@@ -35,7 +35,7 @@ export const toWorld = (p: number[]): V3 => palaceFrame.toWorld(p);
 const impactA = SOUTH_FACE - QUEEN_AT[1];
 const exitA = NORTH_FACE - QUEEN_AT[1];
 export const pierceLine = {
-  名: '冰雪女王',
+  name: '冰雪女王',
   V,
   facing: palaceFrame.facing(YAW),
   tip: (a: number) => toWorld(tipLocal(a)),
@@ -61,7 +61,7 @@ export const T_DEATH = T_TOUCH + T_TOPPLE * deathToFlatRatio;
 export const smokeSpeed = 55;
 // 起、止 的毫秒零头是对着配乐拉回来的：时钟改按真时刻算、6-1-3 放平改真值以后（用户 11-16 定 1/24 秒的格一处不留），照原样放慢穿刺在画面上晚半秒多；
 // 调 起（放慢 100 倍，差 1 毫秒画面上差 0.1 秒）让六次穿刺在配乐里的位置和改之前用户看过的一样（一镜到底/路线/时钟.ts）
-export const slowMo = { 起: T_SOUTH + 0.0012193, 止: T_DEATH + 0.005 };
+export const slowMo = { start: T_SOUTH + 0.0012193, end: T_DEATH + 0.005 };
 export const fxSpeed = 28;
 
 // ---------- 墙 ----------
@@ -76,7 +76,7 @@ const DEB = { speed: 0.55 * V, spread: 24, spin: 70 };
 const AWAY: V3 = [0.4, 0.88, 0.25];
 // 矛管：矛尖连钻头虚影扫过的那一管方块当场崩成原版破坏粒子，不整块飞（用户 10-02；模型/特效/方块飞溅.tsx）；点的时刻相对各自那次撞击（南墙、北墙）。常量对象：哪些格子在管里只算一次
 const tubeFor = (impactTime: number): SpearTube => ({
-  点: Array.from({ length: 31 }, (_, k) => {
+  points: Array.from({ length: 31 }, (_, k) => {
     const dist = k - 15;
     return [...tipLocal(dist), dist / V - impactTime];
   }),
@@ -157,5 +157,5 @@ export const shields = (t: number): { p: V3; axis: V3; angle: number }[] => {
     return { p: [motion.p0[0] + motion.v[0] * t, motion.p0[1] + motion.v[1] * t, motion.p0[2] + motion.v[2] * t - 8 * t * t], axis: motion.axis, angle: motion.w * t };
   });
 };
-export const visibleWindow = { 起: -40, 止: 30 };
+export const visibleWindow = { start: -40, end: 30 };
 export { TIP_LOCAL };

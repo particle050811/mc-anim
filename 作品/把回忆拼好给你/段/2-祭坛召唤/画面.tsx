@@ -24,7 +24,7 @@ const picture: React.FC = () => {
   const g = startFrame + f;
   return (
     <>
-      <FilmPost grade={palette.夏日白天.grade} 种子={g}>
+      <FilmPost grade={palette.夏日白天.grade} seed={g}>
         {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
         <shadingScope.Provider value={{ shading: shadingBySeg['2-祭坛召唤'] }}>
           <AltarPicture g={g} />

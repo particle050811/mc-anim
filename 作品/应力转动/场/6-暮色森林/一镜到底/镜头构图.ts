@@ -29,10 +29,10 @@ const angleDiff = (fromDeg: number, toDeg: number) => {
 // ---------- 构图参数 P ----------
 // `距`：ln 距离（米）；`方`：方位（度，0 = 骑手正后方，往扫帚左手边为正，180 = 正前方）；`仰`：仰角（度，相对扫帚的俯仰往上）；
 // `x`、`y`：骑手中心在画面上的位置；`焦`：ln 焦距（mm，36mm 横向画幅）；`偏`：视线往 boss 偏多少（0～1，按方向球面插值）
-export type Framing = { 距: number; 方: number; 仰: number; x: number; y: number; 焦: number; 偏: number };
-const framingKeys = ['距', '方', '仰', 'x', 'y', '焦', '偏'] as const;
+export type Framing = { dist: number; 方: number; 仰: number; x: number; y: number; 焦: number; 偏: number };
+const framingKeys = ['dist', '方', '仰', 'x', 'y', '焦', '偏'] as const;
 export const mixFraming = (a: Framing, b: Framing, k: number): Framing => ({
-  距: lerp(a.距, b.距, k),
+  dist: lerp(a.dist, b.dist, k),
   方: a.方 + angleDiff(a.方, b.方) * k,
   仰: lerp(a.仰, b.仰, k),
   x: lerp(a.x, b.x, k),
@@ -57,7 +57,7 @@ export const broomFrame = (g: number) => {
 // P 的位置部分 → 镜头位置（相对骑手）。方位绕竖直轴转（锁航向），仰角从扫帚前方往上量（一镜到底俯仰最快 48°/秒，镜头跟着转得匀）
 export const camPosOf = (framing: Framing, g: number) => {
   const { forward: fwd, right: right, normal: normal } = broomFrame(g);
-  const dist = Math.exp(framing.距);
+  const dist = Math.exp(framing.dist);
   const azimuth = rad(framing.方);
   const elev = rad(framing.仰);
   // 往后（−前）转方位：方 90 = 左手边（−右）
@@ -65,12 +65,12 @@ export const camPosOf = (framing: Framing, g: number) => {
   return add(riderAt(g), mul(add(mul(horizDir, Math.cos(elev)), mul(normal, Math.sin(elev))), dist));
 };
 // 镜头位置 → P 的位置部分（停住、追、洞道这些自己走的机位换算回 P 用）
-export const posToFraming = (camPos: Vec, g: number): Pick<Framing, '距' | '方' | '仰'> => {
+export const posToFraming = (camPos: Vec, g: number): Pick<Framing, 'dist' | '方' | '仰'> => {
   const { forward: fwd, right: right, normal: normal } = broomFrame(g);
   const offset = sub(camPos, riderAt(g));
   const dist = len(offset);
   const elev = Math.asin(Math.max(-1, Math.min(1, dot(offset, normal) / dist)));
-  return { 距: Math.log(dist), 方: deg(Math.atan2(-dot(offset, right), -dot(offset, fwd))), 仰: deg(elev) };
+  return { dist: Math.log(dist), 方: deg(Math.atan2(-dot(offset, right), -dot(offset, fwd))), 仰: deg(elev) };
 };
 
 // ---------- 视线：骑手落在画面 (x, y) 上 ----------
@@ -144,7 +144,7 @@ const fromLegacy = (legacy: LegacyParams, pullIn = true): Framing => {
   const dist = len(offset);
   const fw = norm(sub(target, cam));
   const [x, y] = project(cam, fw, legacy.focalLength, rider);
-  return { 距: Math.log(dist), 方: deg(Math.atan2(-offset[0], -offset[1])), 仰: deg(Math.asin(offset[2] / dist)), x, y, 焦: Math.log(legacy.focalLength), 偏: legacy.lookBoss };
+  return { dist: Math.log(dist), 方: deg(Math.atan2(-offset[0], -offset[1])), 仰: deg(Math.asin(offset[2] / dist)), x, y, 焦: Math.log(legacy.focalLength), 偏: legacy.lookBoss };
 };
 // 一串关键帧（没写的参数沿用前一个，最前面是巡航）换算成 P 的关键帧。`pullInAt`：每个关键帧拉不拉（巨人屋外侧视不拉）
 export type LegacyKey = [number, Partial<LegacyParams>];
@@ -165,7 +165,7 @@ export const convertKeys = (ks: LegacyKey[], pullInAt: (i: number) => boolean = 
 // 巡航（boss 之间高速飞）用广角（见 lib/飞行路径.ts 的 WIDE_LENS）：18mm → 10mm，距离按同样倍数推近，骑手在画面上的位置、大小不变。
 // 起飞、boss 近景、降落各有自己的关键帧（没写的参数照 legacyCruise 的 18mm），进出时按 ln 焦距、ln 距离渐变过去
 const narrowCruise = fromLegacy(legacyCruise);
-export const cruiseFraming: Framing = { ...narrowCruise, 焦: Math.log(WIDE_LENS), 距: narrowCruise.距 + Math.log(WIDE_LENS / legacyCruise.focalLength) };
+export const cruiseFraming: Framing = { ...narrowCruise, 焦: Math.log(WIDE_LENS), dist: narrowCruise.dist + Math.log(WIDE_LENS / legacyCruise.focalLength) };
 // 关键帧插值（lib/anim.ts 的 smooth：单调三次 Hermite，不冲过关键帧）
 export const sampleKeys = (ks: Keys[], t: number, anchor = 0): Framing => {
   const result = { ...cruiseFraming };
@@ -176,10 +176,10 @@ export const sampleKeys = (ks: Keys[], t: number, anchor = 0): Framing => {
 // ---------- 孔道：钻墙洞、洞道时镜头夹在洞里 ----------
 // 各段 编排.ts 的孔道：相对贯穿点的路程区间和洞里允许的 `侧`（右为正）、`高`（相对扫帚杆）。镜头所在处（投到路线上）落进去时，往右 / 往上的偏移夹在洞口里
 // （两头 2 米渐变；绕圈转到扫帚侧前方时只在真落在洞里的那一段夹，不渐变）
-type Bore = { s0: number; s1: number; side: number; 高: [number, number] };
+type Bore = { s0: number; s1: number; side: number; height: [number, number] };
 const bores: Bore[] = (Object.keys(route.pierceTable) as route.BossName[]).flatMap((bossName) => {
   const sp = route.markDist(`${bossName}.贯穿`);
-  return ((boreSources[bossName] ?? []) as { a: [number, number]; side: number; 高: [number, number] }[]).map((k) => ({ s0: sp + k.a[0], s1: sp + k.a[1], side: k.side, 高: k.高 }));
+  return ((boreSources[bossName] ?? []) as { a: [number, number]; side: number; height: [number, number] }[]).map((k) => ({ s0: sp + k.a[0], s1: sp + k.a[1], side: k.side, height: k.height }));
 });
 export const clampToBore = (camPos: Vec, g: number, azimuth: number) => {
   const sr = route.broom(g).s;
@@ -199,7 +199,7 @@ export const clampToBore = (camPos: Vec, g: number, azimuth: number) => {
     const side = dot(sub(out, routePt), right);
     const height = out[2] - routePt[2];
     const sideClamped = Math.max(-k.side, Math.min(k.side, side));
-    const heightClamped = Math.max(k.高[0], Math.min(k.高[1], height));
+    const heightClamped = Math.max(k.height[0], Math.min(k.height[1], height));
     out = add(out, add(mul(right, (sideClamped - side) * weight), [0, 0, (heightClamped - height) * weight]));
   }
   return out;

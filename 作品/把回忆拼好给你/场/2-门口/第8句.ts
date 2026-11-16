@@ -19,7 +19,7 @@ export const line8ShotGroundFromBottom = 0.75;
 /** 给 门口画布 的取景（用法同 参数.ts 的 整屏镜头：<门口画布 {...第8句镜头} …>，气泡缩放给 第8句镜头N；全片不描边，不带描边宽）。
  *  门那一格在画面正中（一屏 10 格宽，左右各 5 格）：哈气时苦力怕、她、你都在里面；苦力怕从画框左边走进来（定稿：不用一开始就在画里） */
 export const line8Shot = {
-  framing: { 中心: [0, 1440 / 2 / cellPx(line8ShotCount) - line8ShotGroundFromBottom], pxPerCell: cellPx(line8ShotCount) } as DoorFraming,
+  framing: { center: [0, 1440 / 2 / cellPx(line8ShotCount) - line8ShotGroundFromBottom], pxPerCell: cellPx(line8ShotCount) } as DoorFraming,
 } as const;
 
 // ---------- 哈气那一拍 ----------

@@ -22,7 +22,7 @@ const carpetThickness = 1 / 16;
 export const church = {
   /** 整块地（含院子）的范围，结构坐标 [x0, y0, z0, x1, y1, z1]：87×77×97。尖顶（北塔，结构 (43,80,24)）到 y 80；y 82 那一格是东北角 (86,82,0) 悬空的一根去皮樱花原木。
    * 原结构自带、会入镜的：院子四周一圈基岩边（y 6～7）、三个悬空的 goety:lofty_chest（结构 (27,13,15)、(78,17,71)、(12,27,7)），要不要留等用户定，藏掉用 粉色教堂 的 hide */
-  范围: [0, 6, 0, 87, 83, 97] as const,
+  bounds: [0, 6, 0, 87, 83, 97] as const,
   grassTopY: 7,
   floorTopY: 9,
   /** 跳舞位（调研定的推荐位置）：祭坛前十字交叉处的空地，结构 x 34～52、z 26～33，19×8 格；头顶最低的是 y 27 的梁（净高 18 格），吊灯垂在 x 42～44、z 31～33、最低到 y 20（净高 11 格），东西两边 x 34、52 的墙饰从 y 16 起；地上是粉色心形地毯。人站结构 (43,9,30)，面朝南 */
@@ -44,10 +44,10 @@ export const PinkChurch: React.FC<{ hide?: number[][]; clearPlants?: number[][] 
 // 教堂的灯：数都是 Agent 暂定的，用户没看过；用户改了只改这里。照游戏截图调到亮度差不多：游戏里屋里屋外都是均匀的天光加方块光，
 // 不同朝向的面亮度不同（顶 1、南北 0.8、东西 0.6）。这里用天光（上亮下暗）加一盏不投影的平行光分出朝向，没打点光源、没开阴影。
 export const churchLight = {
-  skylight: { 天: '#ffffff', ground: '#d9c7cf', 强: 1.9 },
-  ambient: { 色: '#fff4f6', 强: 0.45 },
+  skylight: { 天: '#ffffff', ground: '#d9c7cf', strength: 1.9 },
+  ambient: { 色: '#fff4f6', strength: 0.45 },
   /** 平行光从东南上方来：南立面（正门）是受光面 */
-  directional: { 色: '#fff6ea', 强: 1.1, dir: [0.35, -0.6, 0.72] as V3 },
+  directional: { 色: '#fff6ea', strength: 1.1, dir: [0.35, -0.6, 0.72] as V3 },
 };
 
 /** 教堂的灯：放进和 粉色教堂 同一个 Z 朝上的 group。屋里屋外同一套 */
@@ -58,9 +58,9 @@ export const ChurchLighting: React.FC = () => {
   return (
     <>
       {/* 天光的「上」是灯的位置方向（Z 朝上） */}
-      <hemisphereLight args={[skylight.天, skylight.ground, skylight.强]} position={[0, 0, 1]} />
-      <ambientLight color={ambient.色} intensity={ambient.强} />
-      <directionalLight color={directional.色} intensity={directional.强} position={directional.dir} />
+      <hemisphereLight args={[skylight.天, skylight.ground, skylight.strength]} position={[0, 0, 1]} />
+      <ambientLight color={ambient.色} intensity={ambient.strength} />
+      <directionalLight color={directional.色} intensity={directional.strength} position={directional.dir} />
     </>
   );
 };

@@ -13,11 +13,11 @@ export const base = (): FileTable => ({
   'engine/段/段定义.ts': fs.readFileSync(path.join(codeRoot(), 'engine', '段', '段定义.ts'), 'utf8'),
   'engine/段/按时取值.ts': fs.readFileSync(path.join(codeRoot(), 'engine', '段', '按时取值.ts'), 'utf8'),
   '作品/应力转动/清单.ts': [
-    "export const manifest = [{ 键: '7-甲', 章: 7 }];",
-    "export const segDir = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
+    "export const manifest = [{ key: '7-甲', 章: 7 }];",
+    "export const segDir = (key: string) => (key.startsWith('核对-') ? `核对/${key.slice(3)}` : `段/${key}`);",
   ].join('\n'),
-  '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
-  '作品/应力转动/段/7-甲/画面.tsx': "import 图 from 'asset:贴图/甲';\nexport default () => <img src={图} />;\n",
+  '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [] });\n",
+  '作品/应力转动/段/7-甲/画面.tsx': "import image from 'asset:贴图/甲';\nexport default () => <img src={image} />;\n",
   'engine/core/例外.ts': fs.readFileSync(path.join(codeRoot(), 'engine', 'core', '例外.ts'), 'utf8'),
   '作品/应力转动/旧名.tsv': '类别\t旧名\t新键\t备注\n段号\t7-1-1\t7-甲\t\n段名\t7-老名\t7-甲\t改名\n',
   '作品/应力转动/规矩.toml': [
@@ -33,8 +33,8 @@ export const base = (): FileTable => ({
   ].join('\n'),
   '作品/应力转动/台词.toml': '',
   'assets/registry/贴图.toml': ['[["资产"]]', 'id = "贴图/甲"', '"类别" = "贴图"', '"来源" = "手工:测试"', '"许可" = "MIT"', '"可见性" = "公开"'].join('\n'),
-  'assets/资产锁.json': JSON.stringify({ '贴图/甲': { sha256: 'a'.repeat(64), 后缀: '.png', 大小: 3, 库: 'store' } }),
-  'assets/地形版本.json': JSON.stringify({ 包: {} }),
+  'assets/资产锁.json': JSON.stringify({ '贴图/甲': { sha256: 'a'.repeat(64), suffix: '.png', size: 3, lib: 'store' } }),
+  'assets/地形版本.json': JSON.stringify({ pack: {} }),
 });
 
 /** 文件表里的 '<目录>/资产锁.json' 是整份锁的简写（后面的层整份顶掉前面的），写进仓库时展开成 <目录>/资产锁/<id>.json 一件一个文件 */
@@ -63,7 +63,7 @@ export const makeRepo = (...fileLayers: FileTable[]): string => {
 };
 
 /** 在样例仓库上跑一类规则，返回违规文本（带文件前缀，方便 toMatch）和整份报告 */
-export const runRule = async (ruleName: RuleKind, root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; 作品?: string } = {}) => {
+export const runRule = async (ruleName: RuleKind, root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; work?: string } = {}) => {
   const c = new CheckContext(root, options);
   const report = new CheckReport();
   try {
@@ -72,5 +72,5 @@ export const runRule = async (ruleName: RuleKind, root: string, options: { depth
     c.finalize();
     fs.rmSync(root, { recursive: true, force: true });
   }
-  return { violations: report.violations.map((q) => `${q.文件 ?? ''}${q.行 ? `:${q.行}` : ''} ${q.文本}`), report };
+  return { violations: report.violations.map((q) => `${q.file ?? ''}${q.行 ? `:${q.行}` : ''} ${q.text}`), report };
 };

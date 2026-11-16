@@ -48,52 +48,52 @@ export const estimateTiming = (label: string, timingFile = timingLogPath()): num
   return secLines.length ? secLines[Math.floor(secLines.length / 2)]! : null;
 };
 
-export type RunEvent = { 时间: string; 级别: '信息' | '警告' | '错误'; 文本: string; /** 命令抛出的错（cli/路由.ts）：屏幕上不一定打，这里总记 */ 调用栈?: string };
+export type RunEvent = { time: string; level: '信息' | '警告' | '错误'; text: string; /** 命令抛出的错（cli/路由.ts）：屏幕上不一定打，这里总记 */ stack?: string };
 
 export class RunRecord {
-  任务?: string;
+  task?: string;
   private ended = false;
-  命令: string;
-  参数: string[];
+  command: string;
+  params: string[];
   startMs = Date.now();
-  事件: RunEvent[] = [];
-  产物: string[] = [];
+  events: RunEvent[] = [];
+  artifacts: string[] = [];
   /** still、film 渲段的分阶段耗时（阶段.ts）；没有就不写进记录 */
-  阶段: StageRecord[] = [];
+  stage: StageRecord[] = [];
 
   constructor(command: string, params: string[]) {
-    this.命令 = command;
-    this.参数 = params;
+    this.command = command;
+    this.params = params;
   }
 
-  log(level: RunEvent['级别'], messageText: string) {
-    this.事件.push({ 时间: utcTime(), 级别: level, 文本: messageText });
+  log(level: RunEvent['level'], messageText: string) {
+    this.events.push({ time: utcTime(), level: level, text: messageText });
     if (level !== '信息') console.error(`${level === '警告' ? '!!' : '✗'} ${messageText}`);
   }
 
-  结束(exitCode: number) {
+  endedAt(exitCode: number) {
     if(this.ended)return;this.ended=true;
     const elapsedSec = (Date.now() - this.startMs) / 1000;
-    const commandLine = maskCommand(['anim', this.命令, ...this.参数]);
+    const commandLine = maskCommand(['anim', this.command, ...this.params]);
     try {
-      recordTiming(`anim ${this.命令}`, this.startMs, elapsedSec, exitCode, commandLine);
+      recordTiming(`anim ${this.command}`, this.startMs, elapsedSec, exitCode, commandLine);
       const dir = runLogDir();
       fs.mkdirSync(dir, { recursive: true });
-      const fileName = `${utcTime(this.startMs).replace(/[-:]/g, '').replace('T', '-').replace('Z', '')}-${this.命令}-${process.pid}.json`;
+      const fileName = `${utcTime(this.startMs).replace(/[-:]/g, '').replace('T', '-').replace('Z', '')}-${this.command}-${process.pid}.json`;
       const runRecord = {
-        任务: this.任务,
-        命令: commandLine,
-        开始: utcTime(this.startMs),
-        秒: Number(elapsedSec.toFixed(1)),
-        退出码: exitCode,
-        主机: config('主机'),
-        平台: `${process.platform}-${process.arch}`,
+        task: this.task,
+        command: commandLine,
+        startedAt: utcTime(this.startMs),
+        sec: Number(elapsedSec.toFixed(1)),
+        exitCode: exitCode,
+        host: config('主机'),
+        platform: `${process.platform}-${process.arch}`,
         node: process.version,
-        代码: commitStatus(),
-        工作目录: process.cwd(),
-        事件: this.事件,
-        产物: this.产物,
-        ...(this.阶段.length ? { 阶段: this.阶段 } : {}),
+        code: commitStatus(),
+        cwd: process.cwd(),
+        events: this.events,
+        artifacts: this.artifacts,
+        ...(this.stage.length ? { stage: this.stage } : {}),
       };
       fs.writeFileSync(path.join(dir, fileName), JSON.stringify(runRecord, null, 2) + '\n', 'utf8');
     } catch (e) {

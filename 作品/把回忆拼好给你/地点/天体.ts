@@ -28,7 +28,7 @@ export const celestialPosition = (tick: number, arc: SkyArc) => {
   const r = arc.radius;
   const rx = arc.radiusX ?? r;
   return {
-    sun: { x: cx - Math.sin(a) * rx, z: cz + Math.cos(a) * r, 高: Math.cos(a) },
-    moon: { x: cx + Math.sin(a) * rx, z: cz - Math.cos(a) * r, 高: -Math.cos(a), phase: moonPhase(tick) },
+    sun: { x: cx - Math.sin(a) * rx, z: cz + Math.cos(a) * r, height: Math.cos(a) },
+    moon: { x: cx + Math.sin(a) * rx, z: cz - Math.cos(a) * r, height: -Math.cos(a), phase: moonPhase(tick) },
   };
 };

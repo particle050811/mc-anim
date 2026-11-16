@@ -323,7 +323,7 @@ void main() {
   oCol = vec4(max(uM * st * ${ATMO_GAIN}, 0.0), 1.0);
 }`;
 
-type GpuSky = { rt: THREE.WebGLRenderTarget; 场: THREE.Scene; material: THREE.ShaderMaterial; 机: THREE.Camera; lut: THREE.Data3DTexture };
+type GpuSky = { rt: THREE.WebGLRenderTarget; scene: THREE.Scene; material: THREE.ShaderMaterial; machine: THREE.Camera; lut: THREE.Data3DTexture };
 let gpu: GpuSky | null = null;
 const getGpu = (data: Float32Array) => {
   if (gpu) return gpu;
@@ -361,7 +361,7 @@ const getGpu = (data: Float32Array) => {
   quadMesh.frustumCulled = false;
   const scene = new THREE.Scene();
   scene.add(quadMesh);
-  return (gpu = { rt, 场: scene, material, 机: new THREE.OrthographicCamera(), lut: lutTex });
+  return (gpu = { rt, scene: scene, material, machine: new THREE.OrthographicCamera(), lut: lutTex });
 };
 /** GPU 天色图要画的太阳方向（场景坐标、单位长）；画布的 useFrame 里调 备天色图 才真画 */
 let pendingSun: number[] | null = null;
@@ -372,7 +372,7 @@ export const prepareSkyColorMap = (gl: THREE.WebGLRenderer) => {
   (gpu.material.uniforms.uSun!.value as THREE.Vector3).set(pendingSun[0]!, pendingSun[1]!, pendingSun[2]!);
   const prevRenderTarget = gl.getRenderTarget();
   gl.setRenderTarget(gpu.rt);
-  gl.render(gpu.场, gpu.机);
+  gl.render(gpu.scene, gpu.machine);
   gl.setRenderTarget(prevRenderTarget);
   pendingSun = null;
 };
@@ -430,7 +430,7 @@ const closeSky = () => {
 };
 
 /** 放进画布里打开（同 大气.ts 的 <Atmosphere />）：sun = 场景坐标指向太阳；far = 地形远端（米）；算法 = 天色图怎么展开 */
-export const PhotonSky: React.FC<{ sun: readonly [number, number, number]; far: number; 算法: SkyColorAlgorithm }> = ({ sun, far, 算法: algorithm }) => {
+export const PhotonSky: React.FC<{ sun: readonly [number, number, number]; far: number; algorithm: SkyColorAlgorithm }> = ({ sun, far, algorithm: algorithm }) => {
   useWriter(skySlot, closeSky);
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;

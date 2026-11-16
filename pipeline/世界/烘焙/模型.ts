@@ -66,5 +66,5 @@ export const trainPackModel = (voxelLib: VoxelLib, dir: string, transform: (d: S
     }
     if (neutralBytes <= candidateBytes) sectionModel = neutralModel;
   }
-  return { 模型: sectionModel, 区段: sectionCount, 样本数: sampleCount, candidateBytes, neutralBytes };
+  return { model: sectionModel, sections: sectionCount, 样本数: sampleCount, candidateBytes, neutralBytes };
 };

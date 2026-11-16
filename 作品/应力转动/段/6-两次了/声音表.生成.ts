@@ -3,31 +3,31 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/6-李樱-烦死了": {
-      "时长": 1.06,
-      "峰值": -1.5,
-      "响度": -18.3,
+      "duration": 1.06,
+      "peakDb": -1.5,
+      "loudness": -18.3,
       "sha": "9cd68b856272"
     },
     "音效/block.sculk_sensor.clicking.3": {
-      "时长": 0.943896,
-      "峰值": -1.6,
-      "响度": -17.8,
+      "duration": 0.943896,
+      "peakDb": -1.6,
+      "loudness": -17.8,
       "sha": "3003e277b377"
     },
     "音效/block.sculk_shrieker.shriek.3": {
-      "时长": 6.484146,
-      "峰值": -1.1,
-      "响度": -15.6,
+      "duration": 6.484146,
+      "peakDb": -1.1,
+      "loudness": -15.6,
       "sha": "1eeecb1c8939"
     }
   },
-  "台词": {
+  "lines": {
     "6-李樱-烦死了": {
-      "配音": "配音/6-李樱-烦死了",
-      "开口": 0.03,
-      "时长": 1.06
+      "voice": "配音/6-李樱-烦死了",
+      "mouthOpen": 0.03,
+      "duration": 1.06
     }
   }
 };

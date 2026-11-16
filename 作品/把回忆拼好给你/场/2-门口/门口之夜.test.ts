@@ -49,7 +49,7 @@ const swapRocketFrame = Math.round(swapRocketSec * fps);
 const project = (frame: number, x: number, z: number, y = 0.5) => {
   const j = shotAt(frame);
   const k = 16 * j.N;
-  return { x: 1280 + (x - j.中心[0]) * k, y: 720 - (z + (j.topDepth / j.N) * y - j.中心[1]) * k };
+  return { x: 1280 + (x - j.center[0]) * k, y: 720 - (z + (j.topDepth / j.N) * y - j.center[1]) * k };
 };
 /** 存档图标裁的画面正中的正方形（成片像素 x 560～2000） */
 const inIconRange = (x: number) => x >= 560 && x <= 2000;
@@ -57,7 +57,7 @@ const inIconRange = (x: number) => x >= 560 && x <= 2000;
 const moonAt = (frame: number) => {
   const sky = skyFraming(shotAt(frame));
   const m = celestialPosition(nightTick(frame / fps), nightSkyArc).moon;
-  return { x: 1280 + (m.x - sky.中心[0]) * sky.pxPerCell, y: 720 - (m.z - sky.中心[1]) * sky.pxPerCell };
+  return { x: 1280 + (m.x - sky.center[0]) * sky.pxPerCell, y: 720 - (m.z - sky.center[1]) * sky.pxPerCell };
 };
 const moonHalfWidth = 96;
 
@@ -67,14 +67,14 @@ const farBlocks = SurroundBlocks(behindHouseRange);
 const farViewTop = (frame: number, left: number, right: number) => {
   const j0 = shotAt(frame);
   const k = 16 * j0.N;
-  const horizonPx = 720 + (j0.中心[1] - (4 * j0.topDepth) / j0.N - 0.3125) * k;
+  const horizonPx = 720 + (j0.center[1] - (4 * j0.topDepth) / j0.N - 0.3125) * k;
   let farTop = Infinity;
   for (const b of [...farBlocks.plains, ...farBlocks.cherryGrove]) {
     const [i, j, layerY] = b.位 as [number, number, number];
     const height = layerY + 1 - 1.62;
     if (height <= 0) continue;
     const depthScale = (6 * k) / (j + 6);
-    const x1 = 1280 + (i - 0.5 - j0.中心[0]) * depthScale, x2 = 1280 + (i + 0.5 - j0.中心[0]) * depthScale;
+    const x1 = 1280 + (i - 0.5 - j0.center[0]) * depthScale, x2 = 1280 + (i + 0.5 - j0.center[0]) * depthScale;
     if (x2 < left || x1 > right) continue;
     farTop = Math.min(farTop, horizonPx - height * depthScale);
   }
@@ -87,37 +87,37 @@ describe('门口之夜的段（第 9–11 句）', () => {
     expect(endFrame).toBe(toSongFrame(lineAt(12).起));
     expect(segWindows[0]!.止帧).toBe(segWindows[1]!.起帧);
     expect(segWindows[1]!.止帧).toBe(segWindows[2]!.起帧);
-    expect(mainCutEvents.nightfall.帧).toBe(startFrame);
+    expect(mainCutEvents.nightfall.frame).toBe(startFrame);
   });
 
   it('按词写：四个词落在第 9 句那段里、按顺序，两行隔两拍；照片、碎裂、下线落在最后一段里', () => {
-    const writeFrames = writeEventNames.map((k) => mainCutEvents[k].帧);
+    const writeFrames = writeEventNames.map((k) => mainCutEvents[k].frame);
     for (const f of writeFrames) expect(f >= segWindows[0]!.起帧 && f < segWindows[0]!.止帧).toBe(true);
     expect([...writeFrames].sort((a, b) => a - b)).toEqual(writeFrames);
     expect(writeFrames[2]! - writeFrames[0]!).toBe(Math.round(beatAt(72.5) * fps) - Math.round(beatAt(70.5) * fps));
     for (const k of ['screenshotFreeze', 'worldShatters', 'logOff'] as const) {
-      const f = mainCutEvents[k].帧;
+      const f = mainCutEvents[k].frame;
       expect(f >= segWindows[2]!.起帧 && f < segWindows[2]!.止帧).toBe(true);
     }
-    expect(freezeFrame).toBe(mainCutEvents.screenshotFreeze.帧);
+    expect(freezeFrame).toBe(mainCutEvents.screenshotFreeze.frame);
     expect(photoFrame).toBe(freezeFrame + photoLateSec * fps);
   });
 
   it('牌上写字和歌词的字错开：写上一行那一帧离第 9、10 句每个字唱到的那一帧（和 1/24 秒以前拼齐）至少 1/8 秒（24 fps 时 3 帧）', () => {
     const singFrames = [...perChar[9]!, ...perChar[10]!].map(toSongFrame);
     for (const k of writeEventNames) {
-      const f = mainCutEvents[k].帧;
+      const f = mainCutEvents[k].frame;
       for (const g of singFrames) expect(Math.min(Math.abs(f - g), Math.abs(f - (g - fps * legacyFrameSec(1)))) / fps, `${k} 和第 ${g} 帧`).toBeGreaterThanOrEqual(legacyFrameSec(3));
     }
   });
 
   it('牌上的字只有 参数.ts 告示牌行们 一处：写字一之前空着，之后一个词一个词写上（核查 10-24：原来一行整行冒出来），写字二续写全', () => {
-    const firstWritingFrame = mainCutEvents.writeLine1Word1.帧;
+    const firstWritingFrame = mainCutEvents.writeLine1Word1.frame;
     expect(signLinesAt((firstWritingFrame - 1) / fps)).toEqual(['', '', '', '']);
     expect(setupState(firstWritingFrame).signLines).toEqual(['', signWords[0]![0], '', '']);
-    expect(setupState(mainCutEvents.writeLine1Word2.帧).signLines).toEqual([signRows[0], signRows[1], '', signRows[3]]);
-    expect(setupState(mainCutEvents.writeLine2Word1.帧).signLines).toEqual(['', signRows[1], signWords[1]![0], '']);
-    expect(setupState(mainCutEvents.writeLine2Word2.帧).signLines).toEqual(signRows);
+    expect(setupState(mainCutEvents.writeLine1Word2.frame).signLines).toEqual([signRows[0], signRows[1], '', signRows[3]]);
+    expect(setupState(mainCutEvents.writeLine2Word1.frame).signLines).toEqual(['', signRows[1], signWords[1]![0], '']);
+    expect(setupState(mainCutEvents.writeLine2Word2.frame).signLines).toEqual(signRows);
     expect(setupState(endFrame - 1).signLines).toEqual(signRows);
   });
 });
@@ -127,7 +127,7 @@ describe('烟花（原版 1.20.1 的走法）', () => {
     const burstEvents = ['firework1Burst', 'firework3Burst', 'bigFireworkBurst'] as const;
     expect(fireworks.length).toBe(burstEvents.length);
     fireworks.forEach((firework, i) => {
-      expect(burstSec(firework)).toBeCloseTo(mainCutEvents[burstEvents[i]!].秒, 9);
+      expect(burstSec(firework)).toBeCloseTo(mainCutEvents[burstEvents[i]!].sec, 9);
       expect(firework.flightTick).toBeGreaterThanOrEqual(11);
       expect(firework.flightTick).toBeLessThanOrEqual(22);
     });
@@ -136,20 +136,20 @@ describe('烟花（原版 1.20.1 的走法）', () => {
     // 定格帧那一刻已经炸了，前一帧还没炸
     expect(freezeFrame / fps).toBeGreaterThanOrEqual(burstSec(bigFirework));
     expect((freezeFrame - 1) / fps).toBeLessThan(burstSec(bigFirework));
-    const bigBlastCue = doorNightSounds.find((s) => s.名.endsWith('大炸'))!;
+    const bigBlastCue = doorNightSounds.find((s) => s.name.endsWith('大炸'))!;
     expect(bigBlastCue.起帧).toBe(freezeFrame);
   });
 
   it('最后一发升空：离地一格以后，火箭周围一格内前两发的火花都已经烧过一半、缩成小火花（spark_0～3，刚炸开的是 spark_7）', () => {
     const lastFirework = fireworks[fireworks.length - 1]!;
-    for (let f = mainCutEvents.finalFireworkLaunch.帧 + 1; f < freezeFrame; f++) {
+    for (let f = mainCutEvents.finalFireworkLaunch.frame + 1; f < freezeFrame; f++) {
       const p = rocketPos(lastFirework, f / fps)!;
       expect(p, `第 ${f} 帧`).not.toBeNull();
       if (p[2] < 1) continue;
       for (const firework of fireworks) {
         if (firework === lastFirework) continue;
         for (const h of fireworkSparks(firework, f / fps))
-          if (Math.abs(h.p[0] - p[0]) < 1 && Math.abs(h.p[2] - p[2]) < 1) expect(h.贴图, `第 ${f} 帧 第${firework.名}发`).toBeLessThanOrEqual(3);
+          if (Math.abs(h.p[0] - p[0]) < 1 && Math.abs(h.p[2] - p[2]) < 1) expect(h.贴图, `第 ${f} 帧 第${firework.name}发`).toBeLessThanOrEqual(3);
       }
     }
   });
@@ -184,8 +184,8 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       expect(j.N % 2, `第 ${f} 帧`).toBe(0);
       expect(j.topDepth).toBe(2);
       if (j.moving) continue;
-      const ex = (0.5 + j.中心[0]) * k;
-      const ez = j.中心[1] * k;
+      const ex = (0.5 + j.center[0]) * k;
+      const ez = j.center[1] * k;
       expect(Math.abs(ex - Math.round(ex))).toBeLessThan(1e-6);
       expect(Math.abs(Math.round(ex) % 2)).toBe(0);
       expect(Math.abs(ez - Math.round(ez))).toBeLessThan(1e-6);
@@ -207,7 +207,7 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     const still = frameNums.filter((f) => !shotAt(f).moving);
     expect(still.length).toBeGreaterThan(60);
     for (const f of frameNums.filter((f) => shotAt(f).moving && shotAt(f - 1).moving)) {
-      const [a, b] = [shotAt(f - 1).中心, shotAt(f).中心];
+      const [a, b] = [shotAt(f - 1).center, shotAt(f).center];
       expect(a[0] !== b[0] || a[1] !== b[1], `第 ${f} 帧`).toBe(true);
     }
   });
@@ -216,12 +216,12 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     for (let f = startFrame + 1; f < endFrame; f++) {
       const [a, b] = [shotAt(f - 1), shotAt(f)];
       expect(Math.max(a.N / b.N, b.N / a.N), `第 ${f} 帧`).toBeLessThanOrEqual(1.5);
-      expect(Math.abs(project(f, a.中心[0], a.中心[1], 0).x - 1280), `第 ${f} 帧`).toBeLessThan(1280);
+      expect(Math.abs(project(f, a.center[0], a.center[1], 0).x - 1280), `第 ${f} 帧`).toBeLessThan(1280);
     }
   });
 
   it('开场同第 8 句的机位（N 16、中心）匹配剪进来，原样停 1/6 秒（24 fps 时 4 帧）；N 16 一直留到 推起（0.58 秒）才往牌子推', () => {
-    for (let f = startFrame; (f - startFrame) / fps < legacyFrameSec(4); f++) expect(shotAt(f), `第 ${f} 帧`).toEqual({ N: line8ShotCount, topDepth: 2, 中心: line8Shot.framing.中心 });
+    for (let f = startFrame; (f - startFrame) / fps < legacyFrameSec(4); f++) expect(shotAt(f), `第 ${f} 帧`).toEqual({ N: line8ShotCount, topDepth: 2, center: line8Shot.framing.center });
     let f = startFrame;
     while (shotAt(f).N === line8ShotCount) f++;
     expect(f / fps).toBeGreaterThan(shotSegment.pushStart);
@@ -230,11 +230,11 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
   });
 
   it('种下树苗那一帧到往牌子推之前，树苗那一格整个在画里（离左边 64 像素以上）', () => {
-    for (let f = plantFrame; f <= mainCutEvents.pushToSign.帧; f++) expect(project(f, saplingX - 0.5, 0).x, `第 ${f} 帧`).toBeGreaterThanOrEqual(64);
+    for (let f = plantFrame; f <= mainCutEvents.pushToSign.frame; f++) expect(project(f, saplingX - 0.5, 0).x, `第 ${f} 帧`).toBeGreaterThanOrEqual(64);
   });
 
   it('两行字都在牌子特写里写上（N 84）：牌字在画面正中、你在画外；写完的两行在特写里留 0.35 秒以上（按词写只留得出这么多），拉开头 1/8 秒（24 fps 时 3 帧）N 还在 60 以上', () => {
-    for (let f = mainCutEvents.writeLine1Word1.帧; f < shotSegment.followStart * fps; f++) {
+    for (let f = mainCutEvents.writeLine1Word1.frame; f < shotSegment.followStart * fps; f++) {
       expect(shotAt(f).N, `第 ${f} 帧`).toBe(signNearCount);
       const sign = project(f, signFace.x, signFace.z, signFace.y);
       expect(Math.abs(sign.x - 1280)).toBeLessThan(2);
@@ -242,12 +242,12 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       // 你朝西侧身：胳膊往前伸到 x − 0.375
       expect(project(f, YouState(f).x - 0.375, 1).x, `第 ${f} 帧`).toBeGreaterThan(2560);
     }
-    expect(shotSegment.followStart - mainCutEvents.writeLine2Word2.帧 / fps).toBeGreaterThanOrEqual(0.35);
+    expect(shotSegment.followStart - mainCutEvents.writeLine2Word2.frame / fps).toBeGreaterThanOrEqual(0.35);
     for (let f = Math.ceil(shotSegment.followStart * fps); f / fps < shotSegment.followStart + legacyFrameSec(3); f++) expect(shotAt(f).N, `第 ${f} 帧`).toBeGreaterThanOrEqual(60);
   });
 
   it('火箭到手时镜头已经拉开（N 36 以内），你整个人和伸出去的手都在画里，不从画框边戳进来', () => {
-    for (let f = swapRocketFrame; f <= mainCutEvents.firework1Launch.帧; f++) {
+    for (let f = swapRocketFrame; f <= mainCutEvents.firework1Launch.frame; f++) {
       expect(shotAt(f).N, `第 ${f} 帧`).toBeLessThanOrEqual(36);
       expect(project(f, youStand - 0.8, 1).x, `第 ${f} 帧`).toBeGreaterThan(0);
       expect(project(f, youStand + 0.3, 1).x, `第 ${f} 帧`).toBeLessThan(2560);
@@ -262,7 +262,7 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       expect(shotAt(f).N).toBe(farCount);
       const [x, y, z] = burstPoint(firework);
       const p = project(f, x, z, y);
-      expect(Math.hypot(p.x - 1280, p.y - 720), `第${firework.名}发`).toBeLessThan(32);
+      expect(Math.hypot(p.x - 1280, p.y - 720), `第${firework.name}发`).toBeLessThan(32);
     }
   });
 
@@ -272,7 +272,7 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       const [x, y, z] = burstPoint(firework);
       const p = project(f, x, z, y);
       const r = sphereRadius(firework.ballSize, (f / fps - burstSec(firework)) * 20) * 16 * shotAt(f).N;
-      expect(p.y + r, `第${firework.名}发`).toBeLessThan(farViewTop(f, p.x - r, p.x + r));
+      expect(p.y + r, `第${firework.name}发`).toBeLessThan(farViewTop(f, p.x - r, p.x + r));
     }
   });
 
@@ -312,7 +312,7 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       const p = project(f, x, z, y);
       const r = sphereRadius(firework.ballSize, (f / fps - burstSec(firework)) * 20) * 16 * shotAt(f).N;
       const m = moonAt(f);
-      expect(Math.hypot(p.x - m.x, p.y - m.y) - r - moonHalfWidth, `第${firework.名}发`).toBeGreaterThan(0);
+      expect(Math.hypot(p.x - m.x, p.y - m.y) - r - moonHalfWidth, `第${firework.name}发`).toBeGreaterThan(0);
     }
   });
 });
@@ -358,21 +358,21 @@ describe('人', () => {
 describe('下线：存档图标', () => {
   it('照原版：裁正中正方形，落定时 64×64 个点、一个点 8 个成片像素，斜度、相纸边收没', () => {
     // 缩好那一帧：下线那一帧已经走了一帧，缩秒 走完
-    const c = photoCard(mainCutEvents.logOff.帧 + Math.ceil(logoutIcon.shrinkSec * fps) - 1, 2560, 1440);
+    const c = photoCard(mainCutEvents.logOff.frame + Math.ceil(logoutIcon.shrinkSec * fps) - 1, 2560, 1440);
     expect(c.下).toBe(1);
-    expect(c.点).toBe(64);
+    expect(c.points).toBe(64);
     expect(c.w).toBe(512);
     expect(c.h).toBe(512);
     expect(c.borderWidth).toBe(0);
     expect(c.bottomEdge).toBe(0);
-    expect(c.角).toBe(0);
+    expect(c.angle).toBe(0);
     expect(c.源).toEqual([560, 0, 1440, 1440]);
     // 中心、上下沿落在偶数个成片像素上
     expect(c.cy % 2).toBe(0);
   });
 
   it('最后半秒是落定的图标和下线那行聊天', () => {
-    expect((endFrame - mainCutEvents.logOff.帧) / fps - (logoutIcon.shrinkSec - 1 / fps)).toBeGreaterThanOrEqual(0.5);
+    expect((endFrame - mainCutEvents.logOff.frame) / fps - (logoutIcon.shrinkSec - 1 / fps)).toBeGreaterThanOrEqual(0.5);
   });
 
   it('手机 390 宽：聊天字（原版字高 8 个界面像素）至少 11 像素高；图标下沿让开聊天栏暗底（y 950 起）', () => {
@@ -388,10 +388,10 @@ describe('声音', () => {
     for (const cue of doorNightSounds) {
       expect(Number.isInteger(cue.起帧)).toBe(true);
       expect(cue.起帧).toBeGreaterThanOrEqual(startFrame);
-      expect(cues.some((c) => c.名 === cue.名)).toBe(true);
+      expect(cues.some((c) => c.name === cue.name)).toBe(true);
     }
-    expect(doorNightSounds.find((s) => s.名 === '种樱花树苗')!.起帧).toBe(plantFrame);
-    const clickCue = doorNightSounds.find((s) => s.名 === '咔哒')!;
+    expect(doorNightSounds.find((s) => s.name === '种樱花树苗')!.起帧).toBe(plantFrame);
+    const clickCue = doorNightSounds.find((s) => s.name === '咔哒')!;
     expect(clickCue.起帧 + Math.round(0.13 * fps)).toBe(freezeFrame);
   });
 });

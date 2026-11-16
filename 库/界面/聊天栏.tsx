@@ -17,14 +17,14 @@ export const extraChatColors = {
 export type ChatSpan = { text: string; color?: string };
 // text：一段字，或几段不同颜色的字；color：整行默认颜色（不写是白）；起刻：进聊天栏的刻，和 ChatOverlay 的 刻 同一个钟；
 // 系统：系统消息带左边竖条（默认带），玩家发言写 false
-export type ChatLine = { text: string | ChatSpan[]; color?: string; startTick: number; 系统?: boolean };
+export type ChatLine = { text: string | ChatSpan[]; color?: string; startTick: number; system?: boolean };
 
-export const chatLineAlpha = (age: number): { 字: number; bottomAlpha: number } | null => {
+export const chatLineAlpha = (age: number): { char: number; bottomAlpha: number } | null => {
   if (age < 0 || age >= 200) return null;
   const k = Math.min(1, Math.max(0, (1 - age / 200) * 10)) ** 2;
   const textAlpha = Math.trunc(255 * k);
   if (textAlpha <= 3) return null;
-  return { 字: textAlpha / 255, bottomAlpha: Math.trunc(255 * k * 0.5) / 255 };
+  return { char: textAlpha / 255, bottomAlpha: Math.trunc(255 * k * 0.5) / 255 };
 };
 
 // 成就广播进聊天栏的那一行（`PlayerAdvancements.award`，成就开了 announce_to_chat 时发系统消息 chat.type.advancement.<种类>）。
@@ -56,9 +56,9 @@ export const ChatOverlay: React.FC<{ lines: ChatLine[]; 刻: number; s: number }
         const spans = typeof line.text === 'string' ? [{ text: line.text }] : line.text;
         return (
           <div key={i} style={{ position: 'absolute', left: 0, bottom: (40 + lineIndex * 9) * s, width: 332 * s, height: 9 * s, background: `rgba(0,0,0,${a.bottomAlpha})` }}>
-            {line.系统 !== false && <div style={{ position: 'absolute', left: 0, top: 0, width: 2 * s, height: 9 * s, background: `rgba(208,208,208,${a.字})` }} />}
+            {line.system !== false && <div style={{ position: 'absolute', left: 0, top: 0, width: 2 * s, height: 9 * s, background: `rgba(208,208,208,${a.char})` }} />}
             {/* 原版文字从行顶往下 1 像素起画，字形占下面 8 像素 */}
-            <div style={{ position: 'absolute', left: 4 * s, top: s, height: 8 * s, display: 'flex', alignItems: 'center', opacity: a.字 }}>
+            <div style={{ position: 'absolute', left: 4 * s, top: s, height: 8 * s, display: 'flex', alignItems: 'center', opacity: a.char }}>
               {spans.map((sp, k) => (
                 <UiText key={k} fontSize={fs} color={sp.color ?? line.color ?? chatColors.white} style={{ lineHeight: 1 }}>
                   {sp.text}

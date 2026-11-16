@@ -37,10 +37,10 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const scatterMineModel = getModel(scatterMineModelData, 'ScatterMineModel');
 const pulseFrames = [minePulse1Png, minePulse2Png, minePulse3Png, minePulse4Png].map(png);
-const sparkParticleClass: ParticleClass = { 帧: [bigElectric1Png, bigElectric2Png, bigElectric3Png].map(png), 选帧: '按年龄', 混合: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
-const redBurstParticleClass: ParticleClass = { 帧: [generic7Png, generic6Png, generic5Png, generic4Png, generic3Png, generic2Png, generic1Png, generic0Png].map(png), 选帧: '随机', 摩擦: 0.96, 色: [0.44, 0.05, 0.02], 大小: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5 };
+const sparkParticleClass: ParticleClass = { frame: [bigElectric1Png, bigElectric2Png, bigElectric3Png].map(png), 选帧: '按年龄', blend: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
+const redBurstParticleClass: ParticleClass = { frame: [generic7Png, generic6Png, generic5Png, generic4Png, generic3Png, generic2Png, generic1Png, generic0Png].map(png), 选帧: '随机', 摩擦: 0.96, 色: [0.44, 0.05, 0.02], size: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5 };
 
-const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const scatter: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const wholeTick = Math.floor(tick);
   const positions = minePositions(from, target);
@@ -55,9 +55,9 @@ const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
         速: [(-0.05 + r() * 0.05) * 0.25, (-0.05 + r() * 0.05) * 0.25, (-0.05 + r() * 0.05) * 0.25],
         寿命: 2 + Math.floor(r() * 2),
         radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 2,
-        种子: t,
+        seed: t,
       });
-    sparks.push({ 刻: mineDetonateTick, 位: pos, 速: [0.25, 0, 0], 寿命: 2 + Math.floor(r() * 2), radius: 0.1 * (r() * 0.5 + 0.5) * 4, 种子: 999 });
+    sparks.push({ 刻: mineDetonateTick, 位: pos, 速: [0.25, 0, 0], 寿命: 2 + Math.floor(r() * 2), radius: 0.1 * (r() * 0.5 + 0.5) * 4, seed: 999 });
     let n = 0;
     for (let a = -2; a <= 2; a++)
       for (let b = -2; b <= 2; b++)
@@ -65,7 +65,7 @@ const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
           if (Math.max(Math.abs(a), Math.abs(b), Math.abs(c)) < 2) continue;
           const d = [b + (r() - r()) * 0.5, c + (r() - r()) * 0.5, a + (r() - r()) * 0.5] as const;
           const scaledLength = Math.hypot(d[0], d[1], d[2]) / 0.5;
-          redBurst.push({ 刻: mineDetonateTick, 位: pos, 速: [d[0] / scaledLength, d[1] / scaledLength, d[2] / scaledLength], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)) + 4, radius: 0.1 * (r() * 0.5 + 0.5) * 2, 种子: i * 200 + n++ });
+          redBurst.push({ 刻: mineDetonateTick, 位: pos, 速: [d[0] / scaledLength, d[1] / scaledLength, d[2] / scaledLength], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)) + 4, radius: 0.1 * (r() * 0.5 + 0.5) * 2, seed: i * 200 + n++ });
         }
   });
   return (
@@ -81,8 +81,8 @@ const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
             <group rotation={[0, degToRad(90), 0]}>
               <group scale={[-s, -s, s]}>
                 <group position={[0, -1.45, 0]}>
-                  {!detonated && <ModelPart 模型={scatterMineModel} 图={png(wholeTick < 5 ? scatterMineGlowPng : scatterMinePng)} 画法="半透明" opacity={0.15} />}
-                  <ModelPart 模型={scatterMineModel} 图={png(scatterMineGlowPng)} 画法="半透明" opacity={brightnessFade} />
+                  {!detonated && <ModelPart model={scatterMineModel} image={png(wholeTick < 5 ? scatterMineGlowPng : scatterMinePng)} 画法="半透明" opacity={0.15} />}
+                  <ModelPart model={scatterMineModel} image={png(scatterMineGlowPng)} 画法="半透明" opacity={brightnessFade} />
                 </group>
               </group>
             </group>
@@ -95,11 +95,11 @@ const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
           if (age < 1 || age >= 30 || tick >= mineDetonateTick) return null;
           const radius = 1 + 0.1 * Math.abs(((age - 1) % 10) - 5);
           const frameIndex = Math.floor(mulberry32(seed * 7 + i * 100 + k * 10 + Math.floor((age - 1) / 5))() * 4);
-          return <GroundDecal key={`${i}-${k}`} 位={pos} 图={pulseFrames[frameIndex]!} radius={radius} lift={0.05 + k * 0.001} />;
+          return <GroundDecal key={`${i}-${k}`} 位={pos} image={pulseFrames[frameIndex]!} radius={radius} lift={0.05 + k * 0.001} />;
         }),
       )}
-      <TexturedParticles 类={sparkParticleClass} spawns={sparks} 秒={sec} />
-      <TexturedParticles 类={redBurstParticleClass} spawns={redBurst} 秒={sec} />
+      <TexturedParticles type={sparkParticleClass} spawns={sparks} sec={sec} />
+      <TexturedParticles type={redBurstParticleClass} spawns={redBurst} sec={sec} />
     </>
   );
 };

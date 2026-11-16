@@ -5,19 +5,19 @@
 import type { WorldDecl } from '../声明.ts';
 
 type Rect = [number, number, number, number]; // 方块 [x0, z0, x1, z1]
-export type DistantLayerTask = { 名: '粗' | '中' | '细'; step: number; 块边: number; 块: [number, number][] };
-export type DistantTask = { 维度: string; threads: number; 出: string; 层: DistantLayerTask[] };
+export type DistantLayerTask = { name: '粗' | '中' | '细'; step: number; tileEdge: number; tile: [number, number][] };
+export type DistantTask = { dimension: string; threads: number; 出: string; layers: DistantLayerTask[] };
 export const coarseTileEdge = 2048;
 
 export const importRects = (w: WorldDecl): Rect[] =>
-  w.预生成.块
-    .filter((k) => k.形状 === '矩形')
-    .map((k) => (k.两角 ? k.两角 : [k.中心![0] - k.半边![0], k.中心![1] - k.半边![1], k.中心![0] + k.半边![0], k.中心![1] + k.半边![1]]));
+  w.pregen.tile
+    .filter((k) => k.shape === '矩形')
+    .map((k) => (k.corners ? k.corners : [k.center![0] - k.halfSide![0], k.center![1] - k.halfSide![1], k.center![0] + k.halfSide![0], k.center![1] + k.halfSide![1]]));
 
 export const distantRange = (w: WorldDecl): Rect => {
-  if (!w.远景) throw new Error(`世界 ${w.名称} 没写 [远景]`);
+  if (!w.farView) throw new Error(`世界 ${w.displayName} 没写 [远景]`);
   const rs = importRects(w);
-  const outerExpand = w.远景.外扩;
+  const outerExpand = w.farView.outset;
   const alignDown = (v: number) => Math.floor(v / coarseTileEdge) * coarseTileEdge, alignUp = (v: number) => Math.ceil(v / coarseTileEdge) * coarseTileEdge;
   return [alignDown(Math.min(...rs.map((r) => r[0])) - outerExpand), alignDown(Math.min(...rs.map((r) => r[1])) - outerExpand), alignUp(Math.max(...rs.map((r) => r[2])) + outerExpand), alignUp(Math.max(...rs.map((r) => r[3])) + outerExpand)];
 };
@@ -38,9 +38,9 @@ export const distantLayers = (w: WorldDecl): DistantLayerTask[] => {
     return out;
   };
   return [
-    { 名: '粗', step: 32, 块边: coarseTileEdge, 块: tiles(coarseTileEdge, Infinity) },
-    { 名: '中', step: 16, 块边: 512, 块: tiles(512, w.远景!.中宽) },
-    { 名: '细', step: 8, 块边: 256, 块: tiles(256, w.远景!.细宽) },
+    { name: '粗', step: 32, tileEdge: coarseTileEdge, tile: tiles(coarseTileEdge, Infinity) },
+    { name: '中', step: 16, tileEdge: 512, tile: tiles(512, w.farView!.midWidth) },
+    { name: '细', step: 8, tileEdge: 256, tile: tiles(256, w.farView!.fineWidth) },
   ];
 };
 
@@ -48,8 +48,8 @@ export const distantLayers = (w: WorldDecl): DistantLayerTask[] => {
 export const countChunks = (layers: DistantLayerTask[]) => {
   const s = new Set<number>();
   for (const l of layers) {
-    const n = l.块边 / l.step + 1;
-    for (const [x0, z0] of l.块) for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) s.add((((x0 + i * l.step) >> 4) + 32768) * 65536 + (((z0 + j * l.step) >> 4) + 32768));
+    const n = l.tileEdge / l.step + 1;
+    for (const [x0, z0] of l.tile) for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) s.add((((x0 + i * l.step) >> 4) + 32768) * 65536 + (((z0 + j * l.step) >> 4) + 32768));
   }
   return s.size;
 };
@@ -60,9 +60,9 @@ export const splitTasks = (w: WorldDecl, outBase: string, parts: number, threads
   const layers = distantLayers(w);
   const zCuts = Array.from({ length: parts + 1 }, (_, k) => Z0 + Math.round(((Z1 - Z0) / coarseTileEdge) * (k / parts)) * coarseTileEdge);
   return Array.from({ length: parts }, (_, k) => ({
-    维度: w.维度,
+    dimension: w.dimension,
     threads,
     出: parts === 1 ? outBase : `${outBase}.${k + 1}`,
-    层: layers.map((l) => ({ ...l, 块: l.块.filter(([, z]) => z >= zCuts[k] && z < zCuts[k + 1]) })),
+    layers: layers.map((l) => ({ ...l, tile: l.tile.filter(([, z]) => z >= zCuts[k] && z < zCuts[k + 1]) })),
   }));
 };

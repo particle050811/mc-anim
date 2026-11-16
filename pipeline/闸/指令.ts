@@ -4,12 +4,12 @@ import { readJson, writeJson, promptOnly } from './文件.ts';
 import type { SchedulerEnv } from './调度环境.ts';
 export type Directive = {
     动作: string;
-    为什么: string;
-    时: number;
+    why: string;
+    timestamp: number;
     至?: number;
-    强?: boolean;
-    票?: string;
-    任务?: string;
+    strength?: boolean;
+    ticket?: string;
+    task?: string;
 };
 export const directiveFile = (e: SchedulerEnv, id: string) => path.join(e.lockDir, '指令', encodeURIComponent(id) + '.json');
 export const readDirective = (e: SchedulerEnv, id: string) => readJson<Directive>(directiveFile(e, id));
@@ -24,14 +24,14 @@ export const orderFile = (e: SchedulerEnv, lane: string) => path.join(e.schedule
 export const routeYield = (e: SchedulerEnv) => {
     const x = readJson<{
         动作: string;
-        为什么: string;
+        why: string;
         至: number;
-    }>(orderFile(e, e.caller.路));
-    return e.caller.路 && x?.动作 === '让路' && x.至 > e.nowMs() ? x.为什么 : null;
+    }>(orderFile(e, e.caller.lane));
+    return e.caller.lane && x?.动作 === '让路' && x.至 > e.nowMs() ? x.why : null;
 };
 export const yieldExitCode = 75;
 export class SchedYieldError extends Error {
-    退出码 = yieldExitCode;
+    exitCode = yieldExitCode;
 }
 export const failExitCode = (err: unknown) => err instanceof SchedYieldError ? yieldExitCode : 1;
 // 直接 import 闸的脚本没有路由接这个异常，Node 会打调用栈退 1，子代理就当失败重试了。Monitor 不改别的异常的崩溃行为。

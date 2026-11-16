@@ -12,7 +12,7 @@ import { PixelSpace, FrontFace, useTexture } from './像素块.tsx';
 
 const downstairsBlocks = (): PlacedBlock[] => {
   const out: PlacedBlock[] = [];
-  const placeBlock = (blockState: string, i: number, j: number, k: number) => out.push({ 状态: blockState, 位: [i, j, k] });
+  const placeBlock = (blockState: string, i: number, j: number, k: number) => out.push({ state: blockState, 位: [i, j, k] });
   for (let i = emptyLot.left; i < emptyLot.right; i++)
     for (let j = 0; j < building.j; j++) {
       placeBlock(emptyLot.面, i, j, -1);
@@ -43,12 +43,12 @@ const BannerLayer: React.FC = () => {
   const image = useTexture(paintBanner, []);
   return (
     <PixelSpace 位={[banner.left, building.j - 0.02, banner.z]}>
-      <FrontFace x={0} y={0} z={0} 宽={(banner.right - banner.left) * 16} 高={16} 图={image} />
+      <FrontFace x={0} y={0} z={0} width={(banner.right - banner.left) * 16} height={16} image={image} />
     </PixelSpace>
   );
 };
 
-export const Downstairs: React.FC<{ 头: readonly [number, number]; 秒: number }> = ({ 头: headPose, 秒: sec }) => {
+export const Downstairs: React.FC<{ 头: readonly [number, number]; sec: number }> = ({ 头: headPose, sec: sec }) => {
   const pos: V3 = [youDownstairsPos.x, 0.5, 0];
   const you = stevePose(pos, youDownstairsPos.facing, { sec: sec, scale: youDownstairsPos.scale, headPitch: headPose[0], headYaw: headPose[1] });
   return (

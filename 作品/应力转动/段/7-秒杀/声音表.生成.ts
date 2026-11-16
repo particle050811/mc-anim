@@ -3,103 +3,103 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/7-刘心忠-不可能": {
-      "时长": 2.57,
-      "峰值": -1.5,
-      "响度": -18.7,
+      "duration": 2.57,
+      "peakDb": -1.5,
+      "loudness": -18.7,
       "sha": "e60ae48f1663"
     },
     "音效/block.wood.place.1": {
-      "时长": 0.5,
-      "峰值": -1.9,
-      "响度": -26.3,
+      "duration": 0.5,
+      "peakDb": -1.9,
+      "loudness": -26.3,
       "sha": "cb6071c83a7f"
     },
     "音效/block.wood.place.3": {
-      "时长": 0.5,
-      "峰值": -5,
-      "响度": -29.4,
+      "duration": 0.5,
+      "peakDb": -5,
+      "loudness": -29.4,
       "sha": "cf6be2314c08"
     },
     "音效/block.wood.place.4": {
-      "时长": 0.5,
-      "峰值": -6,
-      "响度": -29.3,
+      "duration": 0.5,
+      "peakDb": -6,
+      "loudness": -29.3,
       "sha": "de868b3119b0"
     },
     "音效/entity.arrow.shoot": {
-      "时长": 0.455102,
-      "峰值": -0.1,
-      "响度": -21.4,
+      "duration": 0.455102,
+      "peakDb": -0.1,
+      "loudness": -21.4,
       "sha": "9492b5233938"
     },
     "音效/entity.evoker.cast_spell.1": {
-      "时长": 1.973333,
-      "峰值": -2.1,
-      "响度": -19.8,
+      "duration": 1.973333,
+      "peakDb": -2.1,
+      "loudness": -19.8,
       "sha": "34a2b826f7b0"
     },
     "音效/entity.vex.charge.1": {
-      "时长": 1.926667,
-      "峰值": -13.3,
-      "响度": -27.8,
+      "duration": 1.926667,
+      "peakDb": -13.3,
+      "loudness": -27.8,
       "sha": "8f627f058f18"
     },
     "音效/entity.vex.charge.2": {
-      "时长": 2.037333,
-      "峰值": -13.8,
-      "响度": -29.1,
+      "duration": 2.037333,
+      "peakDb": -13.8,
+      "loudness": -29.1,
       "sha": "6df5c659a4db"
     },
     "音效/entity.vex.death.1": {
-      "时长": 1.386667,
-      "峰值": -9.4,
-      "响度": -21.5,
+      "duration": 1.386667,
+      "peakDb": -9.4,
+      "loudness": -21.5,
       "sha": "4dcc603ca76d"
     },
     "音效/entity.vex.death.2": {
-      "时长": 1.386667,
-      "峰值": -7.5,
-      "响度": -20.5,
+      "duration": 1.386667,
+      "peakDb": -7.5,
+      "loudness": -20.5,
       "sha": "e7bde881c60d"
     },
     "音效/entity.warden.attack_impact.1": {
-      "时长": 0.906604,
-      "峰值": -5.5,
-      "响度": -22.5,
+      "duration": 0.906604,
+      "peakDb": -5.5,
+      "loudness": -22.5,
       "sha": "e67f8b6cacb4"
     },
     "音效/entity.warden.attack_impact.2": {
-      "时长": 1.067125,
-      "峰值": 0.2,
-      "响度": -23.2,
+      "duration": 1.067125,
+      "peakDb": 0.2,
+      "loudness": -23.2,
       "sha": "dbc24cf14297"
     },
     "音效/entity.warden.tendril_clicks.4": {
-      "时长": 1.791625,
-      "峰值": -0.5,
-      "响度": -17.9,
+      "duration": 1.791625,
+      "peakDb": -0.5,
+      "loudness": -17.9,
       "sha": "1cc999aeaa9f"
     },
     "音效/entity.warden.tendril_clicks.6": {
-      "时长": 1.024104,
-      "峰值": -2,
-      "响度": -24.9,
+      "duration": 1.024104,
+      "peakDb": -2,
+      "loudness": -24.9,
       "sha": "f568609506ab"
     },
     "音效/item.elytra.flying": {
-      "时长": 10.220333,
-      "峰值": -12.3,
-      "响度": -24.9,
+      "duration": 10.220333,
+      "peakDb": -12.3,
+      "loudness": -24.9,
       "sha": "0f51f0fd6647"
     }
   },
-  "台词": {
+  "lines": {
     "7-刘心忠-不可能": {
-      "配音": "配音/7-刘心忠-不可能",
-      "开口": 0.03,
-      "时长": 2.57
+      "voice": "配音/7-刘心忠-不可能",
+      "mouthOpen": 0.03,
+      "duration": 2.57
     }
   }
 };

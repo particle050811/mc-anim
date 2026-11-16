@@ -24,14 +24,14 @@ export type DaypartLight = {
   /** 发光区（灯笼、火把）里乘的倍数（大于 1 才吃得到泛光） */
   glowStrength: number;
   /** 灯光：发光区往外照多远（格）、颜色和倍数；强 0 = 不照 */
-  lampLight: { radius: number; 色: string; 强: number };
+  lampLight: { radius: number; 色: string; strength: number };
   /** 泛光：线性颜色最亮的通道超过 阈 的部分往外晕（软 是渐入的宽），强 是叠回去的倍数，宽 0～1 是光晕往外扩多远（不给 = 0，紧贴着亮处）。
    *  阈 定在受光面最亮（白 × 日光强）之上：只有水面碎光、发光区（× 发光强）晕得出来（粒子另走 粒子晕），人物的发光贴图（满亮度也只到 1）不晕，脸不被冲白 */
-  bloom: { threshold: number; softKnee: number; 强: number; 宽?: number };
+  bloom: { threshold: number; softKnee: number; strength: number; width?: number };
   /** 粒子（烟花火花、闪光这类粒子面片）进泛光的倍数：不过阈，画面里的粒子颜色不变；0 = 不晕 */
   particleGlow: number;
   /** 粒子照亮（光影选项.粒子照亮 开了才用）：烟花火花这类粒子当点光源照周围的方块和人，照多远（格）、多亮；按原版方块光一格一级（15 级），不打影子 */
-  particleLight: { radius: number; 强: number };
+  particleLight: { radius: number; strength: number };
   /** 水面（海面这种认得的水材质）：天顶色（反射往上看到的天）、反射多少、太阳碎光的颜色和倍数；
    *  水体：不反光的那部分的颜色（不用原版水贴图，用户 11-02 定去掉原版颗粒），近反射：正对着往下看也至少反射这么多（近处也看得到波纹） */
   水: { zenithColor: string; reflectivity: number; glintColor: string; glintStrength: number; waterBodyColor: string; nearReflect: number };
@@ -40,14 +40,14 @@ export type DaypartLight = {
 export type ShadingGrade = {
   /** 都在 sRGB 数值上做：饱和、对比绕 0.5、暗部往 暗色 推、亮部往 亮色 推（分离色调），强度 0～1 */
   saturation: number;
-  对比: number;
+  comparison: number;
   darkColor: string;
   brightColor: string;
   colorSplit: number;
 };
 
 export type ShadingParams = {
-  名: string;
+  name: string;
   /** 仿哪个包（只是观感参照） */
   shaderPack: string;
   白天: DaypartLight;
@@ -78,7 +78,7 @@ export type ShadingSceneParams = {
    *  镜头一转太阳跟着转，草的十字面一齐翻面、影子边一格一格地爬（用户 11-03「为什么上一帧草有的阴影 下一帧就没了？」「这边边缘像素为什么光影会乱动？」） */
   sunRefDir?: readonly [number, number, number];
   /** 海面的世界高度（Photon 云层从这里起算），不给按 0 */
-  海平面?: number;
+  seaLevel?: number;
   /** 太阳（月亮）照进来几成，0～1：月落、日出这种慢慢变的；0 = 受光面和影子里一样。不给 = 1 */
   lightIntensity?: number;
   /** 光影层的云这一帧的事（engine/light/云/配置.ts 的 云场）：洞 = 让开的竖直圆柱 [x, y, 半径, 软边]（格），亮 = 云底被照亮的一块，曝光倍 = 乘在云的曝光上（闪电、转晴） */
@@ -98,7 +98,7 @@ export type FillLight = {
   位置?: readonly [number, number, number];
   radius?: number;
   色: string | '受光减影子';
-  强: number;
+  strength: number;
   fillShadowOnly?: boolean;
 };
 
@@ -137,7 +137,7 @@ export type ShadingOptions = {
    *  再按 2D 天那样叠原版方形太阳（用户 11-02：太阳先留方形的），画布变成不透明。要透视镜头、要给 太阳 */
   天?: '现有分档' | 'Photon平滑';
   /** 天 是 Photon平滑 时，天顶往 色（场景色板的天顶，sRGB）拉：仰角 高（度，不给 38，同 2D 天的渐变高）以上拉 拉（0～1）这么多，往下渐少、地平线不拉；水面反射的天跟着拉 */
-  zenith?: { 色: string; stretch: number; 高?: number };
+  zenith?: { 色: string; stretch: number; height?: number };
   /** 泛光的光晕：平滑（不给也是）；像素格 = 光晕按贴图像素（正交镜头里 1/16 格在屏幕上的大小，透视镜头按 6 个成片像素）一格取一个值 */
   glowMode?: '平滑' | '像素格';
   /** 粒子（烟花火花这类）当点光源照亮周围（时段光 的 粒子照）；不给 = 不照 */
@@ -177,10 +177,10 @@ const dayBase: DaypartLight = {
   facing: 0.15,
   faceShadeK: 0.6,
   glowStrength: 1.15,
-  lampLight: { radius: 10, 色: '#ffb35c', 强: 0 },
-  bloom: { threshold: 1.5, softKnee: 0.5, 强: 0.12 },
+  lampLight: { radius: 10, 色: '#ffb35c', strength: 0 },
+  bloom: { threshold: 1.5, softKnee: 0.5, strength: 0.12 },
   particleGlow: 0,
-  particleLight: { radius: 16, 强: 0 },
+  particleLight: { radius: 16, strength: 0 },
   水: { zenithColor: '#6f9ae0', reflectivity: 0.8, glintColor: '#fff4dc', glintStrength: 1.6, waterBodyColor: '#2d5a8c', nearReflect: 0.35 },
 };
 
@@ -194,10 +194,10 @@ const duskBase: DaypartLight = {
   facing: 0.25,
   faceShadeK: 0.55,
   glowStrength: 1.3,
-  lampLight: { radius: 10, 色: '#ffad55', 强: 0.25 },
-  bloom: { threshold: 1.6, softKnee: 0.6, 强: 0.35 },
+  lampLight: { radius: 10, 色: '#ffad55', strength: 0.25 },
+  bloom: { threshold: 1.6, softKnee: 0.6, strength: 0.35 },
   particleGlow: 0,
-  particleLight: { radius: 16, 强: 0 },
+  particleLight: { radius: 16, strength: 0 },
   水: { zenithColor: '#8a7fa8', reflectivity: 0.9, glintColor: '#ffcf8a', glintStrength: 2.2, waterBodyColor: '#5a5a86', nearReflect: 0.45 },
 };
 
@@ -211,43 +211,43 @@ const nightBase: DaypartLight = {
   facing: 0.1,
   faceShadeK: 0.7,
   glowStrength: 1.6,
-  lampLight: { radius: 11, 色: '#ffa850', 强: 0.9 },
-  bloom: { threshold: 1.15, softKnee: 0.4, 强: 0.7, 宽: 0.7 },
+  lampLight: { radius: 11, 色: '#ffa850', strength: 0.9 },
+  bloom: { threshold: 1.15, softKnee: 0.4, strength: 0.7, width: 0.7 },
   particleGlow: 1.2,
-  particleLight: { radius: 14, 强: 0.7 },
+  particleLight: { radius: 14, strength: 0.7 },
   水: { zenithColor: '#1c2448', reflectivity: 0.7, glintColor: '#cfd8ff', glintStrength: 0.8, waterBodyColor: '#141c38', nearReflect: 0.3 },
 };
 
 /** 仿 Complementary Reimagined：暖阳、偏灰绿的软影子（不发蓝）、泛光弱，像胶片。实机 A-01 背光的树干压得很黑，这里收着（用户不要描边，黑边会读成描边） */
 const warmSoft: ShadingParams = {
-  名: '暖柔',
+  name: '暖柔',
   shaderPack: 'Complementary Reimagined',
   白天: { ...dayBase },
   日落: { ...duskBase },
   夜: { ...nightBase },
-  grade: { saturation: 1.04, 对比: 1.03, darkColor: '#2e3a3c', brightColor: '#fff1dc', colorSplit: 0.12 },
+  grade: { saturation: 1.04, comparison: 1.03, darkColor: '#2e3a3c', brightColor: '#fff1dc', colorSplit: 0.12 },
   pixelShadow: true,
 };
 
 /** 仿 BSL、Sildur's Vibrant：亮白的太阳、深而冷的蓝灰影子、饱和高、对比强，像游戏宣传图 */
 const vivid: ShadingParams = {
-  名: '鲜艳',
+  name: '鲜艳',
   shaderPack: "BSL / Sildur's Vibrant",
-  白天: { ...dayBase, sunColor: '#fff8ec', sunIntensity: 1.16, shadowColor: '#8c9cc4', shadowStrength: 0.62, facing: 0.2, faceShadeK: 0.55, bloom: { threshold: 1.6, softKnee: 0.5, 强: 0.1 } },
-  日落: { ...duskBase, sunColor: '#ffc488', sunIntensity: 1.2, shadowColor: '#9a96c4', shadowStrength: 0.72, bloom: { threshold: 1.7, softKnee: 0.6, 强: 0.45 } },
-  夜: { ...nightBase, sunColor: '#cfe0ff', shadowColor: '#9fb0dc', shadowStrength: 0.78, lampLight: { radius: 9, 色: '#ffb048', 强: 1.1 }, bloom: { threshold: 1.15, softKnee: 0.35, 强: 0.55, 宽: 0.15 }, particleGlow: 0.7 },
-  grade: { saturation: 1.2, 对比: 1.1, darkColor: '#1c2a44', brightColor: '#fff6e6', colorSplit: 0.1 },
+  白天: { ...dayBase, sunColor: '#fff8ec', sunIntensity: 1.16, shadowColor: '#8c9cc4', shadowStrength: 0.62, facing: 0.2, faceShadeK: 0.55, bloom: { threshold: 1.6, softKnee: 0.5, strength: 0.1 } },
+  日落: { ...duskBase, sunColor: '#ffc488', sunIntensity: 1.2, shadowColor: '#9a96c4', shadowStrength: 0.72, bloom: { threshold: 1.7, softKnee: 0.6, strength: 0.45 } },
+  夜: { ...nightBase, sunColor: '#cfe0ff', shadowColor: '#9fb0dc', shadowStrength: 0.78, lampLight: { radius: 9, 色: '#ffb048', strength: 1.1 }, bloom: { threshold: 1.15, softKnee: 0.35, strength: 0.55, width: 0.15 }, particleGlow: 0.7 },
+  grade: { saturation: 1.2, comparison: 1.1, darkColor: '#1c2a44', brightColor: '#fff6e6', colorSplit: 0.1 },
   pixelShadow: true,
 };
 
 /** 仿 Super Duper Vanilla：粉彩、受光偏金、影子明显偏蓝紫、泛光强、对比低 */
 const pastel: ShadingParams = {
-  名: '粉彩',
+  name: '粉彩',
   shaderPack: 'Super Duper Vanilla',
-  白天: { ...dayBase, sunColor: '#ffe6c8', sunIntensity: 1.1, shadowColor: '#a99ad0', shadowStrength: 0.72, facing: 0.1, faceShadeK: 0.6, bloom: { threshold: 1.5, softKnee: 0.6, 强: 0.3 } },
-  日落: { ...duskBase, sunColor: '#ffc8a8', sunIntensity: 1.14, shadowColor: '#ae9cd2', shadowStrength: 0.8, bloom: { threshold: 1.6, softKnee: 0.7, 强: 0.6 } },
-  夜: { ...nightBase, sunColor: '#c8d4ff', shadowColor: '#a8b0ec', shadowStrength: 0.85, lampLight: { radius: 9, 色: '#ffb070', 强: 0.6 }, bloom: { threshold: 1.1, softKnee: 0.45, 强: 1.0, 宽: 0.85 }, particleGlow: 1.4 },
-  grade: { saturation: 0.96, 对比: 0.93, darkColor: '#3a2c50', brightColor: '#ffe8f0', colorSplit: 0.16 },
+  白天: { ...dayBase, sunColor: '#ffe6c8', sunIntensity: 1.1, shadowColor: '#a99ad0', shadowStrength: 0.72, facing: 0.1, faceShadeK: 0.6, bloom: { threshold: 1.5, softKnee: 0.6, strength: 0.3 } },
+  日落: { ...duskBase, sunColor: '#ffc8a8', sunIntensity: 1.14, shadowColor: '#ae9cd2', shadowStrength: 0.8, bloom: { threshold: 1.6, softKnee: 0.7, strength: 0.6 } },
+  夜: { ...nightBase, sunColor: '#c8d4ff', shadowColor: '#a8b0ec', shadowStrength: 0.85, lampLight: { radius: 9, 色: '#ffb070', strength: 0.6 }, bloom: { threshold: 1.1, softKnee: 0.45, strength: 1.0, width: 0.85 }, particleGlow: 1.4 },
+  grade: { saturation: 0.96, comparison: 0.93, darkColor: '#3a2c50', brightColor: '#ffe8f0', colorSplit: 0.16 },
   pixelShadow: true,
 };
 
@@ -263,7 +263,7 @@ export const mergeShading = (options: ShadingOptions, shadingScene: ShadingScene
     ...(options.lightIntensity === undefined && shadingScene.lightIntensity !== undefined ? { lightIntensity: shadingScene.lightIntensity } : {}),
     ...(options.cloud
       ? {
-          cloud: { ...options.cloud, 海平面: options.cloud.海平面 ?? shadingScene.海平面 ?? 0, ...(options.cloud.层 ?? shadingScene.cloudLayers ? { 层: options.cloud.层 ?? shadingScene.cloudLayers! } : {}) },
+          cloud: { ...options.cloud, seaLevel: options.cloud.seaLevel ?? shadingScene.seaLevel ?? 0, ...(options.cloud.layers ?? shadingScene.cloudLayers ? { layers: options.cloud.layers ?? shadingScene.cloudLayers! } : {}) },
           cloudScene: { ...shadingScene.cloud, ...options.cloudScene },
         }
       : {}),

@@ -181,7 +181,7 @@ export const runMigration = (o: RunOptions) => {
     if (problems.length) readBack.push(`${p.rel}：${problems.join('；')}`);
   }
   for (const s of readBack) o.log(`  !! 读回核对：${s}`);
-  if (backup) fs.writeFileSync(path.join(backup, '小结.json'), JSON.stringify({ 时间: new Date().toISOString(), summaries, written, readBackFailed: readBack.length }, null, 2) + '\n');
+  if (backup) fs.writeFileSync(path.join(backup, '小结.json'), JSON.stringify({ time: new Date().toISOString(), summaries, written, readBackFailed: readBack.length }, null, 2) + '\n');
   return { summaries, plans, backup, written, failed: readBack.length };
 };
 

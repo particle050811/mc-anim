@@ -32,19 +32,19 @@ export const game = {
 
 export type OfferingName = '暗夜之心' | '龙息' | '禁忌卷轴' | '附魔金苹果' | '下界之星' | '不洁之血' | '暗影精华' | '灵魂红宝石' | '炼狱魔典' | '邪恶头盔' | '老巫婆帽' | '术士腰带';
 /** 配方里的顺序（英文 id 在右） */
-export const offerings: readonly { 名: OfferingName; id: string }[] = [
-  { 名: '暗夜之心', id: 'goety:heart_of_the_night' },
-  { 名: '龙息', id: 'minecraft:dragon_breath' },
-  { 名: '禁忌卷轴', id: 'goety:forbidden_scroll' },
-  { 名: '附魔金苹果', id: 'minecraft:enchanted_golden_apple' },
-  { 名: '下界之星', id: 'minecraft:nether_star' },
-  { 名: '不洁之血', id: 'goety:unholy_blood' },
-  { 名: '暗影精华', id: 'goety:shadow_essence' },
-  { 名: '灵魂红宝石', id: 'goety:soul_ruby' },
-  { 名: '炼狱魔典', id: 'goety:infernal_tome' },
-  { 名: '邪恶头盔', id: 'goety:malefic_helm' },
-  { 名: '老巫婆帽', id: 'goety:crone_hat' },
-  { 名: '术士腰带', id: 'goety:warlock_sash' },
+export const offerings: readonly { name: OfferingName; id: string }[] = [
+  { name: '暗夜之心', id: 'goety:heart_of_the_night' },
+  { name: '龙息', id: 'minecraft:dragon_breath' },
+  { name: '禁忌卷轴', id: 'goety:forbidden_scroll' },
+  { name: '附魔金苹果', id: 'minecraft:enchanted_golden_apple' },
+  { name: '下界之星', id: 'minecraft:nether_star' },
+  { name: '不洁之血', id: 'goety:unholy_blood' },
+  { name: '暗影精华', id: 'goety:shadow_essence' },
+  { name: '灵魂红宝石', id: 'goety:soul_ruby' },
+  { name: '炼狱魔典', id: 'goety:infernal_tome' },
+  { name: '邪恶头盔', id: 'goety:malefic_helm' },
+  { name: '老巫婆帽', id: 'goety:crone_hat' },
+  { name: '术士腰带', id: 'goety:warlock_sash' },
 ];
 
 // ---- 摆法 ----
@@ -65,13 +65,13 @@ export const cageCell: GridPos = [0, 0, 1];
 export const altarCell: GridPos = [0, 0, 2];
 
 /** 方块状态和格（给 @engine/model/方块拼搭.tsx，原点 [-0.5, -0.5, 0]：格 i 的中心在 x = i）。灵魂火不在里面（要动，安息仪式.tsx 另画） */
-export const structureBlocks = (options: { obsidianBase?: boolean } = {}): { 状态: string; 位: GridPos }[] => {
-  const placedBlocks: { 状态: string; 位: GridPos }[] = [];
-  if (options.obsidianBase ?? true) for (const i of range(-3, 3)) for (const j of range(-3, 3)) placedBlocks.push({ 状态: 'minecraft:obsidian', 位: [i, j, -1] });
-  for (const i of range(-1, 1)) for (const j of range(-1, 1)) placedBlocks.push({ 状态: 'minecraft:crying_obsidian', 位: [i, j, 0] });
-  for (const [i, j, k] of soulFireCells) placedBlocks.push({ 状态: 'minecraft:soul_soil', 位: [i, j, k - 1] });
-  for (const pos of baseCells) placedBlocks.push({ 状态: 'goety:pedestal', 位: pos });
-  placedBlocks.push({ 状态: 'goety:cursed_cage', 位: cageCell }, { 状态: 'goety:dark_altar[lit=true]', 位: altarCell });
+export const structureBlocks = (options: { obsidianBase?: boolean } = {}): { state: string; 位: GridPos }[] => {
+  const placedBlocks: { state: string; 位: GridPos }[] = [];
+  if (options.obsidianBase ?? true) for (const i of range(-3, 3)) for (const j of range(-3, 3)) placedBlocks.push({ state: 'minecraft:obsidian', 位: [i, j, -1] });
+  for (const i of range(-1, 1)) for (const j of range(-1, 1)) placedBlocks.push({ state: 'minecraft:crying_obsidian', 位: [i, j, 0] });
+  for (const [i, j, k] of soulFireCells) placedBlocks.push({ state: 'minecraft:soul_soil', 位: [i, j, k - 1] });
+  for (const pos of baseCells) placedBlocks.push({ state: 'goety:pedestal', 位: pos });
+  placedBlocks.push({ state: 'goety:cursed_cage', 位: cageCell }, { state: 'goety:dark_altar[lit=true]', 位: altarCell });
   return placedBlocks;
 };
 
@@ -96,13 +96,13 @@ export const appearPos: V3 = altarCenter;
  * 转速、粒子怎么飞照真实时间走（不跟着快进），只有「进行到哪」（聚风带的疏密和粗细、几时起烟）按 过渡进度刻 映射。
  */
 export type SummonPlan = {
-  名: string;
+  name: string;
   /** 12 件祭品同时消失的时刻（用户 11-10 定同时消失；游戏里隔 2.3 秒一件） */
   offeringVanishSec: number;
   /** 祭品消失前自己飞向祭坛、缩小的秒数。游戏里祭品不动（只往祭坛喷物品碎屑），0 = 照游戏；大于 0 是本片自己补的 */
   offeringFlyInSec: number;
   /** 仪式完成：光柱、过渡实体出现 */
-  完成: number;
+  completed: number;
   /** 提示「世界凝视着你....」、黑暗（游戏第 150 刻） */
   提示: number;
   /** 使徒低语、开始冒大烟（游戏第 300 刻） */
@@ -110,29 +110,29 @@ export type SummonPlan = {
   /** 雷声、火焰炸开、亚波伦现身（游戏第 450 刻） */
   appear: number;
   /** 整段到这里结束（现身后留给火焰散开） */
-  总秒: number;
+  totalSec: number;
 };
 
 export const summonPlans = {
   /** 约 6 秒：仪式 2.5 秒、过渡 3.5 秒 */
-  短: { 名: '短', offeringVanishSec: 1.5, offeringFlyInSec: 0, 完成: 2.5, 提示: 3.6, whisperSec: 4.8, appear: 6, 总秒: 7 },
+  短: { name: '短', offeringVanishSec: 1.5, offeringFlyInSec: 0, completed: 2.5, 提示: 3.6, whisperSec: 4.8, appear: 6, totalSec: 7 },
   /** 约 10 秒：仪式 4 秒、过渡 6 秒 */
-  长: { 名: '长', offeringVanishSec: 2.6, offeringFlyInSec: 0, 完成: 4, 提示: 6, whisperSec: 8, appear: 10, 总秒: 11 },
+  length: { name: '长', offeringVanishSec: 2.6, offeringFlyInSec: 0, completed: 4, 提示: 6, whisperSec: 8, appear: 10, totalSec: 11 },
 } satisfies Record<string, SummonPlan>;
 
 const linearMap = (x: number, x0: number, x1: number, y0: number, y1: number) => y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
 
 /** 片里第几秒 → 相当于游戏里过渡实体的第几刻（0～450），分三段线性：完成→提示 是 0～150，提示→低语 是 150～300，低语→现身 是 300～450 */
 export const transitionProgressTick = (sec: number, plan: SummonPlan): number => {
-  if (sec <= plan.完成) return 0;
-  if (sec <= plan.提示) return linearMap(sec, plan.完成, plan.提示, 0, game.hintTicks);
+  if (sec <= plan.completed) return 0;
+  if (sec <= plan.提示) return linearMap(sec, plan.completed, plan.提示, 0, game.hintTicks);
   if (sec <= plan.whisperSec) return linearMap(sec, plan.提示, plan.whisperSec, game.hintTicks, game.whisperTicks);
   return Math.min(game.transitionTicks, linearMap(sec, plan.whisperSec, plan.appear, game.whisperTicks, game.transitionTicks));
 };
 
 export type SummonPhase = '没开始' | '仪式' | '过渡' | '现身后';
 export type SummonState = {
-  阶段: SummonPhase;
+  stage: SummonPhase;
   /** 祭坛上有破碎之环（仪式期间） */
   hasActivator: boolean;
   /** 基座上的祭品：1 = 原样在基座上，0 = 没了；飞入期间在中间（位置按它往祭坛插，大小乘它） */
@@ -152,15 +152,15 @@ export type SummonState = {
 };
 
 export const summonStateAt = (sec: number, plan: SummonPlan): SummonState => {
-  const stage: SummonPhase = sec < 0 ? '没开始' : sec < plan.完成 ? '仪式' : sec < plan.appear ? '过渡' : '现身后';
-  const realTick = (sec - plan.完成) * 20;
+  const stage: SummonPhase = sec < 0 ? '没开始' : sec < plan.completed ? '仪式' : sec < plan.appear ? '过渡' : '现身后';
+  const realTick = (sec - plan.completed) * 20;
   const remainTicks = (plan.appear - sec) * 20;
   const circleActive = stage === '过渡';
   const halfSide = !circleActive ? 0 : remainTicks <= game.circleRetractTicks ? (remainTicks / game.circleRetractTicks) * game.circleHalf : clamp(realTick * 0.1, 0, game.circleHalf);
   const flyInStartSec = plan.offeringVanishSec - plan.offeringFlyInSec;
   const offeringAlpha = sec >= plan.offeringVanishSec ? 0 : plan.offeringFlyInSec > 0 && sec > flyInStartSec ? 1 - (sec - flyInStartSec) / plan.offeringFlyInSec : 1;
   return {
-    阶段: stage,
+    stage: stage,
     hasActivator: stage === '仪式',
     offeringAlpha,
     emitDebris: stage === '仪式' && sec < plan.offeringVanishSec,
@@ -174,18 +174,18 @@ export const summonStateAt = (sec: number, plan: SummonPlan): SummonState => {
 
 // ---- 声音 ----
 /** 一声：资产 id（多选一的写了几个候选）、片里第几秒、游戏里的音量和音高。段.ts 里用 放() 照这张表排；本模块不放声音 */
-export type SummonSound = { 名: string; 资产: readonly string[]; 秒: number; 音量: number; 音高: string; 出处: string };
+export type SummonSound = { name: string; asset: readonly string[]; sec: number; 音量: number; 音高: string; provenance: string };
 export const summonSounds = (plan: SummonPlan): SummonSound[] => {
   const summonSounds: SummonSound[] = [
-    { 名: '仪式开始', 资产: ['音效/仪式/goety.altar_start'], 秒: 0, 音量: 1, 音高: '0.8～1.2 随机', 出处: 'Ritual.start' },
-    { 名: '仪式循环', 资产: ['音效/仪式/goety.altar_loop'], 秒: 0, 音量: 1, 音高: '0.8～1.2 随机', 出处: 'Ritual.update：世界时间每 4 秒整响一次，片里只在开头放一次' },
-    { 名: '祭品被吃', 资产: ['音效/entity.item.pickup'], 秒: plan.offeringVanishSec, 音量: 0.7, 音高: '0.7', 出处: 'Ritual.consumeAdditionalIngredientFromPedestal：游戏里一件一声，片里同时消失只放一声' },
-    { 名: '仪式完成', 资产: ['音效/仪式/goety.altar_finish'], 秒: plan.完成, 音量: 1, 音高: '0.8～1.2 随机', 出处: 'Ritual.finish' },
-    { 名: '提示', 资产: [1, 2, 3, 4, 5].map((n) => `音效/ambient.nether_wastes.mood.${n}`), 秒: plan.提示, 音量: 1, 音高: '1', 出处: 'SummonApostle.tick 第 150 刻（启示录的 mixin 又放了一遍，同一刻两声）' },
-    { 名: '使徒低语', 资产: [1, 2, 3, 4].map((n) => `音效/诡厄巫法/goety.apostle_ambient.${n}`), 秒: plan.whisperSec, 音量: 1, 音高: '1', 出处: 'SummonApostle.tick 第 300 刻' },
-    { 名: '雷声', 资产: [1, 2, 3].map((n) => `音效/entity.lightning_bolt.thunder.${n}`), 秒: plan.appear, 音量: 1, 音高: '1', 出处: 'SummonApostle.tick 第 450 刻；只有声音，没有闪电' },
+    { name: '仪式开始', asset: ['音效/仪式/goety.altar_start'], sec: 0, 音量: 1, 音高: '0.8～1.2 随机', provenance: 'Ritual.start' },
+    { name: '仪式循环', asset: ['音效/仪式/goety.altar_loop'], sec: 0, 音量: 1, 音高: '0.8～1.2 随机', provenance: 'Ritual.update：世界时间每 4 秒整响一次，片里只在开头放一次' },
+    { name: '祭品被吃', asset: ['音效/entity.item.pickup'], sec: plan.offeringVanishSec, 音量: 0.7, 音高: '0.7', provenance: 'Ritual.consumeAdditionalIngredientFromPedestal：游戏里一件一声，片里同时消失只放一声' },
+    { name: '仪式完成', asset: ['音效/仪式/goety.altar_finish'], sec: plan.completed, 音量: 1, 音高: '0.8～1.2 随机', provenance: 'Ritual.finish' },
+    { name: '提示', asset: [1, 2, 3, 4, 5].map((n) => `音效/ambient.nether_wastes.mood.${n}`), sec: plan.提示, 音量: 1, 音高: '1', provenance: 'SummonApostle.tick 第 150 刻（启示录的 mixin 又放了一遍，同一刻两声）' },
+    { name: '使徒低语', asset: [1, 2, 3, 4].map((n) => `音效/诡厄巫法/goety.apostle_ambient.${n}`), sec: plan.whisperSec, 音量: 1, 音高: '1', provenance: 'SummonApostle.tick 第 300 刻' },
+    { name: '雷声', asset: [1, 2, 3].map((n) => `音效/entity.lightning_bolt.thunder.${n}`), sec: plan.appear, 音量: 1, 音高: '1', provenance: 'SummonApostle.tick 第 450 刻；只有声音，没有闪电' },
   ];
   // 每秒扣一次灵魂：幽匿催发体绽放声、祭坛顶上两颗幽匿灵魂粒子（DarkAltarBlockEntity.tick，世界时间每 20 刻）
-  for (let s = 1; s <= plan.完成 + 1e-9; s++) summonSounds.push({ 名: `扣灵魂${s}`, 资产: Array.from({ length: 13 }, (_, n) => `音效/block.sculk_catalyst.bloom.${n + 1}`), 秒: s, 音量: 1, 音高: '0.9～1.0 随机', 出处: 'DarkAltarBlockEntity.tick' });
-  return summonSounds.sort((a, b) => a.秒 - b.秒);
+  for (let s = 1; s <= plan.completed + 1e-9; s++) summonSounds.push({ name: `扣灵魂${s}`, asset: Array.from({ length: 13 }, (_, n) => `音效/block.sculk_catalyst.bloom.${n + 1}`), sec: s, 音量: 1, 音高: '0.9～1.0 随机', provenance: 'DarkAltarBlockEntity.tick' });
+  return summonSounds.sort((a, b) => a.sec - b.sec);
 };

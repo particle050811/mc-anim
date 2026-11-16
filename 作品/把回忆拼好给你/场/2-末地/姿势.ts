@@ -89,7 +89,7 @@ export const onEggPose: BoneTable = {
 export const landBounce = 6;
 
 /** 扑的时候身子从前倾多少（起跳）转到趴平（−90），转完用掉飞行时间的几成 */
-export const pounceTilt = { 起: -40, flatAngleDeg: -90, turnDone: 0.55 };
+export const pounceTilt = { start: -40, flatAngleDeg: -90, turnDone: 0.55 };
 
 /** 看的目标点离脚底多高（看蛋看蛋的中心、看你看你的眼睛：原版玩家站着眼高 1.62） */
 export const eggCenterHeight = 0.5;

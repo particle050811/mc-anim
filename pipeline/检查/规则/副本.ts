@@ -13,7 +13,7 @@ import { canonicalFiles, canonicalTable, type CanonicalItem } from '../正本表
 
 export const copyTablePath = 'docs/副本表.tsv';
 
-export type Spot = { 行: number; 名?: string; matchBy: '名字' | '行为' | '记号' };
+export type Spot = { 行: number; name?: string; matchBy: '名字' | '行为' | '记号' };
 /** 正本 id → 文件 → 各处 */
 export type CopyState = Map<string, Map<string, Spot[]>>;
 type CanonicalFn = (...a: unknown[]) => unknown;
@@ -45,7 +45,7 @@ const canonicalFns = async (c: CheckContext, report: CheckReport) => {
   const canonicalFuncMap = new Map<CanonicalItem, { canonicalFn: CanonicalFn; probes: readonly (readonly unknown[])[]; paramCount: number }[]>();
   for (const z of canonicalTable) {
     if (!z.behaviors) continue;
-    const { 模块: moduleExports, 错误: error } = await c.loadModule(z.位置);
+    const { modules: moduleExports, errors: error } = await c.loadModule(z.位置);
     const exportValue = moduleExports?.[z.exportName];
     if (typeof exportValue !== 'function') {
       report.错(`正本 ${z.id} 加载不了（${z.位置} 的 ${z.exportName}）：${error ?? '没有这个导出函数'}`, z.位置);
@@ -77,12 +77,12 @@ export const scanCopies = (file: string, source: string, canonicalMap: Awaited<R
   for (const f of fileFuncs.functions) {
     const g = fileFuncs.wrap(f);
     const candidates = g ? canonicalTable.filter((z) => canonicalMap.get(z)?.some((r) => r.paramCount === f.paramCount && isSameBehavior(g, r.canonicalFn, r.probes))) : [];
-    for (const z of candidates) report(z.id, f.节点, { 行: f.行, 名: f.名, matchBy: '行为' });
-    if (candidates.length || !f.名) continue;
+    for (const z of candidates) report(z.id, f.节点, { 行: f.行, name: f.name, matchBy: '行为' });
+    if (candidates.length || !f.name) continue;
     // 能按行为比（能求值、有同样参数个数的探针）却不一样的，是同名的别的函数，不算；按行为认出是别的正本的（叫 smoothstep 的 smoothstep01），只算那一个
     for (const z of canonicalTable) {
       const canCompare = !!g && !!canonicalMap.get(z)?.some((r) => r.paramCount === f.paramCount);
-      if (z.names?.includes(f.名) && !canCompare) report(z.id, f.节点, { 行: f.行, 名: f.名, matchBy: '名字' });
+      if (z.names?.includes(f.name) && !canCompare) report(z.id, f.节点, { 行: f.行, name: f.name, matchBy: '名字' });
     }
   }
   const withMarkers = canonicalTable.filter((z) => z.token);
@@ -90,7 +90,7 @@ export const scanCopies = (file: string, source: string, canonicalMap: Awaited<R
     for (const z of withMarkers) {
       if (!z.token!(n, fileFuncs.sf)) continue;
       const node = spotOf(n);
-      report(z.id, node, { 行: lineNo(fileFuncs.sf, n), 名: isFnNode(node) ? (fileFuncs.functions.find((f) => f.节点 === node)?.名) : undefined, matchBy: '记号' });
+      report(z.id, node, { 行: lineNo(fileFuncs.sf, n), name: isFnNode(node) ? (fileFuncs.functions.find((f) => f.节点 === node)?.name) : undefined, matchBy: '记号' });
     }
   });
   const r = new Map<string, Spot[]>();
@@ -118,7 +118,7 @@ export const canonicalTablePath = 'pipeline/检查/正本表.ts';
  * 正本们：分叉点的 正本表.ts 里有的 id（读不到给 null，这时每个 id 都当老的，从严）
  */
 const baseline = (c: CheckContext): { 表: string; canonicalIds: Set<string> | null } | null => {
-  const git = (...a: string[]) => execFileSync('git', ['-C', c.根, '-c', 'core.quotepath=false', ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const git = (...a: string[]) => execFileSync('git', ['-C', c.root, '-c', 'core.quotepath=false', ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   let mergeBase: string;
   let tableText: string;
   try {
@@ -134,8 +134,8 @@ const baseline = (c: CheckContext): { 表: string; canonicalIds: Set<string> | n
   }
 };
 
-const refSnippet = (z: CanonicalItem) => `import { ${z.exportName} } from '${z.位置.replace(/^engine\//, '@engine/').replace(/^库\//, '@库/')}'`;
-const describeSpots = (spots: Spot[]) => spots.map((x) => `第 ${x.行} 行${x.名 ? ` ${x.名}` : ''}（${x.matchBy}）`).join('、');
+const refSnippet = (z: CanonicalItem) => `import { ${z.exportName} } from '${z.位置.replace(/^engine\//, '@engine/').replace(/^库\//, '@lib/')}'`;
+const describeSpots = (spots: Spot[]) => spots.map((x) => `第 ${x.行} 行${x.name ? ` ${x.name}` : ''}（${x.matchBy}）`).join('、');
 
 export const copyRule = async (c: CheckContext, report: CheckReport) => {
   if (!c.exists(copyTablePath)) return void report.错(`没有 ${copyTablePath}（现有副本的冻结表；没有旧副本也要留表头）`);

@@ -11,5 +11,5 @@ export default defineSpellMeta({
   长秒: (frostBreathDurTicks + frostBreathParticleLifeTicks) / 20,
   hitSec: 0, // 每刻对视线前方一段锥形里的生物结算
   // FrostBreathSpell.SpellResult：每刻在施法者处响 FROST_BREATH，音量、音高都是 随机 × 0.5（这里取中间 0.25；音高低于 0.5 的游戏里按 0.5 放）
-  声音: Array.from({ length: frostBreathDurTicks }, (_, n) => ({ 资产: '音效/诡厄巫法/goety.frost_breath', 秒: n / 20, 音量: 0.25, 音高: 0.5 })),
+  sound: Array.from({ length: frostBreathDurTicks }, (_, n) => ({ asset: '音效/诡厄巫法/goety.frost_breath', sec: n / 20, 音量: 0.25, 音高: 0.5 })),
 });

@@ -75,7 +75,7 @@ const ItemPile: React.FC<{ d: Drop; 刻: number }> = ({ d, 刻: tick }) => {
         const o = k === 0 ? [0, 0, 0] : [(r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15];
         return (
           <group key={k} position={[o[0]!, o[1]!, o[2]! + 3 / 16]} scale={0.25}>
-            {d.item === 'minecraft:chest' ? <Chest 贴图={toVanillaCoords(VANILLA_CHEST_TEX, [64, 64])} p={[0, 0, -0.5]} facing="south" /> : <BlockAssembly blocks={[{ 状态: blockState, 位: [0, 0, 0] }]} 原点={[-0.5, -0.5, -0.5]} />}
+            {d.item === 'minecraft:chest' ? <Chest 贴图={toVanillaCoords(VANILLA_CHEST_TEX, [64, 64])} p={[0, 0, -0.5]} facing="south" /> : <BlockAssembly blocks={[{ state: blockState, 位: [0, 0, 0] }]} origin={[-0.5, -0.5, -0.5]} />}
           </group>
         );
       })}

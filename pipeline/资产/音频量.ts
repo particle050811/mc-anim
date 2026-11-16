@@ -12,7 +12,7 @@ import type { LockEntry } from './资产锁.ts';
 export const audioExtensions = new Set(['.ogg', '.wav', '.mp3', '.m4a', '.flac', '.aac', '.opus']);
 export const isAudio = (file: string) => audioExtensions.has(path.extname(file).toLowerCase());
 
-export type AudioMetadata = Pick<LockEntry, '时长' | '峰值' | '响度'>;
+export type AudioMetadata = Pick<LockEntry, 'duration' | 'peakDb' | 'loudness'>;
 
 /** ebur128 汇总里的积分响度（LUFS）、峰值（dBFS）；-inf 给 -Infinity，没有的不给 */
 const readEbur128Summary = (stderr: string): { lufs?: number; peak?: number } => {
@@ -28,7 +28,7 @@ const readEbur128Summary = (stderr: string): { lufs?: number; peak?: number } =>
 export const measureEbur128 = (file: string, o: { peak?: 'sample' | 'true'; lowPriority?: boolean } = {}) => {
   const cmd = [config('ffmpeg'), '-hide_banner', '-nostats', '-nostdin', '-i', file, '-map', '0:a:0', '-af', `ebur128=peak=${o.peak ?? 'sample'}:framelog=quiet`, '-f', 'null', '-'];
   const r = tryRun(o.lowPriority ? lowPriority(cmd) : cmd); // ebur128 的汇总写在 stderr
-  if (r.退出码 !== 0) throw new Error(`量不了 ${file}：${r.stderr.slice(-300)}`);
+  if (r.exitCode !== 0) throw new Error(`量不了 ${file}：${r.stderr.slice(-300)}`);
   return { ...readEbur128Summary(r.stderr), stderr: r.stderr };
 };
 
@@ -37,9 +37,9 @@ export const parseEbur128 = (stderr: string, durationText?: string): AudioMetada
   const r: AudioMetadata = {};
   const { lufs, peak } = readEbur128Summary(stderr);
   const t = Number(durationText?.trim());
-  if (durationText?.trim() && Number.isFinite(t)) r.时长 = Math.round(t * 1e6) / 1e6;
-  if (peak !== undefined && Number.isFinite(peak)) r.峰值 = Math.round(peak * 100) / 100;
-  if (lufs !== undefined && Number.isFinite(lufs)) r.响度 = Math.round(lufs * 100) / 100;
+  if (durationText?.trim() && Number.isFinite(t)) r.duration = Math.round(t * 1e6) / 1e6;
+  if (peak !== undefined && Number.isFinite(peak)) r.peakDb = Math.round(peak * 100) / 100;
+  if (lufs !== undefined && Number.isFinite(lufs)) r.loudness = Math.round(lufs * 100) / 100;
   return r;
 };
 
@@ -47,19 +47,19 @@ export const parseEbur128 = (stderr: string, durationText?: string): AudioMetada
 export const measureAudioFile = (file: string): AudioMetadata => {
   const { stderr } = measureEbur128(file);
   const d = tryRun([config('ffprobe'), '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]);
-  return parseEbur128(stderr, d.退出码 === 0 ? d.stdout : undefined);
+  return parseEbur128(stderr, d.exitCode === 0 ? d.stdout : undefined);
 };
 
 /** 量一个音频文件，时长必须量得出（声音表、补锁都要时长）；峰值、响度量不出（静音）照常不给 */
-export const measureAudio = (file: string): AudioMetadata & { 时长: number } => {
+export const measureAudio = (file: string): AudioMetadata & { duration: number } => {
   const r = measureAudioFile(file);
-  if (r.时长 === undefined || !(r.时长 > 0)) throw new Error(`ffprobe 量不出 ${file} 的时长`);
-  return { ...r, 时长: r.时长 };
+  if (r.duration === undefined || !(r.duration > 0)) throw new Error(`ffprobe 量不出 ${file} 的时长`);
+  return { ...r, duration: r.duration };
 };
 
 /** 是音频就量了并进锁条目，不是原样返回。量不出（没装 ffmpeg、文件解不开）只警告：这几个字段可选，不挡入库 */
 export const withAudioMetadata = (entry: LockEntry, file: string): LockEntry => {
-  if (!isAudio(file) && !audioExtensions.has(entry.后缀)) return entry;
+  if (!isAudio(file) && !audioExtensions.has(entry.suffix)) return entry;
   try {
     return { ...entry, ...measureAudioFile(file) };
   } catch (e) {

@@ -9,7 +9,7 @@ export const registeredDirs = (registryText: string): string[] =>
 
 /** 新作品 段/ 下的占位文件：注册.tsx 的正则只收 段/<段键>/ 下的 段.ts、画面.tsx、叠层*.tsx，它不会被当成段 */
 export const placeholderFileName = '说明.md';
-export const segDirPlaceholderText = `# 段/
+export const segDirPlaceholderText = `# segment/
 
 正片的段放这里，一段一个目录：\`anim new seg <章>-<段名> --scene <场键>\`。
 

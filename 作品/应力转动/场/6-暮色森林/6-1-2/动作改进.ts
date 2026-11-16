@@ -16,7 +16,7 @@ import { rad, smoothstep01 } from '@engine/core/数学.ts';
 import { onTick } from '../时刻.ts';
 // ---------- 1. 打击停顿 ----------
 // 停 3 帧：刀穿过脖子那一帧连放 4 次（1/6 秒）。规矩表「打击停顿」的单位是帧（1/24 秒一格），这里换成秒用
-export const nagaHitStop = exception('打击停顿', 3, { 段: '6-斩娜迦', 原因: '刀穿过脖子那帧连放 4 次；用户 10-21 定按看过的版本' });
+export const nagaHitStop = exception('打击停顿', 3, { segment: '6-斩娜迦', cause: '刀穿过脖子那帧连放 4 次；用户 10-21 定按看过的版本' });
 const nagaHitStopSec = nagaHitStop / 24;
 // 输出剧情时间 → 原剧情时间：在 CUT_TIME 停住 sec 秒，之后整体顺延（人、娜迦、刀光、粒子、镜头一起停）
 export const hitStopTimes = (sec: number) => (sec > 0 ? holdTime([choreo.CUT_TIME, sec]) : (t: number) => t);

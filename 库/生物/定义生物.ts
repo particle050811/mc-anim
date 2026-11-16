@@ -19,16 +19,16 @@ export type VariantTable = Readonly<Record<string, readonly string[]>>;
 export type VariantPick<V extends VariantTable> = { [K in keyof V]: V[K][number] };
 
 export type CreatureDef<V extends VariantTable> = {
-  名: string;
+  name: string;
   /** import 'asset:模型/…' 得到的基岩几何（导出模型.py 的格式：texW、texH、bones），不带贴图 */
-  模型: unknown;
+  model: unknown;
   /** 一张贴图；或按变体给几层（从下到上）合成一张 */
   贴图: TextureSource | ((variant: VariantPick<V>) => readonly TextureSource[]);
   variant?: V;
   /** import 'asset:动画/…' 得到的 .animation.json；默认层们 = 不另给时播哪几层（控制器顺序） */
-  动画?: { 文件: unknown; defaultLayers: readonly AnimationLayerSetting[]; 口径?: Convention; 环境?: MolangEnv };
+  animation?: { file: unknown; defaultLayers: readonly AnimationLayerSetting[]; 口径?: Convention; env?: MolangEnv };
   /** 一像素是多少格，默认 1/16（再乘模组自己的渲染缩放，如 TLM 的 render_entity_scale） */
-  缩放?: number;
+  scale?: number;
   isGlowSkeleton?: (boneName: string) => boolean;
 };
 
@@ -36,10 +36,10 @@ export type CreatureProps<V extends VariantTable> = {
   pose: { loc: number[]; yaw?: number };
   variant?: Partial<VariantPick<V>>;
   /** 动画时钟（秒） */
-  秒?: number;
+  sec?: number;
   layers?: readonly AnimationLayerSetting[];
   /** 合到定义里的环境上：查询、上下文、外部（模组命名空间如 ysm.has_helmet）按名字逐个盖，变量表给了就整张换 */
-  环境?: MolangEnv;
+  env?: MolangEnv;
   /** 叠在动画上面，按通道覆盖 */
   bonePose?: Record<string, BonePose>;
   hurt?: number;
@@ -62,9 +62,9 @@ export const mergeEnv = (bottomEnv: MolangEnv = {}, override: MolangEnv = {}): M
 });
 
 export const defineCreature = <const V extends VariantTable = Record<never, never>>(definition: CreatureDef<V>) => {
-  const animationFiles: Readonly<Record<string, BedrockAnimation>> | undefined = definition.动画 ? parseAnimationFile(definition.动画.文件, definition.动画.口径) : undefined;
-  const model = definition.模型 as Omit<BedrockModel, 'texture'>;
-  if (!Array.isArray(model?.bones)) throw new Error(`定义生物「${definition.名}」：模型不是基岩几何（缺 bones）`);
+  const animationFiles: Readonly<Record<string, BedrockAnimation>> | undefined = definition.animation ? parseAnimationFile(definition.animation.file, definition.animation.口径) : undefined;
+  const model = definition.model as Omit<BedrockModel, 'texture'>;
+  if (!Array.isArray(model?.bones)) throw new Error(`定义生物「${definition.name}」：模型不是基岩几何（缺 bones）`);
   const variantKeys = Object.keys(definition.variant ?? {}) as (keyof V & string)[];
 
   /** 补上默认值、核对取值；不认识的值报错（拼写错不静默） */
@@ -73,7 +73,7 @@ export const defineCreature = <const V extends VariantTable = Record<never, neve
     for (const k of variantKeys) {
       const choices = definition.variant![k]!;
       const v = choice[k] ?? choices[0];
-      if (v === undefined || !choices.includes(v)) throw new Error(`「${definition.名}」的变体 ${k} 没有 ${String(v)}（可选：${choices.join('、')}）`);
+      if (v === undefined || !choices.includes(v)) throw new Error(`「${definition.name}」的变体 ${k} 没有 ${String(v)}（可选：${choices.join('、')}）`);
       picked[k] = v as VariantPick<V>[typeof k];
     }
     return picked;
@@ -87,7 +87,7 @@ export const defineCreature = <const V extends VariantTable = Record<never, neve
     let m = modelCache.get(cacheKey);
     if (!m) {
       const texture = typeof definition.贴图 === 'function' ? overlayTextures(definition.贴图(variant).map(toPng)) : toPng(definition.贴图);
-      if (texture.w !== model.texW || texture.h !== model.texH) console.warn(`「${definition.名}」贴图 ${texture.w}×${texture.h} 和模型的 ${model.texW}×${model.texH} 不一样（UV 按模型的算）`);
+      if (texture.w !== model.texW || texture.h !== model.texH) console.warn(`「${definition.name}」贴图 ${texture.w}×${texture.h} 和模型的 ${model.texW}×${model.texH} 不一样（UV 按模型的算）`);
       modelCache.set(cacheKey, (m = { ...model, texture: texture }));
     }
     return m;
@@ -98,13 +98,13 @@ export const defineCreature = <const V extends VariantTable = Record<never, neve
       'group',
       { position: p.pose.loc, rotation: [0, 0, rad(p.pose.yaw ?? 0)] },
       createElement(BedrockEntity, {
-        模型: getModel(p.variant),
-        缩放: definition.缩放,
-        动画:
-          animationFiles && definition.动画
-            ? { 文件: animationFiles, layers: p.layers ?? definition.动画.defaultLayers, 口径: definition.动画.口径, 环境: mergeEnv(definition.动画.环境, p.环境) }
+        model: getModel(p.variant),
+        scale: definition.scale,
+        animation:
+          animationFiles && definition.animation
+            ? { file: animationFiles, layers: p.layers ?? definition.animation.defaultLayers, 口径: definition.animation.口径, env: mergeEnv(definition.animation.env, p.env) }
             : undefined,
-        秒: p.秒,
+        sec: p.sec,
         bonePose: p.bonePose,
         hurt: p.hurt,
         lighting: p.lighting,
@@ -114,6 +114,6 @@ export const defineCreature = <const V extends VariantTable = Record<never, neve
         attach: p.attach,
       }),
     );
-  component.displayName = definition.名;
+  component.displayName = definition.name;
   return Object.assign(component, { definition, animationFiles, getModel, pickVariant });
 };

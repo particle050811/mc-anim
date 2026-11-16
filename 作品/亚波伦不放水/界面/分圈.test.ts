@@ -58,8 +58,8 @@ describe('分圈', () => {
     const perRing = splitRings(128);
     const slotPos = placeCells(perRing);
     expect(slotPos.length).toBe(128);
-    expect(new Set(slotPos.map((p) => `${p.ring}|${p.格}`)).size).toBe(128);
-    perRing.forEach((n, k) => expect(slotPos.filter((p) => p.ring === k).map((p) => p.格)).toEqual(Array.from({ length: n }, (_, i) => i)));
+    expect(new Set(slotPos.map((p) => `${p.ring}|${p.cell}`)).size).toBe(128);
+    perRing.forEach((n, k) => expect(slotPos.filter((p) => p.ring === k).map((p) => p.cell)).toEqual(Array.from({ length: n }, (_, i) => i)));
   });
 
   it('适配缩放：720 高、留 24，三圈取 8/3，四圈取 2', () => {
@@ -83,9 +83,9 @@ describe('开合', () => {
 
   it('原版的数：2.5 刻线性，开完内 30 外 60，图标半径 45；第 0 格朝正上，顺时针', () => {
     expect(WheelState(-1)).toBeNull();
-    expect(WheelState(1.25)).toMatchObject({ 进度: 0.5, animating: true, 内: 15, outerRadius: 30, patternScale: 0.5 });
+    expect(WheelState(1.25)).toMatchObject({ progress: 0.5, animating: true, 内: 15, outerRadius: 30, patternScale: 0.5 });
     expect(WheelState(0)!.内).toBeCloseTo(0.1, 12);
-    expect(WheelState(2.5)).toMatchObject({ 进度: 1, animating: false, 内: 30, outerRadius: 60, iconRadius: 45 });
+    expect(WheelState(2.5)).toMatchObject({ progress: 1, animating: false, 内: 30, outerRadius: 60, iconRadius: 45 });
     expect(radialWheelConst.底色).toBe(1056964608);
     expect(radialWheelConst.hoverColor).toBe(1073741823);
     expect(Math.sin(cellAngle(0, 20))).toBeCloseTo(-1, 12);
@@ -94,8 +94,8 @@ describe('开合', () => {
 
   it('外圈依次弹开：没轮到是 null，内沿不动、外沿长到位；相邻圈反向转', () => {
     expect(RingState(1, 2.4)).toBeNull();
-    expect(RingState(1, 3.75)).toMatchObject({ 进度: 0.5, animating: true, 内: 60, outerRadius: 75 });
-    expect(RingState(2, 7.5)).toMatchObject({ 进度: 1, animating: false, 内: 90, outerRadius: 120, iconRadius: 105 });
+    expect(RingState(1, 3.75)).toMatchObject({ progress: 0.5, animating: true, 内: 60, outerRadius: 75 });
+    expect(RingState(2, 7.5)).toMatchObject({ progress: 1, animating: false, 内: 90, outerRadius: 120, iconRadius: 105 });
     expect(openDoneTick(3)).toBe(7.5);
     expect(RingState(0, 20)!.angleRad).toBeCloseTo((defaultOpenClose.rotSpeed * Math.PI) / 180, 12);
     expect(RingState(1, 20)!.angleRad).toBeCloseTo(-RingState(0, 20)!.angleRad, 12);
@@ -103,10 +103,10 @@ describe('开合', () => {
   });
 
   it('收盘：最外圈先缩、最里一圈最后缩回圆心，收完是 null；转角照总刻数接着转', () => {
-    expect(retractRingState(2, 100, 0, 3)).toMatchObject({ 进度: 1, 内: 90, outerRadius: 120 });
-    expect(retractRingState(2, 100, 1.25, 3)).toMatchObject({ 进度: 0.5, 内: 90, outerRadius: 105 });
+    expect(retractRingState(2, 100, 0, 3)).toMatchObject({ progress: 1, 内: 90, outerRadius: 120 });
+    expect(retractRingState(2, 100, 1.25, 3)).toMatchObject({ progress: 0.5, 内: 90, outerRadius: 105 });
     expect(retractRingState(2, 100, 3, 3)).toBeNull();
-    expect(retractRingState(0, 100, 3, 3)).toMatchObject({ 进度: 1, 内: 30 });
+    expect(retractRingState(0, 100, 3, 3)).toMatchObject({ progress: 1, 内: 30 });
     expect(retractRingState(0, 100, 6.25, 3)!.内).toBeCloseTo(15, 12);
     expect(retractRingState(0, 100, 7.6, 3)).toBeNull();
     expect(retractRingState(1, 100, 2, 3)!.angleRad).toBeCloseTo(RingState(1, 100)!.angleRad, 12);
@@ -114,18 +114,18 @@ describe('开合', () => {
 
   it('盘心移出：开盘时各圈图标都缩在圆心，那一圈弹完正好落定（之后 null，照常画），中间往外走、变大、旋转都不回头', () => {
     for (const k of [0, 1, 2]) {
-      expect(moveOutState(k, 0)).toEqual({ ratio: 0, 缩放: defaultMoveOut.startScale, roll: (defaultMoveOut.roll * Math.PI) / 180 });
+      expect(moveOutState(k, 0)).toEqual({ ratio: 0, scale: defaultMoveOut.startScale, roll: (defaultMoveOut.roll * Math.PI) / 180 });
       const endTick = k * defaultOpenClose.ringGapTick + defaultOpenClose.ticksPerRing;
       expect(moveOutState(k, endTick)).toBeNull();
       expect(RingState(k, endTick)!.animating).toBe(false);
       expect(RingState(k, endTick - 1e-6)!.animating).toBe(true);
       const endState = moveOutState(k, endTick - 1e-6)!;
-      expect([endState.ratio, endState.缩放, endState.roll]).toEqual([expect.closeTo(1, 6), expect.closeTo(1, 6), expect.closeTo(0, 6)]);
+      expect([endState.ratio, endState.scale, endState.roll]).toEqual([expect.closeTo(1, 6), expect.closeTo(1, 6), expect.closeTo(0, 6)]);
       let prev = moveOutState(k, 0)!;
       for (let tick = 0.1; tick < endTick; tick += 0.1) {
         const curState = moveOutState(k, tick)!;
         expect(curState.ratio).toBeGreaterThanOrEqual(prev.ratio);
-        expect(curState.缩放).toBeGreaterThanOrEqual(prev.缩放);
+        expect(curState.scale).toBeGreaterThanOrEqual(prev.scale);
         expect(Math.abs(curState.roll)).toBeLessThanOrEqual(Math.abs(prev.roll));
         prev = curState;
       }
@@ -137,14 +137,14 @@ describe('排盘', () => {
   it('有画面档 71 个三圈，全部档 128 个四圈（去掉 5 个空壳），每个法术正好落一格', () => {
     const defaults = arrangeWheel();
     expect(defaults.cellsPerRing).toEqual([14, 24, 33]);
-    expect(defaults.项.length).toBe(71);
-    expect(defaults.项.every((item) => item.inReveal)).toBe(true);
+    expect(defaults.items.length).toBe(71);
+    expect(defaults.items.every((item) => item.inReveal)).toBe(true);
     const allRings = arrangeWheel({ 放: '全部' });
     expect(allRings.cellsPerRing).toEqual([16, 27, 37, 48]);
-    expect(new Set(allRings.项.map((item) => item.键)).size).toBe(128);
-    expect(new Set(allRings.项.map((item) => `${item.ring}|${item.格}`)).size).toBe(128);
-    expect(allRings.项.filter((item) => item.inReveal).length).toBe(71);
-    expect(new Set(allRings.项.map((item) => item.法)).size).toBe(spellTable.filter((spell) => spell.类 !== '空壳').length);
+    expect(new Set(allRings.items.map((item) => item.key)).size).toBe(128);
+    expect(new Set(allRings.items.map((item) => `${item.ring}|${item.cell}`)).size).toBe(128);
+    expect(allRings.items.filter((item) => item.inReveal).length).toBe(71);
+    expect(new Set(allRings.items.map((item) => item.法)).size).toBe(spellTable.filter((spell) => spell.类 !== '空壳').length);
   });
 
   it('按学派排：同学派连成一段，学派表盖住法术表里出现的全部学派；照注册排就是法术表的顺序', () => {
@@ -157,8 +157,8 @@ describe('排盘', () => {
   });
 
   it('聚晶键的形状：命名空间:注册名_focus', () => {
-    const { 项: items } = arrangeWheel({ 放: '全部' });
-    expect(items.find((item) => item.法.registryName === 'fireball')!.键).toBe('goety:fireball_focus');
-    expect(items.find((item) => item.法.registryName === 'revelation')!.键).toBe('goety_revelation:revelation_focus');
+    const { items: items } = arrangeWheel({ 放: '全部' });
+    expect(items.find((item) => item.法.registryName === 'fireball')!.key).toBe('goety:fireball_focus');
+    expect(items.find((item) => item.法.registryName === 'revelation')!.key).toBe('goety_revelation:revelation_focus');
   });
 });

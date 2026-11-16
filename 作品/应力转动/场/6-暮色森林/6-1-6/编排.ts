@@ -57,7 +57,7 @@ const profileLimits = pierceProfileLimits(V);
 // 巡航高度（本地 z）：取穿刺线前端那里的巡航高（模型/场景/暮色新世界.tsx 的 `cruiseHeight`），和前面的巡航接平。前端又随压机头的位置变：先按 -500 估一次、再按算出来的前端取一次
 const cruiseZ = (dist: number) => {
   const worldPt = hydraLair.toWorld([PIERCE[0] + DIR[0] * dist, PIERCE[1] + DIR[1] * dist, 0]);
-  return cruiseHeight(worldPt[0], worldPt[1]) - hydraLair.原点[2];
+  return cruiseHeight(worldPt[0], worldPt[1]) - hydraLair.origin[2];
 };
 const pierceState = { a: 0, z: 0, γ: 0 };
 const frontProfileFor = (height: number) => {
@@ -76,7 +76,7 @@ export const sectionInfo = { diveStartA: diveStart.a, diveStartZ: diveStart.z, d
 const hTip = (a: number) => PIERCE[2] + tipProfile.z(a);
 const tipLocal = (a: number): V3 => [PIERCE[0] + DIR[0] * a, PIERCE[1] + DIR[1] * a, hTip(a)];
 export const pierceLine = {
-  名: '九头蛇',
+  name: '九头蛇',
   V,
   facing: hydraLair.facing(YAW),
   tip: (a: number): V3 => hydraLair.toWorld(tipLocal(a)),
@@ -112,4 +112,4 @@ export const hydraHurt = (t: number) => (t >= 0 ? 1 : 0);
 export const sideWall = { inSec: 31.5, 出: 52.5 };
 export const sideWallPoint = (a: number): V3 => tipLocal(a);
 export const sideWallTime = (a: number) => a / V;
-export const visibleWindow = { 起: -40, 止: 8 };
+export const visibleWindow = { start: -40, end: 8 };

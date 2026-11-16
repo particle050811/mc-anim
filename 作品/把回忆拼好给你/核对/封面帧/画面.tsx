@@ -8,7 +8,7 @@ import { coverSafeArea } from '../../场/2-隐世之境/封面.ts';
 import { views } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
 
-const SafeAreaLayer: React.FC<{ 宽: number; 高: number }> = ({ 宽: W, 高: H }) => {
+const SafeAreaLayer: React.FC<{ width: number; height: number }> = ({ width: W, height: H }) => {
   const { fourThreeRect, bottomEdge, bottomRight } = coverSafeArea(W, H);
   const dimColor = 'rgba(0, 0, 0, 0.45)';
   const forbidden = 'rgba(255, 40, 40, 0.28)';
@@ -25,14 +25,14 @@ const SafeAreaLayer: React.FC<{ 宽: number; 高: number }> = ({ 宽: W, 高: H 
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
-  const { 宽: width, 高: height } = eyeContactFraming[v.版];
+  const { width: width, height: height } = eyeContactFraming[v.版];
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <EyeContactPicture 版={v.版} withPost={v.withPost} bigText={v.bigText} showBubble={v.字} showChat={v.字} />
-      {v.safeArea && <SafeAreaLayer 宽={width} 高={height} />}
+      <EyeContactPicture 版={v.版} withPost={v.withPost} bigText={v.bigText} showBubble={v.char} showChat={v.char} />
+      {v.safeArea && <SafeAreaLayer width={width} height={height} />}
       {v.版 !== '片' && (
         <div style={{ position: 'absolute', left: width + 16, top: 12, right: 12, fontFamily: uiFontFamily, fontSize: 18, lineHeight: 1.5, color: '#ffffff' }}>
-          <div>核对-封面帧 · {v.名}</div>
+          <div>核对-封面帧 · {v.name}</div>
           <div style={{ fontSize: 14, color: '#bbbbbb' }}>
             左上角 {width * 2}×{height * 2}（成片像素）
           </div>

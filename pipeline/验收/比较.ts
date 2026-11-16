@@ -10,13 +10,13 @@ import { parse } from 'smol-toml';
 import { measureEbur128 } from '../资产/音频量.ts';
 import { codeRoot } from '../环境/路径.ts';
 
-export type Threshold = { 块8门槛: number; 块16门槛: number; 块64门槛: number; 看一眼门槛: number; 块均值容差: number; 响度容差LU: number; 起音容差帧: number };
+export type Threshold = { block8Threshold: number; block16Threshold: number; block64Threshold: number; glanceThreshold: number; blockMeanTol: number; loudnessTolLu: number; onsetTolFrames: number };
 
 export const thresholdFile = () => path.join(codeRoot(), 'verify', '阈值.toml');
 
 export const readThresholds = (file = thresholdFile()): Threshold => {
   const t = parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>;
-  const thresholdKeys = ['块8门槛', '块16门槛', '块64门槛', '看一眼门槛', '块均值容差', '响度容差LU', '起音容差帧'] as const;
+  const thresholdKeys = ['block8Threshold', 'block16Threshold', 'block64Threshold', 'glanceThreshold', 'blockMeanTol', 'loudnessTolLu', 'onsetTolFrames'] as const;
   for (const k of thresholdKeys) if (typeof t[k] !== 'number') throw new Error(`${file} 要写数字 ${k}`);
   return Object.fromEntries(thresholdKeys.map((k) => [k, t[k]])) as Threshold;
 };
@@ -123,17 +123,17 @@ export const computeBlockDiff = (newPixels: Buffer, oldBuf: Buffer, width: numbe
 export type BlockVerdict = '变了' | '看一眼' | '容差内';
 
 /** 16×16 > 块16门槛、64×64 > 块64门槛、8×8 > 块8门槛 任一条就是变了；16×16 在 (看一眼门槛, 块16门槛] 不判失败、出并排图给人看 */
-export const judgeBlockDiff = (d: BlockDiff, threshold: Pick<Threshold, '块8门槛' | '块16门槛' | '块64门槛' | '看一眼门槛'>): BlockVerdict =>
-  d[16].差 > threshold.块16门槛 || d[64].差 > threshold.块64门槛 || d[8].差 > threshold.块8门槛 ? '变了' : d[16].差 > threshold.看一眼门槛 ? '看一眼' : '容差内';
+export const judgeBlockDiff = (d: BlockDiff, threshold: Pick<Threshold, 'block8Threshold' | 'block16Threshold' | 'block64Threshold' | 'glanceThreshold'>): BlockVerdict =>
+  d[16].差 > threshold.block16Threshold || d[64].差 > threshold.block64Threshold || d[8].差 > threshold.block8Threshold ? '变了' : d[16].差 > threshold.glanceThreshold ? '看一眼' : '容差内';
 
 /** 哪个窗口最该看：超门槛最多的那一档（都没超就是 16×16） */
-export const blocksToView = (d: BlockDiff, threshold: Pick<Threshold, '块8门槛' | '块16门槛' | '块64门槛'>): TileEdge => {
-  const thresholdRatio = { 8: d[8].差 / threshold.块8门槛, 16: d[16].差 / threshold.块16门槛, 64: d[64].差 / threshold.块64门槛 };
+export const blocksToView = (d: BlockDiff, threshold: Pick<Threshold, 'block8Threshold' | 'block16Threshold' | 'block64Threshold'>): TileEdge => {
+  const thresholdRatio = { 8: d[8].差 / threshold.block8Threshold, 16: d[16].差 / threshold.block16Threshold, 64: d[64].差 / threshold.block64Threshold };
   return (TileEdge.filter((w) => thresholdRatio[w] > 1).sort((a, b) => thresholdRatio[b] - thresholdRatio[a])[0] ?? 16) as TileEdge;
 };
 
-export const blockDiffNote = (d: BlockDiff, threshold: Pick<Threshold, '块8门槛' | '块16门槛' | '块64门槛'>) =>
-  `块平均差 16×16 ${d[16].差.toFixed(1)}（门槛 ${threshold.块16门槛}）、64×64 ${d[64].差.toFixed(1)}（${threshold.块64门槛}）、8×8 ${d[8].差.toFixed(1)}（${threshold.块8门槛}），最大的 16×16 块在 (${d[16].x}, ${d[16].y})`;
+export const blockDiffNote = (d: BlockDiff, threshold: Pick<Threshold, 'block8Threshold' | 'block16Threshold' | 'block64Threshold'>) =>
+  `块平均差 16×16 ${d[16].差.toFixed(1)}（门槛 ${threshold.block16Threshold}）、64×64 ${d[64].差.toFixed(1)}（${threshold.block64Threshold}）、8×8 ${d[8].差.toFixed(1)}（${threshold.block8Threshold}），最大的 16×16 块在 (${d[16].x}, ${d[16].y})`;
 
 // ---------- 并排图 ----------
 
@@ -223,7 +223,7 @@ export const recordThreshold = 6;
 export const strongOnset = 10;
 const floorDb = -45;
 
-export type Onset = { 秒: number; 强: number };
+export type Onset = { sec: number; strength: number };
 
 /** 边读 s16le 双声道 48 kHz 的 PCM 边算包络 */
 export class Envelope {
@@ -261,7 +261,7 @@ export const findOnsets = (dB: readonly number[]): Onset[] => {
     for (let j = Math.max(0, i - lookbackCells); j < i; j++) minDb = Math.min(minDb, dB[j]!);
     const jumpDb = dB[i]! - minDb;
     if (jumpDb >= recordThreshold) {
-      r.push({ 秒: Math.round(i * cellSec * 1000) / 1000, 强: Math.round(jumpDb * 10) / 10 });
+      r.push({ sec: Math.round(i * cellSec * 1000) / 1000, strength: Math.round(jumpDb * 10) / 10 });
       lastIndex = i;
     }
   }
@@ -270,14 +270,14 @@ export const findOnsets = (dB: readonly number[]): Onset[] => {
 
 /** 一边的强起音在另一边容差内找不到起音的，列出来（秒） */
 export const compareOnsets = (newOnsets: readonly Onset[], oldOnsets: readonly Onset[], toleranceSec: number) => {
-  const findMissing = (firstOnsets: readonly Onset[], secondOnsets: readonly Onset[]) => firstOnsets.filter((a) => a.强 >= strongOnset && !secondOnsets.some((b) => Math.abs(b.秒 - a.秒) <= toleranceSec + 1e-9)).map((a) => a.秒);
+  const findMissing = (firstOnsets: readonly Onset[], secondOnsets: readonly Onset[]) => firstOnsets.filter((a) => a.strength >= strongOnset && !secondOnsets.some((b) => Math.abs(b.sec - a.sec) <= toleranceSec + 1e-9)).map((a) => a.sec);
   return { oldOnly: findMissing(oldOnsets, newOnsets), newOnly: findMissing(newOnsets, oldOnsets) };
 };
 
 /** 认可记录里起音写成「秒@强度」 */
-export const onsetToString = (x: Onset) => `${x.秒.toFixed(3)}@${x.强.toFixed(1)}`;
+export const onsetToString = (x: Onset) => `${x.sec.toFixed(3)}@${x.strength.toFixed(1)}`;
 export const onsetFromString = (s: string): Onset => {
   const m = /^(\d+(?:\.\d+)?)@(\d+(?:\.\d+)?)$/.exec(s);
   if (!m) throw new Error(`起音要写成「秒@强度」：${s}`);
-  return { 秒: Number(m[1]), 强: Number(m[2]) };
+  return { sec: Number(m[1]), strength: Number(m[2]) };
 };

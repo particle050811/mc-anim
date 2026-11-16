@@ -7,7 +7,7 @@ import os from 'node:os';
 import { isMac, isWindows } from './配置.ts';
 import { tryRun } from './子进程.ts';
 
-export type MemReading = { 总: number; 空闲: number; 空闲百分比: number; 交换区总: number; 交换区已用: number | null };
+export type MemReading = { grandTotal: number; free: number; freePercent: number; swapTotal: number; swapUsed: number | null };
 
 export const parseVmStat = (text: string, totalBytes: number) => {
   const page = Number(/page size of (\d+) bytes/.exec(text)?.[1] ?? 4096);
@@ -19,40 +19,40 @@ export const parseVmStat = (text: string, totalBytes: number) => {
 /** sysctl vm.swapusage：total = 8192.00M  used = 6935.00M ... */
 export const parseSwap = (text: string) => {
   const mb = (fieldName: string) => Number(new RegExp(`${fieldName} = ([\\d.]+)M`).exec(text)?.[1] ?? 0) * 1024 * 1024;
-  return { 总: mb('total'), used: mb('used') };
+  return { grandTotal: mb('total'), used: mb('used') };
 };
 
 export const readMemory = (): MemReading | null => {
   const total = os.totalmem();
   let freeBytes: number;
-  let swap: { 总: number; used: number | null } = { 总: 0, used: null };
+  let swap: { grandTotal: number; used: number | null } = { grandTotal: 0, used: null };
   if (isMac) {
     const vm = tryRun(['vm_stat']);
-    if (vm.退出码 !== 0) return null;
+    if (vm.exitCode !== 0) return null;
     freeBytes = parseVmStat(vm.stdout, total);
     const sw = tryRun(['sysctl', '-n', 'vm.swapusage']);
-    if (sw.退出码 === 0) swap = parseSwap(sw.stdout);
+    if (sw.exitCode === 0) swap = parseSwap(sw.stdout);
   } else if (isWindows) {
     const r = tryRun(['powershell', '-NoProfile', '-Command', '$o = Get-CimInstance Win32_OperatingSystem; "$($o.FreePhysicalMemory) $($o.TotalVirtualMemorySize) $($o.FreeVirtualMemory) $($o.TotalVisibleMemorySize)"']);
     const [free, totalVirt, freeVirt, totalVisible] = r.stdout.trim().split(/\s+/).map(Number);
-    if (r.退出码 !== 0 || !Number.isFinite(free)) return null;
+    if (r.exitCode !== 0 || !Number.isFinite(free)) return null;
     freeBytes = free! * 1024;
-    swap = { 总: Math.max(0, (totalVirt! - totalVisible!) * 1024), used: Math.max(0, (totalVirt! - freeVirt! - (totalVisible! - free!)) * 1024) };
+    swap = { grandTotal: Math.max(0, (totalVirt! - totalVisible!) * 1024), used: Math.max(0, (totalVirt! - freeVirt! - (totalVisible! - free!)) * 1024) };
   } else {
     try {
       const text = fs.readFileSync('/proc/meminfo', 'utf8');
       const kb = (fieldName: string) => Number(new RegExp(`^${fieldName}:\\s+(\\d+)`, 'm').exec(text)?.[1] ?? 0) * 1024;
       freeBytes = kb('MemAvailable');
-      swap = { 总: kb('SwapTotal'), used: kb('SwapTotal') - kb('SwapFree') };
+      swap = { grandTotal: kb('SwapTotal'), used: kb('SwapTotal') - kb('SwapFree') };
     } catch {
       return null;
     }
   }
-  return { 总: total, 空闲: freeBytes, 空闲百分比: Math.round((freeBytes / total) * 100), 交换区总: swap.总, 交换区已用: swap.used };
+  return { grandTotal: total, free: freeBytes, freePercent: Math.round((freeBytes / total) * 100), swapTotal: swap.grandTotal, swapUsed: swap.used };
 };
 
 /** 渲染能不能放行：照旧资源闸只看空闲内存不低于下限。交换区只显示不卡（Mac 交换区用掉后很久不还，卡它会一直等） */
-export const enoughMemory = (m: MemReading, minPercent: number) => m.空闲百分比 >= minPercent;
+export const enoughMemory = (m: MemReading, minPercent: number) => m.freePercent >= minPercent;
 
 export const coreCount = () => os.availableParallelism();
 
@@ -60,13 +60,13 @@ export const coreCount = () => os.availableParallelism();
 export const load1Min = (): number | null => (isWindows ? null : os.loadavg()[0]!);
 
 export const readingNote = (m: MemReading) =>
-  `空闲内存 ${m.空闲百分比}%（${(m.空闲 / 2 ** 30).toFixed(1)}/${(m.总 / 2 ** 30).toFixed(0)} GB）` +
-  (m.交换区总 && m.交换区已用 !== null ? `，交换区 ${(m.交换区已用 / 2 ** 30).toFixed(1)}/${(m.交换区总 / 2 ** 30).toFixed(1)} GB` : '');
+  `空闲内存 ${m.freePercent}%（${(m.free / 2 ** 30).toFixed(1)}/${(m.grandTotal / 2 ** 30).toFixed(0)} GB）` +
+  (m.swapTotal && m.swapUsed !== null ? `，交换区 ${(m.swapUsed / 2 ** 30).toFixed(1)}/${(m.swapTotal / 2 ** 30).toFixed(1)} GB` : '');
 
 /** macOS 压力值：1 正常、2 警告、4 严重；不支持的平台不猜。 */
 export const readPressure = (): number | null => {
   if (!isMac) return null;
   const r = tryRun(['sysctl', '-n', 'kern.memorystatus_vm_pressure_level']);
   const n = Number(r.stdout.trim());
-  return r.退出码 === 0 && [1, 2, 4].includes(n) ? n : null;
+  return r.exitCode === 0 && [1, 2, 4].includes(n) ? n : null;
 };

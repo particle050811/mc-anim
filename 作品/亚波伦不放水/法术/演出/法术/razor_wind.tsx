@@ -23,7 +23,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const slashFrames = [slash1Png, slash2Png, slash3Png, slash4Png].map(png);
 const radiusAt = (tick: number) => 0.3 + 0.12 * tick;
 
-const RazorWind: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const RazorWind: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const trajectory = razorWindPath(from, target);
   const endTick = razorWindEndTick(from, target);
@@ -46,13 +46,13 @@ const RazorWind: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
   const image = slashFrames[Math.floor(sec * 10) % 4]!;
   return (
     <>
-      <TexturedParticles 类={cloudClass} spawns={clouds} 秒={sec} />
+      <TexturedParticles type={cloudClass} spawns={clouds} sec={sec} />
       {tick < endTick && (
         <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
           <group rotation={[0, degToRad(yaw), 0]}>
             <group rotation={[degToRad(-pitch), 0, 0]}>
-              <FlatQuad corners={corners} 图={image} 混合="半透明" opacity={0.5} />
-              <FlatQuad corners={corners} 图={image} 混合="加色" opacity={0.5} />
+              <FlatQuad corners={corners} image={image} blend="半透明" opacity={0.5} />
+              <FlatQuad corners={corners} image={image} blend="加色" opacity={0.5} />
             </group>
           </group>
         </MinecraftSpace>

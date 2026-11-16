@@ -6,8 +6,8 @@ import type { SoundTable } from './声音助手.ts';
 
 export type SoundItem = {
   /** 要放的文件的资产 id（声音地址表的键） */
-  资产: string;
-  名: string;
+  asset: string;
+  name: string;
   档?: string;
   /** 段内第几秒起放（带小数） */
   startSec: number;
@@ -22,12 +22,12 @@ export type SoundItem = {
   distinctKey?: string;
 };
 const assetSound = (c: AssetCue): SoundItem => {
-  if (c.循环 && (c.入点秒 ?? 0) > 0) throw new Error(`${c.名}（第 ${c.秒} 秒）：循环的 cue 不能带入点秒（段框架还不支持从文件中间起循环，拆成两条 cue）`);
+  if (c.循环 && (c.入点秒 ?? 0) > 0) throw new Error(`${c.name}（第 ${c.sec} 秒）：循环的 cue 不能带入点秒（段框架还不支持从文件中间起循环，拆成两条 cue）`);
   return {
-    资产: c.资产,
-    名: c.名,
+    asset: c.asset,
+    name: c.name,
     ...(c.档 !== undefined ? { 档: c.档 } : {}),
-    startSec: c.秒,
+    startSec: c.sec,
     durSec: c.长秒,
     入点秒: c.入点秒 ?? 0,
     速率: c.速率 ?? 1,
@@ -37,35 +37,35 @@ const assetSound = (c: AssetCue): SoundItem => {
 };
 
 /** 一段的全部声音。台词增益：台词总线的音量（engine/audio/混音.ts 的 lineVolume，去台词时是 0） */
-export const segPlayPlan = (seg: Pick<SegmentDef, '声音' | '秒'>, soundTable: SoundTable, o: { lineGain: number }): SoundItem[] => {
-  const cues = seg.声音 ?? [];
+export const segPlayPlan = (seg: Pick<SegmentDef, 'sound' | 'sec'>, soundTable: SoundTable, o: { lineGain: number }): SoundItem[] => {
+  const cues = seg.sound ?? [];
   const segLengthSec = segDurSec(seg);
   const openSec = new Map<string, number>();
   const out: SoundItem[] = [];
   cues.forEach((c, i) => {
-    if (c.台词 === undefined) {
+    if (c.lines === undefined) {
       out.push(assetSound(c));
       return;
     }
-    const t = soundTable.台词[c.台词];
-    if (!t) throw new Error(`声音表里没有台词「${c.台词}」：跑 anim cues`);
-    const f = c.接上段 ? (openSec.get(c.台词) ?? t.上段开口秒) : c.秒;
-    if (f === undefined) throw new Error(`第 ${c.秒} 秒的台词「${c.台词}」标了 接上段，本段前面和清单里上一段都没有它开口`);
-    openSec.set(c.台词, f);
-    const leadSec = f - t.开口;
-    const startSec = c.接上段 ? c.秒 : Math.max(0, leadSec);
+    const t = soundTable.lines[c.lines];
+    if (!t) throw new Error(`声音表里没有台词「${c.lines}」：跑 anim cues`);
+    const f = c.接上段 ? (openSec.get(c.lines) ?? t.上段开口秒) : c.sec;
+    if (f === undefined) throw new Error(`第 ${c.sec} 秒的台词「${c.lines}」标了 接上段，本段前面和清单里上一段都没有它开口`);
+    openSec.set(c.lines, f);
+    const leadSec = f - t.mouthOpen;
+    const startSec = c.接上段 ? c.sec : Math.max(0, leadSec);
     const shiftSec = startSec - leadSec;
     // 截到段尾、同一句的下一截
-    const nextSlice = cues.slice(i + 1).find((x) => x.台词 === c.台词);
-    const limit = Math.min(segLengthSec, nextSlice ? nextSlice.秒 : Infinity) - startSec;
-    const lengthSec = Math.min(c.长秒 ?? t.时长 - shiftSec + lineTailSec, limit);
+    const nextSlice = cues.slice(i + 1).find((x) => x.lines === c.lines);
+    const limit = Math.min(segLengthSec, nextSlice ? nextSlice.sec : Infinity) - startSec;
+    const lengthSec = Math.min(c.长秒 ?? t.duration - shiftSec + lineTailSec, limit);
     if (lengthSec <= 1e-9) return;
-    out.push({ 资产: t.配音, 名: c.台词, startSec: startSec, durSec: lengthSec, 入点秒: shiftSec, 速率: 1, 循环: false, 增益: () => o.lineGain });
+    out.push({ asset: t.voice, name: c.lines, startSec: startSec, durSec: lengthSec, 入点秒: shiftSec, 速率: 1, 循环: false, 增益: () => o.lineGain });
   });
   // 同一个文件叠着放：后面那声加区分标记，不然母版里只剩一声（同源区分.ts）
   for (let i = 0; i < out.length; i++) {
     const a = out[i]!;
-    if (out.slice(0, i).some((b) => b.资产 === a.资产 && b.startSec < a.startSec + a.durSec && a.startSec < b.startSec + b.durSec)) a.distinctKey = `段声音${i}`;
+    if (out.slice(0, i).some((b) => b.asset === a.asset && b.startSec < a.startSec + a.durSec && a.startSec < b.startSec + b.durSec)) a.distinctKey = `段声音${i}`;
   }
   return out;
 };

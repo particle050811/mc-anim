@@ -9,13 +9,13 @@ import { views } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
 
 /** 眼睛特写同段里（第 3 句祭坛那一镜接着推） */
-const eyeView = (g: number) => <AltarPicture g={g} 机={eyeCameraRig(g)} />;
+const eyeView = (g: number) => <AltarPicture g={g} machine={eyeCameraRig(g)} />;
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <SunsetRowingPicture songFrame={v.帧} eyeView={eyeView} waveOn={v.waveOn ?? true} withPost={v.withPost ?? true} crossfadeStyle={crossfadeStyle} waveStyle={waveStyle} />
+      <SunsetRowingPicture songFrame={v.frame} eyeView={eyeView} waveOn={v.waveOn ?? true} withPost={v.withPost ?? true} crossfadeStyle={crossfadeStyle} waveStyle={waveStyle} />
     </AbsoluteFill>
   );
 };

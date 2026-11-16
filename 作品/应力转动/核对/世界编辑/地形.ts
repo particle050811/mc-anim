@@ -12,11 +12,11 @@ import { fetchSectionsInPool, registerSource, registerModel } from '@engine/voxe
 import { readModel, modelFileName } from '@engine/voxel/区段模型.ts';
 import type { VoxelGrid, VoxelSource } from '@engine/voxel/生成.ts';
 
-export type VersionedTerrain = { 键: string; 来源: VoxelSource; heightRange: [number, number]; 原点: [number, number, number] };
+export type VersionedTerrain = { key: string; source: VoxelSource; heightRange: [number, number]; origin: [number, number, number] };
 
 const buildSource = async (dir: string): Promise<VersionedTerrain> => {
   const info = await fetchJson<PackageInfo>(`${dir}/包.json`, 'anim world bake 测试-修整-编辑示例 烘出来');
-  if (info.版本 !== formatVersion) throw new Error(`世界编辑核对地形 ${dir} 是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：运行 anim world transcode，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
+  if (info.version !== formatVersion) throw new Error(`世界编辑核对地形 ${dir} 是格式 ${info.version}，这版代码只读格式 ${formatVersion}：运行 anim world transcode，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
   const url = new URL(dataUrl(`${dir}/${modelFileName}`), location.href).href;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`取世界编辑核对模型 ${url}：${res.status}；运行 anim world transcode，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
@@ -25,9 +25,9 @@ const buildSource = async (dir: string): Promise<VersionedTerrain> => {
   registerModel(url, bytes);
   const coarse = decodeCoarseHeight(info);
   let maxTop = -Infinity;
-  for (const h of coarse.高) if (h !== -32768) maxTop = Math.max(maxTop, h);
-  const ctx: SectionContext = { info, tables: buildPackTables(info), variesByPos: info.群系.map(variesByPos), cutBoxes: [], flattenAreas: [] };
-  const workerCtx = registerSource({ 原点: info.原点, 状态: info.状态, 群系: info.群系 }, [], []);
+  for (const h of coarse.height) if (h !== -32768) maxTop = Math.max(maxTop, h);
+  const ctx: SectionContext = { info, tables: buildPackTables(info), variesByPos: info.biome.map(variesByPos), cutBoxes: [], flattenAreas: [] };
+  const workerCtx = registerSource({ origin: info.origin, state: info.state, biome: info.biome }, [], []);
   const indexCache = new Map<string, Promise<Uint32Array>>();
   const sectionDataByKey = new Map<string, SectionData>();
   const readyVoxels = new Map<string, VoxelGrid>();
@@ -51,7 +51,7 @@ const buildSource = async (dir: string): Promise<VersionedTerrain> => {
       out.z = h === -Infinity ? 0 : h;
       out.crown = 0;
     },
-    区段: (q) => {
+    sections: (q) => {
       if (!hasSection(coarse, q)) return null;
       const k = sectionKey(q);
       const v = readyVoxels.get(k);
@@ -74,7 +74,7 @@ const buildSource = async (dir: string): Promise<VersionedTerrain> => {
       return pending.size ? Promise.all(pending).then(() => undefined) : undefined;
     },
   };
-  return { 键: `按版本:${dir}`, 来源: source, heightRange: [-64 - info.原点[1], maxTop], 原点: info.原点 };
+  return { key: `按版本:${dir}`, source: source, heightRange: [-64 - info.origin[1], maxTop], origin: info.origin };
 };
 
 /** 包.json 取到之前返回 null，并用 delayRender 拦住截图（同 useImportedTerrain） */

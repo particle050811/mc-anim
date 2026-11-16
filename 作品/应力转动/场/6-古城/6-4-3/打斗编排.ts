@@ -40,11 +40,11 @@ export const tl = buildTimeline(followClock, {
       [momentumEnd, 1 / 16],
       [returnSpeedTime, 1, true],
     ],
-    { 段: '6-挡箭', 原因: '用户 10-10 点名要弹开慢动作' },
+    { segment: '6-挡箭', cause: '用户 10-10 点名要弹开慢动作' },
   ),
   pause: { storySec: pauseTime },
 });
-const startSec = tl.segTable['6-4-3b'].起;
+const startSec = tl.segTable['6-4-3b'].start;
 const cutStartSec = tl.frameSecAt(cuts.C2);
 export const deflectArrowSec = tl.frameSecAt(bEnd) - startSec;
 export const flickArrowSec = tl.frameSecAt(cuts.C3) - cutStartSec;

@@ -3,20 +3,20 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     },
     "音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2": {
-      "时长": 1.718753,
-      "峰值": -1.5,
-      "响度": -11.8,
+      "duration": 1.718753,
+      "peakDb": -1.5,
+      "loudness": -11.8,
       "sha": "a7ebd396ef42"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

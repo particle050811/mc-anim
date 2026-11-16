@@ -21,10 +21,10 @@ export const interpTable = (valueTable: ArrayLike<number>, x: number): number =>
 };
 
 /** 一档一格的硬切（闪光这类）：第 x 格落在哪一档就取哪一项（第 i 档管 [i, i + 1) 格），档内不插值；头尾之外取头尾，给了 出界 就取它 */
-export const pickTier = <T>(valueTable: ArrayLike<T>, x: number, outOfRange?: { 值: T }): T => {
+export const pickTier = <T>(valueTable: ArrayLike<T>, x: number, outOfRange?: { value: T }): T => {
   const n = valueTable.length;
   if (!n) throw new Error('取档：表是空的');
   const i = Math.floor(snapToFrame(x));
-  if (outOfRange && (i < 0 || i >= n)) return outOfRange.值;
+  if (outOfRange && (i < 0 || i >= n)) return outOfRange.value;
   return valueTable[Math.min(n - 1, Math.max(0, i))]!;
 };

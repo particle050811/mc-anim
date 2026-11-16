@@ -22,8 +22,8 @@ const scaleColor = (hex: string, k: number) => {
 
 export type DoorCanvasProps = EntranceCabinProps & {
   /** 画布的页面尺寸（成片 scale 2），要偶数；半屏给 宽 640 和 半屏取景(1280, …) */
-  宽?: number;
-  高?: number;
+  width?: number;
+  height?: number;
   /** 默认 N = 6 的整屏取景（参数.ts 的 取景，核对-门口 用）。成片里整屏的镜头传 参数.ts 的 整屏镜头（N = 10，连 描边宽 一起：{...整屏镜头}）；
    *  半屏用 半屏取景(…) */
   framing?: DoorFraming;
@@ -46,9 +46,9 @@ export type DoorCanvasProps = EntranceCabinProps & {
   outlineWidth?: number;
   /** 屋后的远景（地点/屋后远景.tsx：同第 6、7 句那片起伏的地、樱花林、橡树，远处照原版的雾淡进天里）：true 开，给对象可以再给 云；
    *  默认不画（第 8 句起各句自己开） */
-  远景?: boolean | BackViewOptions;
+  farView?: boolean | BackViewOptions;
   /** 画在三维画布上面的 2D 叠层（气泡、聊天栏），坐标是这块画布的页面坐标（地点/侧剖面.tsx 的 侧投影 算，顶面要同一个） */
-  叠层?: React.ReactNode;
+  overlay?: React.ReactNode;
   /** 三维的场景内容：角色等 */
   children?: React.ReactNode;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]）：不给 = 不开。开了天以外的几张画布（屋子、屋后远景或身后的林子）一起开，
@@ -64,8 +64,8 @@ export const DoorShading: React.FC<{ shading?: ShadingOptions | null; shadingSce
 
 /** 一块 宽 × 高 的定位容器：天、三维、叠层三层叠在一起 */
 export const DoorCanvas: React.FC<DoorCanvasProps> = ({
-  宽: width = 1280,
-  高: height = 720,
+  width: width = 1280,
+  height: height = 720,
   framing = defaultFraming,
   topDepth = orthoTop,
   刻: tick = dayTick,
@@ -74,11 +74,11 @@ export const DoorCanvas: React.FC<DoorCanvasProps> = ({
   afterimage,
   tone: tone = '夏日白天',
   brightness = 1,
-  outlineWidth = defaultOutline.宽,
-  远景: farView = false,
-  叠层: overlay,
+  outlineWidth = defaultOutline.width,
+  farView: farView = false,
+  overlay: overlay,
   children,
-  群系: biomeName = biome,
+  biome: biomeName = biome,
   shading,
   shadingScene,
   ...houseProps
@@ -92,13 +92,13 @@ export const DoorCanvas: React.FC<DoorCanvasProps> = ({
   return (
     <DoorShading shading={shading} {...(shadingScene ? { shadingScene } : {})}>
       <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden' }}>
-        {!photonSky && <SideSectionSky framing={framing} 宽={width} 高={height} 色={skyColors} 刻={tick} arc={skyArc} lightDarkAmp={lightDarkAmp} afterimage={afterimage} />}
+        {!photonSky && <SideSectionSky framing={framing} width={width} height={height} 色={skyColors} 刻={tick} arc={skyArc} lightDarkAmp={lightDarkAmp} afterimage={afterimage} />}
         {farView && (
           <BehindHouseVista
             {...(farView === true || photonSky ? {} : farView)}
             framing={framing}
-            宽={width}
-            高={height}
+            width={width}
+            height={height}
             topDepth={topDepth}
             tint={tint}
             skyColors={skyColors}
@@ -107,14 +107,14 @@ export const DoorCanvas: React.FC<DoorCanvasProps> = ({
           />
         )}
         <ToonCanvas
-          宽={width}
-          高={height}
+          width={width}
+          height={height}
           cameraRig={sideRig(framing, topDepth)}
           tint={tint}
-          outline={defaultOutline.开 ? { 宽: outlineWidth, 色: t.outlineColor } : false}
+          outline={defaultOutline.开 ? { width: outlineWidth, 色: t.outlineColor } : false}
           style={{ position: 'absolute', left: 0, top: 0 }}
         >
-          <EntranceCabin {...houseProps} 群系={biomeName} />
+          <EntranceCabin {...houseProps} biome={biomeName} />
           {children}
         </ToonCanvas>
         {overlay}

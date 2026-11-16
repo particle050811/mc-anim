@@ -22,10 +22,10 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'biting',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // FangSpell.SpellResult 末尾 playSound(EVOKER_CAST_SPELL)；每颗牙开咬时 EVOKER_FANGS_ATTACK（音高 0.85～1.05，这里记 0.95）
-  声音: [
-    { 资产: '音效/entity.evoker.cast_spell.1', 秒: 0 },
-    ...Array.from({ length: biteCount }, (_, l) => ({ 资产: '音效/entity.evoker_fangs.attack', 秒: (l + 1) / 20, 音高: 0.95 })),
+  sound: [
+    { asset: '音效/entity.evoker.cast_spell.1', sec: 0 },
+    ...Array.from({ length: biteCount }, (_, l) => ({ asset: '音效/entity.evoker_fangs.attack', sec: (l + 1) / 20, 音高: 0.95 })),
   ],
 });

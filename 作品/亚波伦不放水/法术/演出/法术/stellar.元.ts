@@ -24,11 +24,11 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'stellar',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // VoidShockSpell：起手 VOID_PREPARE_SPELL；每颗生出来 TELEPORT_ORB_THROW 音量 2；撞上 FUNGUS_EXPLOSION（只挂了第一颗）
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.void_prepare_spell.1', 秒: 0 },
-    ...Array.from({ length: starfallCount }, (_, k) => ({ 资产: '音效/诡厄巫法/goety.teleport_orb_throw', 秒: (10 + k * 5) / 20, 音量: 2 })),
-    { 资产: '音效/诡厄巫法/goety.fungus_explosion.1', 秒: 0, fromHit: true },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.void_prepare_spell.1', sec: 0 },
+    ...Array.from({ length: starfallCount }, (_, k) => ({ asset: '音效/诡厄巫法/goety.teleport_orb_throw', sec: (10 + k * 5) / 20, 音量: 2 })),
+    { asset: '音效/诡厄巫法/goety.fungus_explosion.1', sec: 0, fromHit: true },
   ],
 });

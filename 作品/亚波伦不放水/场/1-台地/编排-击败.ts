@@ -27,18 +27,18 @@ export const deathMsgTemplate = '%1$s被%2$s使用的魔法杀死了';
 // ── 她：七版的编排（七版的钟）：一直悬停着，5-03 开头收盘一招（7 帧摆好、盘照原版快慢收回），收完一下俯冲落地滑一小段站住、低头看 ──
 const clockAt = (t: number) => rev7Clock(t);
 const timeline: readonly PerformanceBar[] = [
-  { 起: 0, pose: '悬停' },
+  { start: 0, pose: '悬停' },
   // 收盘：7 帧把杖竖到身前（线性，出手段），盘收完再把杖放到身侧
-  { 起: clockAt(actStart), 到: clockAt(actStart) + yaBoLunBeats.retractPoseSec, pose: '收盘', ease: '线性' },
-  { 起: clockAt(secAt(yaBoLunBeats.descendStart)), 到: clockAt(secAt(yaBoLunBeats.descendStart)) + 0.2, pose: '悬停' },
-  { 起: clockAt(landSec) - 0.1, 到: clockAt(landSec) + 0.08, pose: '落地' },
-  { 起: clockAt(landSec) + 0.09, 到: clockAt(landSec) + 0.24, pose: '站立' },
+  { start: clockAt(actStart), dest: clockAt(actStart) + yaBoLunBeats.retractPoseSec, pose: '收盘', ease: '线性' },
+  { start: clockAt(secAt(yaBoLunBeats.descendStart)), dest: clockAt(secAt(yaBoLunBeats.descendStart)) + 0.2, pose: '悬停' },
+  { start: clockAt(landSec) - 0.1, dest: clockAt(landSec) + 0.08, pose: '落地' },
+  { start: clockAt(landSec) + 0.09, dest: clockAt(landSec) + 0.24, pose: '站立' },
   // 滑慢下来时低头看地上那堆东西
-  { 起: clockAt(standStillSec) - 0.3, 到: clockAt(standStillSec) + 0.15, pose: '低头' },
+  { start: clockAt(standStillSec) - 0.3, dest: clockAt(standStillSec) + 0.15, pose: '低头' },
 ];
 /** 俯冲时身子往冲的方向倒、急刹往后仰（同第 4 幕） */
 const lean: TiltSettings = { perSpeed: 1.0, perAccel: 0.03, limit: 25, 窗: 0.08 };
-const performBase = definePerformance({ timeline, 位: v7Pos, 目标: () => steveEye, lean });
+const performBase = definePerformance({ timeline, 位: v7Pos, target: () => steveEye, lean });
 /** 她的演出（编排的钟）：换到七版的钟取，浮动、待机动画的相位和七版一样 */
 export const perform = { ...performBase, 在: (t: number) => performBase.在(clockAt(t)), 杖: (t: number) => performBase.杖(clockAt(t)) };
 const ringCount = arrangeWheel({ 放: '有画面' }).cellsPerRing.length;

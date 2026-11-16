@@ -125,7 +125,7 @@ export const Guard: React.FC<{ sec: number; headPitch?: number; headYaw?: number
     pose.right_arm = { rot: rightArm, offset: pose.right_arm.offset };
     pose.right_sleeve = pose.right_arm;
   }
-  const glint = { tex: TEX.附魔光泽, 秒: glintSec ?? sec };
+  const glint = { tex: TEX.附魔光泽, sec: glintSec ?? sec };
   const skin = SKINS[((Math.round(skinIndex) % SKINS.length) + SKINS.length) % SKINS.length];
   const crouchAmt = Math.min(1, Math.max(0, crouch));
   if (crouchAmt > 0) {

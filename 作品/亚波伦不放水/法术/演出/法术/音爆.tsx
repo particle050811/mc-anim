@@ -8,16 +8,16 @@ import { addVec, sub, scaleVec, vecLength, unitVec } from '../零件/弹道.ts';
 import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
 import meta from './音爆.元.ts';
 
-const sonicBoom: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const sonicBoom: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const eye: Vec3 = [target[0], target[1], target[2] + 1.62];
   const startToEyeDiff = sub(eye, from);
   const dir = unitVec(startToEyeDiff);
   const spawnCount = Math.floor(vecLength(startToEyeDiff)) + 6;
   const spawns: ParticleSpawn[] = Array.from({ length: spawnCount }, (_, k) => {
     const p = addVec(from, scaleVec(dir, k + 1));
-    return { 种: 'sonic_boom', 刻: 0, p: [p[0], p[1], p[2]], 种子: seed * 101 + k };
+    return { kind: 'sonic_boom', 刻: 0, p: [p[0], p[1], p[2]], seed: seed * 101 + k };
   });
-  return <VanillaParticles spawns={spawns} 秒={sec} />;
+  return <VanillaParticles spawns={spawns} sec={sec} />;
 };
 
 export default defineSpellPerformance(meta, sonicBoom);

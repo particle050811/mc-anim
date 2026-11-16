@@ -5,36 +5,36 @@ import { listFiles } from './文件.ts';
 import { maskSecret, sensitiveRe, type Caller } from './发起者.ts';
 export type SchedulerEvent = {
     v: number;
-    时: string;
-    事: string;
-    任务?: string;
-    票?: string;
-    锁?: string;
-    主机: string;
+    timestamp: string;
+    event: string;
+    task?: string;
+    ticket?: string;
+    lock?: string;
+    host: string;
     [k: string]: unknown;
 };
 const maxRowBytes = 4096;
 const fitsLimit = (record: SchedulerEvent) => Buffer.byteLength(JSON.stringify(record)) + 1 < maxRowBytes;
-const shortInitiator = (x: unknown) => { const { 来源: source, 会话: sessionId, 路: lane, 工作区: workspace, pid, 子会话: isChildSession, 代理标: agentTag } = x as Partial<Caller>; return { 来源: source, 会话: sessionId, 路: lane, 工作区: workspace, pid, 子会话: isChildSession, 代理标: agentTag }; };
+const shortInitiator = (x: unknown) => { const { source: source, session: sessionId, lane: lane, workspace: workspace, pid, childSession: isChildSession, agentTag: agentTag } = x as Partial<Caller>; return { source: source, session: sessionId, lane: lane, workspace: workspace, pid, childSession: isChildSession, agentTag: agentTag }; };
 const truncateBytes = (s: string, n: number) => Buffer.byteLength(s) <= n ? s : Buffer.from(s).subarray(0, n).toString('utf8').replace(/\uFFFD+$/, '') + '…';
 /** 按丢失的代价从小到大退。决定、为什么、谁 是这条日志存在的理由，只收缩不删。 */
 const compactLine = (record: SchedulerEvent): SchedulerEvent => {
-    const a: SchedulerEvent = { ...record, 截断: true }, seen = a.看到 as { 人工?: string; 摘要?: string } | string | undefined;
+    const a: SchedulerEvent = { ...record, 截断: true }, seen = a.observed as { 人工?: string; digest?: string } | string | undefined;
     if (seen && typeof seen === 'object')
-        a.看到 = [seen.人工, seen.摘要].filter(Boolean).join('；');
-    delete a.队;
-    delete a.机;
+        a.observed = [seen.人工, seen.digest].filter(Boolean).join('；');
+    delete a.queue;
+    delete a.machine;
     if (fitsLimit(a))
         return a;
-    for (const k of ['发起', '谁'])
+    for (const k of ['initiator', 'who'])
         if (a[k] && typeof a[k] === 'object')
             a[k] = shortInitiator(a[k]);
     if (fitsLimit(a))
         return a;
-    for (const k of ['看到', '决定', '为什么'])
+    for (const k of ['observed', 'decision', 'why'])
         if (typeof a[k] === 'string')
             a[k] = truncateBytes(a[k], 900);
-    return fitsLimit(a) ? a : { v: a.v, 时: a.时, 事: a.事, 任务: a.任务, 票: a.票, 主机: a.主机, 截断: true, 谁: a.谁, 决定: a.决定, 为什么: a.为什么 };
+    return fitsLimit(a) ? a : { v: a.v, timestamp: a.timestamp, event: a.event, task: a.task, ticket: a.ticket, host: a.host, 截断: true, who: a.who, decision: a.decision, why: a.why };
 };
 /** 单次 O_APPEND write，不能先读再写；多进程和跨月均不轮转正在打开的文件。 */
 export const recordSchedulerEvent = (schedDir: string, eventName: string, fields: Record<string, unknown> = {}, now = Date.now()) => {
@@ -51,13 +51,13 @@ export const recordSchedulerEvent = (schedDir: string, eventName: string, fields
                 return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, sanitize(v, k)]));
             return x;
         };
-        const record: SchedulerEvent = { ...(sanitize(fields) as Record<string, unknown>), v: 1, 时: new Date(now).toISOString(), 事: eventName, 主机: config('主机') };
+        const record: SchedulerEvent = { ...(sanitize(fields) as Record<string, unknown>), v: 1, timestamp: new Date(now).toISOString(), event: eventName, host: config('主机') };
         let text = JSON.stringify(record) + '\n';
         if (!fitsLimit(record)) {
             text = JSON.stringify(compactLine(record)) + '\n';
             console.error(`!! 调度日志一行超过 ${maxRowBytes} 字节，已压缩：${eventName}`);
         }
-        const fd = fs.openSync(path.join(schedDir, record.时.slice(0, 7) + '.jsonl'), 'a');
+        const fd = fs.openSync(path.join(schedDir, record.timestamp.slice(0, 7) + '.jsonl'), 'a');
         try {
             fs.writeSync(fd, text);
         }
@@ -112,25 +112,25 @@ export const readSchedulerEvents = (schedDir: string, tailBytes?: number): Sched
 };
 /** UTC 月文件名和字节偏移，跨月、尾部滑出都不丢。 */
 export type LogPosition = {
-    月: string;
-    偏移: number;
+    month: string;
+    offset: number;
 };
 /** 从位置读到末尾，只吃整行（末行可能还在写）。每行带读完它的位置，调用方可以只把报过的算已读。 */
 export const readNewEvents = (schedDir: string, fromCursor?: LogPosition | null) => {
-    const rows: { 事件: SchedulerEvent; 到: LogPosition }[] = [];
-    let endCursor: LogPosition = fromCursor ?? { 月: '', 偏移: 0 };
+    const rows: { events: SchedulerEvent; dest: LogPosition }[] = [];
+    let endCursor: LogPosition = fromCursor ?? { month: '', offset: 0 };
     for (const name of monthFiles(schedDir)) {
         const month = name.slice(0, 7);
-        if (fromCursor && month < fromCursor.月)
+        if (fromCursor && month < fromCursor.month)
             continue;
         let startOffset = 0;
-        const b = readBytes(path.join(schedDir, name), size => (startOffset = fromCursor?.月 === month && fromCursor.偏移 <= size ? fromCursor.偏移 : 0));
+        const b = readBytes(path.join(schedDir, name), size => (startOffset = fromCursor?.month === month && fromCursor.offset <= size ? fromCursor.offset : 0));
         if (!b)
             continue;
         for (let lineStart = 0, lineEnd = b.indexOf(10); lineEnd >= 0; lineStart = lineEnd + 1, lineEnd = b.indexOf(10, lineStart)) {
-            endCursor = { 月: month, 偏移: startOffset + lineEnd + 1 };
+            endCursor = { month: month, offset: startOffset + lineEnd + 1 };
             try {
-                rows.push({ 事件: JSON.parse(b.toString('utf8', lineStart, lineEnd)), 到: endCursor });
+                rows.push({ events: JSON.parse(b.toString('utf8', lineStart, lineEnd)), dest: endCursor });
             }
             catch { /* 坏行跳过，不卡住后面 */ }
         }

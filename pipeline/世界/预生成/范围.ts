@@ -7,18 +7,18 @@ import type { PregenBox } from '../声明.ts';
 export type ChunkBox = { cx0: number; cx1: number; cz0: number; cz1: number };
 
 /** 矩形块的中心和两个半边（米）；两角写法换成中心加半边 */
-export const rectCenterHalf = (k: PregenBox): { 中心: [number, number]; 半边: [number, number] } => {
-  if (k.两角) {
-    const [x1, z1, x2, z2] = k.两角;
-    return { 中心: [(x1 + x2) / 2, (z1 + z2) / 2], 半边: [Math.abs(x2 - x1) / 2, Math.abs(z2 - z1) / 2] };
+export const rectCenterHalf = (k: PregenBox): { center: [number, number]; halfSide: [number, number] } => {
+  if (k.corners) {
+    const [x1, z1, x2, z2] = k.corners;
+    return { center: [(x1 + x2) / 2, (z1 + z2) / 2], halfSide: [Math.abs(x2 - x1) / 2, Math.abs(z2 - z1) / 2] };
   }
-  if (!k.中心 || !k.半边) throw new Error(`预生成块 ${k.名} 不是矩形`);
-  return { 中心: k.中心, 半边: k.半边 };
+  if (!k.center || !k.halfSide) throw new Error(`预生成块 ${k.name} 不是矩形`);
+  return { center: k.center, halfSide: k.halfSide };
 };
 
 /** 矩形块的区块范围（含两端），照 Chunky 的 Selection：中心对齐区块、半边向上取整到区块 */
 export const rectChunkBox = (k: PregenBox): ChunkBox => {
-  const { 中心: center, 半边: halfSide } = rectCenterHalf(k);
+  const { center: center, halfSide: halfSide } = rectCenterHalf(k);
   const cx = Math.floor(center[0]) >> 4, cz = Math.floor(center[1]) >> 4;
   const rx = Math.ceil(halfSide[0] / 16), rz = Math.ceil(halfSide[1] / 16);
   return { cx0: cx - rx, cx1: cx + rx, cz0: cz - rz, cz1: cz + rz };
@@ -55,11 +55,11 @@ const alongPolyline = (px: number, pz: number, polyline: readonly (readonly [num
 
 /** 走廊块的区块，按生成顺序：16×16 区块一片，片按沿折线的先后、片里按行（相邻区块挨着生成，要读的邻居大多还在内存里） */
 export const corridorChunks = (k: PregenBox, allBlocks: readonly PregenBox[]): [number, number][] => {
-  const polyline = k.折线!, halfWidth = k.半宽!;
-  const exclude = (k.去掉 ?? []).map((n) => {
-    const b = allBlocks.find((x) => x.名 === n);
-    if (!b) throw new Error(`走廊 ${k.名} 的 去掉 写了 ${n}，可没有这一块`);
-    if (b.形状 !== '矩形') throw new Error(`走廊 ${k.名} 只能去掉矩形块（${n} 是走廊）`);
+  const polyline = k.polyline!, halfWidth = k.halfWidth!;
+  const exclude = (k.exclude ?? []).map((n) => {
+    const b = allBlocks.find((x) => x.name === n);
+    if (!b) throw new Error(`走廊 ${k.name} 的 去掉 写了 ${n}，可没有这一块`);
+    if (b.shape !== '矩形') throw new Error(`走廊 ${k.name} 只能去掉矩形块（${n} 是走廊）`);
     return rectChunkBox(b);
   });
   const xs = polyline.map((p) => p[0]), zs = polyline.map((p) => p[1]);
@@ -79,11 +79,11 @@ export const corridorChunks = (k: PregenBox, allBlocks: readonly PregenBox[]): [
 };
 
 /** 包住全部区块的 Chunky 方形：中心 (x, z)（区块中心，米）、半边（米，16 的倍数） */
-export const enclosingSquare = (chunks: readonly [number, number][]): { 中心: [number, number]; 半边: number } => {
+export const enclosingSquare = (chunks: readonly [number, number][]): { center: [number, number]; halfSide: number } => {
   const { cx0: x0, cx1: x1, cz0: z0, cz1: z1 } = listBox(chunks);
   const cx = Math.floor((x0 + x1) / 2), cz = Math.floor((z0 + z1) / 2);
   const r = Math.max(cx - x0, x1 - cx, cz - z0, z1 - cz);
-  return { 中心: [cx * 16 + 8, cz * 16 + 8], 半边: r * 16 };
+  return { center: [cx * 16 + 8, cz * 16 + 8], halfSide: r * 16 };
 };
 
 /** 区块列表的外包框（几十万个区块，不用展开参数的 Math.min） */

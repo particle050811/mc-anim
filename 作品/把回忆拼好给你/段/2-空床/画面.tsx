@@ -58,7 +58,7 @@ const LogoffAfterimage: React.FC<{ f: number }> = ({ f }) => {
   const t = (f / fps + oneFrameSec) / (openingSceneMorphSec + oneFrameSec);
   return (
     <div style={{ position: 'absolute', inset: 0, opacity: 1 - t * t * (3 - 2 * t) }}>
-      <DoorwayNightPhoto 帧={toSongFrame(f)} />
+      <DoorwayNightPhoto frame={toSongFrame(f)} />
     </div>
   );
 };
@@ -68,7 +68,7 @@ const picture: React.FC = () => {
   const light = lightState(f);
   return (
     <>
-      <FilmPost grade={postGrade(f)} 种子={toSongFrame(f)}>
+      <FilmPost grade={postGrade(f)} seed={toSongFrame(f)}>
         <BedroomCanvas
           tone={light.tone}
           天={light.天}

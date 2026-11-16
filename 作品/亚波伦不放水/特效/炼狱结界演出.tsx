@@ -21,40 +21,40 @@ const placeholderFlames = (settings: CagePerformanceSetting, particleCount: numb
     const angle = rand() * Math.PI * 2;
     const dist = Math.sqrt(rand()) * 0.55;
     return {
-      种: isSmoke ? ('smoke' as const) : ('flame' as const),
+      kind: isSmoke ? ('smoke' as const) : ('flame' as const),
       // sqrt：出生时刻往后段挤
       刻: startTick + Math.sqrt(rand()) * durTicks,
-      p: [settings.目标[0] + Math.cos(angle) * dist, settings.目标[1] + Math.sin(angle) * dist, settings.目标[2] - 0.9 + rand() * 1.9] as [number, number, number],
+      p: [settings.target[0] + Math.cos(angle) * dist, settings.target[1] + Math.sin(angle) * dist, settings.target[2] - 0.9 + rand() * 1.9] as [number, number, number],
       v: [0, 0, 0.03 + rand() * 0.05] as [number, number, number],
-      种子: 7000 + i,
+      seed: 7000 + i,
     };
   });
 };
 
 export const RevelationCagePerformance: React.FC<{
   /** 从扔出那一刻算的秒 */
-  秒: number;
+  sec: number;
   settings: CagePerformanceSetting;
   /** 占位火的颗数、放大倍数（原版 flame 半边长 0.1～0.2 格，远景里看不见） */
   flameCount?: number;
   flameScale?: number;
   /** 线的画法：默认本片的辉线，可只改几项外观；'原版' = 照原版的细线 */
   lineStyle?: Partial<CageGlowAppearance> | '原版';
-}> = ({ 秒: sec, settings, flameCount = 600, flameScale = 3, lineStyle }) => {
+}> = ({ sec: sec, settings, flameCount = 600, flameScale = 3, lineStyle }) => {
   const s = cagePerformanceStateAt(sec, settings);
   const flames = useMemo(() => placeholderFlames(settings, flameCount), [settings, flameCount]);
-  if (s.阶段 === '未出' || s.阶段 === '结束') return null;
+  if (s.stage === '未出' || s.stage === '结束') return null;
   return (
     <>
-      <group position={s.中心}>
+      <group position={s.center}>
         {lineStyle === '原版' ? (
-          <RevelationCageWire 秒={s.spinSec} radiusFactor={s.radiusFactor} opacity={s.opacity} />
+          <RevelationCageWire sec={s.spinSec} radiusFactor={s.radiusFactor} opacity={s.opacity} />
         ) : (
           // 结界小的时候（刚离手、收缩完）线跟着细，不然一人大小的框上晕比框还宽；下限 0.4 是随手取的
-          <RevelationCageGlow 秒={s.spinSec} radiusFactor={s.radiusFactor} opacity={s.opacity} appearance={lineStyle} thicknessScale={clamp(s.radiusFactor / settings.fullRadiusFactor, 0.4, 1)} />
+          <RevelationCageGlow sec={s.spinSec} radiusFactor={s.radiusFactor} opacity={s.opacity} appearance={lineStyle} thicknessScale={clamp(s.radiusFactor / settings.fullRadiusFactor, 0.4, 1)} />
         )}
       </group>
-      {s.阶段 === '收缩焚烧' && <VanillaParticles spawns={flames} 秒={sec} size={flameScale} />}
+      {s.stage === '收缩焚烧' && <VanillaParticles spawns={flames} sec={sec} size={flameScale} />}
     </>
   );
 };

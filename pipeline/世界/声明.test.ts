@@ -10,8 +10,8 @@ describe('世界声明', () => {
   it('包继承 烘焙.原点，默认套编辑、登记', () => {
     const w = parseDecl(`${baseDecl}["烘焙"]\n"原点" = [0, 64, 2048]\n[["烘焙"."包"]]\n"名" = "a"\n[["烘焙"."包"]]\n"名" = "b"\n"原点" = [2048, 64, 0]\n"登记" = false\n"套编辑" = false`, '甲');
     expect(w.packDimension).toBe('主世界');
-    expect(w.存档).toBe('甲');
-    expect(w.包.map((b) => [b.名, b.原点.join(), b.applyEdits, b.登记])).toEqual([
+    expect(w.save).toBe('甲');
+    expect(w.pack.map((b) => [b.name, b.origin.join(), b.applyEdits, b.entries])).toEqual([
       ['a', '0,64,2048', true, true],
       ['b', '2048,64,0', false, false],
     ]);
@@ -20,7 +20,7 @@ describe('世界声明', () => {
   it('下界认得：包维度 下界、oy 0、默认全高；露天维度默认不全高，[烘焙] 全高 可以改', () => {
     const tomlText = `"名称" = "甲"\n"服务端" = "服"\n"维度" = "minecraft:the_nether"\n["烘焙"]\n"原点" = [0, 0, 0]\n[["烘焙"."包"]]\n"名" = "a"\n`;
     const w = parseDecl(tomlText, '甲');
-    expect([w.packDimension, w.fullHeight, w.包[0]!.原点.join()]).toEqual(['下界', true, '0,0,0']);
+    expect([w.packDimension, w.fullHeight, w.pack[0]!.origin.join()]).toEqual(['下界', true, '0,0,0']);
     expect(() => parseDecl(tomlText.replace('[0, 0, 0]', '[0, 64, 0]'), '甲')).toThrow(/oy/);
     expect(parseDecl(tomlText.replace('["烘焙"]', '["烘焙"]\n"全高" = false'), '甲').fullHeight).toBe(false);
     expect(parseDecl(`${baseDecl}["烘焙"]\n"原点" = [0, 64, 0]`, '甲').fullHeight).toBe(false);
@@ -37,23 +37,23 @@ describe('世界声明', () => {
   it('预生成块：两角换成中心和半边，不是正方形的用 rectangle 和两个半径', () => {
     const w = parseDecl(`${baseDecl}[["预生成"."块"]]\n"名" = "k"\n"两角" = [-100, 0, 100, 50]`, '甲');
     const [k] = pregenPlans(w);
-    expect(k!.selection).toEqual({ 形状: 'rectangle', 中心: [0, 25], 半边: [100, 25] });
-    expect(k!.步骤).toContainEqual(['chunky radius 100 25', 'Radius changed for x to']);
-    expect(k!.步骤).toContainEqual(['chunky shape rectangle', 'Shape changed to rectangle']);
-    expect(k!.区块数).toBe((2 * 7 + 1) * (2 * 2 + 1)); // 中心区块 (0, 1)，半径 ⌈100/16⌉ = 7、⌈25/16⌉ = 2
+    expect(k!.selection).toEqual({ shape: 'rectangle', center: [0, 25], halfSide: [100, 25] });
+    expect(k!.steps).toContainEqual(['chunky radius 100 25', 'Radius changed for x to']);
+    expect(k!.steps).toContainEqual(['chunky shape rectangle', 'Shape changed to rectangle']);
+    expect(k!.chunkCount).toBe((2 * 7 + 1) * (2 * 2 + 1)); // 中心区块 (0, 1)，半径 ⌈100/16⌉ = 7、⌈25/16⌉ = 2
   });
 
   it('走廊：折线、半宽、去掉；去掉的不是矩形块、块重名都报错', () => {
     const extraToml = `[["预生成"."块"]]\n"名" = "岛"\n"中心" = [0, 0]\n"半边" = [64, 64]\n[["预生成"."块"]]\n"名" = "线"\n"折线" = [[0, 0], [512, 0]]\n"半宽" = 32\n"去掉" = ["岛"]\n`;
     const w = parseDecl(baseDecl + extraToml, '甲');
-    expect(w.预生成.块.map((k) => k.形状)).toEqual(['矩形', '走廊']);
+    expect(w.pregen.tile.map((k) => k.shape)).toEqual(['矩形', '走廊']);
     const p = pregenPlans(w, '线')[0]!;
     expect(p.pattern).toBe('csv');
     expect(p.csvName).toMatch(/^anim-[0-9a-f]{10}$/);
     // 区块中心离 z = 0 不超过 32：cz = −3…1（中心 −40…24 里 |z| ≤ 32 的是 −24、−8、8、24），岛占了 cx −4…4
-    expect(new Set(p.区块!.map((c) => c[1]))).toEqual(new Set([-2, -1, 0, 1]));
-    expect(p.区块!.some(([cx]) => cx >= -4 && cx <= 4)).toBe(false);
-    expect(p.区块![0]![0]).toBeLessThan(p.区块!.at(-1)![0]); // 沿折线从起点往终点排
+    expect(new Set(p.chunks!.map((c) => c[1]))).toEqual(new Set([-2, -1, 0, 1]));
+    expect(p.chunks!.some(([cx]) => cx >= -4 && cx <= 4)).toBe(false);
+    expect(p.chunks![0]![0]).toBeLessThan(p.chunks!.at(-1)![0]); // 沿折线从起点往终点排
     expect(() => parseDecl(baseDecl + extraToml.replace('"去掉" = ["岛"]', '"去掉" = ["海"]'), '甲')).toThrow(/没有这个矩形块/);
     expect(() => parseDecl(baseDecl + extraToml.replace('"名" = "线"', '"名" = "岛"'), '甲')).toThrow(/重名/);
     expect(() => parseDecl(baseDecl + extraToml.replace('"半宽" = 32', ''), '甲')).toThrow(/半宽/);

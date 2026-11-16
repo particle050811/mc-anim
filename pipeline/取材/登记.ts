@@ -13,15 +13,15 @@ import { defaultParts, inheritLicense, licenseTable, pendingLicense, type Inheri
 const quote = (s: string) => JSON.stringify(s);
 
 /** 一条资产表条目的 TOML 文本（和 assets/registry 里现有的写法一样：id 裸键，中文键加引号） */
-export const entryText = (e: Pick<AssetEntry, 'id' | '类别' | '来源' | '许可' | '可见性' | '说明'>) =>
+export const entryText = (e: Pick<AssetEntry, 'id' | 'category' | 'source' | 'license' | 'visibility' | 'note'>) =>
   [
     '[["资产"]]',
     `id = ${quote(e.id)}`,
-    `"类别" = ${quote(e.类别)}`,
-    `"来源" = ${quote(e.来源)}`,
-    `"许可" = ${quote(e.许可)}`,
-    `"可见性" = ${quote(e.可见性)}`,
-    ...(e.说明 ? [`"说明" = ${quote(e.说明)}`] : []),
+    `"类别" = ${quote(e.category)}`,
+    `"来源" = ${quote(e.source)}`,
+    `"许可" = ${quote(e.license)}`,
+    `"可见性" = ${quote(e.visibility)}`,
+    ...(e.note ? [`"说明" = ${quote(e.note)}`] : []),
   ].join('\n') + '\n';
 
 /** 在资产表文本尾部追加几条（文件不存在时由调用方给表头） */
@@ -42,13 +42,13 @@ export const setLicense = (raw: string, id: string, newLicense: string): string 
 const recipeName = (source: string) => /^提取:([^@]+)@/.exec(source)?.[1];
 
 /** 一条资产按 jar 继承许可：部分取配方的「许可部分」，没写按类别 */
-export const assetInheritLicense = (q: SourcingManifest, e: Pick<AssetEntry, '来源' | '类别'>, licenses = licenseTable(q.jars.values())): InheritResult => {
-  const written = q.entryMap.get(recipeName(e.来源) ?? '')?.许可部分;
-  const part = Array.isArray(written) ? written : written?.[e.类别];
-  return inheritLicense(e.来源, part ?? defaultParts(e.类别), licenses);
+export const assetInheritLicense = (q: SourcingManifest, e: Pick<AssetEntry, 'source' | 'category'>, licenses = licenseTable(q.jars.values())): InheritResult => {
+  const written = q.entryMap.get(recipeName(e.source) ?? '')?.licenseParts;
+  const part = Array.isArray(written) ? written : written?.[e.category];
+  return inheritLicense(e.source, part ?? defaultParts(e.category), licenses);
 };
 
-export type LicenseFillResult = { fillable: { e: AssetEntry; 许可: string }[]; stillPending: { e: AssetEntry; missing: string[] }[] };
+export type LicenseFillResult = { fillable: { e: AssetEntry; license: string }[]; stillPending: { e: AssetEntry; missing: string[] }[] };
 
 /** jars.toml 没记 sha256 的（资源索引）按本机文件现算前 12 位；文件不在返回 undefined */
 export const localSha12 = (q: SourcingManifest, jarPath: (id: string) => string) => (id: string) => {
@@ -66,9 +66,9 @@ export const computeLicenseFills = (q: SourcingManifest, entries: Iterable<Asset
   const licenses = licenseTable(q.jars.values(), jarPath && localSha12(q, jarPath));
   const r: LicenseFillResult = { fillable: [], stillPending: [] };
   for (const e of entries) {
-    if (e.许可 !== pendingLicense || !e.来源.startsWith('提取:')) continue;
+    if (e.license !== pendingLicense || !e.source.startsWith('提取:')) continue;
     const x = assetInheritLicense(q, e, licenses);
-    if (x.许可) r.fillable.push({ e, 许可: x.许可 });
+    if (x.license) r.fillable.push({ e, license: x.license });
     else r.stillPending.push({ e, missing: x.missing });
   }
   return r;
@@ -79,13 +79,13 @@ const tablePath = (e: Pick<AssetEntry, 'side' | '表'>, workRoot: string) => pat
 
 /** 把 能补 的写回各自的表文件；返回改了哪些文件 */
 export const writeLicenseFills = (fillable: LicenseFillResult['fillable'], workRoot: string): string[] => {
-  const byFile = new Map<string, { id: string; 许可: string }[]>();
-  for (const { e, 许可: license } of fillable) {
+  const byFile = new Map<string, { id: string; license: string }[]>();
+  for (const { e, license: license } of fillable) {
     const f = tablePath(e, workRoot);
     if (!byFile.has(f)) byFile.set(f, []);
-    byFile.get(f)!.push({ id: e.id, 许可: license });
+    byFile.get(f)!.push({ id: e.id, license: license });
   }
-  for (const [f, edits] of byFile) fs.writeFileSync(f, edits.reduce((t, x) => setLicense(t, x.id, x.许可), fs.readFileSync(f, 'utf8')), 'utf8');
+  for (const [f, edits] of byFile) fs.writeFileSync(f, edits.reduce((t, x) => setLicense(t, x.id, x.license), fs.readFileSync(f, 'utf8')), 'utf8');
   return [...byFile.keys()];
 };
 
@@ -93,34 +93,34 @@ export const writeLicenseFills = (fillable: LicenseFillResult['fillable'], workR
  * 配方产物的来源串：提取:<名称>@<用到的各 jar sha256 前 12 位>；jars.toml 没记 sha 的（资源索引）现算本机文件。
  * 用到：脚本在产物来源里写了这件用到哪几个 jar 就只记那几个（一条配方读好几个 jar 时，一件产物往往只来自其中一个）；没写记「需要」的全部
  */
-export const sourceString = (q: SourcingManifest, e: SourcingEntry, jarPath: (id: string) => string, usedIds: readonly string[] = e.需要) => {
+export const sourceString = (q: SourcingManifest, e: SourcingEntry, jarPath: (id: string) => string, usedIds: readonly string[] = e.requires) => {
   const sha = localSha12(q, jarPath);
   const shas = usedIds.map((id) => {
-    if (!q.jars.has(id)) throw new Error(`「${e.名称}」需要的 ${id} 不在 jars.toml`);
+    if (!q.jars.has(id)) throw new Error(`「${e.displayName}」需要的 ${id} 不在 jars.toml`);
     const x = sha(id);
-    if (!x) throw new Error(`「${e.名称}」用到的 ${id} 不在本机（${jarPath(id)}），算不出 sha`);
+    if (!x) throw new Error(`「${e.displayName}」用到的 ${id} 不在本机（${jarPath(id)}），算不出 sha`);
     return x;
   });
-  if (!shas.length) throw new Error(`「${e.名称}」没写「需要」，来源记不出 jar sha，手工登记`);
-  return `提取:${e.名称}@${[...new Set(shas)].join('+')}`;
+  if (!shas.length) throw new Error(`「${e.displayName}」没写「需要」，来源记不出 jar sha，手工登记`);
+  return `提取:${e.displayName}@${[...new Set(shas)].join('+')}`;
 };
 
 /** 产物来源里写的 jar 路径 → 配方「需要」里的 jar id；对不上的报错（脚本读了配方没声明的 jar） */
 export const reverseLookupJar = (e: SourcingEntry, jarPath: (id: string) => string, paths: readonly string[]): string[] =>
   paths.map((p) => {
-    const id = e.需要.find((i) => path.resolve(jarPath(i)) === path.resolve(p));
-    if (!id) throw new Error(`「${e.名称}」的产物来源写了 ${p}，不是「需要」里哪个 jar（${e.需要.join('、')}）`);
+    const id = e.requires.find((i) => path.resolve(jarPath(i)) === path.resolve(p));
+    if (!id) throw new Error(`「${e.displayName}」的产物来源写了 ${p}，不是「需要」里哪个 jar（${e.requires.join('、')}）`);
     return id;
   });
 
 /** --register 时写进资产表的可见性：配方写了就用；公开版 = 提取 的默认「提取」 */
 export const recipeVisibility = (e: SourcingEntry): Visibility => {
-  if (e.可见性) return e.可见性;
-  if (e.公开版 === '提取') return '提取';
-  throw new Error(`「${e.名称}」公开版不是「提取」，--register 不知道新产物的可见性：在配方里写 "可见性" = "发布" / "私有" / "公开"`);
+  if (e.visibility) return e.visibility;
+  if (e.publicVersion === '提取') return '提取';
+  throw new Error(`「${e.displayName}」公开版不是「提取」，--register 不知道新产物的可见性：在配方里写 "可见性" = "发布" / "私有" / "公开"`);
 };
 
-export type PendingRegister = { id: string; 文件: string };
+export type PendingRegister = { id: string; file: string };
 export type RegisterResult = { newRegistered: string[]; licenseFilled: string[]; stillPending: { id: string; missing: string[] }[]; lockAdded: string[]; tableFiles: string[] };
 
 /**
@@ -147,7 +147,7 @@ export const registerArtifacts = (
 ): RegisterResult => {
   const r: RegisterResult = { newRegistered: [], licenseFilled: [], stillPending: [], lockAdded: [], tableFiles: [] };
   const lockPath = (side: '共用' | '作品') => (side === '作品' ? workAssetLockPath(o.workRoot) : (o.sharedLockPath ?? assetLockPath()));
-  const recipeSide = e.作品 === undefined ? '共用' : '作品';
+  const recipeSide = e.work === undefined ? '共用' : '作品';
   const tableDir = recipeSide === '作品' ? workAssetRegistryDir(o.workRoot) : (o.sharedTableDir ?? assetRegistryDir());
   const unlocked = artifacts.filter((p) => !o.assetLock[p.id]);
   if (!unlocked.length) return r;
@@ -156,14 +156,14 @@ export const registerArtifacts = (
   const byFile = new Map<string, Parameters<typeof entryText>[0][]>();
   for (const p of unlocked) {
     if (o.registered.has(p.id)) continue;
-    const usedIds = o.artifactSources?.[p.文件];
+    const usedIds = o.artifactSources?.[p.file];
     const source = sourceString(q, e, o.jarPath, usedIds ? reverseLookupJar(e, o.jarPath, usedIds) : undefined);
     const category = p.id.split('/')[0]!;
-    const x = assetInheritLicense(q, { 来源: source, 类别: category }, licenses);
-    if (!x.许可) r.stillPending.push({ id: p.id, missing: x.missing });
+    const x = assetInheritLicense(q, { source: source, category: category }, licenses);
+    if (!x.license) r.stillPending.push({ id: p.id, missing: x.missing });
     const f = path.join(tableDir, `${category}.toml`);
     if (!byFile.has(f)) byFile.set(f, []);
-    byFile.get(f)!.push({ id: p.id, 类别: category, 来源: source, 许可: x.许可 ?? pendingLicense, 可见性: visibility, 说明: `anim extract --register 自动登记（${p.文件}）` });
+    byFile.get(f)!.push({ id: p.id, category: category, source: source, license: x.license ?? pendingLicense, visibility: visibility, note: `anim extract --register 自动登记（${p.file}）` });
     r.newRegistered.push(p.id);
   }
   for (const [f, entries] of byFile) {
@@ -177,8 +177,8 @@ export const registerArtifacts = (
     const registeredEntry = o.registered.get(p.id);
     const f = lockPath(registeredEntry?.side ?? recipeSide);
     if (!locks.has(f)) locks.set(f, readAssetLock(f));
-    const file = path.join(dir, p.文件);
-    const storedBytes = importToStore(file, libName(registeredEntry?.可见性 ?? visibility), o.dataRoot);
+    const file = path.join(dir, p.file);
+    const storedBytes = importToStore(file, libName(registeredEntry?.visibility ?? visibility), o.dataRoot);
     locks.get(f)![p.id] = o.measureAudio === false ? storedBytes : withAudioMetadata(storedBytes, file);
     r.lockAdded.push(p.id);
   }

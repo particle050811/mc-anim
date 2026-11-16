@@ -81,9 +81,9 @@ describe('歌词艺术字的数据', () => {
     for (const lineIndex of [3, 10, 11, 13, 14]) {
       const lyricLine = mainCutLyricLine(lineIndex, 100);
       const wordEffect = lyricLine.wordEffect!;
-      expect([...lyricLine.text].slice(wordEffect.从, wordEffect.到 + 1).join('')).toBe(keywords[lineIndex]!.word);
-      if (wordEffect.effect === '刹那') expect(wordEffect.shatterFrame).toBe(mainCutEvents.worldShatters.帧 - 100);
-      if (wordEffect.effect === '时差') expect(wordEffect.halfBeat).toBeCloseTo((beatGrid.拍长 / 2) * fps);
+      expect([...lyricLine.text].slice(wordEffect.从, wordEffect.dest + 1).join('')).toBe(keywords[lineIndex]!.word);
+      if (wordEffect.effect === '刹那') expect(wordEffect.shatterFrame).toBe(mainCutEvents.worldShatters.frame - 100);
+      if (wordEffect.effect === '时差') expect(wordEffect.halfBeat).toBeCloseTo((beatGrid.beatSec / 2) * fps);
     }
     expect(mainCutLyricLine(1).wordEffect).toBeUndefined();
   });
@@ -94,9 +94,9 @@ describe.skipIf(!fontBytes || !galacticBytes)('歌词艺术字的排版', () => 
   const glyphSource = makeGlyphSource(sga, JSON.parse(fontBytes!.toString('utf8')) as GlyphTable, '字体/把回忆拼好给你/歌词字');
 
   it('银河字母的字宽照原版（ascii_sga.png 量的）', () => {
-    const glyphWidths = Object.fromEntries([...'abcdefghijklmnopqrstuvwxyz'].map((c) => [c, glyphSource.rune(c).宽]));
+    const glyphWidths = Object.fromEntries([...'abcdefghijklmnopqrstuvwxyz'].map((c) => [c, glyphSource.rune(c).width]));
     expect(glyphWidths).toEqual({ a: 5, b: 5, c: 2, d: 5, e: 5, f: 5, g: 3, h: 5, i: 1, j: 1, k: 5, l: 3, m: 5, n: 4, o: 4, p: 3, q: 5, r: 4, s: 2, t: 5, u: 5, v: 5, w: 5, x: 5, y: 3, z: 5 });
-    for (const c of 'abcdefghijklmnopqrstuvwxyz') for (const [, y] of glyphSource.rune(c).点) expect(y).toBeLessThan(7);
+    for (const c of 'abcdefghijklmnopqrstuvwxyz') for (const [, y] of glyphSource.rune(c).points) expect(y).toBeLessThan(7);
   });
 
   it('每句的字都在歌词字表里，步进 18 点', () => {
@@ -214,11 +214,11 @@ describe.skipIf(!fontBytes || !galacticBytes)('歌词艺术字的排版', () => 
       for (const char of s.text) {
         const glyph = glyphSource.hanChar(char);
         const chunks = splitBlocks(char, glyph);
-        expect(chunks.length, char).toBe(Math.min(tileCount(glyph.点.length), glyph.点.length));
-        expect(chunks.length).toBe(glyph.点.length < 60 ? 2 : 3);
-        const cellKeys = chunks.flatMap((b) => b.点.map(([x, y]) => `${x},${y}`));
-        expect(new Set(cellKeys).size, char).toBe(glyph.点.length);
-        expect(cellKeys.length, char).toBe(glyph.点.length);
+        expect(chunks.length, char).toBe(Math.min(tileCount(glyph.points.length), glyph.points.length));
+        expect(chunks.length).toBe(glyph.points.length < 60 ? 2 : 3);
+        const cellKeys = chunks.flatMap((b) => b.points.map(([x, y]) => `${x},${y}`));
+        expect(new Set(cellKeys).size, char).toBe(glyph.points.length);
+        expect(cellKeys.length, char).toBe(glyph.points.length);
         for (let k = 1; k < chunks.length; k++) expect(chunks[k]!.心[1] * 2 + chunks[k]!.心[0]).toBeGreaterThanOrEqual(chunks[k - 1]!.心[1] * 2 + chunks[k - 1]!.心[0]);
       }
   });
@@ -231,14 +231,14 @@ describe.skipIf(!fontBytes || !galacticBytes)('歌词艺术字的排版', () => 
         const chunks = splitBlocks(char, glyphSource.hanChar(char));
         const flights = flyBlocks(chunks, lyricLine.pinyin[j]!, { ...timeSpans[j]!, 入: lyricLine.入 + j * runeLyricDefault.staggerSec * fps }, runeLyricDefault.flySec, glyphSeed(s.序, j));
         flights.forEach((flight, k) => {
-          for (let f = Math.ceil(flight.起); f < flight.landTime; f++) {
+          for (let f = Math.ceil(flight.start); f < flight.landTime; f++) {
             const pos = flyPos(flight, f)!;
             const topY = chunks[k]!.心[1] + pos[1] - 3.5 * runeScale;
             expect(topY, `第 ${s.序} 句「${char}」第 ${k} 块`).toBeGreaterThanOrEqual(-flyParams.topGap - 0.5);
             expect(topY + 7 * runeScale).toBeLessThanOrEqual(glyphCell + flyParams.extendDown + 0.5);
           }
           const endPos = flyPos(flight, flight.landTime - legacyFrameSec(1) * fps);
-          if (endPos && (flight.landTime - flight.起) / fps >= flyParams.minFlySec) expect(Math.hypot(endPos[0], endPos[1]), `第 ${s.序} 句「${char}」`).toBeLessThan(8);
+          if (endPos && (flight.landTime - flight.start) / fps >= flyParams.minFlySec) expect(Math.hypot(endPos[0], endPos[1]), `第 ${s.序} 句「${char}」`).toBeLessThan(8);
         });
       });
     }
@@ -254,9 +254,9 @@ describe.skipIf(!fontBytes || !galacticBytes)('歌词艺术字的排版', () => 
       [...lyricLine.text].forEach((char, j) => {
         const enterFrame = lyricLine.入 + j * runeLyricDefault.staggerSec * fps;
         const flights = flyBlocks(splitBlocks(char, glyphSource.hanChar(char)), lyricLine.pinyin[j]!, { ...timeSpans[j]!, 入: enterFrame }, runeLyricDefault.flySec, glyphSeed(i + 1, j));
-        for (const flight of flights) for (let k = Math.ceil(flight.起 / frameStep); k * frameStep < flight.landTime; k++) inFlight.set(k, (inFlight.get(k) ?? 0) + 1);
+        for (const flight of flights) for (let k = Math.ceil(flight.start / frameStep); k * frameStep < flight.landTime; k++) inFlight.set(k, (inFlight.get(k) ?? 0) + 1);
         // 句首的字进场晚（首飞秒），拼字缩短；其余的字整 拼字秒
-        if (timeSpans[j]!.起 > enterFrame + runeLyricDefault.firstFlySec * fps) expect(timeSpans[j]!.end - timeSpans[j]!.起, `第 ${i + 1} 句「${char}」`).toBeCloseTo(runeLyricDefault.assembleSec * fps, 9);
+        if (timeSpans[j]!.start > enterFrame + runeLyricDefault.firstFlySec * fps) expect(timeSpans[j]!.end - timeSpans[j]!.start, `第 ${i + 1} 句「${char}」`).toBeCloseTo(runeLyricDefault.assembleSec * fps, 9);
       });
     });
     expect(Math.max(...inFlight.values())).toBeLessThanOrEqual(7);
@@ -281,8 +281,8 @@ describe('歌词艺术字的时序', () => {
 
   it('拼字：起唱前 落定提前秒 拼齐，第一块落定在那之前 拼字秒；和前一个字叠着拼（不再按两字间隔缩短）', () => {
     expect(decodeTimeSpans(firstWord, timeStyle)).toEqual([
-      { 起: 60 - 17.5, end: 60 },
-      { 起: 72.5 - 17.5, end: 72.5 },
+      { start: 60 - 17.5, end: 60 },
+      { start: 72.5 - 17.5, end: 72.5 },
     ]);
     expect(charStates([firstWord, second], 0, 57.5, timeStyle)[0]!.afterSolve).toBe(-2.5);
     expect(charStates([firstWord, second], 0, 60, timeStyle)[0]!.afterSolve).toBe(0);
@@ -290,9 +290,9 @@ describe('歌词艺术字的时序', () => {
 
   it('句首的字进场晚：第一块不早于进场后 首飞秒，挤到拼齐那一帧为止', () => {
     expect(decodeTimeSpans({ 入: 25, charTimes: [42.5, 50, 35] }, timeStyle)).toEqual([
-      { 起: 35, end: 40 },
-      { 起: 36.25, end: 47.5 },
-      { 起: 32.5, end: 32.5 },
+      { start: 35, end: 40 },
+      { start: 36.25, end: 47.5 },
+      { start: 32.5, end: 32.5 },
     ]);
   });
 
@@ -326,13 +326,13 @@ describe('歌词艺术字的时序', () => {
   });
 
   it('符文：落定按块的顺序排满 起～完（第一块 起、最后一块 完），起飞不早于这个字进场，来不及飞的直接落定', () => {
-    const chunks = [{ 点: [[0, 0]] as const, 心: [0, 0] as const }, { 点: [[1, 1]] as const, 心: [1, 1] as const }, { 点: [[2, 2]] as const, 心: [2, 2] as const }];
-    const flights = flyBlocks(chunks, 'ni', { 起: 50, end: 60, 入: 25 }, legacyFrameSec(8), 1);
+    const chunks = [{ points: [[0, 0]] as const, 心: [0, 0] as const }, { points: [[1, 1]] as const, 心: [1, 1] as const }, { points: [[2, 2]] as const, 心: [2, 2] as const }];
+    const flights = flyBlocks(chunks, 'ni', { start: 50, end: 60, 入: 25 }, legacyFrameSec(8), 1);
     expect(flights.map((x) => x.landTime)).toEqual([50, 55, 60]);
-    expect(flights.map((x) => x.起)).toEqual([30, 35, 40]);
+    expect(flights.map((x) => x.start)).toEqual([30, 35, 40]);
     expect(flights.map((x) => x.letter)).toEqual(['n', 'i', 'n']);
-    const lateItems = flyBlocks(chunks, 'ni', { 起: 50, end: 60, 入: 47.5 }, legacyFrameSec(8), 1);
-    expect(lateItems.map((x) => x.起)).toEqual([50, 47.5, 47.5]);
+    const lateItems = flyBlocks(chunks, 'ni', { start: 50, end: 60, 入: 47.5 }, legacyFrameSec(8), 1);
+    expect(lateItems.map((x) => x.start)).toEqual([50, 47.5, 47.5]);
     expect(flyPos(flights[0]!, 27.5)).toBeNull();
     expect(flyPos(flights[0]!, 50)).toBeNull();
     expect(flyPos(flights[0]!, 30)![0]).toBe(flights[0]!.dx);
@@ -375,7 +375,7 @@ describe('五个关键词的效果', () => {
     const wordEffect = lyricLine.wordEffect!;
     expect(wordEffect.effect).toBe('刹那');
     const timeSpans = decodeTimeSpans(lyricLine, runeLyricDefault);
-    const shatterFrame = mainCutEvents.worldShatters.帧;
+    const shatterFrame = mainCutEvents.worldShatters.frame;
     expect((shatterFrame - timeSpans[wordEffect.从]!.end) / fps).toBeGreaterThanOrEqual(legacyFrameSec(10));
     // 第 12 句让聊天、切进卧室才进，第 11 句照原来的时刻（收）退，不跟着拖到接缝
     const fadeOutStart = lyricLine.收!;
@@ -383,7 +383,7 @@ describe('五个关键词的效果', () => {
     // 退场的渐变按秒连着算，起头前 1/24 秒那一刻还整句亮着
     expect(charStates(lyricLines, 10, fadeOutStart - legacyFrameSec(1) * fps, runeLyricDefault).every((s) => s.shown === 1)).toBe(true);
     expect(charStates(lyricLines, 10, fadeOutStart + runeLyricDefault.exitSec * fps, runeLyricDefault).every((s) => s.shown === 0)).toBe(true);
-    for (let j = wordEffect.从; j <= wordEffect.到; j++)
+    for (let j = wordEffect.从; j <= wordEffect.dest; j++)
       for (let k = 0; k < 8; k++) expect(instantBlock(fadeOutStart, timeSpans[j]!.end, shatterFrame, [1, 0], glyphSeed(11, j) * 8 + k).dy, `第 ${j} 个字`).toBeGreaterThanOrEqual(glyphCell);
   });
 

@@ -21,17 +21,17 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 };
 
 const makeSounds = (options?: SpellOptions) => [
-  { 资产: '音效/诡厄巫法/goety.heavy_woosh.1', 秒: 0, 音量: 3 },
-  { 资产: '音效/诡厄巫法/goety.teleport_orb_throw', 秒: 0, 音量: 3 },
-  { 资产: '音效/entity.dragon_fireball.explode.1', 秒: voidFlashBombPath([-10, 0, 7], [0, 0, 0], options?.highSpeed).arriveTick / 20, 音量: 1.5, 音高: 0.75 },
-  { 资产: '音效/诡厄巫法/goety.fungus_explosion.1', 秒: 0, fromHit: true },
+  { asset: '音效/诡厄巫法/goety.heavy_woosh.1', sec: 0, 音量: 3 },
+  { asset: '音效/诡厄巫法/goety.teleport_orb_throw', sec: 0, 音量: 3 },
+  { asset: '音效/entity.dragon_fireball.explode.1', sec: voidFlashBombPath([-10, 0, 7], [0, 0, 0], options?.highSpeed).arriveTick / 20, 音量: 1.5, 音高: 0.75 },
+  { asset: '音效/诡厄巫法/goety.fungus_explosion.1', sec: 0, fromHit: true },
 ];
 
 export default defineSpellMeta({
   id: 'void_flash',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // VoidFlashSpell：HEAVY_WOOSH 音量 3、TELEPORT_ORB_THROW 音量 3；落地 DRAGON_FIREBALL_EXPLODE 音量 1.5、音高 0.75（落地时刻按参考距离写死）；撞上 FUNGUS_EXPLOSION
-  声音: makeSounds(),
+  sound: makeSounds(),
   soundsFor: makeSounds,
 });

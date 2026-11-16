@@ -7,7 +7,7 @@ vi.mock('./真实方块图集.ts', () => ({ blockAtlas: () => ({}), blockAtlasGl
 vi.mock('./网格.ts', () => ({ posScale: 64, groupCount: 11, skirtGroupStart: 7 }));
 
 const ctx = { SHORT: 5122, UNSIGNED_SHORT: 5123, UNSIGNED_BYTE: 5121 } as WebGL2RenderingContext;
-const makeFaceGroup = (faceCount: number, faceGroupStarts = [0, faceCount]) => ({ n: faceCount, pos: new Int16Array(faceCount * 12), uv: new Int16Array(faceCount * 8), tex: new Uint16Array(faceCount * 16), col: new Uint8Array(faceCount * 16), 段: faceGroupStarts });
+const makeFaceGroup = (faceCount: number, faceGroupStarts = [0, faceCount]) => ({ n: faceCount, pos: new Int16Array(faceCount * 12), uv: new Int16Array(faceCount * 8), tex: new Uint16Array(faceCount * 16), col: new Uint8Array(faceCount * 16), segment: faceGroupStarts });
 
 describe('花草短索引', () => {
   it('只有花草、面数在边界内才用 16 位索引', () => {
@@ -35,7 +35,7 @@ describe('批项', () => {
     const boundingSphere = new THREE.Sphere().copy(mesh.geometry.boundingSphere!).applyMatrix4(mesh.matrixWorld);
     expect(batchItem.boundingSphere.center.toArray()).toEqual(boundingSphere.center.toArray());
     expect(batchItem.boundingSphere.radius).toBe(boundingSphere.radius);
-    expect(batchItem.缩放).toBe(mesh.scale.x);
+    expect(batchItem.scale).toBe(mesh.scale.x);
   });
   it('挑朝向并出来的段和 pickDirs 一样', () => {
     const faceGroupStarts = [0, 3, 3, 10, 11, 20, 20, 26, 30, 30, 31, 40];
@@ -50,8 +50,8 @@ describe('批项', () => {
       batcher.加(buildBatchItem(ctx, makeFaceGroup(40, faceGroupStarts), false, [0, 0, 0], 64, [0, 0, 0, 1, 1, 1]), visibleFlags);
       const mesh = faceGroupMesh(ctx, makeFaceGroup(40, faceGroupStarts), '水', [0, 0, 0], 1, [0, 0, 0, 1, 1, 1])!;
       pickDirs(mesh, visibleFlags);
-      expect(batcher.段).toEqual(mesh.geometry.groups.flatMap((g) => [g.start, g.count]));
-      expect(batcher.项.length).toBe(mesh.visible ? 1 : 0);
+      expect(batcher.segment).toEqual(mesh.geometry.groups.flatMap((g) => [g.start, g.count]));
+      expect(batcher.items.length).toBe(mesh.visible ? 1 : 0);
     }
   });
 });

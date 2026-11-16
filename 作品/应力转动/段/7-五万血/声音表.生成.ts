@@ -3,36 +3,36 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配音/7-李樱-五万血": {
-      "时长": 2.24,
-      "峰值": -4,
-      "响度": -18,
+      "duration": 2.24,
+      "peakDb": -4,
+      "loudness": -18,
       "sha": "08eae572c6c6"
     },
     "配音/7-李樱-溜了": {
-      "时长": 1.081,
-      "峰值": -5.2,
-      "响度": -18,
+      "duration": 1.081,
+      "peakDb": -5.2,
+      "loudness": -18,
       "sha": "cfeb568789c0"
     },
     "音效/entity.warden.tendril_clicks.6": {
-      "时长": 1.024104,
-      "峰值": -2,
-      "响度": -24.9,
+      "duration": 1.024104,
+      "peakDb": -2,
+      "loudness": -24.9,
       "sha": "f568609506ab"
     }
   },
-  "台词": {
+  "lines": {
     "7-李樱-五万血": {
-      "配音": "配音/7-李樱-五万血",
-      "开口": 0,
-      "时长": 2.24
+      "voice": "配音/7-李樱-五万血",
+      "mouthOpen": 0,
+      "duration": 2.24
     },
     "7-李樱-溜了": {
-      "配音": "配音/7-李樱-溜了",
-      "开口": 0,
-      "时长": 1.081
+      "voice": "配音/7-李樱-溜了",
+      "mouthOpen": 0,
+      "duration": 1.081
     }
   }
 };

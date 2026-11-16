@@ -12,17 +12,17 @@ const indoorLight: DaypartLight = {
   facing: 0.2,
   faceShadeK: 1,
   glowStrength: 1,
-  lampLight: { radius: 9, 色: '#ffffff', 强: 0 },
-  bloom: { threshold: 3, softKnee: 0.5, 强: 0 },
+  lampLight: { radius: 9, 色: '#ffffff', strength: 0 },
+  bloom: { threshold: 3, softKnee: 0.5, strength: 0 },
   particleGlow: 0,
 };
 const indoorMoonlight: ShadingParams = {
-  名: '屋里月光',
+  name: '屋里月光',
   shaderPack: '手画窗光',
   白天: { ...indoorLight, sunColor: '#ffd8b0', sunIntensity: 1.6 },
   日落: { ...indoorLight, sunColor: '#ffd8b0', sunIntensity: 1.6 },
   夜: { ...indoorLight, sunColor: '#c4d5ff', sunIntensity: 2.6 },
-  grade: { saturation: 1, 对比: 1, darkColor: '#000000', brightColor: '#ffffff', colorSplit: 0 },
+  grade: { saturation: 1, comparison: 1, darkColor: '#000000', brightColor: '#ffffff', colorSplit: 0 },
   pixelShadow: false,
 };
 
@@ -38,41 +38,41 @@ const frontLight: DaypartLight = {
   shadowStrength: 0.85,
   facing: 0.35,
   faceShadeK: 0.6,
-  bloom: { threshold: 1.2, softKnee: 0.5, 强: 0.18, 宽: 0.35 },
+  bloom: { threshold: 1.2, softKnee: 0.5, strength: 0.18, width: 0.35 },
 };
 const photoFrontLight: ShadingParams = {
-  名: '合照正面光',
+  name: '合照正面光',
   shaderPack: '棚拍正面主光',
   白天: frontLight,
   日落: frontLight,
   夜: frontLight,
-  grade: { saturation: 1.02, 对比: 1.02, darkColor: '#3a2c50', brightColor: '#fff0e0', colorSplit: 0.06 },
+  grade: { saturation: 1.02, comparison: 1.02, darkColor: '#3a2c50', brightColor: '#fff0e0', colorSplit: 0.06 },
   pixelShadow: true,
 };
 
 /** 从镜头这边补到脸上的光，只补影子里（太阳照到的浅色衣服、帽子、蛋糕不加，不然发白冒光）。
  *  色取受光减影子、补齐：帽檐下的脸和身上受光的地方一样亮、一样色。白光补 0.5 时用户 11-03 看了说「这个补光的强度不够大 脸部还是有明显的区别」（脸发灰发紫），看了预览 1103-0319 定「补光补齐」 */
-const faceFill: FillLight = { lightDir: '镜头', 色: '受光减影子', 强: 1, fillShadowOnly: true };
+const faceFill: FillLight = { lightDir: '镜头', 色: '受光减影子', strength: 1, fillShadowOnly: true };
 
 /** 2-抢龙蛋 的末地：没有太阳，粉彩的白天把末地石照成沙土黄、夜把它压成灰；这里光是暖白、影子淡紫，末地石还是原来的淡黄。
  *  龙蛋粒子照 夜 的晕着，泛光门槛照白天（不然整片末地石跟着晕） */
 const endDim: DaypartLight = { ...shadingPresets.粉彩.夜, sunColor: '#fff6e8', sunIntensity: 1.05, shadowColor: '#c4b8e0', shadowStrength: 0.85, bloom: shadingPresets.粉彩.白天.bloom };
-const endLight: ShadingParams = { ...shadingPresets.粉彩, 名: '末地光', 白天: endDim, 日落: endDim, 夜: endDim };
+const endLight: ShadingParams = { ...shadingPresets.粉彩, name: '末地光', 白天: endDim, 日落: endDim, 夜: endDim };
 
 /** 分屏里现实那半（现实/画布.tsx）：现实调冷（主会话 10-24 美术定稿「现实冷，服务器保持夏天的暖」），粉彩的金光、紫影子把墙照成暖灰，这里光、影子都偏冷 */
 const reality: DaypartLight = { ...shadingPresets.粉彩.白天, sunColor: '#f2f6ff', sunIntensity: 1.05, shadowColor: '#b4c0d4', shadowStrength: 0.78 };
-const realLight: ShadingParams = { ...shadingPresets.粉彩, 名: '现实光', 白天: reality, 日落: reality, 夜: reality };
+const realLight: ShadingParams = { ...shadingPresets.粉彩, name: '现实光', 白天: reality, 日落: reality, 夜: reality };
 
 /** 雷雨那个镜头：她被自己的阵照亮是平涂的发光区，粉彩的发光区乘 1.15～1.6，她浅色的衣服整个糊成一团白光，这里不乘 */
 const rainyPreset: ShadingParams = {
   ...shadingPresets.粉彩,
-  名: '雨天',
+  name: '雨天',
   白天: { ...shadingPresets.粉彩.白天, glowStrength: 1 },
   日落: { ...shadingPresets.粉彩.日落, glowStrength: 1 },
   夜: { ...shadingPresets.粉彩.夜, glowStrength: 1 },
 };
 /** 雨里太阳只照进来四成（不然地上一大块硬边的房子影子），补一点冷光，跟不开时一样灰蓝 */
-const rainyLight: ShadingOptions = { preset: rainyPreset, baseBrightness: 1.1, lightIntensity: 0.4, fillLights: [{ lightDir: '镜头', 色: '#e4e8ff', 强: 0.25 }] };
+const rainyLight: ShadingOptions = { preset: rainyPreset, baseBrightness: 1.1, lightIntensity: 0.4, fillLights: [{ lightDir: '镜头', 色: '#e4e8ff', strength: 0.25 }] };
 /** 本作品光影层的天色图、云的质量档（engine/light/天/Photon天.ts、engine/light/云/配置.ts）：用户 11-04 定 B1～B5 都做（画面会变，要过目）。
  *  换回 { 天算法: '精确', 质量: '精确' } 就是 11-04 以前用户看过的画面 */
 const skyCloudTier = { skyAlgo: 'GPU', quality: '快' } as const;
@@ -80,9 +80,9 @@ const skyCloudTier = { skyAlgo: 'GPU', quality: '快' } as const;
 const rainSky: ShadingOptions = { ...rainyLight, 天: 'Photon平滑', skyAlgo: skyCloudTier.skyAlgo, cloud: { weather: { humidity: 1, temperature: 0.5, wind: 0.6 }, exposure: 2, quality: skyCloudTier.quality } };
 /** 2-日落划船 的云（海平面 0，世界高度、格）：高度照原来的默认三层，中层换成贴图层（用户 11-04 定 B5，远层用便宜的算法） */
 const sunsetBoatClouds: readonly CloudLayer[] = [
-  { 算法: 'Photon积云', bottomHeight: 300 },
-  { 算法: '贴图层', bottomHeight: 3200 / 3 },
-  { 算法: 'Photon卷云', bottomHeight: 2000 },
+  { algorithm: 'Photon积云', bottomHeight: 300 },
+  { algorithm: '贴图层', bottomHeight: 3200 / 3 },
+  { algorithm: 'Photon卷云', bottomHeight: 2000 },
 ];
 /** 雨停以后门口白天（第 8 句）：光照还是门口白天的粉彩，天和云接着第 7 句那层 Photon 雨云（洞、海平面在场景的 光影场） */
 const afterRainSky: ShadingOptions = { preset: '粉彩', 天: 'Photon平滑', skyAlgo: skyCloudTier.skyAlgo, cloud: rainSky.cloud! };
@@ -90,7 +90,7 @@ const afterRainSky: ShadingOptions = { preset: '粉彩', 天: 'Photon平滑', sk
  *  量化写死在 1/16 格，套 Faithful 32x 后比贴图像素粗一倍。关掉后屋檐的影子又成锯齿（用户 11-07「屋顶的都是平的，为什么投影会是锯齿状的？」）：影子图格子和方块对齐、再加 2×2 过滤。
  *  斜着的边（头投在衣领上那条）对齐管不到，光贴着斜照时纹素一格被拉长成台阶（用户 11-07「为什么放大看这个人的阴影还是有锯齿状？」），影子图边加到 8192 也只是台阶减半。
  *  用户 11-07 指出影子图从原理上就不对（「像素无限放大…就算是最后的 16384 你这个从原理上来讲就不对了」）：改成光线影子，影子边由几何定。只管这一段 */
-const pastelSmoothShadow: ShadingParams = { ...shadingPresets.粉彩, 名: '粉彩平滑影子', pixelShadow: false, shadowAlgo: '光线' };
+const pastelSmoothShadow: ShadingParams = { ...shadingPresets.粉彩, name: '粉彩平滑影子', pixelShadow: false, shadowAlgo: '光线' };
 
 /** 光影按段开（用户 11-02 定），段键 → 样式（见 engine/三渲二/光影/预设.ts）。不开的段画面不变；场景只给太阳方向、海平面这些事实
  *  （三渲二画布的 光影场），样式都在这里。用户每句话只管写在它下面的那几段。
@@ -112,7 +112,7 @@ export const approvedShadingBySeg: Readonly<Record<string, ShadingOptions>> = {
     waterReflectCloud: true,
     天: 'Photon平滑',
     skyAlgo: skyCloudTier.skyAlgo,
-    cloud: { weather: { humidity: 0.7, temperature: 0.5, wind: 0.6 }, exposure: 2, quality: skyCloudTier.quality, 层: sunsetBoatClouds },
+    cloud: { weather: { humidity: 0.7, temperature: 0.5, wind: 0.6 }, exposure: 2, quality: skyCloudTier.quality, layers: sunsetBoatClouds },
     zenith: { 色: '#3e4f86', stretch: 1 },
   },
   // 用户 11-02「粉彩」（预览 1102-1611）、「光晕 不要做成像素格 烟花要照亮周围」（预览 1102-1632 第 2、3 问）

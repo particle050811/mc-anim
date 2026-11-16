@@ -34,12 +34,12 @@ const originalSizeIds = new Set(['贴图/场景/天空/clouds']);
  *  三渲二正交机位一个原版贴图像素 = 像素N 个成片像素、顶面一个贴图像素 = 正交顶面 个像素高（画风.ts）；放大 倍 倍后一个贴图像素是 像素N ÷ 倍，
  *  要整像素（画风原则 3：像素一样大、不糊）就得 倍 同时整除 像素N 和 正交顶面。本作品 6、2 → 2：32x 原样，64x、128x 缩到 32x（6 ÷ 4 = 1.5 像素）。
  *  封顶（一格最多几个贴图像素，16 = 原版尺寸）再往下压；作品没有 画风.ts 的 像素N 就不放大。
- *  第三个参数（作品 材质包.toml 的 "分辨率"，或试样的 ANIM_PACKS_TRY，见 资产锁.ts）顶掉画风的整除限制，直接放到 ÷ 16 倍：
+ *  第三个参数（作品 材质包.toml 的 "resolution"，或试样的 ANIM_PACKS_TRY，见 资产锁.ts）顶掉画风的整除限制，直接放到 ÷ 16 倍：
  *  一个贴图像素不再是整数个成片像素（64x 在 像素N 6 下是 1.5 像素）。用户 11-07 定《把回忆拼好给你》直接用 64x */
-export const maxUpscale = (styleText: string | null, resCap?: number, trialRes?: number): { factor: number; 依据: string } => {
+export const maxUpscale = (styleText: string | null, resCap?: number, trialRes?: number): { factor: number; basis: string } => {
   if (trialRes !== undefined) {
     const factor = Math.min(trialRes, resCap ?? trialRes) / 16;
-    return { factor, 依据: `指定 ${trialRes}x（材质包.toml 的 分辨率 或 ANIM_PACKS_TRY）：不按画风整除，最多 ${factor} 倍（${16 * factor}x）${resCap !== undefined ? `，封顶 ${resCap}` : ''}` };
+    return { factor, basis: `指定 ${trialRes}x（材质包.toml 的 分辨率 或 ANIM_PACKS_TRY）：不按画风整除，最多 ${factor} 倍（${16 * factor}x）${resCap !== undefined ? `，封顶 ${resCap}` : ''}` };
   }
   const getLimit = (constName: string) => {
     const m = styleText ? new RegExp(`export const ${constName} = (\\d+)`).exec(styleText) : null;
@@ -62,22 +62,22 @@ export const maxUpscale = (styleText: string | null, resCap?: number, trialRes?:
       basis += `，封顶 ${resCap} → ${16 * factor}x`;
     }
   }
-  return { factor, 依据: basis };
+  return { factor, basis: basis };
 };
 
-export type CopiedTexture = { packPath: string; 组: string };
+export type CopiedTexture = { packPath: string; group: string };
 /** extract.toml 里照搬 jar 里一张贴图的产物：id → 包内路径（assets/<ns>/textures/...png）和组（同一步导出的一组，材质包放大时一组一样大）。
  *  认这几种：「导出模型」的 名=路径、单写路径（产物名 = 文件名）、路径里带 *（按 锁ids 里有的 id 展开）、导出到单个文件；
  *  「导出实体模型」--贴图 后面的 名=路径（一张时产物是 <模型>.png，几张时是 <模型>.<名>.png） */
 export const copyTextures = (sourcingTableText: string, lockedIds: Iterable<string> = []): Map<string, CopiedTexture> => {
-  const t = parse(sourcingTableText) as { 取材?: { 名称?: string; 步骤?: unknown[][]; 产物?: Record<string, string> }[] };
+  const t = parse(sourcingTableText) as { sourcing?: { displayName?: string; steps?: unknown[][]; artifacts?: Record<string, string> }[] };
   const ids = [...lockedIds];
   const copies = new Map<string, CopiedTexture>();
-  for (const r of t.取材 ?? []) {
-    (r.步骤 ?? []).forEach((s, index) => {
+  for (const r of t.sourcing ?? []) {
+    (r.steps ?? []).forEach((s, index) => {
       if (typeof s[2] !== 'string') return;
-      const group = `${r.名称 ?? '?'}#${index}`;
-      const artifacts = Object.entries(r.产物 ?? {});
+      const group = `${r.displayName ?? '?'}#${index}`;
+      const artifacts = Object.entries(r.artifacts ?? {});
       if (s[0] === '导出实体模型') {
         const i = s.indexOf('--贴图');
         if (i < 0) return;
@@ -89,7 +89,7 @@ export const copyTextures = (sourcingTableText: string, lockedIds: Iterable<stri
         }
         const stem = s[2].replace(/\.json$/, '');
         const textureFiles = new Map(texturePairs.map(([suffix, filePath]) => [texturePairs.length === 1 ? `${stem}.png` : `${stem}.${suffix}.png`, filePath]));
-        for (const [id, file] of artifacts) if (textureFiles.has(file)) copies.set(id, { packPath: textureFiles.get(file)!, 组: group });
+        for (const [id, file] of artifacts) if (textureFiles.has(file)) copies.set(id, { packPath: textureFiles.get(file)!, group: group });
         return;
       }
       if (s[0] !== '导出模型') return;
@@ -116,7 +116,7 @@ export const copyTextures = (sourcingTableText: string, lockedIds: Iterable<stri
       for (const [idPattern, filePattern] of artifacts) {
         // 导出到单个文件（第三项是 .png、只给一张）：产物就是这个文件
         if (filePattern === dir && mapping.size === 1 && !wildcards.length) {
-          copies.set(idPattern, { packPath: [...mapping.values()][0]!, 组: group });
+          copies.set(idPattern, { packPath: [...mapping.values()][0]!, group: group });
           continue;
         }
         if (!filePattern.startsWith(`${dir}/`) || !filePattern.endsWith('.png')) continue;
@@ -126,11 +126,11 @@ export const copyTextures = (sourcingTableText: string, lockedIds: Iterable<stri
           const names = new Set([...mapping.keys(), ...ids.filter((x) => x.startsWith(prefix) && !x.slice(prefix.length).includes('/')).map((x) => x.slice(prefix.length))]);
           for (const textureName of names) {
             const inPackPath = byName(textureName);
-            if (inPackPath) copies.set(prefix + textureName, { packPath: inPackPath, 组: group });
+            if (inPackPath) copies.set(prefix + textureName, { packPath: inPackPath, group: group });
           }
         } else if (!namePattern.includes('*')) {
           const inPackPath = byName(namePattern);
-          if (inPackPath) copies.set(idPattern, { packPath: inPackPath, 组: group });
+          if (inPackPath) copies.set(idPattern, { packPath: inPackPath, group: group });
         }
       }
     });
@@ -138,19 +138,19 @@ export const copyTextures = (sourcingTableText: string, lockedIds: Iterable<stri
   return copies;
 };
 
-export type HealthCheck = { 名: string; pack_format: unknown; supported_formats: unknown; 统计: Record<string, number>; 例: Record<string, string[]> };
+export type HealthCheck = { name: string; pack_format: unknown; supported_formats: unknown; stats: Record<string, number>; examples: Record<string, string[]> };
 export type RenderResult = {
-  产物: { id: string; 文件: string; 换: number; 共: number }[];
+  artifacts: { id: string; file: string; replaced: number; total: number }[];
   图集缺: number;
-  图集不合: { 名: string; 包: string; 原因: string }[];
+  图集不合: { name: string; pack: string; cause: string }[];
   单张缺: string[];
   单张原版放大: string[];
-  单张不合: { id: string; 包: string; 原因: string }[];
+  单张不合: { id: string; pack: string; cause: string }[];
   图集格: Record<string, number>;
-  缩放: Record<string, number>;
-  各包贡献: Record<string, number>;
+  scale: Record<string, number>;
+  perPackContribution: Record<string, number>;
   体检: HealthCheck[];
-  群系色?: { 改: number; 色图来自: string[]; 例: Record<string, [string, string]> };
+  biomeColor?: { changed: number; colorMapSources: string[]; examples: Record<string, [string, string]> };
 };
 
 const runImageRender = (request: object, outDir: string): RenderResult => {
@@ -168,74 +168,74 @@ const runImageRender = (request: object, outDir: string): RenderResult => {
 export const warnings = (checks: HealthCheck[]) =>
   checks.flatMap((t) => {
     const w: string[] = [];
-    if (t.pack_format != null && t.pack_format !== 15 && !/\b15\b/.test(JSON.stringify(t.supported_formats ?? ''))) w.push(`${t.名}：pack_format ${String(t.pack_format)}，不是 1.20.1 的 15，个别贴图可能改过名`);
-    for (const [k, n] of Object.entries(t.统计)) {
-      const examplesText = (t.例[k] ?? []).slice(0, 2).join('、');
-      if (k.startsWith('OptiFine/')) w.push(`${t.名}：${k} ${n} 个文件不支持（如 ${examplesText}）`);
-      else if (k === 'models/block' || k === 'blockstates') w.push(`${t.名}：${k} 覆盖 ${n} 个没用上（方块形状照原版方块表；如 ${examplesText}）`);
-      else if (k === 'shaders') w.push(`${t.名}：core shaders ${n} 个不支持`);
+    if (t.pack_format != null && t.pack_format !== 15 && !/\b15\b/.test(JSON.stringify(t.supported_formats ?? ''))) w.push(`${t.name}：pack_format ${String(t.pack_format)}，不是 1.20.1 的 15，个别贴图可能改过名`);
+    for (const [k, n] of Object.entries(t.stats)) {
+      const examplesText = (t.examples[k] ?? []).slice(0, 2).join('、');
+      if (k.startsWith('OptiFine/')) w.push(`${t.name}：${k} ${n} 个文件不支持（如 ${examplesText}）`);
+      else if (k === 'models/block' || k === 'blockstates') w.push(`${t.name}：${k} 覆盖 ${n} 个没用上（方块形状照原版方块表；如 ${examplesText}）`);
+      else if (k === 'shaders') w.push(`${t.name}：core shaders ${n} 个不支持`);
     }
     return w;
   });
 
-/** 建覆盖层：按给的选用（默认环境变量或作品的 "包"），返回覆盖层锁、写到哪、报告 */
+/** 建覆盖层：按给的选用（默认环境变量或作品的 "pack"），返回覆盖层锁、写到哪、报告 */
 export const buildResourcePackOverride = (workRoot: string, packSelection = readResourcePackSelection(workRoot)) => {
-  if (!packSelection.包.length) throw new Error(`这部作品没选用材质包：在 ${path.join(workRoot, '材质包.toml')} 写 "包" = ["材质包/<名>"]，或试样时前面带 ANIM_PACKS=<名>`);
-  const assetLock = readWorkAssetLock(workRoot, { 包: [], source: '无' }); // 原版锁：覆盖层只照原版建
+  if (!packSelection.pack.length) throw new Error(`这部作品没选用材质包：在 ${path.join(workRoot, '材质包.toml')} 写 "pack" = ["材质包/<名>"]，或试样时前面带 ANIM_PACKS=<名>`);
+  const assetLock = readWorkAssetLock(workRoot, { pack: [], source: '无' }); // 原版锁：覆盖层只照原版建
   const assetTable = readAssetRegistryBoth(workRoot).entryMap;
-  const packs = packSelection.包.map((id) => {
+  const packs = packSelection.pack.map((id) => {
     const e = assetTable.get(id);
-    if (!e || e.类别 !== '材质包') throw new Error(`${id} 没在资产表登记成 类别 = "材质包"（assets/registry/材质包.toml），先登记、anim assets add ${id} <包.zip>`);
-    return { id, 名: id.slice('材质包/'.length), 可见性: e.可见性, 许可: e.许可, entry: assetLock[id]!, zip: resolveAsset(id, assetLock).文件 };
+    if (!e || e.category !== '材质包') throw new Error(`${id} 没在资产表登记成 类别 = "材质包"（assets/registry/材质包.toml），先登记、anim assets add ${id} <包.zip>`);
+    return { id, name: id.slice('材质包/'.length), visibility: e.visibility, license: e.license, entry: assetLock[id]!, zip: resolveAsset(id, assetLock).file };
   });
-  const blockTable = JSON.parse(fs.readFileSync(resolveAsset(blockTableId, assetLock).文件, 'utf8')) as { 贴图: string[] };
+  const blockTable = JSON.parse(fs.readFileSync(resolveAsset(blockTableId, assetLock).file, 'utf8')) as { 贴图: string[] };
   const singleTextures = [...copyTextures(fs.readFileSync(path.join(codeRoot(), 'sourcing', 'extract.toml'), 'utf8'), Object.keys(assetLock))]
     .filter(([id, { packPath }]) => id in assetLock && id.startsWith('贴图/') && (uiReplaceable.has(id) || !noReplacePrefixes.some((q) => id.startsWith(q))) && packPath.startsWith(swappablePrefix) && !noSwapPrefixes.some((q) => packPath.startsWith(q)))
-    .map(([id, { packPath, 组: group }]) => ({ id, 原图: resolveAsset(id, assetLock).文件, 包内: packPath, 组: group, ...(originalSizeIds.has(id) ? { 倍上限: 1 } : {}) }));
+    .map(([id, { packPath, group: group }]) => ({ id, 原图: resolveAsset(id, assetLock).file, 包内: packPath, group: group, ...(originalSizeIds.has(id) ? { 倍上限: 1 } : {}) }));
   const artStylePath = path.join(workRoot, '画风.ts');
-  const limit = maxUpscale(fs.existsSync(artStylePath) ? fs.readFileSync(artStylePath, 'utf8') : null, packSelection.封顶, packSelection.试验 ?? packSelection.分辨率);
+  const limit = maxUpscale(fs.existsSync(artStylePath) ? fs.readFileSync(artStylePath, 'utf8') : null, packSelection.resolutionCap, packSelection.trial ?? packSelection.resolution);
   const jar = jarPath(readManifest(), vanillaJar);
   if (!fs.existsSync(jar)) throw new Error(`原版 jar 不在 ${jar}（群系色要它的色图和群系温度湿度）：anim extract --download`);
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
   try {
     const rendered = runImageRender(
       {
-        包们: packs.map((p) => ({ zip: p.zip, 名: p.名 })),
+        包们: packs.map((p) => ({ zip: p.zip, name: p.name })),
         原版jar: jar,
         倍上限: limit.factor,
-        图集: [{ id: atlasId, 原图: resolveAsset(atlasId, assetLock).文件, 贴图名: blockTable.贴图, 格: 16 }],
-        单张: singleTextures,
-        群系: { id: biomeColorId, 原表: resolveAsset(biomeColorId, assetLock).文件 },
+        图集: [{ id: atlasId, 原图: resolveAsset(atlasId, assetLock).file, 贴图名: blockTable.贴图, cell: 16 }],
+        singleTextures: singleTextures,
+        biome: { id: biomeColorId, 原表: resolveAsset(biomeColorId, assetLock).file },
       },
       outDir,
     );
-    const storage = packs.some((p) => p.可见性 === '私有') ? '私有' : 'store';
+    const storage = packs.some((p) => p.visibility === '私有') ? '私有' : 'store';
     const overrides: Record<string, LockEntry> = {};
-    for (const p of rendered.产物) {
-      const entry = importToStore(p.文件, storage);
+    for (const p of rendered.artifacts) {
+      const entry = importToStore(p.file, storage);
       if (entry.sha256 !== assetLock[p.id]!.sha256) overrides[p.id] = entry;
     }
     const resourcePackLock: ResourcePackLock = {
-      包: packs.map((p) => ({ id: p.id, sha256: p.entry.sha256 })),
-      ...(packSelection.封顶 !== undefined ? { 封顶: packSelection.封顶 } : {}),
-      ...(packSelection.试验 !== undefined ? { 试验: packSelection.试验 } : {}),
-      ...(packSelection.分辨率 !== undefined ? { 分辨率: packSelection.分辨率 } : {}),
-      覆盖: Object.fromEntries(Object.keys(overrides).sort().map((k) => [k, overrides[k]!])) as AssetLock,
-      报告: {
-        许可: Object.fromEntries(packs.map((p) => [p.id, `${p.许可}（${p.可见性}）`])),
-        分辨率: { 规则: limit.依据, 方块图集格: rendered.图集格[atlasId] ?? 16 },
-        方块图集: { 换: rendered.产物.find((x) => x.id === atlasId)?.换 ?? 0, 共: blockTable.贴图.length, 包里没有: rendered.图集缺, 不合: rendered.图集不合.length },
-        单张: { 共: singleTextures.length, 换: rendered.产物.filter((x) => x.id !== atlasId && x.id !== biomeColorId && x.换 > 0).length, 包里没有: rendered.单张缺.length, 包里没有但同组放大: rendered.单张原版放大, 不合: rendered.单张不合 },
-        缩放: rendered.缩放,
-        各包贡献: rendered.各包贡献,
-        群系色: rendered.群系色 ?? null,
-        警告: warnings(rendered.体检),
+      pack: packs.map((p) => ({ id: p.id, sha256: p.entry.sha256 })),
+      ...(packSelection.resolutionCap !== undefined ? { resolutionCap: packSelection.resolutionCap } : {}),
+      ...(packSelection.trial !== undefined ? { trial: packSelection.trial } : {}),
+      ...(packSelection.resolution !== undefined ? { resolution: packSelection.resolution } : {}),
+      overrides: Object.fromEntries(Object.keys(overrides).sort().map((k) => [k, overrides[k]!])) as AssetLock,
+      report: {
+        license: Object.fromEntries(packs.map((p) => [p.id, `${p.license}（${p.visibility}）`])),
+        resolution: { policy: limit.basis, blockAtlasCell: rendered.图集格[atlasId] ?? 16 },
+        blockAtlas: { replaced: rendered.artifacts.find((x) => x.id === atlasId)?.replaced ?? 0, total: blockTable.贴图.length, notInPack: rendered.图集缺, mismatched: rendered.图集不合.length },
+        singleTextures: { total: singleTextures.length, replaced: rendered.artifacts.filter((x) => x.id !== atlasId && x.id !== biomeColorId && x.replaced > 0).length, notInPack: rendered.单张缺.length, missingUpscaledInGroup: rendered.单张原版放大, mismatched: rendered.单张不合 },
+        scale: rendered.scale,
+        perPackContribution: rendered.perPackContribution,
+        biomeColor: rendered.biomeColor ?? null,
+        warnings: warnings(rendered.体检),
       },
     };
     const lockFile = resourcePackLockPath(workRoot, packSelection);
     fs.mkdirSync(path.dirname(lockFile), { recursive: true });
     fs.writeFileSync(lockFile, JSON.stringify(resourcePackLock, null, 2) + '\n', 'utf8');
-    return { 选: packSelection, packs, resourcePackLock, 结果: rendered, lockFile };
+    return { 选: packSelection, packs, resourcePackLock, result: rendered, lockFile };
   } finally {
     fs.rmSync(outDir, { recursive: true, force: true });
   }

@@ -13,6 +13,6 @@ import meta from './震颤猛击.元.ts';
 
 const groundColor = hexColor(0x700000);
 
-const temblorClap: React.FC<SpellPerformanceProps> = ({ 秒: sec, from }) => <SlamWall 位={from} 刻={sec * 20} 宽={3.5} 色={groundColor} 寿命={10} />;
+const temblorClap: React.FC<SpellPerformanceProps> = ({ sec: sec, from }) => <SlamWall 位={from} 刻={sec * 20} width={3.5} 色={groundColor} 寿命={10} />;
 
 export default defineSpellPerformance(meta, temblorClap);

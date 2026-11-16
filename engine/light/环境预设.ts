@@ -11,13 +11,13 @@ import { twilightForest } from './维度.ts';
 export const twilightEnv = (o: { fogFar: number; fogNear?: number }): EnvDescription =>
   defineEnvironment(
     {
-      维度: twilightForest,
+      dimension: twilightForest,
       画法: '暮色',
       sun: twilightSunDir,
       lightSpec: { tier: '暮色' },
       fog: { 种类: '线性', near: o.fogNear ?? o.fogFar * 0.25, far: o.fogFar, 色: twilightFogColor },
       heightFog: { start: twilightHeightFog.start, halfLife: twilightHeightFog.halfLife, density: twilightHeightFog.density },
-      cloud: { 种类: 'photon', 海平面: 0 },
+      cloud: { 种类: 'photon', seaLevel: 0 },
       shadow: { far: shadowFarFor(o.fogFar) },
     },
     '暮色环境',

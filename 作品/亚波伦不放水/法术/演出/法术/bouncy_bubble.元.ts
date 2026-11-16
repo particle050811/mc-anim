@@ -45,7 +45,7 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'bouncy_bubble',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // BouncyBubbleSpell：GENERIC_SPLASH；爆 BUBBLE_COLUMN_BUBBLE_POP、GENERIC_SPLASH（爆的时刻随距离变，这里按参考距离写死在 时长 之外，段里要准的用 泡泡道().爆刻）
-  声音: [{ 资产: '音效/entity.generic.splash.1', 秒: 0 }],
+  sound: [{ asset: '音效/entity.generic.splash.1', sec: 0 }],
 });

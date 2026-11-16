@@ -10,7 +10,7 @@ import { smoothstep } from '@engine/core/数学.ts';
  *  别处三分之一出虞美人、蓝花美耳草、滨菊、矢车菊，其余是蒲公英。原版噪声尺度 0.005（一片两百来格），这里 郁金香尺度 取同一个量级、阈是 Agent 挑的，
  *  让出生点到樱花林这一路上有一片郁金香 */
 export const plainsParams = {
-  种子: 20230607,
+  seed: 20230607,
   起伏: 2.4,
   undulationScale: 64,
   fineUndulation: 0.5,
@@ -55,11 +55,11 @@ export const cherryGrove = {
   petalClusterRate: 0.35,
 };
 
-const noise = simplex2(plainsParams.种子);
+const noise = simplex2(plainsParams.seed);
 /** 细起伏的噪声，铺草时也拿它定草丛疏密 */
-export const fineNoise = simplex2(plainsParams.种子 + 7);
-const mountainNoise = simplex2(plainsParams.种子 + 13);
-const flowerNoise = simplex2(plainsParams.种子 + 29);
+export const fineNoise = simplex2(plainsParams.seed + 7);
+const mountainNoise = simplex2(plainsParams.seed + 13);
+const flowerNoise = simplex2(plainsParams.seed + 29);
 
 /** 樱花林那座山在 (i, j) 有多高（格，小数）：山脚、山顶的半径按噪声扭，坡上、顶上加一点起伏 */
 export const mountainHeightAt = (i: number, j: number): number => {
@@ -84,7 +84,7 @@ export const inGrove = (i: number, j: number) => Math.hypot(i - cherryGrove.心[
 export const isForest = (i: number, j: number) => inGrove(i, j) || Math.hypot(i - cherryGrove.心[0], j - cherryGrove.心[1]) <= cherryGrove.mountainRadius * 0.8;
 
 /** 高：橡树的树干高（樱花树的高按原版自己抽，写 0） */
-export type GroveTree = { i: number; j: number; 种: '橡' | '樱'; 高: number; 种子: number };
+export type GroveTree = { i: number; j: number; kind: '橡' | '樱'; height: number; seed: number };
 
 /** 樱花林里的树按格子撒（每 樱花林.树距 见方一棵，抖一抖），再加平原上零星几棵橡树（平原.橡树们，Agent 摆的） */
 export const groveTrees = (): GroveTree[] => {
@@ -96,9 +96,9 @@ export const groveTrees = (): GroveTree[] => {
       const i = Math.round(gx * d + (hash2(gx, gy, 1) - 0.5) * d * 0.7);
       const j = Math.round(gy * d + (hash2(gx, gy, 2) - 0.5) * d * 0.7);
       if (!inGrove(i, j) || hash2(gx, gy, 3) > cherryGrove.treeRate) continue;
-      out.push({ i, j, 种: '樱', 高: 0, 种子: gx * 131 + gy });
+      out.push({ i, j, kind: '樱', height: 0, seed: gx * 131 + gy });
     }
-  for (const [i, j, treeHeight] of plainsParams.oaks) out.push({ i, j, 种: '橡', 高: treeHeight, 种子: i * 7 + j });
+  for (const [i, j, treeHeight] of plainsParams.oaks) out.push({ i, j, kind: '橡', height: treeHeight, seed: i * 7 + j });
   return out;
 };
 

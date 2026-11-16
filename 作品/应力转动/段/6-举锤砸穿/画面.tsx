@@ -10,8 +10,8 @@ import soundUrl from './声音地址.生成.ts';
 import { boundaryFrameSec, segPlaySec } from '../../地点/边城/6-3-下坠/时间线.ts';
 
 const cuts = [
-  { 段: '6-3-5', picture: RaiseMace, 从: 0, 到: segPlaySec('6-3-5') },
-  { 段: '6-3-6', picture: SmashThrough, 从: boundaryFrameSec, 到: segPlaySec('6-3-6') },
+  { segment: '6-3-5', picture: RaiseMace, 从: 0, dest: segPlaySec('6-3-5') },
+  { segment: '6-3-6', picture: SmashThrough, 从: boundaryFrameSec, dest: segPlaySec('6-3-6') },
 ];
 
-export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} 每秒={1} />);
+export default definePicture(segment, soundUrl, () => <SegmentStitch cuts={cuts} perSec={1} />);

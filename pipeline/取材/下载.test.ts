@@ -73,17 +73,17 @@ describe('anim extract --download', () => {
     const fakeDownload = (content: string) => (_: string, destPath: string) => fs.writeFileSync(destPath, content);
     const badDownloads = downloadList(parseManifest('', jars('f'.repeat(64))), [], jarRecordPath);
     const [badResult] = download(badDownloads, fakeDownload(mappingContent));
-    expect(badResult).toMatchObject({ 状态: '失败', 说明: expect.stringMatching(/下到的 sha256/) });
-    expect(fs.readdirSync(path.dirname(badResult!.到))).toEqual([]);
+    expect(badResult).toMatchObject({ state: '失败', note: expect.stringMatching(/下到的 sha256/) });
+    expect(fs.readdirSync(path.dirname(badResult!.dest))).toEqual([]);
 
     const downloadItems = downloadList(parseManifest('', jars()), [], jarRecordPath);
-    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ 状态: '下好' });
-    expect(fs.readFileSync(downloadItems[0]!.到, 'utf8')).toBe(mappingContent);
-    expect(download(downloadItems, () => { throw new Error('不该再下'); })[0]).toMatchObject({ 状态: '已有' });
+    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ state: '下好' });
+    expect(fs.readFileSync(downloadItems[0]!.dest, 'utf8')).toBe(mappingContent);
+    expect(download(downloadItems, () => { throw new Error('不该再下'); })[0]).toMatchObject({ state: '已有' });
 
-    fs.writeFileSync(downloadItems[0]!.到, '被改过');
-    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ 状态: '失败', 说明: expect.stringMatching(/没覆盖/) });
-    expect(fs.readFileSync(downloadItems[0]!.到, 'utf8')).toBe('被改过');
+    fs.writeFileSync(downloadItems[0]!.dest, '被改过');
+    expect(download(downloadItems, fakeDownload(mappingContent))[0]).toMatchObject({ state: '失败', note: expect.stringMatching(/没覆盖/) });
+    expect(fs.readFileSync(downloadItems[0]!.dest, 'utf8')).toBe('被改过');
   });
 
   it('下载出错（网断）记失败、不留临时文件', () => {
@@ -93,7 +93,7 @@ describe('anim extract --download', () => {
       fs.writeFileSync(destPath, '半截');
       throw new Error('curl: (6) Could not resolve host');
     });
-    expect(r).toMatchObject({ 状态: '失败', 说明: expect.stringMatching(/Could not resolve/) });
-    expect(fs.readdirSync(path.dirname(downloadItems[0]!.到))).toEqual([]);
+    expect(r).toMatchObject({ state: '失败', note: expect.stringMatching(/Could not resolve/) });
+    expect(fs.readdirSync(path.dirname(downloadItems[0]!.dest))).toEqual([]);
   });
 });

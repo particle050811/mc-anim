@@ -60,7 +60,7 @@ export const turnHeadSec = legacyFrameSec(3);
 export const creeperFront = 7 / 16;
 /** 走速（米/秒）：画框左沿往左 苦力怕前沿 处走到 哈气站位.苦力怕，用冒头到哈气那几帧 */
 export const creeperWalkSpeed =
-  ((hissStandPos.苦力怕 - (-1280 / line8Shot.framing.pxPerCell - creeperFront)) * fps) / (mainCutEvents.hiss.帧 - mainCutEvents.creeperAppears.帧);
+  ((hissStandPos.苦力怕 - (-1280 / line8Shot.framing.pxPerCell - creeperFront)) * fps) / (mainCutEvents.hiss.frame - mainCutEvents.creeperAppears.frame);
 /** 逃：原版躲猫近处的速度（CREEPER.speed.flee，3.89 米/秒）再快一倍（演绎）：三稿要 28.23 逃出画框，原版速度从停的地方跑出画框要 0.9 秒；
  *  快一倍以后 28.5 秒出画框，段尾（第 9 句匹配剪之前）已经不在画里。28.23「淘」那一拍它还在画框左边跑。
  *  原版 limbSwingAmount 封顶 1（库/角色/史蒂夫.tsx 的 vanillaWalk），腿摆得跟不上这个速度，有点滑步（原版跑快了也是这样） */
@@ -79,13 +79,13 @@ export const proudBubbleText = '(✿◠‿◠)';
 export const originalGain = 0.5;
 /** 照片挂进框：原版荧光框放东西的声音（entity.glow_item_frame.add_item.1，0.09 秒，一开头就是最响的 −4.3 dBFS，ffmpeg 按 48 kHz 每 1/24 秒 2000 个样本一格量的），
  *  起音落在 挂照片 那一帧。增益压到峰值 −11 dBFS 左右，叠在原声（× 0.5）上听得出一下「咔」（Agent 暂定） */
-export const hangPhotoSound = { 资产: '音效/把回忆拼好给你/entity.glow_item_frame.add_item.1', 秒: 0.093, 增益: 0.45 } as const;
+export const hangPhotoSound = { asset: '音效/把回忆拼好给你/entity.glow_item_frame.add_item.1', sec: 0.093, 增益: 0.45 } as const;
 /** 原版 item.book.page_turn 三个文件的纸声：峰秒、峰值是实测（按 48 kHz 每 1/24 秒 2000 个样本一格量峰值，格从文件头数起，峰秒 = 那一格的起点）：
  *  .1 第 10 格 −6.9 dBFS（前面 0.4 秒是很轻的翻页声）、.2 第 6 格 −20.9（第 4～6 格差不多响）、.3 第 6 格 −15.7；长度是文件时长。原来量给第 8 句放照片进箱子用，箱子删了以后第 14 句的撕书、撒手（第14句声音.ts）还在用 */
 export const paperSounds = [
-  { 资产: '音效/item.book.page_turn.1', peakSec: legacyFrameSec(10), 峰值: -6.9, 秒: 0.729 },
-  { 资产: '音效/item.book.page_turn.2', peakSec: legacyFrameSec(6), 峰值: -20.9, 秒: 0.7 },
-  { 资产: '音效/item.book.page_turn.3', peakSec: legacyFrameSec(6), 峰值: -15.7, 秒: 0.537 },
+  { asset: '音效/item.book.page_turn.1', peakSec: legacyFrameSec(10), peakDb: -6.9, sec: 0.729 },
+  { asset: '音效/item.book.page_turn.2', peakSec: legacyFrameSec(6), peakDb: -20.9, sec: 0.7 },
+  { asset: '音效/item.book.page_turn.3', peakSec: legacyFrameSec(6), peakDb: -15.7, sec: 0.537 },
 ] as const;
 /** 纸声在母版里的峰值（dBFS）：原声（× 0.5）峰值 −3～−5、每 1/24 秒的响度 −10～−20 dBFS，纸声压在它底下，只听得到一下轻轻的「唰」（Agent 暂定） */
 export const paperSoundPeakDb = -20;
@@ -100,7 +100,7 @@ export const line8EndState = {
   doorOpen: true,
   /** 照片墙四张都挂上了（照片墙格位.夏天，地点/照片墙格.ts），合照格还没有框；没有箱子 */
   photoWallPreset: '夏天四张' as const,
-  远景: true,
+  farView: true,
   liYing: { x: hissStandPos.liYingX, yaw: 180, 看: proudLook, tilt: proudTilt, bubbleText: proudBubbleText },
   你: { x: hissStandPos.你, yaw: 180, 头: youHead },
   苦力怕: '逃出画框左边' as const,

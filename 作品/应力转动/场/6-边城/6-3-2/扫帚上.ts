@@ -13,7 +13,7 @@ import { smoothstep01, lerp } from '@engine/core/数学.ts';
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 const D2R = Math.PI / 180;
 
-const T0 = segTable['6-3-2'].起;
+const T0 = segTable['6-3-2'].start;
 const sec = (globalSec: number) => globalSec - T0;
 
 // ---------- 时刻（段内秒数） ----------
@@ -76,7 +76,7 @@ const MID = mediumShot(6.2, 5.0, 2.4, 28);
 // 段首：6-3-1 末帧的机位（现在是悬停机位）
 let startCam: choreo.Cam | null = null;
 const camera = (t: number): choreo.Cam => {
-  startCam ??= backToTown(segTable['6-3-1'].止).cam;
+  startCam ??= backToTown(segTable['6-3-1'].end).cam;
   const pushFrac = Math.min(1, t / cues632.pushIn[1]);
   return camBetween(startCam, MID, smoothstep01(pushFrac / 0.75), smoothstep01((pushFrac - 0.2) / 0.8));
 };

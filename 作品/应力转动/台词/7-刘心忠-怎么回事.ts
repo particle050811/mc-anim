@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 a9c82c3b8800），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-怎么回事（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 999944ad58d9），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-怎么回事（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "7-刘心忠-怎么回事",
-  "角色": "刘心忠",
-  "念": "这是怎么回事？",
-  "配音": "配音/7-刘心忠-怎么回事",
-  "成品sha": "a17c283108d1",
-  "开口": 0.03,
+  "character": "刘心忠",
+  "spoken": "这是怎么回事？",
+  "voice": "配音/7-刘心忠-怎么回事",
+  "finishedSha": "a17c283108d1",
+  "mouthOpen": 0.03,
   "有声长": 0.78,
-  "时长": 0.96,
+  "duration": 0.96,
   "文件秒数": 0.96,
-  "字": [
+  "char": [
     ["这",0,0.16],
     ["是",0.16,0.24],
     ["怎",0.24,0.32],

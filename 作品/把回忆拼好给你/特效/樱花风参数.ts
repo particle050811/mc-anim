@@ -3,7 +3,7 @@ import { filmScale } from '@engine/三渲二/像素.ts';
 import { mulberry32 } from '@engine/core/数学.ts';
 
 export type SakuraWindParams = {
-  种子: number;
+  seed: number;
   /** 风流：花瓣数；一个贴图像素在成片上多大（从小到大几档，后生的取大的）；从 源 往外卷的速度（页面像素/秒）、转速（圈/秒）、往右、往上飘的速度、
    *  旋涡竖向压扁多少（散开）；满 以后从 散心（樱花风.tsx，默认画面中心）往四边吹散的加速度（页面像素/秒²），满 以后几秒全吹出画 */
   windFlow: { 数: number; tiers: readonly number[]; outwardCurl: number; rotSpeed: number; driftRight: number; floatUp: number; spreadAmount: number; scatterAccel: number; scatterDoneSec: number };
@@ -24,7 +24,7 @@ export type SakuraWindParams = {
 };
 
 export const sakuraWindDefaults: SakuraWindParams = {
-  种子: 1511,
+  seed: 1511,
   // 档们：门口那一镜是正交、N = 10（一个贴图像素成片 10 像素），风流里的花瓣算场景里的粒子，只取 N 和 2N 两档（核查 10-24：原来 10～40 四档，同屏好几种像素大小）
   windFlow: { 数: 700, tiers: [10, 10, 20, 20], outwardCurl: 650, rotSpeed: 1.2, driftRight: 900, floatUp: 350, spreadAmount: 0.3, scatterAccel: 12000, scatterDoneSec: 0.3 },
   windWall: {
@@ -41,14 +41,14 @@ export const sakuraWindDefaults: SakuraWindParams = {
 };
 
 /** 时间轴（歌上的秒）：起 = 摇铃（风从铃那里起），满 = 风墙整屏盖住（转场那一下） */
-export type SakuraWindMoment = { 起: number; full: number };
+export type SakuraWindMoment = { start: number; full: number };
 /** 风墙的一片花瓣：在整块里的位置（成片像素，左上角）、贴图像素多大、用哪张、转几个 90°、翻不翻；散的时候随机多晚起步（0～1，乘 抖秒）、速度乘多少 */
-export type WallPetal = { x: number; y: number; 档: number; 图: number; 转: number; flip: boolean; jitter: number; 速: number };
+export type WallPetal = { x: number; y: number; 档: number; image: number; 转: number; flip: boolean; jitter: number; 速: number };
 
 /** 风墙的花瓣：按 格距 排满一块比画面宽一倍的长方形（抖动半格）。宽高是成片像素 */
 export const makeWindWall = (p: SakuraWindParams, width: number, height: number): WallPetal[] => {
-  const r = mulberry32(p.种子 * 31 + 7);
-  const scatterRand = mulberry32(p.种子 * 31 + 11);
+  const r = mulberry32(p.seed * 31 + 7);
+  const scatterRand = mulberry32(p.seed * 31 + 11);
   const { cellSpacing, tiers, scatter } = p.windWall;
   const out: WallPetal[] = [];
   for (let y = -cellSpacing; y < height + cellSpacing; y += cellSpacing)
@@ -57,7 +57,7 @@ export const makeWindWall = (p: SakuraWindParams, width: number, height: number)
         x: x + (r() - 0.5) * cellSpacing + p.windWall.waveAmplitude * Math.sin((2 * Math.PI * y) / p.windWall.wavelength),
         y: y + (r() - 0.5) * cellSpacing,
         档: tiers[Math.floor(r() * tiers.length)]!,
-        图: Math.floor(r() * 12),
+        image: Math.floor(r() * 12),
         转: Math.floor(r() * 4),
         flip: r() < 0.5,
         jitter: scatterRand(),

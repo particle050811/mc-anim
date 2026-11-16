@@ -2,7 +2,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 
 /** 竖构图，和参考视频 08（1080×1920）同比例 */
-export const aspect = { 宽: 720, 高: 1280 } as const;
+export const aspect = { width: 720, height: 1280 } as const;
 /** 前后两半各多少秒：前半纯色底，后半教堂 */
 export const halfSec = 10;
 

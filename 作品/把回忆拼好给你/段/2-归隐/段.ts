@@ -11,17 +11,17 @@ import { line14Sounds } from '../../场/2-门口/第14句声音.ts';
 const clock = segClock('2-归隐');
 const toCue = (cue: Parameters<typeof clipToSegment>[1]) => {
   const c = clipToSegment(clock.sceneWindow, cue);
-  if (!c) throw new Error(`${cue.名} 不在 2-归隐 的窗口里`);
+  if (!c) throw new Error(`${cue.name} 不在 2-归隐 的窗口里`);
   return c;
 };
 
 export default defineSeg({
-  场: '2-门口',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-门口',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
   // 段在一串歌中间，不淡入、不淡出
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: mainCutOriginalGain }, ...line14Sounds.map(toCue)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: mainCutOriginalGain }, ...line14Sounds.map(toCue)],
 });

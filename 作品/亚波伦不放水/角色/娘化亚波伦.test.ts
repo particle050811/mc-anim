@@ -5,7 +5,7 @@ import type { BedrockBone } from '@engine/model/基岩模型.tsx';
 import { defineAct, GirlYaBoLunCreature, outlineFace, stand, staticEnv, type YaBoLunAct } from './娘化亚波伦.tsx';
 
 // 娘化亚波伦.tsx 顶上的 asset: import 打包时由 webpack 内联，测试里换成 store 里的字节
-const { json, 图: mockImage, hasBytes } = await vi.hoisted(async () => {
+const { json, image: mockImage, hasBytes } = await vi.hoisted(async () => {
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { bytesPath, readAssetLock } = await import('../../../pipeline/资产/资产锁.ts');
@@ -20,7 +20,7 @@ const { json, 图: mockImage, hasBytes } = await vi.hoisted(async () => {
   // 没有字节时给一张 1×1 透明 PNG，模块能加载就行
   const emptyImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==';
   const mockImage = (id: string) => ({ default: `data:image/png;base64,${readBytes(id)?.toString('base64') ?? emptyImage}` });
-  return { json, 图: mockImage, hasBytes: needIds.every((id) => readBytes(id)) };
+  return { json, image: mockImage, hasBytes: needIds.every((id) => readBytes(id)) };
 });
 vi.mock('asset:模型/角色/娘化亚波伦', () => json('模型/角色/娘化亚波伦', '{"texW":1,"texH":1,"bones":[]}'));
 vi.mock('asset:动画/角色/娘化亚波伦/main', () => json('动画/角色/娘化亚波伦/main', '{"animations":{}}'));
@@ -36,19 +36,19 @@ vi.mock('../物品/下界魔杖.tsx', () => ({ HeldNetherWand: () => null }));
 vi.mock('../特效/晋升之环.tsx', () => ({ yaBoLunHeadRing: () => null }));
 
 const poseAt = (act: YaBoLunAct, sec: number, unresolved?: Set<string>) => {
-  const e = act.环境(sec);
+  const e = act.env(sec);
   return animationPose(
     {
-      文件: GirlYaBoLunCreature.animationFiles!,
+      file: GirlYaBoLunCreature.animationFiles!,
       layers: act.layers(sec),
       口径: '通用',
-      环境: { query: { ...staticEnv.query, ...e.query }, external: { ...staticEnv.external, ...e.external }, functions: { 'ysm.second_order': act.secondOrderAt(sec) }, unresolved },
+      env: { query: { ...staticEnv.query, ...e.query }, external: { ...staticEnv.external, ...e.external }, functions: { 'ysm.second_order': act.secondOrderAt(sec) }, unresolved },
     },
     sec,
   );
 };
 // 第 1 秒起水平速度从 0 跳到 20
-const forwardFlySetup = { 主: () => [{ 名: 'fly' }], 环境: (sec: number) => ({ query: { ground_speed: sec >= 1 ? 20 : 0 } }) };
+const forwardFlySetup = { 主: () => [{ name: 'fly' }], env: (sec: number) => ({ query: { ground_speed: sec >= 1 ? 20 : 0 } }) };
 
 describe.skipIf(!hasBytes)('娘化亚波伦', () => {
   it('动画文件：main 50 段加 extra 8 段', () => {
@@ -59,7 +59,7 @@ describe.skipIf(!hasBytes)('娘化亚波伦', () => {
 
   it('站着、悬停、受击用到的查询和 ysm.* 都给了值', () => {
     const unresolved = new Set<string>();
-    for (const clipName of ['idle', 'fly', 'attacked']) poseAt(defineAct({ 主: () => [{ 名: clipName }] }), 0.3, unresolved);
+    for (const clipName of ['idle', 'fly', 'attacked']) poseAt(defineAct({ 主: () => [{ name: clipName }] }), 0.3, unresolved);
     // 剩下的是包自己没赋值的变量（v.hv、v.hg、v.bg 全包没有一处赋值；v.bv 只有 idle、walk 这些赋），按 0 算
     expect([...unresolved].sort()).toEqual(['v.bg', 'v.bv', 'v.hg', 'v.hv']);
   });
@@ -141,7 +141,7 @@ describe.skipIf(!hasBytes)('娘化亚波伦', () => {
       expect(outlineFaces.length).toBe(bone.name.endsWith('176') || bone.name.endsWith('178') ? 5 : 4);
       for (const f of outlineFaces) {
         expect(f.色).toEqual([255, 255, 255]);
-        const [a, b, , d] = f.角;
+        const [a, b, , d] = f.angle;
         const e1 = [d![0] - a![0], d![1] - a![1], d![2] - a![2]];
         const e2 = [b![0] - a![0], b![1] - a![1], b![2] - a![2]];
         const n = [e1[1]! * e2[2]! - e1[2]! * e2[1]!, e1[2]! * e2[0]! - e1[0]! * e2[2]!, e1[0]! * e2[1]! - e1[1]! * e2[0]!];

@@ -18,7 +18,7 @@ export interface DebrisBirth {
   readonly 位: Vec3;
   /** addParticle 的 xa、ya、za（场景坐标，格/刻）；不给 = 0 */
   readonly 速?: Vec3;
-  readonly 种子: number;
+  readonly seed: number;
 }
 
 /** ServerParticleUtil.circularParticles：圆面积 π r² 颗（向上取整），均匀撒在半径 r 的圆里 */
@@ -28,7 +28,7 @@ export const scatterInCircle = (center: Vec3, radius: number, tick: number, seed
   return Array.from({ length: n }, (_, i) => {
     const angle = r() * Math.PI * 2;
     const randDistance = Math.sqrt(r()) * radius;
-    return { 刻: tick, 位: [center[0] + Math.cos(angle) * randDistance, center[1] + Math.sin(angle) * randDistance, center[2]] as const, 种子: seed * 31 + i };
+    return { 刻: tick, 位: [center[0] + Math.cos(angle) * randDistance, center[1] + Math.sin(angle) * randDistance, center[2]] as const, seed: seed * 31 + i };
   });
 };
 
@@ -40,19 +40,19 @@ export const scatterDebris = (center: Vec3, count: number, spread: Vec3, speed: 
     刻: tick,
     位: [center[0] + gaussian() * spread[0], center[1] + gaussian() * spread[1], center[2] + gaussian() * spread[2]] as const,
     速: [gaussian() * speed, gaussian() * speed, gaussian() * speed] as const,
-    种子: seed * 131 + i,
+    seed: seed * 131 + i,
   }));
 };
 
 const debrisColor = [0.6, 0.6, 0.6] as const;
 
-export const BlockDebris: React.FC<{ spawns: readonly DebrisBirth[]; 秒: number; 图?: Png; ground?: number }> = ({ spawns, 秒: sec, 图: image = defaultGroundBlockPng, ground }) => {
+export const BlockDebris: React.FC<{ spawns: readonly DebrisBirth[]; sec: number; image?: Png; ground?: number }> = ({ spawns, sec: sec, image: image = defaultGroundBlockPng, ground }) => {
   const tick = sec * 20;
   const items: QuadItem[] = [];
   for (const spawn of spawns) {
     const age = tick - spawn.刻;
     if (age < 0) continue;
-    const r = mulberry32(spawn.种子 * 2654435761 + 11);
+    const r = mulberry32(spawn.seed * 2654435761 + 11);
     const lifetime = Math.floor(4 / (r() * 0.9 + 0.1));
     if (age >= lifetime) continue;
     const speedVec = spawn.速 ?? [0, 0, 0];
@@ -62,5 +62,5 @@ export const BlockDebris: React.FC<{ spawns: readonly DebrisBirth[]; 秒: number
     const trail = particlePath([...spawn.位] as V3, [v[0], -v[2], v[1]], Math.ceil(age) + 1, new ParticlePhysics(1, 0.98, ground));
     items.push(facePatch(interpPathPos(trail, age), halfSize, debrisColor, [u0, v0, u0 + 0.25, v0 + 0.25]));
   }
-  return <QuadGroup 图={image} 项={items} 混合="镂空" />;
+  return <QuadGroup image={image} items={items} blend="镂空" />;
 };

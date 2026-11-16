@@ -38,7 +38,7 @@ export const WaveSteve: React.FC<{ pose: StevePose; wave: number | null }> = ({ 
   );
 };
 
-export const youPose = (s: YouState): StevePose => steveLookAt(stevePose(s.loc, s.yaw, { sec: s.秒 }), s.看, true);
+export const youPose = (s: YouState): StevePose => steveLookAt(stevePose(s.loc, s.yaw, { sec: s.sec }), s.看, true);
 
 export const EndCharacter: React.FC<{ liYing: LiYingState; 你: YouState; outline?: boolean }> = ({ liYing, 你: you, outline: outline = true }) => (
   <>
@@ -54,7 +54,7 @@ export const EndCharacter: React.FC<{ liYing: LiYingState; 你: YouState; outlin
         看={liYing.看}
         skeleton={liYing.skeleton}
         blink={liYing.blink}
-        秒={liYing.秒}
+        sec={liYing.sec}
         backStaff={false}
       />
     </Outline>

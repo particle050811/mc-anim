@@ -3,16 +3,16 @@
 import { segFrameCount, type SegmentDef } from './段定义.ts';
 
 /** 清单顺序里各正片段的全片起帧（输出帧；核对段不进成片，各自从 0 起） */
-export const filmStartFrameTable = (segments: readonly { 键: string; 段: Pick<SegmentDef, '秒'> }[], fps: number): Map<string, number> => {
+export const filmStartFrameTable = (segments: readonly { key: string; segment: Pick<SegmentDef, 'sec'> }[], fps: number): Map<string, number> => {
   const frameMap = new Map<string, number>();
   let at = 0;
   for (const s of segments) {
-    if (s.键.startsWith('核对-')) {
-      frameMap.set(s.键, 0);
+    if (s.key.startsWith('核对-')) {
+      frameMap.set(s.key, 0);
       continue;
     }
-    frameMap.set(s.键, at);
-    at += segFrameCount(s.段, fps);
+    frameMap.set(s.key, at);
+    at += segFrameCount(s.segment, fps);
   }
   return frameMap;
 };

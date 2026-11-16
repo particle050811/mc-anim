@@ -4,11 +4,11 @@ import { defineSceneTimeline } from '@engine/段/窗口段.ts';
 import { onePassSec } from '../../角色/动作/忘情牛肉面时长.ts';
 
 export default defineSceneTimeline({
-  场: '2-教堂',
-  事件: {
-    开始: { 在: { 秒: 0 }, 依据: '第 6 幕开头：切进中殿' },
-    danceStart: { 在: { after: '开始', addSec: 0 }, 依据: '一进来就起跳（用户 11-11「直接跳」）' },
-    danceDone: { 在: { after: 'danceStart', addSec: onePassSec }, 依据: '忘情牛肉面一遍（角色/动作/忘情牛肉面.ts 的 一遍秒）' },
-    结束: { 在: { after: 'danceDone', addSec: 2 }, 依据: '分镜 6-03 收在最后站姿上停 2 秒' },
+  scene: '2-教堂',
+  events: {
+    开始: { 在: { sec: 0 }, basis: '第 6 幕开头：切进中殿' },
+    danceStart: { 在: { after: '开始', addSec: 0 }, basis: '一进来就起跳（用户 11-11「直接跳」）' },
+    danceDone: { 在: { after: 'danceStart', addSec: onePassSec }, basis: '忘情牛肉面一遍（角色/动作/忘情牛肉面.ts 的 一遍秒）' },
+    结束: { 在: { after: 'danceDone', addSec: 2 }, basis: '分镜 6-03 收在最后站姿上停 2 秒' },
   },
 });

@@ -10,14 +10,14 @@ import { project, drawSelectWorld, type UiState, type Framing } from './画界�
 const shardEdge = shardParams.shardEdge;
 
 export type SelectWorldProps = {
-  状态: UiState;
+  state: UiState;
   /** 页面尺寸，默认 1280×720 */
-  宽?: number;
-  高?: number;
+  width?: number;
+  height?: number;
 };
 
 /** 铺满画面，放在 position 不是 static 的容器里 */
-export const SelectWorld: React.FC<SelectWorldProps> = ({ 状态: uiState, 宽: width = 1280, 高: height = 720 }) => {
+export const SelectWorld: React.FC<SelectWorldProps> = ({ state: uiState, width: width = 1280, height: height = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = width * filmScale, H = height * filmScale;
   useLayoutEffect(() => {
@@ -33,12 +33,12 @@ export type ShardLayerProps = {
   /** 拼回来的新图标（图标边×图标边 RGBA） */
   新: Uint8Array;
   framing?: Framing;
-  宽?: number;
-  高?: number;
+  width?: number;
+  height?: number;
 };
 
 /** 片尾的碎片：每块画新图标的那一块，飞着的按 碎块在 的位置、大小，到位的画进图标框那一格；还没起飞的不画。透明底，叠在界面上面 */
-export const ShardLayer: React.FC<ShardLayerProps> = ({ f, 新: newPixels, framing: t = normalFraming, 宽: width = 1280, 高: height = 720 }) => {
+export const ShardLayer: React.FC<ShardLayerProps> = ({ f, 新: newPixels, framing: t = normalFraming, width: width = 1280, height: height = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = width * filmScale, H = height * filmScale;
   useLayoutEffect(() => {
@@ -49,7 +49,7 @@ export const ShardLayer: React.FC<ShardLayerProps> = ({ f, 新: newPixels, frami
     shards.forEach((b) => {
       const s = shardAt(b, f);
       if (!s) return;
-      const cell = s.到 ? { x: iconFrame.x + (b.i * iconFrame.side * shardEdge) / iconEdge, y: iconFrame.y + (b.j * iconFrame.side * shardEdge) / iconEdge, side: (iconFrame.side * shardEdge) / iconEdge } : { x: s.x, y: s.y, side: s.side };
+      const cell = s.dest ? { x: iconFrame.x + (b.i * iconFrame.side * shardEdge) / iconEdge, y: iconFrame.y + (b.j * iconFrame.side * shardEdge) / iconEdge, side: (iconFrame.side * shardEdge) / iconEdge } : { x: s.x, y: s.y, side: s.side };
       const subCellStep = cell.side / shardEdge;
       for (let y = 0; y < shardEdge; y++)
         for (let x = 0; x < shardEdge; x++) {

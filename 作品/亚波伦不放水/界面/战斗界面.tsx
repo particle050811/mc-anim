@@ -19,7 +19,7 @@ import { focusIcons } from '../物品/聚晶图标.ts';
 import { focusKey } from './轮盘法术.ts';
 
 /** 贴图上的一块，逐像素放大（不糊）。宽 可以比 uv 块窄（血条按血量截） */
-const TextureBlock: React.FC<{ 图: Png; u: number; v: number; 宽: number; 高: number; left: number; 上: number; s: number }> = ({ 图: image, u, v, 宽: width, 高: height, left, 上: top, s }) => {
+const TextureBlock: React.FC<{ image: Png; u: number; v: number; width: number; height: number; left: number; 上: number; s: number }> = ({ image: image, u, v, width: width, height: height, left, 上: top, s }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   useLayoutEffect(() => {
     const cv = ref.current;
@@ -40,19 +40,19 @@ const nameColor = '#AA0000';
 
 export type BossBarProps = {
   /** 画面宽（像素）和 GUI 缩放 */
-  宽: number;
+  width: number;
   s: number;
   /** 血量比例 0～1 */
   healthRatio: number;
   /** 完整 = 游戏默认的弓形框（默认）；简版 = 配置 useSimpleApollyonBossbar 开着时的窄条 */
   variant?: '完整' | '简版';
-  名?: string;
+  name?: string;
   title?: string;
   /** 整个淡入淡出（游戏里没有，出场用） */
   opacity?: number;
 };
 
-export const YaBoLunHealthBar: React.FC<BossBarProps> = ({ 宽: width, s, healthRatio, variant = '完整', 名: name = yaBoLunName, title = yaBoLunTitle, opacity = 1 }) => {
+export const YaBoLunHealthBar: React.FC<BossBarProps> = ({ width: width, s, healthRatio, variant = '完整', name: name = yaBoLunName, title = yaBoLunTitle, opacity = 1 }) => {
   const screenWidth = width / s;
   const x = Math.floor(screenWidth / 2) - 100 - 24;
   const y = 12;
@@ -62,9 +62,9 @@ export const YaBoLunHealthBar: React.FC<BossBarProps> = ({ 宽: width, s, health
     const image = png(bossBarSimplePng);
     return (
       <div style={{ position: 'absolute', inset: 0, opacity: opacity }}>
-        <TextureBlock 图={image} u={13} v={235} 宽={222} 高={7} left={x + 13} 上={y + 3} s={s} />
-        <TextureBlock 图={image} u={13} v={215} 宽={barWidth} 高={7} left={x + 13} 上={y + 3} s={s} />
-        <TextureBlock 图={image} u={0} v={163} 宽={248} 高={19} left={x} 上={y} s={s} />
+        <TextureBlock image={image} u={13} v={235} width={222} height={7} left={x + 13} 上={y + 3} s={s} />
+        <TextureBlock image={image} u={13} v={215} width={barWidth} height={7} left={x + 13} 上={y + 3} s={s} />
+        <TextureBlock image={image} u={0} v={163} width={248} height={19} left={x} 上={y} s={s} />
         <div style={{ position: 'absolute', left: 0, width: width, top: (y + 16) * s, display: 'flex', justifyContent: 'center' }}>
           <UiText fontSize={8.6 * s} style={{ lineHeight: 1 }}>{`${name} ${title}`}</UiText>
         </div>
@@ -81,9 +81,9 @@ export const YaBoLunHealthBar: React.FC<BossBarProps> = ({ 宽: width, s, health
       <div style={{ position: 'absolute', left: (centerX + 30) * s, top: (y + 5) * s }}>
         <UiText fontSize={fs} color={nameColor} style={{ lineHeight: 1 }}>{title}</UiText>
       </div>
-      <TextureBlock 图={image} u={13} v={235} 宽={222} 高={7} left={x - 1 + 13} 上={y + 29} s={s} />
-      <TextureBlock 图={image} u={13} v={215} 宽={barWidth} 高={7} left={x - 1 + 13} 上={y + 29} s={s} />
-      <TextureBlock 图={image} u={0} v={137} 宽={248} 高={66} left={x - 1} 上={y} s={s} />
+      <TextureBlock image={image} u={13} v={235} width={222} height={7} left={x - 1 + 13} 上={y + 29} s={s} />
+      <TextureBlock image={image} u={13} v={215} width={barWidth} height={7} left={x - 1 + 13} 上={y + 29} s={s} />
+      <TextureBlock image={image} u={0} v={137} width={248} height={66} left={x - 1} 上={y} s={s} />
     </div>
   );
 };
@@ -126,7 +126,7 @@ export const SpellNameTag: React.FC<NameTag & { s: number }> = ({ 键: focusKey,
 };
 
 // ── 计数「n / 71」（原创）：右上角，和血条错开 ──
-export const SpellCount: React.FC<{ n: number; 总?: number; s: number; opacity?: number }> = ({ n, 总: total = 71, s, opacity = 1 }) => (
+export const SpellCount: React.FC<{ n: number; grandTotal?: number; s: number; opacity?: number }> = ({ n, grandTotal: total = 71, s, opacity = 1 }) => (
   <div style={{ position: 'absolute', right: 8 * s, top: 8 * s, opacity: opacity, background: 'rgba(0,0,0,0.5)', padding: `${2 * s}px ${5 * s}px`, borderRadius: 1.5 * s }}>
     <UiText fontSize={8.6 * s * 1.5} style={{ lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{`${n} / ${total}`}</UiText>
   </div>
@@ -144,21 +144,21 @@ export const deathMessageLine = (startTick: number, { victim = 'Steve', killer =
 });
 
 export type BattleUiProps = {
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   s: number;
   /** 不给不画血条 */
-  healthBar?: Omit<BossBarProps, '宽' | 's'>;
+  healthBar?: Omit<BossBarProps, 'width' | 's'>;
   /** 不给不画计数 */
-  spellCount?: { n: number; 总?: number; opacity?: number };
+  spellCount?: { n: number; grandTotal?: number; opacity?: number };
   nameTags?: readonly NameTag[];
   children?: React.ReactNode;
 };
 
 /** 血条、计数、名签一起摆：放在和画面一样大的容器里。聊天栏另用 库/界面/聊天栏.tsx 的 <ChatOverlay>（可以当 children 放进来） */
-export const BattleUi: React.FC<BattleUiProps> = ({ 宽: width, 高: height, s, healthBar, spellCount, nameTags = [], children }) => (
+export const BattleUi: React.FC<BattleUiProps> = ({ width: width, height: height, s, healthBar, spellCount, nameTags = [], children }) => (
   <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height }}>
-    {healthBar && <YaBoLunHealthBar 宽={width} s={s} {...healthBar} />}
+    {healthBar && <YaBoLunHealthBar width={width} s={s} {...healthBar} />}
     {spellCount && <SpellCount s={s} {...spellCount} />}
     {nameTags.map((nameTag, i) => (
       <SpellNameTag key={`${nameTag.键}-${i}`} {...nameTag} s={s} />

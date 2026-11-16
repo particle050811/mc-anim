@@ -69,9 +69,9 @@ const getLavaMaterial = (waterMaterial: THREE.Material) => {
 };
 
 /** 挖：场地上自己摆了方块的地方，把导入地形的那几格挖掉，不然两层共面互相闪（要模块顶层的同一个数组）；键后缀 让挖法不同的不共用网格缓存 */
-export type NetherCut = { 框: LandmarkCutout[]; keySuffix: string };
+export type NetherCut = { box: LandmarkCutout[]; keySuffix: string };
 export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLight; carve?: NetherCut }> = ({ cameraPos, 光: netherLight, carve }) => {
-  const t = useImportedTerrain(realNetherPack, carve?.框 ?? noCuts);
+  const t = useImportedTerrain(realNetherPack, carve?.box ?? noCuts);
   const scene = useThree((s) => s.scene);
   const groupRef = useRef<THREE.Group>(null);
   useSelfLight(0);
@@ -99,7 +99,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       if (Array.isArray(mesh.material) && mesh.material[0] === waterMaterial) mesh.material = [rockMat];
     });
   });
-  if (t && t.原点.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.原点}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
+  if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
   const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * face), toLinear(netherLight.baseLight[1] * face), toLinear(netherLight.baseLight[2] * face));
   const bottomColor = faceColor(faceShade.eastWest);
   const fillColor = (face: number) => faceColor(face).sub(bottomColor);
@@ -112,7 +112,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      {t && <VoxelWorld 键={t.键 + (carve?.keySuffix ?? '')} 来源={t.来源} 中心={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? netherLight.fog.far} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
+      {t && <VoxelWorld key={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? netherLight.fog.far} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );
 };

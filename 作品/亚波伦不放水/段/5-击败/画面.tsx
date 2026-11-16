@@ -48,8 +48,8 @@ const shotTable: Shot[] = [
   // 七版 5-03，一个数不改（用户 11-11「不改」）：镜头在她左前方（杖在右手，从右边拍杖头会挡脸），开头比她低一点、离得远些把盘框进来；
   // 她俯冲 0.25 秒落地，镜头每 0.1 秒一个关键跟着往下（高度晚她 0.06 秒，看得出在落），一路推近；落地后跟着她滑停，最后略往下看她低头看的那堆东西。
   {
-    名: '5-03',
-    起: 0,
+    name: '5-03',
+    start: 0,
     cameraRig: followShot(
       actDur,
       (s, k) => {
@@ -74,19 +74,19 @@ const shotTable: Shot[] = [
 ];
 
 export default definePicture(seg, soundUrl, () => {
-  const { 秒: sec, 段: thisSegment } = useSeg(seg);
+  const { sec: sec, segment: thisSegment } = useSeg(seg);
   const t = actStart + sec;
   const yaBoLun = perform.在(t);
   const params = wheelParams(t);
   const sinceDeath = afterDeathSec(t);
   const trajectory = useMemo(() => deathDropTrack(S, steveDropCount, dropSeed), []);
   const whiteSmoke = useMemo(() => deathPoof(S, 0.6, 1.8, 0, 5), []);
-  const { cameraRig } = pickShot(shotTable, sec, thisSegment.秒);
+  const { cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
   // 死亡界面：他一死就打开，20 刻后按钮才能按；光标在「重生」上是指着，点下去以后不能按
-  const uiDims = uiSize(aspect.宽, aspect.高, uiScale);
+  const uiDims = uiSize(aspect.width, aspect.height, uiScale);
   const cursor = cursorAt(sec);
-  const respawnButtonState: DeathButtonState = sec * 20 < deathButtonDelayTicks || sec >= cursorMove.点 ? '不能按' : deathButtonAt(0, cursor[0], cursor[1], uiDims.宽, uiDims.高) ? '指着' : '平常';
-  const titleButtonState: DeathButtonState = sec * 20 < deathButtonDelayTicks ? '不能按' : deathButtonAt(1, cursor[0], cursor[1], uiDims.宽, uiDims.高) ? '指着' : '平常';
+  const respawnButtonState: DeathButtonState = sec * 20 < deathButtonDelayTicks || sec >= cursorMove.points ? '不能按' : deathButtonAt(0, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
+  const titleButtonState: DeathButtonState = sec * 20 < deathButtonDelayTicks ? '不能按' : deathButtonAt(1, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
   // 死亡消息和死亡界面同一刻出（原版死的那一刻发系统消息）
   const chatLines = inGameUi ? [deathMessageLine(0, deathMsg)] : [];
   // 他：死了不再挣，倒下 1 秒后人没了（反应史蒂夫 照 死后秒 自己藏）
@@ -97,22 +97,22 @@ export default definePicture(seg, soundUrl, () => {
       cameraRig={cameraRig}
       ui={
         <>
-          <BattleUi 宽={aspect.宽} 高={aspect.高} s={uiScale} healthBar={{ healthRatio: 1 }}>
+          <BattleUi width={aspect.width} height={aspect.height} s={uiScale} healthBar={{ healthRatio: 1 }}>
             {chatLines.length > 0 && <ChatOverlay lines={chatLines} 刻={sec * 20} s={uiScale} />}
           </BattleUi>
-          {inGameUi && <DeathScreen 宽={aspect.宽} 高={aspect.高} s={uiScale} buttonImg={png(widgetsPng)} deathCause={deathText} respawnButtonState={respawnButtonState} titleButtonState={titleButtonState} cursor={cursor} />}
+          {inGameUi && <DeathScreen width={aspect.width} height={aspect.height} s={uiScale} buttonImg={png(widgetsPng)} deathCause={deathText} respawnButtonState={respawnButtonState} titleButtonState={titleButtonState} cursor={cursor} />}
         </>
       }
     >
       {/* 仪式做完后留在台地上的结构和四角灵魂火，同第 2 幕；仪式的钟走编排的钟，同第 4 幕 */}
       <group position={altar}>
-        <RestRitualPerformance 秒={t + timeline.事件.yaBoLunAppears.秒 - timeline.事件.placeRing.秒} plan={summonPlans.短} />
+        <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeRing.sec} plan={summonPlans.短} />
       </group>
       <GirlYaBoLun {...yaBoLun.props} holdWand />
       {params && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={params} cellsPerPixel={cellsPerPixel} />}
-      <ReactingSteve 状态={steveState} />
-      <DeathDrop trajectory={trajectory} drops={steveDrops(sinceDeath)} 秒={sinceDeath} />
-      <VanillaParticles spawns={whiteSmoke} 秒={sinceDeath} />
+      <ReactingSteve state={steveState} />
+      <DeathDrop trajectory={trajectory} drops={steveDrops(sinceDeath)} sec={sinceDeath} />
+      <VanillaParticles spawns={whiteSmoke} sec={sinceDeath} />
     </TerraceCanvas>
   );
 });

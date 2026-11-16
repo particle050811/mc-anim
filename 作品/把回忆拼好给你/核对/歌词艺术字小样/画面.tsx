@@ -18,8 +18,8 @@ const picture: React.FC = () => {
   const f = useSnappedFrame();
   return (
     <>
-      <FilmPost grade={line8Tone.grade} 种子={frameWindow.起帧 + f}>
-        <DoorCanvas doorOpen chestOpen={1} tone={line8Tone} {...fullScreenShot} 叠层={<PuffBubble framing={fullScreenShot.framing} />}>
+      <FilmPost grade={line8Tone.grade} seed={frameWindow.起帧 + f}>
+        <DoorCanvas doorOpen chestOpen={1} tone={line8Tone} {...fullScreenShot} overlay={<PuffBubble framing={fullScreenShot.framing} />}>
           <PuffCharacter />
         </DoorCanvas>
         <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: line8Tone.outlineColor }} />

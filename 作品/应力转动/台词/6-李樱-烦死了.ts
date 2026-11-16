@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 ad600a1459ef），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-烦死了（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 de46e1351b89），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-烦死了（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-烦死了",
-  "角色": "李樱",
-  "念": "烦死了！",
-  "配音": "配音/6-李樱-烦死了",
-  "成品sha": "9cd68b856272",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "烦死了！",
+  "voice": "配音/6-李樱-烦死了",
+  "finishedSha": "9cd68b856272",
+  "mouthOpen": 0.03,
   "有声长": 0.88,
-  "时长": 1.06,
+  "duration": 1.06,
   "文件秒数": 1.06,
-  "字": [
+  "char": [
     ["烦",0.08,0.4],
     ["死",0.4,0.64],
     ["了",0.64,0.88],

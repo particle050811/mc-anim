@@ -16,7 +16,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const white: readonly [number, number, number] = [1, 1, 1];
 
-const WindBlast: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+const WindBlast: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
   const tick = sec * 20;
   const dir = unitVec(sub([target[0], target[1], target[2] + 0.9], from));
   const r = mulberry32(seed * 7919 + 5);
@@ -29,16 +29,16 @@ const WindBlast: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
     const lifetime = 20 + Math.floor(r() * 20);
     // 第 k 刻末的位置：每刻先 × 0.99 再走
     const positionAt = (k: number): Vec3 => addVec(spawnPoint, scaleVec(speedVec, (0.99 * (1 - 0.99 ** k)) / 0.01));
-    return { 位置: positionAt, 段数: segCount, 高: height, 寿命: lifetime };
+    return { 位置: positionAt, 段数: segCount, height: height, 寿命: lifetime };
   });
   const flames: ParticleSpawn[] = Array.from({ length: 7 }, (_, i) => {
     const p = addVec(from, scaleVec(dir, i + 1));
-    return { 种: 'flame', 刻: 0, p: [p[0], p[1], p[2]], v: [0, 0, 0], 种子: seed * 101 + i };
+    return { kind: 'flame', 刻: 0, p: [p[0], p[1], p[2]], v: [0, 0, 0], seed: seed * 101 + i };
   });
   return (
     <>
-      {waves.map((windWave, i) => tick < windWave.寿命 && <WindBand key={i} 位置={windWave.位置} age={tick} 段数={windWave.段数} 高={windWave.高} 色={white} opacity={1 - Math.floor(tick) / windWave.寿命} />)}
-      <VanillaParticles spawns={flames} 秒={sec} />
+      {waves.map((windWave, i) => tick < windWave.寿命 && <WindBand key={i} 位置={windWave.位置} age={tick} 段数={windWave.段数} height={windWave.height} 色={white} opacity={1 - Math.floor(tick) / windWave.寿命} />)}
+      <VanillaParticles spawns={flames} sec={sec} />
     </>
   );
 };

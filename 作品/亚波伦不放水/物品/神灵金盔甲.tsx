@@ -21,7 +21,7 @@ import { settleCape, capeVertexTable, type CapeData } from './神灵金披风.ts
 
 const textureMap = { 旧版: oldTexturePng, 新版: newTexturePng } as const;
 
-type RawArmorMesh = { 骨: number; 顶点: number[] };
+type RawArmorMesh = { bone: number; 顶点: number[] };
 const armorData = armorMeshData as unknown as { 骨: string[]; 槽: Record<'head' | 'chest' | 'legs' | 'feet', RawArmorMesh[]>; 披风: CapeData };
 
 export type ApocalyptiumPiece = '头盔' | '胸甲' | '护腿' | '靴子';
@@ -40,19 +40,19 @@ let capeGeometryCache: ReturnType<typeof quadGeometry> | null = null;
 const capeVertices = () => (capeVerticesCache ??= capeVertexTable(armorData.披风, settleCape(armorData.披风)));
 const capeGeometry = () => (capeGeometryCache ??= quadGeometry(capeVertices()));
 
-export type ArmorMesh = { 键: string; 骨: string; 顶点: readonly number[]; geometry: THREE.BufferGeometry };
+export type ArmorMesh = { key: string; bone: string; 顶点: readonly number[]; geometry: THREE.BufferGeometry };
 
 /** 件：穿哪几件，不给 = 全套。光泽秒：附魔光泽滚动的时钟，不给 = 没附魔。外观：不给 = 本片默认（旧版）。
  *  返回材质和各块网格（跟哪个部件、顶点表、现成的几何），不包成节点：给要自己画的用（史蒂夫的四肢要在肘、膝处折，见 角色/史蒂夫装备.tsx） */
-export const useApocalyptiumArmorMaterials = (pieces: readonly ApocalyptiumPiece[] = apocalyptiumFullSet, glintSec?: number, appearance: EquipAppearance = defaultAppearance): { material: THREE.Material; 网格: ArmorMesh[] } => {
+export const useApocalyptiumArmorMaterials = (pieces: readonly ApocalyptiumPiece[] = apocalyptiumFullSet, glintSec?: number, appearance: EquipAppearance = defaultAppearance): { material: THREE.Material; grid: ArmorMesh[] } => {
   const enchanted = glintSec !== undefined;
   const { material, setGlintSec } = useMemo(() => armorMaterial(png(textureMap[appearance]), enchanted ? png(enchantGlintPng) : undefined), [enchanted, appearance]);
   if (enchanted) setGlintSec(glintSec);
   const meshes: ArmorMesh[] = [];
   for (const pieceName of apocalyptiumFullSet) {
     if (!pieces.includes(pieceName)) continue;
-    armorData.槽[slotNames[pieceName]].forEach((m, i) => meshes.push({ 键: `${pieceName}${i}`, 骨: armorData.骨[m.骨]!, 顶点: m.顶点, geometry: buildMeshGeometry(m) }));
-    if (pieceName === '胸甲') meshes.push({ 键: '披风', 骨: 'body', 顶点: capeVertices(), geometry: capeGeometry() });
+    armorData.槽[slotNames[pieceName]].forEach((m, i) => meshes.push({ key: `${pieceName}${i}`, bone: armorData.骨[m.bone]!, 顶点: m.顶点, geometry: buildMeshGeometry(m) }));
+    if (pieceName === '胸甲') meshes.push({ key: '披风', bone: 'body', 顶点: capeVertices(), geometry: capeGeometry() });
   }
-  return { material, 网格: meshes };
+  return { material, grid: meshes };
 };

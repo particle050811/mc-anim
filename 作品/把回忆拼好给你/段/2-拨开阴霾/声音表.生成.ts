@@ -3,38 +3,38 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     },
     "音效/把回忆拼好给你/block.beacon.activate": {
-      "时长": 2.953292,
-      "峰值": -13.5,
-      "响度": -25.6,
+      "duration": 2.953292,
+      "peakDb": -13.5,
+      "loudness": -25.6,
       "sha": "cff5ac29875b"
     },
     "音效/把回忆拼好给你/weather.rain.2": {
-      "时长": 1.978667,
-      "峰值": -3.2,
-      "响度": -24.8,
+      "duration": 1.978667,
+      "peakDb": -3.2,
+      "loudness": -24.8,
       "sha": "5f754e4c7e64"
     },
     "音效/把回忆拼好给你/weather.rain.3": {
-      "时长": 2.085333,
-      "峰值": -4.5,
-      "响度": -25,
+      "duration": 2.085333,
+      "peakDb": -4.5,
+      "loudness": -25,
       "sha": "4cafe2fcec6a"
     },
     "音效/把回忆拼好给你/weather.rain.4": {
-      "时长": 2.165333,
-      "峰值": -6.4,
-      "响度": -24.5,
+      "duration": 2.165333,
+      "peakDb": -6.4,
+      "loudness": -24.5,
       "sha": "94a3c04d5b51"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

@@ -86,7 +86,7 @@ export const leapApex = { 一: 2.5, 二: 1.5, 三: 1.5 };
 export const leapFrom = (p0: V3, p1: V3, apex: number, t0: number): Jump => eliteLeap(p0, p1, apex, t0);
 // 第一跃落在墙头东段，几乎不停（落地 1/12 秒就是第二跃的蓄力）；第二跃落在塔顶西沿，按落地时的水平速度刹住。
 // 刹车不按全片的 `RAMP_SEC`（跑步.ts）：塔顶只有 5 格宽，0.3 秒要滑 2.2 米，再挨音爆往东横滑会停到塔顶东沿外 1 米（悬空），所以这里是例外
-export const towerBrakeSec = exception('起停', 0.15, { 场: '7-墙头追逐', 原因: '马落塔顶刹车：塔顶只有 5 格宽，0.3 秒会滑出塔沿；用户 10-21 定照留' });
+export const towerBrakeSec = exception('起停', 0.15, { scene: '7-墙头追逐', cause: '马落塔顶刹车：塔顶只有 5 格宽，0.3 秒会滑出塔沿；用户 10-21 定照留' });
 // 音爆的击退（原版 SonicBoom：水平 2.5 格/刻 × 方向的水平分量；之后每刻按地面摩擦 0.546 衰减）
 export const knockFriction = 0.6 * 0.91;
 export const knockSlide = (horizFraction: number) => (2.5 * horizFraction) / (1 - knockFriction);

@@ -1,17 +1,17 @@
-// 由 anim voice 生成（校验 0d0f60e3ffa0），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-没有最终boss（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 90619a85bd36），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-没有最终boss（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
 const sentence: LineSentence = {
   "id": "6-李樱-没有最终boss",
-  "角色": "李樱",
-  "念": "都穿越到mc了，没想到暮色森林还是没有最终boss！",
-  "配音": "配音/6-李樱-没有最终boss",
-  "成品sha": "fcfd70bc6df7",
-  "开口": 0.03,
+  "character": "李樱",
+  "spoken": "都穿越到mc了，没想到暮色森林还是没有最终boss！",
+  "voice": "配音/6-李樱-没有最终boss",
+  "finishedSha": "fcfd70bc6df7",
+  "mouthOpen": 0.03,
   "有声长": 3.604,
-  "时长": 3.634,
+  "duration": 3.634,
   "文件秒数": 3.634,
-  "字": [
+  "char": [
     ["都",0.16,0.32],
     ["穿",0.32,0.48],
     ["越",0.48,0.56],

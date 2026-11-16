@@ -26,12 +26,12 @@ export const groundLineFromBottom = (N = pixelCount) => {
 };
 
 /** 取景：中心 = 画面中心对着的 [x, z]（格），每格 = 一格几个像素（成片） */
-export type DoorFraming = { 中心: readonly [number, number]; pxPerCell: number };
+export type DoorFraming = { center: readonly [number, number]; pxPerCell: number };
 
 /** 整屏取景：门那一格的中心在画面正中，地面线离底 地面线离底(N) 像素；N 不给按 像素N（给别的 N 是比密度用的） */
 export const fullScreenFraming = (N = pixelCount): DoorFraming => {
   if (!Number.isInteger(N) || N <= 0 || N % 2) throw new Error(`像素N 要是正偶数：${N}`);
-  return { 中心: [0, (1440 / 2 - groundLineFromBottom(N)) / cellPx(N)], pxPerCell: cellPx(N) };
+  return { center: [0, (1440 / 2 - groundLineFromBottom(N)) / cellPx(N)], pxPerCell: cellPx(N) };
 };
 export const framing = fullScreenFraming();
 
@@ -46,8 +46,8 @@ export const fullScreenShotGroundFromBottom = 1.5;
 /** 门这个机位整屏镜头给 门口画布 的取景和描边宽：门那一格在画面正中，地面线离底 整屏镜头地面离底 格；描边一个贴图像素宽。
  *  用法：<门口画布 {...整屏镜头} …>，气泡、聊天栏的缩放给 整屏镜头N */
 export const fullScreenShot = {
-  framing: { 中心: [0, 1440 / 2 / cellPx(fullScreenShotCount) - fullScreenShotGroundFromBottom], pxPerCell: cellPx(fullScreenShotCount) } as DoorFraming,
-  outlineWidth: (fullScreenShotCount * outline.宽) / pixelCount,
+  framing: { center: [0, 1440 / 2 / cellPx(fullScreenShotCount) - fullScreenShotGroundFromBottom], pxPerCell: cellPx(fullScreenShotCount) } as DoorFraming,
+  outlineWidth: (fullScreenShotCount * outline.width) / pixelCount,
 } as const;
 
 /** 半屏取景（第 13、14 句分屏里门口那半屏）：画布宽 宽像素（成片像素，比如 1280），门中心落在从左数 门在 × 宽像素 的地方。
@@ -56,7 +56,7 @@ export const halfScreenFraming = (widthPx: number, doorFrac: number, N = pixelCo
   const offsetPx = (doorFrac - 0.5) * widthPx;
   if (Math.abs(offsetPx - Math.round(offsetPx)) > 1e-6 || Math.round(offsetPx) % 2) throw new Error(`门在 ${doorFrac}、宽 ${widthPx}：门中心离画布中线 ${offsetPx} 像素，要是偶数`);
   const fullFraming = fullScreenFraming(N);
-  return { 中心: [-offsetPx / fullFraming.pxPerCell, fullFraming.中心[1]], pxPerCell: fullFraming.pxPerCell };
+  return { center: [-offsetPx / fullFraming.pxPerCell, fullFraming.center[1]], pxPerCell: fullFraming.pxPerCell };
 };
 
 /** 旧版式（服务器在右半屏、N = 6）的门位置：门在半屏 0.75 处，N = 6 时左边看得到 10 格，长成的树冠（x −9.5～−0.5）整个在里面；右边 3.3 格，箱子和她站的地方在里面。
@@ -70,9 +70,9 @@ export const skyColors = { horizon: '#c0d8ff', topColor: '#78a7ff', gradientHeig
  *  N = 6 整屏是半径 10.6 的圆：正午太阳在屋脊、树顶上面，早晚落到两边的草地上，下午那段从树冠后面过 */
 export const defaultSkyArc = (framing: DoorFraming, pageWidth: number, pageHeight: number) => {
   const halfWidth = pageWidth / framing.pxPerCell; // 页面像素 × 2 ÷ 每格 ÷ 2
-  const arcTop = framing.中心[1] + pageHeight / framing.pxPerCell;
+  const arcTop = framing.center[1] + pageHeight / framing.pxPerCell;
   const radius = arcTop - 1.25;
-  return { 心: [framing.中心[0], 0] as const, radius, radiusX: Math.min(radius, halfWidth - 1.25) };
+  return { 心: [framing.center[0], 0] as const, radius, radiusX: Math.min(radius, halfWidth - 1.25) };
 };
 
 /** 第 8 句雨后的白天：游戏刻 7000（正午过一点，太阳在门左上方） */

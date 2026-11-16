@@ -18,7 +18,7 @@ import { drawTopView, drawCrossSection, drawHeight } from './出图.ts';
 import { segmentAt, PackBlockSource, SaveBlockSource, normalizeRange, type BlockSource, type QueryRect } from './源.ts';
 import { BlockPalette } from './颜色.ts';
 
-const sourceOptions = { 值: ['--pack', '--version', '--save-dir', '--to', '--pixels', '--y', '--table'], toggles: ['--raw', '--column'] } as const;
+const sourceOptions = { value: ['--pack', '--version', '--save-dir', '--to', '--pixels', '--y', '--table'], toggles: ['--raw', '--column'] } as const;
 const sourceUsage = '[--raw | --pack <名> [--version <v>]] [--save-dir <世界目录>]';
 
 const toInt = (s: string | undefined, fieldName: string) => {
@@ -33,28 +33,28 @@ export const worldDraftDir = () => {
   return d;
 };
 const outputPath = (p: ParsedArgs, fileName: string) => {
-  const f = p.值['--to'] ? path.resolve(p.值['--to']) : path.join(worldDraftDir(), fileName);
+  const f = p.value['--to'] ? path.resolve(p.value['--to']) : path.join(worldDraftDir(), fileName);
   fs.mkdirSync(path.dirname(f), { recursive: true });
   return f;
 };
 
 /** 按选项建方块源；存档源另返回区域源（批量预读用） */
-export const buildSource = async (w: WorldDecl, p: ParsedArgs): Promise<{ 源: BlockSource; 存档?: SaveBlockSource; 区域?: RegionSource; 标: string }> => {
-  if (p.值['--pack']) {
-    const packName = p.值['--pack'];
-    const version = p.值['--version'] ?? readTerrainTable().包[packName]?.版本;
+export const buildSource = async (w: WorldDecl, p: ParsedArgs): Promise<{ 源: BlockSource; save?: SaveBlockSource; region?: RegionSource; 标: string }> => {
+  if (p.value['--pack']) {
+    const packName = p.value['--pack'];
+    const version = p.value['--version'] ?? readTerrainTable().pack[packName]?.version;
     if (!version) throw new UsageError(`assets/地形版本.json 没登记包 ${packName}，要写 --version`);
     const dir = versionDir(packName, version);
     if (!fs.existsSync(path.join(dir, '包.json'))) throw new Error(`没有 ${dir}：anim assets pull 拉地形包，或 anim world bake 烘`);
     return { 源: new PackBlockSource(dir, await loadVoxelLib(), `地形包 ${packName} 版本 ${version}`), 标: `包${packName}` };
   }
-  const dir = regionDir(w, p.值['--save-dir']);
-  const seed = worldSeed(saveDir(w, p.值['--save-dir']));
+  const dir = regionDir(w, p.value['--save-dir']);
+  const seed = worldSeed(saveDir(w, p.value['--save-dir']));
   const editSet = p.toggles.has('--raw') ? null : await loadEdits(w);
   const editApplier = editSet ? new EditApplier(editSet, new RegionSource(dir, seed, columnSegmentCacheDir())) : null;
   const regionSource = new RegionSource(dir, seed, columnSegmentCacheDir(), editApplier ? (r) => editApplier.applyEdits(r) : null);
-  const saveSource = new SaveBlockSource(regionSource, `存档 ${dir}${editSet ? `，套编辑 ${editSet.步.length} 条命令` : p.toggles.has('--raw') ? '，不套编辑' : ''}`);
-  return { 源: saveSource, 存档: saveSource, 区域: regionSource, 标: editSet ? '编辑后' : '原样' };
+  const saveSource = new SaveBlockSource(regionSource, `存档 ${dir}${editSet ? `，套编辑 ${editSet.step.length} 条命令` : p.toggles.has('--raw') ? '，不套编辑' : ''}`);
+  return { 源: saveSource, save: saveSource, region: regionSource, 标: editSet ? '编辑后' : '原样' };
 };
 
 const regionsInRange = (r: QueryRect) => {
@@ -65,15 +65,15 @@ const regionsInRange = (r: QueryRect) => {
 
 /** 范围要解的区域多就过资源闸并行预读进缓存，少就只解要的区块 */
 const prepare = async <T>(s: Awaited<ReturnType<typeof buildSource>>, r: QueryRect, fn: () => Promise<T> | T): Promise<T> => {
-  if (!s.存档 || !s.区域) return fn();
-  await s.区域.computeKeys(regionsInRange(r), defaultThreads());
-  const pending = s.存档.uncachedRegions(r);
+  if (!s.save || !s.region) return fn();
+  await s.region.computeKeys(regionsInRange(r), defaultThreads());
+  const pending = s.save.uncachedRegions(r);
   if (pending.length <= 2) {
-    s.存档.load(r);
+    s.save.load(r);
     return fn();
   }
   return passGate(async () => {
-    await s.区域!.preRead(pending, defaultThreads(), (x) => console.log(x));
+    await s.region!.preRead(pending, defaultThreads(), (x) => console.log(x));
     return fn();
   });
 };
@@ -84,15 +84,15 @@ const worldArgs = (args: string[], argCount: number, usage: string) => {
   return { p, w: readDecl(p.位置[0]!) };
 };
 
-const pixelOption = (p: ParsedArgs) => (p.值['--pixels'] ? toInt(p.值['--pixels'], '--pixels') : undefined);
+const pixelOption = (p: ParsedArgs) => (p.value['--pixels'] ? toInt(p.value['--pixels'], '--pixels') : undefined);
 
-type SubCommand = { 用法: string; 跑: (args: string[], runRecord: Parameters<Command['跑']>[1]) => Promise<number | void> };
+type SubCommand = { usage: string; 跑: (args: string[], runRecord: Parameters<Command['跑']>[1]) => Promise<number | void> };
 
 export const QUERY_COMMANDS: Record<string, SubCommand> = {
   block: {
-    用法: `block <世界> <x> <y> <z> [--column] ${sourceUsage}`,
+    usage: `block <世界> <x> <y> <z> [--column] ${sourceUsage}`,
     跑: async (args) => {
-      const usage = QUERY_COMMANDS.block!.用法;
+      const usage = QUERY_COMMANDS.block!.usage;
       const { p, w } = worldArgs(args, 4, usage);
       const [x, y, z] = [1, 2, 3].map((i) => toInt(p.位置[i], ['x', 'y', 'z'][i - 1]!));
       const s = await buildSource(w, p);
@@ -105,51 +105,51 @@ export const QUERY_COMMANDS: Record<string, SubCommand> = {
         }
         const b = segmentAt(c, y!);
         const t = s.源.topBlockAt(x!, z!);
-        console.log(`(${x}, ${y}, ${z})：${b ? `${b.状态 ?? '没数据'}，群系 ${b.群系 ?? '（不记）'}` : y! < c.yBottom ? `低于存的范围（${c.yBottom} 以下${s.存档 ? '' : '，包里没存、渲染当实心'}）` : 'minecraft:air（高于这一列）'}`);
-        console.log(`这一列最高的方块：${t ? `y ${t.y} ${t.状态}` : '没有（全是空气）'}`);
-        if (p.toggles.has('--column')) for (const g of c.段) console.log(`  y ${g.bottom}～${g.topY}：${g.状态 ?? '没数据'}${g.群系 ? `  ${g.群系}` : ''}`);
+        console.log(`(${x}, ${y}, ${z})：${b ? `${b.state ?? '没数据'}，群系 ${b.biome ?? '（不记）'}` : y! < c.yBottom ? `低于存的范围（${c.yBottom} 以下${s.save ? '' : '，包里没存、渲染当实心'}）` : 'minecraft:air（高于这一列）'}`);
+        console.log(`这一列最高的方块：${t ? `y ${t.y} ${t.state}` : '没有（全是空气）'}`);
+        if (p.toggles.has('--column')) for (const g of c.segment) console.log(`  y ${g.bottom}～${g.topY}：${g.state ?? '没数据'}${g.biome ? `  ${g.biome}` : ''}`);
         return 0;
       });
     },
   },
   heightmap: {
-    用法: `heightmap <世界> <x1> <z1> <x2> <z2> [--to <png>] [--table <tsv>] [--pixels <n>] ${sourceUsage}`,
+    usage: `heightmap <世界> <x1> <z1> <x2> <z2> [--to <png>] [--table <tsv>] [--pixels <n>] ${sourceUsage}`,
     跑: async (args, runRecord) => {
-      const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.heightmap!.用法);
+      const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.heightmap!.usage);
       const r = normalizeRange(...([1, 2, 3, 4].map((i) => toInt(p.位置[i], '范围')) as [number, number, number, number]));
       const s = await buildSource(w, p);
       const g = await prepare(s, r, () => drawHeight(s.源, r, pixelOption(p)));
-      const f = outputPath(p, `${w.名称}-高度-${r.x1}_${r.z1}_${r.x2}_${r.z2}-${s.标}.png`);
+      const f = outputPath(p, `${w.displayName}-高度-${r.x1}_${r.z1}_${r.x2}_${r.z2}-${s.标}.png`);
       fs.writeFileSync(f, g.png);
-      if (p.值['--table']) fs.writeFileSync(path.resolve(p.值['--table']), g.表.map((row) => row.map((h) => h ?? '').join('\t')).join('\n') + '\n');
-      console.log(`来源：${s.源.description}\n${f}（${g.宽}×${g.高}，${g.步 > 1 ? `每 ${g.步} 格取一格` : `一格 ${g.pixel} 像素`}）；最高的非空气方块 y ${g.minY ?? '-'}～${g.maxY ?? '-'}，有数据 ${g.withData}/${g.total}`);
-      runRecord.产物.push(f);
+      if (p.value['--table']) fs.writeFileSync(path.resolve(p.value['--table']), g.表.map((row) => row.map((h) => h ?? '').join('\t')).join('\n') + '\n');
+      console.log(`来源：${s.源.description}\n${f}（${g.width}×${g.height}，${g.step > 1 ? `每 ${g.step} 格取一格` : `一格 ${g.pixel} 像素`}）；最高的非空气方块 y ${g.minY ?? '-'}～${g.maxY ?? '-'}，有数据 ${g.withData}/${g.total}`);
+      runRecord.artifacts.push(f);
     },
   },
   map: {
-    用法: `map <世界> <x1> <z1> <x2> <z2> [--to <png>] [--pixels <n>] ${sourceUsage}`,
+    usage: `map <世界> <x1> <z1> <x2> <z2> [--to <png>] [--pixels <n>] ${sourceUsage}`,
     跑: async (args, runRecord) => {
-      const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.map!.用法);
+      const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.map!.usage);
       const r = normalizeRange(...([1, 2, 3, 4].map((i) => toInt(p.位置[i], '范围')) as [number, number, number, number]));
       const s = await buildSource(w, p);
       const palette = new BlockPalette(await loadVoxelLib());
       const g = await prepare(s, r, () => drawTopView(s.源, r, palette, pixelOption(p)));
-      const f = outputPath(p, `${w.名称}-俯视-${r.x1}_${r.z1}_${r.x2}_${r.z2}-${s.标}.png`);
+      const f = outputPath(p, `${w.displayName}-俯视-${r.x1}_${r.z1}_${r.x2}_${r.z2}-${s.标}.png`);
       fs.writeFileSync(f, g.png);
-      console.log(`来源：${s.源.description}\n${f}（${g.宽}×${g.高}，${g.步 > 1 ? `每 ${g.步} 格取一格` : `一格 ${g.pixel} 像素`}，北在上）；地表 y ${g.minY ?? '-'}～${g.maxY ?? '-'}，有数据 ${g.withData}/${g.total}`);
-      runRecord.产物.push(f);
+      console.log(`来源：${s.源.description}\n${f}（${g.width}×${g.height}，${g.step > 1 ? `每 ${g.step} 格取一格` : `一格 ${g.pixel} 像素`}，北在上）；地表 y ${g.minY ?? '-'}～${g.maxY ?? '-'}，有数据 ${g.withData}/${g.total}`);
+      runRecord.artifacts.push(f);
     },
   },
   slice: {
-    用法: `slice <世界> x|z <位置> <起> <止> [--y <y1>..<y2>] [--to <png>] [--pixels <n>] ${sourceUsage}`,
+    usage: `slice <世界> x|z <位置> <起> <止> [--y <y1>..<y2>] [--to <png>] [--pixels <n>] ${sourceUsage}`,
     跑: async (args, runRecord) => {
-      const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.slice!.用法);
+      const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.slice!.usage);
       const axis = p.位置[1];
       if (axis !== 'x' && axis !== 'z') throw new UsageError('轴写 x（切 x = 位置 的面，横轴是 z）或 z（横轴是 x）');
       const [planePos, a1, a2] = [2, 3, 4].map((i) => toInt(p.位置[i], '位置和起止')) as [number, number, number];
       let y1: number | undefined, y2: number | undefined;
-      if (p.值['--y']) {
-        const m = /^(-?\d+)\.\.(-?\d+)$/.exec(p.值['--y']);
+      if (p.value['--y']) {
+        const m = /^(-?\d+)\.\.(-?\d+)$/.exec(p.value['--y']);
         if (!m) throw new UsageError('--y 写成 <y1>..<y2>，比如 40..120');
         [y1, y2] = [Math.min(+m[1]!, +m[2]!), Math.max(+m[1]!, +m[2]!)];
       }
@@ -157,10 +157,10 @@ export const QUERY_COMMANDS: Record<string, SubCommand> = {
       const s = await buildSource(w, p);
       const palette = new BlockPalette(await loadVoxelLib());
       const g = await prepare(s, r, () => drawCrossSection(s.源, axis, planePos, a1, a2, palette, { y1, y2, pixel: pixelOption(p) }));
-      const f = outputPath(p, `${w.名称}-切面-${axis}${planePos}-${Math.min(a1, a2)}_${Math.max(a1, a2)}-y${g.y1}_${g.y2}-${s.标}.png`);
+      const f = outputPath(p, `${w.displayName}-切面-${axis}${planePos}-${Math.min(a1, a2)}_${Math.max(a1, a2)}-y${g.y1}_${g.y2}-${s.标}.png`);
       fs.writeFileSync(f, g.png);
-      console.log(`来源：${s.源.description}\n${f}（${g.宽}×${g.高}，一格 ${g.pixel} 像素，${axis === 'x' ? '从西往东看，右边是南' : '从南往北看，右边是东'}；y ${g.y1}～${g.y2}）`);
-      runRecord.产物.push(f);
+      console.log(`来源：${s.源.description}\n${f}（${g.width}×${g.height}，一格 ${g.pixel} 像素，${axis === 'x' ? '从西往东看，右边是南' : '从南往北看，右边是东'}；y ${g.y1}～${g.y2}）`);
+      runRecord.artifacts.push(f);
     },
   },
 };

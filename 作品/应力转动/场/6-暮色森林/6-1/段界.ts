@@ -16,7 +16,7 @@ import { TICKS_PER_SEC, ticksAtOrAfter } from '../时刻.ts';
 
 export type SegmentSource = '6-1-1' | '6-1-2' | '6-1-3' | '一镜到底';
 // 一截：源组件的 [从, 到) 刻
-export type Clip = { 源: SegmentSource; 从: number; 到: number };
+export type Clip = { 源: SegmentSource; 从: number; dest: number };
 
 export const CUT_STEPS_PER_SEC = TICKS_PER_SEC;
 const step = ticksAtOrAfter;
@@ -27,15 +27,15 @@ const cut612 = step(officialSecOf(S3));
 const cut613 = step(K613.beats.sinkStart);
 
 export const segments = [
-  { id: '6-1-1', 名: '进入森林', cuts: [{ 源: '6-1-1', 从: 0, 到: cut611 }] },
-  { id: '6-1-2', 名: '斩娜迦', cuts: [{ 源: '6-1-1', 从: cut611, 到: enterForestSteps }, { 源: '6-1-2', 从: 0, 到: cut612 }] },
-  { id: '6-1-3', 名: '起飞', cuts: [{ 源: '6-1-2', 从: cut612, 到: step(officialLength) }, { 源: '6-1-3', 从: 0, 到: cut613 }] },
-  { id: '6-1-4至9', 名: '一镜到底', cuts: [{ 源: '6-1-3', 从: cut613, 到: step(K613.LENGTH) }, { 源: '一镜到底', 从: 0, 到: step(G_CUT) }] },
-] as const satisfies readonly { id: string; 名: string; cuts: readonly Clip[] }[];
+  { id: '6-1-1', name: '进入森林', cuts: [{ 源: '6-1-1', 从: 0, dest: cut611 }] },
+  { id: '6-1-2', name: '斩娜迦', cuts: [{ 源: '6-1-1', 从: cut611, dest: enterForestSteps }, { 源: '6-1-2', 从: 0, dest: cut612 }] },
+  { id: '6-1-3', name: '起飞', cuts: [{ 源: '6-1-2', 从: cut612, dest: step(officialLength) }, { 源: '6-1-3', 从: 0, dest: cut613 }] },
+  { id: '6-1-4至9', name: '一镜到底', cuts: [{ 源: '6-1-3', 从: cut613, dest: step(K613.LENGTH) }, { 源: '一镜到底', 从: 0, dest: step(G_CUT) }] },
+] as const satisfies readonly { id: string; name: string; cuts: readonly Clip[] }[];
 export type SegmentId = (typeof segments)[number]['id'];
 
 const segmentOf = (id: SegmentId) => segments.find((s) => s.id === id)!;
-export const pieceFrames = (pieces: readonly Clip[]) => pieces.reduce((n, p) => n + p.到 - p.从, 0);
+export const pieceFrames = (pieces: readonly Clip[]) => pieces.reduce((n, p) => n + p.dest - p.从, 0);
 export const frameCountOf = (id: SegmentId) => pieceFrames(segmentOf(id).cuts);
-export const compositionId = (id: SegmentId) => `${id}-${segmentOf(id).名}`;
+export const compositionId = (id: SegmentId) => `${id}-${segmentOf(id).name}`;
 

@@ -4,7 +4,7 @@ import type { ToneName } from '../../色板.ts';
 // 门口核对的视图表（纯数据，段.ts 也读）：一帧一个视图，看门口机位的构图、樱花树（树苗、长成）、箱子开合、门开关、太阳月亮的走法、分屏右边的取景，
 // 和像素密度 N = 6、8、10 并排比（站位标尺那几帧：真史蒂夫、真魔法酒狐站着戴帽，头顶气泡、左下聊天栏按同一个 N 画）。
 export type View = {
-  名: string;
+  name: string;
   doorOpen?: boolean;
   chestOpen?: number;
   treeProgress?: number;
@@ -27,22 +27,22 @@ export type View = {
   tone?: ToneName;
 };
 
-const treeView = (grown: boolean): View => ({ 名: grown ? '樱花树-长成' : '樱花树-树苗', treeProgress: grown ? 1 : 0, hasSign: true });
-const rulerView = (N: number): View => ({ 名: `站位标尺-N${N}`, treeProgress: 0, hasSign: true, showRuler: true, N });
+const treeView = (grown: boolean): View => ({ name: grown ? '樱花树-长成' : '樱花树-树苗', treeProgress: grown ? 1 : 0, hasSign: true });
+const rulerView = (N: number): View => ({ name: `站位标尺-N${N}`, treeProgress: 0, hasSign: true, showRuler: true, N });
 
 export const views: readonly View[] = [
-  { 名: '空场景-白天' },
+  { name: '空场景-白天' },
   ...[false, true].map(treeView),
-  { 名: '箱子开', chestOpen: 1 },
-  { 名: '箱子合', chestOpen: 0, treeProgress: 0, hasSign: true },
-  { 名: '门开-第15句开头', doorOpen: true, treeProgress: 1, hasSign: true },
-  { 名: '门-左关右开', hasSign: true, doorCompare: true },
+  { name: '箱子开', chestOpen: 1 },
+  { name: '箱子合', chestOpen: 0, treeProgress: 0, hasSign: true },
+  { name: '门开-第15句开头', doorOpen: true, treeProgress: 1, hasSign: true },
+  { name: '门-左关右开', hasSign: true, doorCompare: true },
   rulerView(6),
-  { 名: '分屏右-树长成', treeProgress: 1, hasSign: true, halfScreen: { doorFrac: splitDoorFrac }, 刻: 6000 },
-  { 名: '天体-上午', 刻: 4500, hasSign: true, celestialPath: true },
-  { 名: '天体-下午', 刻: 9000, treeProgress: 1, hasSign: true, celestialPath: true },
-  { 名: '天体-午夜-树长成-调子夜', 刻: 18000, treeProgress: 1, hasSign: true, tone: '夜' },
+  { name: '分屏右-树长成', treeProgress: 1, hasSign: true, halfScreen: { doorFrac: splitDoorFrac }, 刻: 6000 },
+  { name: '天体-上午', 刻: 4500, hasSign: true, celestialPath: true },
+  { name: '天体-下午', 刻: 9000, treeProgress: 1, hasSign: true, celestialPath: true },
+  { name: '天体-午夜-树长成-调子夜', 刻: 18000, treeProgress: 1, hasSign: true, tone: '夜' },
   rulerView(8),
   rulerView(10),
-  { 名: '纯侧面-顶面0-树长成', treeProgress: 1, hasSign: true, topDepth: 0 },
+  { name: '纯侧面-顶面0-树长成', treeProgress: 1, hasSign: true, topDepth: 0 },
 ];

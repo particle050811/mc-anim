@@ -10,9 +10,9 @@ import { pointTrack, type TrackPoint } from './轨迹.ts';
 import timeline from './时间线.ts';
 
 export { beats, slowMo, toClipSec, actDur };
-const events = timeline.事件;
+const events = timeline.events;
 /** 第 2 幕开头（编排的钟 = 现身后几秒） */
-export const actStart = events.summonDone.秒 - events.yaBoLunAppears.秒;
+export const actStart = events.summonDone.sec - events.yaBoLunAppears.sec;
 /** 第 2 幕幕内世界秒 → 编排的钟 */
 export const act = (w: number) => actStart + w;
 /** 第 2 幕末（编排的钟，世界秒）：这之后两人都停在末态，第 4 幕从这里接 */
@@ -20,7 +20,7 @@ export const actEnd = act(beats.endSec);
 
 // 和场时间线的事件对上（时间线.ts 从 开盘拍.ts 算的，这里防两边各改各的）
 for (const [eventName, beatTime] of [['firstDash', beats.dashFirstSec], ['teleport', beats.移], ['secondDash', beats.dashSecondSec], ['wheelOpens', beats.openWheelSec], ['wheelOpenDone', beats.endSec]] as const) {
-  const timeDiffSec = events[eventName].秒 - events.summonDone.秒 - toClipSec(beatTime);
+  const timeDiffSec = events[eventName].sec - events.summonDone.sec - toClipSec(beatTime);
   if (Math.abs(timeDiffSec) > 1e-9) throw new Error(`开盘时刻：时间线的 ${eventName} 和 开盘拍.ts 差 ${timeDiffSec} 秒`);
 }
 
@@ -75,7 +75,7 @@ export const steveFirstPath: readonly TrackPoint[] = [
   [2.3, [0.4, -8.75], [0, 0.4]],
   [actStart - 0.04, [0.4, -8.6], [0, 0]],
 ];
-if (steveFirstPath[0]![0] !== events.开始.秒 - events.yaBoLunAppears.秒) throw new Error('开盘时刻：史一 要从第 1 幕开头起');
+if (steveFirstPath[0]![0] !== events.开始.sec - events.yaBoLunAppears.sec) throw new Error('开盘时刻：史一 要从第 1 幕开头起');
 const steveTrack = pointTrack(steveFirstPath);
 /** 第 1 幕他的脚步声（编排的钟）：照原版 Entity.move，走过的路程每 1/0.6 格响一步 */
 export const act1Steps: readonly number[] = (() => {
@@ -109,7 +109,7 @@ export const yaBoLunChestHeight = 1.1;
 const firstElevationDeg = 2.25;
 /** 他第 1 幕末站的地方 */
 const from = steveFirstPath[steveFirstPath.length - 1]![1] as readonly [number, number];
-const dashTrack = (startPos: readonly number[], dir: readonly [number, number], elevationDeg: number): DashTrail => calcDash({ 起: [startPos[0]!, startPos[1]!, standHeight(startPos[0]!, startPos[1]!)], dir, elevationDeg, groundHeight: standHeight });
+const dashTrack = (startPos: readonly number[], dir: readonly [number, number], elevationDeg: number): DashTrail => calcDash({ start: [startPos[0]!, startPos[1]!, standHeight(startPos[0]!, startPos[1]!)], dir, elevationDeg, groundHeight: standHeight });
 const unitVec = (x: number, y: number): [number, number] => {
   const n = Math.hypot(x, y);
   return [x / n, y / n];
@@ -126,7 +126,7 @@ const circleIntersect = (a: readonly number[], ra: number, b: readonly number[],
 };
 const dashSetup = (() => {
   // 平地上冲多远只看仰角（落地那一刻），先在平地上量一次，再照真地形迭代两次
-  const flatCharge = (elevationDeg: number) => calcDash({ 起: [0, 0, 0], dir: [1, 0], elevationDeg, groundHeight: () => 0 }).farDist;
+  const flatCharge = (elevationDeg: number) => calcDash({ start: [0, 0, 0], dir: [1, 0], elevationDeg, groundHeight: () => 0 }).farDist;
   let [farFirst, farSecond] = [flatCharge(firstElevationDeg), flatCharge(-1)];
   let secondStart: [number, number] = [0, 0];
   for (let i = 0; i < 3; i++) {
@@ -154,7 +154,7 @@ if (!(secondElevationDeg <= groundElevMax)) throw new Error(`开盘时刻：第�
 export const firstDash = dashTrack(from, firstDir, firstElevationDeg);
 export const secondDash = dashTrack(secondStart, secondDir, secondElevationDeg);
 for (const [passName, track, target] of [['第一次', firstDash, secondStart], ['第二次', secondDash, trappedLocal]] as const) {
-  const lastPoint = track.点[track.点.length - 1]!;
+  const lastPoint = track.points[track.points.length - 1]!;
   if (Math.hypot(lastPoint[0] - target[0], lastPoint[1] - target[1]) > 0.01) throw new Error(`开盘时刻：${passName}冲停在 (${lastPoint[0]}, ${lastPoint[1]})，差 ${target} 太多`);
 }
 export { firstElevationDeg };
@@ -166,7 +166,7 @@ export const steveSecondLocal = (w: number): [number, number, number] => {
   // 冲停的地方和 受困本地 差不到 0.01 格（迭代剩下的）：冲出去 0.5～0.7 秒（第 10～14 刻，已经慢得几乎不动）里挪过去，之后就站在 受困本地
   if (w >= beats.dashSecondSec + 0.7) return [trappedLocal[0], trappedLocal[1], standHeight(...trappedLocal)];
   const p = dashPos(secondDash, w - beats.dashSecondSec);
-  const lastPoint = secondDash.点[secondDash.点.length - 1]!;
+  const lastPoint = secondDash.points[secondDash.points.length - 1]!;
   const k = Math.min(1, Math.max(0, (w - beats.dashSecondSec - 0.5) / 0.2));
   return [p[0] + (trappedLocal[0] - lastPoint[0]) * k, p[1] + (trappedLocal[1] - lastPoint[1]) * k, p[2]];
 };

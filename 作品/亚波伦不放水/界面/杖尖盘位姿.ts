@@ -60,10 +60,10 @@ export const discPoint = (disc: PlatePose, cellsPerPixel: number, x: number, y: 
 
 /** 某个聚晶那一格的图标中心在场景里的位置（法术从盘上自己那一格出手用）；盘上没有这个聚晶、或那一圈还没弹开返回 null */
 export const discCellPos = (disc: PlatePose, cellsPerPixel: number, plateParams: ArrangeOptions & { 刻: number; openClose?: Partial<OpenClose> }, focusKey: string): V3 | null => {
-  const { cellsPerRing, 项: items } = arrangeWheel(plateParams);
-  const item = items.find((p) => p.键 === focusKey);
+  const { cellsPerRing, items: items } = arrangeWheel(plateParams);
+  const item = items.find((p) => p.key === focusKey);
   const ringState = item && RingState(item.ring, plateParams.刻, plateParams.ringShape ?? defaultRingShape, { ...defaultOpenClose, ...plateParams.openClose });
   if (!item || !ringState) return null;
-  const angle = cellRange(item.格, cellsPerRing[item.ring]!).中 + ringState.angleRad;
+  const angle = cellRange(item.cell, cellsPerRing[item.ring]!).中 + ringState.angleRad;
   return discPoint(disc, cellsPerPixel, ringState.iconRadius * Math.cos(angle), ringState.iconRadius * Math.sin(angle));
 };

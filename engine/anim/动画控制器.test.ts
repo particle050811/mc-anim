@@ -64,23 +64,23 @@ describe('基岩版控制器', () => {
 
   it('解析：初始状态默认 default，动画带 Molang 权重，转移按顺序', () => {
     expect(controller.initialState).toBe('default');
-    expect(controller.states.default!.animations[0]!.名).toBe('walk');
+    expect(controller.states.default!.animations[0]!.name).toBe('walk');
     expect(typeof controller.states.default!.animations[0]!.weight).toBe('object');
-    expect(controller.states.default!.transitions.map((t) => t.到)).toEqual(['grazing']);
+    expect(controller.states.default!.transitions.map((t) => t.dest)).toEqual(['grazing']);
     expect(controller.states.grazing!.transition).toBe(0);
     expect(() => parseControllerFile({ animation_controllers: { c: { states: { default: { transitions: [{ 没有: '1' }] } } } } })).toThrow(/不存在/);
   });
 
   // 第 1 秒开始吃草（只给一步），吃完 2 秒自己回 default
   const envAt = (sec: number) => ({ query: { modified_move_speed: 0.5, is_grazing: sec >= 1 && sec < 1.05 ? 1 : 0 } });
-  const sheep = bedrockController(controller, { animations, nameTable, 环境: envAt });
+  const sheep = bedrockController(controller, { animations, nameTable, env: envAt });
 
   it('状态按条件转、all_animations_finished 播完回去', () => {
-    expect(sheep.stepAt(0.95).状态).toBe('default');
-    expect(sheep.stepAt(1).状态).toBe('grazing');
+    expect(sheep.stepAt(0.95).state).toBe('default');
+    expect(sheep.stepAt(1).state).toBe('grazing');
     expect(sheep.stepAt(1).enteredAt).toBe(1);
-    expect(sheep.stepAt(2.9).状态).toBe('grazing');
-    expect(sheep.stepAt(3).状态).toBe('default');
+    expect(sheep.stepAt(2.9).state).toBe('grazing');
+    expect(sheep.stepAt(3).state).toBe('default');
   });
 
   it('姿势：default 里 walk 按 modified_move_speed 加权叠加；状态动画从进入时刻开播', () => {
@@ -92,7 +92,7 @@ describe('基岩版控制器', () => {
   });
 
   it('结果只看时间，和取帧顺序无关', () => {
-    const secondCtrl = bedrockController(controller, { animations, nameTable, 环境: envAt });
+    const secondCtrl = bedrockController(controller, { animations, nameTable, env: envAt });
     const actualPose = secondCtrl.poseAt(3.25);
     const first = secondCtrl.poseAt(2);
     expect(actualPose).toEqual(sheep.poseAt(3.25));
@@ -111,7 +111,7 @@ describe('基岩版控制器', () => {
         },
       },
     }).c!;
-    const p = bedrockController(c, { animations, 环境: (sec) => ({ query: { life_time: sec } }) });
+    const p = bedrockController(c, { animations, env: (sec) => ({ query: { life_time: sec } }) });
     expect(p.poseAt(0.5).body).toEqual({ pos: [0, -4, 0], rot: [0, 0, 10] });
     // 1.25 秒：旧（坐）权重 0.5，新（站 + 设变量）0.5
     const bodyPose = p.poseAt(1.25).body!;
@@ -135,7 +135,7 @@ describe('基岩版控制器', () => {
             },
           },
         }).c!,
-        { animations, 环境: (sec) => ({ query: { life_time: sec } }) },
+        { animations, env: (sec) => ({ query: { life_time: sec } }) },
       ).poseAt(1.5).body!.rot![1];
     expect(runCase(false)).toBeCloseTo(0, 9);
     expect(Math.abs(runCase(true)!)).toBeCloseTo(180, 9);
@@ -143,9 +143,9 @@ describe('基岩版控制器', () => {
 
   it('blend_transition 写成曲线', () => {
     const curve = [
-      { 时: 0, weight: 1 },
-      { 时: 0.2, weight: 0.8 },
-      { 时: 0.4, weight: 0 },
+      { timestamp: 0, weight: 1 },
+      { timestamp: 0.2, weight: 0.8 },
+      { timestamp: 0.4, weight: 0 },
     ];
     expect(transitionWeight(curve, 0.1)).toBeCloseTo(0.9, 12);
     expect(transitionWeight(curve, 0.3)).toBeCloseTo(0.4, 12);
@@ -154,8 +154,8 @@ describe('基岩版控制器', () => {
     expect(transitionWeight(0, 0)).toBe(0);
     const c = parseControllerFile({ animation_controllers: { c: { states: { default: { blend_transition: { '0.0': 1, '0.4': 0 } } } } } }).c!;
     expect(c.states.default!.transition).toEqual([
-      { 时: 0, weight: 1 },
-      { 时: 0.4, weight: 0 },
+      { timestamp: 0, weight: 1 },
+      { timestamp: 0.4, weight: 0 },
     ]);
   });
 
@@ -167,30 +167,30 @@ describe('基岩版控制器', () => {
 describe('start_delay、loop_delay', () => {
   const a = animations.延迟!;
   it('开播前不给骨骼，每遍之间停在末帧', () => {
-    expect(animProgress(a, 0.3)).toEqual({ 时: 0, stopped: false, 等待: true });
+    expect(animProgress(a, 0.3)).toEqual({ timestamp: 0, stopped: false, waiting: true });
     expect(sampleAnim(a, 0.3).skeleton).toEqual({});
-    expect(animProgress(a, 1).时).toBeCloseTo(0.5, 12);
-    expect(animProgress(a, 1.6).时).toBe(1); // 1.5～1.75 是 loop_delay
-    expect(animProgress(a, 1.8).时).toBeCloseTo(0.05, 12);
+    expect(animProgress(a, 1).timestamp).toBeCloseTo(0.5, 12);
+    expect(animProgress(a, 1.6).timestamp).toBe(1); // 1.5～1.75 是 loop_delay
+    expect(animProgress(a, 1.8).timestamp).toBeCloseTo(0.05, 12);
     expect(sampleAnim(a, 1).skeleton.a!.pos![0]).toBeCloseTo(4, 12);
   });
   it('TLM 口径不读延迟', () => {
-    expect(animProgress(a, 0.3, { 口径: 'TLM' }).时).toBeCloseTo(0.3, 12);
+    expect(animProgress(a, 0.3, { 口径: 'TLM' }).timestamp).toBeCloseTo(0.3, 12);
   });
   it('loop_delay 是 Molang 时每遍末求一次', () => {
     const b = animations.随机延迟!;
     const variables = {};
     // 第 1 遍 [0,1)、等 1、第 2 遍 [2,3)、等 2、第 3 遍 [5,6)
-    expect(animProgress(b, 1.5, { 环境: { 变量: variables } }).时).toBe(1);
-    expect(animProgress(b, 2.5, { 环境: { 变量: {} } }).时).toBeCloseTo(0.5, 12);
-    expect(animProgress(b, 4, { 环境: { 变量: {} } }).时).toBe(1);
-    expect(animProgress(b, 5.25, { 环境: { 变量: {} } }).时).toBeCloseTo(0.25, 12);
+    expect(animProgress(b, 1.5, { env: { 变量: variables } }).timestamp).toBe(1);
+    expect(animProgress(b, 2.5, { env: { 变量: {} } }).timestamp).toBeCloseTo(0.5, 12);
+    expect(animProgress(b, 4, { env: { 变量: {} } }).timestamp).toBe(1);
+    expect(animProgress(b, 5.25, { env: { 变量: {} } }).timestamp).toBeCloseTo(0.25, 12);
   });
 });
 
 describe('GeckoLib 控制器（transitionLength）', () => {
   it('开头从原位过渡到第一段动画的第 0 刻，过渡完从 0 开播', () => {
-    const c = geckoLibController({ 名: 'main', transitionTicks: 10, schedule: [{ 秒: 0, clip: '挥手' }], animations });
+    const c = geckoLibController({ name: 'main', transitionTicks: 10, schedule: [{ sec: 0, clip: '挥手' }], animations });
     expect(c.poseAt(0).arm!.rot).toEqual([0, 0, 0]);
     expect(c.poseAt(0.25).arm!.rot![0]).toBeCloseTo(-15, 12); // 0 → −30 的一半
     expect(c.poseAt(0.5).arm!.rot![0]).toBeCloseTo(-30, 12); // 开播，第 0 刻
@@ -201,11 +201,11 @@ describe('GeckoLib 控制器（transitionLength）', () => {
 
   it('播到一半换动画：从切换那一刻的姿势插过去，只插新动画有的骨骼、通道', () => {
     const c = geckoLibController({
-      名: 'main',
+      name: 'main',
       transitionTicks: 4,
       schedule: [
-        { 秒: 0, clip: [{ 名: '挥手', 循环: 'loop' }] },
-        { 秒: 0.7, clip: '坐' },
+        { sec: 0, clip: [{ name: '挥手', 循环: 'loop' }] },
+        { sec: 0.7, clip: '坐' },
       ],
       animations,
     });
@@ -218,7 +218,7 @@ describe('GeckoLib 控制器（transitionLength）', () => {
   });
 
   it('过渡被打断：从过渡中的姿势再插', () => {
-    const c = geckoLibController({ 名: 'm', transitionTicks: 20, schedule: [{ 秒: 0, clip: '坐' }, { 秒: 0.5, clip: '站' }], animations });
+    const c = geckoLibController({ name: 'm', transitionTicks: 20, schedule: [{ sec: 0, clip: '坐' }, { sec: 0.5, clip: '站' }], animations });
     // 0.5 秒时 body.pos 在 0 → −4 的一半（−2），再插到 +2
     expect(c.poseAt(0.5).body!.pos).toEqual([0, -2, 0]);
     expect(c.poseAt(1).body!.pos![1]).toBeCloseTo(0, 12);
@@ -227,12 +227,12 @@ describe('GeckoLib 控制器（transitionLength）', () => {
 
   it('队列：once 播完过渡到下一段；几遍、hold、等刻；一样的 RawAnimation 不重播；null 停', () => {
     const c = geckoLibController({
-      名: 'm',
+      name: 'm',
       transitionTicks: 0,
       schedule: [
-        { 秒: 0, clip: [{ 名: '挥手', 循环: 2 }, { waitTicks: 10 }, { 名: '挥手', 循环: 'hold' }] },
-        { 秒: 1, clip: [{ 名: '挥手', 循环: 2 }, { waitTicks: 10 }, { 名: '挥手', 循环: 'hold' }] },
-        { 秒: 10, clip: null },
+        { sec: 0, clip: [{ name: '挥手', 循环: 2 }, { waitTicks: 10 }, { name: '挥手', 循环: 'hold' }] },
+        { sec: 1, clip: [{ name: '挥手', 循环: 2 }, { waitTicks: 10 }, { name: '挥手', 循环: 'hold' }] },
+        { sec: 10, clip: null },
       ],
       animations,
     });
@@ -245,9 +245,9 @@ describe('GeckoLib 控制器（transitionLength）', () => {
 
   it('几遍、等刻有过渡时同 GeckoLib 4：每遍之间过渡（thenPlayXTimes 是 n 段），等刻前也过渡', () => {
     const c = geckoLibController({
-      名: 'm',
+      name: 'm',
       transitionTicks: 10,
-      schedule: [{ 秒: 0, clip: [{ 名: '挥手', 循环: 2 }, { waitTicks: 10 }, { 名: '挥手' }] }],
+      schedule: [{ sec: 0, clip: [{ name: '挥手', 循环: 2 }, { waitTicks: 10 }, { name: '挥手' }] }],
       animations,
     });
     // [0, 0.5) 过渡、[0.5, 1.5) 第 1 遍、[1.5, 2) 从末帧 −90 插回第 0 刻 −30、[2, 3) 第 2 遍
@@ -258,11 +258,11 @@ describe('GeckoLib 控制器（transitionLength）', () => {
     expect(c.poseAt(3.7)).toEqual({});
     expect(c.poseAt(4.25).arm!.rot![0]).toBeCloseTo(-15, 12);
     // 0 遍不播
-    expect(geckoLibController({ 名: 'm', transitionTicks: 0, schedule: [{ 秒: 0, clip: [{ 名: '挥手', 循环: 0 }] }], animations }).poseAt(0.5)).toEqual({});
+    expect(geckoLibController({ name: 'm', transitionTicks: 0, schedule: [{ sec: 0, clip: [{ name: '挥手', 循环: 0 }] }], animations }).poseAt(0.5)).toEqual({});
   });
 
   it('速度：过渡和播放一起快', () => {
-    const c = geckoLibController({ 名: 'm', transitionTicks: 10, 速度: 2, schedule: [{ 秒: 0, clip: '挥手' }], animations });
+    const c = geckoLibController({ name: 'm', transitionTicks: 10, speed: 2, schedule: [{ sec: 0, clip: '挥手' }], animations });
     expect(c.poseAt(0.125).arm!.rot![0]).toBeCloseTo(-15, 12);
     expect(c.poseAt(0.5).arm!.rot![0]).toBeCloseTo(-60, 12);
   });

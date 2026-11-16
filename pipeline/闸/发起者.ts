@@ -2,19 +2,19 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import {codeRoot} from '../环境/路径.ts';
 export type Caller = {
-    来源: string;
-    会话: string;
-    路: string;
-    工作区: string;
-    分支: string;
-    提交: string;
+    source: string;
+    session: string;
+    lane: string;
+    workspace: string;
+    branch: string;
+    commit: string;
     cwd: string;
     pid: number;
     ppid: number;
-    父链?: number[];
-    命令: string;
-    子会话: boolean;
-    代理标: string;
+    parentChain?: number[];
+    command: string;
+    childSession: boolean;
+    agentTag: string;
 };
 const maskedLabel = '[已遮蔽]';
 // 丢掉截点上的整个词，避免 URL 的 @ 被切掉后把半截密码当普通文本留下。
@@ -47,17 +47,17 @@ const maskText = (s: string) => truncate(s)
     .replace(flagValueRe, `$1${maskedLabel}`)
     .replace(new RegExp(String.raw`\bBearer\s+(?:${valuePattern}|\S+)`, 'gi'), `Bearer ${maskedLabel}`)
     .replace(/\b(?:(?:sk-|gh[pousr]_|github_pat_)[\w-]{4,}|(?:sk_live_|xoxb-)[\w-]+)/g, maskedLabel);
-type LoginOptions = { separateFlags: string[]; combinedShort: string[]; 长: string[]; takesValue: Set<string>; shortGroup?: boolean; hasSubcommands?: boolean };
+type LoginOptions = { separateFlags: string[]; combinedShort: string[]; length: string[]; takesValue: Set<string>; shortGroup?: boolean; hasSubcommands?: boolean };
 const dbLoginOpts: LoginOptions = {
     // mysql 的 -p 单独出现是交互输入密码，后面的数据库名不能遮；-P 是端口，-U 是安全更新开关。
-    separateFlags: ['-u'], combinedShort: ['-u', '-p'], 长: ['--user'],
+    separateFlags: ['-u'], combinedShort: ['-u', '-p'], length: ['--user'],
     takesValue: new Set(['-h', '--host', '-P', '--port', '-S', '--socket', '-e', '--execute', '-D', '--database', '--password']),
 };
 const loginTools: Record<string, LoginOptions> = {
-    curl: { separateFlags: ['-u', '-U'], combinedShort: ['-u', '-U'], 长: ['--user', '--proxy-user'], shortGroup: true,
+    curl: { separateFlags: ['-u', '-U'], combinedShort: ['-u', '-U'], length: ['--user', '--proxy-user'], shortGroup: true,
         takesValue: new Set(['--header', '--data', '--data-raw', '--data-binary', '--data-urlencode', '--output', '--user-agent', '--referer', '--url', '--proxy', '--request']) },
     mysql: dbLoginOpts, mariadb: dbLoginOpts, mysqldump: dbLoginOpts, mysqladmin: dbLoginOpts, 'mariadb-dump': dbLoginOpts,
-    sshpass: { separateFlags: ['-p'], combinedShort: ['-p'], 长: [], takesValue: new Set(['-f', '-d', '-P']), hasSubcommands: true },
+    sshpass: { separateFlags: ['-p'], combinedShort: ['-p'], length: [], takesValue: new Set(['-f', '-d', '-P']), hasSubcommands: true },
 };
 const toolName = (s: string) => s.split(/[\\/]/).at(-1)!.replace(/\.exe$/i, '').toLowerCase();
 // 非 ASCII 的说明不是凭据；但「张三:pw」有明确的 ASCII 冒号，仍须遮住。
@@ -76,8 +76,8 @@ const replaceLoginArgs = (argv: readonly string[]) => {
     for (let i = 1; i < argv.length; i++) {
         const a = argv[i]!;
         if (a === '--') break;
-        const longOptLength = options.长.find(k => a.startsWith(k + '='));
-        if (options.separateFlags.includes(a) || options.长.includes(a)) skipArg(++i);
+        const longOptLength = options.length.find(k => a.startsWith(k + '='));
+        if (options.separateFlags.includes(a) || options.length.includes(a)) skipArg(++i);
         else if (longOptLength) skipArg(i, longOptLength + '=');
         else if (options.shortGroup && /^-[^-]/.test(a)) {
             for (let j = 1; j < a.length; j++) {
@@ -109,23 +109,23 @@ const maskSpacedHeader = (a: string, prevItem = '') => {
 };
 /** 文本已经丢失 argv 边界，只按字面引号、转义和命令分隔符分词，不执行 shell 或展开变量。 */
 const tokenize = (s: string) => [...s.matchAll(/&&|\|\||[;|&\r\n]|(?:\\[\s\S]|"(?:\\[\s\S]|[^"\\])*(?:"|$)|'[^']*(?:'|$)|[^\s"'\\;|&])+/g)].map(m => ({
-    原: m[0], 起: m.index,
-    字: m[0].replace(/"((?:\\[\s\S]|[^"\\])*)(?:"|$)|'([^']*)(?:'|$)|\\([\s\S])/g,
+    原: m[0], start: m.index,
+    char: m[0].replace(/"((?:\\[\s\S]|[^"\\])*)(?:"|$)|'([^']*)(?:'|$)|\\([\s\S])/g,
         (fullMatch, doubleQuoted: string | undefined, singleQuoted: string | undefined, backtick: string | undefined) => doubleQuoted?.replace(/\\(["\\$`\n])/g, '$1') ?? singleQuoted ?? backtick!),
 }));
 type TextWord = ReturnType<typeof tokenize>[number];
 const isSeparator = (t: TextWord) => /^(?:&&|\|\||[;|&\r\n])$/.test(t.原);
 // 无引号的 Windows 路径不按 shell 转义吃掉反斜杠；cu"r"l 仍使用解引号后的字。
-const toolWord = (t: TextWord) => t.原.includes('\\') && !/^["']/.test(t.原) ? t.原 : t.字;
+const toolWord = (t: TextWord) => t.原.includes('\\') && !/^["']/.test(t.原) ? t.原 : t.char;
 const isPipelineCommand = (s: string) => ['anim', 'node'].includes(toolName(s));
 const writeBack = (s: string, tokens: TextWord[], replacements: Map<number, string>) => {
     let out = '', cursor = 0;
     for (const [i, replacement] of [...replacements].sort(([a], [b]) => a - b)) {
         const t = tokens[i]!;
-        if (replacement === t.字) continue;
+        if (replacement === t.char) continue;
         const quote = /^['"]/.test(t.原) && t.原.endsWith(t.原[0]!) ? t.原[0]! : '';
-        out += s.slice(cursor, t.起) + quote + replacement + quote;
-        cursor = t.起 + t.原.length;
+        out += s.slice(cursor, t.start) + quote + replacement + quote;
+        cursor = t.start + t.原.length;
     }
     return out + s.slice(cursor);
 };
@@ -133,13 +133,13 @@ const replaceInlineArgs = (tokens: TextWord[]) => {
     const replacements = new Map<number, string>();
     for (let i = 0; i < tokens.length; i++) {
         // 只认独立工具名，不把文件路径里的 curl/mysql 目录名当命令。
-        const tool = tokens[i]!.字.replace(/\.exe$/i, '').toLowerCase();
+        const tool = tokens[i]!.char.replace(/\.exe$/i, '').toLowerCase();
         const options = Object.hasOwn(loginTools, tool) ? loginTools[tool]! : undefined;
         const item = tokens[i + 1], valueWord = tokens[i + 2];
         if (!options || !item || isSeparator(item)) continue;
-        if (item.字 === '-u' && options.separateFlags.includes('-u') && valueWord && !isSeparator(valueWord) && valueWord.字.includes(':')) replacements.set(i + 2, maskedLabel);
-        else if (/^-p[\x00-\x7f]+$/.test(item.字) && options.combinedShort.includes('-p')) replacements.set(i + 1, '-p' + maskedLabel);
-        else if (tool === 'sshpass' && item.字 === '-p' && valueWord && !isSeparator(valueWord) && looksLikeCred(valueWord.字)) replacements.set(i + 2, maskedLabel);
+        if (item.char === '-u' && options.separateFlags.includes('-u') && valueWord && !isSeparator(valueWord) && valueWord.char.includes(':')) replacements.set(i + 2, maskedLabel);
+        else if (/^-p[\x00-\x7f]+$/.test(item.char) && options.combinedShort.includes('-p')) replacements.set(i + 1, '-p' + maskedLabel);
+        else if (tool === 'sshpass' && item.char === '-p' && valueWord && !isSeparator(valueWord) && looksLikeCred(valueWord.char)) replacements.set(i + 2, maskedLabel);
     }
     return replacements;
 };
@@ -159,9 +159,9 @@ const maskCommandText = (s: string) => {
             let wordEnd = startIndex;
             while (wordEnd < tokens.length && !isSeparator(tokens[wordEnd]!)) wordEnd++;
             // 只支持不带选项的壳前缀；sudo -u、bash -c 等不在这里猜测。
-            while (startIndex < wordEnd && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[startIndex]!.字) || /^(?:env|sudo|time|nohup|command|exec)$/.test(tokens[startIndex]!.字))) startIndex++;
+            while (startIndex < wordEnd && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[startIndex]!.char) || /^(?:env|sudo|time|nohup|command|exec)$/.test(tokens[startIndex]!.char))) startIndex++;
             if (startIndex < wordEnd) {
-                const argv = tokens.slice(startIndex, wordEnd).map((t, i) => i === 0 ? toolWord(t) : t.字);
+                const argv = tokens.slice(startIndex, wordEnd).map((t, i) => i === 0 ? toolWord(t) : t.char);
                 for (const [i, replacement] of replaceLoginArgs(argv)) replacements.set(startIndex + i, replacement);
             }
             startIndex = wordEnd + 1;
@@ -170,8 +170,8 @@ const maskCommandText = (s: string) => {
     for (let i = 0; i < tokens.length; i++) {
         const t = tokens[i]!;
         if (isSeparator(t) || replacements.has(i)) continue;
-        const replacement = maskSpacedHeader(isPipeline ? maskInlineLogin(t.字) : t.字, tokens[i - 1]?.字);
-        if (replacement !== t.字) replacements.set(i, replacement);
+        const replacement = maskSpacedHeader(isPipeline ? maskInlineLogin(t.char) : t.char, tokens[i - 1]?.char);
+        if (replacement !== t.char) replacements.set(i, replacement);
     }
     return writeBack(s, tokens, replacements);
 };
@@ -199,8 +199,8 @@ export const readCaller = (env: NodeJS.ProcessEnv = process.env, argv = process.
     catch {
         return '?';
     } };
-    return { 来源: env.CODEX_THREAD_ID ? 'codex' : env.CLAUDE_CODE_SESSION_ID ? 'claude' : '人',
-        会话: (env.CODEX_THREAD_ID ?? env.CLAUDE_CODE_SESSION_ID ?? '').slice(0, 8), 路: maskSecret(env.ANIM_ROUTE ?? '').slice(0, 80),
-        工作区: path.basename(root), cwd, 分支: git ? runGit(['branch', '--show-current']) : '?', 提交: git ? runGit(['rev-parse', '--short', 'HEAD']) : '?',
-        pid: process.pid, ppid: process.ppid, 父链: parentChain, 命令: maskCommand(argv).slice(0, 200), 子会话: env.CLAUDE_CODE_CHILD_SESSION === '1', 代理标: maskSecret(env.AI_AGENT ?? '').slice(0, 80) };
+    return { source: env.CODEX_THREAD_ID ? 'codex' : env.CLAUDE_CODE_SESSION_ID ? 'claude' : '人',
+        session: (env.CODEX_THREAD_ID ?? env.CLAUDE_CODE_SESSION_ID ?? '').slice(0, 8), lane: maskSecret(env.ANIM_ROUTE ?? '').slice(0, 80),
+        workspace: path.basename(root), cwd, branch: git ? runGit(['branch', '--show-current']) : '?', commit: git ? runGit(['rev-parse', '--short', 'HEAD']) : '?',
+        pid: process.pid, ppid: process.ppid, parentChain: parentChain, command: maskCommand(argv).slice(0, 200), childSession: env.CLAUDE_CODE_CHILD_SESSION === '1', agentTag: maskSecret(env.AI_AGENT ?? '').slice(0, 80) };
 };

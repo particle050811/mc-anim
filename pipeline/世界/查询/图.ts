@@ -10,31 +10,31 @@ const GLYPH_BITMAPS: Record<string, number[]> = {
 };
 
 export class Canvas {
-  readonly 宽: number;
-  readonly 高: number;
+  readonly width: number;
+  readonly height: number;
   readonly pixels: Uint8Array;
 
   constructor(width: number, height: number, baseColor: RGB = [255, 255, 255]) {
-    this.宽 = width;
-    this.高 = height;
+    this.width = width;
+    this.height = height;
     this.pixels = new Uint8Array(width * height * 3);
     for (let i = 0; i < width * height; i++) this.pixels.set(baseColor, i * 3);
   }
 
-  点(x: number, y: number, c: RGB, alpha = 1) {
-    if (x < 0 || y < 0 || x >= this.宽 || y >= this.高) return;
-    const o = (y * this.宽 + x) * 3;
+  points(x: number, y: number, c: RGB, alpha = 1) {
+    if (x < 0 || y < 0 || x >= this.width || y >= this.height) return;
+    const o = (y * this.width + x) * 3;
     for (let k = 0; k < 3; k++) this.pixels[o + k] = Math.round(this.pixels[o + k]! * (1 - alpha) + c[k]! * alpha);
   }
 
   rect(x: number, y: number, w: number, h: number, c: RGB, alpha = 1) {
-    for (let j = Math.max(0, y); j < Math.min(this.高, y + h); j++) for (let i = Math.max(0, x); i < Math.min(this.宽, x + w); i++) this.点(i, j, c, alpha);
+    for (let j = Math.max(0, y); j < Math.min(this.height, y + h); j++) for (let i = Math.max(0, x); i < Math.min(this.width, x + w); i++) this.points(i, j, c, alpha);
   }
 
   /** 字的宽（像素） */
   static textWidth = (s: string, pixelSize = 2) => s.length * 4 * pixelSize - pixelSize;
 
-  字(x: number, y: number, s: string, c: RGB = [0, 0, 0], pixelSize = 2) {
+  char(x: number, y: number, s: string, c: RGB = [0, 0, 0], pixelSize = 2) {
     [...s].forEach((ch, n) => {
       const g = GLYPH_BITMAPS[ch] ?? GLYPH_BITMAPS[' ']!;
       g.forEach((row, r) => {
@@ -44,7 +44,7 @@ export class Canvas {
   }
 
   png() {
-    return Buffer.from(encode({ width: this.宽, height: this.高, data: this.pixels, channels: 3, depth: 8 }));
+    return Buffer.from(encode({ width: this.width, height: this.height, data: this.pixels, channels: 3, depth: 8 }));
   }
 }
 
@@ -55,10 +55,10 @@ export const gridSpacing = (pixelsPerCell: number, minPixel = 64) => {
 };
 
 /** 图上一个方块占几个像素（放大）或一个像素几个方块（缩小，步 > 1），让长边落在 [512, 2048] 附近 */
-export const ratioFor = (ratioFor: number, specifiedPixel?: number): { pixel: number; 步: number } => {
-  if (specifiedPixel) return { pixel: specifiedPixel, 步: 1 };
-  if (ratioFor <= 1024) return { pixel: Math.max(1, Math.min(16, Math.floor(1024 / ratioFor))), 步: 1 };
-  return { pixel: 1, 步: Math.ceil(ratioFor / 2048) };
+export const ratioFor = (ratioFor: number, specifiedPixel?: number): { pixel: number; step: number } => {
+  if (specifiedPixel) return { pixel: specifiedPixel, step: 1 };
+  if (ratioFor <= 1024) return { pixel: Math.max(1, Math.min(16, Math.floor(1024 / ratioFor))), step: 1 };
+  return { pixel: 1, step: Math.ceil(ratioFor / 2048) };
 };
 
 /**
@@ -69,22 +69,22 @@ export class CoordChart {
   readonly canvas: Canvas;
   readonly left = 64;
   readonly 上 = 22;
-  private o: { 列: number; 行: number; pixel: number; 步: number; horizStart: number; vertStart: number; vertDir: 1 | -1; horizontalLabel: string; verticalLabel: string };
+  private o: { 列: number; 行: number; pixel: number; step: number; horizStart: number; vertStart: number; vertDir: 1 | -1; horizontalLabel: string; verticalLabel: string };
 
   constructor(o: CoordChart['o']) {
     this.o = o;
     this.canvas = new Canvas(this.left + o.列 * o.pixel + 8, this.上 + o.行 * o.pixel + 8, [250, 250, 250]);
   }
 
-  格(i: number, j: number, c: RGB) {
+  cell(i: number, j: number, c: RGB) {
     const p = this.o.pixel;
-    if (p === 1) this.canvas.点(this.left + i, this.上 + j, c);
+    if (p === 1) this.canvas.points(this.left + i, this.上 + j, c);
     else this.canvas.rect(this.left + i * p, this.上 + j * p, p, p, c);
   }
 
   /** 画网格线和刻度（内容画完再调） */
-  网格() {
-    const { 列: colCount, 行: rows, pixel, 步: stride, horizStart, vertStart, vertDir, horizontalLabel, verticalLabel } = this.o;
+  grid() {
+    const { 列: colCount, 行: rows, pixel, step: stride, horizStart, vertStart, vertDir, horizontalLabel, verticalLabel } = this.o;
     const pxPerCell = pixel / stride;
     const spacing = gridSpacing(pxPerCell);
     const lineColor: RGB = [255, 255, 255];
@@ -93,7 +93,7 @@ export class CoordChart {
       const px = this.left + Math.round(((v - horizStart) / stride) * pixel);
       this.canvas.rect(px, this.上, 1, rows * pixel, lineColor, 0.45);
       const s = String(v);
-      this.canvas.字(px - Math.floor(Canvas.textWidth(s) / 2), 6, s);
+      this.canvas.char(px - Math.floor(Canvas.textWidth(s) / 2), 6, s);
     }
     const verticalEnd = vertStart + vertDir * (rows - 1) * stride;
     const [lo, hi] = vertDir > 0 ? [vertStart, verticalEnd] : [verticalEnd, vertStart];
@@ -101,9 +101,9 @@ export class CoordChart {
       const py = this.上 + Math.round((((v - vertStart) * vertDir) / stride) * pixel);
       this.canvas.rect(this.left, py, colCount * pixel, 1, lineColor, 0.45);
       const s = String(v);
-      this.canvas.字(this.left - 6 - Canvas.textWidth(s), py - 5, s);
+      this.canvas.char(this.left - 6 - Canvas.textWidth(s), py - 5, s);
     }
-    this.canvas.字(4, 6, horizontalLabel);
-    this.canvas.字(4, this.上 + 4, verticalLabel);
+    this.canvas.char(4, 6, horizontalLabel);
+    this.canvas.char(4, this.上 + 4, verticalLabel);
   }
 }

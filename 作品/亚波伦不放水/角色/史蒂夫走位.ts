@@ -38,8 +38,8 @@ const landSearchSec = 0.6;
  * 位：脚底在哪（场景坐标，时钟自定）；看：这一刻看向哪（决定倒着走时身子朝哪）；起：从哪一秒开始推（之前当站着不动）；初朝向：起 那一刻身子朝哪（度，0 朝 +Y，正 = 往左）。
  * 返回 在(秒)：位置原样取 位(秒)，朝向和摆腿在两刻之间线性插。
  */
-export const defineWalk = (settings: { 位: (sec: number) => V3; 看: (sec: number) => V3; 起: number; initFacing: number }) => {
-  const { 位: posAt, 看: lookAt, 起: startSec } = settings;
+export const defineWalk = (settings: { 位: (sec: number) => V3; 看: (sec: number) => V3; start: number; initFacing: number }) => {
+  const { 位: posAt, 看: lookAt, start: startSec } = settings;
   // 第 k 刻末的状态（k = 0 是 起）
   const stepTable: { facing: number; swing: number; stride: number; walkDir: number }[] = [{ facing: settings.initFacing, swing: 0, stride: 0, walkDir: 1 }];
   const pushTo = (k: number) => {

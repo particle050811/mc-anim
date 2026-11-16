@@ -52,8 +52,8 @@ const SampleCell: React.FC<{ 画法: DrawMethod }> = ({ 画法: drawMethod }) =>
   const recording = recordings[v.meta.id]!;
   const feet = [castFrom[0], castFrom[1], castFrom[2] - v.startHeight] as const;
   return (
-    <div style={{ position: 'relative', width: panelSize.宽, height: panelSize.高 }}>
-      <ThreeCanvas width={panelSize.宽} height={panelSize.高} gl={{ antialias: false }}>
+    <div style={{ position: 'relative', width: panelSize.width, height: panelSize.height }}>
+      <ThreeCanvas width={panelSize.width} height={panelSize.height} gl={{ antialias: false }}>
         <color attach="background" args={['#5a5e66']} />
         <ApplyRig v={v.cameraRig} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -69,9 +69,9 @@ const SampleCell: React.FC<{ 画法: DrawMethod }> = ({ 画法: drawMethod }) =>
             <meshBasicMaterial color="#ffffff" />
           </mesh>
           {drawMethod === '手写' ? (
-            <SpellPerformance id={v.meta.id} 秒={v.秒} from={castFrom} 目标={target} 种子={seed} />
+            <SpellPerformance id={v.meta.id} sec={v.sec} from={castFrom} target={target} seed={seed} />
           ) : (
-            <RecordingReplay 录制={recording} 秒={v.秒} feet={feet} 目标={target} 贴图={textureMap} animMode={drawMethod === '录制·算' ? '算' : '轨'} />
+            <RecordingReplay 录制={recording} sec={v.sec} feet={feet} target={target} 贴图={textureMap} animMode={drawMethod === '录制·算' ? '算' : '轨'} />
           )}
         </group>
       </ThreeCanvas>
@@ -83,14 +83,14 @@ const SampleCell: React.FC<{ 画法: DrawMethod }> = ({ 画法: drawMethod }) =>
 const picture: React.FC = () => {
   const v = viewAt(useCurrentSec());
   return (
-    <AbsoluteFill style={{ background: '#5a5e66', width: aspect.宽, height: aspect.高 }}>
+    <AbsoluteFill style={{ background: '#5a5e66', width: aspect.width, height: aspect.height }}>
       <div style={{ display: 'flex' }}>
         <SampleCell 画法="手写" />
         <SampleCell 画法="录制·轨" />
         <SampleCell 画法="录制·算" />
       </div>
       <div style={{ position: 'absolute', left: 12, bottom: 8, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 18, textShadow: '0 1px 3px #000' }}>
-        {v.meta.id}　{v.cameraRig.名}　出手后 {v.秒.toFixed(2)} 秒（第 {(v.秒 * 20).toFixed(1)} 刻）／长秒 {v.长秒.toFixed(2)}
+        {v.meta.id}　{v.cameraRig.name}　出手后 {v.sec.toFixed(2)} 秒（第 {(v.sec * 20).toFixed(1)} 刻）／长秒 {v.长秒.toFixed(2)}
       </div>
     </AbsoluteFill>
   );

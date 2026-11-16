@@ -12,5 +12,5 @@ export default defineSpellMeta({
   长秒: (waterPillarDurTicks + 20) / 20,
   hitSec: 0,
   // WaterJetSpell.loopSound：WATER_JET 循环着响（这里只在开头放一次，循环由段里定）
-  声音: [{ 资产: '音效/诡厄巫法/goety.water_jet', 秒: 0 }],
+  sound: [{ asset: '音效/诡厄巫法/goety.water_jet', sec: 0 }],
 });

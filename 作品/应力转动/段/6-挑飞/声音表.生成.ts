@@ -3,7 +3,7 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {},
-  "台词": {}
+  "asset": {},
+  "lines": {}
 };
 export default soundTable;

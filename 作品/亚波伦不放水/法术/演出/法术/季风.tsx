@@ -20,16 +20,16 @@ const radius = 2;
 const thunderColor = hexColor(11660252);
 const cloudGray = 0x43 / 255;
 
-const Monsoon: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const Monsoon: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const tick = sec * 20;
   const cloudCenter: [number, number, number] = [target[0], target[1], target[2] + 4];
   const endTick = monsoonActiveTick + monsoonRainTicks;
   return (
     <>
-      <TexturedParticles 类={cloudPieceClass} spawns={cloudFaceSpawns(seed * 17 + 1, cloudCenter, radius, endTick, [cloudGray, cloudGray, cloudGray])} 秒={sec} />
-      <TexturedParticles 类={raindropClass} spawns={raindropSpawns(seed * 17 + 2, cloudCenter, radius, monsoonActiveTick, endTick)} 秒={sec} />
+      <TexturedParticles type={cloudPieceClass} spawns={cloudFaceSpawns(seed * 17 + 1, cloudCenter, radius, endTick, [cloudGray, cloudGray, cloudGray])} sec={sec} />
+      <TexturedParticles type={raindropClass} spawns={raindropSpawns(seed * 17 + 2, cloudCenter, radius, monsoonActiveTick, endTick)} sec={sec} />
       {monsoonStrikeTicks(seed).map((t) => (
-        <ElectricArc key={t} 起={cloudCenter} end={[target[0], target[1], target[2] + 0.9]} settings={arcPresets.thunderBolt} 刻={tick - t} lifeTicks={10} 色={thunderColor} 种子={seed * 131 + t} />
+        <ElectricArc key={t} start={cloudCenter} end={[target[0], target[1], target[2] + 0.9]} settings={arcPresets.thunderBolt} 刻={tick - t} lifeTicks={10} 色={thunderColor} seed={seed * 131 + t} />
       ))}
     </>
   );

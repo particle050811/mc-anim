@@ -13,10 +13,10 @@ const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {
 export default defineSpellMeta({
   id: 'ice_spike',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // IceSpikeSpell：ICE_SPIKE_CAST；命中 ICE_SPIKE_HIT 音高 1.2 ÷ (随机 × 0.2 + 0.9)，这里取 1.2
-  声音: [
-    { 资产: '音效/诡厄巫法/goety.ice_spike_cast', 秒: 0 },
-    { 资产: '音效/诡厄巫法/goety.ice_spike_hit.1', 秒: 0, fromHit: true, 音高: 1.2 },
+  sound: [
+    { asset: '音效/诡厄巫法/goety.ice_spike_cast', sec: 0 },
+    { asset: '音效/诡厄巫法/goety.ice_spike_hit.1', sec: 0, fromHit: true, 音高: 1.2 },
   ],
 });

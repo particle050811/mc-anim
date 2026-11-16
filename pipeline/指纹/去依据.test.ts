@@ -10,9 +10,9 @@ import { computeMerkle } from './默克尔.ts';
 const relPath = (p: string) => path.relative(codeRoot(), p).split(path.sep).join('/');
 
 // 分镜.ts 的写法（把回忆拼好给你）：去依据.ts 不引作品的类型，键对不对在这里核。作品的类型加减键，下面的表 tsc 就编译不过
-const storyboardTimeKeys: KeyTable<StoryboardTime> = { 秒: true, beat: true, measure: true, 句: true, 点: true, after: true, addSec: true };
-const storyboardSegWindowKeys: KeyTable<StoryboardSegWindow> = { 键: true, 起: true, 止: true, 依据: true };
-const storyboardEventKeys: KeyTable<StoryboardEventDef> = { 在: true, 依据: true };
+const storyboardTimeKeys: KeyTable<StoryboardTime> = { sec: true, beat: true, measure: true, 句: true, points: true, after: true, addSec: true };
+const storyboardSegWindowKeys: KeyTable<StoryboardSegWindow> = { key: true, start: true, end: true, basis: true };
+const storyboardEventKeys: KeyTable<StoryboardEventDef> = { 在: true, basis: true };
 const storyboardFields: [keyof StoryboardEventDef, keyof StoryboardEventDef, keyof StoryboardSegWindow, keyof StoryboardSegWindow, keyof StoryboardSegWindow] = [atKey, basisKey, segKeyField, startKey, endKey];
 
 it('分镜.ts 的时刻、事件、段窗都在认的形状里', () => {
@@ -24,8 +24,8 @@ it('分镜.ts 的时刻、事件、段窗都在认的形状里', () => {
 
 describe('去依据（文本）', () => {
   it('事件：只去说明文字，时刻留着', () => {
-    expect(stripBasis(`const 表 = { 甲: { 在: { 秒: 42 }, 依据: "说明" } };`)).toBe(`const 表 = { 甲: { 在: { 秒: 42 } } };`);
-    expect(stripBasis(`const 表 = { 乙: { 在: { after: "甲", addSec: -1 / 20 }, 依据: "说明" } };`)).toBe(`const 表 = { 乙: { 在: { after: "甲", addSec: -1 / 20 } } };`);
+    expect(stripBasis(`const 表 = { 甲: { 在: { sec: 42 }, basis: "说明" } };`)).toBe(`const 表 = { 甲: { 在: { sec: 42 } } };`);
+    expect(stripBasis(`const 表 = { 乙: { 在: { after: "甲", addSec: -1 / 20 }, basis: "说明" } };`)).toBe(`const 表 = { 乙: { 在: { after: "甲", addSec: -1 / 20 } } };`);
   });
 
   it('段窗：起止和键留着', () => {
@@ -35,8 +35,8 @@ describe('去依据（文本）', () => {
   });
 
   it('说明换行、说明变长，结果一样', () => {
-    const strippedShort = stripBasis(`const 表 = { 甲: { 在: { 秒: 42 }, 依据: "短" } };`);
-    const strippedLong = stripBasis(`const 表 = { 甲: {\n  在: { 秒: 42 },\n  依据: "很长很长的一段说明，换了一行"\n} };`);
+    const strippedShort = stripBasis(`const 表 = { 甲: { 在: { sec: 42 }, basis: "短" } };`);
+    const strippedLong = stripBasis(`const 表 = { 甲: {\n  在: { sec: 42 },\n  basis: "很长很长的一段说明，换了一行"\n} };`);
     expect(strippedLong).toBe(strippedShort);
   });
 
@@ -57,25 +57,25 @@ describe('去依据（文本）', () => {
   });
 
   it.each([
-    ['别的结构里同名字段', `const x = { 字: "画在屏幕上", 依据: "说明" };`],
-    ['只有依据一个键', `const x = { 依据: "说明" };`],
-    ['解出的事件（秒、帧、依据）', `const x = { 秒: 1, 帧: 24, 依据: "说明" };`],
-    ['世界声明的块', `const x = { 名: "岛", 形状: "矩形", 两角: [1, 2], 依据: "说明" };`],
-    ['字幕的换屏界', `const x = { 秒: 1, 谷: null, 依据: "按音节比例" };`],
-    ['在 不是时刻（数组）', `const x = { 在: [1, 2], 依据: "显示的字" };`],
-    ['在 里有不认识的键', `const x = { 在: { 位置: 3 }, 依据: "显示的字" };`],
-    ['在 是变量', `const x = { 在: 某处, 依据: "显示的字" };`],
-    ['多一个键', `const x = { 在: { 秒: 1 }, 字: "显示的字", 依据: "说明" };`],
-    ['有展开', `const x = { 在: { 秒: 1 }, ...其他, 依据: "说明" };`],
-    ['依据是变量', `const x = { 在: { 秒: 1 }, 依据: 变量 };`],
-    ['依据是模板拼接', 'const x = { 在: { 秒: 1 }, 依据: `第${n}句` };'],
-    ['依据是函数调用', `const x = { 在: { 秒: 1 }, 依据: 算() };`],
+    ['别的结构里同名字段', `const x = { char: "画在屏幕上", basis: "说明" };`],
+    ['只有依据一个键', `const x = { basis: "说明" };`],
+    ['解出的事件（秒、帧、依据）', `const x = { sec: 1, frame: 24, basis: "说明" };`],
+    ['世界声明的块', `const x = { name: "岛", shape: "矩形", corners: [1, 2], basis: "说明" };`],
+    ['字幕的换屏界', `const x = { sec: 1, 谷: null, basis: "按音节比例" };`],
+    ['在 不是时刻（数组）', `const x = { 在: [1, 2], basis: "显示的字" };`],
+    ['在 里有不认识的键', `const x = { 在: { 位置: 3 }, basis: "显示的字" };`],
+    ['在 是变量', `const x = { 在: 某处, basis: "显示的字" };`],
+    ['多一个键', `const x = { 在: { sec: 1 }, char: "显示的字", basis: "说明" };`],
+    ['有展开', `const x = { 在: { sec: 1 }, ...其他, basis: "说明" };`],
+    ['依据是变量', `const x = { 在: { sec: 1 }, basis: 变量 };`],
+    ['依据是模板拼接', 'const x = { 在: { sec: 1 }, basis: `第${n}句` };'],
+    ['依据是函数调用', `const x = { 在: { sec: 1 }, basis: 算() };`],
     ['透传', `r[名] = { 秒, 帧: 歌曲帧(秒), 依据: 表[名].依据 };`],
-    ['只有止没有键', `const x = { 止: { 秒: 1 }, 依据: "说明" };`],
-    ['止 不是时刻', `const x = { 键: "甲", 止: 变量, 依据: "说明" };`],
-    ['起 不是时刻', `const x = { 键: "甲", 起: 变量, 止: { 秒: 1 }, 依据: "说明" };`],
+    ['只有止没有键', `const x = { end: { sec: 1 }, basis: "说明" };`],
+    ['止 不是时刻', `const x = { key: "甲", end: 变量, basis: "说明" };`],
+    ['起 不是时刻', `const x = { key: "甲", start: 变量, end: { sec: 1 }, basis: "说明" };`],
     ['字符串里提到依据', `const x = "依据: 说明";`],
-    ['变量叫依据', `const 依据 = "说明"; 画(依据);`],
+    ['变量叫依据', `const basis = "说明"; 画(basis);`],
   ])('不吃：%s', (_, sourceText) => {
     expect(stripBasis(sourceText)).toBe(sourceText);
   });
@@ -89,9 +89,9 @@ describe('去依据（模块哈希）', () => {
   afterEach(() => fs.rmSync(d, { recursive: true, force: true }));
   const writeToml = (content: string) => {
     fs.writeFileSync(path.join(d, '分镜.ts'), content);
-    return computeMerkle([relPath(path.join(d, '分镜.ts'))]).then((r) => r.根[0]!);
+    return computeMerkle([relPath(path.join(d, '分镜.ts'))]).then((r) => r.root[0]!);
   };
-  const makeDefTableSource = (eventsText: string) => `const 定义 = { ${eventsText} } as const satisfies Record<string, { 在: object; 依据: string }>;\nexport default 定义;\n`;
+  const makeDefTableSource = (eventsText: string) => `const 定义 = { ${eventsText} } as const satisfies Record<string, { 在: object; basis: string }>;\nexport default 定义;\n`;
 
   it('只改依据不变；改帧号、秒、接的事件都变', async () => {
     const firstResult = await writeToml(makeDefTableSource(`甲: { 在: { 帧: 100 }, 依据: '第一版说明' }, 乙: { 在: { after: '甲', addSec: 1 }, 依据: '说明' }`));
@@ -107,8 +107,8 @@ describe('去依据（模块哈希）', () => {
   });
 
   it('别的结构里的依据改了照样变', async () => {
-    const firstResult = await writeToml(`export const 屏 = { 字: '画在屏幕上', 依据: '甲' };\n`);
-    expect(await writeToml(`export const 屏 = { 字: '画在屏幕上', 依据: '乙' };\n`)).not.toBe(firstResult);
+    const firstResult = await writeToml(`export const 屏 = { char: '画在屏幕上', basis: '甲' };\n`);
+    expect(await writeToml(`export const 屏 = { char: '画在屏幕上', basis: '乙' };\n`)).not.toBe(firstResult);
   });
 
   it('真分镜：字面量的时刻依据全去掉，透传的留着', () => {

@@ -31,7 +31,7 @@ export const SphereBurst: React.FC<{ 位: Vec3; 刻: number; 色: RgbColor; 尺�
   const opacity = x < 1 ? 1 - (1 - x) ** 4 : (2 - x) ** 3;
   const radius = size * (0.5 + 0.5 * Math.sin(((age / 30) * Math.PI) / 2));
   return (
-    <mesh position={[pos[0], pos[1], pos[2]]} scale={radius} material={faceMaterial(null, { 混合: '加色', 色: color, opacity })} frustumCulled={false}>
+    <mesh position={[pos[0], pos[1], pos[2]]} scale={radius} material={faceMaterial(null, { blend: '加色', 色: color, opacity })} frustumCulled={false}>
       <sphereGeometry args={[1, 32, 24]} />
     </mesh>
   );
@@ -40,7 +40,7 @@ export const SphereBurst: React.FC<{ 位: Vec3; 刻: number; 色: RgbColor; 尺�
 export const CircleBurst: React.FC<{ 位: Vec3; 刻: number; 色: RgbColor; 尺寸: number; 速?: number }> = ({ 位: pos, 刻: tick, 色: color, 尺寸: size, 速: speed = 1 }) => {
   const age = Math.floor(tick) * (1 + speed);
   if (tick < 0 || age >= 30) return null;
-  return <GroundDecal 位={pos} 图={sequenceFrame(ringFrames, (age * 8) / 30)} radius={size} lift={0} 色={color} 混合="半透明" />;
+  return <GroundDecal 位={pos} image={sequenceFrame(ringFrames, (age * 8) / 30)} radius={size} lift={0} 色={color} blend="半透明" />;
 };
 
 export interface FogCloudBirth {
@@ -50,7 +50,7 @@ export interface FogCloudBirth {
   /** FoggyCloudParticleOption 的 size（半边长）、speed（每刻年龄多加几） */
   尺寸: number;
   速: number;
-  种子: number;
+  seed: number;
 }
 /**
  * FoggyCloudParticle：寿命 40～60 刻（每刻年龄 + 1 + 速），颜色 × (0.85～0.99)，透明度 1 − 年龄 ÷ 寿命，
@@ -59,7 +59,7 @@ export interface FogCloudBirth {
 export const FogCloud: React.FC<{ spawns: readonly FogCloudBirth[]; 刻: number }> = ({ spawns, 刻: tick }) => (
   <>
     {spawns.map((spawn, i) => {
-      const r = mulberry32(spawn.种子 * 7 + 3);
+      const r = mulberry32(spawn.seed * 7 + 3);
       const lifetime = 40 + Math.floor(r() * 21);
       const ageTick = tick - spawn.刻;
       const age = ageTick * (1 + spawn.速);
@@ -74,12 +74,12 @@ export const FogCloud: React.FC<{ spawns: readonly FogCloudBirth[]; 刻: number 
         <GroundDecal
           key={i}
           位={[spawn.位[0] + drift, spawn.位[1] + driftY, spawn.位[2] + riseOffset + 0.08 + opacity * 0.125]}
-          图={png(fogCloudPng)}
+          image={png(fogCloudPng)}
           radius={spawn.尺寸 * (1 + Math.min(1, (age / lifetime) * 0.75)) * Math.min(1, age / 5)}
           lift={0}
           色={[spawn.色[0] * f, spawn.色[1] * f, spawn.色[2] * f]}
           opacity={opacity}
-          混合="半透明"
+          blend="半透明"
         />
       );
     })}
@@ -87,4 +87,4 @@ export const FogCloud: React.FC<{ spawns: readonly FogCloudBirth[]; 刻: number 
 );
 
 /** 原版爆炸（威力 < 2）：一颗 explosion 粒子，参数 xd = 1（半边长 1 格） */
-export const vanillaExplosion = (pos: Vec3, tick: number, seed: number): ParticleSpawn => ({ 种: 'explosion', 刻: tick, p: [pos[0], pos[1], pos[2]], v: [1, 0, 0], 种子: seed });
+export const vanillaExplosion = (pos: Vec3, tick: number, seed: number): ParticleSpawn => ({ kind: 'explosion', 刻: tick, p: [pos[0], pos[1], pos[2]], v: [1, 0, 0], seed: seed });

@@ -34,14 +34,14 @@ const materialClasses: MaterialClass[] = ['实心', '镂空', '实心树叶', '�
 // 显存里那份归各上下文（faceGroupMesh 传完不留 CPU 数组），这里留的就是这批数组。总面数有上限（每面 88 字节），超了丢最久没画的。
 // 上限要装得下一整帧（飞越边城一帧约 560 万面），装不下的话切截时只有一部分接得上
 // 猜的：替下一帧预取进来、还没有哪一帧真要过（见「预取下一帧」）
-type Kept = { mesh: SectionMesh | null; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null; used: number; guessed?: boolean };
+type Kept = { mesh: SectionMesh | null; V: Pick<VoxelGrid, 'origin' | 'cell' | 'nz'> | null; used: number; guessed?: boolean };
 const kept = new Map<string, Kept>();
 const maxKeptFaces = 7_000_000;
 let keptFaces = 0;
 let keptClock = 0;
 const keptKey = (worldKey: string, section: SectionId) => `${worldKey}|${sectionKey(section)}`;
 // 空区段也占一条记录（几百字节，按 4 面算），免得只进不出
-const keptCost = (rec: Kept) => (rec.mesh?.面数 ?? 0) + 4;
+const keptCost = (rec: Kept) => (rec.mesh?.faceCount ?? 0) + 4;
 const keep = (k: string, rec: Kept) => {
   const old = kept.get(k);
   if (old) return old;
@@ -76,9 +76,9 @@ const probe = newSurface();
 // 区段直接用包里解出来的（没有这一块就是空的，见 体素来源.区段）
 const emptyEntry = (rec: Kept): Entry => ({ items: [], casters: [], water: null, plants: null, box: [], faceCount: 0, used: 0, kept: rec });
 // 树叶：第 0 级照游戏「高品质」镂空，粗级照 Voxy 画成实心（区段出网格 的第二个参数 q.L >= 1）
-const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, '原点' | '格' | 'nz'>, section: SectionId, rec: Kept): Entry => {
+const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, 'origin' | 'cell' | 'nz'>, section: SectionId, rec: Kept): Entry => {
   const [x0, y0, sizeM] = sectionBounds(section);
-  const box = [x0, y0, voxels.原点[2], x0 + sizeM, y0 + sizeM, voxels.原点[2] + voxels.nz * voxels.格];
+  const box = [x0, y0, voxels.origin[2], x0 + sizeM, y0 + sizeM, voxels.origin[2] + voxels.nz * voxels.cell];
   const items: [number, BatchItem][] = [];
   const casters: BatchItem[] = [];
   let water: VoxelMesh | null = null;
@@ -87,15 +87,15 @@ const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxe
     const faces = sectionMesh[materialClass];
     if (!faces.n) return;
     if (materialClass === '水') {
-      water = faceGroupMesh(ctx, faces, materialClass, voxels.原点, voxels.格, box);
+      water = faceGroupMesh(ctx, faces, materialClass, voxels.origin, voxels.cell, box);
       return;
     }
-    const item = buildBatchItem(ctx, faces, materialClass === '花草', voxels.原点, posScale / voxels.格, box);
+    const item = buildBatchItem(ctx, faces, materialClass === '花草', voxels.origin, posScale / voxels.cell, box);
     items.push([classNo, item]);
     if (materialClass === '花草') plants = item;
     else casters.push(item);
   });
-  return { items, casters, water, plants, box, faceCount: sectionMesh.面数, used: 0, kept: rec };
+  return { items, casters, water, plants, box, faceCount: sectionMesh.faceCount, used: 0, kept: rec };
 };
 
 // ---------- 预取下一帧（用户 11-15 定做）----------
@@ -116,8 +116,8 @@ const prefetch = (worldKey: string, source: VoxelSource, toPrefetch: SectionId[]
     for (let pending = source.prefetch?.(toPrefetch, true); pending; pending = source.prefetch?.(toPrefetch, true)) await pending;
     await Promise.all(
       toPrefetch.map(async (q) => {
-        const voxels = source.区段(q);
-        const V = voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz };
+        const voxels = source.sections(q);
+        const V = voxels && { origin: voxels.origin, cell: voxels.cell, nz: voxels.nz };
         const mesh = voxels ? await buildMeshInPool(voxels, q.L >= 1, source.transferOwnership) : null;
         keep(keptKey(worldKey, q), { mesh, V, used: keptClock, guessed: true });
       }),
@@ -136,9 +136,9 @@ const _orientation = new THREE.Quaternion();
 const _scale = new THREE.Vector3();
 
 export type VoxelWorldProps = {
-  键: string; // 缓存用，不同的世界不能重名
-  来源: VoxelSource;
-  中心: number[]; // 镜头位置（场景坐标）
+  key: string; // 缓存用，不同的世界不能重名
+  source: VoxelSource;
+  center: number[]; // 镜头位置（场景坐标）
   pixel: number; // 细一级的一格在画面上还有这么多像素（画面的 CSS 像素）就细分，见 lib/渲染级别.ts
   far: number; // 最远画到多远（米）
   heightRange?: [number, number]; // 地面和树最低、最高大概在哪（米），判断区段在不在视野里用
@@ -157,7 +157,7 @@ const plantFarM = 256;
 const distToBox = (b: number[], p: number[]) =>
   Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[3]), Math.max(b[1] - p[1], 0, p[1] - b[4]), Math.max(b[2] - p[2], 0, p[2] - b[5]));
 
-export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: source, 中心: camPos, pixel: splitPixels, far: farM, heightRange: heightRange = [-30, 140], shadowLightDir }) => {
+export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: source, center: camPos, pixel: splitPixels, far: farM, heightRange: heightRange = [-30, 140], shadowLightDir }) => {
   const camera = useThree((st) => st.camera) as THREE.PerspectiveCamera;
   const size = useThree((st) => st.size);
   const advance = useThree((st) => st.advance);
@@ -288,7 +288,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           // 主线程按 qs 的先后取体素块、交给网格池；建好的按同样的先后建 three 网格、进缓存（three 的物体编号跟着建的先后走，
           // 同一帧深度一样的物体按编号定先后，先后不能变；留着网格的区段也排在同一个队里）。同时在算的最多 窗口 块，不然第一帧几千块的体素块一起压在内存里
           const windowSize = 32;
-          const inFlight: { q: SectionId; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null; m: Promise<SectionMesh> | null; rec: Kept | null }[] = [];
+          const inFlight: { q: SectionId; V: Pick<VoxelGrid, 'origin' | 'cell' | 'nz'> | null; m: Promise<SectionMesh> | null; rec: Kept | null }[] = [];
           const collectOne = async () => {
             const x = inFlight.shift()!;
             const mesh = x.m && (await x.m);
@@ -303,8 +303,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
               inFlight.push({ q: section, V: had.V, m: had.mesh && Promise.resolve(had.mesh), rec: had.rec });
               continue;
             }
-            const voxels = source.区段(section);
-            inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.transferOwnership) : null, rec: null });
+            const voxels = source.sections(section);
+            inFlight.push({ q: section, V: voxels && { origin: voxels.origin, cell: voxels.cell, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.transferOwnership) : null, rec: null });
             if (performance.now() - t > 1000) break; // 隔一会儿回头看一次要建的变没变
           }
           while (inFlight.length) await collectOne();
@@ -353,8 +353,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     if (backlit) for (const item of entry.casters) shadowBatch.加(item, item.面 > drawAllMaxFaces ? backlit : allDirs);
   }
   // 这一帧没有哪一类的面，那一类的材质就不在场景里（屏幕AO 按场景里有哪些材质定怎么画）
-  for (const batch of batches) if (batch?.项.length) group.add(batch);
-  if (shadowBatch.项.length) group.add(shadowBatch);
+  for (const batch of batches) if (batch?.items.length) group.add(batch);
+  if (shadowBatch.items.length) group.add(shadowBatch);
   // 这一帧用到的块不能被清掉
   if (world.faceCount > maxCachedFaces) {
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);

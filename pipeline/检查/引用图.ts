@@ -28,7 +28,7 @@ const specOf = (n: ts.Node): { spec: string; kind: RefKind } | null => {
 };
 
 export const buildRefGraph = (c: CheckContext): RefGraph => {
-  const known = new Set(c.文件());
+  const known = new Set(c.file());
   const resolve = (from: string, spec: string): string | null => {
     const alias = aliasRoots.find(([a]) => spec.startsWith(a));
     const base = alias ? alias[1] + spec.slice(alias[0].length) : spec.startsWith('.') ? path.posix.normalize(path.posix.join(path.posix.dirname(from), spec)) : null;

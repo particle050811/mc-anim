@@ -3,14 +3,14 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/结算舞/DreamFunk忘情牛肉面": {
-      "时长": 89.071927,
-      "峰值": 0.2,
-      "响度": -8.4,
+      "duration": 89.071927,
+      "peakDb": 0.2,
+      "loudness": -8.4,
       "sha": "d63001f27774"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

@@ -77,10 +77,10 @@ export const frostRingSpawns = (seed: number, pos: Vec3, radius: number, launchT
       const y = Math.sin(i / (Math.PI * 2)) * radius + pos[1];
       // 游戏 (x, y竖直, z) → 场景 (x, −z, y)
       const v1 = [gaussAround(0, 0.02) + jitter(), gaussAround(1.0, 0.04) + jitter(), gaussAround(0, 0.02) + jitter()] as const;
-      frostSpawns.push({ 刻: launchTick, 位: [x, y, pos[2] + 0.3], 速: [v1[0], -v1[2], v1[1]], 寿命: lifetime(), radius: particleRadius(), 种子: Math.floor(r() * 1e9) });
+      frostSpawns.push({ 刻: launchTick, 位: [x, y, pos[2] + 0.3], 速: [v1[0], -v1[2], v1[1]], 寿命: lifetime(), radius: particleRadius(), seed: Math.floor(r() * 1e9) });
       const px = x + gaussAround(0, 0.1);
       const v2 = [gaussAround(0, 0.02) + gaussAround(0, 0.1) + jitter(), gaussAround(0.4, 0.04) + jitter(), gaussAround(0, 0.02) + jitter()] as const;
-      frostSpawns.push({ 刻: launchTick, 位: [px, y, pos[2] + 0.3 + gaussAround(0.3, 0.1)], 速: [v2[0], -v2[2], v2[1]], 寿命: lifetime(), radius: particleRadius(), 种子: Math.floor(r() * 1e9) });
+      frostSpawns.push({ 刻: launchTick, 位: [px, y, pos[2] + 0.3 + gaussAround(0.3, 0.1)], 速: [v2[0], -v2[2], v2[1]], 寿命: lifetime(), radius: particleRadius(), seed: Math.floor(r() * 1e9) });
     }
   }
   return frostSpawns;

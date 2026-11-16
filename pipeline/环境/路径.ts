@@ -56,12 +56,12 @@ export const currentCheckout = () => canonicalCheckout(codeRoot());
 export const inMainCheckout = () => currentCheckout() === canonicalCheckout(mainCheckout());
 
 /** 当前提交和工作区是否有未提交的改动；不在 git 里返回 null */
-export const commitStatus = (): { 提交: string; 有改动: boolean } | null => {
+export const commitStatus = (): { commit: string; dirty: boolean } | null => {
   try {
     const root = codeRoot();
     const commit = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
     const changes = execFileSync('git', ['-C', root, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    return { 提交: commit, 有改动: changes.trim() !== '' };
+    return { commit: commit, dirty: changes.trim() !== '' };
   } catch {
     return null;
   }

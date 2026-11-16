@@ -49,16 +49,16 @@ export const referencedPreviewFiles = (root = mainCheckout()): Set<string> => {
   return parseReferences(r.stdout);
 };
 
-type FileEntry = { 相对: string; 大小: number };
+type FileEntry = { 相对: string; size: number };
 const listFiles = (dir: string, pathPrefix = ''): FileEntry[] =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const relPath = path.join(pathPrefix, e.name);
-    return e.isDirectory() ? listFiles(path.join(dir, e.name), relPath) : [{ 相对: relPath, 大小: fs.lstatSync(path.join(dir, e.name)).size }];
+    return e.isDirectory() ? listFiles(path.join(dir, e.name), relPath) : [{ 相对: relPath, size: fs.lstatSync(path.join(dir, e.name)).size }];
   });
 const subDirs = (root: string) => (fs.existsSync(root) ? fs.readdirSync(root, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) : []);
 
 /** 归档到 不是 null 的是 预览/ 里过时的夹：留的挪过去，整夹删；null 的是归档里的夹，只删媒体 */
-export type FolderPlan = { 名: string; 目录: string; archiveTo: string | null; 留: string[]; removed: FileEntry[] };
+export type FolderPlan = { name: string; 目录: string; archiveTo: string | null; 留: string[]; removed: FileEntry[] };
 
 export const planPreviewCleanup = (o: { previewRoot: string; archiveRoot: string; now: number; days: number; 引用: Set<string> }): FolderPlan[] => {
   const plan: FolderPlan[] = [];
@@ -67,10 +67,10 @@ export const planPreviewCleanup = (o: { previewRoot: string; archiveRoot: string
     const removed: FileEntry[] = [];
     for (const f of listFiles(dir)) {
       const refKey = `${dirName}/${f.相对.split(path.sep).join('/')}`.normalize('NFC');
-      if (isTextFile(f.相对, f.大小) || o.引用.has(refKey)) kept.push(f.相对);
+      if (isTextFile(f.相对, f.size) || o.引用.has(refKey)) kept.push(f.相对);
       else removed.push(f);
     }
-    if (archiveTo || removed.length) plan.push({ 名: dirName, 目录: dir, archiveTo, 留: kept, removed });
+    if (archiveTo || removed.length) plan.push({ name: dirName, 目录: dir, archiveTo, 留: kept, removed });
   };
   for (const dirName of subDirs(o.previewRoot)) {
     const previewDir = path.join(o.previewRoot, dirName);
@@ -83,7 +83,7 @@ export const planPreviewCleanup = (o: { previewRoot: string; archiveRoot: string
 
 /** 草稿里按日期起名、超过天数没动的 */
 export const planDraftCleanup = (draftRoot: string, now: number, days = defaultDays.draftDays): DirEntry[] =>
-  planDrafts(listDir(draftRoot, 2, (entryName) => /^\d{4}-\d{4}-/.test(entryName)), { now, days }).filter((d) => !d.理由.length);
+  planDrafts(listDir(draftRoot, 2, (entryName) => /^\d{4}-\d{4}-/.test(entryName)), { now, days }).filter((d) => !d.reason.length);
 
 const uniqueName = (p: string) => {
   if (!fs.existsSync(p)) return p;
@@ -125,7 +125,7 @@ export const executeCleanup = (plan: FolderPlan[], drafts: DirEntry[]): CleanRes
     for (const f of p.removed) {
       fs.rmSync(path.join(p.目录, f.相对), { force: true });
       r.deletedFiles++;
-      r.deletedBytes += f.大小;
+      r.deletedBytes += f.size;
     }
     if (p.archiveTo) {
       for (const relPath of p.留)
@@ -139,9 +139,9 @@ export const executeCleanup = (plan: FolderPlan[], drafts: DirEntry[]): CleanRes
     } else removeEmptyDir(p.目录);
   }
   for (const d of drafts) {
-    fs.rmSync(d.路径, { recursive: true, force: true });
+    fs.rmSync(d.path, { recursive: true, force: true });
     r.deletedDrafts++;
-    r.draftBytes += d.大小;
+    r.draftBytes += d.size;
   }
   return r;
 };

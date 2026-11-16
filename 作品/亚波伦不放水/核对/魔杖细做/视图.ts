@@ -2,27 +2,27 @@
 // （物品/下界魔杖细做.tsx）。坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格），机位在南边朝北看。
 import type { Cam } from '@engine/core/机位.ts';
 
-export const aspect = { 宽: 1280, 高: 720 } as const;
+export const aspect = { width: 1280, height: 720 } as const;
 
 export type Variant = '原版' | '甲' | '乙' | '丙';
 export const variants: readonly Variant[] = ['原版', '甲', '乙', '丙'];
 export const candidateLabels = ['甲', '乙', '丙'] as const;
 
 export type View = {
-  名: string;
-  说明?: string;
+  name: string;
+  note?: string;
   /** 灰 = 中性灰底、白光；暗红 = 下界的暗红底，光照封面草稿的配法 */
   bottomBackground: '灰' | '暗红';
   pictureMode:
-    | { 类: '并排' }
+    | { type: '并排' }
     /** 杖头近看：杖立着，机位贴到杖头 */
-    | { 类: '杖头'; variant: Variant }
+    | { type: '杖头'; variant: Variant }
     /** 杆和握把近看：杖横躺（杖头朝右），段 = 看哪一截 */
-    | { 类: '杆'; variant: Variant; 段: '握把' | '上段' }
+    | { type: '杆'; variant: Variant; segment: '握把' | '上段' }
     /** 娘化亚波伦站着、默认斜举（角色/娘化亚波伦.tsx 的 斜举.站） */
-    | { 类: '持杖'; variant: Variant; cameraRig: '正面' | '斜侧' }
+    | { type: '持杖'; variant: Variant; cameraRig: '正面' | '斜侧' }
     /** 封面式中景：她在画面左上悬着，杖指向右下（用户 11-10 定的封面摆法），人占画面高约三分之一 */
-    | { 类: '中景'; variant: Variant };
+    | { type: '中景'; variant: Variant };
 };
 
 /** 并排：四根杖立着，杖尾落在 z = 0，按拿在她手上的大小摆（0.7 倍），横向间隔 并排间隔 格 */
@@ -52,19 +52,19 @@ const notes = {
 } as const;
 
 export const views: readonly View[] = [
-  { 名: '并排-灰底', 说明: '左起：原版、甲、乙、丙，按拿在她手上的大小', bottomBackground: '灰', pictureMode: { 类: '并排' } },
-  { 名: '并排-暗红底', 说明: '左起：原版、甲、乙、丙', bottomBackground: '暗红', pictureMode: { 类: '并排' } },
-  ...candidateLabels.map((k): View => ({ 名: `杖头近看-${k}`, 说明: notes[k], bottomBackground: '灰', pictureMode: { 类: '杖头', variant: k } })),
-  ...candidateLabels.map((k): View => ({ 名: `杖头近看-${k}-暗红底`, 说明: notes[k], bottomBackground: '暗红', pictureMode: { 类: '杖头', variant: k } })),
+  { name: '并排-灰底', note: '左起：原版、甲、乙、丙，按拿在她手上的大小', bottomBackground: '灰', pictureMode: { type: '并排' } },
+  { name: '并排-暗红底', note: '左起：原版、甲、乙、丙', bottomBackground: '暗红', pictureMode: { type: '并排' } },
+  ...candidateLabels.map((k): View => ({ name: `杖头近看-${k}`, note: notes[k], bottomBackground: '灰', pictureMode: { type: '杖头', variant: k } })),
+  ...candidateLabels.map((k): View => ({ name: `杖头近看-${k}-暗红底`, note: notes[k], bottomBackground: '暗红', pictureMode: { type: '杖头', variant: k } })),
   ...candidateLabels.flatMap((k): View[] => [
-    { 名: `握把近看-${k}`, 说明: notes[k], bottomBackground: '灰', pictureMode: { 类: '杆', variant: k, 段: '握把' } },
-    { 名: `上段近看-${k}`, 说明: notes[k], bottomBackground: '灰', pictureMode: { 类: '杆', variant: k, 段: '上段' } },
+    { name: `握把近看-${k}`, note: notes[k], bottomBackground: '灰', pictureMode: { type: '杆', variant: k, segment: '握把' } },
+    { name: `上段近看-${k}`, note: notes[k], bottomBackground: '灰', pictureMode: { type: '杆', variant: k, segment: '上段' } },
   ]),
   ...candidateLabels.flatMap((k): View[] => [
-    { 名: `持杖-${k}-正面`, 说明: notes[k], bottomBackground: '灰', pictureMode: { 类: '持杖', variant: k, cameraRig: '正面' } },
-    { 名: `持杖-${k}-斜侧`, 说明: notes[k], bottomBackground: '灰', pictureMode: { 类: '持杖', variant: k, cameraRig: '斜侧' } },
+    { name: `持杖-${k}-正面`, note: notes[k], bottomBackground: '灰', pictureMode: { type: '持杖', variant: k, cameraRig: '正面' } },
+    { name: `持杖-${k}-斜侧`, note: notes[k], bottomBackground: '灰', pictureMode: { type: '持杖', variant: k, cameraRig: '斜侧' } },
   ]),
-  ...variants.map((k): View => ({ 名: `中景-${k}`, 说明: notes[k], bottomBackground: '暗红', pictureMode: { 类: '中景', variant: k } })),
-  { 名: '杖头近看-原版', 说明: notes.原版, bottomBackground: '灰', pictureMode: { 类: '杖头', variant: '原版' } },
-  { 名: '持杖-原版-正面', 说明: notes.原版, bottomBackground: '灰', pictureMode: { 类: '持杖', variant: '原版', cameraRig: '正面' } },
+  ...variants.map((k): View => ({ name: `中景-${k}`, note: notes[k], bottomBackground: '暗红', pictureMode: { type: '中景', variant: k } })),
+  { name: '杖头近看-原版', note: notes.原版, bottomBackground: '灰', pictureMode: { type: '杖头', variant: '原版' } },
+  { name: '持杖-原版-正面', note: notes.原版, bottomBackground: '灰', pictureMode: { type: '持杖', variant: '原版', cameraRig: '正面' } },
 ];

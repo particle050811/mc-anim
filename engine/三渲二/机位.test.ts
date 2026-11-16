@@ -22,7 +22,7 @@ describe('正交像素机位', () => {
     for (const [N, topDepth, dpr] of [[6, 2, 2], [6, 0, 2], [8, 4, 1], [6, 4, 2], [6, 2, 1]] as const)
       it(`朝${facing} N=${N} 顶面=${topDepth} dpr=${dpr}：贴图像素的边落在整数像素上`, () => {
         const lookAt: [number, number, number] = [11.37, -10.52, 3.219];
-        const q = computeOrthoFraming({ 种: '正交', 看: lookAt, facing, N, topDepth }, 1280, 720, dpr);
+        const q = computeOrthoFraming({ kind: '正交', 看: lookAt, facing, N, topDepth }, 1280, 720, dpr);
         const cam = new THREE.OrthographicCamera();
         setOrthoCamera(cam, q);
         const [width, height] = [1280 * dpr, 720 * dpr];
@@ -43,13 +43,13 @@ describe('正交像素机位', () => {
       });
 
   it('N、顶面、画布宽高是奇数就报错', () => {
-    expect(() => computeOrthoFraming({ 种: '正交', 看: [0, 0, 0], facing: '北', N: 5 }, 1280, 720, 2)).toThrow();
-    expect(() => computeOrthoFraming({ 种: '正交', 看: [0, 0, 0], facing: '北', N: 6, topDepth: 3 }, 1280, 720, 2)).toThrow();
-    expect(() => computeOrthoFraming({ 种: '正交', 看: [0, 0, 0], facing: '北', N: 6 }, 1281, 720, 2)).toThrow();
+    expect(() => computeOrthoFraming({ kind: '正交', 看: [0, 0, 0], facing: '北', N: 5 }, 1280, 720, 2)).toThrow();
+    expect(() => computeOrthoFraming({ kind: '正交', 看: [0, 0, 0], facing: '北', N: 6, topDepth: 3 }, 1280, 720, 2)).toThrow();
+    expect(() => computeOrthoFraming({ kind: '正交', 看: [0, 0, 0], facing: '北', N: 6 }, 1281, 720, 2)).toThrow();
   });
 
   it('看点最多挪半个画布像素', () => {
-    const q = computeOrthoFraming({ 种: '正交', 看: [3.01, 4.02, 5.03], facing: '北', N: 6 }, 1280, 720, 2);
+    const q = computeOrthoFraming({ kind: '正交', 看: [3.01, 4.02, 5.03], facing: '北', N: 6 }, 1280, 720, 2);
     expect(Math.abs(q.lookPoint.x - 3.01)).toBeLessThanOrEqual(0.5 / 96 + 1e-9);
     expect(Math.abs(q.lookPoint.y - 5.03)).toBeLessThanOrEqual(0.5 / 96 + 1e-9);
   });
@@ -57,11 +57,11 @@ describe('正交像素机位', () => {
 
 describe('调色矩阵', () => {
   it('中性参数是单位矩阵', () => {
-    const m = gradeMatrix({ 饱和: 1, 对比: 1, multiply: '#ffffff', lift: '#000000', 暗角: 0, 颗粒: 0 });
+    const m = gradeMatrix({ 饱和: 1, comparison: 1, multiply: '#ffffff', lift: '#000000', 暗角: 0, 颗粒: 0 });
     expect(m.map((v) => Math.round(v * 1e6) / 1e6)).toEqual([1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]);
   });
   it('抬黑把纯黑抬到抬色、纯白不动', () => {
-    const m = gradeMatrix({ 饱和: 0.5, 对比: 1, multiply: '#ffffff', lift: '#336699', 暗角: 0, 颗粒: 0 });
+    const m = gradeMatrix({ 饱和: 0.5, comparison: 1, multiply: '#ffffff', lift: '#336699', 暗角: 0, 颗粒: 0 });
     const applyGradeMatrix = (c: number[]) => [0, 1, 2].map((i) => m[i * 5]! * c[0]! + m[i * 5 + 1]! * c[1]! + m[i * 5 + 2]! * c[2]! + m[i * 5 + 4]!);
     expect(applyGradeMatrix([0, 0, 0]).map((v) => Math.round(v * 255))).toEqual([0x33, 0x66, 0x99]);
     expect(applyGradeMatrix([1, 1, 1]).map((v) => Math.round(v * 1e6) / 1e6)).toEqual([1, 1, 1]);
@@ -69,7 +69,7 @@ describe('调色矩阵', () => {
 });
 
 describe('透视机位的宽高比', () => {
-  const rig = { 种: '透视', 眼: [0, -6, 1], 看: [0, -5, 1], fov: 50 } satisfies PerspectiveRigParams;
+  const rig = { kind: '透视', 眼: [0, -6, 1], 看: [0, -5, 1], fov: 50 } satisfies PerspectiveRigParams;
   const getAspect = (c: THREE.Camera) => (c as THREE.PerspectiveCamera).aspect;
   it('不给按画布宽高算，给了用给的（屋后远景按上一帧的画布高算）', () => {
     expect(getAspect(makeRigCamera(rig, 1280, 720, 1))).toBeCloseTo(1280 / 720);
@@ -78,13 +78,13 @@ describe('透视机位的宽高比', () => {
 });
 
 describe('显式宽高比不依赖上次渲染的画布尺寸', () => {
-  const params = { 种: '透视', 眼: [0, -6, 1], 看: [0, -5, 1], fov: 50, aspectRatio: 1280 / 1000 } satisfies PerspectiveRigParams;
+  const params = { kind: '透视', 眼: [0, -6, 1], 看: [0, -5, 1], fov: 50, aspectRatio: 1280 / 1000 } satisfies PerspectiveRigParams;
   it('旧 size 不改变投影矩阵，和画布外的投影相机一致', () => {
     const expected = makeRigCamera(params, 1280, 900, 2);
     for (const height of [720, 1000, 900]) {
       canvasState.size = { width: 1280, height };
       canvasState.camera = new THREE.PerspectiveCamera();
-      CameraRig({ 参数: params });
+      CameraRig({ params: params });
       expect(canvasState.camera.projectionMatrix.elements).toEqual(expected.projectionMatrix.elements);
       expect(canvasState.camera.matrixWorld.elements).toEqual(expected.matrixWorld.elements);
     }
@@ -94,7 +94,7 @@ describe('显式宽高比不依赖上次渲染的画布尺寸', () => {
     for (const height of [720, 1000]) {
       canvasState.size = { width: 1280, height };
       canvasState.camera = new THREE.PerspectiveCamera();
-      CameraRig({ 参数: defaultParams });
+      CameraRig({ params: defaultParams });
       const expected = makeRigCamera(defaultParams, 1280, height, 2);
       expect(canvasState.camera.projectionMatrix.elements).toEqual(expected.projectionMatrix.elements);
     }

@@ -147,13 +147,13 @@ export const ShaftFill: React.FC<{ w: number }> = ({ w: physSec }) => {
 // 层按游戏 y；锤底、顶面是场景 z。汇报和出对照图用（工具里没有直接跑 TS 的地方，在画面里按 --props 打到控制台）
 const breachSamplesPerSec = segFps;
 export const breachByFrame = () => {
-  const t6 = segTable['6-3-6'].起;
+  const t6 = segTable['6-3-6'].start;
   const step = 1 / breachSamplesPerSec;
   const cells = fillCells();
   const layerTops = new Map<number, number>();
   for (const cell of cells) layerTops.set(cell.y, Math.max(layerTops.get(cell.y) ?? -Infinity, cell.topZ));
   const rows = [];
-  const sampleCount = Math.round((segTable['6-3-6'].止 - t6) * breachSamplesPerSec);
+  const sampleCount = Math.round((segTable['6-3-6'].end - t6) * breachSamplesPerSec);
   for (let frame = 0; frame <= sampleCount; frame++) {
     const physSec = physicalTime(t6 + frame * step);
     const wPrev = physicalTime(t6 + (frame - 1) * step);

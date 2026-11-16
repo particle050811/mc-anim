@@ -13,16 +13,16 @@ const silenceBelowPeakDb = 40; // 且不高于 −60 dBFS
 
 export type LineLanding = {
   id: string;
-  段: string;
+  segment: string;
   /** cue 写的开口落在段内第几帧（cue 秒 × fps） */
   段内帧: number;
   /** 配音文件第 0 秒落在全片第几帧（= 段起帧 +（cue 秒 − 开口秒）× fps） */
   文件头帧: number;
-  文件: string;
+  file: string;
   /** 配音的资产 id */
-  配音: string;
-  字: string;
-  角色: string;
+  voice: string;
+  char: string;
+  character: string;
   位置: SubtitlePosition;
   屏们: SubtitleCard[];
   /** 上一段说过来的后半截（同一个文件在这一段接着放）：不出字幕，只拿来对两边接没接上 */
@@ -104,7 +104,7 @@ export const screenTimes = (screens: SubtitleCard[], x: Float32Array, voicedSpan
     return end;
   };
   const sum = (a: number, b?: number) => syllables.slice(a, b).reduce((p, q) => p + q, 0);
-  const boundaries: { 秒: number; valley: number | null; 依据: string }[] = [{ 秒: speechStartSec, valley: null, 依据: '开口' }];
+  const boundaries: { sec: number; valley: number | null; basis: string }[] = [{ sec: speechStartSec, valley: null, basis: '开口' }];
   let cursor = speechStartSec;
   let anchorClause = 0;
   for (let i = 1; i < clauses.length; i++) {
@@ -130,23 +130,23 @@ export const screenTimes = (screens: SubtitleCard[], x: Float32Array, voicedSpan
             break;
           }
         }
-        boundaries.push({ 秒: start, valley: t(j), 依据: `停顿（谷底 ${t(j).toFixed(2)} 秒低 ${(medianEnv - valley[j]!).toFixed(0)} dB，${start.toFixed(2)} 秒重新开口；估计 ${estimatedSec.toFixed(2)}）` });
+        boundaries.push({ sec: start, valley: t(j), basis: `停顿（谷底 ${t(j).toFixed(2)} 秒低 ${(medianEnv - valley[j]!).toFixed(0)} dB，${start.toFixed(2)} 秒重新开口；估计 ${estimatedSec.toFixed(2)}）` });
         cursor = start;
         anchorClause = i;
         continue;
       }
     }
-    boundaries.push({ 秒: estimatedSec, valley: null, 依据: '按音节比例' + (clauses[i - 1]!.标点断 ? '（这个标点后没找到停顿）' : '') });
+    boundaries.push({ sec: estimatedSec, valley: null, basis: '按音节比例' + (clauses[i - 1]!.标点断 ? '（这个标点后没找到停顿）' : '') });
   }
   return screens.slice(1).map((_, k) => {
     const b = boundaries[screenStartClause[k + 1]!]!;
-    return [b.valley !== null ? Math.max(b.valley, b.秒 - screenLeadSec) : b.秒, b.依据];
+    return [b.valley !== null ? Math.max(b.valley, b.sec - screenLeadSec) : b.sec, b.basis];
   });
 };
 
-export type SubtitleScreen = { 字: string; 位置: SubtitlePosition; 起帧: number; 止帧: number; 句: string; 角色: string; 段: string; 依据: string };
+export type SubtitleScreen = { char: string; 位置: SubtitlePosition; 起帧: number; 止帧: number; 句: string; character: string; segment: string; basis: string };
 export type PlacedSentence = LineLanding & { voicedSpans: [number, number][]; 开: number; end: number; 开口帧: number };
-export type FollowOn = { 落点: LineLanding; 差: number };
+export type FollowOn = { placement: LineLanding; 差: number };
 
 // Python round（银行家舍入）：字幕.py 用 int(round(...))
 const rounder = (x: number) => {
@@ -165,17 +165,17 @@ export const placeSubtitles = (landings: LineLanding[], totalFrames: number, fps
   const changes = new Map<string, [number, string][]>();
   for (const a of landings) {
     if (a.接上段) continue;
-    const x = readAudio(a.文件);
+    const x = readAudio(a.file);
     const voicedSpans = voicedSegments(x);
-    if (!voicedSpans.length) throw new Error(`字幕：${a.id} 的配音 ${a.文件} 没有声音`);
+    if (!voicedSpans.length) throw new Error(`字幕：${a.id} 的配音 ${a.file} 没有声音`);
     const speechStartSec = voicedSpans[0]![0];
     const end = voicedSpans[voicedSpans.length - 1]![1];
     const e: PlacedSentence = { ...a, voicedSpans, 开: speechStartSec, end, 开口帧: a.文件头帧 + speechStartSec * fps };
     sentences.push(e);
-    changes.set(a.id + '\u0000' + a.段, screenTimes(a.屏们, x, voicedSpans));
+    changes.set(a.id + '\u0000' + a.segment, screenTimes(a.屏们, x, voicedSpans));
   }
   for (const e of [...sentences].sort((a, b) => a.开口帧 - b.开口帧)) {
-    const switches = changes.get(e.id + '\u0000' + e.段)!;
+    const switches = changes.get(e.id + '\u0000' + e.segment)!;
     const subtitleSecs = [e.开 - leadSec, ...switches.map(([t]) => t), e.end + holdSec];
     const bases = ['开口', ...switches.map(([, d]) => d)];
     const frames = subtitleSecs.map((t) => rounder(e.文件头帧 + t * fps));
@@ -183,21 +183,21 @@ export const placeSubtitles = (landings: LineLanding[], totalFrames: number, fps
     const lastIndex = frames.length - 1;
     const cutPoint = cutPoints.find((c) => frames[lastIndex - 1]! < c && c < frames[lastIndex]! && speechEndFrame <= c);
     if (cutPoint !== undefined) frames[lastIndex] = cutPoint;
-    e.屏们.forEach((p, k) => screens.push({ 字: p.字, 位置: e.位置, 起帧: frames[k]!, 止帧: frames[k + 1]!, 句: e.id, 角色: e.角色, 段: e.段, 依据: bases[k]! }));
+    e.屏们.forEach((p, k) => screens.push({ char: p.char, 位置: e.位置, 起帧: frames[k]!, 止帧: frames[k + 1]!, 句: e.id, character: e.character, segment: e.segment, basis: bases[k]! }));
   }
   for (let i = 0; i + 1 < screens.length; i++) if (screens[i]!.止帧 > screens[i + 1]!.起帧) screens[i]!.止帧 = screens[i + 1]!.起帧;
   for (const p of screens) {
     p.起帧 = Math.max(0, p.起帧);
     p.止帧 = Math.min(totalFrames, p.止帧);
-    if (p.止帧 <= p.起帧) throw new Error(`字幕：「${p.字}」被下一句挤得没有了（${p.句}）`);
+    if (p.止帧 <= p.起帧) throw new Error(`字幕：「${p.char}」被下一句挤得没有了（${p.句}）`);
   }
   // 接着放的后半截：换到全片帧要和开口那一段对上（开口那段不在这次范围里的不列）
   const followOns: FollowOn[] = landings.flatMap((a) => {
     const prevLine = a.接上段 ? sentences.find((e) => e.id === a.id) : undefined;
-    return prevLine ? [{ 落点: a, 差: a.文件头帧 - prevLine.文件头帧 }] : [];
+    return prevLine ? [{ placement: a, 差: a.文件头帧 - prevLine.文件头帧 }] : [];
   });
   // 容差是以前 24 帧编排时的 1.5 帧，换成秒
-  for (const x of followOns) if (Math.abs(x.差) / fps > 1.5 / 24) throw new Error(`字幕：${x.落点.id} 在 ${x.落点.段} 接着放的后半截和开口那段差 ${x.差.toFixed(1)} 帧`);
+  for (const x of followOns) if (Math.abs(x.差) / fps > 1.5 / 24) throw new Error(`字幕：${x.placement.id} 在 ${x.placement.segment} 接着放的后半截和开口那段差 ${x.差.toFixed(1)} 帧`);
   return { 屏们: screens, sentences, followOns };
 };
 
@@ -216,8 +216,8 @@ const signedNum = (x: number) => {
 export const subtitleTableTsv = (screens: SubtitleScreen[], fps: number, followOns: FollowOn[] = []) =>
   [
     '句\t角色\t段\t字\t起帧\t止帧（不含）\t起\t止\t换上的依据',
-    ...screens.map((p) => `${p.句}\t${p.角色}\t${p.段}\t${p.字}\t${p.起帧}\t${p.止帧}\t${clockTime(p.起帧, fps)}\t${clockTime(p.止帧, fps)}\t${p.依据}`),
-    ...followOns.map(({ 落点: a, 差: frameDiff }) => `${a.id}\t${a.角色}\t${a.段}\t（接着放的后半截，和开口那段差 ${signedNum(frameDiff)} 帧）\t\t\t\t\t`),
+    ...screens.map((p) => `${p.句}\t${p.character}\t${p.segment}\t${p.char}\t${p.起帧}\t${p.止帧}\t${clockTime(p.起帧, fps)}\t${clockTime(p.止帧, fps)}\t${p.basis}`),
+    ...followOns.map(({ placement: a, 差: frameDiff }) => `${a.id}\t${a.character}\t${a.segment}\t（接着放的后半截，和开口那段差 ${signedNum(frameDiff)} 帧）\t\t\t\t\t`),
   ].join('\n') + '\n';
 
 const srtTime = (frame: number, fps: number) => {
@@ -225,4 +225,4 @@ const srtTime = (frame: number, fps: number) => {
   const p = (n: number, w = 2) => String(n).padStart(w, '0');
   return `${p(Math.floor(ms / 3600000))}:${p(Math.floor(ms / 60000) % 60)}:${p(Math.floor(ms / 1000) % 60)},${p(ms % 1000, 3)}`;
 };
-export const srt = (screens: SubtitleScreen[], fps: number) => screens.map((p, i) => `${i + 1}\n${srtTime(p.起帧, fps)} --> ${srtTime(p.止帧, fps)}\n${p.字}\n\n`).join('');
+export const srt = (screens: SubtitleScreen[], fps: number) => screens.map((p, i) => `${i + 1}\n${srtTime(p.起帧, fps)} --> ${srtTime(p.止帧, fps)}\n${p.char}\n\n`).join('');

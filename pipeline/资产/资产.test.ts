@@ -14,10 +14,10 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'anim-资产-'));
 describe('资产锁', () => {
   it('一件一个文件：字段排序、缩进 2、末尾换行（和 Python sort_keys 一致）；读回来键按 id 排', () => {
     const d = path.join(tmp(), '资产锁');
-    writeAssetLock({ 'b/乙': { 库: 'store', 后缀: '.png', 大小: 1, sha256: 'b'.repeat(64) }, 'b/甲/深': { sha256: 'a'.repeat(64), 大小: 2, 库: '私有', 后缀: '.wav' }, 'b-c/丙': { sha256: 'c'.repeat(64), 大小: 3, 库: 'store', 后缀: '.png' } }, d);
+    writeAssetLock({ 'b/乙': { lib: 'store', suffix: '.png', size: 1, sha256: 'b'.repeat(64) }, 'b/甲/深': { sha256: 'a'.repeat(64), size: 2, lib: '私有', suffix: '.wav' }, 'b-c/丙': { sha256: 'c'.repeat(64), size: 3, lib: 'store', suffix: '.png' } }, d);
     const f = path.join(d, 'b', '甲', '深.json');
     const text = fs.readFileSync(f, 'utf8');
-    expect(text).toBe(JSON.stringify({ sha256: 'a'.repeat(64), 后缀: '.wav', 大小: 2, 库: '私有' }, null, 2) + '\n');
+    expect(text).toBe(JSON.stringify({ sha256: 'a'.repeat(64), suffix: '.wav', size: 2, lib: '私有' }, null, 2) + '\n');
     // 按 id 的码位排：'-' U+002D 在 '/' U+002F 前面（按文件路径排就会反过来）；乙 U+4E59 在 甲 U+7532 前面
     expect(Object.keys(readAssetLock(d))).toEqual(['b-c/丙', 'b/乙', 'b/甲/深']);
     const py = spawnSync(process.platform === 'win32' ? 'python' : 'python3', ['-c', 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf-8")); sys.stdout.buffer.write((json.dumps(d,sort_keys=True,ensure_ascii=False,indent=2)+"\\n").encode())', f], { encoding: 'utf8' });
@@ -27,7 +27,7 @@ describe('资产锁', () => {
   it('写锁只动变了的文件：没变的不重写，删掉的连空目录一起删；整份一个文件的旧格式在就报错', () => {
     const root = tmp();
     const d = path.join(root, '资产锁');
-    const lockEntry = (c: string) => ({ sha256: c.repeat(64), 大小: 1, 库: 'store' as const, 后缀: '.png' });
+    const lockEntry = (c: string) => ({ sha256: c.repeat(64), size: 1, lib: 'store' as const, suffix: '.png' });
     writeAssetLock({ '贴图/甲': lockEntry('a'), '贴图/深/乙': lockEntry('b') }, d);
     const textureFile = path.join(d, '贴图', '甲.json');
     fs.utimesSync(textureFile, 0, 0);
@@ -44,10 +44,10 @@ describe('资产锁', () => {
     const sourcePath = path.join(root, 'x.PNG');
     fs.writeFileSync(sourcePath, 'abc');
     const e = importToStore(sourcePath, 'store', root);
-    expect(e).toMatchObject({ 大小: 3, 库: 'store', 后缀: '.png', sha256: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad' });
+    expect(e).toMatchObject({ size: 3, lib: 'store', suffix: '.png', sha256: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad' });
     expect(fs.readFileSync(bytesPath(e, root), 'utf8')).toBe('abc');
     expect(importToStore(sourcePath, 'store', root)).toEqual(e);
-    expect(resolveAsset('核对/x', { '核对/x': e }, root).文件).toBe(bytesPath(e, root));
+    expect(resolveAsset('核对/x', { '核对/x': e }, root).file).toBe(bytesPath(e, root));
     expect(() => resolveAsset('核对/没有', {}, root)).toThrow(/anim assets add 核对\/没有/);
     expect(() => resolveAsset('核对/x', { '核对/x': { ...e, sha256: 'f'.repeat(64) } }, root)).toThrow(/字节不在/);
   });
@@ -97,7 +97,7 @@ const makeSides = (sharedEntries: string[], workEntries: string[]) => {
   fs.writeFileSync(path.join(sharedTableDir, '贴图.toml'), sharedEntries.join('\n\n'));
   fs.writeFileSync(path.join(workRoot, '资产表', '配乐.toml'), workEntries.join('\n\n'));
   const sharedLockPath = path.join(d, '资产锁');
-  writeAssetLock({ '贴图/共用甲': { sha256: 'a'.repeat(64), 大小: 1, 库: 'store', 后缀: '.png' } }, sharedLockPath);
+  writeAssetLock({ '贴图/共用甲': { sha256: 'a'.repeat(64), size: 1, lib: 'store', suffix: '.png' } }, sharedLockPath);
   const sourcePath = path.join(d, '曲.m4a');
   fs.writeFileSync(sourcePath, '曲子');
   return { sharedTableDir, workRoot, sharedLockPath, dataRoot: path.join(d, '数据'), 源: sourcePath };
@@ -108,7 +108,7 @@ describe('作品资产表', () => {
     const t = makeSides([assetToml('贴图/共用甲'), assetToml('配乐/撞名')], [assetToml('配乐/曲', '私有'), assetToml('配乐/撞名')]);
     const { entryMap, duplicates } = readAssetRegistryBoth(t.workRoot, t.sharedTableDir);
     expect(entryMap.get('贴图/共用甲')?.side).toBe('共用');
-    expect(entryMap.get('配乐/曲')).toMatchObject({ side: '作品', 表: '配乐.toml', 可见性: '私有' });
+    expect(entryMap.get('配乐/曲')).toMatchObject({ side: '作品', 表: '配乐.toml', visibility: '私有' });
     expect(entryMap.get('配乐/撞名')?.side).toBe('共用');
     expect(duplicates.map((e) => e.id)).toEqual(['配乐/撞名']);
     // 作品没有 资产表/ 就只有共用的
@@ -122,7 +122,7 @@ describe('作品资产表', () => {
     const r = registerAsset('配乐/曲', t.源, t);
     expect(r.lockFile).toBe(path.join(t.workRoot, '资产锁'));
     expect(readAssetLock(r.lockFile)).toEqual({ '配乐/曲': r.entry });
-    expect(r.entry.库).toBe('私有');
+    expect(r.entry.lib).toBe('私有');
     expect(fs.existsSync(bytesPath(r.entry, t.dataRoot))).toBe(true);
     expect(fs.readdirSync(t.sharedLockPath, { recursive: true })).toEqual(['贴图', path.join('贴图', '共用甲.json')]);
     expect(fs.readFileSync(sharedAssetFile)).toEqual(sharedLockOriginal);
@@ -153,8 +153,8 @@ describe('作品资产表', () => {
     const workRoot = tmp();
     const sharedLock = readAssetLock();
     expect(readWorkAssetLock(workRoot)).toEqual(sharedLock);
-    writeAssetLock({ '配乐/只在作品': { sha256: 'c'.repeat(64), 大小: 1, 库: '私有', 后缀: '.m4a' } }, path.join(workRoot, '资产锁'));
-    expect(readWorkAssetLock(workRoot)['配乐/只在作品']?.库).toBe('私有');
+    writeAssetLock({ '配乐/只在作品': { sha256: 'c'.repeat(64), size: 1, lib: '私有', suffix: '.m4a' } }, path.join(workRoot, '资产锁'));
+    expect(readWorkAssetLock(workRoot)['配乐/只在作品']?.lib).toBe('私有');
     const clashKey = Object.keys(sharedLock)[0]!;
     writeAssetLock({ [clashKey]: sharedLock[clashKey]! }, path.join(workRoot, '资产锁'));
     expect(() => readWorkAssetLock(workRoot)).toThrow(/在共用锁和 .* 里都有/);
@@ -163,8 +163,8 @@ describe('作品资产表', () => {
   it('换用.toml：这部作品里共用 id 换成作品那件的字节；换用 = false 是没换的；右边没登记、写法不对报错', () => {
     const workRoot = tmp();
     const sharedLock = readAssetLock();
-    const originalId = Object.keys(sharedLock).find((id) => sharedLock[id]!.后缀 === '.png')!;
-    const lockEntry: LockEntry = { sha256: 'd'.repeat(64), 大小: 2, 库: '私有', 后缀: '.png' };
+    const originalId = Object.keys(sharedLock).find((id) => sharedLock[id]!.suffix === '.png')!;
+    const lockEntry: LockEntry = { sha256: 'd'.repeat(64), size: 2, lib: '私有', suffix: '.png' };
     fs.writeFileSync(path.join(workRoot, '换用.toml'), `# 说明\n"${originalId}" = "贴图/附加/甲"  # 行尾注释\n`);
     expect(() => readWorkAssetLock(workRoot)).toThrow(/贴图\/附加\/甲 不在资产锁里/);
     writeAssetLock({ '贴图/附加/甲': lockEntry }, path.join(workRoot, '资产锁'));
@@ -180,7 +180,7 @@ describe('esbuild 的 asset: 解析', () => {
     const d = tmp();
     fs.writeFileSync(path.join(d, 'a.ts'), "import x from 'asset:核对/甲'; console.log(x);");
     const assetRecord = new Map<string, string>();
-    const assetLock = { '核对/甲': { sha256: 'a'.repeat(64), 大小: 1, 库: 'store' as const, 后缀: '.png' } };
+    const assetLock = { '核对/甲': { sha256: 'a'.repeat(64), size: 1, lib: 'store' as const, suffix: '.png' } };
     await build({ entryPoints: [path.join(d, 'a.ts')], bundle: true, write: false, logLevel: 'silent', plugins: [esbuildAssetPlugin(assetLock, assetRecord)] });
     expect([...assetRecord]).toEqual([['核对/甲', 'a'.repeat(64)]]);
     fs.writeFileSync(path.join(d, 'b.ts'), "import x from 'asset:核对/乙'; console.log(x);");

@@ -6,5 +6,5 @@ import { segmentTable } from '../../../地点/边城/6-2-5/编排.ts';
 
 export const BorderTownAhead: React.FC = () => {
   const sec = useCurrentSec();
-  return <FlightView T={segmentTable['6-2-6'].起 + sec} />;
+  return <FlightView T={segmentTable['6-2-6'].start + sec} />;
 };

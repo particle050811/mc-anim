@@ -8,7 +8,7 @@ import path from 'node:path';
 import { isWindows, publicDir, terrainRoot, dataRoot, solveCacheDir } from '../环境/配置.ts';
 import { privateMusicDir } from '../资产/私有配乐.ts';
 
-const linkTable = () => ({ terrain: terrainRoot(), solveCache: solveCacheDir(), 私有配乐: privateMusicDir(dataRoot()) });
+const linkTable = () => ({ terrain: terrainRoot(), solveCache: solveCacheDir(), privateMusic: privateMusicDir(dataRoot()) });
 
 /** 建好（或校正）public 目录里的链接，返回 public 目录的路径 */
 export const ensurePublicDir = (): string => {

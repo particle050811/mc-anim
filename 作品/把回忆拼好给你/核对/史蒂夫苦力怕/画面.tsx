@@ -49,14 +49,14 @@ const creeperPoseTable: Record<CreeperPosePreset, CreeperPose> = {
 };
 
 // 三个机位：从哪个方向看（场景坐标，Z 朝上），都对准脚底上方 1 格
-const cameraRigs: { 名: string; viewDir: V3 }[] = [
-  { 名: '正面', viewDir: [0, 1, 0] },
-  { 名: '右侧面', viewDir: [1, 0, 0] },
-  { 名: '四分之三（右前上方）', viewDir: [Math.SQRT1_2 * Math.cos(Math.PI / 9), Math.SQRT1_2 * Math.cos(Math.PI / 9), Math.sin(Math.PI / 9)] },
+const cameraRigs: { name: string; viewDir: V3 }[] = [
+  { name: '正面', viewDir: [0, 1, 0] },
+  { name: '右侧面', viewDir: [1, 0, 0] },
+  { name: '四分之三（右前上方）', viewDir: [Math.SQRT1_2 * Math.cos(Math.PI / 9), Math.SQRT1_2 * Math.cos(Math.PI / 9), Math.sin(Math.PI / 9)] },
 ];
 const pixelsPerCell = 128;
 const lookAt: V3 = [0, 0, 1];
-const panel = { 宽: 416, 高: 600, top: 80, 间: 8 };
+const panel = { width: 416, height: 600, top: 80, 间: 8 };
 const OrthoRig: React.FC<{ viewDir: V3; pxPerCell?: number }> = ({ viewDir, pxPerCell = pixelsPerCell }) => {
   const { camera } = useThree();
   const cam = camera as THREE.OrthographicCamera;
@@ -102,8 +102,8 @@ const RedDot: React.FC<{ at: V3 }> = ({ at }) => (
 const TriView: React.FC<{ children: React.ReactNode; lit?: boolean; antialias?: boolean }> = ({ children, lit, antialias }) => (
   <>
     {cameraRigs.map((m, i) => (
-      <div key={m.名} style={{ position: 'absolute', left: panel.间 + i * (panel.宽 + panel.间), top: panel.top, width: panel.宽, height: panel.高, background: '#8fa3b8' }}>
-        <ThreeCanvas orthographic flat width={panel.宽} height={panel.高} gl={{ antialias: !!antialias }}>
+      <div key={m.name} style={{ position: 'absolute', left: panel.间 + i * (panel.width + panel.间), top: panel.top, width: panel.width, height: panel.height, background: '#8fa3b8' }}>
+        <ThreeCanvas orthographic flat width={panel.width} height={panel.height} gl={{ antialias: !!antialias }}>
           <OrthoRig viewDir={m.viewDir} />
           {lit && <ambientLight intensity={Math.PI} />}
           <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -111,7 +111,7 @@ const TriView: React.FC<{ children: React.ReactNode; lit?: boolean; antialias?: 
             {children}
           </group>
         </ThreeCanvas>
-        <div style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 18, color: '#ffffff', textShadow: '0 1px 3px #000' }}>{m.名}</div>
+        <div style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 18, color: '#ffffff', textShadow: '0 1px 3px #000' }}>{m.name}</div>
       </div>
     ))}
   </>
@@ -120,7 +120,7 @@ const TriView: React.FC<{ children: React.ReactNode; lit?: boolean; antialias?: 
 // 像素密度对比：三渲二定的 N=6（成片一个贴图像素 6 个输出像素，三渲二底座 分支 engine/三渲二/像素.ts），一格 16 × 6 ÷ 成片倍数 2 = 48 页面像素。
 // 纯正面正交，看脚底 1 格高处，画面左边是场景 +X（正面看，人的右手在画面左边）；尺子柱是一格 16×16 的棋盘，一格棋盘一个贴图像素。
 // 两臂摆正（不轻晃），只看像素格对不对得上。
-const grid = { pxPerCell: 48, 宽: 1264, 高: 600 };
+const grid = { pxPerCell: 48, width: 1264, height: 600 };
 const rulerMaterial = (() => {
   const d = new Uint8Array(16 * 16 * 4);
   for (let i = 0; i < 256; i++) d.fill(((i % 16) + Math.floor(i / 16)) % 2 ? 0xd8 : 0x9a, i * 4, i * 4 + 3).fill(255, i * 4 + 3, i * 4 + 4);
@@ -131,14 +131,14 @@ const rulerMaterial = (() => {
   return new THREE.MeshBasicMaterial({ map: t });
 })();
 const attention = (loc: V3, scale?: number): StevePose => ({ ...stevePose(loc, 0, { scale }), armR: 0, armL: 0, armRRoll: 0, armLRoll: 0 });
-const densityStands: { 名: string; x: number }[] = [
-  { 名: '史蒂夫 0.9375 倍（原版）', x: 5 },
-  { 名: '史蒂夫 1 倍', x: 0 },
-  { 名: '苦力怕（原版 1 倍）', x: -5 },
+const densityStands: { name: string; x: number }[] = [
+  { name: '史蒂夫 0.9375 倍（原版）', x: 5 },
+  { name: '史蒂夫 1 倍', x: 0 },
+  { name: '苦力怕（原版 1 倍）', x: -5 },
 ];
 const PixelDensity: React.FC = () => (
-  <div style={{ position: 'absolute', left: panel.间, top: panel.top, width: grid.宽, height: grid.高, background: '#8fa3b8' }}>
-    <ThreeCanvas orthographic flat width={grid.宽} height={grid.高} gl={{ antialias: false }}>
+  <div style={{ position: 'absolute', left: panel.间, top: panel.top, width: grid.width, height: grid.height, background: '#8fa3b8' }}>
+    <ThreeCanvas orthographic flat width={grid.width} height={grid.height} gl={{ antialias: false }}>
       <OrthoRig viewDir={[0, 1, 0]} pxPerCell={grid.pxPerCell} />
       <ambientLight intensity={Math.PI} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -154,12 +154,12 @@ const PixelDensity: React.FC = () => (
             </mesh>
           )),
         )}
-        {densityStands.map((p, i) => (i === 2 ? <Creeper key={p.名} pose={{ loc: [p.x, 0, 0] }} /> : <Steve key={p.名} pose={attention([p.x, 0, 0], i === 1 ? 1 : undefined)} />))}
+        {densityStands.map((p, i) => (i === 2 ? <Creeper key={p.name} pose={{ loc: [p.x, 0, 0] }} /> : <Steve key={p.name} pose={attention([p.x, 0, 0], i === 1 ? 1 : undefined)} />))}
       </group>
     </ThreeCanvas>
     {densityStands.map((p) => (
-      <div key={p.名} style={{ position: 'absolute', left: grid.宽 / 2 - p.x * grid.pxPerCell - 110, width: 220, top: grid.高 / 2 + 1.5 * grid.pxPerCell, textAlign: 'center', fontSize: 16, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
-        {p.名}
+      <div key={p.name} style={{ position: 'absolute', left: grid.width / 2 - p.x * grid.pxPerCell - 110, width: 220, top: grid.height / 2 + 1.5 * grid.pxPerCell, textAlign: 'center', fontSize: 16, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
+        {p.name}
       </div>
     ))}
     <div style={{ position: 'absolute', left: 16, top: 16, fontSize: 16, lineHeight: 1.6, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
@@ -201,7 +201,7 @@ const picture: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: v.subject === '第一人称' ? 'linear-gradient(#a7aeb5, #6c737a)' : '#5a5e66', fontFamily: uiFontFamily }}>
       {content}
-      <div style={{ position: 'absolute', left: 16, top: 14, fontSize: 24, color: '#ffffff', textShadow: '0 1px 3px #000' }}>核对-史蒂夫苦力怕 · {v.名}</div>
+      <div style={{ position: 'absolute', left: 16, top: 14, fontSize: 24, color: '#ffffff', textShadow: '0 1px 3px #000' }}>核对-史蒂夫苦力怕 · {v.name}</div>
     </AbsoluteFill>
   );
 };

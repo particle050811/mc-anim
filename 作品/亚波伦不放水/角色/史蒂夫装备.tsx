@@ -35,10 +35,10 @@ const Wrist: React.FC<{ angleDeg: number; children: React.ReactNode }> = ({ angl
 
 // 四肢：本体部件、外层部件、关节、角度取 pose 的哪个字段。弯折的角绕部件的 +x：膝往后折是正，肘往前折是负
 const limbs = [
-  { partName: 'right_arm', outerLayer: 'right_sleeve', joint: joints.elbow, sign: -1, 角: 'elbowR' },
-  { partName: 'left_arm', outerLayer: 'left_sleeve', joint: joints.elbow, sign: -1, 角: 'elbowL' },
-  { partName: 'right_leg', outerLayer: 'right_pants', joint: joints.knee, sign: 1, 角: 'kneeR' },
-  { partName: 'left_leg', outerLayer: 'left_pants', joint: joints.knee, sign: 1, 角: 'kneeL' },
+  { partName: 'right_arm', outerLayer: 'right_sleeve', joint: joints.elbow, sign: -1, angle: 'elbowR' },
+  { partName: 'left_arm', outerLayer: 'left_sleeve', joint: joints.elbow, sign: -1, angle: 'elbowL' },
+  { partName: 'right_leg', outerLayer: 'right_pants', joint: joints.knee, sign: 1, angle: 'kneeR' },
+  { partName: 'left_leg', outerLayer: 'left_pants', joint: joints.knee, sign: 1, angle: 'kneeL' },
 ] as const;
 const limbPartNames = new Set<string>(limbs.flatMap((limb) => [limb.partName, limb.outerLayer]));
 // 四肢的方盒拿掉的模型（部件还在，装备照旧挂）
@@ -78,17 +78,17 @@ export type SteveEquip = {
  *  受伤：原版受伤、死亡的变红 0～1，只红皮肤（原版盔甲层、手里的东西都不套受伤色） */
 export const EquippedSteve: React.FC<{
   pose: JointPose;
-  秒: number;
+  sec: number;
   equipment?: SteveEquip;
   editParts?: (poses: Record<string, PartPose>) => Record<string, PartPose>;
   hurt?: number;
-}> = ({ pose, 秒: sec, equipment = {}, editParts, hurt }) => {
+}> = ({ pose, sec: sec, equipment = {}, editParts, hurt }) => {
   const { armor = apocalyptiumFullSet, enchanted = true, 剑: sword = true, hasRing = true, appearance = defaultAppearance, rightHand, leftHand } = equipment;
-  const { material: armorMaterial, 网格: meshes } = useApocalyptiumArmorMaterials(armor, enchanted ? sec : undefined, appearance);
+  const { material: armorMaterial, grid: meshes } = useApocalyptiumArmorMaterials(armor, enchanted ? sec : undefined, appearance);
   // 和 EntityModel 给头、身用的是同一份材质（参数一样）
   const skinMaterial = entityMaterial(STEVE_SKIN, { emissive: 0, opacity: 1, alphaTest: 0.1, hurt: hurt ?? 0 });
-  const armorMesh = (m: ArmorMesh) => <mesh key={m.键} geometry={m.geometry} material={armorMaterial} castShadow receiveShadow />;
-  const hangArmor = (boneName: string) => meshes.filter((m) => m.骨 === boneName).map(armorMesh);
+  const armorMesh = (m: ArmorMesh) => <mesh key={m.key} geometry={m.geometry} material={armorMaterial} castShadow receiveShadow />;
+  const hangArmor = (boneName: string) => meshes.filter((m) => m.bone === boneName).map(armorMesh);
   const handItems: Record<string, React.ReactNode> = {
     right_arm:
       rightHand ??
@@ -105,20 +105,20 @@ export const EquippedSteve: React.FC<{
     head: (
       <>
         {hangArmor('head')}
-        {hasRing && <AscensionHalo 秒={sec} />}
+        {hasRing && <AscensionHalo sec={sec} />}
       </>
     ),
     body: hangArmor('body'),
   };
   for (const limb of limbs) {
-    const limbMeshes = meshes.filter((m) => m.骨 === limb.partName).map((m) => ({ m, 节: meshSection(m.顶点, limb.joint.cut) }));
-    const armorLayers: BendLayer[] = [{ 键: '皮', triangles: skinTriangles[limb.partName], material: skinMaterial }, ...limbMeshes.filter((b) => b.节 === '弯').map((b) => ({ 键: b.m.键, triangles: armorTriangles(b.m.顶点), material: armorMaterial }))];
+    const limbMeshes = meshes.filter((m) => m.bone === limb.partName).map((m) => ({ m, 节: meshSection(m.顶点, limb.joint.cut) }));
+    const armorLayers: BendLayer[] = [{ key: '皮', triangles: skinTriangles[limb.partName], material: skinMaterial }, ...limbMeshes.filter((b) => b.节 === '弯').map((b) => ({ key: b.m.key, triangles: armorTriangles(b.m.顶点), material: armorMaterial }))];
     attach[limb.partName] = (
       <BendLimb
         cut={limb.joint.cut}
         hingeZ={limb.joint.hingeZ}
-        角={(limb.sign * (pose[limb.角] ?? 0) * Math.PI) / 180}
-        层={armorLayers}
+        angle={(limb.sign * (pose[limb.angle] ?? 0) * Math.PI) / 180}
+        layers={armorLayers}
         upperPart={limbMeshes.filter((b) => b.节 === '上').map((b) => armorMesh(b.m))}
         lowerPart={
           <>

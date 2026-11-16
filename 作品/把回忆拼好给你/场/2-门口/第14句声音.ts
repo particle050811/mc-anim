@@ -14,31 +14,31 @@ const segEndFrame = segmentWindow('2-归隐').止帧;
 /** 纸飘下：原版 item.book.page_turn.2（第8句参数.ts 量过峰秒、峰值），最响那一下落在 纸飘下 那一帧（头一把纸飘进画面），比第 8 句放照片轻一点（纸在楼上、离你远） */
 const paperSound = paperSounds[1]!;
 export const paperFloatSound: SongSound = {
-  资产: paperSound.资产,
-  名: '纸飘下',
-  起帧: events.paperDrifts.帧 - Math.round(paperSound.peakSec * fps),
-  时长秒: paperSound.秒,
-  增益: () => Math.round(10 ** ((paperSoundPeakDb - 4 - paperSound.峰值) / 20) * 1e6) / 1e6,
+  asset: paperSound.asset,
+  name: '纸飘下',
+  起帧: events.paperDrifts.frame - Math.round(paperSound.peakSec * fps),
+  durationSec: paperSound.sec,
+  增益: () => Math.round(10 ** ((paperSoundPeakDb - 4 - paperSound.peakDb) / 20) * 1e6) / 1e6,
 };
 
 /** 荧光框取出声（entity.glow_item_frame.remove_item.1，0.1 秒，第一窗 −40 dB、第二窗起 −10.8 dB）：落在取照那一帧（照片方案：合照落进手里、那一格变暗同一帧） */
 export const takeOutSound: SongSound = {
-  资产: '音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1',
-  名: '荧光框取出',
-  起帧: events.takePhoto.帧,
-  时长秒: 0.1,
+  asset: '音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1',
+  name: '荧光框取出',
+  起帧: events.takePhoto.frame,
+  durationSec: 0.1,
   增益: () => 0.35,
 };
 
 /** 挂铃的铃声（同第 15 句的寻风之铃）：起音落在挂铃那一帧，轻一点（挂上去碰了一下）；段尾前 淡出秒 淡掉 */
 export const hangBellSoundParams = { 增益: 0.25, fadeOutSec: 0.3 } as const;
-const bellStart = events.hangBell.帧 - Math.round(bellFile.onsetSec * fps);
+const bellStart = events.hangBell.frame - Math.round(bellFile.onsetSec * fps);
 export const hangBellSound: SongSound = {
-  资产: '音效/万法皆通/wind_seeking_bell',
-  名: '挂铃',
+  asset: '音效/万法皆通/wind_seeking_bell',
+  name: '挂铃',
   起帧: bellStart,
-  帧数: segEndFrame - bellStart,
-  时长秒: bellFile.时长秒,
+  frameCount: segEndFrame - bellStart,
+  durationSec: bellFile.durationSec,
   增益: (frame) => hangBellSoundParams.增益 * clamp01((segEndFrame - frame) / (hangBellSoundParams.fadeOutSec * fps)),
 };
 

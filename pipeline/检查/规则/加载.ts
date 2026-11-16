@@ -13,11 +13,11 @@ export const checkLoad = async (c: CheckContext, report: CheckReport) => {
   const pureFiles = c.workFiles().filter(isPureModule);
   for (const p of pureFiles) {
     const r = await c.loadModule(p);
-    if (r.错误) report.错(`执行出错：${r.错误}`, p);
+    if (r.errors) report.错(`执行出错：${r.errors}`, p);
   }
   const parsedContent = await readContent(c);
-  if ('错误' in parsedContent) return; // 清单本身执行出错，上面已报
-  for (const s of parsedContent.segments) if (s.错误 && !s.错误.includes('执行出错')) report.错(s.错误, s.段文件);
+  if ('errors' in parsedContent) return; // 清单本身执行出错，上面已报
+  for (const s of parsedContent.segments) if (s.errors && !s.errors.includes('执行出错')) report.错(s.errors, s.segmentFile);
   report.infoLines.push(`执行了 ${pureFiles.length} 个纯模块`);
   await checkSegFramework(c, report, parsedContent.segments);
   await checkEnvDecl(c, report, parsedContent.segments);

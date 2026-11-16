@@ -88,8 +88,8 @@ export const lichPose = (sec: number, opts: { headYaw?: number; headPitch?: numb
 
 // 秒：游戏时间（驱动护盾转动、手晃）；护盾：见上；护盾数：按游戏的方式画 n 面（给了就不看 护盾）；权杖：右手拿着暮色权杖；头偏 / 头仰：弧度（头仰正 = 低头）；发光：受击时闪一下白（0～1；不用红色，避免生成血）；
 // 受伤：原版受伤 / 死亡时的变红（0～1，lib/实体模型.tsx 的 `HURT_MIX`；用户 10-02 要先在 6-1-5 巫妖死时试，看成片会不会画出血）
-export const Lich: React.FC<{ 秒: number; shields?: number[]; shieldCount?: number; scepter?: boolean; headYaw?: number; headPitch?: number; armRaise?: number; opacity?: number; hitFlash?: number; hurt?: number }> = ({
-  秒: sec,
+export const Lich: React.FC<{ sec: number; shields?: number[]; shieldCount?: number; scepter?: boolean; headYaw?: number; headPitch?: number; armRaise?: number; opacity?: number; hitFlash?: number; hurt?: number }> = ({
+  sec: sec,
   shields: shields = [1, 1, 1, 1, 1, 1],
   shieldCount,
   scepter = true,

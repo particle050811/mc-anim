@@ -10,7 +10,7 @@ import type { Png } from '../../engine/model/贴图.ts';
 import { UiText } from './基础.tsx';
 
 /** 原版 zh_cn（1.20.1，资源索引 5）：deathScreen.title、deathScreen.score、deathScreen.respawn、deathScreen.titleScreen */
-export const deathScreenText = { 标题: '你死了！', score: '分数', respawn: '重生', titleScreen: '标题屏幕' } as const;
+export const deathScreenText = { title: '你死了！', score: '分数', respawn: '重生', titleScreen: '标题屏幕' } as const;
 /** 打开后几刻按钮才能按 */
 export const deathButtonDelayTicks = 20;
 
@@ -18,7 +18,7 @@ export type DeathButtonState = '不能按' | '平常' | '指着';
 const buttonV: Record<DeathButtonState, number> = { 不能按: 46, 平常: 66, 指着: 86 };
 
 /** 界面尺寸（GUI 像素）：窗口 ÷ 缩放，向上取整（Window.calculateScale 之后的 guiScaledWidth） */
-export const uiSize = (width: number, height: number, s: number) => ({ 宽: Math.ceil(width / s), 高: Math.ceil(height / s) });
+export const uiSize = (width: number, height: number, s: number) => ({ width: Math.ceil(width / s), height: Math.ceil(height / s) });
 
 /** 第 i 个按钮（0 重生、1 标题屏幕）的框，GUI 像素 */
 export const deathButtonRect = (i: 0 | 1, panelWidth: number, uiHeight: number) => ({ x: Math.trunc(panelWidth / 2) - 100, y: Math.trunc(uiHeight / 4) + 72 + 24 * i, w: 200, h: 20 });
@@ -32,7 +32,7 @@ export const deathButtonAt = (i: 0 | 1, x: number, y: number, panelWidth: number
 const arrowRows = ['B', 'BB', 'BWB', 'BWWB', 'BWWWB', 'BWWWWB', 'BWWWWWB', 'BWWWWWWB', 'BWWWWWWWB', 'BWWWWWWWWB', 'BWWWWWWWWWB', 'BWWWWWWBBBBB', 'BWWWBWWB', 'BWWBBWWB', 'BWB  BWWB', 'BB   BWWB', 'B     BWWB', '      BWWB', '       BB'];
 
 /** widgets.png 里第 v 行起的 200 × 20 一条，逐像素放大 */
-const ButtonBase: React.FC<{ 图: Png; v: number; left: number; 上: number; s: number }> = ({ 图: image, v, left, 上: top, s }) => {
+const ButtonBase: React.FC<{ image: Png; v: number; left: number; 上: number; s: number }> = ({ image: image, v, left, 上: top, s }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
@@ -69,8 +69,8 @@ const CursorDraw: React.FC<{ x: number; y: number; pixel: number }> = ({ x, y, p
 
 export type DeathScreenProps = {
   /** 画面宽高（像素）和 GUI 缩放 */
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   s: number;
   /** widgets.png（256 × 256） */
   buttonImg: Png;
@@ -86,20 +86,20 @@ export type DeathScreenProps = {
 };
 
 /** 放在和画面一样大的容器里，盖在游戏画面和 HUD 上 */
-export const DeathScreen: React.FC<DeathScreenProps> = ({ 宽: width, 高: height, s, buttonImg, deathCause, score = 0, respawnButtonState, titleButtonState = respawnButtonState === '不能按' ? '不能按' : '平常', cursor, cursorPixel = 1.5 }) => {
+export const DeathScreen: React.FC<DeathScreenProps> = ({ width: width, height: height, s, buttonImg, deathCause, score = 0, respawnButtonState, titleButtonState = respawnButtonState === '不能按' ? '不能按' : '平常', cursor, cursorPixel = 1.5 }) => {
   const uiDims = uiSize(width, height, s);
-  const centerX = Math.trunc(uiDims.宽 / 2);
+  const centerX = Math.trunc(uiDims.width / 2);
   const fs = 8.6 * s;
   const buttons = [
-    { i: 0 as const, 字: deathScreenText.respawn, buttonState: respawnButtonState },
-    { i: 1 as const, 字: deathScreenText.titleScreen, buttonState: titleButtonState },
+    { i: 0 as const, char: deathScreenText.respawn, buttonState: respawnButtonState },
+    { i: 1 as const, char: deathScreenText.titleScreen, buttonState: titleButtonState },
   ];
   return (
     <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(80,0,0,0.376), rgba(128,48,48,0.627))' }} />
       <CenteredText x={Math.trunc(centerX / 2) * 2} y={30 * 2} s={s} heightScale={2}>
         <UiText fontSize={fs * 2} style={{ lineHeight: 1 }}>
-          {deathScreenText.标题}
+          {deathScreenText.title}
         </UiText>
       </CenteredText>
       {deathCause !== undefined && (
@@ -115,11 +115,11 @@ export const DeathScreen: React.FC<DeathScreenProps> = ({ 宽: width, 高: heigh
           {String(score)}
         </UiText>
       </CenteredText>
-      {buttons.map(({ i, 字: label, buttonState }) => {
-        const b = deathButtonRect(i, uiDims.宽, uiDims.高);
+      {buttons.map(({ i, char: label, buttonState }) => {
+        const b = deathButtonRect(i, uiDims.width, uiDims.height);
         return (
           <React.Fragment key={i}>
-            <ButtonBase 图={buttonImg} v={buttonV[buttonState]} left={b.x} 上={b.y} s={s} />
+            <ButtonBase image={buttonImg} v={buttonV[buttonState]} left={b.x} 上={b.y} s={s} />
             <CenteredText x={b.x + b.w / 2} y={b.y + 6} s={s}>
               <UiText fontSize={fs} color={buttonState === '不能按' ? '#A0A0A0' : '#FFFFFF'} style={{ lineHeight: 1 }}>
                 {label}

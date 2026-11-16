@@ -23,10 +23,10 @@ const duration = (from: Vec3, target: Vec3) => {
 export default defineSpellMeta({
   id: 'shredding',
   ...duration([-10, 0, 7], [0, 0, 0]),
-  时长: duration,
+  duration: duration,
   // SpikeSpell：playSound(EVOKER_CAST_SPELL, 1, 0.5)；每根出土 GRINDSTONE_USE（音高 0.85～1.05）
-  声音: [
-    { 资产: '音效/entity.evoker.cast_spell.1', 秒: 0, 音高: 0.5 },
-    ...Array.from({ length: spikeCount }, (_, l) => ({ 资产: '音效/block.grindstone.use.1', 秒: (l + 1) / 20, 音高: 0.95 })),
+  sound: [
+    { asset: '音效/entity.evoker.cast_spell.1', sec: 0, 音高: 0.5 },
+    ...Array.from({ length: spikeCount }, (_, l) => ({ asset: '音效/block.grindstone.use.1', sec: (l + 1) / 20, 音高: 0.95 })),
   ],
 });

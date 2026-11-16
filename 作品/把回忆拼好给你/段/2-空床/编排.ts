@@ -32,11 +32,11 @@ const segMainCutEventFrames = (segKey: string) => segmentFrames(segmentWindow(se
 export const segKey = '2-空床';
 export const events = segMainCutEventFrames(segKey);
 const thisWindow = segmentWindow(segKey);
-export const frameCount = thisWindow.帧数;
+export const frameCount = thisWindow.frameCount;
 /** 段内帧 → 歌曲帧（颗粒的种子、歌词用它） */
 export const toSongFrame = (f: number) => thisWindow.起帧 + f;
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
-const beatFrames = beatGrid.拍长 * fps;
+const beatFrames = beatGrid.beatSec * fps;
 
 type BoneTable = Record<string, BonePose>;
 /** 两张骨骼表逐字段插值（转角、位移、缩放；一边没有的当 0° / 0 / 1） */
@@ -154,7 +154,7 @@ const catmullRom = (p0: readonly number[], p1: readonly number[], p2: readonly n
 export const shadingSceneAt = (f: number): ShadingSceneParams => {
   if (f >= events.moonset) {
     const k = smoothstep(clamp01((f - events.moonset) / (events.dawnTurnHead - events.moonset)));
-    const sun = params.sunrise.起.map((v, i) => lerp(v, params.sunrise.止[i]!, k)) as [number, number, number];
+    const sun = params.sunrise.start.map((v, i) => lerp(v, params.sunrise.end[i]!, k)) as [number, number, number];
     return { timeOfDay: '日落', sun, lightIntensity: k };
   }
   const moons = params.moonPositions;
@@ -178,10 +178,10 @@ const snap = (cell: number, pxPerCell: number) => (Math.round((cell * pxPerCell)
 
 /** 横移的时候中心不吸：吸到偶数像素时 60 fps 下起步那截一帧挪 2 像素、几帧不挪，一顿一顿（用户 11-03「统统改成 60 帧」）；不吸时贴图像素宽窄差 1 像素，动着看不出来 */
 export const shotAt = (f: number): SideFraming => {
-  const { 中心: center, pxPerCell } = params.bedroomFraming;
+  const { center: center, pxPerCell } = params.bedroomFraming;
   const progress = slideProgress(f);
   const x = center[0] + params.sideMove.right * progress;
-  return { 中心: [progress > 0 ? x : snap(x, pxPerCell), center[1]], pxPerCell };
+  return { center: [progress > 0 ? x : snap(x, pxPerCell), center[1]], pxPerCell };
 };
 
 /** 横移走完那一刻（横移进度 = 1）镜头的速度（格/秒、成片像素/格）：交给分屏那一路接（t^幂 的导数 幂·t^(幂−1)/横移秒数，t = 1） */
@@ -189,7 +189,7 @@ export const endVelocity = () => ({ rightSpeed: (params.sideMove.right * params.
 
 // ---------- 屋外、接缝 ----------
 /** 2-时差 第一帧（分屏起）服务器那半的调子：横移时屋外的林子照它的色调画，整片后期往它走 */
-const seamTone = serverToneAt(mainCutEvents.splitScreenStart.帧);
+const seamTone = serverToneAt(mainCutEvents.splitScreenStart.frame);
 
 /** 屋外林子的 林偏（场/2-门口/林间门口.tsx）：横移走完那一刻（段的最后一帧）再按 末速度 走一帧，中景正好落在 2-时差 第一帧服务器那半的中景上，
  *  切过去林子接着同一个速度滑（远景 N 是中景的一半，同一个林偏两层一起对上）。
@@ -199,21 +199,21 @@ export const outdoorForestOffset = (() => {
   const pagePerCell = (pxPerCell: number) => pxPerCell / filmScale;
   const layerPerCell = 16 * midGrove.N;
   const parallaxWidth = splitLayout.serverWidth + formShift.horizontalPx;
-  const parallaxLeft = shapeOffsetAt(mainCutEvents.splitScreenStart.帧) - formShift.horizontalPx;
-  const parallaxNearX = serverFraming.中心[0] - formShift.horizontalPx / pagePerCell(serverFraming.pxPerCell) / 2;
+  const parallaxLeft = shapeOffsetAt(mainCutEvents.splitScreenStart.frame) - formShift.horizontalPx;
+  const parallaxNearX = serverFraming.center[0] - formShift.horizontalPx / pagePerCell(serverFraming.pxPerCell) / 2;
   const parallaxMid = (parallaxNearX * splitScreenCount) / midGrove.N;
   const speed = endVelocity();
   const frameStep = pagePerCell(speed.rightSpeed * oneFrameSec * speed.pxPerCell);
   // 走完那一刻：1280 宽、中景中心 c；中景 x 在页面 640 + (x − c)·层每格页，再左移 一帧 = 2-时差 第一帧的 时差左 + 时差宽/2 + (x − 时差中)·层每格页
   const c = parallaxMid + (640 - frameStep - parallaxLeft - parallaxWidth / 2) / pagePerCell(layerPerCell);
-  return lastShot.中心[0] - (c * midGrove.N) / (lastShot.pxPerCell / 16);
+  return lastShot.center[0] - (c * midGrove.N) / (lastShot.pxPerCell / 16);
 })();
 
 /** 这一帧的屋外：横移还没动以前不给（屋外不在画里，画法照旧）；亮 = 横移进度（后窗那块天亮的橙跟着淡成屋外的天），走完以后是 1 */
 export const outdoorState = (f: number): BedroomOutside | undefined =>
   slideProgress(f) <= 0
     ? undefined
-    : { bright: clamp01(slideProgress(f)), tint: seamTone.tint, skyColors, 刻: dayTick, 群系: biome, growth: SplitState(mainCutEvents.splitScreenStart.帧).growth, forestOffset: outdoorForestOffset, skyPerCell: 16 * splitScreenCount };
+    : { bright: clamp01(slideProgress(f)), tint: seamTone.tint, skyColors, 刻: dayTick, biome: biome, growth: SplitState(mainCutEvents.splitScreenStart.frame).growth, forestOffset: outdoorForestOffset, skyPerCell: 16 * splitScreenCount };
 
 /** 整片后期的调色：横移以前是这一档窗光的调子；横移时按 横移进度 往 接缝调子 插，走完以后和 2-时差 第一帧服务器那半一样 */
 export const postGrade = (f: number) => {

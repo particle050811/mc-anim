@@ -19,7 +19,7 @@ describe('49.96 对视的站位', () => {
     expect(eyeContactFoot[0]).toBeLessThan(7);
     expect(eyeContactFoot[1]).toBeGreaterThan(-11);
     // 门扇开到底：关着时的盒（取到 1/16 格就是门扇本身）绕转轴转 开角
-    const { 盒: box, axis, openAngle } = mainHallDoors.westDoor.leaves[0]!;
+    const { boxes: box, axis, openAngle } = mainHallDoors.westDoor.leaves[0]!;
     const toSixteenth = (v: number) => Math.round(v * 16) / 16;
     const [c, s] = [Math.cos((openAngle * Math.PI) / 180), Math.sin((openAngle * Math.PI) / 180)];
     const corners = [
@@ -55,15 +55,15 @@ describe('49.96 对视的站位', () => {
     expect(chatAgeTick).toBeLessThan(180);
   });
   it('气泡缩放都是偶数，片那一版一个气泡像素是画幅高的 1/90；封面黄字也是偶数倍', () => {
-    for (const edition of ['片', 'B站封面', '竖版'] as const) expect(eyeContactBubble.缩放[edition] % 2).toBe(0);
-    expect(eyeContactBubble.缩放.片 * 90).toBe(eyeContactFraming.片.高 * 2);
-    for (const edition of ['B站封面', '竖版'] as const) expect(coverBigText[edition].缩放 % 2).toBe(0);
+    for (const edition of ['片', 'B站封面', '竖版'] as const) expect(eyeContactBubble.scale[edition] % 2).toBe(0);
+    expect(eyeContactBubble.scale.片 * 90).toBe(eyeContactFraming.片.height * 2);
+    for (const edition of ['B站封面', '竖版'] as const) expect(coverBigText[edition].scale % 2).toBe(0);
   });
   it('封面两张（B站封面、竖版）气泡里是「您的手艺，一如既往呢」（用户 10-25 定），片那一版还是哭脸', () => {
     expect(coverLine).toBe('您的手艺，一如既往呢');
-    expect(eyeContactBubble.字.B站封面).toBe(coverLine);
-    expect(eyeContactBubble.字.竖版).toBe(coverLine);
-    expect(eyeContactBubble.字.片).toBe(bubbleText);
+    expect(eyeContactBubble.char.B站封面).toBe(coverLine);
+    expect(eyeContactBubble.char.竖版).toBe(coverLine);
+    expect(eyeContactBubble.char.片).toBe(bubbleText);
   });
   it('片里聊天栏的宽是原版设置「聊天栏宽度」调得出的（floor(设置 × 280 + 40)，设置 0～1）', () => {
     const setting = (movieChatWidth - 40) / 280;
@@ -81,27 +81,27 @@ const hasTable = !!fontLockEntry && fs.existsSync(bytesPath(fontLockEntry));
 describe.skipIf(!hasTable)('49.96 对视的构图', () => {
   const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(fontLockEntry!), 'utf8')), '字体/把回忆拼好给你/像素字');
   const project = (edition: EyeContactVersion, z: number) => {
-    const { 宽: width, 高: height, 看: lookAt } = eyeContactFraming[edition];
-    const cam = makePerspectiveCamera({ 眼: zUpToThree(eye), 看: zUpToThree(lookAt), fov: eyeContactFov, 宽: width, 高: height });
+    const { width: width, height: height, 看: lookAt } = eyeContactFraming[edition];
+    const cam = makePerspectiveCamera({ 眼: zUpToThree(eye), 看: zUpToThree(lookAt), fov: eyeContactFov, width: width, height: height });
     return projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], z]), width, height);
   };
   // 气泡（库/界面/女仆气泡.tsx）：盒子底边在锚点上，宽 = 字宽 + 10、高 19（一行）；中：盒子从 −trunc(宽/2) 起、尾巴在锚点左右各 8；
   // 左：盒子在 −1−宽 ～ −1、尾巴往下指的那一竖在 −2 ～ −1。尾巴往下 8。页面上一个气泡像素 = 缩放 / 2。
   // 锚点：居中的那几版横着挪到让盒子居中（对视.tsx 的 对视气泡锚），高都是帽顶；画的时候再吸到一个气泡像素的格子上（这里不吸，差不到一个气泡像素）
-  const bubbleBox = (edition: EyeContactVersion, text = eyeContactBubble.字[edition]) => {
-    const halfScale = eyeContactBubble.缩放[edition] / 2;
+  const bubbleBox = (edition: EyeContactVersion, text = eyeContactBubble.char[edition]) => {
+    const halfScale = eyeContactBubble.scale[edition] / 2;
     const width = pixelFont.textWidth(text) + 10;
     const bubblePos = eyeContactBubble.位置[edition];
     const boxX = bubblePos === '中' ? -Math.trunc(width / 2) : -1 - width;
     const projectedPoint = project(edition, eyeContactBubble.anchorHeight);
-    const anchorX = eyeContactBubble.centered[edition] ? eyeContactFraming[edition].宽 / 2 - (boxX + width / 2) * halfScale : projectedPoint.x;
+    const anchorX = eyeContactBubble.centered[edition] ? eyeContactFraming[edition].width / 2 - (boxX + width / 2) * halfScale : projectedPoint.x;
     const tailX = bubblePos === '中' ? anchorX : anchorX - 1.5 * halfScale;
     return { x0: anchorX + boxX * halfScale, x1: anchorX + (boxX + width) * halfScale, y0: projectedPoint.y - 19 * halfScale, y1: projectedPoint.y + 8 * halfScale, tailX };
   };
 
   it('片、B站封面：气泡整个在画里（离上沿至少 8）、在 4:3 里', () => {
     for (const edition of ['片', 'B站封面'] as const) {
-      const { 宽: W } = eyeContactFraming[edition];
+      const { width: W } = eyeContactFraming[edition];
       const b = bubbleBox(edition);
       expect(b.y0).toBeGreaterThan(8 * (W / 1280));
       expect(b.x0).toBeGreaterThan((W * 240) / 1920);
@@ -120,20 +120,20 @@ describe.skipIf(!hasTable)('49.96 对视的构图', () => {
   // 脸连两边头发宽 0.416 格（模型 x −4.42～5.82，按 0.65/16 缩）
   const faceWidth = (10.24 * 0.65) / 16;
   it('B站封面：脸连头发至少占 16:9 卡片宽的 20%（主会话 10-24 美术定稿）', () => {
-    expect(project('B站封面', 1.33).pxPerCell * faceWidth).toBeGreaterThanOrEqual(eyeContactFraming.B站封面.宽 * 0.2);
+    expect(project('B站封面', 1.33).pxPerCell * faceWidth).toBeGreaterThanOrEqual(eyeContactFraming.B站封面.width * 0.2);
   });
   // 封面上气泡是 C 位（用户 10-25 定）：盒子左右居中、尾巴压在她帽顶（帽冠半宽约 0.3 格，静帧上量的）、整个在她眉眼（脚底以上 1.45 格）上面
   const centerSlot = (edition: 'B站封面' | '竖版') => {
-    const W = eyeContactFraming[edition].宽;
+    const W = eyeContactFraming[edition].width;
     const g = bubbleBox(edition);
     const headView = project(edition, 1.33);
-    expect(Math.abs((g.x0 + g.x1) / 2 - W / 2)).toBeLessThanOrEqual(eyeContactBubble.缩放[edition] / 2);
+    expect(Math.abs((g.x0 + g.x1) / 2 - W / 2)).toBeLessThanOrEqual(eyeContactBubble.scale[edition] / 2);
     expect(Math.abs(g.tailX - headView.x)).toBeLessThanOrEqual(0.3 * headView.pxPerCell);
     expect(g.y1).toBeLessThan(project(edition, 1.45).y);
     return g;
   };
   it('B站封面：脸在 4:3 里、躲开底边和右下角；气泡居中、在 4:3 里、尾巴压在帽顶；黄字在左下：4:3 里、离 4:3 左沿至少 60 像素（1920 宽计）、在底边 20% 上面、在脸左边，像素格是整数', () => {
-    const [W, H] = [eyeContactFraming.B站封面.宽, eyeContactFraming.B站封面.高];
+    const [W, H] = [eyeContactFraming.B站封面.width, eyeContactFraming.B站封面.height];
     const headView = project('B站封面', 1.33);
     const chin = project('B站封面', 1.1);
     const halfWidth = (faceWidth / 2) * headView.pxPerCell;
@@ -154,7 +154,7 @@ describe.skipIf(!hasTable)('49.96 对视的构图', () => {
     for (const v of [b.x0 * 2, b.y0 * 2, b.x1 * 2, b.y1 * 2]) expect(Number.isInteger(v)).toBe(true);
   });
   it('竖版：气泡在画里、居中、尾巴压在帽顶；黄字在左下角（离左边、下边不到画幅的 5%）、在下巴底下', () => {
-    const { 宽: W, 高: H } = eyeContactFraming.竖版;
+    const { width: W, height: H } = eyeContactFraming.竖版;
     const g = centerSlot('竖版');
     expect(g.x0).toBeGreaterThan(0);
     expect(g.x1).toBeLessThan(W);

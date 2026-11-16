@@ -285,13 +285,13 @@ export const breachTimes = breachBlocks.map((b) => (boxEntryDist(deflectPoint, f
 
 // ---------- 箭在 T 时的位置 ----------
 // 返回实体位置、飞行方向、速度（米/秒）、绕长轴自转的角（度，见 自转角）。冲出地面以后是 '飞走'，不再画
-export type ArrowState = { p: V3; dir: V3; v: number; spin: number; 阶段: '弦上' | '来' | '挑飞' | '飞走' };
+export type ArrowState = { p: V3; dir: V3; v: number; spin: number; stage: '弦上' | '来' | '挑飞' | '飞走' };
 export const arrowState = (storySec: number): ArrowState => {
-  if (storySec < shootTime) return { p: nockPoint, dir: incomingDir, v: 0, spin: 0, 阶段: '弦上' };
+  if (storySec < shootTime) return { p: nockPoint, dir: incomingDir, v: 0, spin: 0, stage: '弦上' };
   if (storySec < deflect) {
     const dist = incomingArrowDist(storySec - shootTime);
-    return { p: add(nockPoint, incomingDir, dist), dir: incomingDir, v: arrowSpeed(dist), spin: spinAngle(dist), 阶段: '来' };
+    return { p: add(nockPoint, incomingDir, dist), dir: incomingDir, v: arrowSpeed(dist), spin: spinAngle(dist), stage: '来' };
   }
   const dist = (storySec - deflect) * arrowMaxSpeed;
-  return { p: add(deflectPoint, flingDir, dist), dir: flingDir, v: arrowMaxSpeed, spin: spinAngle(deflectDist + dist), 阶段: dist < exitGroundDist ? '挑飞' : '飞走' };
+  return { p: add(deflectPoint, flingDir, dist), dir: flingDir, v: arrowMaxSpeed, spin: spinAngle(deflectDist + dist), stage: dist < exitGroundDist ? '挑飞' : '飞走' };
 };

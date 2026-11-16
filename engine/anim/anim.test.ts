@@ -12,8 +12,8 @@ const keyGroups: Record<string, Key[]> = {
   linear: [[0, 0, 'linear'], [10, 5, 'linear'], [20, 2]],
   const: [[0, 1, 'const'], [12, 3, 'const'], [24, -1]],
   back: [[0, 0], [10, 4, 'back'], [20, 10], [30, 0]],
-  混合: [[0, 0, 'linear'], [6, 2], [14, 8, 'back'], [22, 3, 'const'], [28, 6]],
-  单键: [[5, 7]],
+  blend: [[0, 0, 'linear'], [6, 2], [14, 8, 'back'], [22, 3, 'const'], [28, 6]],
+  singleKey: [[5, 7]],
 };
 
 describe('anim.ts 插值', () => {

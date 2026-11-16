@@ -67,7 +67,7 @@ export const mortarTrailSmoke = (trajectory: ReturnType<typeof mortarTrajectory>
   const out: ParticleSpawn[] = [];
   for (let k = Math.ceil(t0); k < t1; k++) {
     const pos = trajectory.posAt(k - Math.ceil(t0));
-    out.push({ 种: 'smoke', 刻: k, p: [pos[0], pos[1], pos[2] + LOB.halfWidth], 种子: seed * 31 + k });
+    out.push({ kind: 'smoke', 刻: k, p: [pos[0], pos[1], pos[2] + LOB.halfWidth], seed: seed * 31 + k });
   }
   return out;
 };

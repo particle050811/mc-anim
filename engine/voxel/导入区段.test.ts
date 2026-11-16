@@ -34,17 +34,17 @@ const section = (): SectionData => {
     runLengths: Uint16Array.from({ length: cols * 3 }, (_, r) => [1, 1, 2][r % 3]!),
   };
 };
-const info = { 原点: [0, 64, 0] as [number, number, number], 状态: ['minecraft:air', 'minecraft:stone', 'minecraft:grass_block'], 群系: ['minecraft:plains'] };
+const info = { origin: [0, 64, 0] as [number, number, number], state: ['minecraft:air', 'minecraft:stone', 'minecraft:grass_block'], biome: ['minecraft:plains'] };
 const cutBoxes = [
-  { 盒: [0, 0, 0, 2, 2, 10], 留: null }, // 列 (1..2, 1..2) 整列挖空
-  { 盒: [4, 4, 0, 5, 5, 10], 留: globRegex(['grass_*']) }, // 列 (5, 5) 只留草方块
+  { boxes: [0, 0, 0, 2, 2, 10], 留: null }, // 列 (1..2, 1..2) 整列挖空
+  { boxes: [4, 4, 0, 5, 5, 10], 留: globRegex(['grass_*']) }, // 列 (5, 5) 只留草方块
 ];
 // 游戏方块列 (9, −10) 是体素列 (10, 10)；地面顶面场景 z 7，竖直范围要往上扩
 const flattenAreas = [{ x0: 9, z0: -10, nx: 1, nz: 1, mask: Uint8Array.of(1), groundY: 70, fillBlocks: ['minecraft:dirt'] }];
 const context = (src: { info: typeof info; cutBoxes: typeof cutBoxes; flattenAreas: typeof flattenAreas }): SectionContext => ({
   info: src.info,
   tables: buildPackTables(src.info),
-  variesByPos: src.info.群系.map(() => true),
+  variesByPos: src.info.biome.map(() => true),
   cutBoxes: src.cutBoxes,
   flattenAreas: src.flattenAreas,
 });
@@ -55,7 +55,7 @@ describe('导入区段', () => {
   it('挖、留、整平、按位置染色', () => {
     const v = importedSectionVoxels(section(), context({ info, cutBoxes, flattenAreas }));
     expect(v.nz).toBe(8); // 整平把竖直范围扩到地面顶上一格
-    expect(v.原点).toEqual([0, 0, 0]);
+    expect(v.origin).toEqual([0, 0, 0]);
     for (let k = 0; k < v.nz; k++) expect(v.vox[at(1, 1, k)]).toBe(0);
     expect(v.carveMask?.[1 * cols + 1]).toBe(1);
     expect(v.carveMask?.[5 * cols + 5]).toBe(0);
@@ -75,7 +75,7 @@ describe('导入区段', () => {
   it('地面低于存的范围：往下扩，扩出来的填石头', () => {
     const low = [{ ...flattenAreas[0]!, groundY: 61 }]; // 地面顶面场景 z −2
     const v = importedSectionVoxels(section(), context({ info, cutBoxes: [], flattenAreas: low }));
-    expect(v.原点[2]).toBe(-3);
+    expect(v.origin[2]).toBe(-3);
     expect(v.palette[v.vox[at(0, 0, 0)]!]!.v).toBe(1);
     expect(v.carveMask).toBeUndefined();
   });
@@ -88,7 +88,7 @@ describe('导入区段', () => {
     expect(worker.vox).toEqual(main.vox);
     expect(worker.carveMask).toEqual(main.carveMask);
     expect(worker.palette).toEqual(main.palette);
-    expect([worker.nx, worker.ny, worker.nz, worker.格, worker.原点]).toEqual([main.nx, main.ny, main.nz, main.格, main.原点]);
+    expect([worker.nx, worker.ny, worker.nz, worker.cell, worker.origin]).toEqual([main.nx, main.ny, main.nz, main.cell, main.origin]);
     expect(data).toEqual(before);
     // 同一份数据重换一次（工人换好的已经交出去、网格又被挤掉）结果一样
     expect(importedSectionVoxels(data, context({ info, cutBoxes, flattenAreas })).vox).toEqual(main.vox);

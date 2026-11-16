@@ -13,14 +13,14 @@ import { useOutputFrame } from './时间.tsx';
 export type ModuleDir = { keys(): string[]; (key: string): unknown };
 
 export type RegisterParams = {
-  manifest: readonly { 键: string }[];
+  manifest: readonly { key: string }[];
   /** 段键 → 段目录（相对作品根，如 段/6-斩娜迦、核对/冒烟） */
   segDir: (segKey: string) => string;
   /** 段目录的第一层（段、核对）→ 扫这一层的 webpackContext，键形如 ./<段名>/段.ts */
-  模块: Readonly<Record<string, ModuleDir>>;
+  modules: Readonly<Record<string, ModuleDir>>;
 };
 
-export const makeRegistry = ({ manifest, segDir, 模块: modules }: RegisterParams): React.FC => {
+export const makeRegistry = ({ manifest, segDir, modules: modules }: RegisterParams): React.FC => {
   const loadExport = <T,>(segKey: string, file: string, exportName: string): T => {
     const dir = segDir(segKey);
     const [topLayer, ...restSegments] = dir.split('/');
@@ -37,25 +37,25 @@ export const makeRegistry = ({ manifest, segDir, 模块: modules }: RegisterPara
   /** 这一段的字幕：输出帧 */
   const SubtitleLayer: React.FC = () => {
     const frame = useOutputFrame();
-    const activeSubtitles = useSettings().字幕.filter((p) => p.起 <= frame && frame < p.止);
+    const activeSubtitles = useSettings().subtitles.filter((p) => p.start <= frame && frame < p.end);
     return (
       <>
         {activeSubtitles.map((p, i) => (
           <AbsoluteFill key={i}>
-            <Img src={p.图} style={{ width: '100%', height: '100%', imageRendering: 'pixelated' }} />
+            <Img src={p.image} style={{ width: '100%', height: '100%', imageRendering: 'pixelated' }} />
           </AbsoluteFill>
         ))}
       </>
     );
   };
 
-  const segments = manifest.map(({ 键: segKey }) => ({ 键: segKey, 段: loadExport<SegmentDef>(segKey, '段.ts', 'default') }));
-  const outputFps = settings.输出fps ?? segFps;
+  const segments = manifest.map(({ key: segKey }) => ({ key: segKey, segment: loadExport<SegmentDef>(segKey, '段.ts', 'default') }));
+  const outputFps = settings.outputFps ?? segFps;
 
-  const compositions = segments.flatMap(({ 键: segKey, 段: seg }) => {
+  const compositions = segments.flatMap(({ key: segKey, segment: seg }) => {
     const frameCount = segFrameCount(seg, outputFps);
     const Picture = loadExport<React.FC>(segKey, '画面.tsx', 'default');
-    const overlays = (seg.叠层 ?? []).map((l) => ({ 名: l.名, component: loadExport<React.FC>(segKey, l.entry, 'default') }));
+    const overlays = (seg.overlay ?? []).map((l) => ({ name: l.name, component: loadExport<React.FC>(segKey, l.entry, 'default') }));
     const wrap = (children: React.ReactNode, withSubtitles: boolean): React.FC => {
       const component: React.FC = () => (
         <SettingsProvider settings={settings}>
@@ -68,7 +68,7 @@ export const makeRegistry = ({ manifest, segDir, 模块: modules }: RegisterPara
     const mainComp = (
       <>
         <Picture />
-        {overlays.map(({ 名: overlayName, component: OverlayLayer }) => (
+        {overlays.map(({ name: overlayName, component: OverlayLayer }) => (
           <AbsoluteFill key={overlayName}>
             <OverlayLayer />
           </AbsoluteFill>
@@ -76,15 +76,15 @@ export const makeRegistry = ({ manifest, segDir, 模块: modules }: RegisterPara
       </>
     );
     return [
-      { id: segKey, component: wrap(mainComp, true), 段: seg, 帧数: frameCount },
-      ...overlays.map(({ 名: overlayName, component: OverlayLayer }) => ({ id: `${segKey}-${overlayName}`, component: wrap(<OverlayLayer />, false), 段: seg, 帧数: frameCount })),
+      { id: segKey, component: wrap(mainComp, true), segment: seg, frameCount: frameCount },
+      ...overlays.map(({ name: overlayName, component: OverlayLayer }) => ({ id: `${segKey}-${overlayName}`, component: wrap(<OverlayLayer />, false), segment: seg, frameCount: frameCount })),
     ];
   });
 
   const registration: React.FC = () => (
     <>
-      {compositions.map(({ id, 段: seg, component, 帧数: frameCount }) => (
-        <Composition key={id} id={id} component={component} durationInFrames={frameCount} fps={outputFps} width={seg.宽} height={seg.高} />
+      {compositions.map(({ id, segment: seg, component, frameCount: frameCount }) => (
+        <Composition key={id} id={id} component={component} durationInFrames={frameCount} fps={outputFps} width={seg.width} height={seg.height} />
       ))}
     </>
   );

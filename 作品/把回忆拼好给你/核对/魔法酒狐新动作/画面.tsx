@@ -68,7 +68,7 @@ const setupView = (v: View) => {
   const liYing = v.cameraRig === '封面' ? { ...standPose(originPos), yaw: magicalWineFoxTurnTo(originPos, coverEye, 50, '左').yaw } : { ...standPose(originPos), yaw: 180 };
   const display = v.handheldDisplay ? DISPLAY.handheld.thirdperson_righthand : undefined;
   const holdFlowerProps = (facing?: HeldItem['facing']): Partial<MagicalWineFoxExProps> => (v.holdFlower ? { [v.leftHand ? 'leftHand' : 'rightHand']: { item: <MoonBellLily />, display, facing } } : {});
-  const bottomProps: MagicalWineFoxExProps = { pose: liYing, stancePose: v.stancePose, expression: v.expression, blink: v.blink, 秒: v.秒, 看: Array.isArray(v.看) ? v.看 : undefined, ...holdFlowerProps() };
+  const bottomProps: MagicalWineFoxExProps = { pose: liYing, stancePose: v.stancePose, expression: v.expression, blink: v.blink, sec: v.sec, 看: Array.isArray(v.看) ? v.看 : undefined, ...holdFlowerProps() };
   const bones = magicalWineFoxExBones(bottomProps);
   const headPos = addVec(magicalWineFoxBoneAt(liYing, bones, 'Head'), [0, 0, 0.12]);
   let eye: V3;
@@ -101,8 +101,8 @@ const ToonGround: React.FC = () => (
 );
 
 const ToonPicture: React.FC<{ v: View; props: MagicalWineFoxExProps }> = ({ v, props }) => (
-  <div style={{ position: 'absolute', left: 0, top: 0, width: aspect.宽 / toonScale, height: aspect.高 / toonScale, transform: `scale(${toonScale})`, transformOrigin: '0 0', imageRendering: 'pixelated' }}>
-    <ToonCanvas 宽={aspect.宽 / toonScale} 高={aspect.高 / toonScale} cameraRig={filmOrthoRig({ 看: [0, 0, 0.9], facing: toonFacing[v.cameraRig] })} {...canvasTone('夏日白天')}>
+  <div style={{ position: 'absolute', left: 0, top: 0, width: aspect.width / toonScale, height: aspect.height / toonScale, transform: `scale(${toonScale})`, transformOrigin: '0 0', imageRendering: 'pixelated' }}>
+    <ToonCanvas width={aspect.width / toonScale} height={aspect.height / toonScale} cameraRig={filmOrthoRig({ 看: [0, 0, 0.9], facing: toonFacing[v.cameraRig] })} {...canvasTone('夏日白天')}>
       <ToonGround />
       <Outline>
         <TexturePixelAlign 锚={props.pose.loc as V3}>
@@ -121,25 +121,25 @@ const picture: React.FC = () => {
       <AbsoluteFill style={{ background: '#000000' }}>
         <ToonPicture v={v} props={props} />
         <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-          <div>{v.名}</div>
+          <div>{v.name}</div>
           <div style={{ fontSize: 16 }}>成片像素密度，最近邻放大 {toonScale} 倍</div>
         </div>
       </AbsoluteFill>
     );
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas key={v.ortho ? '正交' : '透视'} orthographic={!!v.ortho} width={aspect.宽} height={aspect.高} gl={{ antialias: !v.ortho }}>
+      <ThreeCanvas key={v.ortho ? '正交' : '透视'} orthographic={!!v.ortho} width={aspect.width} height={aspect.height} gl={{ antialias: !v.ortho }}>
         <color attach="background" args={['#5a5e66']} />
         {v.ortho ? <OrthoRig 眼={eye} 看={lookAt} /> : <FirstPersonRig 眼={eye} 看={lookAt} fov={fov} />}
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
           <Ground />
-          {v.legacyComponent ? <MagicalWineFox pose={props.pose} stancePose="站" blink={v.blink} 秒={v.秒} /> : <MagicalWineFoxEx {...props} />}
+          {v.legacyComponent ? <MagicalWineFox pose={props.pose} stancePose="站" blink={v.blink} sec={v.sec} /> : <MagicalWineFoxEx {...props} />}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.名}</div>
+        <div>{v.name}</div>
         <div style={{ fontSize: 16 }}>
           姿势 {v.stancePose}
           {v.expression ? `，表情 ${v.expression}` : ''}

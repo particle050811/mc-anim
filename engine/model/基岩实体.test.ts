@@ -41,13 +41,13 @@ describe('动画姿势', () => {
   });
 
   it('按层顺序取样、混合；各层可以有自己的时钟', () => {
-    expect(animationPose({ 文件: animFile, layers: [{ 名: '走' }] }, 1).head!.rot).toEqual([10, 0, 0]);
-    expect(animationPose({ 文件: animFile, layers: [{ 名: '走' }, { 名: '点头', blendMode: '叠加' }] }, 1).head!.rot).toEqual([15, 0, 0]);
-    expect(animationPose({ 文件: animFile, layers: [{ 名: '走', 秒: 0.5 }] }, 1).head!.rot).toEqual([5, 0, 0]);
+    expect(animationPose({ file: animFile, layers: [{ name: '走' }] }, 1).head!.rot).toEqual([10, 0, 0]);
+    expect(animationPose({ file: animFile, layers: [{ name: '走' }, { name: '点头', blendMode: '叠加' }] }, 1).head!.rot).toEqual([15, 0, 0]);
+    expect(animationPose({ file: animFile, layers: [{ name: '走', sec: 0.5 }] }, 1).head!.rot).toEqual([5, 0, 0]);
   });
 
   it('动画名拼错直接报错', () => {
-    expect(() => animationPose({ 文件: animFile, layers: [{ 名: '跑' }] }, 0)).toThrow(/没有 跑/);
+    expect(() => animationPose({ file: animFile, layers: [{ name: '跑' }] }, 0)).toThrow(/没有 跑/);
   });
 
   it('没给变量表时每帧一张新表：通道里的赋值不报错，后面的层读得到；q.life_time 默认是 秒', () => {
@@ -57,10 +57,10 @@ describe('动画姿势', () => {
         读: { loop: true, bones: { body: { position: ['v.h * 2', 0, 0] } } },
       },
     });
-    const pose = animationPose({ 文件: script, layers: [{ 名: '算' }, { 名: '读' }] }, 1.5);
+    const pose = animationPose({ file: script, layers: [{ name: '算' }, { name: '读' }] }, 1.5);
     expect(pose.head!.pos).toEqual([3, 1.5, 0]);
     expect(pose.body!.pos).toEqual([6, 0, 0]);
-    expect(animationPose({ 文件: script, layers: [{ 名: '算' }], 环境: { query: { life_time: 9 } } }, 1.5).head!.pos![1]).toBe(9);
+    expect(animationPose({ file: script, layers: [{ name: '算' }], env: { query: { life_time: 9 } } }, 1.5).head!.pos![1]).toBe(9);
   });
 
   it('通用口径乘 blend_weight，TLM 不读', () => {
@@ -71,15 +71,15 @@ describe('动画姿势', () => {
       },
     });
     const env = { 变量: { w: 0.5 } };
-    expect(animationPose({ 文件: weighted, layers: [{ 名: '底' }, { 名: '半' }], 环境: env }, 0).head!.rot).toEqual([15, 0, 0]);
-    expect(animationPose({ 文件: weighted, layers: [{ 名: '底' }, { 名: '半' }], 环境: env, 口径: 'TLM' }, 0).head!.rot).toEqual([20, 0, 0]);
+    expect(animationPose({ file: weighted, layers: [{ name: '底' }, { name: '半' }], env: env }, 0).head!.rot).toEqual([15, 0, 0]);
+    expect(animationPose({ file: weighted, layers: [{ name: '底' }, { name: '半' }], env: env, 口径: 'TLM' }, 0).head!.rot).toEqual([20, 0, 0]);
   });
 
   it('一层可以是控制器：按它自己的时钟给骨骼，和别的层照常混合', () => {
-    const controller = geckoLibController({ 名: 'main', transitionTicks: 0, schedule: [{ 秒: 0, clip: '点头' }, { 秒: 1, clip: '走' }], animations: animFile });
-    expect(animationPose({ 文件: animFile, layers: [{ controller: controller }] }, 0.5).head!.rot).toEqual([5, 0, 0]);
-    expect(animationPose({ 文件: animFile, layers: [{ controller: controller }] }, 2).head!.rot).toEqual([10, 0, 0]);
-    expect(animationPose({ 文件: animFile, layers: [{ controller: controller, 秒: 0.2 }, { 名: '点头', blendMode: '叠加' }] }, 9).head!.rot).toEqual([10, 0, 0]);
+    const controller = geckoLibController({ name: 'main', transitionTicks: 0, schedule: [{ sec: 0, clip: '点头' }, { sec: 1, clip: '走' }], animations: animFile });
+    expect(animationPose({ file: animFile, layers: [{ controller: controller }] }, 0.5).head!.rot).toEqual([5, 0, 0]);
+    expect(animationPose({ file: animFile, layers: [{ controller: controller }] }, 2).head!.rot).toEqual([10, 0, 0]);
+    expect(animationPose({ file: animFile, layers: [{ controller: controller, sec: 0.2 }, { name: '点头', blendMode: '叠加' }] }, 9).head!.rot).toEqual([10, 0, 0]);
   });
 });
 

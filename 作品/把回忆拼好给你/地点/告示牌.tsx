@@ -14,9 +14,9 @@ const PX = 1 / 24;
 
 /** 告示牌的尺寸（格，相对底面中心）。字面：放字的那块，中心在牌面南边贴面处 */
 export const signSize = {
-  signBoard: { 宽: 24 * PX, 高: 12 * PX, thickness: 2 * PX, bottom: 14 * PX },
+  signBoard: { width: 24 * PX, height: 12 * PX, thickness: 2 * PX, bottom: 14 * PX },
   topPx: 26 * PX,
-  textPanel: { 中心: [0, -PX - 1 / 512, 20 * PX] as V3, 宽: 90 / 96, 高: 40 / 96 },
+  textPanel: { center: [0, -PX - 1 / 512, 20 * PX] as V3, width: 90 / 96, height: 40 / 96 },
   glyphPx: 1 / 96,
   行高: 10 / 96,
 };
@@ -26,6 +26,6 @@ export const Signboard: React.FC<{ 位: V3; children?: React.ReactNode }> = ({ �
   <group position={pos}>
     <TexBox tex={TEX} px={[24, 12, 2]} uv={[0, 0]} s={[24 * PX, 2 * PX, 12 * PX]} p={[0, 0, 20 * PX]} />
     <TexBox tex={TEX} px={[2, 14, 2]} uv={[0, 14]} s={[2 * PX, 2 * PX, 14 * PX]} p={[0, 0, 7 * PX]} />
-    {children && <group position={signSize.textPanel.中心}>{children}</group>}
+    {children && <group position={signSize.textPanel.center}>{children}</group>}
   </group>
 );

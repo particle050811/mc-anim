@@ -12,8 +12,8 @@ import { snapToFrame } from '@engine/段/按时取值.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 
 const lineCues: readonly LineCue[] = [
-  { 句: dieLine, 帧: 6 },
-  { 句: slipAwayLine, 帧: 36 },
+  { 句: dieLine, frame: 6 },
+  { 句: slipAwayLine, frame: 36 },
 ];
 const sounds = { [dieLine.id]: dieWav, [slipAwayLine.id]: slipAwayWav };
 
@@ -26,14 +26,14 @@ const picture: React.FC = () => {
   const pxPerFrame = (width - 160) / ((durationInFrames / frameRate) * fps);
   return (
     <AbsoluteFill style={{ background: '#1b1d22', color: '#eee', fontFamily: 'sans-serif' }}>
-      <LineCueTrack lineCues={lineCues} 声音={sounds} />
-      {lineCues.map(({ 句: sentence, 帧: lineStartFrame }, i) => {
-        const mouth = sentenceLip(lineCues, sentence.角色, frame, fps);
+      <LineCueTrack lineCues={lineCues} sound={sounds} />
+      {lineCues.map(({ 句: sentence, frame: lineStartFrame }, i) => {
+        const mouth = sentenceLip(lineCues, sentence.character, frame, fps);
         const left = 200 + i * 520;
         return (
           <div key={sentence.id}>
-            <div style={{ position: 'absolute', left: left, top: 90, fontSize: 40 }}>{sentence.角色}</div>
-            <div style={{ position: 'absolute', left: left, top: 150, fontSize: 30, color: '#aab' }}>{sentence.念}</div>
+            <div style={{ position: 'absolute', left: left, top: 90, fontSize: 40 }}>{sentence.character}</div>
+            <div style={{ position: 'absolute', left: left, top: 150, fontSize: 30, color: '#aab' }}>{sentence.spoken}</div>
             <div style={{ position: 'absolute', left: left, top: 220, width: 240, height: 180, background: '#d9b38c', borderRadius: 12 }}>
               <div
                 style={{

@@ -14,11 +14,11 @@ export const fireballSmoke = (projectiles: readonly Fireball[], tick: number, se
   projectiles.flatMap((projectile, i) =>
     eachTick(1, Math.min(tick - projectile.launchTick, projectile.flightTick)).map((n) => {
       const p = projectile.trajectory(n);
-      return { 种: 'smoke' as const, 刻: projectile.launchTick + n, p: [p[0], p[1], p[2] + 0.5] as [number, number, number], 种子: seed * 131 + i * 977 + n };
+      return { kind: 'smoke' as const, 刻: projectile.launchTick + n, p: [p[0], p[1], p[2] + 0.5] as [number, number, number], seed: seed * 131 + i * 977 + n };
     }),
   );
 
-export const FireballGroup: React.FC<{ projectiles: readonly Fireball[]; 秒: number; /** 渲染器的 scale：小火球 0.75，大火球 3 */ scale: number; 种子: number }> = ({ projectiles, 秒: sec, scale, 种子: seed }) => {
+export const FireballGroup: React.FC<{ projectiles: readonly Fireball[]; sec: number; /** 渲染器的 scale：小火球 0.75，大火球 3 */ scale: number; seed: number }> = ({ projectiles, sec: sec, scale, seed: seed }) => {
   const tick = sec * 20;
   const items = projectiles
     .filter((projectile) => tick >= projectile.launchTick && tick - projectile.launchTick < projectile.flightTick)
@@ -28,8 +28,8 @@ export const FireballGroup: React.FC<{ projectiles: readonly Fireball[]; 秒: nu
     });
   return (
     <>
-      <QuadGroup 图={png(fireChargePng)} 项={items} 混合="镂空" />
-      <VanillaParticles spawns={fireballSmoke(projectiles, tick, seed)} 秒={sec} />
+      <QuadGroup image={png(fireChargePng)} items={items} blend="镂空" />
+      <VanillaParticles spawns={fireballSmoke(projectiles, tick, seed)} sec={sec} />
     </>
   );
 };

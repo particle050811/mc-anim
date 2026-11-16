@@ -46,9 +46,9 @@ describe('小木屋四周的地（用户 10-24「而且怎么超平坦背景 合
   it('门口那一扇（第 8～11 句）没有樱花林：用户 10-25「背景从什么都没有到长成一片樱花林」，第 13 句才一棵棵冒；第 6、7 句那一扇照旧有', () => {
     const backViewBlocks = SurroundBlocks(behindHouseRange);
     expect(backViewBlocks.cherryGrove).toEqual([]);
-    expect(backViewBlocks.plains.filter((b) => /cherry|pink_petals/.test(b.状态))).toEqual([]);
+    expect(backViewBlocks.plains.filter((b) => /cherry|pink_petals/.test(b.state))).toEqual([]);
     const terrainBlocks = SurroundBlocks(terrainRange);
-    expect(terrainBlocks.cherryGrove.some((b) => b.状态.startsWith('minecraft:cherry_leaves'))).toBe(true);
+    expect(terrainBlocks.cherryGrove.some((b) => b.state.startsWith('minecraft:cherry_leaves'))).toBe(true);
   });
 
   it('同一份种子铺出来的一样（每个渲染页面各铺一遍，帧和帧不能差）', () => {

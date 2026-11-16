@@ -27,22 +27,22 @@ const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0 && spawnSync('f
 
 describe('音频元数据', () => {
   it('解析 ebur128 汇总：积分响度、采样峰值取 Summary 里的，时长取 ffprobe 的', () => {
-    expect(parseEbur128(ebuSummary, '3.312646\n')).toEqual({ 时长: 3.312646, 峰值: -0.3, 响度: -15.5 });
-    expect(parseEbur128(ebuSummary)).toEqual({ 峰值: -0.3, 响度: -15.5 });
+    expect(parseEbur128(ebuSummary, '3.312646\n')).toEqual({ duration: 3.312646, peakDb: -0.3, loudness: -15.5 });
+    expect(parseEbur128(ebuSummary)).toEqual({ peakDb: -0.3, loudness: -15.5 });
   });
 
   it('静音：峰值 -inf 不写，响度照写', () => {
     const sampleOutput = 'Summary:\n  Integrated loudness:\n    I:         -70.0 LUFS\n  Sample peak:\n    Peak:        -inf dBFS\n';
-    expect(parseEbur128(sampleOutput, 'N/A')).toEqual({ 响度: -70 });
+    expect(parseEbur128(sampleOutput, 'N/A')).toEqual({ loudness: -70 });
   });
 
   it('不是音频的条目原样返回；量不出只警告、不抛', () => {
-    const lockEntry = { sha256: 'a'.repeat(64), 大小: 1, 库: 'store' as const, 后缀: '.png' };
+    const lockEntry = { sha256: 'a'.repeat(64), size: 1, lib: 'store' as const, suffix: '.png' };
     expect(withAudioMetadata(lockEntry, '/没有/图.png')).toBe(lockEntry);
     const d = fs.mkdtempSync(path.join(os.tmpdir(), '音频量-'));
     const badPath = path.join(d, '坏.ogg');
     fs.writeFileSync(badPath, '不是 ogg');
-    expect(withAudioMetadata({ ...lockEntry, 后缀: '.ogg' }, badPath)).toEqual({ ...lockEntry, 后缀: '.ogg' });
+    expect(withAudioMetadata({ ...lockEntry, suffix: '.ogg' }, badPath)).toEqual({ ...lockEntry, suffix: '.ogg' });
   });
 
   // lavfi 的 sine 默认振幅 1/8（-18 dBFS），再乘 0.5 是 -24.08 dBFS；用 flac 不用 wav：Homebrew ffmpeg 9.0.2 把 wav 误探成 mpegts
@@ -50,9 +50,9 @@ describe('音频元数据', () => {
     const d = fs.mkdtempSync(path.join(os.tmpdir(), '音频量-'));
     const f = path.join(d, '正弦.flac');
     spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1:sample_rate=48000', '-af', 'volume=0.5', f]);
-    const r = withAudioMetadata({ sha256: 'b'.repeat(64), 大小: 1, 库: 'store', 后缀: '.flac' }, f);
-    expect(r.时长).toBeCloseTo(1, 2);
-    expect(r.峰值).toBeCloseTo(-24.08, 0);
-    expect(r.响度).toBeLessThan(r.峰值!);
+    const r = withAudioMetadata({ sha256: 'b'.repeat(64), size: 1, lib: 'store', suffix: '.flac' }, f);
+    expect(r.duration).toBeCloseTo(1, 2);
+    expect(r.peakDb).toBeCloseTo(-24.08, 0);
+    expect(r.loudness).toBeLessThan(r.peakDb!);
   });
 });

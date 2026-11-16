@@ -9,11 +9,11 @@ import { segSounds } from '../../场/2-门口/门口之夜声音.ts';
 const clock = segClock('2-截图下线');
 
 export default defineSeg({
-  场: '2-门口',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-门口',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: mainCutOriginalGain }, ...segSounds(clock.sceneWindow)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: mainCutOriginalGain }, ...segSounds(clock.sceneWindow)],
 });

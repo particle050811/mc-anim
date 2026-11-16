@@ -20,7 +20,7 @@ import { EndPortal } from './末地传送门.tsx';
 import { EndCharacter } from './角色.tsx';
 
 const tone = palette.末地;
-const width = aspect.宽, height = aspect.高;
+const width = aspect.width, height = aspect.height;
 
 /** 全片 15 句的符文歌词行（段内帧），样式照歌词艺术字定稿、描边色跟末地调子 */
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, segmentWindow('2-抢龙蛋').起帧));
@@ -32,9 +32,9 @@ export const EndScene: React.FC<{ f: number }> = ({ f }) => (
     <EndSky 眼={cameraRig(f).眼} />
     <EndSet />
     <EndPortal 刻={frameToTick(f)} />
-    <DragonEgg 格={eggCell(f)} />
+    <DragonEgg cell={eggCell(f)} />
     <EndCharacter liYing={LiYingState(f)} 你={YouState(f)} outline={defaultOutline.开} />
-    <VanillaParticles spawns={teleportParticles} 秒={f / fps} />
+    <VanillaParticles spawns={teleportParticles} sec={f / fps} />
   </>
 );
 
@@ -52,12 +52,12 @@ export type EndShotProps = {
 /** 一整帧（1280×720 页面） */
 export const EndShot: React.FC<EndShotProps> = ({ f, clean = false, withPost = true, overlay }) => (
   <AbsoluteFill>
-    <FilmPost grade={withPost ? (overlay ? { ...tone.grade, 暗角: 0, 颗粒: 0 } : tone.grade) : null} 种子={toSongFrame(f)}>
-      <ToonCanvas 宽={width} 高={height} cameraRig={cameraRig(f)} {...canvasTone('末地')}>
+    <FilmPost grade={withPost ? (overlay ? { ...tone.grade, 暗角: 0, 颗粒: 0 } : tone.grade) : null} seed={toSongFrame(f)}>
+      <ToonCanvas width={width} height={height} cameraRig={cameraRig(f)} {...canvasTone('末地')}>
         <EndScene f={f} />
       </ToonCanvas>
     </FilmPost>
     {overlay}
-    {!clean && <RuneLyric lines={lyricLines} 样式={lyricStyle} 帧={f} />}
+    {!clean && <RuneLyric lines={lyricLines} 样式={lyricStyle} frame={f} />}
   </AbsoluteFill>
 );

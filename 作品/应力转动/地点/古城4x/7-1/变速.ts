@@ -5,7 +5,7 @@
 import { HIT_STOP_SEC } from '../../../默认.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 
-export type ClockPoint = [t: number, clock: number, 对数?: boolean];
+export type ClockPoint = [t: number, clock: number, logScale?: boolean];
 export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[], stops: number[] = []) => {
   const samplesPerSec = 24;
   const hitStopSec = HIT_STOP_SEC;

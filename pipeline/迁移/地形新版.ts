@@ -73,9 +73,9 @@ export const migrateTerrain = async (o: { roots: Roots; only?: string[]; dryRun:
     else fs.renameSync(stage, dest);
     const m = await packManifest(dest);
     entry[field(entry, '版本')] = to;
-    entry[field(entry, '文件数')] = m.文件数;
-    entry[field(entry, '大小')] = m.大小;
-    entry[field(entry, '清单sha256')] = m.清单sha256;
+    entry[field(entry, '文件数')] = m.fileCount;
+    entry[field(entry, '大小')] = m.size;
+    entry[field(entry, '清单sha256')] = m.manifestSha256;
     const sourceKey = field(entry, '来源');
     entry[sourceKey] = `${entry[sourceKey] as string}；盘键迁移从 ${from} 改键名`;
     result.to = to;

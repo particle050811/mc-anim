@@ -34,10 +34,10 @@ const ApplyRig: React.FC<{ v: CameraRig }> = ({ v }) => {
 const picture: React.FC = () => {
   const segSec = useCurrentSec();
   const v = viewAt(segSec);
-  const hurt = v.hitSec !== undefined && v.秒 >= v.hitSec && v.秒 < v.hitSec + 0.5;
+  const hurt = v.hitSec !== undefined && v.sec >= v.hitSec && v.sec < v.hitSec + 0.5;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: false }}>
         <color attach="background" args={['#5a5e66']} />
         <ApplyRig v={v.cameraRig} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -53,15 +53,15 @@ const picture: React.FC = () => {
             <sphereGeometry args={[0.08, 12, 8]} />
             <meshBasicMaterial color="#ffffff" />
           </mesh>
-          <SpellPerformance id={v.meta.id} 秒={v.秒} from={castFrom} 目标={target} 种子={seed} />
+          <SpellPerformance id={v.meta.id} sec={v.sec} from={castFrom} target={target} seed={seed} />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
         <div>
-          第 {v.slotIndex + 1} 个　{chineseNames.get(v.meta.id) ?? ''}（{v.meta.id}）　{v.cameraRig.名}
+          第 {v.slotIndex + 1} 个　{chineseNames.get(v.meta.id) ?? ''}（{v.meta.id}）　{v.cameraRig.name}
         </div>
         <div style={{ fontSize: 16 }}>
-          出手后 {v.秒.toFixed(2)} 秒（第 {(v.秒 * 20).toFixed(1)} 刻）／全长 {v.长秒.toFixed(2)} 秒{v.hitSec === undefined ? '' : `　命中在 ${v.hitSec.toFixed(2)} 秒`}　槽起帧 {v.slotIndex * slotSec * 60}
+          出手后 {v.sec.toFixed(2)} 秒（第 {(v.sec * 20).toFixed(1)} 刻）／全长 {v.长秒.toFixed(2)} 秒{v.hitSec === undefined ? '' : `　命中在 ${v.hitSec.toFixed(2)} 秒`}　槽起帧 {v.slotIndex * slotSec * 60}
         </div>
       </div>
     </AbsoluteFill>

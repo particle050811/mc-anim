@@ -14,14 +14,14 @@ export const textureIndex = (n: TextureName) => raw.贴图[n].序号;
 
 // 方块：X / Y 是朝东西 / 南北的侧面，顶 / 底；换：这几个朝向的面把贴图转 90°（横放的原木），位 1 = X 面、2 = Y 面、4 = 顶底；
 // 变体：同一种方块里按格子随机换成别的贴图（石砖里混裂纹石砖、苔石砖，和游戏里建城墙的做法一样），[贴图, 比例] 最多两种
-export type BlockDef = { X: number; Y: number; topTexIndex: number; bottom: number; 换: number; variants: [number, number, number, number] };
+export type BlockDef = { X: number; Y: number; topTexIndex: number; bottom: number; replaced: number; variants: [number, number, number, number] };
 const uniformBlock = (n: TextureName, variants: [TextureName, number][] = []): BlockDef => facesBlock(n, n, n, n, 0, variants);
 const facesBlock = (x: TextureName, y: TextureName, topTex: TextureName, bottomTex: TextureName, rotateMask = 0, variants: [TextureName, number][] = []): BlockDef => ({
   X: textureIndex(x),
   Y: textureIndex(y),
   topTexIndex: textureIndex(topTex),
   bottom: textureIndex(bottomTex),
-  换: rotateMask,
+  replaced: rotateMask,
   variants: [variants[0] ? textureIndex(variants[0][0]) : -1, variants[1] ? textureIndex(variants[1][0]) : -1, variants[0]?.[1] ?? 0, variants[1]?.[1] ?? 0],
 });
 // 原木：竖着放（顶底是年轮），沿 X 横放（东西两面是年轮，其余的面贴图转 90°，纹理顺着原木），沿 Y 横放

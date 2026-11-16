@@ -36,7 +36,7 @@ export const registerAsset = (id: string, file: string, o: IngestOptions): { ent
   const [lockFile, otherLockFile] = e.side === '作品' ? [workAssetLockPath(o.workRoot), sharedLockPath] : [sharedLockPath, workAssetLockPath(o.workRoot)];
   const assetLock = readAssetLock(lockFile);
   const otherLock = readAssetLock(otherLockFile);
-  const storedBytes = importToStore(path.resolve(file), libName(e.可见性), o.dataRoot);
+  const storedBytes = importToStore(path.resolve(file), libName(e.visibility), o.dataRoot);
   const nextEntry = o.measureAudio === false ? storedBytes : withAudioMetadata(storedBytes, file);
   const prevEntry = assetLock[id] ?? otherLock[id];
   if (prevEntry && prevEntry.sha256 !== nextEntry.sha256 && !o.replace) {
@@ -57,17 +57,17 @@ const writeBytes = async (checkOnly: boolean, runRecord: Parameters<Command['跑
   const repoListPath = path.join(workDir, repoTableName);
   if (!fs.existsSync(repoListPath)) throw new Error(`${relativeToCodeRoot(repoListPath)} 不存在：这部作品没定随仓库发哪些段的字节（写 "段" = ["<段键或章>", …]）`);
   if (path.relative(path.join(codeRoot(), '作品', workName()), workDir) !== '') throw new Error(`${workName()} 不在 作品/ 下，随仓库发字节只管仓库里的作品`);
-  const c = new CheckContext(codeRoot(), { 作品: workName() });
+  const c = new CheckContext(codeRoot(), { work: workName() });
   try {
-    const bundleSet = await computeRepoBundle(c, readRepoManifest(fs.readFileSync(repoListPath, 'utf8')).段);
+    const bundleSet = await computeRepoBundle(c, readRepoManifest(fs.readFileSync(repoListPath, 'utf8')).segment);
     if (bundleSet.issues.length) throw new Error(`算不出随仓库的集合：\n  ${bundleSet.issues.join('\n  ')}`);
     const r = writeRepoBundle(bundleSet, workDir, dataRoot(), checkOnly);
     const relDir = relativeToCodeRoot(bytesDir(workDir));
-    console.log(`${bundleSet.segKeys.length} 段要 ${r.fileCount} 件字节（${(r.大小 / 1e6).toFixed(1)} MB）；私有不带 ${bundleSet.privateFiles.length} 件${bundleSet.privateFiles.length ? `：${bundleSet.privateFiles.join('、')}` : ''}`);
-    const changeCount = r.added.length + r.改.length + r.removed.length;
+    console.log(`${bundleSet.segKeys.length} 段要 ${r.fileCount} 件字节（${(r.size / 1e6).toFixed(1)} MB）；私有不带 ${bundleSet.privateFiles.length} 件${bundleSet.privateFiles.length ? `：${bundleSet.privateFiles.join('、')}` : ''}`);
+    const changeCount = r.added.length + r.changed.length + r.removed.length;
     if (!changeCount) console.log(`${relDir} 已经一致`);
-    else console.log(`${relDir}${checkOnly ? ' 要' : ' '}添 ${r.added.length} 件、重拷 ${r.改.length} 件、删 ${r.removed.length} 件${checkOnly ? '（anim assets vendor 写进去）' : ''}`);
-    if (!checkOnly && changeCount) runRecord.产物.push(bytesDir(workDir));
+    else console.log(`${relDir}${checkOnly ? ' 要' : ' '}添 ${r.added.length} 件、重拷 ${r.changed.length} 件、删 ${r.removed.length} 件${checkOnly ? '（anim assets vendor 写进去）' : ''}`);
+    if (!checkOnly && changeCount) runRecord.artifacts.push(bytesDir(workDir));
     return checkOnly && changeCount ? 1 : 0;
   } finally {
     c.finalize();
@@ -80,16 +80,16 @@ const runPackRelease = async (upload: boolean, runRecord: Parameters<Command['�
   const tableFile = path.join(workDir, releaseTableName);
   if (!fs.existsSync(tableFile)) throw new Error(`${relativeToCodeRoot(tableFile)} 不存在：这部作品没定挂 Release 发哪些段（写 "仓库"、"标签"、"段"）`);
   const releaseTable = readReleaseManifest(fs.readFileSync(tableFile, 'utf8'));
-  const c = new CheckContext(codeRoot(), { 作品: workName() });
+  const c = new CheckContext(codeRoot(), { work: workName() });
   try {
     const { releaseLock, newPacks, expected } = await packRelease(c, releaseTable, workDir, dataRoot());
     writeReleaseLock(releaseLock, workDir);
-    runRecord.产物.push(path.join(workDir, releaseLockName), ...newPacks);
-    const totalBytes = releaseLock.附件.reduce((s, a) => s + a.大小, 0);
-    console.log(`${expected.段数} 段：${expected.字节.length + expected.私有库字节.length} 件字节${expected.私有库字节.length ? `（私有/ 库 ${expected.私有库字节.length} 件）` : ''}、${expected.地形.length} 个地形包，${releaseLock.附件.length} 个附件共 ${(totalBytes / 1e9).toFixed(2)} GB；新打 ${newPacks.length} 个${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件：${expected.privateFiles.join('、')}` : ''}`);
+    runRecord.artifacts.push(path.join(workDir, releaseLockName), ...newPacks);
+    const totalBytes = releaseLock.attachments.reduce((s, a) => s + a.size, 0);
+    console.log(`${expected.段数} 段：${expected.bytes.length + expected.privateLibBytes.length} 件字节${expected.privateLibBytes.length ? `（私有/ 库 ${expected.privateLibBytes.length} 件）` : ''}、${expected.terrain.length} 个地形包，${releaseLock.attachments.length} 个附件共 ${(totalBytes / 1e9).toFixed(2)} GB；新打 ${newPacks.length} 个${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件：${expected.privateFiles.join('、')}` : ''}`);
     console.log(`写了 ${relativeToCodeRoot(path.join(workDir, releaseLockName))}`);
     if (upload) await uploadRelease(releaseLock, dataRoot());
-    else if (newPacks.length) console.log(`传上去：anim assets pack --upload（要 gh 登录），或手动 gh release upload ${releaseLock.标签} <cache/发布/ 里的附件> --repo ${releaseLock.仓库}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
+    else if (newPacks.length) console.log(`传上去：anim assets pack --upload（要 gh 登录），或手动 gh release upload ${releaseLock.label} <cache/发布/ 里的附件> --repo ${releaseLock.repo}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
   } finally {
     c.finalize();
   }
@@ -106,18 +106,18 @@ const fillMeasure = async (checkOnly: boolean, runRecord: Parameters<Command['�
       const r = fillAudioMetadata(readAssetLock(lockFile), {
         dataRoot: dataRoot(),
         checkOnly,
-        进度: (i, n) => {
+        progress: (i, n) => {
           if (i % 100 === 0 || i === n) console.error(`  ${relPath}：量到 ${i}/${n}`);
         },
       });
       filled += r.missing.length - r.noBytes.length;
-      console.log(`${relPath}：音频 ${r.音频} 件，缺数 ${r.missing.length} 件${r.noBytes.length ? `，字节不在本机跳过 ${r.noBytes.length} 件` : ''}${checkOnly ? '' : `，补了 ${r.patched.length} 件`}`);
+      console.log(`${relPath}：音频 ${r.audio} 件，缺数 ${r.missing.length} 件${r.noBytes.length ? `，字节不在本机跳过 ${r.noBytes.length} 件` : ''}${checkOnly ? '' : `，补了 ${r.patched.length} 件`}`);
       unmeasuredCount += r.unmeasured.length;
-      for (const x of r.unmeasured) console.log(`  量不出 ${x.id}：${x.原因}`);
+      for (const x of r.unmeasured) console.log(`  量不出 ${x.id}：${x.cause}`);
       if (r.stillMissing.length) console.log(`  量完还缺字段 ${r.stillMissing.length} 件（静音没有峰值、太短没有积分响度）：${r.stillMissing.slice(0, 10).map((x) => `${x.id}（${x.missingFields.join('、')}）`).join('、')}${r.stillMissing.length > 10 ? ' …' : ''}`);
       if (!checkOnly && r.patched.length) {
         writeAssetLock(r.assetLock, lockFile);
-        runRecord.产物.push(lockFile);
+        runRecord.artifacts.push(lockFile);
       }
     }
     if (checkOnly && filled) console.log(`能补 ${filled} 件：anim assets measure`);
@@ -130,8 +130,8 @@ const fillMeasure = async (checkOnly: boolean, runRecord: Parameters<Command['�
 
 export const assetCommands: Record<string, Command> = {
   assets: {
-    用法: 'assets add <id> <文件> [--replace] | assets measure [--check] | assets vendor [--check] | assets seed | assets pack [--upload] | assets pull | assets packs',
-    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--check 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（film、still、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--upload 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "包"、"封顶"，[段] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
+    usage: 'assets add <id> <文件> [--replace] | assets measure [--check] | assets vendor [--check] | assets seed | assets pack [--upload] | assets pull | assets packs',
+    note: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--check 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（film、still、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--upload 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "pack"、"封顶"，[段] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { toggles: ['--replace', '--check', '--upload'] });
       const [subcommand, id, file] = p.位置;
@@ -145,34 +145,34 @@ export const assetCommands: Record<string, Command> = {
         return;
       }
       if (subcommand === 'packs' && p.位置.length === 1 && !p.toggles.size) {
-        // 试样（环境变量）只建那一份；不然 材质包.toml 里的每一种选用（"包" 和 [段] 另选的）各建一份
+        // 试样（环境变量）只建那一份；不然 材质包.toml 里的每一种选用（"pack" 和 [段] 另选的）各建一份
         const selections = readResourcePackSelection(workRoot()).source === '环境' ? [readResourcePackSelection(workRoot())] : workResourcePackSelections(workRoot());
-        if (!selections.length) throw new Error(`这部作品没选用材质包：在 ${relativeToCodeRoot(workResourcePackTablePath(workRoot()))} 写 "包" = ["材质包/<名>"]（或 [段] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
+        if (!selections.length) throw new Error(`这部作品没选用材质包：在 ${relativeToCodeRoot(workResourcePackTablePath(workRoot()))} 写 "pack" = ["材质包/<名>"]（或 [段] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
         for (const packSelection of selections) {
           const r = buildResourcePackOverride(workRoot(), packSelection);
-          const report = r.resourcePackLock.报告 as { 分辨率: { 规则: string; 方块图集格: number }; 方块图集: { 换: number; 共: number; 包里没有: number; 不合: number }; 单张: { 共: number; 换: number; 包里没有: number; 包里没有但同组放大: string[]; 不合: { id: string; 原因: string }[] }; 缩放: Record<string, number>; 各包贡献: Record<string, number>; 群系色: { 改: number } | null; 警告: string[] };
-          console.log(`选用（${r.选.source}，上面的盖下面的）：${r.packs.map((p) => `${p.id}（${p.许可}，${p.可见性}）`).join(' > ')} > 原版`);
-          console.log(`分辨率：${report.分辨率.规则}；方块图集一格 ${report.分辨率.方块图集格} 像素`);
-          console.log(`方块图集换了 ${report.方块图集.换}/${report.方块图集.共} 格（包里没有 ${report.方块图集.包里没有}，尺寸不合 ${report.方块图集.不合}）；照搬的单张贴图 ${report.单张.共} 件，换了 ${report.单张.换} 件，包里没有 ${report.单张.包里没有} 件（其中 ${report.单张.包里没有但同组放大.length} 件跟同组放大）`);
-          for (const x of report.单张.不合) console.log(`  不合 ${x.id}：${x.原因}`);
-          console.log(`缩放：${Object.entries(report.缩放).map(([k, n]) => `${k} ${n}`).join('、')}；各包贡献：${Object.entries(report.各包贡献).map(([k, n]) => `${k} ${n}`).join('、')}`);
-          console.log(report.群系色 ? `群系色：按包的 colormap 改了 ${report.群系色.改} 处` : '群系色：包里没有 colormap，照原版');
-          for (const w of report.警告) console.log(`  !! ${w}`);
-          console.log(`覆盖层 ${Object.keys(r.resourcePackLock.覆盖).length} 件，写了 ${relativeToCodeRoot(r.lockFile)}`);
-          runRecord.产物.push(r.lockFile);
+          const report = r.resourcePackLock.report as { resolution: { policy: string; blockAtlasCell: number }; blockAtlas: { replaced: number; total: number; notInPack: number; mismatched: number }; singleTextures: { total: number; replaced: number; notInPack: number; missingUpscaledInGroup: string[]; mismatched: { id: string; cause: string }[] }; scale: Record<string, number>; perPackContribution: Record<string, number>; biomeColor: { changed: number } | null; warnings: string[] };
+          console.log(`选用（${r.选.source}，上面的盖下面的）：${r.packs.map((p) => `${p.id}（${p.license}，${p.visibility}）`).join(' > ')} > 原版`);
+          console.log(`分辨率：${report.resolution.policy}；方块图集一格 ${report.resolution.blockAtlasCell} 像素`);
+          console.log(`方块图集换了 ${report.blockAtlas.replaced}/${report.blockAtlas.total} 格（包里没有 ${report.blockAtlas.notInPack}，尺寸不合 ${report.blockAtlas.mismatched}）；照搬的单张贴图 ${report.singleTextures.total} 件，换了 ${report.singleTextures.replaced} 件，包里没有 ${report.singleTextures.notInPack} 件（其中 ${report.singleTextures.missingUpscaledInGroup.length} 件跟同组放大）`);
+          for (const x of report.singleTextures.mismatched) console.log(`  不合 ${x.id}：${x.cause}`);
+          console.log(`缩放：${Object.entries(report.scale).map(([k, n]) => `${k} ${n}`).join('、')}；各包贡献：${Object.entries(report.perPackContribution).map(([k, n]) => `${k} ${n}`).join('、')}`);
+          console.log(report.biomeColor ? `群系色：按包的 colormap 改了 ${report.biomeColor.changed} 处` : '群系色：包里没有 colormap，照原版');
+          for (const w of report.warnings) console.log(`  !! ${w}`);
+          console.log(`覆盖层 ${Object.keys(r.resourcePackLock.overrides).length} 件，写了 ${relativeToCodeRoot(r.lockFile)}`);
+          runRecord.artifacts.push(r.lockFile);
         }
         return 0;
       }
       if (subcommand === 'seed' && p.位置.length === 1 && !p.toggles.size) {
         const r = fillBytes(workRoot(), dataRoot());
-        console.log(`${relativeToCodeRoot(bytesDir(workRoot()))}：${r.共} 件，补进 ${path.join(dataRoot(), 'store')} ${r.copied} 件（其余已有）`);
+        console.log(`${relativeToCodeRoot(bytesDir(workRoot()))}：${r.total} 件，补进 ${path.join(dataRoot(), 'store')} ${r.copied} 件（其余已有）`);
         return;
       }
       if (subcommand !== 'add' || !id || !file || p.位置.length !== 3 || p.toggles.has('--check')) throw new UsageError('要 anim assets add <id> <文件> [--replace]、anim assets measure [--check]、anim assets vendor [--check]、anim assets seed、anim assets pack [--upload] 或 anim assets pull');
       const { entry: entry, lockFile, movedFrom } = registerAsset(id, file, { workRoot: workRoot(), replace: p.toggles.has('--replace') });
-      runRecord.产物.push(`${id} → ${entry.库}/${entry.sha256}`);
-      const meterText = entry.时长 !== undefined ? `，${entry.时长} 秒、峰值 ${entry.峰值 ?? '-inf'} dBFS、响度 ${entry.响度 ?? '?'} LUFS` : '';
-      console.log(`${id}：${entry.库}/${entry.sha256.slice(0, 2)}/${entry.sha256}（${entry.大小} 字节，${entry.后缀}${meterText}）→ ${relativeToCodeRoot(lockFile)}`);
+      runRecord.artifacts.push(`${id} → ${entry.lib}/${entry.sha256}`);
+      const meterText = entry.duration !== undefined ? `，${entry.duration} 秒、峰值 ${entry.peakDb ?? '-inf'} dBFS、响度 ${entry.loudness ?? '?'} LUFS` : '';
+      console.log(`${id}：${entry.lib}/${entry.sha256.slice(0, 2)}/${entry.sha256}（${entry.size} 字节，${entry.suffix}${meterText}）→ ${relativeToCodeRoot(lockFile)}`);
       if (movedFrom) console.log(`  从 ${relativeToCodeRoot(movedFrom)} 挪过来（登记换了一侧）`);
     },
   },

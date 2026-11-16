@@ -29,12 +29,12 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     expect(frameCountOf(seg)).toBe(189);
     expect(frameCount).toBe(189);
     expect(sceneWindowFrames(seg)).toEqual({ 起帧: 2306, 止帧: 2495 });
-    expect(mainCutEvents.splitScreenStart.帧).toBe(2495);
+    expect(mainCutEvents.splitScreenStart.frame).toBe(2495);
   });
 
   it('三稿的时刻：抚平 38.46、坐床沿 39.31（差不到半帧），天亮转头 提前一拍到 40.59（核查 10-24：横移起 前多停一会）；事件按顺序、都在段里', () => {
     for (const [e, sec] of [[mainCutEvents.smoothBlanket, 38.46], [mainCutEvents.sitBedEdge, 39.31], [mainCutEvents.dawnTurnHead, 40.59]] as const)
-      expect(Math.abs(e.秒 - sec)).toBeLessThan(0.5 / fps + 0.01);
+      expect(Math.abs(e.sec - sec)).toBeLessThan(0.5 / fps + 0.01);
     const order = [events.smoothBlanket, events.sitBedEdge, events.windowLightStep2, events.windowLightStep3, events.moonset, events.dawnTurnHead, events.sidePanStart];
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(order[0]).toBeGreaterThanOrEqual(0);
@@ -54,13 +54,13 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     }
     expect(exposed).toBeGreaterThan(fps * 2);
     expect(lyricLines[11]!.入).toBe(0);
-    expect(lyricLines[11]!.收! + runeLyricDefault.exitSec * fps).toBeCloseTo(mainCutEvents.sidePanStart.帧 - toSongFrame(0), 6);
+    expect(lyricLines[11]!.收! + runeLyricDefault.exitSec * fps).toBeCloseTo(mainCutEvents.sidePanStart.frame - toSongFrame(0), 6);
   });
 
   it('cue：只有原声，铺满整段、固定增益、不淡', () => {
     const soundCues = toFrameCues(seg);
     expect(soundCues).toHaveLength(1);
-    expect(soundCues[0]).toMatchObject({ 帧: 0, 帧数: 189, 入点秒: 2306 / fps, 增益: mainCutOriginalGain, 资产: '配乐/把回忆拼好给你-无男声DJ' });
+    expect(soundCues[0]).toMatchObject({ frame: 0, frameCount: 189, 入点秒: 2306 / fps, 增益: mainCutOriginalGain, asset: '配乐/把回忆拼好给你-无男声DJ' });
   });
 
   it('抚平：手心落在你床的被面上（反解再正算回去，差不到 0.01 格），手伸出去离脚底 0.3 格以上（手在她身子外面），抹的幅度手机上看得出（0.25 格以上）', () => {
@@ -146,10 +146,10 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
       for (const face of bedroomLitSurfaces)
         for (const c of lightSpot(face, b.lightDir, bedroomOpenings[b.从])) {
           const A = (c.a1 - c.a0) * (c.b1 - c.b0);
-          areaByFace[face.名] = (areaByFace[face.名] ?? 0) + A;
+          areaByFace[face.name] = (areaByFace[face.name] ?? 0) + A;
           s += A;
           sx += ((c.a0 + c.a1) / 2) * A;
-          sy += (face.种 === '平' ? (c.b0 + c.b1) / 2 : face.y) * A;
+          sy += (face.kind === '平' ? (c.b0 + c.b1) / 2 : face.y) * A;
         }
       return { area: areaByFace, s, x: sx / s, y: sy / s };
     };
@@ -173,7 +173,7 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
           for (const strip of lightSpot(face, b.lightDir, bedroomOpenings[b.从])) {
             expect(strip.a0).toBeGreaterThanOrEqual(face.x[0] - 1e-9);
             expect(strip.a1).toBeLessThanOrEqual(face.x[1] + 1e-9);
-            if (face.名 === '后墙') {
+            if (face.name === '后墙') {
               const [i, k] = bedroom.backWindow;
               const inWindow = strip.a1 > i - 0.5 && strip.a0 < i + 0.5 && strip.b1 > k && strip.b0 < k + 1;
               expect(inWindow).toBe(false);
@@ -188,12 +188,12 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     expect(slideProgress(frameCount - 1)).toBeCloseTo(1, 9);
     const delta = (f: number) => slideProgress(f) - slideProgress(f - 1);
     for (let f = beforeSlide + 1; f < frameCount; f++) expect(delta(f)).toBeGreaterThan(delta(f - 1));
-    for (let f = 0; f < frameCount; f++) expect(shotAt(f).中心[1]).toBe(shotAt(0).中心[1]);
+    for (let f = 0; f < frameCount; f++) expect(shotAt(f).center[1]).toBe(shotAt(0).center[1]);
     const distToInt = (x: number) => Math.abs(x - Math.round(x));
-    for (let f = 0; f <= beforeSlide; f++) for (const v of shotAt(f).中心) expect(distToInt((v * shotAt(f).pxPerCell) / 2)).toBeLessThan(1e-6);
+    for (let f = 0; f <= beforeSlide; f++) for (const v of shotAt(f).center) expect(distToInt((v * shotAt(f).pxPerCell) / 2)).toBeLessThan(1e-6);
     const lastShot = shotAt(frameCount - 1), prev = shotAt(frameCount - 2);
     // 最后两帧之间实际挪的，和走完那一刻的瞬时速度（t^幂 的导数）差不到一成
-    expect((lastShot.中心[0] - prev.中心[0]) / (endVelocity().rightSpeed / fps)).toBeGreaterThan(0.9);
+    expect((lastShot.center[0] - prev.center[0]) / (endVelocity().rightSpeed / fps)).toBeGreaterThan(0.9);
     // 走完那一刻：东墙内面（x 4.5）在画面左沿外，外面（x 5.5）在画里、离左沿不到一格半
     const lastCam = shotAt(frameCount - 1);
     const project = (camera: typeof lastShot) => sideProjection(camera, 1280, 720, params.bedroomTop);
@@ -213,9 +213,9 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     expect(outdoorState(events.sidePanStart)!.bright).toBeGreaterThan(0);
     expect(outdoorState(frameCount - 1)!.bright).toBe(1);
     expect(postGrade(beforeSlide)).toEqual(lightState(beforeSlide).tone.grade);
-    const grade = serverToneAt(mainCutEvents.splitScreenStart.帧).grade;
+    const grade = serverToneAt(mainCutEvents.splitScreenStart.frame).grade;
     const lastGrade = postGrade(frameCount - 1);
-    for (const k of ['饱和', '对比', '暗角', '颗粒'] as const) expect(lastGrade[k], k).toBeCloseTo(grade[k], 6);
+    for (const k of ['饱和', 'comparison', '暗角', '颗粒'] as const) expect(lastGrade[k], k).toBeCloseTo(grade[k], 6);
     expect([lastGrade.multiply, lastGrade.lift]).toEqual([grade.multiply, grade.lift]);
   });
 });

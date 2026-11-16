@@ -35,9 +35,9 @@ const paperWidth = tableWidth + 2 * margin;
 const paperHeight = margin + 9 + 3 + tableHeight + 3 + noteLines.length * 9 + margin - 1;
 /** 框（白桦木板）每边 2，凸出墙面 2 */
 const border = 2;
-export const timetableSize = { 宽: paperWidth + 2 * border, 高: paperHeight + 2 * border, depth: 2 } as const;
+export const timetableSize = { width: paperWidth + 2 * border, height: paperHeight + 2 * border, depth: 2 } as const;
 const S = timetableSize;
-if (S.宽 !== timetableFrame.宽 || S.高 !== timetableFrame.高) throw new Error(`课表排出来 ${S.宽}×${S.高}，课桌布局.ts 的 课表框 写的是 ${timetableFrame.宽}×${timetableFrame.高}：改那边（镜头按它对准）`);
+if (S.width !== timetableFrame.width || S.height !== timetableFrame.height) throw new Error(`课表排出来 ${S.width}×${S.height}，课桌布局.ts 的 课表框 写的是 ${timetableFrame.width}×${timetableFrame.height}：改那边（镜头按它对准）`);
 
 const textCenterOffset = (s: string) => pixelFont.textWidth(s) - 1;
 /** 在方框 [x0, x1) × [y0, y1)（贴图像素）里居中写一行 */
@@ -46,8 +46,8 @@ const writeCentered = (p: PixelArt, s: string, x0: number, x1: number, y0: numbe
 
 /** 一格里的字排成几行：放得下就一行（疏排的字间空一个全角空格）；放不下就两个字一行，疏排的一个字一行 */
 const layoutLines = (g: TimetableCell, innerWidth: number): string[] => {
-  const chars = [...g.字];
-  const oneLine = g.sparse ? chars.join('　') : g.字;
+  const chars = [...g.char];
+  const oneLine = g.sparse ? chars.join('　') : g.char;
   if (textCenterOffset(oneLine) <= innerWidth) return [oneLine];
   const perRow = g.sparse ? 1 : Math.max(1, Math.floor((innerWidth + 1) / 9));
   const out: string[] = [];
@@ -56,13 +56,13 @@ const layoutLines = (g: TimetableCell, innerWidth: number): string[] => {
 };
 
 const paintPaper = (brightMap: ReadonlyMap<TimetableCell, number>): PixelArt => {
-  const p = newPixelArt(S.宽, S.高);
+  const p = newPixelArt(S.width, S.height);
   // 框：白桦木板的四色噪点，外沿一圈暗
-  p.noise(0, 0, S.宽, S.高, realColors.框, 201, [4, 3, 2, 1]);
-  p.fillRect(0, 0, S.宽, 1, realColors.框[3]);
-  p.fillRect(0, S.高 - 1, S.宽, 1, realColors.框[3]);
-  p.fillRect(0, 0, 1, S.高, realColors.框[3]);
-  p.fillRect(S.宽 - 1, 0, 1, S.高, realColors.框[3]);
+  p.noise(0, 0, S.width, S.height, realColors.box, 201, [4, 3, 2, 1]);
+  p.fillRect(0, 0, S.width, 1, realColors.box[3]);
+  p.fillRect(0, S.height - 1, S.width, 1, realColors.box[3]);
+  p.fillRect(0, 0, 1, S.height, realColors.box[3]);
+  p.fillRect(S.width - 1, 0, 1, S.height, realColors.box[3]);
   // 纸：米黄噪点，棕边按位置哈希宽 2～3，外圈最深
   const [ox, oy] = [border, border];
   p.noise(ox, oy, paperWidth, paperHeight, realColors.drawingPaper, 202, [5, 3, 2]);
@@ -76,9 +76,9 @@ const paintPaper = (brightMap: ReadonlyMap<TimetableCell, number>): PixelArt => 
   p.noise(ox + paperWidth - 2, oy + 1, 1, paperHeight - 2, realColors.drawingEdge.slice(1), 210);
   // 第三圈稀疏的几点，边就不是一条直线
   for (let i = 2; i < paperWidth - 2; i++)
-    for (const [y, k] of [[2, 211], [paperHeight - 3, 212]] as const) if ((i * 7 + k) % 5 < 2) p.点(ox + i, oy + y, realColors.drawingEdge[2]);
+    for (const [y, k] of [[2, 211], [paperHeight - 3, 212]] as const) if ((i * 7 + k) % 5 < 2) p.points(ox + i, oy + y, realColors.drawingEdge[2]);
   for (let j = 2; j < paperHeight - 2; j++)
-    for (const [x, k] of [[2, 213], [paperWidth - 3, 214]] as const) if ((j * 7 + k) % 5 < 2) p.点(ox + x, oy + j, realColors.drawingEdge[2]);
+    for (const [x, k] of [[2, 213], [paperWidth - 3, 214]] as const) if ((j * 7 + k) % 5 < 2) p.points(ox + x, oy + j, realColors.drawingEdge[2]);
 
   const ink = realColors.drawingInk;
   writeCentered(p, timetableTitle, ox, ox + paperWidth, oy + margin, oy + margin + 9, ink);
@@ -118,12 +118,12 @@ const paintPaper = (brightMap: ReadonlyMap<TimetableCell, number>): PixelArt => 
     writeCentered(p, n.节, b.x0 + 1, b.x1, b.y0 + 1, b.y1, ink);
   });
   for (const g of timetableCells) {
-    if (!g.字) continue;
+    if (!g.char) continue;
     const b = boxAt(g.行 + 1, g.列 + 1, g.rowSpan, g.colSpan);
     const rows = layoutLines(g, b.x1 - b.x0 - 1);
     const rowDistance = rows.length > 1 && g.sparse ? lineGap : 9;
     const totalHeight = (rows.length - 1) * rowDistance + 8;
-    if (totalHeight > b.y1 - b.y0 - 1) throw new Error(`课表格「${g.字}」排出来 ${totalHeight} 像素高，格子里只有 ${b.y1 - b.y0 - 1}`);
+    if (totalHeight > b.y1 - b.y0 - 1) throw new Error(`课表格「${g.char}」排出来 ${totalHeight} 像素高，格子里只有 ${b.y1 - b.y0 - 1}`);
     const y0 = Math.round((b.y0 + 1 + b.y1 - totalHeight) / 2);
     rows.forEach((s, j) => writeCentered(p, s, b.x0 + 1, b.x1, y0 + j * rowDistance, y0 + j * rowDistance + 8, ink));
   }
@@ -155,14 +155,14 @@ export const Timetable: React.FC<{
   let image = timetableTextureCache.get(cacheKey);
   if (!image) timetableTextureCache.set(cacheKey, (image = makeTexture(paintPaper(brightMap))));
   frameTop ??= (() => {
-    const p = newPixelArt(S.宽, S.depth);
-    p.noise(0, 0, S.宽, S.depth, realColors.框, 215, [4, 3, 2, 1]);
+    const p = newPixelArt(S.width, S.depth);
+    p.noise(0, 0, S.width, S.depth, realColors.box, 215, [4, 3, 2, 1]);
     return makeTexture(p);
   })();
   return (
     <group>
-      <FrontFace x={x} y={y} z={z} 宽={S.宽} 高={S.高} 图={image} />
-      <TopFace x={x} y={y} z={z + S.高} 宽={S.宽} depth={S.depth} 图={frameTop} />
+      <FrontFace x={x} y={y} z={z} width={S.width} height={S.height} image={image} />
+      <TopFace x={x} y={y} z={z + S.height} width={S.width} depth={S.depth} image={frameTop} />
     </group>
   );
 };

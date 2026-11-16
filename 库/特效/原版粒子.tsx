@@ -154,7 +154,7 @@ export const vanillaParticleAtlas = ATLAS;
 export type ParticleKind = 'portal' | 'reverse_portal' | 'crimson_spore' | 'witch' | 'enchant' | 'flame' | 'smoke' | 'poof' | 'explosion' | 'sonic_boom' | 'splash';
 // 一颗粒子的出生：刻 = 出生时刻（刻，可以带小数，和组件的 秒×20 同一个钟）；p、v = addParticle 的位置和速度（场景坐标）；
 // 种子：这颗粒子自己的随机数（同一个种子每帧算出来一样）；水面：splash 落回这个高度以下（掉进水里）就消失
-export type ParticleSpawn = { 种: ParticleKind; 刻: number; p: V3; v?: V3; 种子: number; waterLevel?: number };
+export type ParticleSpawn = { kind: ParticleKind; 刻: number; p: V3; v?: V3; seed: number; waterLevel?: number };
 
 // 状态：位置、半边长、贴图名、颜色、透明度
 type ParticleState = { p: V3; half: number; tex: string; color: [number, number, number]; alpha: number; translucent: boolean };
@@ -196,14 +196,14 @@ const SGA = 'abcdefghijklmnopqrstuvwxyz'.split('').map((c) => `sga_${c}`);
 export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleState | null => {
   const τ = tick - spawn.刻;
   if (τ < 0) return null;
-  const rand = mulberry32(spawn.种子 * 2654435761 + 97);
+  const rand = mulberry32(spawn.seed * 2654435761 + 97);
   const vel = spawn.v ?? [0, 0, 0];
   const age = Math.floor(τ);
   const pt = τ - age;
-  switch (spawn.种) {
+  switch (spawn.kind) {
     case 'portal':
     case 'reverse_portal': {
-      const rev = spawn.种 === 'reverse_portal';
+      const rev = spawn.kind === 'reverse_portal';
       // PortalParticle 构造：xd 等直接用给的速度（不加随机）
       const half0 = 0.1 * (rand() * 0.2 + 0.5) * (rev ? 1.5 : 1);
       const shade = rand() * 0.6 + 0.4;
@@ -317,7 +317,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
     }
     case 'explosion':
     case 'sonic_boom': {
-      const sb = spawn.种 === 'sonic_boom';
+      const sb = spawn.kind === 'sonic_boom';
       const lifeR = 6 + Math.floor(rand() * 4);
       const gray = rand() * 0.6 + 0.4;
       const life = sb ? 16 : lifeR;
@@ -329,7 +329,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
 };
 
 // 画一批粒子。秒：当前时间（和出生的 刻 同一个钟，秒×20 = 刻）；size：整体放大
-export const VanillaParticles: React.FC<{ spawns: ParticleSpawn[]; 秒: number; size?: number }> = ({ spawns, 秒: sec, size = 1 }) => {
+export const VanillaParticles: React.FC<{ spawns: ParticleSpawn[]; sec: number; size?: number }> = ({ spawns, sec: sec, size = 1 }) => {
   const tick = sec * 20;
   const { op, tr } = useMemo(() => {
     const op: Particle[] = [];
@@ -358,11 +358,11 @@ export const deathPoof = (at: V3, width: number, height: number, deathTick: numb
   const rand = mulberry32(seed * 7919 + 11);
   const gauss = () => Math.sqrt(-2 * Math.log(Math.max(1e-9, rand()))) * Math.cos(2 * Math.PI * rand());
   return Array.from({ length: 20 }, (_, i) => ({
-    种: 'poof' as const,
+    kind: 'poof' as const,
     刻: deathTick + 20,
     p: [at[0] + width * (2 * rand() - 1), at[1] + width * (2 * rand() - 1), at[2] + height * rand()] as V3,
     v: [gauss() * 0.02, gauss() * 0.02, gauss() * 0.02] as V3,
-    种子: seed * 131 + i,
+    seed: seed * 131 + i,
   }));
 };
 
@@ -372,11 +372,11 @@ export const waterSplash = (at: V3, vel: V3, tick: number, width: number, waterL
   const rand = mulberry32(seed * 6271 + 3);
   const z = Math.floor(at[2]) + 1;
   return Array.from({ length: Math.ceil(1 + Math.fround(width) * 20) }, (_, i) => ({
-    种: 'splash' as const,
+    kind: 'splash' as const,
     刻: tick,
     p: [at[0] + (rand() * 2 - 1) * width, at[1] + (rand() * 2 - 1) * width, z] as V3,
     v: vel,
-    种子: seed * 389 + i,
+    seed: seed * 389 + i,
     waterLevel,
   }));
 };
@@ -387,10 +387,10 @@ export const serverSendParticles = (kind: ParticleKind, tick: number, at: V3, co
   const rand = mulberry32(seed * 104729 + 5);
   const gauss = () => Math.sqrt(-2 * Math.log(Math.max(1e-9, rand()))) * Math.cos(2 * Math.PI * rand());
   return Array.from({ length: count }, (_, i) => ({
-    种: kind,
+    kind: kind,
     刻: tick,
     p: [at[0] + gauss() * spread[0], at[1] + gauss() * spread[1], at[2] + gauss() * spread[2]] as V3,
     v: [gauss() * speed, gauss() * speed, gauss() * speed] as V3,
-    种子: seed * 977 + i,
+    seed: seed * 977 + i,
   }));
 };

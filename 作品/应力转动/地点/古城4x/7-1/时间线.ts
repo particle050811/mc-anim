@@ -113,7 +113,7 @@ const frames = sceneFrames(cutTs['7-1-1']);
 export const segments = ids.map((id, i) => {
   const startFrame = frames.frameAt(skipTo[id] ?? cutTs[id]);
   const lastFrame = i + 1 < ids.length ? frames.frameAt(cutTs[ids[i + 1]]) - 1 : frames.frameAt(sceneEndT0);
-  return { segmentId: id, 名: names[id], startFrame, lastFrame };
+  return { segmentId: id, name: names[id], startFrame, lastFrame };
 });
 const segmentOf = (segId: SegmentId) => segments.find((s) => s.segmentId === segId)!;
 // 段内秒 → 场时刻 t（秒）
@@ -124,13 +124,13 @@ export const segmentEndT = (segId: SegmentId) => frames.tAtFrame(segmentOf(segId
 export const segmentLastSec = (segId: SegmentId) => (segmentOf(segId).lastFrame - segmentOf(segId).startFrame) / 60;
 
 // ---------- 台词开口（场时刻 t；id 照 7-<场>-<段>-<角色>-<短名>，句子在 id 的那一段开口，给了 段 的在 段 开口） ----------
-export const dialogue: Record<string, { t: number; 文: string; 段?: SegmentId }> = {
+export const dialogue: Record<string, { t: number; 文: string; segment?: SegmentId }> = {
   '7-1-1-刘心忠-怎么回事': { t: 1.3, 文: '这是怎么回事？' },
   '7-1-3-刘心忠-不可能': { t: impossibleT, 文: '一百级的恼鬼……就这么没了？！' },
   '7-1-5-黄叛-受死': { t: dieT, 文: '怪物受死！' },
 };
 export type LineId = keyof typeof dialogue;
-const lineSegment = (id: LineId) => dialogue[id].段 ?? (id.split('-').slice(0, 3).join('-') as SegmentId);
+const lineSegment = (id: LineId) => dialogue[id].segment ?? (id.split('-').slice(0, 3).join('-') as SegmentId);
 for (const id of Object.keys(dialogue) as LineId[]) {
   const segId = lineSegment(id);
   const { t } = dialogue[id];

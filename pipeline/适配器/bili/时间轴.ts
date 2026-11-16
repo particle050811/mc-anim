@@ -5,9 +5,9 @@ import path from 'node:path';
 import type { RetentionPoint, Submission } from './数据.ts';
 
 /** 交付 manifest.json 里这里用到的几项（各版本都有；直接读原 JSON） */
-export type DeliveryManifest = { 名: string; 帧率: number; 时长秒: number; 完成?: string; 段: { 编号?: string | null; 键: string; 帧数: number; 全片起帧: number }[] };
+export type DeliveryManifest = { name: string; fps: number; durationSec: number; completed?: string; segment: { serial?: string | null; key: string; frameCount: number; filmStartFrame: number }[] };
 export type Delivery = { 目录: string; m: DeliveryManifest };
-export type SegmentRange = { 编号: string; 键: string; 名: string; 起: number; 止: number };
+export type SegmentRange = { serial: string; key: string; name: string; start: number; end: number };
 export type SegmentStat = SegmentRange & {
   retentionIn: number;
   retentionOut: number;
@@ -25,7 +25,7 @@ export type SegmentStat = SegmentRange & {
   tooShort: boolean;
   /** 在场观众每 10 秒流失的比例（只算 [计起, 计止]），跨段可比；开头窗内、结尾窗内的段是 NaN */
   relDropPer10s: number;
-  弹幕: number;
+  danmaku: number;
   danmakuPer10s: number;
 };
 
@@ -34,7 +34,7 @@ export const readDeliveryList = (deliveryDir: string): Delivery[] =>
     .map((n) => path.join(deliveryDir, n))
     .filter((d) => fs.existsSync(path.join(d, 'manifest.json')))
     .map((d) => ({ 目录: d, m: JSON.parse(fs.readFileSync(path.join(d, 'manifest.json'), 'utf8')) }))
-    .filter((x) => typeof x.m.时长秒 === 'number' && Array.isArray(x.m.段));
+    .filter((x) => typeof x.m.durationSec === 'number' && Array.isArray(x.m.segment));
 
 /** 交付名「第6-7章」→ [6, 7]；不是这种名字返回 null */
 export const chapterRange = (chapterName: string): [number, number] | null => {
@@ -45,36 +45,36 @@ export const chapterRange = (chapterName: string): [number, number] | null => {
 /** 标题里独立出现的数字（「应力转动 6 出征暮色」→ [6]，「应力转动（1-3）」→ [1, 3]） */
 export const titleNumbers = (title: string) => [...title.matchAll(/(?<!\d)\d{1,3}(?!\d)/g)].map((m) => Number(m[0]));
 
-export const matchDelivery = (submission: Pick<Submission, '标题' | '时长'>, deliveries: Delivery[], toleranceSec = 1.5): Delivery | null => {
-  const candidates = deliveries.filter((x) => Math.abs(x.m.时长秒 - submission.时长) <= toleranceSec);
+export const matchDelivery = (submission: Pick<Submission, 'title' | 'duration'>, deliveries: Delivery[], toleranceSec = 1.5): Delivery | null => {
+  const candidates = deliveries.filter((x) => Math.abs(x.m.durationSec - submission.duration) <= toleranceSec);
   const score = (x: Delivery) => {
-    const r = chapterRange(x.m.名);
-    const chapterMatch = r !== null && titleNumbers(submission.标题).some((n) => n >= r[0] && n <= r[1]);
+    const r = chapterRange(x.m.name);
+    const chapterMatch = r !== null && titleNumbers(submission.title).some((n) => n >= r[0] && n <= r[1]);
     return (chapterMatch ? 2 : 0) + (r ? 1 : 0);
   };
-  candidates.sort((a, b) => score(b) - score(a) || (b.m.完成 ?? '').localeCompare(a.m.完成 ?? ''));
+  candidates.sort((a, b) => score(b) - score(a) || (b.m.completed ?? '').localeCompare(a.m.completed ?? ''));
   return candidates[0] && score(candidates[0]) >= 2 ? candidates[0] : null;
 };
 
 export const segmentRanges = (m: DeliveryManifest): SegmentRange[] =>
-  m.段.map((s) => ({
-    编号: s.编号 ?? s.键,
-    键: s.键,
-    名: s.键.replace(/^\d+-/, ''),
-    起: s.全片起帧 / m.帧率,
-    止: (s.全片起帧 + s.帧数) / m.帧率,
+  m.segment.map((s) => ({
+    serial: s.serial ?? s.key,
+    key: s.key,
+    name: s.key.replace(/^\d+-/, ''),
+    start: s.filmStartFrame / m.fps,
+    end: (s.filmStartFrame + s.frameCount) / m.fps,
   }));
 
 /** 留存曲线在 t 秒处的值（线性插值；超出末档取末档） */
 export const retentionAt = (curve: RetentionPoint[], t: number) => {
   if (!curve.length) return NaN;
-  if (t <= curve[0]!.秒) return curve[0]!.留存;
+  if (t <= curve[0]!.sec) return curve[0]!.retention;
   for (let i = 1; i < curve.length; i++) {
     const a = curve[i - 1]!;
     const b = curve[i]!;
-    if (t <= b.秒) return a.留存 + ((b.留存 - a.留存) * (t - a.秒)) / (b.秒 - a.秒 || 1);
+    if (t <= b.sec) return a.retention + ((b.retention - a.retention) * (t - a.sec)) / (b.sec - a.sec || 1);
   }
-  return curve.at(-1)!.留存;
+  return curve.at(-1)!.retention;
 };
 
 /** 在场观众在 [起, 止] 内每 10 秒流失的比例 */
@@ -85,38 +85,38 @@ export const dropPer10s = (curve: RetentionPoint[], startSec: number, endSec: nu
 
 /** 留存曲线相邻两档的间隔（中位） */
 export const binWidth = (curve: RetentionPoint[]) => {
-  const gaps = curve.slice(1).map((p, i) => p.秒 - curve[i]!.秒).sort((a, b) => a - b);
+  const gaps = curve.slice(1).map((p, i) => p.sec - curve[i]!.sec).sort((a, b) => a - b);
   return gaps.length ? gaps[Math.floor(gaps.length / 2)]! : 0;
 };
 
 /** 默认开头窗：推荐流「刷到就划走」集中在开头，这段时间的流失不记到任何段头上（窗长是假设，报告里用同账号其他稿件检验） */
 export const defaultOpeningWindow = 40;
 /** 默认结尾窗：最后一个段和最后 30 秒取较长的；看出要结束就走是正常的，不记到段上（用户 10-22 定） */
-export const defaultEndingWindow = (segments: SegmentRange[]) => Math.max(30, segments.length ? segments.at(-1)!.止 - segments.at(-1)!.起 : 0);
+export const defaultEndingWindow = (segments: SegmentRange[]) => Math.max(30, segments.length ? segments.at(-1)!.end - segments.at(-1)!.start : 0);
 export type EdgeWindow = { headSec: number; tailSec: number };
 
 export const statsBySegment = (segments: SegmentRange[], curve: RetentionPoint[], danmakuSec: number[], edgeWindow?: Partial<EdgeWindow>): SegmentStat[] => {
-  const filmLength = segments.at(-1)?.止 ?? 0;
+  const filmLength = segments.at(-1)?.end ?? 0;
   const openingWindow = edgeWindow?.headSec ?? defaultOpeningWindow;
   const endingWindow = edgeWindow?.tailSec ?? defaultEndingWindow(segments);
   // 末档落在片子结尾时那一档是「放完了」，结尾窗比它短时也不能把它摊到最后几段上
   const last = curve.at(-1);
-  const playedOut = last && curve.length > 2 && last.秒 >= filmLength - 1 && last.留存 < curve.at(-2)!.留存 / 2;
-  const effectiveEnd = Math.min(filmLength - endingWindow, playedOut ? curve.at(-2)!.秒 : Infinity);
+  const playedOut = last && curve.length > 2 && last.sec >= filmLength - 1 && last.retention < curve.at(-2)!.retention / 2;
+  const effectiveEnd = Math.min(filmLength - endingWindow, playedOut ? curve.at(-2)!.sec : Infinity);
   const width = binWidth(curve);
   return segments.map((s, i) => {
-    const lengthSec = Math.max(s.止 - s.起, 1e-6);
-    const startRetention = retentionAt(curve, s.起);
-    const endRetention = retentionAt(curve, s.止);
+    const lengthSec = Math.max(s.end - s.start, 1e-6);
+    const startRetention = retentionAt(curve, s.start);
+    const endRetention = retentionAt(curve, s.end);
     const isLastSegment = i === segments.length - 1;
-    const danmakuCount = danmakuSec.filter((t) => t >= s.起 && (t < s.止 || (isLastSegment && t <= s.止))).length;
-    const countStart = Math.max(s.起, openingWindow);
-    const countEnd = Math.min(s.止, effectiveEnd);
-    const inHeadWindow = countStart >= s.止;
+    const danmakuCount = danmakuSec.filter((t) => t >= s.start && (t < s.end || (isLastSegment && t <= s.end))).length;
+    const countStart = Math.max(s.start, openingWindow);
+    const countEnd = Math.min(s.end, effectiveEnd);
+    const inHeadWindow = countStart >= s.end;
     const inTailWindow = !inHeadWindow && countStart >= countEnd;
     const relLoss = inHeadWindow || inTailWindow ? NaN : dropPer10s(curve, countStart, countEnd);
     const tooShort = countEnd - countStart < width / 2;
-    return { ...s, retentionIn: startRetention, retentionOut: endRetention, dropOff: startRetention - endRetention, countStart, countEnd, inHeadWindow, inTailWindow, tooShort, relDropPer10s: relLoss, 弹幕: danmakuCount, danmakuPer10s: (danmakuCount * 10) / lengthSec };
+    return { ...s, retentionIn: startRetention, retentionOut: endRetention, dropOff: startRetention - endRetention, countStart, countEnd, inHeadWindow, inTailWindow, tooShort, relDropPer10s: relLoss, danmaku: danmakuCount, danmakuPer10s: (danmakuCount * 10) / lengthSec };
   });
 };
 
@@ -125,11 +125,11 @@ export const danmakuDensity = (danmakuSec: number[], duration: number, bin = 5) 
   const n = Math.max(1, Math.ceil(duration / bin));
   const bins = new Array<number>(n).fill(0);
   for (const t of danmakuSec) bins[Math.min(n - 1, Math.max(0, Math.floor(t / bin)))]!++;
-  return bins.map((c, i) => ({ 起: i * bin, 数: c }));
+  return bins.map((c, i) => ({ start: i * bin, 数: c }));
 };
 
 /** 排名的单位：够长的段单独一个；连续的短段（不到半档）合成一组，攒够半档再算（没攒够就并进后面的段），免得短段拿到的只是所在档的平均 */
-export type RankUnit = { 编号: string; 名: string; 起: number; 止: number; countStart: number; countEnd: number; segKeys: string[]; relDropPer10s: number };
+export type RankUnit = { serial: string; name: string; start: number; end: number; countStart: number; countEnd: number; segKeys: string[]; relDropPer10s: number };
 export const rankUnits = (segments: SegmentStat[], curve: RetentionPoint[]) => {
   const halfBin = binWidth(curve) / 2;
   const eligible = segments.filter((s) => !s.inHeadWindow && !s.inTailWindow);
@@ -138,10 +138,10 @@ export const rankUnits = (segments: SegmentStat[], curve: RetentionPoint[]) => {
     const a = segGroup[0]!;
     const b = segGroup.at(-1)!;
     return {
-      编号: segGroup.length > 1 ? `${a.编号}～${b.编号}` : a.编号,
-      名: segGroup.length > 1 ? `${a.名}～${b.名}` : a.名,
-      起: a.起, 止: b.止, countStart: a.countStart, countEnd: b.countEnd,
-      segKeys: segGroup.map((s) => s.键),
+      serial: segGroup.length > 1 ? `${a.serial}～${b.serial}` : a.serial,
+      name: segGroup.length > 1 ? `${a.name}～${b.name}` : a.name,
+      start: a.start, end: b.end, countStart: a.countStart, countEnd: b.countEnd,
+      segKeys: segGroup.map((s) => s.key),
       relDropPer10s: dropPer10s(curve, a.countStart, b.countEnd),
     };
   };

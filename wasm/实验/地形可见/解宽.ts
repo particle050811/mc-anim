@@ -51,7 +51,7 @@ const buildWideDecoder = (wasm: Uint8Array, m: SectionModel, width: number) => {
     runCounts.set(new Uint16Array(memory.buffer, counts, columnCount));
     paletteIndex.set(new Uint16Array(memory.buffer, values, R));
     runLengths.set(new Uint16Array(memory.buffer, lengths, R));
-    return { kBottom, nz, palette, runCounts, paletteIndex, runLengths, 格: () => new Uint16Array(memory.buffer, cm, nz * columnCount) };
+    return { kBottom, nz, palette, runCounts, paletteIndex, runLengths, cell: () => new Uint16Array(memory.buffer, cm, nz * columnCount) };
   };
 };
 
@@ -60,11 +60,11 @@ const getArg = (flagName: string) => { const i = cliParams.indexOf(flagName); re
 const perLevel = Number(getArg('--每级') ?? 40);
 const env = await load(), pack = openPack(env, terrainRoot(), packName);
 const fidelityFile = getArg('--保真'), faithfulSet = new Set(fidelityFile ? fs.readFileSync(fidelityFile, 'utf8').split('\n').filter(Boolean) : []);
-const wasm = makeWidthDecoder(bigCount), decodeWidth = buildWideDecoder(wasm, pack.模型, bigCount);
+const wasm = makeWidthDecoder(bigCount), decodeWidth = buildWideDecoder(wasm, pack.model, bigCount);
 type LevelGroup = { L: number; 小: { raw: Uint8Array; id: SectionId }[]; 大: Uint8Array };
 const raw: LevelGroup[] = [], afterApply: LevelGroup[] = [], seen = new Set<string>();
 const colNames = ['四个原样', '拼原样', '四个最终', '一个大的最终'] as const;
-const levelStats = Array.from({ length: 7 }, () => ({ 组: 0, ...(Object.fromEntries(colNames.map((k) => [k, 0])) as Record<(typeof colNames)[number], number>) }));
+const levelStats = Array.from({ length: 7 }, () => ({ group: 0, ...(Object.fromEntries(colNames.map((k) => [k, 0])) as Record<(typeof colNames)[number], number>) }));
 /** 最终的做法（定底裙边.ts 量出来的）：3 封腔、1 埋格、邻圈只换被埋的并归空，第 0 级再加核心边。窗口 34 列、66 列都能用 */
 const applyAll = (g: CellGrid, hasNeighbor: boolean[]) => {
   fillSealedCavity(g); replaceBuriedWithStone(g);
@@ -74,22 +74,22 @@ const applyAll = (g: CellGrid, hasNeighbor: boolean[]) => {
 };
 for (const s of holdoutSplit(pack).测) {
   const { L } = s.id, a = s.id.i >> 1, b = s.id.j >> 1, groupKey = `${L}/${a}/${b}`, st = levelStats[L]!;
-  if (seen.has(groupKey) || st.组 >= perLevel) continue;
+  if (seen.has(groupKey) || st.group >= perLevel) continue;
   seen.add(groupKey);
   const items = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([di, dj]) => pack.lookup.get(sectionKey({ L, i: 2 * a + di!, j: 2 * b + dj! })));
   if (items.some((x) => !x || faithfulSet.has(sectionKey(x.id)))) continue;
-  st.组++;
+  st.group++;
   const grids = (items as SectionItem[]).map((x) => makeCellGrid(pack, pack.decodeSection(x)));
   const neighbors = (i: number, j: number, offset: number) => [[offset, 0], [-offset, 0], [0, offset], [0, -offset]].map(([di, dj]) => pack.lookup.has(sectionKey({ L, i: i + di!, j: j + dj! })));
   const packMergeCheck = (g: ReturnType<typeof combineQuad>) => {
-    const palette = arrangePalette(g), raw = compressWidth(palette, L, pack.模型), decoded = decodeWidth(raw, L), cells = decoded.格();
+    const palette = arrangePalette(g), raw = compressWidth(palette, L, pack.model), decoded = decodeWidth(raw, L), cells = decoded.cell();
     if (decoded.nz !== palette.nz || decoded.kBottom !== palette.kBottom || Buffer.compare(Buffer.from(cells.buffer, cells.byteOffset, cells.byteLength), Buffer.from(palette.cm.buffer, palette.cm.byteOffset, palette.cm.byteLength))) throw new Error(`宽区段 ${groupKey} 解回来不一样`);
     return raw;
   };
   const bigOriginal = packMergeCheck(combineQuad(grids, pack.stoneState, pack.stateFull));
   // 大的：四个小的先各自封腔、埋格（邻圈、核心边先不动，拼的时候中间那两列要用），拼好再在 66 列的窗口上全做一遍；大区段四周的邻段按 2 个小区段外有没有算
   const bigAfter = packMergeCheck(applyAll(combineQuad(grids.map((g) => { const h = copyGrid(g); fillSealedCavity(h); replaceBuriedWithStone(h); return h; }), pack.stoneState, pack.stateFull), [pack.lookup.has(sectionKey({ L, i: 2 * a + 2, j: 2 * b })), pack.lookup.has(sectionKey({ L, i: 2 * a - 1, j: 2 * b })), pack.lookup.has(sectionKey({ L, i: 2 * a, j: 2 * b + 2 })), pack.lookup.has(sectionKey({ L, i: 2 * a, j: 2 * b - 1 }))]));
-  const smallAfter = grids.map((g) => ({ raw: encodeSection(makeSection(applyAll(copyGrid(g), neighbors(g.id.i, g.id.j, 1))), pack.模型), id: g.id }));
+  const smallAfter = grids.map((g) => ({ raw: encodeSection(makeSection(applyAll(copyGrid(g), neighbors(g.id.i, g.id.j, 1))), pack.model), id: g.id }));
   raw.push({ L, 小: (items as SectionItem[]).map((x) => ({ raw: pack.读(x), id: x.id })), 大: bigOriginal });
   afterApply.push({ L, 小: smallAfter, 大: bigAfter });
   st.四个原样 += (items as SectionItem[]).reduce((n, x) => n + x.len, 0); st.拼原样 += bigOriginal.length;
@@ -97,23 +97,23 @@ for (const s of holdoutSplit(pack).测) {
 }
 const fullLevelBytes = pack.级.map((b) => b.reduce((n, x) => n + x.len, 0)), total = Object.fromEntries(colNames.map((k) => [k, 0])) as Record<(typeof colNames)[number], number>;
 let sumBytes = 0;
-for (let L = 0; L < 7; L++) if (levelStats[L]!.组) { sumBytes += fullLevelBytes[L]!; for (const k of colNames) total[k] += fullLevelBytes[L]! * levelStats[L]![k] / levelStats[L]!.四个原样; }
+for (let L = 0; L < 7; L++) if (levelStats[L]!.group) { sumBytes += fullLevelBytes[L]!; for (const k of colNames) total[k] += fullLevelBytes[L]! * levelStats[L]![k] / levelStats[L]!.四个原样; }
 const timingOf = (groups: LevelGroup[]) => {
-  const laps: { 谁: string; ms: number }[] = [];
+  const laps: { who: string; ms: number }[] = [];
   for (const variant of ['四个小的', '一个大的', '一个大的', '四个小的']) {
     const t = performance.now();
     for (let rep = 0; rep < 8; rep++) for (const g of groups) {
-      if (variant === '四个小的') for (const x of g.小) env.库.sectionDecoder.decodeSection(x.raw, x.id, pack.模型);
+      if (variant === '四个小的') for (const x of g.小) env.lib.sectionDecoder.decodeSection(x.raw, x.id, pack.model);
       else decodeWidth(g.大, g.L);
     }
-    laps.push({ 谁: variant, ms: performance.now() - t });
+    laps.push({ who: variant, ms: performance.now() - t });
   }
-  return { 组: groups.length, 轮: laps, 大比小: [laps[1]!.ms / laps[0]!.ms, laps[2]!.ms / laps[3]!.ms], 四个小的每组毫秒: (laps[0]!.ms + laps[3]!.ms) / 16 / groups.length, 一个大的每组毫秒: (laps[1]!.ms + laps[2]!.ms) / 16 / groups.length };
+  return { group: groups.length, 轮: laps, 大比小: [laps[1]!.ms / laps[0]!.ms, laps[2]!.ms / laps[3]!.ms], 四个小的每组毫秒: (laps[0]!.ms + laps[3]!.ms) / 16 / groups.length, 一个大的每组毫秒: (laps[1]!.ms + laps[2]!.ms) / 16 / groups.length };
 };
 const crossCompare = (() => { const a = timingOf(raw).轮, b = timingOf(afterApply).轮; return { 四个小的原样ms: (a[0]!.ms + a[3]!.ms) / 2, 四个小的最终ms: (b[0]!.ms + b[3]!.ms) / 2, 一个大的最终ms: (b[1]!.ms + b[2]!.ms) / 2 }; })();
 console.log(JSON.stringify({
-  包: packName, 每级: perLevel, 负载: os.loadavg(), 宽解码器字节: wasm.length,
-  级: levelStats.map((x, L) => ({ L, ...x, 大比小_原样: x.组 ? x.拼原样 / x.四个原样 : null, 大比小_最终: x.组 ? x.一个大的最终 / x.四个最终 : null })),
+  pack: packName, 每级: perLevel, load: os.loadavg(), 宽解码器字节: wasm.length,
+  级: levelStats.map((x, L) => ({ L, ...x, 大比小_原样: x.group ? x.拼原样 / x.四个原样 : null, 大比小_最终: x.group ? x.一个大的最终 / x.四个最终 : null })),
   // 各级样本比 × 全包该级区段字节；没有成组样本的级不算进分母
   加权估计_对现行格式: Object.fromEntries(colNames.map((k) => [k, total[k] / sumBytes])), 加权覆盖的字节占比: sumBytes / fullLevelBytes.reduce((a, b) => a + b, 0),
   解码: { 原样: { 全部: timingOf(raw), 第0级: timingOf(raw.filter((g) => g.L === 0)) }, 最终: { 全部: timingOf(afterApply), 第0级: timingOf(afterApply.filter((g) => g.L === 0)) }, 现行对最终: { ...crossCompare, 小的最终比现行: crossCompare.四个小的最终ms / crossCompare.四个小的原样ms, 大的最终比现行: crossCompare.一个大的最终ms / crossCompare.四个小的原样ms } },

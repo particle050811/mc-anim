@@ -6,7 +6,7 @@
 import { spellDuration, type SpellMeta, type Vec3 } from '../../法术/演出/接口.ts';
 import { spellMetas } from '../../法术/演出/元表.ts';
 
-export const aspect = { 宽: 1280, 高: 720 } as const;
+export const aspect = { width: 1280, height: 720 } as const;
 export const slotSec = 2;
 export const halfSlotSec = slotSec / 2;
 
@@ -15,11 +15,11 @@ export const castFrom: Vec3 = [-10, 0, 7];
 export const target: Vec3 = [0, 0, 0];
 export const seed = 1;
 
-export type CameraRig = { 名: '全景' | '近景'; 眼: Vec3; 看: Vec3; fov: number };
+export type CameraRig = { name: '全景' | '近景'; 眼: Vec3; 看: Vec3; fov: number };
 // 机位在南边朝北看：西（起点）在画面左边
 export const cameraRigs: readonly [CameraRig, CameraRig] = [
-  { 名: '全景', 眼: [-5, -24, 5], 看: [-5, 0, 3.4], fov: 40 },
-  { 名: '近景', 眼: [1.2, -9, 2.4], 看: [0, 0, 1.1], fov: 40 },
+  { name: '全景', 眼: [-5, -24, 5], 看: [-5, 0, 3.4], fov: 40 },
+  { name: '近景', 眼: [1.2, -9, 2.4], 看: [0, 0, 1.1], fov: 40 },
 ];
 
 export interface View {
@@ -27,7 +27,7 @@ export interface View {
   slotIndex: number;
   cameraRig: CameraRig;
   /** 法术出手后的秒 */
-  秒: number;
+  sec: number;
   长秒: number;
   hitSec?: number;
 }
@@ -39,5 +39,5 @@ export const viewAt = (segSec: number): View => {
   const inSlotSec = Math.max(0, segSec - slotIndex * slotSec);
   const isSecondHalf = inSlotSec + 1e-9 >= halfSlotSec ? 1 : 0;
   const spellTiming = spellDuration(meta, castFrom, target);
-  return { meta, slotIndex, cameraRig: cameraRigs[isSecondHalf], 秒: Math.min(1, Math.max(0, (inSlotSec - isSecondHalf * halfSlotSec) / halfSlotSec)) * spellTiming.长秒, ...spellTiming };
+  return { meta, slotIndex, cameraRig: cameraRigs[isSecondHalf], sec: Math.min(1, Math.max(0, (inSlotSec - isSecondHalf * halfSlotSec) / halfSlotSec)) * spellTiming.长秒, ...spellTiming };
 };

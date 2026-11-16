@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: { 贴图: [], 面组: [], 方块: {} } }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { 群系: {} } }));
+vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { biome: {} } }));
 const P = await import('./区段包.ts');
 const { mulberry32 } = await import('../core/数学.ts');
 const { sectionCells, coarsestLevel } = await import('./区段.ts');
@@ -60,10 +60,10 @@ describe('区段包', () => {
   });
   it('区段 → 体素块：每列从上往下按段铺，空气不写，原点按级换成米', () => {
     const d = makeSection(5, 1, 12);
-    const packTable = { 值: Uint16Array.from([0, 11, 12, 13]), 色: (s: number, b: number) => [s, b === P.noBiome ? 0 : b, 0] as [number, number, number] };
+    const packTable = { value: Uint16Array.from([0, 11, 12, 13]), 色: (s: number, b: number) => [s, b === P.noBiome ? 0 : b, 0] as [number, number, number] };
     const g = P.sectionToVoxels(d, packTable);
-    expect([g.nx, g.ny, g.nz, g.格]).toEqual([P.paddedSectionCols, P.paddedSectionCols, 12, 2]);
-    expect(g.原点).toEqual([-3 * sectionCells * 2, 7 * sectionCells * 2, -5 * 2]);
+    expect([g.nx, g.ny, g.nz, g.cell]).toEqual([P.paddedSectionCols, P.paddedSectionCols, 12, 2]);
+    expect(g.origin).toEqual([-3 * sectionCells * 2, 7 * sectionCells * 2, -5 * 2]);
     expect(g.palette.map((p) => p.v)).toEqual([0, 11, 12, 13]);
     // 第 0 列：从顶往下逐段核
     let z = d.nz;
@@ -76,7 +76,7 @@ describe('区段包', () => {
   it('粗高度图：越界、没数据给 −Infinity；有没有区段看核心范围里有没有数据', () => {
     const heights = new Int16Array([5, -32768, 7, 9, -32768, -32768]);
     const b64 = Buffer.from(heights.buffer).toString('base64');
-    const coarseHeight = P.decodeCoarseHeight({ 粗高度: { 格: 32, x0: -64, y0: 0, nx: 3, ny: 2, 高: b64 } });
+    const coarseHeight = P.decodeCoarseHeight({ coarseHeight: { cell: 32, x0: -64, y0: 0, nx: 3, ny: 2, height: b64 } });
     expect(P.coarseHeightAt(coarseHeight, -60, 1)).toBe(5);
     expect(P.coarseHeightAt(coarseHeight, -20, 1)).toBe(-Infinity);
     expect(P.coarseHeightAt(coarseHeight, 10, 40)).toBe(-Infinity);
@@ -87,8 +87,8 @@ describe('区段包', () => {
   });
   it('块文件头的字节（金样）', async () => {
     const json = JSON.stringify({
-      块头sha256: crypto.createHash('sha256').update(P.encodeTileHeader(1, -1, Uint32Array.from({ length: 2 * P.tileEntryCount }, (_, k) => k))).digest('hex'),
-      粗高度指纹: P.coarseHeightFingerprint(P.decodeCoarseHeight({ 粗高度: { 格: 32, x0: -64, y0: 0, nx: 2, ny: 1, 高: Buffer.from(new Int16Array([3, -32768]).buffer).toString('base64') } })),
+      chunkHeaderSha256: crypto.createHash('sha256').update(P.encodeTileHeader(1, -1, Uint32Array.from({ length: 2 * P.tileEntryCount }, (_, k) => k))).digest('hex'),
+      coarseHeightFingerprint: P.coarseHeightFingerprint(P.decodeCoarseHeight({ coarseHeight: { cell: 32, x0: -64, y0: 0, nx: 2, ny: 1, height: Buffer.from(new Int16Array([3, -32768]).buffer).toString('base64') } })),
     }, null, 1);
     await expect(json + '\n').toMatchFileSnapshot('./金样/区段包.json');
   });

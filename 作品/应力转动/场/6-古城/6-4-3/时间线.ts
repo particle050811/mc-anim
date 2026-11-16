@@ -149,12 +149,12 @@ export const buildTimeline = (followClock: number, variant?: Staging) => {
   // 末帧是剧情时间到 END 的第一个输出帧
   const totalSec = frameSecAt(cuts.END) + 1 / segFps;
   // 段表（画面秒，[起, 止)，落在输出帧上）
-  const segmentTable: Record<SegmentName, { 起: number; 止: number; 名: string }> = {
-    '6-4-3a': { 起: 0, 止: frameSecAt(cuts.B1), 名: '风矢' },
-    '6-4-3b': { 起: frameSecAt(cuts.B1), 止: frameSecAt(cuts.C1), 名: '挡箭' },
-    '6-4-3c': { 起: frameSecAt(cuts.C1), 止: totalSec, 名: '挑飞' },
+  const segmentTable: Record<SegmentName, { start: number; end: number; name: string }> = {
+    '6-4-3a': { start: 0, end: frameSecAt(cuts.B1), name: '风矢' },
+    '6-4-3b': { start: frameSecAt(cuts.B1), end: frameSecAt(cuts.C1), name: '挡箭' },
+    '6-4-3c': { start: frameSecAt(cuts.C1), end: totalSec, name: '挑飞' },
   };
-  return { followClock, clock, totalSec, storyTime, frameSecAt, secFractional, segTable: segmentTable, segSec: (segment: SegmentName) => segmentTable[segment].止 - segmentTable[segment].起 };
+  return { followClock, clock, totalSec, storyTime, frameSecAt, secFractional, segTable: segmentTable, segSec: (segment: SegmentName) => segmentTable[segment].end - segmentTable[segment].start };
 };
 export type SegmentName = '6-4-3a' | '6-4-3b' | '6-4-3c';
 
@@ -174,9 +174,9 @@ export const segSec = mainTimeline.segSec;
 export const cutSecs = {
   A2: frameSecAt(cuts.A2),
   A3: frameSecAt(cuts.A3),
-  B1: segTable['6-4-3b'].起,
+  B1: segTable['6-4-3b'].start,
   deflect: frameSecAt(geom.deflect),
-  C1: segTable['6-4-3c'].起,
+  C1: segTable['6-4-3c'].start,
   C2: frameSecAt(cuts.C2),
   C3: frameSecAt(cuts.C3),
 };
@@ -189,4 +189,4 @@ export const slashSpawnSec = frameSecAt(geom.swingTime);
 // 黄叛「纳命来」的开口（画面秒）：放箭前 3/4 秒（用户 10-12 在剪映里放的位置，「来」正对放箭）；用户 10-18 删了等拉弓以后前半句落在李樱翻箱子的镜头里。
 // 画面的点头口型用；声音照 段/6-规矩风矢 段.ts 的台词 cue 放（原来在 声音.tsx，那份声音表 11-06 迁成原生段后没人用、删了），两边要一起改。放箭那一刻对齐到 1/60 秒（输出帧）
 export const shoutLeadSec = 3 / 4;
-export const shoutLine: LineAt = { id: '6-4-3a-黄叛-纳命来', 秒: Math.round(secFractional(geom.shootTime) * 60) / 60 - shoutLeadSec };
+export const shoutLine: LineAt = { id: '6-4-3a-黄叛-纳命来', sec: Math.round(secFractional(geom.shootTime) * 60) / 60 - shoutLeadSec };

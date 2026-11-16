@@ -63,8 +63,8 @@ export const normalizeSource = async (source: string, loader: Loader): Promise<s
   return t;
 };
 
-type Target = { 路径: string; namespaceName: string; external: boolean };
-type Edge = { specifier: string; 目标: Target };
+type Target = { path: string; namespaceName: string; external: boolean };
+type Edge = { specifier: string; target: Target };
 
 /** 记下每条 import 的「说明符 → 解析结果」：自己先 build.resolve 一遍（带记号防递归），结果原样交回 */
 const edgeRecordPlugin = (edgesByImporter: Map<string, Edge[]>): Plugin => ({
@@ -75,7 +75,7 @@ const edgeRecordPlugin = (edgesByImporter: Map<string, Edge[]>): Plugin => ({
       const r = await b.resolve(args.path, { kind: args.kind, importer: args.importer, resolveDir: args.resolveDir, namespace: args.namespace, with: args.with, pluginData: { recordEdge: true } });
       if (r.errors.length) return { errors: r.errors };
       const edgeList = edgesByImporter.get(args.importer) ?? [];
-      edgeList.push({ specifier: args.path, 目标: { 路径: r.path, namespaceName: r.namespace, external: r.external } });
+      edgeList.push({ specifier: args.path, target: { path: r.path, namespaceName: r.namespace, external: r.external } });
       edgesByImporter.set(args.importer, edgeList);
       return { path: r.path, external: r.external, namespace: r.namespace, sideEffects: r.sideEffects, suffix: r.suffix };
     });
@@ -84,8 +84,8 @@ const edgeRecordPlugin = (edgesByImporter: Map<string, Edge[]>): Plugin => ({
 
 const newUrlRe = /new\s+URL\(\s*(["'])((?:\.\.?\/)[^"'\n]*)\1\s*,\s*import\.meta\.url\s*\)/g;
 
-export type MerkleDetail = { 模块: Record<string, string>; 资产: Record<string, string> };
-export type MerkleResult = { 根: string[]; 明细: MerkleDetail };
+export type MerkleDetail = { modules: Record<string, string>; asset: Record<string, string> };
+export type MerkleResult = { root: string[]; detail: MerkleDetail };
 export type MerkleOptions = { /** 这条边不跟进去，换成固定占位（外壳到 清单.ts） */ skip?: (importer: string, target: string) => boolean };
 /** 一次打包得到的全图：按任意一组入口取结果，和只拿这组入口单独打包算的一样（指纹.test.ts 有等值测试） */
 export type MerkleGraph = { 取: (entries: string[]) => MerkleResult };
@@ -148,15 +148,15 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
 
   const moduleHashes = new Map<string, string>();
   const leafHash = (t: Target): string | undefined => {
-    if (t.namespaceName === 'anim-资产') return `asset:${assets.get(t.路径)}`;
-    if (t.external) return `npm:${pkgName(t.路径)}@${lockedVersion(pkgName(t.路径))}${t.路径.slice(pkgName(t.路径).length)}`;
-    if (t.namespaceName !== 'file') throw new Error(`默克尔指纹不认识的命名空间 ${t.namespaceName}:${t.路径}`);
-    if (!codeLoaders[path.extname(t.路径)]) return `file:${sha(fs.readFileSync(t.路径))}`;
+    if (t.namespaceName === 'anim-资产') return `asset:${assets.get(t.path)}`;
+    if (t.external) return `npm:${pkgName(t.path)}@${lockedVersion(pkgName(t.path))}${t.path.slice(pkgName(t.path).length)}`;
+    if (t.namespaceName !== 'file') throw new Error(`默克尔指纹不认识的命名空间 ${t.namespaceName}:${t.path}`);
+    if (!codeLoaders[path.extname(t.path)]) return `file:${sha(fs.readFileSync(t.path))}`;
     return undefined;
   };
 
   // 每个代码模块：规范化文本、说明符位置和对应目标
-  type ModuleRecord = { 文本: string; loader: Loader; 引用: { 起: number; 止: number; 目标: Target }[] };
+  type ModuleRecord = { text: string; loader: Loader; 引用: { start: number; end: number; target: Target }[] };
   const modules = new Map<string, ModuleRecord>();
   const readModule = async (f: string): Promise<ModuleRecord> => {
     const cached = modules.get(f);
@@ -169,8 +169,8 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
     const bySpecifier = new Map<string, Target>();
     for (const e of edgesByImporter.get(f) ?? []) {
       const prevTarget = bySpecifier.get(e.specifier);
-      if (prevTarget && stableKey(prevTarget) !== stableKey(e.目标)) throw new Error(`${relPath}：同一个说明符 ${e.specifier} 解析到了两个目标`);
-      bySpecifier.set(e.specifier, e.目标);
+      if (prevTarget && stableKey(prevTarget) !== stableKey(e.target)) throw new Error(`${relPath}：同一个说明符 ${e.specifier} 解析到了两个目标`);
+      bySpecifier.set(e.specifier, e.target);
     }
     const refs: ModuleRecord['引用'] = [];
     const seenFiles = new Set<string>();
@@ -180,33 +180,33 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
       if ((q !== '"' && q !== "'") || sourceText[end - 1] !== q || sourceText.slice(imp.pos + 1, end - 1) !== imp.fileName) throw new Error(`${relPath}：说明符 ${imp.fileName} 的位置对不上`);
       const t = bySpecifier.get(imp.fileName);
       if (!t) throw new Error(`${relPath}：规范化文本里的说明符 ${imp.fileName} 不在 esbuild 的依赖图里（tsconfig 两边不一致？）`);
-      refs.push({ 起: imp.pos, 止: end, 目标: t });
+      refs.push({ start: imp.pos, end: end, target: t });
       seenFiles.add(imp.fileName);
     }
     for (const m of sourceText.matchAll(newUrlRe)) {
       const targetPath = path.resolve(path.dirname(f), m[2]!);
       const startIndex = m.index! + m[0].indexOf(m[1]! + m[2]!);
-      refs.push({ 起: startIndex, 止: startIndex + m[2]!.length + 2, 目标: { 路径: targetPath, namespaceName: 'file', external: false } });
+      refs.push({ start: startIndex, end: startIndex + m[2]!.length + 2, target: { path: targetPath, namespaceName: 'file', external: false } });
     }
     const missing = [...bySpecifier.keys()].filter((s) => !seenFiles.has(s));
     if (missing.length) throw new Error(`${relPath}：esbuild 依赖图里的说明符 ${missing.join('、')} 在规范化文本里找不到（tsconfig 两边不一致？）`);
-    refs.sort((a, b) => a.起 - b.起);
-    const m = { 文本: sourceText, loader, 引用: refs };
+    refs.sort((a, b) => a.start - b.start);
+    const m = { text: sourceText, loader, 引用: refs };
     modules.set(f, m);
     return m;
   };
 
-  const follow = (f: string, t: Target) => t.namespaceName === 'file' && !t.external && codeLoaders[path.extname(t.路径)] && !options.skip?.(f, t.路径);
+  const follow = (f: string, t: Target) => t.namespaceName === 'file' && !t.external && codeLoaders[path.extname(t.path)] && !options.skip?.(f, t.path);
   const substituteImports = (f: string, m: ModuleRecord, inCycle?: Set<string>) => {
     let out = '';
     let i = 0;
     for (const r of m.引用) {
-      const leaf = leafHash(r.目标);
-      const h = leaf ?? (options.skip?.(f, r.目标.路径) ? '略' : inCycle?.has(r.目标.路径) ? '环' : moduleHashes.get(r.目标.路径)!);
-      out += `${m.文本.slice(i, r.起)}"«${h}»"`;
-      i = r.止;
+      const leaf = leafHash(r.target);
+      const h = leaf ?? (options.skip?.(f, r.target.path) ? '略' : inCycle?.has(r.target.path) ? '环' : moduleHashes.get(r.target.path)!);
+      out += `${m.text.slice(i, r.start)}"«${h}»"`;
+      i = r.end;
     }
-    return out + m.文本.slice(i);
+    return out + m.text.slice(i);
   };
 
   // Tarjan：强连通分量按依赖在前的顺序出来，依次算哈希
@@ -222,8 +222,8 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
     onStack.add(f);
     const m = await readModule(f);
     for (const r of m.引用) {
-      if (!follow(f, r.目标)) continue;
-      const g = r.目标.路径;
+      if (!follow(f, r.target)) continue;
+      const g = r.target.path;
       if (!indexByKey.has(g)) {
         await visit(g);
         indexByFingerprint.set(f, Math.min(indexByFingerprint.get(f)!, indexByFingerprint.get(g)!));
@@ -237,7 +237,7 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
       component.push(g);
       if (g === f) break;
     }
-    const selfLoop = component.length === 1 && m.引用.some((r) => follow(f, r.目标) && r.目标.路径 === f);
+    const selfLoop = component.length === 1 && m.引用.some((r) => follow(f, r.target) && r.target.path === f);
     if (component.length === 1 && !selfLoop) {
       moduleHashes.set(f, sha(`anim-${MERKLE_ALGORITHM}\0${m.loader}\0${substituteImports(f, m)}`));
       return;
@@ -270,7 +270,7 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
       const f = toFollow.pop()!;
       if (followed.has(f)) continue;
       followed.add(f);
-      for (const r of modules.get(f)!.引用) if (follow(f, r.目标)) toFollow.push(r.目标.路径);
+      for (const r of modules.get(f)!.引用) if (follow(f, r.target)) toFollow.push(r.target.path);
     }
     // 单独打包时 esbuild 读到的文件和 asset:（边全跟，加原文的 new URL）
     const readFiles = new Set<string>();
@@ -281,8 +281,8 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
       if (readFiles.has(f)) continue;
       readFiles.add(f);
       for (const e of edgesByImporter.get(f) ?? []) {
-        if (e.目标.namespaceName === 'anim-资产') usedAssets.add(e.目标.路径);
-        else if (e.目标.namespaceName === 'file' && !e.目标.external) toRead.push(e.目标.路径);
+        if (e.target.namespaceName === 'anim-资产') usedAssets.add(e.target.path);
+        else if (e.target.namespaceName === 'file' && !e.target.external) toRead.push(e.target.path);
       }
       toRead.push(...(rawNewUrls.get(f) ?? []));
     }
@@ -292,12 +292,12 @@ export const buildMerkleGraph = async (allEntries: string[], options: MerkleOpti
       if (!codeLoaders[path.extname(f)] && !(relPath(f) in moduleDetail)) moduleDetail[relPath(f)] = fileSha(f);
     }
     const assetRegistry = [...usedAssets].sort().map((id) => [id, assets.get(id)!] as const);
-    return { 根: rootHashes, 明细: { 模块: moduleDetail, 资产: Object.fromEntries(assetRegistry) } };
+    return { root: rootHashes, detail: { modules: moduleDetail, asset: Object.fromEntries(assetRegistry) } };
   };
   return { 取: merkleOf };
 };
 
-const stableKey = (t: Target) => `${t.namespaceName}:${t.external}:${t.路径}`;
+const stableKey = (t: Target) => `${t.namespaceName}:${t.external}:${t.path}`;
 
 /** 单个文件规范化后的哈希，不跟它的 import（打包规则用：webpack.ts 等不跟闭包，免得改 pipeline 别处就全片失效） */
 export const textFileHash = async (relPath: string) => {

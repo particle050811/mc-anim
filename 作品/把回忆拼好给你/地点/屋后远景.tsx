@@ -29,12 +29,12 @@ export const eyeHeight = 1.62;
 /** 地平线比屋前草地的后沿高几格（Agent 暂定：N = 16 时 80 成片像素，一条窄窄的远处草地，再上面是坡和林子） */
 export const horizonToGrass = 0.3125;
 /** 原版 12 区块的地形雾（照 场/2-新世界/参数.ts 的 地形雾：起 = 192 − 19.2、止 = 192） */
-export const farFog = { 起: 172.8, 止: 192 };
+export const farFog = { start: 172.8, end: 192 };
 /** 屋前草地几排（门口小木屋.tsx 的 j 0～3） */
 const grassRowCount = 4;
 
 /** 地平线在成片画面上离画面中心往下几格 */
-export const horizonBelowCenter = (framing: SideFraming, topDepth: number) => framing.中心[1] - (grassRowCount * topDepth) / (framing.pxPerCell / 16) - horizonToGrass;
+export const horizonBelowCenter = (framing: SideFraming, topDepth: number) => framing.center[1] - (grassRowCount * topDepth) / (framing.pxPerCell / 16) - horizonToGrass;
 
 type FogUniforms = Record<string, { value: number | THREE.Vector3 }>;
 
@@ -74,7 +74,7 @@ const applyFog = <M extends THREE.Material>(m: M, u: FogUniforms): M => {
 };
 
 // 一个渲染页面只建一次几何
-type DistantMesh = { g: THREE.BufferGeometry; 类: '实心' | '镂空'; 名: string };
+type DistantMesh = { g: THREE.BufferGeometry; type: '实心' | '镂空'; name: string };
 let geometryCache: DistantMesh[] | null = null;
 const farGeometry = () => {
   if (geometryCache) return geometryCache;
@@ -84,7 +84,7 @@ const farGeometry = () => {
     [surroundBlocks.plains, 'minecraft:plains'],
     [surroundBlocks.cherryGrove, 'minecraft:cherry_grove'],
   ] as [PlacedBlock[], string][]) {
-    const buffers = assembleBuffers(blocks, { 原点: gridOrigin, 群系: biome });
+    const buffers = assembleBuffers(blocks, { origin: gridOrigin, biome: biome });
     if (buffers.半透明.idx.length || buffers.发光.idx.length) throw new Error('屋后远景里不该有半透明、发光的方块');
     for (const matKind of ['实心', '镂空'] as const) {
       const b = buffers[matKind];
@@ -95,7 +95,7 @@ const farGeometry = () => {
       g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2));
       g.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3));
       g.setIndex(b.idx);
-      out.push({ g, 类: matKind, 名: `屋后远景-${biome}-${matKind}` });
+      out.push({ g, type: matKind, name: `屋后远景-${biome}-${matKind}` });
     }
   }
   return (geometryCache = out);
@@ -122,7 +122,7 @@ const BehindHouseContent: React.FC<{ u: FogUniforms; clouds?: DistantCloud; fogP
       实心: applyFog(new THREE.MeshStandardMaterial(common), u),
       镂空: applyFog(new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide }), u),
     };
-    const meshes = farGeometry().map(({ g, 类: matKind, 名: name }) => {
+    const meshes = farGeometry().map(({ g, type: matKind, name: name }) => {
       const m = new THREE.Mesh(g, materials[matKind]);
       m.name = name;
       m.frustumCulled = false;
@@ -154,8 +154,8 @@ export type BehindHouseViewProps = BackViewOptions & {
    *  不给时保留既有行为：静帧核对里也会切换取景，不在这里顺带改它们（docs/渲染性能.md）。 */
   frontFraming?: SideFraming;
   /** 整块画面的页面尺寸（同 门口画布） */
-  宽: number;
-  高: number;
+  width: number;
+  height: number;
   /** 正交那一层的斜投影俯角（画风.ts 的 正交顶面） */
   topDepth: number;
   /** 平涂色调（同正交那一层，夜里压暗的也一样） */
@@ -175,21 +175,21 @@ const canvasHalfPageHeight = (framing: SideFraming, height: number, topDepth: nu
 };
 
 /** 放在 门口画布 的天和正交画布中间（绝对定位，自己算位置；比画面高的部分由 门口画布 的 overflow 裁掉） */
-export const BehindHouseVista: React.FC<BehindHouseViewProps> = ({ framing, frontFraming, clouds, 宽: width, 高: height, topDepth, tint, skyColors, 刻: tick, lightDarkAmp }) => {
+export const BehindHouseVista: React.FC<BehindHouseViewProps> = ({ framing, frontFraming, clouds, width: width, height: height, topDepth, tint, skyColors, 刻: tick, lightDarkAmp }) => {
   const pxPerCell = framing.pxPerCell;
   const horizonDrop = horizonBelowCenter(framing, topDepth);
   const halfPageHeight = canvasHalfPageHeight(framing, height, topDepth);
   const frontCanvasHeight = frontFraming === undefined ? undefined : canvasHalfPageHeight(frontFraming, height, topDepth) * 2;
   const topPage = horizonLineAt(framing, height, topDepth) / filmScale - halfPageHeight;
-  const eye: [number, number, number] = [framing.中心[0], -farViewDistance, framing.中心[1] - horizonDrop];
+  const eye: [number, number, number] = [framing.center[0], -farViewDistance, framing.center[1] - horizonDrop];
   // 地形往下挪：眼睛正好在远景地面上 眼高
   const terrainLow = eye[2] - eyeHeight;
   const fov = (2 * Math.atan((halfPageHeight * filmScale) / (pxPerCell * farViewDistance)) * 180) / Math.PI;
   const bright = 1 - lightDarkAmp * (1 - skyBrightness(tick));
   const u = useMemo<FogUniforms>(
     () => ({
-      mcFogStart: { value: farFog.起 },
-      mcFogEnd: { value: farFog.止 },
+      mcFogStart: { value: farFog.start },
+      mcFogEnd: { value: farFog.end },
       mcTop: { value: 0 },
       mcBufH: { value: 0 },
       mcPx: { value: 1 },
@@ -202,16 +202,16 @@ export const BehindHouseVista: React.FC<BehindHouseViewProps> = ({ framing, fron
     [],
   );
   u.mcTop!.value = topPage * filmScale;
-  u.mcGround!.value = height * filmScale * 0.5 + framing.中心[1] * pxPerCell;
+  u.mcGround!.value = height * filmScale * 0.5 + framing.center[1] * pxPerCell;
   u.mcRowPx!.value = pxPerCell / 16;
   u.mcGrad!.value = skyColors.gradientHeight;
   u.mcHorizon!.value = mix(parseColor(skyColors.nightHorizon), parseColor(skyColors.horizon), bright);
   u.mcZenith!.value = mix(parseColor(skyColors.nightTop), parseColor(skyColors.topColor), bright);
   return (
     <ToonCanvas
-      宽={width}
-      高={halfPageHeight * 2}
-      cameraRig={{ 种: '透视', 眼: eye, 看: [eye[0], eye[1] + 1, eye[2]], fov, near: 1, farPlane: farFog.止 + farViewDistance + 16, aspectRatio: frontCanvasHeight === undefined ? undefined : width / frontCanvasHeight }}
+      width={width}
+      height={halfPageHeight * 2}
+      cameraRig={{ kind: '透视', 眼: eye, 看: [eye[0], eye[1] + 1, eye[2]], fov, near: 1, farPlane: farFog.end + farViewDistance + 16, aspectRatio: frontCanvasHeight === undefined ? undefined : width / frontCanvasHeight }}
       tint={tint}
       style={{ position: 'absolute', left: 0, top: topPage }}
     >

@@ -22,12 +22,12 @@ const voidShockModel = getModel(voidShockModelData, 'VoidShockModel');
 const deepPurple: readonly [number, number, number] = [0.8, 0, 0.8];
 const burstColor = hexColor(0xb103d8);
 
-export const VoidShockGroup: React.FC<{ shocks: readonly VoidShock[]; 目标: Vec3; 秒: number; 种子: number }> = ({ shocks, 目标: target, 秒: sec, 种子: seed }) => {
+export const VoidShockGroup: React.FC<{ shocks: readonly VoidShock[]; target: Vec3; sec: number; seed: number }> = ({ shocks, target: target, sec: sec, seed: seed }) => {
   const tick = sec * 20;
   const particles: ParticleSpawn[] = shocks.flatMap((tremor, i) =>
     eachTick(1, Math.min(tick - tremor.launchTick, voidShockHitTick(tremor, target))).map((n) => {
       const p = voidShockPos(tremor, target, n);
-      return { 种: 'portal' as const, 刻: tremor.launchTick + n, p: [p[0], p[1], p[2] + 0.3] as [number, number, number], 种子: seed * 211 + i * 1009 + n };
+      return { kind: 'portal' as const, 刻: tremor.launchTick + n, p: [p[0], p[1], p[2] + 0.3] as [number, number, number], seed: seed * 211 + i * 1009 + n };
     }),
   );
   return (
@@ -58,8 +58,8 @@ export const VoidShockGroup: React.FC<{ shocks: readonly VoidShock[]; 目标: Ve
             <MinecraftSpace 位={p}>
               <group position={[0, 0.3, 0]}>
                 <group scale={[-1, -1, 1]}>
-                  <ModelPart 模型={voidShockModel} 图={png(voidShockInnerPng)} 画法="加色" partPoses={partPoses} />
-                  <ModelPart 模型={voidShockModel} 图={png(voidShockOuterPng)} 画法="加色" opacity={0.4} partPoses={partPoses} />
+                  <ModelPart model={voidShockModel} image={png(voidShockInnerPng)} 画法="加色" partPoses={partPoses} />
+                  <ModelPart model={voidShockModel} image={png(voidShockOuterPng)} 画法="加色" opacity={0.4} partPoses={partPoses} />
                 </group>
               </group>
             </MinecraftSpace>
@@ -69,18 +69,18 @@ export const VoidShockGroup: React.FC<{ shocks: readonly VoidShock[]; 目标: Ve
                   const q = voidShockPos(tremor, target, Math.max(tremor.lockTick, t - j));
                   return [q[0], q[1], q[2] + 0.3] as const;
                 })}
-                宽={0.2}
-                长={3}
-                图={png(solidTrailPng)}
+                width={0.2}
+                length={3}
+                image={png(solidTrailPng)}
                 色={deepPurple}
                 实心
-                混合="镂空"
+                blend="镂空"
               />
             )}
           </React.Fragment>
         );
       })}
-      <VanillaParticles spawns={particles} 秒={sec} />
+      <VanillaParticles spawns={particles} sec={sec} />
     </>
   );
 };

@@ -9,11 +9,11 @@ import type { SpeedRamp } from './变速.ts';
 import { ScenePicture } from './画面.tsx';
 import type { Cam } from '@engine/core/机位.ts';
 
-export type SpeedRampShot = { 起: number; cam: (t: number) => Cam };
+export type SpeedRampShot = { start: number; cam: (t: number) => Cam };
 export const buildCameraRig = (v: SpeedRamp, shots: SpeedRampShot[]) => {
   const shotIndex = (t: number) => {
     let i = 0;
-    while (i + 1 < shots.length && t >= shots[i + 1].起) i++;
+    while (i + 1 < shots.length && t >= shots[i + 1].start) i++;
     return i;
   };
   return (sec: number): Cam => {

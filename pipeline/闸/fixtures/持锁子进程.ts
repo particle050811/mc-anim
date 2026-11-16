@@ -6,4 +6,4 @@ const dir=process.argv[2]!;
 await passRenderGate(async()=>{
   const tmp=path.join(dir,'本次.渲染中.mkv');fs.writeFileSync(tmp,'temp');registerTempFile(tmp);
   console.log('ready');await new Promise(()=>setInterval(()=>{},1000));
-},()=>{}, {lockDir:dir,localHost:os.hostname(),memFloor:30,readMemory:()=>null,readPressure:()=>1}, {种:'fixture',用途:'实验'});
+},()=>{}, {lockDir:dir,localHost:os.hostname(),memFloor:30,readMemory:()=>null,readPressure:()=>1}, {kind:'fixture',purpose:'实验'});

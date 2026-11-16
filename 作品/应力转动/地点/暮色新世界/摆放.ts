@@ -12,7 +12,7 @@ const rot = (deg: number, point: number[]): V3 => {
   return [point[0] * cosR - point[1] * sinR, point[0] * sinR + point[1] * cosR, point[2]];
 };
 export type LandmarkFrame = {
-  原点: V3; // 网格原点的世界坐标（网格组件放在这里、再转 转 度）
+  origin: V3; // 网格原点的世界坐标（网格组件放在这里、再转 转 度）
   转: number; // 逆时针度数
   toWorld: (localPos: number[]) => V3; // 网格本地坐标（场景坐标、原点 = 网格原点）→ 世界
   toLocal: (worldPos: number[]) => V3;
@@ -28,11 +28,11 @@ export const frameByName = Object.fromEntries(
       return [worldOrigin[0] + rotated[0], worldOrigin[1] + rotated[1], worldOrigin[2] + rotated[2]];
     };
     // 方块对齐：网格的方块角转过去以后要落在整数上（和导入地形的方块对齐），不然 `newOrigin` 给错了
-    const { from, to, origin } = def.说明;
+    const { from, to, origin } = def.note;
     const corner = toWorld([from[0] - origin[0], origin[2] - (to[2] + 1), from[1] - origin[1]]);
     if (corner.some((v) => Math.abs(v - Math.round(v)) > 1e-6)) throw new Error(`暮色新世界：${name} 的新原点没对齐方块（角落在 ${corner}）`);
     const frame: LandmarkFrame = {
-      原点: worldOrigin,
+      origin: worldOrigin,
       转: def.转,
       toWorld: toWorld,
       toLocal: (p) => rot(-def.转, [p[0] - worldOrigin[0], p[1] - worldOrigin[1], p[2] - worldOrigin[2]]),
@@ -57,12 +57,12 @@ const columnRange = (name: TwilightLandmarkName, rect: number[]) => {
 };
 // 网格的整个导出范围（网格本地）、网格最低那层在新世界的游戏 y
 const meshRect = (name: TwilightLandmarkName): Rect => {
-  const { from, to, origin } = landmarkDefs[name].说明;
+  const { from, to, origin } = landmarkDefs[name].note;
   return [from[0] - origin[0], origin[2] - (to[2] + 1), to[0] + 1 - origin[0], origin[2] - from[2]];
 };
 const meshBottomY = (name: TwilightLandmarkName) => {
   const def = landmarkDefs[name];
-  return def.说明.from[1] + Math.round(def.newOrigin[1] - def.说明.origin[1]);
+  return def.note.from[1] + Math.round(def.newOrigin[1] - def.note.origin[1]);
 };
 function meshCutout(name: TwilightLandmarkName, core?: number[]): LandmarkCutout {
   const [x0, z0, x1, z1] = columnRange(name, core ?? meshRect(name));
@@ -156,7 +156,7 @@ function edgeFixExtraCutouts(name: TwilightLandmarkName): LandmarkCutout[] {
 const mainCutoutsByName = Object.fromEntries(
   twilightLandmarkNames.map((name) => {
     const def = landmarkDefs[name];
-    if (def.网格 === false && !def.cutouts) return [name, []];
+    if (def.grid === false && !def.cutouts) return [name, []];
     return [name, [...(def.cutouts ?? (def.core ? coreCutouts(name) : [meshCutout(name)])), ...edgeFixExtraCutouts(name)]];
   }),
 ) as Record<TwilightLandmarkName, CutoutEntry[]>;
@@ -178,7 +178,7 @@ export const allFlattens: FlattenArea[] = twilightLandmarkNames.flatMap((name) =
 const rangeBoxesByName = Object.fromEntries(
   twilightLandmarkNames.map((name) => {
     const def = landmarkDefs[name];
-    const mainBoxes: CutoutEntry[] = (def.范围 ?? (def.网格 === false ? [meshRect(name)] : null))?.map((rect) => {
+    const mainBoxes: CutoutEntry[] = (def.bounds ?? (def.grid === false ? [meshRect(name)] : null))?.map((rect) => {
       const [x0, z0, x1, z1] = columnRange(name, rect);
       return { from: [x0, 0, z0], to: [x1, 0, z1] };
     }) ?? mainCutoutsByName[name];

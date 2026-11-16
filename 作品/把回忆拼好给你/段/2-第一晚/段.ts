@@ -10,14 +10,14 @@ import { toAssetCue, type FrameCue } from '../../声音/跨段音效.ts';
 const segKey = '2-第一晚';
 const clock = segClock(segKey);
 const events = segMainCutEventFrames(segKey);
-const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
+const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.frameCount - startFrame);
 
 type SfxName = keyof typeof soundFx;
 /** 一个音效：在第 帧 帧起放，增益把文件峰值配到 参数.ts 的 到（dBFS），放到文件完或段尾 */
 const playCue = (soundName: SfxName, startFrame: number): FrameCue => {
   const sound = soundFx[soundName];
-  const gain = Math.round(10 ** ((sound.到 - sound.峰值) / 20) * 1e6) / 1e6;
-  return { 帧: startFrame, 资产: sound.资产, 名: soundName, 帧数: clampFramesToSegEnd(startFrame, sound.秒), 增益: gain };
+  const gain = Math.round(10 ** ((sound.dest - sound.peakDb) / 20) * 1e6) / 1e6;
+  return { frame: startFrame, asset: sound.asset, name: soundName, frameCount: clampFramesToSegEnd(startFrame, sound.sec), 增益: gain };
 };
 
 // 挖、放土在方块碎、方块出现的那一帧；僵尸低吼最响那一下落在它走到洞顶正上方的时候
@@ -31,11 +31,11 @@ const sfxCues: readonly FrameCue[] = [
 ];
 
 export default defineSeg({
-  场: '2-第一晚',
-  秒: clock.秒,
-  宽: aspect.宽,
-  高: aspect.高,
-  地形: [],
+  scene: '2-第一晚',
+  sec: clock.sec,
+  width: aspect.width,
+  height: aspect.height,
+  terrain: [],
   sceneWindow: clock.sceneWindow,
-  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }, ...sfxCues.map(toAssetCue)],
+  sound: [{ ...clock.origTrack, asset: '配乐/把回忆拼好给你-无男声DJ', name: '原声', 增益: originalGain }, ...sfxCues.map(toAssetCue)],
 });

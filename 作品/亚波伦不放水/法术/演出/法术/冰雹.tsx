@@ -14,13 +14,13 @@ import meta, { hailSnowTicks, hailActiveTick } from './冰雹.元.ts';
 
 const radius = 2;
 
-const Hail: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+const Hail: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
   const cloudCenter: [number, number, number] = [target[0], target[1], target[2] + 4];
   const endTick = hailActiveTick + hailSnowTicks;
   return (
     <>
-      <TexturedParticles 类={cloudPieceClass} spawns={cloudFaceSpawns(seed * 17 + 1, cloudCenter, radius, endTick, [0.5, 0.5, 0.5])} 秒={sec} />
-      <TexturedParticles 类={fallingDustClass(target[2])} spawns={fallingDustSpawns(seed * 17 + 2, cloudCenter, radius, hailActiveTick, endTick)} 秒={sec} />
+      <TexturedParticles type={cloudPieceClass} spawns={cloudFaceSpawns(seed * 17 + 1, cloudCenter, radius, endTick, [0.5, 0.5, 0.5])} sec={sec} />
+      <TexturedParticles type={fallingDustClass(target[2])} spawns={fallingDustSpawns(seed * 17 + 2, cloudCenter, radius, hailActiveTick, endTick)} sec={sec} />
     </>
   );
 };

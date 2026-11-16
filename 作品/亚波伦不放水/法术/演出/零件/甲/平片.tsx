@@ -6,7 +6,7 @@ import { faceMaterial, type FaceMaterialOptions } from '../材质.ts';
 
 export type CornerVertex = readonly [number, number, number, number, number];
 
-export const FlatQuad: React.FC<FaceMaterialOptions & { corners: readonly [CornerVertex, CornerVertex, CornerVertex, CornerVertex]; 图: Png }> = ({ corners, 图: image, ...materialOpts }) => {
+export const FlatQuad: React.FC<FaceMaterialOptions & { corners: readonly [CornerVertex, CornerVertex, CornerVertex, CornerVertex]; image: Png }> = ({ corners, image: image, ...materialOpts }) => {
   const cacheKey = JSON.stringify(corners);
   const geo = useMemo(() => {
     const g = new THREE.BufferGeometry();

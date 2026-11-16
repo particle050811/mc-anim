@@ -8,7 +8,7 @@ import { transformPos, transformState, cellIndex } from './结构.ts';
 
 export const commandCellLimit = 32768;
 
-export type Replay = { loads: string[]; 命令: string[]; unloadCmds: string[]; 警告: string[] };
+export type Replay = { loads: string[]; command: string[]; unloadCmds: string[]; warnings: string[] };
 
 const boxCoords = (b: Box) => `${b.x1} ${b.y1} ${b.z1} ${b.x2} ${b.y2} ${b.z2}`;
 
@@ -52,56 +52,56 @@ export const shellAndInner = (b: Box): { shellBoxes: Box[]; 内: Box | null } =>
 
 /** 一步翻成游戏命令（不带 execute in） */
 const expandStep = (s: EditStep, warnings: string[]): string[] => {
-  switch (s.种) {
+  switch (s.kind) {
     case 'setblock':
       return [s.原文.replace(/^\s*\//, '')];
     case 'fill': {
-      if (volume(s.盒) <= commandCellLimit) return [s.原文.replace(/^\s*\//, '')];
+      if (volume(s.boxes) <= commandCellLimit) return [s.原文.replace(/^\s*\//, '')];
       if (s.fillMode === 'hollow' || s.fillMode === 'outline') {
-        const { shellBoxes, 内: innerBox } = shellAndInner(s.盒);
+        const { shellBoxes, 内: innerBox } = shellAndInner(s.boxes);
         const out = shellBoxes.flatMap((b) => splitBox(b)).map((b) => `fill ${boxCoords(b)} ${s.stateText}`);
         if (innerBox && s.fillMode === 'hollow') out.unshift(...splitBox(innerBox).map((b) => `fill ${boxCoords(b)} minecraft:air`));
         return out;
       }
       const suffix = s.fillMode === 'keep' ? ' keep' : s.filterText ? ` replace ${s.filterText}` : '';
-      return splitBox(s.盒).map((b) => `fill ${boxCoords(b)} ${s.stateText}${suffix}`);
+      return splitBox(s.boxes).map((b) => `fill ${boxCoords(b)} ${s.stateText}${suffix}`);
     }
     case 'clone': {
       if (volume(s.源) <= commandCellLimit) return [s.原文.replace(/^\s*\//, '')];
       const tailWords = splitWords(s.原文.replace(/^\s*\//, '')).slice(10);
-      if (s.isMove || tailWords.includes('force')) warnings.push(`${s.出处}：clone 超过 ${commandCellLimit} 格要拆开，源和目标重叠时拆开执行和一次执行的结果可能不同，重放后核对一下`);
+      if (s.isMove || tailWords.includes('force')) warnings.push(`${s.provenance}：clone 超过 ${commandCellLimit} 格要拆开，源和目标重叠时拆开执行和一次执行的结果可能不同，重放后核对一下`);
       const [dx, dy, dz] = s.offset;
       return splitBox(s.源).map((b) => `clone ${boxCoords(b)} ${b.x1 + dx} ${b.y1 + dy} ${b.z1 + dz}${tailWords.length ? ' ' + tailWords.join(' ') : ''}`);
     }
     case 'place': {
       // 展开：每个 (y, z) 一行，沿 x 连续相同的并成一条 fill
-      const [ex, ey, ez] = s.结构.大小;
+      const [ex, ey, ez] = s.结构.size;
       const worldCells = new Map<string, string>();
       for (let y = 0; y < ey; y++)
         for (let c = 0; c < ez; c++)
           for (let a = 0; a < ex; a++) {
-            const st = s.结构.格[cellIndex(s.结构, a, y, c)];
+            const st = s.结构.cell[cellIndex(s.结构, a, y, c)];
             if (st == null) continue;
             const [dx, dz] = transformPos(a, c, s.rotation, s.mirror);
             worldCells.set(`${s.位置[0] + dx},${s.位置[1] + y},${s.位置[2] + dz}`, transformState(st, s.rotation, s.mirror));
           }
       const out: string[] = [];
-      for (let y = s.盒.y1; y <= s.盒.y2; y++)
-        for (let z = s.盒.z1; z <= s.盒.z2; z++) {
-          let x = s.盒.x1;
-          while (x <= s.盒.x2) {
+      for (let y = s.boxes.y1; y <= s.boxes.y2; y++)
+        for (let z = s.boxes.z1; z <= s.boxes.z2; z++) {
+          let x = s.boxes.x1;
+          while (x <= s.boxes.x2) {
             const st = worldCells.get(`${x},${y},${z}`);
             if (!st) {
               x++;
               continue;
             }
             let x2 = x;
-            while (x2 + 1 <= s.盒.x2 && worldCells.get(`${x2 + 1},${y},${z}`) === st) x2++;
+            while (x2 + 1 <= s.boxes.x2 && worldCells.get(`${x2 + 1},${y},${z}`) === st) x2++;
             out.push(x2 === x ? `setblock ${x} ${y} ${z} ${st}` : `fill ${x} ${y} ${z} ${x2} ${y} ${z} ${st}`);
             x = x2 + 1;
           }
         }
-      if (s.结构.blockEntityCount) warnings.push(`${s.出处}：结构里 ${s.结构.blockEntityCount} 个方块实体的 NBT（箱子内容、告示牌字）没有重放`);
+      if (s.结构.blockEntityCount) warnings.push(`${s.provenance}：结构里 ${s.结构.blockEntityCount} 个方块实体的 NBT（箱子内容、告示牌字）没有重放`);
       return out;
     }
   }
@@ -124,14 +124,14 @@ export const loadRects = (boxes: Box[]): [number, number, number, number][] => {
 export const buildReplay = (editSet: EditSet, dimension: string): Replay => {
   const warnings: string[] = [];
   const prefix = `execute in ${dimension} run `;
-  const commands = editSet.步.flatMap((s) => expandStep(s, warnings)).map((c) => prefix + c);
-  const boxes = editSet.步.flatMap((s) => (s.种 === 'clone' ? [s.盒, s.源] : [s.盒]));
+  const commands = editSet.step.flatMap((s) => expandStep(s, warnings)).map((c) => prefix + c);
+  const boxes = editSet.step.flatMap((s) => (s.kind === 'clone' ? [s.boxes, s.源] : [s.boxes]));
   const rects = loadRects(boxes);
   return {
     loads: rects.map((r) => `${prefix}forceload add ${r.join(' ')}`),
-    命令: commands,
+    command: commands,
     unloadCmds: rects.map((r) => `${prefix}forceload remove ${r.join(' ')}`),
-    警告: warnings,
+    warnings: warnings,
   };
 };
 
@@ -153,8 +153,8 @@ export const buildReplayScript = (r: Replay, note: string, perBatch = 400) => {
     ...batch(r.loads),
     'sleep 3',
     '',
-    `# 2. 编辑（${r.命令.length} 条）`,
-    ...batch(r.命令),
+    `# 2. 编辑（${r.command.length} 条）`,
+    ...batch(r.command),
     '',
     '# 3. 取消强制加载',
     ...batch(r.unloadCmds),

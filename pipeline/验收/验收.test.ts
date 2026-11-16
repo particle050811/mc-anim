@@ -12,7 +12,7 @@ import { frameStream, readStream, blockMeans, sampleFrames, pickFrameBatch, fram
 import { readApproval, writeApproval, approvalFile, type ApprovalRecord } from './认可.ts';
 import { isChanged, scanMaster } from './验收.ts';
 
-const threshold: Threshold = { 块8门槛: 24, 块16门槛: 10, 块64门槛: 4, 看一眼门槛: 6, 块均值容差: 1, 响度容差LU: 0.5, 起音容差帧: 1 };
+const threshold: Threshold = { block8Threshold: 24, block16Threshold: 10, block64Threshold: 4, glanceThreshold: 6, blockMeanTol: 1, loudnessTolLu: 0.5, onsetTolFrames: 1 };
 let dir = '';
 // 声音：静 0.5 秒后起一声 440 Hz（延后、音量可调），起音落在 0.5 秒 + 延后
 const makeVideo = (fileName: string, videoFilter: string, soundOpts: { delayMs?: number; volumeDb?: number } = {}) => {
@@ -45,8 +45,8 @@ beforeAll(() => {
 afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
 
 const makeApproval = async (masterPath: string): Promise<ApprovalRecord> => ({
-  段: '核对-样例', 指纹: 'f'.repeat(64), 平台: 'test', 渲染级别: '视频', 认可于: '2026-10-21T00:00:00Z', 提交: 'abc', 理由: '测试', 上一版指纹: null,
-  ...(await scanMaster(masterPath)).签名,
+  segment: '核对-样例', fingerprint: 'f'.repeat(64), platform: 'test', renderLevel: '视频', approvedAt: '2026-10-21T00:00:00Z', commit: 'abc', reason: '测试', prevFingerprint: null,
+  ...(await scanMaster(masterPath)).signature,
 });
 
 describe('anim verify', () => {
@@ -60,13 +60,13 @@ describe('anim verify', () => {
   it('签名可重复：同一母版扫两次一样；认可记录写出去读回来不变', async () => {
     const a = await scanMaster(originalFile);
     const b = await scanMaster(originalFile);
-    expect(a.签名).toEqual(b.签名);
-    expect(a.签名).toMatchObject({ 宽: 64, 高: 36, 帧数: 48, 间隔: 24 });
-    expect(a.签名.帧.map((f) => f.帧)).toEqual([0, 24, 47]);
-    expect(a.签名.帧[0]!.块均值).toHaveLength(9);
-    expect(a.签名.音频sha).toMatch(/^[0-9a-f]{64}$/);
-    expect(a.签名.响度).toBeLessThan(-10);
-    expect(a.签名.起音!.map((x) => x.秒)).toEqual([0.5]);
+    expect(a.signature).toEqual(b.signature);
+    expect(a.signature).toMatchObject({ width: 64, height: 36, frameCount: 48, interval: 24 });
+    expect(a.signature.frame.map((f) => f.frame)).toEqual([0, 24, 47]);
+    expect(a.signature.frame[0]!.blockMeans).toHaveLength(9);
+    expect(a.signature.audioSha).toMatch(/^[0-9a-f]{64}$/);
+    expect(a.signature.loudness).toBeLessThan(-10);
+    expect(a.signature.onsets!.map((x) => x.sec)).toEqual([0.5]);
     const r = await makeApproval(originalFile);
     const file = approvalFile('核对-样例', 'test', dir);
     writeApproval(file, r);
@@ -75,8 +75,8 @@ describe('anim verify', () => {
   });
 
   it('合规样例放行：和认可版一模一样', async () => {
-    const r = await scanMaster(originalFile, { approval: await makeApproval(originalFile), oldMaster: originalFile, 阈值: threshold });
-    expect(r.frameVerdicts.map((f) => f.结论)).toEqual(['一样', '一样', '一样']);
+    const r = await scanMaster(originalFile, { approval: await makeApproval(originalFile), oldMaster: originalFile, threshold: threshold });
+    expect(r.frameVerdicts.map((f) => f.verdict)).toEqual(['一样', '一样', '一样']);
     expect(r.audioVerdict).toBe('一样');
     expect(isChanged(r)).toBe(false);
   });
@@ -84,54 +84,54 @@ describe('anim verify', () => {
   it('画面变了被拦：有旧母版比块平均差，没有就比块均值；变了的帧写 旧|新|差 并排图进预览', async () => {
     const approval = await makeApproval(originalFile);
     const previewDir = fs.mkdtempSync(path.join(dir, '预览-'));
-    const blockDiff = await scanMaster(secondHalfChanged, { approval: approval, oldMaster: originalFile, 阈值: threshold, 预览: { 目录: () => previewDir, filePrefix: '核对-样例' } });
-    expect(blockDiff.比法).toBe('块差');
-    expect(blockDiff.frameVerdicts.map((f) => f.结论)).toEqual(['一样', '一样', '变了']);
-    expect(blockDiff.frameVerdicts[2]!.说明).toMatch(/块平均差 16×16 \d+\.\d（门槛 10）/);
+    const blockDiff = await scanMaster(secondHalfChanged, { approval: approval, oldMaster: originalFile, threshold: threshold, 预览: { 目录: () => previewDir, filePrefix: '核对-样例' } });
+    expect(blockDiff.compareMethod).toBe('块差');
+    expect(blockDiff.frameVerdicts.map((f) => f.verdict)).toEqual(['一样', '一样', '变了']);
+    expect(blockDiff.frameVerdicts[2]!.note).toMatch(/块平均差 16×16 \d+\.\d（门槛 10）/);
     expect(blockDiff.audioVerdict).toBe('一样');
     expect(isChanged(blockDiff)).toBe(true);
     expect(fs.readdirSync(previewDir).sort()).toEqual(['核对-样例-第0047帧-变了-认可-现在-差.png']);
     const decodedPng = decode(fs.readFileSync(path.join(previewDir, '核对-样例-第0047帧-变了-认可-现在-差.png')));
     expect([decodedPng.width, decodedPng.height]).toEqual([64 * 3, 36 * 2]);
 
-    const scanResult = await scanMaster(secondHalfChanged, { approval: approval, oldMaster: path.join(dir, '不在.mkv'), 阈值: threshold });
-    expect(scanResult.比法).toBe('块均值');
-    expect(scanResult.frameVerdicts[2]).toMatchObject({ 结论: '变了', 说明: expect.stringMatching(/只比了块均值/) });
+    const scanResult = await scanMaster(secondHalfChanged, { approval: approval, oldMaster: path.join(dir, '不在.mkv'), threshold: threshold });
+    expect(scanResult.compareMethod).toBe('块均值');
+    expect(scanResult.frameVerdicts[2]).toMatchObject({ verdict: '变了', note: expect.stringMatching(/只比了块均值/) });
   });
 
   it('只差四个像素的小点在容差内（块平均差小），不出图；8×8 门槛压低就拦', async () => {
     const previewDir = fs.mkdtempSync(path.join(dir, '预览-'));
-    const r = await scanMaster(smallDot, { approval: await makeApproval(originalFile), oldMaster: originalFile, 阈值: threshold, 预览: { 目录: () => previewDir, filePrefix: '核对-小点' } });
-    expect(r.frameVerdicts[2]).toMatchObject({ 结论: '容差内', 说明: expect.stringMatching(/块平均差/) });
+    const r = await scanMaster(smallDot, { approval: await makeApproval(originalFile), oldMaster: originalFile, threshold: threshold, 预览: { 目录: () => previewDir, filePrefix: '核对-小点' } });
+    expect(r.frameVerdicts[2]).toMatchObject({ verdict: '容差内', note: expect.stringMatching(/块平均差/) });
     expect(r.frameVerdicts[2]!.看一眼).toBeUndefined();
     expect(isChanged(r)).toBe(false);
     expect(fs.readdirSync(previewDir)).toEqual([]);
-    expect((await scanMaster(smallDot, { approval: await makeApproval(originalFile), oldMaster: originalFile, 阈值: { ...threshold, 块8门槛: 0.5 } })).frameVerdicts[2]!.结论).toBe('变了');
+    expect((await scanMaster(smallDot, { approval: await makeApproval(originalFile), oldMaster: originalFile, threshold: { ...threshold, block8Threshold: 0.5 } })).frameVerdicts[2]!.verdict).toBe('变了');
   });
 
   it('16×16 在看一眼门槛和块16门槛之间：不判失败，出「看一眼」并排图', async () => {
     const previewDir = fs.mkdtempSync(path.join(dir, '预览-'));
-    const looseThresholds = { ...threshold, 块8门槛: 1e4, 块16门槛: 1e4, 块64门槛: 1e4, 看一眼门槛: 1 };
-    const r = await scanMaster(secondHalfChanged, { approval: await makeApproval(originalFile), oldMaster: originalFile, 阈值: looseThresholds, 预览: { 目录: () => previewDir, filePrefix: '核对-样例' } });
-    expect(r.frameVerdicts[2]).toMatchObject({ 结论: '容差内', 看一眼: true });
+    const looseThresholds = { ...threshold, block8Threshold: 1e4, block16Threshold: 1e4, block64Threshold: 1e4, glanceThreshold: 1 };
+    const r = await scanMaster(secondHalfChanged, { approval: await makeApproval(originalFile), oldMaster: originalFile, threshold: looseThresholds, 预览: { 目录: () => previewDir, filePrefix: '核对-样例' } });
+    expect(r.frameVerdicts[2]).toMatchObject({ verdict: '容差内', 看一眼: true });
     expect(isChanged(r)).toBe(false);
     expect(fs.readdirSync(previewDir)).toEqual(['核对-样例-第0047帧-看一眼-认可-现在-差.png']);
   });
 
   it('声音比响度和起音：一帧内的挪动放行，挪多了、响了都拦；只靠认可记录（没有旧母版）也能比', async () => {
     const approval = await makeApproval(originalFile);
-    const nearFrame = await scanMaster(lateOneFrame, { approval: approval, 阈值: threshold });
-    expect(nearFrame.frameVerdicts.every((f) => f.结论 === '一样')).toBe(true);
+    const nearFrame = await scanMaster(lateOneFrame, { approval: approval, threshold: threshold });
+    expect(nearFrame.frameVerdicts.every((f) => f.verdict === '一样')).toBe(true);
     expect(nearFrame.audioVerdict).toBe('容差内');
-    const farScan = await scanMaster(veryLate, { approval: approval, 阈值: threshold });
+    const farScan = await scanMaster(veryLate, { approval: approval, threshold: threshold });
     expect(farScan.audioVerdict).toBe('变了');
     expect(farScan.audioNote).toMatch(/0\.5 秒起的声音，现在前后 1 帧内没有/);
-    const audioScan = await scanMaster(loudFile, { approval: approval, 阈值: threshold });
+    const audioScan = await scanMaster(loudFile, { approval: approval, threshold: threshold });
     expect(audioScan.audioVerdict).toBe('变了');
     expect(audioScan.audioNote).toMatch(/响度差 3\.\d+ LU/);
     // 认可记录没有响度和起音就比不了（不从旧母版补）
-    const legacy = { ...approval, 响度: null, 起音: null };
-    expect((await scanMaster(lateOneFrame, { approval: legacy, 阈值: threshold })).audioNote).toMatch(/比不了/);
+    const legacy = { ...approval, loudness: null, onsets: null };
+    expect((await scanMaster(lateOneFrame, { approval: legacy, threshold: threshold })).audioNote).toMatch(/比不了/);
   });
 
   it('抽一百多帧只起一个 ffmpeg：帧号、字节和整段解一遍取到的一样；中间的帧、跳着抽也对', async () => {
@@ -169,8 +169,8 @@ describe('anim verify', () => {
   }, 120_000);
 
   it('帧数尺寸不一样直接算变了', async () => {
-    const approval = { ...(await makeApproval(originalFile)), 帧数: 49 };
-    const r = await scanMaster(originalFile, { approval: approval, oldMaster: originalFile, 阈值: threshold });
+    const approval = { ...(await makeApproval(originalFile)), frameCount: 49 };
+    const r = await scanMaster(originalFile, { approval: approval, oldMaster: originalFile, threshold: threshold });
     expect(r.sizeChanged).toMatch(/认可的是 64×36 49 帧，现在是 64×36 48 帧/);
     expect(isChanged(r)).toBe(true);
   });
@@ -184,12 +184,12 @@ describe('anim verify', () => {
     envelope.加(pcm.subarray(0, 1001));
     envelope.加(pcm.subarray(1001));
     const onsets = findOnsets(envelope.finish());
-    expect(onsets.map((x) => x.秒)).toEqual([0.1]);
+    expect(onsets.map((x) => x.sec)).toEqual([0.1]);
     expect(onsetFromString(onsetToString(onsets[0]!))).toEqual(onsets[0]);
-    expect(compareOnsets([{ 秒: 1.04, 强: 20 }], [{ 秒: 1, 强: 20 }], 1 / 24)).toEqual({ oldOnly: [], newOnly: [] });
-    expect(compareOnsets([{ 秒: 1.1, 强: 20 }], [{ 秒: 1, 强: 20 }], 1 / 24)).toEqual({ oldOnly: [1], newOnly: [1.1] });
-    expect(compareOnsets([{ 秒: 1.1, 强: 8 }], [], 1 / 24).newOnly).toEqual([]); // 弱起音只当对面的凭据，自己不要求对得上
-    expect(readThresholds()).toEqual({ 块8门槛: 24, 块16门槛: 10, 块64门槛: 4, 看一眼门槛: 6, 块均值容差: 1, 响度容差LU: 0.5, 起音容差帧: 1 });
+    expect(compareOnsets([{ sec: 1.04, strength: 20 }], [{ sec: 1, strength: 20 }], 1 / 24)).toEqual({ oldOnly: [], newOnly: [] });
+    expect(compareOnsets([{ sec: 1.1, strength: 20 }], [{ sec: 1, strength: 20 }], 1 / 24)).toEqual({ oldOnly: [1], newOnly: [1.1] });
+    expect(compareOnsets([{ sec: 1.1, strength: 8 }], [], 1 / 24).newOnly).toEqual([]); // 弱起音只当对面的凭据，自己不要求对得上
+    expect(readThresholds()).toEqual({ block8Threshold: 24, block16Threshold: 10, block64Threshold: 4, glanceThreshold: 6, blockMeanTol: 1, loudnessTolLu: 0.5, onsetTolFrames: 1 });
   });
 });
 

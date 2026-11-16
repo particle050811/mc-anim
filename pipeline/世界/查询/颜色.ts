@@ -11,13 +11,13 @@ export const skyRgb: RGB = [214, 230, 245];
 export const unknownColor: RGB = [255, 0, 255];
 
 export class BlockPalette {
-  private 库: VoxelLib;
+  private lib: VoxelLib;
   private averages: RGB[] = [];
   private colorCache = new Map<string, RGB>();
 
   constructor(voxelLib: VoxelLib) {
-    this.库 = voxelLib;
-    const img = decode(fs.readFileSync(resolveAsset('贴图/场景/关键帧/方块表', readAssetLock()).文件));
+    this.lib = voxelLib;
+    const img = decode(fs.readFileSync(resolveAsset('贴图/场景/关键帧/方块表', readAssetLock()).file));
     const ch = img.channels;
     const tileCount = img.height / 16;
     for (let t = 0; t < tileCount; t++) {
@@ -37,12 +37,12 @@ export class BlockPalette {
   /** 状态在 (x, z) 处朝上（面 = 'top'）或朝侧面的颜色；方块表里没有的是品红 */
   色(blockState: string, biome: string | null, x: number, z: number, face: 'top' | 'side'): RGB {
     const cacheKey = `${blockState}|${biome}|${face}`;
-    const blockTable = this.库.blockTable;
+    const blockTable = this.lib.blockTable;
     const v = blockTable.voxelFromState(blockState);
     if (!v) return unknownColor;
     // 随位置变的染色（沼泽草色噪声）不缓存，其余按 状态 + 群系 缓存
     const tintKind = blockTable.blockProps.tint[v]!;
-    const cacheable = tintKind === 0 || !biome || !this.库.群系色.variesByPos(biome);
+    const cacheable = tintKind === 0 || !biome || !this.lib.biomeColor.variesByPos(biome);
     const cached = cacheable ? this.colorCache.get(cacheKey) : undefined;
     if (cached) return cached;
     const faceList = blockTable.faceTable[v]!;

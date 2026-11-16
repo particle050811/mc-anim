@@ -26,12 +26,12 @@ import { rad } from '@engine/core/数学.ts';
 
 // 开口（全局秒，mouthAt 每秒给 1）：夸克古卷跨 6-2-2、6-2-3 两窗
 const mouthCues = [
-  { id: '6-2-1-李樱-不算白跑', 帧: choreo.lineStarts.notWasted },
-  { id: '6-2-1-李樱-锁链基底', 帧: choreo.lineStarts.chainBase },
-  { id: '6-2-1-李樱-熔炼温度', 帧: choreo.lineStarts.smeltTemp },
-  { id: '6-2-2-李樱-沉淀', 帧: choreo.lineStarts.sediment },
-  { id: '6-2-2-李樱-夸克古卷', 帧: choreo.lineStarts.quarkTome },
-  { id: '6-2-3-李樱-古城寻宝', 帧: choreo.ancientCityLineStart },
+  { id: '6-2-1-李樱-不算白跑', frame: choreo.lineStarts.notWasted },
+  { id: '6-2-1-李樱-锁链基底', frame: choreo.lineStarts.chainBase },
+  { id: '6-2-1-李樱-熔炼温度', frame: choreo.lineStarts.smeltTemp },
+  { id: '6-2-2-李樱-沉淀', frame: choreo.lineStarts.sediment },
+  { id: '6-2-2-李樱-夸克古卷', frame: choreo.lineStarts.quarkTome },
+  { id: '6-2-3-李樱-古城寻宝', frame: choreo.ancientCityLineStart },
 ];
 
 const asV3 = (p: number[]) => p as [number, number, number];
@@ -39,7 +39,7 @@ const LOOT_SIZE = 0.5;
 
 export const BasePlanSegment: React.FC<{ segment: choreo.SegmentName }> = ({ segment: segment }) => {
   const { width, height } = useVideoConfig();
-  const sec = choreo.segmentTable[segment].起 + useCurrentSec();
+  const sec = choreo.segmentTable[segment].start + useCurrentSec();
   const cam = choreo.camera(sec);
   const ly = choreo.liying(sec);
   const jh = choreo.jiuhu(sec);

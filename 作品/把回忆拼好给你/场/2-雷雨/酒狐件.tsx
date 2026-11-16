@@ -16,16 +16,16 @@ const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown a
 
 // ---------- 魔法阵 ----------
 /** 一片：贴图里的一块（u, v, 宽, 高，贴图像素）画成 边 模型像素见方，中心在 [x, y]（模型像素，阵心为原点），转 转 度，层 = 往上垫几层（防闪） */
-type CirclePiece = { u: number; v: number; w: number; h: number; side: number; x: number; y: number; 转: number; 层: number };
+type CirclePiece = { u: number; v: number; w: number; h: number; side: number; x: number; y: number; 转: number; layers: number };
 // 尺寸、位置照模型（导出的 bones）：大阵 60.5 见方转 −45°；四个小环 22.3 见方，离阵心 28.4；小环里的方框 13.4 转 45°；中间环 29.16、方框 17.5 转 45°
 const formationPlanes: readonly CirclePiece[] = [
-  { u: 191, v: 191, w: 65, h: 65, side: 60.5, x: 0, y: 0, 转: -45, 层: 0 },
+  { u: 191, v: 191, w: 65, h: 65, side: 60.5, x: 0, y: 0, 转: -45, layers: 0 },
   ...([[0, 28.4], [28.4, 0], [0, -28.4], [-28.4, 0]] as const).flatMap(([x, y]) => [
-    { u: 161, v: 50, w: 45, h: 45, side: 22.3, x, y, 转: 0, 层: 1 },
-    { u: 163, v: 97, w: 27, h: 27, side: 13.4, x, y, 转: 45, 层: 2 },
+    { u: 161, v: 50, w: 45, h: 45, side: 22.3, x, y, 转: 0, layers: 1 },
+    { u: 163, v: 97, w: 27, h: 27, side: 13.4, x, y, 转: 45, layers: 2 },
   ]),
-  { u: 161, v: 50, w: 45, h: 45, side: 29.16, x: 0, y: 0, 转: 0, 层: 1 },
-  { u: 163, v: 97, w: 27, h: 27, side: 17.5, x: 0, y: 0, 转: 45, 层: 2 },
+  { u: 161, v: 50, w: 45, h: 45, side: 29.16, x: 0, y: 0, 转: 0, layers: 1 },
+  { u: 163, v: 97, w: 27, h: 27, side: 17.5, x: 0, y: 0, 转: 45, layers: 2 },
 ];
 /** 魔法阵的半径（格）：小环外沿离阵心多远 */
 export const magicCircleRadius = (28.4 + 22.3 / 2) * MAGICAL_WINE_FOX.scale;
@@ -33,7 +33,7 @@ export const magicCircleRadius = (28.4 + 22.3 / 2) * MAGICAL_WINE_FOX.scale;
 const circleMaterial = () => new THREE.MeshBasicMaterial({ map: entityTexture(MODEL.texture), alphaTest: 0.5, side: THREE.DoubleSide, toneMapped: false, fog: false });
 
 /** 脚下的魔法阵：心 = 阵心（格，地面上）；转 = 整个阵转了几度；大小 = 0～1 展开 */
-export const MagicCircle: React.FC<{ 心: V3; 转: number; 大小: number }> = ({ 心: center, 转: rotationDeg, 大小: size }) => {
+export const MagicCircle: React.FC<{ 心: V3; 转: number; size: number }> = ({ 心: center, 转: rotationDeg, size: size }) => {
   const mat = useMemo(circleMaterial, []);
   const pieces = useMemo(
     () =>
@@ -55,7 +55,7 @@ export const MagicCircle: React.FC<{ 心: V3; 转: number; 大小: number }> = (
   return (
     <group position={center as V3} rotation={[0, 0, rotationDeg * radPerDeg]} scale={[s, s, s]}>
       {pieces.map(({ p, g }, k) => (
-        <mesh key={k} geometry={g} material={mat} position={[p.x, p.y, 0.05 + p.层 * 0.08]} rotation={[0, 0, p.转 * radPerDeg]} renderOrder={5} />
+        <mesh key={k} geometry={g} material={mat} position={[p.x, p.y, 0.05 + p.layers * 0.08]} rotation={[0, 0, p.转 * radPerDeg]} renderOrder={5} />
       ))}
     </group>
   );

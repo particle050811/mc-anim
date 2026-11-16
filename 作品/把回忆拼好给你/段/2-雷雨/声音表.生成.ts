@@ -3,32 +3,32 @@
 import type { SoundTable } from '@engine/段/声音助手.ts';
 
 const soundTable: SoundTable = {
-  "资产": {
+  "asset": {
     "配乐/把回忆拼好给你-无男声DJ": {
-      "时长": 56.005011,
-      "峰值": -1.1,
-      "响度": -9.3,
+      "duration": 56.005011,
+      "peakDb": -1.1,
+      "loudness": -9.3,
       "sha": "c31621fc073a"
     },
     "音效/entity.lightning_bolt.thunder.2": {
-      "时长": 7.25,
-      "峰值": -0.4,
-      "响度": -22.4,
+      "duration": 7.25,
+      "peakDb": -0.4,
+      "loudness": -22.4,
       "sha": "c6618caf8747"
     },
     "音效/把回忆拼好给你/weather.rain.1": {
-      "时长": 2.010667,
-      "峰值": -9.1,
-      "响度": -25.2,
+      "duration": 2.010667,
+      "peakDb": -9.1,
+      "loudness": -25.2,
       "sha": "44d72c5a4419"
     },
     "音效/把回忆拼好给你/weather.rain.2": {
-      "时长": 1.978667,
-      "峰值": -3.2,
-      "响度": -24.8,
+      "duration": 1.978667,
+      "peakDb": -3.2,
+      "loudness": -24.8,
       "sha": "5f754e4c7e64"
     }
   },
-  "台词": {}
+  "lines": {}
 };
 export default soundTable;

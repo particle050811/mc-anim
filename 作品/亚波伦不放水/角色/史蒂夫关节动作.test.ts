@@ -7,7 +7,7 @@ import { addJointAction, landWeight, chargeWeight } from './史蒂夫关节动�
 import { defineWalk } from './史蒂夫走位.ts';
 
 // 库里的史蒂夫一 import 就要模型和皮肤的字节；这里只算姿势，给个空模型和 1×1 的图
-vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { 宽: { texW: 64, texH: 64, parts: [] } } } }));
+vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { width: { texW: 64, texH: 64, parts: [] } } } }));
 vi.mock('asset:贴图/角色/巨人/史蒂夫', () => ({ default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' }));
 
 // 往 +y 匀速走 2 格/秒；0.5 秒处脚下高了一格（地形的台阶，不是跳）；1.0～1.5 秒跳一下（重力 24.6，落回原高）
@@ -18,7 +18,7 @@ const posAt = (t: number): V3 => {
 
 describe('史蒂夫走位', () => {
   it('从轨迹里认出腾空：台阶不算，起跳前、空中、落地后各给对时间', () => {
-    const walker = defineWalk({ 位: posAt, 看: () => [0, 100, 1], 起: 0, initFacing: 0 });
+    const walker = defineWalk({ 位: posAt, 看: () => [0, 100, 1], start: 0, initFacing: 0 });
     expect(walker.在(0.5).跳.airPhase).toBeUndefined();
     expect(walker.在(0.3).跳).toEqual({});
     expect(walker.在(0.9).跳.preTakeoffSec).toBeCloseTo(0.1, 1);
@@ -33,13 +33,13 @@ describe('史蒂夫走位', () => {
   });
 
   it('向：脸朝移动方向是 1，倒着走是 −1', () => {
-    expect(defineWalk({ 位: posAt, 看: () => [0, 100, 1], 起: 0, initFacing: 0 }).在(0.8).走.walkDir).toBeCloseTo(1, 2);
-    expect(defineWalk({ 位: posAt, 看: () => [0, -100, 1], 起: 0, initFacing: 180 }).在(0.8).走.walkDir).toBeCloseTo(-1, 2);
+    expect(defineWalk({ 位: posAt, 看: () => [0, 100, 1], start: 0, initFacing: 0 }).在(0.8).走.walkDir).toBeCloseTo(1, 2);
+    expect(defineWalk({ 位: posAt, 看: () => [0, -100, 1], start: 0, initFacing: 180 }).在(0.8).走.walkDir).toBeCloseTo(-1, 2);
   });
 });
 
 describe('史蒂夫关节动作', () => {
-  const stance = { swing: 0, stride: 0, 秒: 0, holdRight: true, holdLeft: false, holdingSword: true };
+  const stance = { swing: 0, stride: 0, sec: 0, holdRight: true, holdLeft: false, holdingSword: true };
 
   it('站着不动：腿是直的、脚踩实，只有肘微屈', () => {
     const pose = addJointAction(stevePose([0, 0, 0], 0, { holdR: true }), stance);

@@ -639,7 +639,7 @@ void main() {
 // 加的云：场景坐标 [x, y, 半径]（方块米），在高积云层里
 type Circle = [number, number, number];
 /** 云底被照亮的一块（场景坐标，方块米）：心、半径、强（乘在 色 上，线性；1 = 和积云那层的日光一样亮）、色（sRGB） */
-export type CloudGlow = { 心: readonly [number, number]; radius: number; 强: number; 色: string };
+export type CloudGlow = { 心: readonly [number, number]; radius: number; strength: number; 色: string };
 type Settings = {
   weather: CloudWeather;
   add: Circle[];
@@ -828,7 +828,7 @@ export const updateCloudUniforms = (cam: THREE.Camera) => {
   const c = settings.clear;
   u.pcClear.value.set(c ? S * c[0] : 0, c ? -S * c[1] : 0, c ? S * c[2] : 0, c ? S * c[3] : 0);
   const g = settings.glow;
-  u.pcGlow.value.set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.radius : 1, g ? g.强 : 0);
+  u.pcGlow.value.set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.radius : 1, g ? g.strength : 0);
   if (g) u.pcGlowCol.value.setStyle(g.色, THREE.LinearSRGBColorSpace);
   // 三层所在的云空间高度上的日光（light_color.glsl：日光色 × 透过率 × 7）
   [1200, 3200, 6000].forEach((h, i) => u.pcLight.value[i].fromArray(atmoLightAt(h)));

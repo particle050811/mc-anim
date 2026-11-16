@@ -8,7 +8,7 @@ import { baseline, baselineDir, rightNormal, perturb } from './真实飞行.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 // ---------- 扫帚 ----------
-export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; 速度: number };
+export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; speed: number };
 // 差分步长和三角平滑的采样间隔照旧版 1/24 秒一格（换了间隔，转弯内倾、速度会差一点）
 const diffStepSec = 1 / 24;
 const raw = (globalSec: number) => {
@@ -74,11 +74,11 @@ export const broom = (globalSec: number): BroomState => {
   const yaw = routeYaw(globalSec) + pert.heading;
   const hover = globalSec > stopSec ? 0.6 * Math.sin(((globalSec - stopSec) * 2 * Math.PI) / 2) : 0; // 2 秒一个起伏
   return {
-    位置: [track.p[0] + normal[0] * pert.lateral, track.p[1] + normal[1] * pert.lateral, track.p[2] + pert.竖 + hover],
+    位置: [track.p[0] + normal[0] * pert.lateral, track.p[1] + normal[1] * pert.lateral, track.p[2] + pert.vertical + hover],
     facing: yaw,
     pitch: pitch,
     roll: roll * smoothstep01((globalSec - 1 / 4) / (5 / 12)) * (1 - ys),
-    速度: track.v,
+    speed: track.v,
   };
 };
 

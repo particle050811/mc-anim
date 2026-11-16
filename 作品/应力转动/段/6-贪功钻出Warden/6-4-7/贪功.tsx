@@ -9,5 +9,5 @@ const cues = lipCues(Object.values(choreo.lines));
 // t：本段秒（6-4-7至9 的前一截，见 ../6-4-7至9/）
 export const GloryGrabView: React.FC<{ t: number }> = ({ t }) => {
   const pursuerPoses = choreo.pursuers(t);
-  return <PursuerScene 段="6-4-7" τ={choreo.τ(t)} cam={choreo.camera(t)} liu={withTalkNod(pursuerPoses.刘, cues, '刘心忠', t, 1)} huang={pursuerPoses.黄} />;
+  return <PursuerScene segment="6-4-7" τ={choreo.τ(t)} cam={choreo.camera(t)} liu={withTalkNod(pursuerPoses.刘, cues, '刘心忠', t, 1)} huang={pursuerPoses.黄} />;
 };

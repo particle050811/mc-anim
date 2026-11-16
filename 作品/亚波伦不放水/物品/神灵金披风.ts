@@ -31,8 +31,8 @@ export const buildCape = (d: CapeData) => {
   if (d.静止.length !== flatLength) throw new Error('披风：静止网格的长度不对');
   const restPositions = [...d.静止];
   for (let i = 0; i < flatLength; i += 3) pushOutChestplate(restPositions, i, d.碰撞);
-  const edges: { a: number; b: number; 长: number }[] = [];
-  const addEdge = (a: number, b: number) => edges.push({ a, b, 长: Math.hypot(restPositions[a]! - restPositions[b]!, restPositions[a + 1]! - restPositions[b + 1]!, restPositions[a + 2]! - restPositions[b + 2]!) });
+  const edges: { a: number; b: number; length: number }[] = [];
+  const addEdge = (a: number, b: number) => edges.push({ a, b, length: Math.hypot(restPositions[a]! - restPositions[b]!, restPositions[a + 1]! - restPositions[b + 1]!, restPositions[a + 2]! - restPositions[b + 2]!) });
   for (let row = 0; row < d.行; row++)
     for (let c = 0; c < cols; c++) {
       const i = (row * cols + c) * 3;
@@ -57,7 +57,7 @@ export const buildCape = (d: CapeData) => {
       }
     }
     for (let ring = 0; ring < 10; ring++) {
-      for (const { a, b, 长: restLength } of edges) {
+      for (const { a, b, length: restLength } of edges) {
         const dx = positions[b]! - positions[a]!;
         const dy = positions[b + 1]! - positions[a + 1]!;
         const dz = positions[b + 2]! - positions[a + 2]!;

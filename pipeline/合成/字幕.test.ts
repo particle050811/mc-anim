@@ -14,11 +14,11 @@ import { readMono } from './音频.ts';
 
 const tableDir = path.join(baselineRoot(), '_表');
 const assetLock = readAssetLock();
-const hasLibrary = (id: string) => !!assetLock[id] && fs.existsSync(dataPath(assetLock[id]!.库, assetLock[id]!.sha256.slice(0, 2), assetLock[id]!.sha256));
+const hasLibrary = (id: string) => !!assetLock[id] && fs.existsSync(dataPath(assetLock[id]!.lib, assetLock[id]!.sha256.slice(0, 2), assetLock[id]!.sha256));
 const hasBaseline = fs.existsSync(path.join(tableDir, '台词落点.json')) && hasLibrary('字体/像素字');
 const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
 
-type OldLanding = { id: string; 段: string; 起帧: number; 字: string; 角色: string; 位置: '下' | '思索上'; 屏们: unknown[]; 接上段: boolean };
+type OldLanding = { id: string; segment: string; 起帧: number; char: string; character: string; 位置: '下' | '思索上'; 屏们: unknown[]; 接上段: boolean };
 
 const newLineId = () => {
   const m = new Map<string, string>();
@@ -30,14 +30,14 @@ const newLineId = () => {
 };
 // 6-3-2 思索里念的那句不走台词轨，配音是镜头自己的
 const voiceAsset = (oldId: string, idMap: Map<string, string>) => (oldId === '6-3-2-李樱-压路机' ? '配音/镜头/6-3-2/李樱-压路机-改字' : `配音/${idMap.get(oldId)}`);
-const assetFile = (id: string) => dataPath(assetLock[id]!.库, assetLock[id]!.sha256.slice(0, 2), assetLock[id]!.sha256);
+const assetFile = (id: string) => dataPath(assetLock[id]!.lib, assetLock[id]!.sha256.slice(0, 2), assetLock[id]!.sha256);
 
 const readBaseline = () => {
   const landings = (JSON.parse(fs.readFileSync(path.join(tableDir, '台词落点.json'), 'utf8')) as OldLanding[]).filter((a) => !a.接上段);
   const concatRows = fs.readFileSync(path.join(tableDir, '拼接表.tsv'), 'utf8').trim().split('\n').slice(1).map((l) => l.split('\t'));
   const startFrames = new Map(concatRows.map((r) => [r[0]!, Number(r[4])]));
   const totalFrames = concatRows.reduce((a, r) => a + Number(r[3]) - Number(r[2]), 0);
-  return { landings, 起: startFrames, 总帧数: totalFrames };
+  return { landings, start: startFrames, totalFrameCount: totalFrames };
 };
 
 describe('字幕', () => {
@@ -56,18 +56,18 @@ describe('字幕', () => {
   });
 
   it.skipIf(!hasBaseline)('断屏：和旧项目 台词落点.json 的 屏们 一样', () => {
-    for (const a of readBaseline().landings) expect(breakScreens(a.字), a.id).toEqual(a.屏们);
+    for (const a of readBaseline().landings) expect(breakScreens(a.char), a.id).toEqual(a.屏们);
   });
 
   it.skipIf(!hasBaseline || !hasFfmpeg)('排时间：落点按基线算，字幕表、SRT 和旧项目的一样（起止帧差不超过 1 帧）', () => {
-    const { landings, 起: startFrames, 总帧数: totalFrames } = readBaseline();
+    const { landings, start: startFrames, totalFrameCount: totalFrames } = readBaseline();
     const idMap = newLineId();
-    const lineTable = JSON.parse(fs.readFileSync(assetFile('数据/配音/台词表'), 'utf8')) as Record<string, { 开口: number }>;
+    const lineTable = JSON.parse(fs.readFileSync(assetFile('数据/配音/台词表'), 'utf8')) as Record<string, { mouthOpen: number }>;
     const linePlacements: LineLanding[] = landings.map((a) => {
       // 新的 cue 帧是开口落在段内哪一帧（整数）；基线的 起帧 是文件头
-      const mouthOpenSec = lineTable[a.id]?.开口 ?? 0;
+      const mouthOpenSec = lineTable[a.id]?.mouthOpen ?? 0;
       const cueFrame = Math.round(a.起帧 + mouthOpenSec * 24);
-      return { id: a.id, 段: a.段, 段内帧: cueFrame, 文件头帧: startFrames.get(a.段)! + cueFrame - mouthOpenSec * 24, 文件: assetFile(voiceAsset(a.id, idMap)), 配音: voiceAsset(a.id, idMap), 字: a.字, 角色: a.角色, 位置: a.位置, 屏们: breakScreens(a.字) };
+      return { id: a.id, segment: a.segment, 段内帧: cueFrame, 文件头帧: startFrames.get(a.segment)! + cueFrame - mouthOpenSec * 24, file: assetFile(voiceAsset(a.id, idMap)), voice: voiceAsset(a.id, idMap), char: a.char, character: a.character, 位置: a.位置, 屏们: breakScreens(a.char) };
     });
     const soundByFile = new Map<string, Float32Array>();
     const readMonoCached = (f: string) => soundByFile.get(f) ?? soundByFile.set(f, readMono(f)).get(f)!;
