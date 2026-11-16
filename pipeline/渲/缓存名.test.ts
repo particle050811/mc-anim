@@ -84,7 +84,7 @@ describe('同一个持久缓存目录', () => {
     return { artifacts: fs.readFileSync(path.join(tempDir, dirName, 'main.js'), 'utf8'), compiled };
   };
   const value = (bundleOutput: string) => {
-    const m = { exports: {} as { default: [{ value: number }, string, Record<string, string>] } };
+    const m = { exports: {} as { default: [{ 值: number }, string, Record<string, string>] } };
     new Function('module', 'exports', 'require', bundleOutput)(m, m.exports, require);
     return m.exports.default;
   };
@@ -94,7 +94,7 @@ describe('同一个持久缓存目录', () => {
     writeSingleLock(bytesLockEntry('一.json', '{"值":1}'));
     const firstBuild = await bundleOut('出一');
     const [firstItem, unchangedModule, solverFirst] = value(firstBuild.artifacts);
-    expect(firstItem).toEqual({ value: 1 });
+    expect(firstItem).toEqual({ 值: 1 });
     expect(unchangedModule).toBe('不变的模块');
     expect(Object.keys(solverFirst)).toEqual(['测试求解']);
     expect(firstBuild.compiled.some((n) => n.includes('不变.js'))).toBe(true);
@@ -103,7 +103,7 @@ describe('同一个持久缓存目录', () => {
     writeSolveFile(2);
     const secondPack = await bundleOut('出二');
     const [secondItem, , solverSecond] = value(secondPack.artifacts);
-    expect(secondItem).toEqual({ value: 2 });
+    expect(secondItem).toEqual({ 值: 2 });
     expect(solverSecond.测试求解).not.toBe(solverFirst.测试求解);
     // 缓存确实在用：没变的模块这次没重编
     expect(secondPack.compiled.some((n) => n.includes('不变.js'))).toBe(false);

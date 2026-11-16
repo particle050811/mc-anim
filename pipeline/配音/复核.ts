@@ -54,7 +54,7 @@ export const reviewReportText = (o: { id: string; spoken: string; tone: string; 
     '',
     '| 候选 | 音色相似度 | 基频中位 Hz | 音高跨度 st | 音高标准差 st | 响度跨度 dB |',
     '|---|---|---|---|---|---|',
-    ...entries.map((t) => `| ${t.name} | ${cellText(t.复核.timbre, '相似度')} | ${cellText(t.复核.起伏, '基频中位Hz')} | ${cellText(t.复核.起伏, '音高跨度st')} | ${cellText(t.复核.起伏, '音高标准差st')} | ${cellText(t.复核.起伏, '响度跨度dB')} |`),
+    ...entries.map((t) => `| ${t.name} | ${cellText(t.复核.音色, '相似度')} | ${cellText(t.复核.起伏, '基频中位Hz')} | ${cellText(t.复核.起伏, '音高跨度st')} | ${cellText(t.复核.起伏, '音高标准差st')} | ${cellText(t.复核.起伏, '响度跨度dB')} |`),
     ...(hints.length ? ['', ...hints] : []),
     '',
   ].join('\n');
