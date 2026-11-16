@@ -34,7 +34,7 @@ import { useFrame } from '@react-three/fiber';
 import { voxelsPending } from './世界.tsx';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { DIR_FOG_GLSL, HEIGHT_FOG_GLSL, SKY_FOG_GLSL, dirFog, heightFog, skyFogUniforms } from '../light/高度雾.ts';
+import { DIR_FOG_GLSL, FAR_FOG_ATMO_GLSL, FAR_FOG_GLSL, HEIGHT_FOG_GLSL, SKY_FOG_GLSL, dirFog, farFogUniforms, heightFog, skyFogUniforms } from '../light/高度雾.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms } from '../light/大气.ts';
 import { PHOTON_CLOUD_COMMON_GLSL, PHOTON_CLOUD_SHADOW_GLSL, cloudUniforms, updateCloudUniforms } from '../light/大气/云.ts';
 import { aoPassUniform } from './材质.ts';
@@ -89,9 +89,11 @@ uniform vec3 uFogGlow;
 ${HEIGHT_FOG_GLSL}
 ${DIR_FOG_GLSL}
 ${SKY_FOG_GLSL}
+${FAR_FOG_GLSL}
 #ifdef ATMO
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
+${FAR_FOG_ATMO_GLSL}
 ${PHOTON_CLOUD_COMMON_GLSL}
 ${PHOTON_CLOUD_SHADOW_GLSL}
 // 云影只压日光那一份：日光占的比例按 FlightSky 的平行光 3.2、天光和环境光约 1.8 估，换成画面值上的系数
@@ -191,6 +193,7 @@ void main() {
     vec3 Cw = uCamWorld[3].xyz;
     vec3 keep;
     vec3 B = atmoFogParts(Cw, Pw, keep);
+    farFogAtmoParts(Cw, Pw, keep, B);
     float sh = cloudShadowAt(Pw - Cw, Pw.y, dot(mat3(uCamWorld) * N, atmoSun));
     APPLY(B, ao * sh)
 #else
@@ -199,8 +202,10 @@ void main() {
     float w = -P.z;
     float f = uFogType == 1 ? smoothstep(uFog.x, uFog.y, w) : uFogType == 2 ? 1.0 - exp(-uFog.z * uFog.z * w * w) : 0.0;
     vec3 Pw = (uCamWorld * vec4(P, 1.0)).xyz;
+    float farFog = farFogAt(uCamWorld[3].xyz, Pw);
+    if (uFogType > 0 && fogEdge.y > 0.0) f = farFog;
     if (uFogType > 0) f = addHeightFog(f, uCamWorld[3].xyz, Pw, uFogHeight);
-    vec3 F = skyFogMix(dirFogColor(uFogColor, uCamWorld[3].xyz, Pw, uFogSun, uFogGlow), uCamWorld[3].xyz, Pw, f) * f;
+    vec3 F = farFogSky(skyFogMix(dirFogColor(uFogColor, uCamWorld[3].xyz, Pw, uFogSun, uFogGlow), uCamWorld[3].xyz, Pw, f), uCamWorld[3].xyz, Pw, farFog) * f;
     APPLY(F, ao)
 #endif
   }
@@ -349,6 +354,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       uFogSun: { value: dirFog.dir },
       uFogGlow: { value: dirFog.color },
       ...skyFogUniforms,
+      ...farFogUniforms,
       uCamWorld: { value: new THREE.Matrix4() },
       ...atmoUniforms,
       ...cloudUniforms,
