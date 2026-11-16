@@ -57,7 +57,7 @@ CPU秒	cpuSec
 文件	file
 旧票	oldTickets
 旧锁	oldLocks
-时	timeMs
+时	timestamp
 时间	time
 机	machine
 来源	source
