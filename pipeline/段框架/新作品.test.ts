@@ -54,7 +54,7 @@ describe('新段', () => {
     newSegment(workRoot, '1-开门', { scene: '1-门口' });
     newSegment(workRoot, '1-进门', { scene: '1-门口', start: '结束', end: '结束' });
     expect(fs.existsSync(path.join(workRoot, '场/1-门口/时间线.ts'))).toBe(true);
-    expect(readText(workRoot, '清单.ts')).toMatch(/\{ 键: '核对-起步', 章: '核对' \},\n  \{ 键: '1-开门', 章: 1 \},\n  \{ 键: '1-进门', 章: 1 \},\n\];/);
+    expect(readText(workRoot, '清单.ts')).toMatch(/\{ key: '核对-起步', 章: '核对' \},\n  \{ key: '1-开门', 章: 1 \},\n  \{ key: '1-进门', 章: 1 \},\n\];/);
     const seg = (await freshExec(path.join(workRoot, '段/1-开门/段.ts'), codeRoot())).default as SegmentDef & { sceneWindow: unknown };
     expect([seg.sec, seg.sceneWindow]).toEqual([3, { startSec: 0, endSec: 3 }]);
     // 段键只在目录名和清单里

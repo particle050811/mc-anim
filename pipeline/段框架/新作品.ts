@@ -44,8 +44,8 @@ export const registration = makeRegistry({
   manifest,
   segDir,
   modules: {
-    segment: import.meta.webpackContext('./段', { recursive: true, regExp: /^\\.\\/[^/]+\\/(segment\\.ts|画面\\.tsx|overlay[^/]*\\.tsx)$/ }),
-    verify: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\\.\\/[^/]+\\/(segment\\.ts|画面\\.tsx|overlay[^/]*\\.tsx)$/ }),
+    segment: import.meta.webpackContext('./段', { recursive: true, regExp: /^\\.\\/[^/]+\\/(段\\.ts|画面\\.tsx|叠层[^/]*\\.tsx)$/ }),
+    verify: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\\.\\/[^/]+\\/(段\\.ts|画面\\.tsx|叠层[^/]*\\.tsx)$/ }),
   },
 });
 `;
@@ -64,7 +64,7 @@ import soundUrl from './声音地址.生成.ts';
 
 export default definePicture(seg, soundUrl, () => {
   const { sec: sec, segment: thisSegment } = useSeg(seg);
-  return <AbsoluteFill style={{ background: '#000', color: '#fff', fontSize: 48, justifyContent: 'center', alignItems: 'center' }}>{\`\${sec.toFixed(2)} / \${thisSegment.秒} 秒\`}</AbsoluteFill>;
+  return <AbsoluteFill style={{ background: '#000', color: '#fff', fontSize: 48, justifyContent: 'center', alignItems: 'center' }}>{\`\${sec.toFixed(2)} / \${thisSegment.sec} 秒\`}</AbsoluteFill>;
 });
 `;
 
@@ -85,7 +85,7 @@ export const newWork = (codeRoot: string, workName: string): string[] => {
 import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';
 import soundTable from './声音表.生成.ts';
 
-const timeline = defineSceneTimeline({ scene: '核对', events: { startedAt: { 在: { sec: 0 } }, endedAt: { 在: { sec: 2 } } } });
+const timeline = defineSceneTimeline({ scene: '核对', events: { 开始: { 在: { sec: 0 } }, 结束: { 在: { sec: 2 } } } });
 
 export default windowSeg(timeline, { start: '开始', end: '结束', soundTable });
 `,
@@ -101,8 +101,8 @@ export const addSegToManifest = (text: string, segKey: string, chapter: number |
   const startIndex = text.indexOf('export const manifest');
   const endIndex = startIndex < 0 ? -1 : text.indexOf('\n];', startIndex);
   if (endIndex < 0) throw new Error('清单.ts 里找不到 export const manifest … ]; 这个数组，手动加');
-  if (new RegExp(`键: '${segKey}'`).test(text)) throw new Error(`清单里已经有 ${segKey}`);
-  return `${text.slice(0, endIndex)}\n  { 键: '${segKey}', 章: ${typeof chapter === 'number' ? chapter : `'核对'`} },${text.slice(endIndex)}`;
+  if (new RegExp(`key: '${segKey}'`).test(text)) throw new Error(`清单里已经有 ${segKey}`);
+  return `${text.slice(0, endIndex)}\n  { key: '${segKey}', 章: ${typeof chapter === 'number' ? chapter : `'核对'`} },${text.slice(endIndex)}`;
 };
 
 /** 本场已有的老段（defineSeg 写的，不是窗口段），清单顺序：段键、段长秒，有 场窗口 的带起秒；画幅不是默认的也带上 */
@@ -111,7 +111,7 @@ export type SceneLegacySeg = { key: string; sec: number; startSec?: number; widt
 /** 老场的场时间线：老段的段长抄成数摆上来（engine/段/老段接续.ts；场不许 import 段），新段的起止事件接在最后一个老段后面 */
 const legacySceneTimelineTemplate = (scene: string, legacySegs: readonly SceneLegacySeg[], startEvent: string, endMark: string) => {
   const firstOldSeg = legacySegs[0]!;
-  const frameSizeLines = firstOldSeg.width !== 1280 || firstOldSeg.height !== 720 ? [`  aspect: { 宽: ${firstOldSeg.width}, 高: ${firstOldSeg.height} },`] : [];
+  const frameSizeLines = firstOldSeg.width !== 1280 || firstOldSeg.height !== 720 ? [`  aspect: { width: ${firstOldSeg.width}, height: ${firstOldSeg.height} },`] : [];
   return `// ${scene} 的场时间线：本场的老段（defineSeg 写的）一个不改，段长抄过来按清单顺序首尾相接摆上，事件 <段键>.起、<段键>.止（engine/段/老段接续.ts）；
 // 新段（窗口段）从这条线取窗口，跨段的声音写在 声音 里（只放进新段，老段照旧）。抄的段长 anim check 和老段的 段.ts 对；老段中间有跳过的，给那一段写 startSec。纯模块。
 import { continueOldSeg } from '@engine/段/老段接续.ts';
@@ -119,7 +119,7 @@ import { continueOldSeg } from '@engine/段/老段接续.ts';
 export default continueOldSeg({
   scene: '${scene}',
 ${frameSizeLines.join('\n')}${frameSizeLines.length ? '\n' : ''}  legacySegs: [
-${legacySegs.map((x) => `    { 键: '${x.key}', 秒: ${x.sec}${x.startSec !== undefined ? `, startSec: ${x.startSec}` : ''} },`).join('\n')}
+${legacySegs.map((x) => `    { key: '${x.key}', sec: ${x.sec}${x.startSec !== undefined ? `, startSec: ${x.startSec}` : ''} },`).join('\n')}
   ],
   events: {
     ${startEvent}: { 在: { after: '${legacySegs.at(-1)!.key}.止' }, basis: '暂定：接在本场最后一个老段后面' },
