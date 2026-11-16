@@ -1,4 +1,4 @@
-// 6-3-8、6-3-10 的画面：按编排秒 `t` 画出这一帧（编排.ts 的人、卫兵、机位）。各段 Composition（二人登场.tsx、6-3-10/追进竖井.tsx）只给段名，段内帧换 t 用编排.ts 的 `toSec`（含跳下城墙那一截跳切）。
+// 6-3-8、6-3-10 的画面：按编排秒 `t` 画出这一帧（编排.ts 的人、卫兵、机位）。各段 Composition（二人登场.tsx、6-3-10/追进竖井.tsx）只给段名，段内秒换 t 用编排.ts 的 `toSec`（含跳下城墙那一截跳切）。
 // 场景和 6-3-4～6-3-6 是同一套（6-3-下坠/画面.tsx 原样拿来）：主世界-116 的真实地形、边城、挖掉的坑和竖井、碎块、Photon 的云、和 6-2-5 同一套太阳天光。
 // 砸穿后格子都碎完了（`ShaftFill` 按 `fallTime` 画，全空）；碎块.tsx 里落地碎块寿命 30 秒，这几段要演到砸地后 40 多秒，所以碎块按砸地后 29 秒那一刻画（停住不动，也不会突然消失）。
 // 坑口不冒烟（用户 10-12 嫌浓烟多余）：不画碎块.tsx 的 `烟尘`、`余烟`，不画 6-3-6 的震波；古城地面照 6-3-6 砸完落定的样子（坑、落块、裂纹，竖井.tsx 的 `AncientCity` 默认）。
@@ -90,7 +90,7 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
                 </group>
               );
             })}
-            {huang.present && <HuangPan pose={withTalkNod(huang.pose, choreo.lineCuesBySegment['6-3-8'], '黄叛', t * choreo.FPS)} />}
+            {huang.present && <HuangPan pose={withTalkNod(huang.pose, choreo.lineCuesBySegment['6-3-8'], '黄叛', t * choreo.nodSamplesPerSec, choreo.nodSamplesPerSec)} />}
             {liu.present && <LiuXinzhong pose={liu.pose} />}
             </>
           )}
@@ -101,9 +101,9 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
   );
 };
 
-// 段内秒换成这条时间线的格（1/24 秒）再走 toSec（跳下城墙那一截跳切）
+// 段内秒走 toSec 换成编排秒（跳下城墙那一截跳切）
 export const PursuerSegment: React.FC<{ segment: choreo.SegmentName }> = ({ segment: segment }) => {
   const sec = useCurrentSec();
-  return <PursuerScene t={choreo.toSec(segment, sec * choreo.FPS)} />;
+  return <PursuerScene t={choreo.toSec(segment, sec)} />;
 };
 

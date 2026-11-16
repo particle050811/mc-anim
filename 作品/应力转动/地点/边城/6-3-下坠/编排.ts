@@ -1,4 +1,4 @@
-// 6-3 下坠的编排（纯函数）：扫帚、李樱、九胡、锤和压路机虚影、金光、坑和竖井、卫兵、机位。输入全局帧 G 或物理时间 w（见 时间线.ts）。
+// 6-3 下坠的编排（纯函数）：扫帚、李樱、九胡、锤和压路机虚影、金光、坑和竖井、卫兵、机位。输入全局秒 T 或物理时间 w（见 时间线.ts）。
 // 从 6-2-6 末帧悬停到砸穿落进古城，分段见 时间线.ts 的 `段表`（城墙上和李樱两边并行，见 时间线.ts 文件头）：
 // - 6-3-3 俯冲（原速）：接 6-3-2 思索推近，他已经头朝下摆好锤击架势往下冲（用户 10-19：不演从扫帚上跳下来）。起身、跃出、翻身的动作照算（物理连续），只是画面从 `刻`.俯冲起 开始。
 //   被推着高速下冲（用户 10-05，推力见 时间线.ts 的 `鼓风机`），不画推力来源（用户 10-10）；锤往回抡到脑后，压路机虚影浮现、金光亮满（编排/李樱.ts 的 `strikeTracks`）。
@@ -8,7 +8,7 @@
 // 代码分在 编排/ 下；这里留汇报和接 6-4-1 用的两个函数。
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
-import { FPS, tick, impactTime, segTable, physicalTime } from './时间线.ts';
+import { tick, impactTime, segTable, physicalTime } from './时间线.ts';
 import { shaftLayout as shaftLayout } from '../../古城4x/布局.ts';
 import { liYing, liYingShaft, strikeDepth, LY_LEAP_HIP } from './编排/李樱.ts';
 import { shaftCellCenter } from './编排/坑口.ts';
@@ -30,18 +30,17 @@ export const fallStats = () => {
 // 6-3-6 末帧李樱的状态（6-4-1 首帧接它，G2 用）。古城场景坐标（古城4x.tsx 的 `G4`，同 `GUCHENG4X.落点`）：脚底 = 落点那格的格心、古城地面；
 // 朝向（度，0 = 北 +Y，正 = 往左转，同 古城戏.ts）；姿势是站直、双臂微垂、右手握锤
 export const liYingEnd636 = () => {
-  const globalFrame = segTable['6-3-6'].止;
-  const state = liYing(physicalTime(globalFrame));
+  const globalSec = segTable['6-3-6'].止;
+  const state = liYing(physicalTime(globalSec));
   const center = shaftCellCenter();
   const fwd = new THREE.Vector3(0, 1, 0).transformDirection(state.matrix);
   const yawDeg = (Math.atan2(-fwd.x, fwd.y) * 180) / Math.PI;
   const ancientLanding = shaftLayout.落点; // = GUCHENG4X.落点
   return {
-    globalFrame: globalFrame,
+    globalSec: globalSec,
     feet: [ancientLanding[0] + state.hip[0] - center[0], ancientLanding[1] + state.hip[1] - center[1], 0] as V3,
     facing: +yawDeg.toFixed(1),
     pose: state.pose,
     hammerHand: '右手',
   };
 };
-export { FPS };

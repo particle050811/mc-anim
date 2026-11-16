@@ -28,7 +28,6 @@ import { uiClose, uiFade, smashBeats, calloutBeats, matchSec as pushEnd } from '
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 import { ticksPerSec } from '@库/原版物理.ts';
 
-export const FPS = 24;
 const D2R = Math.PI / 180;
 
 // ---------- 时刻（思索场景时间，秒） ----------
