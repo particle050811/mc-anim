@@ -1,10 +1,10 @@
 // 6-1-9b 开头的从天落地（编排，纯函数）：用户 10-18 的思路——一镜到底快到城堡时剪掉，不演骑扫帚降落（收扫帚、冲下屋顶那些难做的都删），
 // 改成两人在切点那一刻离开扫帚，带着扫帚的冲劲斜着飞进城堡、落到屋顶上（用户 10-18：不是从天上竖着掉，要带着扫帚的惯性斜着飞进来），落地时站位排好、动作做足。
 // 两个镜头，中间一刀硬切（用户 10-18：中间不要追拍，不然还是连续镜头）：
-//   ① 6-1-9：一镜到底原样飞到 `F_CUT`（扫帚刚开始往屋顶平台扎）；
+//   ① 6-1-9：一镜到底原样飞到 `G_CUT`（扫帚刚开始往屋顶平台扎）；
 //   ② 6-1-9b：一镜到底末帧的机位（二人右前方低处），李樱从画面左边的垛口低低地滑进来、半蹲落地、往前滑一段停住，
-//      九胡晚 `JIUHU_LAG` 帧落在他右后方，起身站定。
-// 硬切处剪掉一整小节（用户 10-18 嫌落地后空镜头太多）加 `ONER_TRIM` 帧画面（用户 10-20 又剪了俯冲的尾巴），只剪画面：② 的配乐接着 ① 一路放（编排.ts 的 `musicStartSec`）。
+//      九胡晚 `JIUHU_LAG` 秒落在他右后方，起身站定。
+// 硬切处剪掉一整小节（用户 10-18 嫌落地后空镜头太多）加 `ONER_TRIM` 秒画面（用户 10-20 又剪了俯冲的尾巴），只剪画面：② 的配乐接着 ① 一路放（编排.ts 的 `musicStartSec`）。
 // 两人用一镜到底末帧的站姿，这里加位移和姿势；脱手到切过来之间不演，轨迹只管画面里那几帧的方向和速度。
 // 飞行轨迹不照原版逐刻算（用户 10-18：数学上不必精确，画面上要合理）：起点的位置、方向取切点那一帧的扫帚，经垛口（`CRENEL_LOCAL`）到着地点，两截 Hermite 曲线接成一条；
 // 速度从扫帚的速度按指数衰减到 `LAND_SPEED`（像被空气拖慢），飞多久按这条速度曲线走完全程来定，切过来时李樱刚出垛口、九胡正过垛口。
@@ -22,16 +22,16 @@ import * as route from '../一镜到底/路线.ts';
 import * as choreo619b from './编排.ts';
 import { smoothstep01, mulberry32 } from '@engine/core/数学.ts';
 
-const FPS = 24;
-const F0 = choreo619b.F0;
-// ① → ②：F0 往前一小节（`BAR_CUT_FRAMES`）再早 `ONER_TRIM` 帧：扫帚刚压下机头往屋顶平台扎，离城垛还远
-export const F_CUT = F0 - choreo619b.BAR_CUT_FRAMES - choreo619b.ONER_TRIM;
-export const T_LIYING = F0 + choreo619b.landFrame; // 李樱着地（全局帧）
-export const JIUHU_LAG = 3; // 两人同一刻离开扫帚，九胡飞得稍慢一点
+// 下面的时刻都是一镜到底的画面秒；动作关键帧（李樱、九胡）是相对着地的秒，注释里的「帧」是原来的 1/24 秒一格
+const G0 = choreo619b.G0;
+// ① → ②：G0 往前一小节（`BAR_CUT`）再早 `ONER_TRIM` 秒：扫帚刚压下机头往屋顶平台扎，离城垛还远
+export const G_CUT = G0 - choreo619b.BAR_CUT - choreo619b.ONER_TRIM;
+export const T_LIYING = G0 + choreo619b.landTime; // 李樱着地
+export const JIUHU_LAG = 3 / 24; // 两人同一刻离开扫帚，九胡飞得稍慢一点
 export const T_JIUHU = T_LIYING + JIUHU_LAG;
 
 // ---------- 场坐标：一镜到底末帧扫帚（两人一起走的坐标系，朝向 0 = 面朝北）的本地坐标，x 东、y 北、z 上，z = 0 是屋顶 ----------
-const B0 = route.broom(F0).位置;
+const B0 = route.broom(G0).位置;
 const roofZ = choreo619.castleOrigin[2] + choreo619.ROOF_Z;
 const fromScene = (p: number[]): V3 => [B0[0] + p[0], B0[1] + p[1], roofZ + p[2]];
 // 站位（场坐标）：李樱在前座（骑扫帚.tsx 的 RIDE.front），九胡在后座再挪 6-1-9b 的 `jiuhuStepTo`，即他右后方
@@ -47,12 +47,12 @@ const CRENEL_LOCAL: V3 = [341, 4.5, choreo619.ROOF_Z + 2.35];
 const crenel = (dx: number): V3 => [choreo619.castleOrigin[0] + CRENEL_LOCAL[0] + dx - B0[0], choreo619.castleOrigin[1] + CRENEL_LOCAL[1] - B0[1], CRENEL_LOCAL[2] - choreo619.ROOF_Z];
 const LAND_SPEED = 27; // 着地时的速度（米/秒），也差不多是滑进画面的速度
 const LAND_PITCH = -14; // 着地时往下的角度（度），比过垛口那截收平一点
-// 着地以后往前滑多少帧停住（按着地时的水平速度匀减速，滑的距离 = 速度 × 帧数 / 2）
-const SKID_FRAMES = 6;
-const skidLength = ((LAND_SPEED * Math.cos((LAND_PITCH * Math.PI) / 180)) / FPS) * (SKID_FRAMES / 2);
+// 着地以后往前滑多久停住（按着地时的水平速度匀减速，滑的距离 = 速度 × 时长 / 2）
+const SKID_SEC = 0.25;
+const skidLength = LAND_SPEED * Math.cos((LAND_PITCH * Math.PI) / 180) * (SKID_SEC / 2);
 // 速度 v(t) = LAND_SPEED + (扫帚速度 − LAND_SPEED)·e^(−t/TAU)
 const TAU = 0.3;
-const broomRelease = route.broom(F_CUT);
+const broomRelease = route.broom(G_CUT);
 // 扫帚的方向：朝向 0 = 北、正 = 往左；俯仰正 = 抬头
 const releaseDir = (): V3 => {
   const yaw = (broomRelease.facing * Math.PI) / 180;
@@ -73,7 +73,7 @@ type Flight = { at: (u: number) => V3; arc: Float64Array; T: number; t0: number;
 const ARC_N = 800;
 const pathDist = (t: number, v0: number) => LAND_SPEED * t + (v0 - LAND_SPEED) * TAU * (1 - Math.exp(-t / TAU));
 // stand：站位；seat：离开扫帚时在扫帚上坐的位置相对站位差多少（李樱就在前座；九胡在后座，站位又往右后挪了 `jiuhuStepTo`）；gap：过垛口的那一点（场坐标）
-const flight = (touchFrame: number, stand: V3, seat: V3, gap: V3): Flight => {
+const flight = (touchTime: number, stand: V3, seat: V3, gap: V3): Flight => {
   const start: V3 = [broomRelease.位置[0] - B0[0] + seat[0], broomRelease.位置[1] - B0[1] + seat[1], broomRelease.位置[2] - B0[2] + seat[2]];
   const g = sub(gap, stand);
   // 过了垛口朝站位直着滑过去：着地点在站位前面滑的那一截
@@ -96,7 +96,7 @@ const flight = (touchFrame: number, stand: V3, seat: V3, gap: V3): Flight => {
     const b = at(k / ARC_N);
     arc[k] = arc[k - 1] + Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
   }
-  // 按速度曲线走完全程要多久（二分）：着地在 touchFrame，起飞就在这么多秒以前（在硬切前，画外）
+  // 按速度曲线走完全程要多久（二分）：着地在 touchTime，起飞就在这么多秒以前（在硬切前，画外）
   let lo = 0;
   let hi = 60;
   for (let k = 0; k < 60; k++) {
@@ -104,57 +104,57 @@ const flight = (touchFrame: number, stand: V3, seat: V3, gap: V3): Flight => {
     if (pathDist(mid, broomRelease.速度) > arc[ARC_N]) hi = mid;
     else lo = mid;
   }
-  return { at, arc, T: (lo + hi) / 2, t0: touchFrame, touch, skidDir };
+  return { at, arc, T: (lo + hi) / 2, t0: touchTime, touch, skidDir };
 };
 const flights = {
   liYing: flight(T_LIYING, LIYING_AT, [0, 0, 0], crenel(-0.1)),
   jiuhu: flight(T_JIUHU, JIUHU_AT, [-choreo619b.jiuhuStepTo[0], -choreo619b.jiuhuStepTo[1], 0], crenel(0)),
 };
-// 第 F 帧相对站位的位移：空中沿路径走，着地后匀减速滑到站位
-const offsetAt = (fl: Flight, F: number): V3 => {
-  const c = F - fl.t0;
+// 第 g 秒相对站位的位移：空中沿路径走，着地后匀减速滑到站位
+const offsetAt = (fl: Flight, g: number): V3 => {
+  const c = g - fl.t0;
   if (c >= 0) {
-    const k = Math.min(1, c / SKID_FRAMES);
+    const k = Math.min(1, c / SKID_SEC);
     const left = skidLength * (1 - k) * (1 - k);
     return [-fl.skidDir[0] * left, -fl.skidDir[1] * left, 0];
   }
-  const s = pathDist(Math.max(0, fl.T + c / FPS), broomRelease.速度);
+  const s = pathDist(Math.max(0, fl.T + c), broomRelease.速度);
   let k = 0;
   while (k < ARC_N - 1 && fl.arc[k + 1] < s) k++;
   const u = (k + Math.min(1, Math.max(0, (s - fl.arc[k]) / (fl.arc[k + 1] - fl.arc[k])))) / ARC_N;
   return fl.at(u);
 };
-// 诊断用（工具里量轨迹、核对擦不擦方块）：第 F 帧（全局帧）两人相对各自站位的位移
-export const landingOffset = (who: keyof typeof flights, F: number) => offsetAt(flights[who], F);
+// 诊断用（工具里量轨迹、核对擦不擦方块）：一镜到底第 g 秒两人相对各自站位的位移
+export const landingOffset = (who: keyof typeof flights, g: number) => offsetAt(flights[who], g);
 // 摔落距离：从脱手的高度算
 const fallHeight = flights.liYing.at(0)[2];
 
 // ---------- 李樱（绝对姿势，度；约定同 骨架.tsx）：空中往前倾着冲、两臂张开、低头看落点；着地前直起身、腿伸到前面，着地半蹲多蹲一会儿再起身 ----------
 // 着地后半蹲、蹲住 6 帧（摔得重），起身冲过头再回
-const H = -60; // 空中一直是这个姿势（脱手到着地约 30 帧，比这短）
+const H = -2.5; // 空中一直是这个姿势（脱手到着地约 30 帧，比这短）
 const liyingKeys: Record<string, Key[]> = {
-  pitch: [[H, -28], [-14, -24], [-6, -4], [-2, -2], [0, -8], [3, -32], [9, -28], [18, 3], [23, -1.5], [30, 0]],
-  headPitch: [[H, -22], [-8, -18], [0, 6], [3, 20], [9, 16], [18, -2], [23, 1], [30, 0]],
-  legR: [[H, 20], [-14, 16], [-6, 30], [-2, 22], [0, 12], [3, 80], [9, 74], [18, 2], [23, 4], [30, 0]],
-  legL: [[H, -16], [-14, -12], [-6, 14], [-2, 10], [0, 6], [3, 68], [9, 62], [18, 0], [23, 2], [30, 0]],
-  kneeR: [[H, 50], [-8, 35], [-2, 18], [0, 15], [3, 112], [9, 102], [18, 4], [23, 6], [30, 0]],
-  kneeL: [[H, 40], [-8, 30], [-2, 20], [0, 18], [3, 112], [9, 102], [18, 3], [23, 5], [30, 0]],
-  legRRoll: [[H, -10], [-8, -10], [0, -6], [3, -8], [9, -8], [18, 0], [30, 0]],
-  legLRoll: [[H, -10], [-8, -10], [0, -6], [3, -8], [9, -8], [18, 0], [30, 0]],
-  armR: [[H, 25], [-8, 25], [0, 20], [3, 40], [9, 36], [18, -6], [23, 2], [30, 0]],
-  armL: [[H, 15], [-8, 15], [0, 18], [3, 36], [9, 32], [18, -5], [23, 2], [30, 0]],
-  armRRoll: [[H, -75], [-8, -70], [0, -42], [3, -26], [9, -22], [18, -6], [23, -2], [30, 0]],
-  armLRoll: [[H, -70], [-8, -66], [0, -40], [3, -28], [9, -22], [18, -6], [23, -2], [30, 0]],
-  elbowR: [[H, 20], [-8, 20], [0, 18], [3, 30], [9, 28], [18, 4], [30, 0]],
-  elbowL: [[H, 20], [-8, 20], [0, 18], [3, 30], [9, 28], [18, 4], [30, 0]],
+  pitch: [[H, -28], [-14 / 24, -24], [-6 / 24, -4], [-2 / 24, -2], [0, -8], [3 / 24, -32], [9 / 24, -28], [18 / 24, 3], [23 / 24, -1.5], [30 / 24, 0]],
+  headPitch: [[H, -22], [-8 / 24, -18], [0, 6], [3 / 24, 20], [9 / 24, 16], [18 / 24, -2], [23 / 24, 1], [30 / 24, 0]],
+  legR: [[H, 20], [-14 / 24, 16], [-6 / 24, 30], [-2 / 24, 22], [0, 12], [3 / 24, 80], [9 / 24, 74], [18 / 24, 2], [23 / 24, 4], [30 / 24, 0]],
+  legL: [[H, -16], [-14 / 24, -12], [-6 / 24, 14], [-2 / 24, 10], [0, 6], [3 / 24, 68], [9 / 24, 62], [18 / 24, 0], [23 / 24, 2], [30 / 24, 0]],
+  kneeR: [[H, 50], [-8 / 24, 35], [-2 / 24, 18], [0, 15], [3 / 24, 112], [9 / 24, 102], [18 / 24, 4], [23 / 24, 6], [30 / 24, 0]],
+  kneeL: [[H, 40], [-8 / 24, 30], [-2 / 24, 20], [0, 18], [3 / 24, 112], [9 / 24, 102], [18 / 24, 3], [23 / 24, 5], [30 / 24, 0]],
+  legRRoll: [[H, -10], [-8 / 24, -10], [0, -6], [3 / 24, -8], [9 / 24, -8], [18 / 24, 0], [30 / 24, 0]],
+  legLRoll: [[H, -10], [-8 / 24, -10], [0, -6], [3 / 24, -8], [9 / 24, -8], [18 / 24, 0], [30 / 24, 0]],
+  armR: [[H, 25], [-8 / 24, 25], [0, 20], [3 / 24, 40], [9 / 24, 36], [18 / 24, -6], [23 / 24, 2], [30 / 24, 0]],
+  armL: [[H, 15], [-8 / 24, 15], [0, 18], [3 / 24, 36], [9 / 24, 32], [18 / 24, -5], [23 / 24, 2], [30 / 24, 0]],
+  armRRoll: [[H, -75], [-8 / 24, -70], [0, -42], [3 / 24, -26], [9 / 24, -22], [18 / 24, -6], [23 / 24, -2], [30 / 24, 0]],
+  armLRoll: [[H, -70], [-8 / 24, -66], [0, -40], [3 / 24, -28], [9 / 24, -22], [18 / 24, -6], [23 / 24, -2], [30 / 24, 0]],
+  elbowR: [[H, 20], [-8 / 24, 20], [0, 18], [3 / 24, 30], [9 / 24, 28], [18 / 24, 4], [30 / 24, 0]],
+  elbowL: [[H, 20], [-8 / 24, 20], [0, 18], [3 / 24, 30], [9 / 24, 28], [18 / 24, 4], [30 / 24, 0]],
 };
-const LY_DONE = 30;
-const lagFrames: Record<string, number> = { headPitch: 1, armR: 1, armL: 1, armRRoll: 1, armLRoll: 1, elbowR: 1, elbowL: 1 };
-// 风里两臂微微抖（着地前收掉）
-const flutter = (c: number) => (1 - smoothstep01((c + 8) / 6)) * Math.sin(c * 0.9);
+const LY_DONE = 1.25;
+const lagSec: Record<string, number> = { headPitch: 1 / 24, armR: 1 / 24, armL: 1 / 24, armRRoll: 1 / 24, armLRoll: 1 / 24, elbowR: 1 / 24, elbowL: 1 / 24 };
+// 风里两臂微微抖（着地前收掉；每格 0.9 弧度）
+const flutter = (c: number) => (1 - smoothstep01((c + 8 / 24) / 0.25)) * Math.sin(c * 21.6);
 
 const tweakLiying = (ly: RideLiYing, c: number): RideLiYing => {
-  if (c - 1 >= LY_DONE) return ly;
+  if (c - 1 / 24 >= LY_DONE) return ly;
   const basePose = ly.poseOverride;
   const off = offsetAt(flights.liYing, T_LIYING + c);
   return {
@@ -162,9 +162,9 @@ const tweakLiying = (ly: RideLiYing, c: number): RideLiYing => {
     poseOverride: (base: FigurePose) => {
       const pose: FigurePose = typeof basePose === 'function' ? basePose(base) : { ...base, ...basePose };
       const out: FigurePose = { ...pose, loc: [pose.loc[0] + off[0], pose.loc[1] + off[1], pose.loc[2] + off[2]], ground: c >= 0 ? 1 : 0 };
-      for (const [k, keys] of Object.entries(liyingKeys)) (out as Record<string, unknown>)[k] = sampleLag(keys, c, lagFrames[k] ?? 0);
+      for (const [k, keys] of Object.entries(liyingKeys)) (out as Record<string, unknown>)[k] = sampleLag(keys, c, lagSec[k] ?? 0);
       out.armRRoll += 5 * flutter(c);
-      out.armLRoll += 5 * flutter(c + 2);
+      out.armLRoll += 5 * flutter(c + 2 / 24);
       return out;
     },
   };
@@ -173,17 +173,17 @@ const tweakLiying = (ly: RideLiYing, c: number): RideLiYing => {
 // ---------- 九胡（骨骼增量，到末尾归零）：比李樱轻，蹲得浅、起得快 ----------
 const JH_PX = 0.7 / 16;
 const jiuhuKeys: Record<string, Key[]> = {
-  上身: [[H, 26], [-14, 22], [-6, 6], [0, 8], [3, 24], [8, 20], [16, -3], [21, 1], [28, 0]],
-  头: [[H, 22], [-8, 18], [0, 0], [28, 0]], // 低头看落点（rot.x 正 = 低头）
-  右腿: [[H, 15], [-14, 12], [-6, 26], [-2, 16], [0, 8], [3, 50], [8, 44], [16, 0], [28, 0]],
-  左腿: [[H, -10], [-8, -5], [-2, 0], [0, 5], [3, 46], [8, 40], [16, 0], [28, 0]],
-  右膝: [[H, 45], [-8, 35], [-2, 15], [0, 12], [3, 95], [8, 85], [16, 0], [28, 0]],
-  左膝: [[H, 50], [-8, 40], [-2, 18], [0, 15], [3, 90], [8, 80], [16, 0], [28, 0]],
-  臂前: [[H, 10], [-8, 10], [0, 15], [3, 30], [8, 26], [16, -5], [21, 0], [28, 0]],
-  臂张: [[H, 70], [-8, 65], [0, 40], [3, 22], [8, 18], [16, 4], [28, 0]],
-  耳: [[H, -15], [-1, -15], [2, 14], [6, 0], [28, 0]], // 下落时被风压平，着地一抖
+  上身: [[H, 26], [-14 / 24, 22], [-6 / 24, 6], [0, 8], [3 / 24, 24], [8 / 24, 20], [16 / 24, -3], [21 / 24, 1], [28 / 24, 0]],
+  头: [[H, 22], [-8 / 24, 18], [0, 0], [28 / 24, 0]], // 低头看落点（rot.x 正 = 低头）
+  右腿: [[H, 15], [-14 / 24, 12], [-6 / 24, 26], [-2 / 24, 16], [0, 8], [3 / 24, 50], [8 / 24, 44], [16 / 24, 0], [28 / 24, 0]],
+  左腿: [[H, -10], [-8 / 24, -5], [-2 / 24, 0], [0, 5], [3 / 24, 46], [8 / 24, 40], [16 / 24, 0], [28 / 24, 0]],
+  右膝: [[H, 45], [-8 / 24, 35], [-2 / 24, 15], [0, 12], [3 / 24, 95], [8 / 24, 85], [16 / 24, 0], [28 / 24, 0]],
+  左膝: [[H, 50], [-8 / 24, 40], [-2 / 24, 18], [0, 15], [3 / 24, 90], [8 / 24, 80], [16 / 24, 0], [28 / 24, 0]],
+  臂前: [[H, 10], [-8 / 24, 10], [0, 15], [3 / 24, 30], [8 / 24, 26], [16 / 24, -5], [21 / 24, 0], [28 / 24, 0]],
+  臂张: [[H, 70], [-8 / 24, 65], [0, 40], [3 / 24, 22], [8 / 24, 18], [16 / 24, 4], [28 / 24, 0]],
+  耳: [[H, -15], [-1 / 24, -15], [2 / 24, 14], [6 / 24, 0], [28 / 24, 0]], // 下落时被风压平，着地一抖
 };
-const JH_DONE = 28;
+const JH_DONE = 28 / 24;
 const legHeight = (thigh: number, knee: number) => {
   const deg2rad = Math.PI / 180;
   return 7.7 * Math.cos(thigh * deg2rad) + 8.7 * Math.cos((thigh - knee) * deg2rad) + 2.55;
@@ -192,13 +192,13 @@ const addRot = (bone: BonePose | undefined, delta: number[]): BonePose => {
   const rot = bone?.rot ?? [0, 0, 0];
   return { ...bone, rot: rot.map((v, i) => v + (delta[i] ?? 0)) };
 };
-// 尾巴不管，落地后.tsx 按全局帧接着摆
-const tweakJiuhu = (jh: RideJiuhu, c: number, F: number): RideJiuhu => {
+// 尾巴不管，落地后.tsx 按一镜到底的时间接着摆
+const tweakJiuhu = (jh: RideJiuhu, c: number, g: number): RideJiuhu => {
   const baseOffset = jh.offset ?? [0, 0, 0];
   const bones = { ...(jh.boneOverrides ?? {}) };
   const offset: V3 = [baseOffset[0] + choreo619b.jiuhuStepTo[0], baseOffset[1] + choreo619b.jiuhuStepTo[1], baseOffset[2]];
-  if (c - 1 >= JH_DONE) return { ...jh, boneOverrides: bones, offset };
-  const keyAt = (k: string) => sampleLag(jiuhuKeys[k], c, 1);
+  if (c - 1 / 24 >= JH_DONE) return { ...jh, boneOverrides: bones, offset };
+  const keyAt = (k: string) => sampleLag(jiuhuKeys[k], c, 1 / 24);
   const [upperBody, head, legR, legL, kneeR, kneeL, armFwd, armOut, ear] = ['上身', '头', '右腿', '左腿', '右膝', '左膝', '臂前', '臂张', '耳'].map(keyAt);
   bones.UpBody = addRot(bones.UpBody, [upperBody, 0, 0]);
   bones.Head = addRot(bones.Head, [-0.6 * upperBody + head, 0, 0]);
@@ -208,19 +208,19 @@ const tweakJiuhu = (jh: RideJiuhu, c: number, F: number): RideJiuhu => {
   bones.LeftLowerLeg = addRot(bones.LeftLowerLeg, [kneeL, 0, 0]);
   bones.RightFoot = addRot(bones.RightFoot, [legR - kneeR, 0, 0]);
   bones.LeftFoot = addRot(bones.LeftFoot, [legL - kneeL, 0, 0]);
-  bones.RightArm = addRot(bones.RightArm, [-armFwd, 0, armOut + 4 * flutter(c + 1)]);
-  bones.LeftArm = addRot(bones.LeftArm, [-armFwd, 0, -armOut - 4 * flutter(c + 3)]);
+  bones.RightArm = addRot(bones.RightArm, [-armFwd, 0, armOut + 4 * flutter(c + 1 / 24)]);
+  bones.LeftArm = addRot(bones.LeftArm, [-armFwd, 0, -armOut - 4 * flutter(c + 3 / 24)]);
   bones.Left_ear = addRot(bones.Left_ear, [ear, 0, 0]);
   bones.Right_ear = addRot(bones.Right_ear, [ear, 0, 0]);
   const hipDrop = c >= 0 ? (18.95 - Math.max(legHeight(legR, kneeR), legHeight(legL, kneeL))) * JH_PX : 0;
-  const off = offsetAt(flights.jiuhu, F);
+  const off = offsetAt(flights.jiuhu, g);
   return { ...jh, boneOverrides: bones, offset: [offset[0] + off[0], offset[1] + off[1], offset[2] + off[2] - hipDrop] };
 };
 
-export const tweakRiders = (F: number) => (riders: Riders): Riders => ({
+export const tweakRiders = (g: number) => (riders: Riders): Riders => ({
   ...riders,
-  liYing: tweakLiying(riders.liYing, F - T_LIYING),
-  jiuhu: tweakJiuhu(riders.jiuhu, F - T_JIUHU, F),
+  liYing: tweakLiying(riders.liYing, g - T_LIYING),
+  jiuhu: tweakJiuhu(riders.jiuhu, g - T_JIUHU, g),
 });
 
 // ---------- 着地粒子（`LivingEntity.checkFallDamage` → `ServerLevel.sendParticles`） ----------

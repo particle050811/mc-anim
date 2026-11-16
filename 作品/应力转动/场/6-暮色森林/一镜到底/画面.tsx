@@ -34,20 +34,20 @@ import { rad, smoothstep01, lerp } from '@engine/core/数学.ts';
 const sheath = <WornSheath />;
 
 // ---------- 骑手 ----------
-// 首帧 = 6-1-3 末帧的姿势；30 帧内压成高速飞行的姿势（李樱前倾 46、抬头看前面，九胡抱腰贴着他）。
-// 长矛：离巫妖怪塔的穿刺线还有 1.5 公里时亮出来（按物品切换：矛从手里长出来），之后一直平端到降落；起飞后 1.5 公里前姿势还在往高速飞行压，所以不早于第 30 帧。
+// 首帧 = 6-1-3 末帧的姿势；1.25 秒内压成高速飞行的姿势（李樱前倾 46、抬头看前面，九胡抱腰贴着他）。
+// 长矛：离巫妖怪塔的穿刺线还有 1.5 公里时亮出来（按物品切换：矛从手里长出来），之后一直平端到降落；起飞后 1.5 公里前姿势还在往高速飞行压，所以不早于第 1.25 秒。
 // 每次冲刺击杀，矛头外面包一个动力钻头的虚影（用户 10-02，见 战利品.tsx）
-const F_SPEAR = Math.max(30, route.frameAt(route.timeAtDist(route.markDist('巫妖.前') - 1500)));
-const END613 = P613.riders(P613.beats.末帧);
+const G_SPEAR = Math.max(1.25, route.secAt(route.timeAtDist(route.markDist('巫妖.前') - 1500)));
+const END613 = P613.riders(P613.beats.last);
 const ly613 = END613.liYing as { lean: number; headRaise: number };
 const jh613 = END613.jiuhu as { lean: number; headRaise: number };
-export const ridersAt = (frame: number, physT: number) => {
-  const k0 = smoothstep01(frame / 30);
-  const ks = smoothstep01((frame - F_SPEAR) / 12);
-  const grow = smoothstep01((frame - F_SPEAR - 3) / 8);
+export const ridersAt = (g: number, physT: number) => {
+  const k0 = smoothstep01(g / 1.25);
+  const ks = smoothstep01((g - G_SPEAR) / 0.5);
+  const grow = smoothstep01((g - G_SPEAR - 3 / 24) / (8 / 24));
   const lean = lerp(lerp(ly613.lean, 46, k0), SPEAR_RIDER.lean, ks);
   const headRaise = lerp(lerp(ly613.headRaise, 30, k0), 8, ks);
-  const drill = drillGhost(frame);
+  const drill = drillGhost(g);
   let liYing: RideLiYing = {
     lean,
     headRaise,
@@ -73,7 +73,7 @@ export const ridersAt = (frame: number, physT: number) => {
   let jiuHu: RideJiuhu = {
     lean: lerp(jh613.lean, 30, k0),
     hugWaist: 1,
-    tailPhase: (P613.beats.末帧 + frame) / 9,
+    tailPhase: (P613.beats.last + g) / (9 / 24), // 同 6-1-3：每 9/24 秒走 1
     wind: 1,
     headRaise: lerp(jh613.headRaise, 10, k0),
   };
@@ -161,11 +161,11 @@ const stowBroom = (physT: number) => {
   if (!broomItems) {
     // 原版实体收起时掉落物生成在实体原点（扫帚杆中心往下 `stickZ`），自己不带速度：两人冲出去，它留在身后一点，再追上去被吸进李樱身体里。
     // 放在杆中心、带着冲劲的话整段都藏在两人中间被九胡尾巴挡住
-    const P0 = route.broom(route.F_LAND).位置;
+    const P0 = route.broom(route.G_LAND).位置;
     broomItems = [{ 名: '扫帚', p0: [P0[0], P0[1], P0[2] - RIDE.stickZ + 0.25], v0: [0, 0, 0], spinAxis: [0.2, -0.1, 0.3], spinSpeed: 20, suckStart: 0, suckEnd: dismount.absorbSec }];
   }
   // 吸到李樱胸口（他在前座）
-  const broom = route.broom(route.frameAt(physT));
+  const broom = route.broom(route.secAt(physT));
   const yaw = rad(broom.facing);
   const chest: V3 = [broom.位置[0] - Math.sin(yaw) * RIDE.front, broom.位置[1] + Math.cos(yaw) * RIDE.front, broom.位置[2] + 0.8];
   return { items: broomItems, τ: td, target: chest };
@@ -180,15 +180,15 @@ const isNear = (landmark: TwilightLandmarkName, camPos: number[], maxDist = 1600
   return Math.hypot(origin[0] - camPos[0], origin[1] - camPos[1]) < maxDist;
 };
 
-// 一帧（全局帧 `F`）。机位：给了就用它（核对用的静帧），不给就按 镜头.ts。
+// 一帧（画面时间 `g` 秒，0 = 6-1-3 末帧）。机位：给了就用它（核对用的静帧），不给就按 镜头.ts。
 // 级别：见 lib/渲染级别.ts。`像素`、`远`、`dpr`（画布超采样倍数）不给就用这一级的（关键帧级超采样 1，配 --scale=4 出 5120×2880）。
 // 屏幕AO：体素地形的屏幕空间环境光遮蔽（lib/体素/屏幕AO.tsx），默认开
 // `tweakRiders`：在这一帧的骑手姿势上再改（6-1-9b 落地后接着一镜到底末帧往下演），不给就照 `ridersAt` 原样
 // `extra`：另外画进场景的东西（场景坐标 Z 朝上）；`loot={false}` 不画战利品箱和掉落物（封面.tsx）
 // `farView`：超远景（暮色新世界/超远景.ts），不给不开；6-穿塔斩首领（`OnerSegment`）给，6-落地后、封面不给（用户 11-07 只定了两个飞行段）
 export type Riders = ReturnType<typeof ridersAt>;
-export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: TwilightFarView } & Partial<LevelParams>> = ({
-  F: frame,
+export const OnerFrame: React.FC<{ g: number; cam?: Cam; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: TwilightFarView } & Partial<LevelParams>> = ({
+  g,
   cam: camOverride,
   level: level = '视频',
   screenAo: AO = true,
@@ -201,10 +201,10 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   const far = farViewOf(officialFar);
   const { pixel: lodPixels, far: farDist, dpr } = { ...LevelParams[level], ...overrides };
   const { width, height } = useVideoConfig();
-  const cam = camOverride ?? cameraAt(frame);
-  const broom = route.broom(frame);
+  const cam = camOverride ?? cameraAt(g);
+  const broom = route.broom(g);
   const physT = broom.T;
-  const riders = tweakRiders ? tweakRiders(ridersAt(frame, physT)) : ridersAt(frame, physT);
+  const riders = tweakRiders ? tweakRiders(ridersAt(g, physT)) : ridersAt(g, physT);
   const stow = stowBroom(physT);
   const broomMat = broomMatrix(broom.位置, broom.facing, broom.pitch, broom.roll);
   // 雾和投影的级联按镜头离脚下地物多高算（新世界的地面不在 z = 0：终焉高原在 z 96）；
@@ -214,7 +214,7 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   // 镜头钻进结构里（巫妖的房间、宫殿顶层、小屋、雪怪的洞）时补一盏不投影的点光，免得黑成一片
   const indoorLights: V3[] = [];
   for (const [bossName, halfSpan] of [['巫妖', 0.6], ['冰雪女王', 0.5], ['巨人', 0.5], ['雪怪首领', 0.8]] as const) {
-    const t = route.localTime(bossName, frame);
+    const t = route.localTime(bossName, g);
     if (t > -halfSpan && t < halfSpan) indoorLights.push(route.pierceTable[bossName].tip(0));
   }
   return (
@@ -230,19 +230,19 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
           <TwilightTerrain
             camPos={cam.pos}
             landmarks={[...(isNear('娜迦庭院', cam.pos, nagaDrawDist(fogFar, far)) ? ['娜迦庭院' as const] : []), ...(isNear('终焉高原城堡', cam.pos) ? ['终焉高原城堡' as const] : [])]}
-            t={P613.T612 + (P613.beats.末帧 + frame) / 24}
+            t={P613.T612 + P613.beats.last + g}
             clearPlants={P613.CLEAR_PLANTS}
             pixel={lodPixels}
             far={farDist}
             shadowLightDir={twilightSunDir}
             farView={officialFar}
           />
-          {isNear('巫妖怪塔', cam.pos) && <LichScene t={route.localTime('巫妖', frame)} camPos={cam.pos} />}
-          {isNear('九头蛇巢穴', cam.pos) && <HydraScene t={route.localTime('九头蛇', frame)} broom={broom.位置} />}
-          {isNear('幽冥高塔', cam.pos) && <UrGhastScene t={route.localTime('暮初恶魂', frame)} broom={broom.位置} />}
-          {isNear('雪怪洞窟', cam.pos) && <AlphaYetiScene t={route.localTime('雪怪首领', frame)} camPos={cam.pos} />}
-          {isNear('极光宫殿', cam.pos) && <SnowQueenScene t={route.localTime('冰雪女王', frame)} camPos={cam.pos} />}
-          {isNear('云中小屋', cam.pos) && <GiantScene t={route.localTime('巨人', frame)} camPos={cam.pos} />}
+          {isNear('巫妖怪塔', cam.pos) && <LichScene t={route.localTime('巫妖', g)} camPos={cam.pos} />}
+          {isNear('九头蛇巢穴', cam.pos) && <HydraScene t={route.localTime('九头蛇', g)} broom={broom.位置} />}
+          {isNear('幽冥高塔', cam.pos) && <UrGhastScene t={route.localTime('暮初恶魂', g)} broom={broom.位置} />}
+          {isNear('雪怪洞窟', cam.pos) && <AlphaYetiScene t={route.localTime('雪怪首领', g)} camPos={cam.pos} />}
+          {isNear('极光宫殿', cam.pos) && <SnowQueenScene t={route.localTime('冰雪女王', g)} camPos={cam.pos} />}
+          {isNear('云中小屋', cam.pos) && <GiantScene t={route.localTime('巨人', g)} camPos={cam.pos} />}
           <RideBroom pos={broom.位置} yaw={broom.facing} pitch={broom.pitch} roll={broom.roll} liYing={riders.liYing} jiuhu={riders.jiuhu} broom={{ appear: riders.broomAppear }} />
           {stow && <ItemPickup items={stow.items} τ={stow.τ} target={stow.target} camPos={cam.pos} />}
           {/* 冲刺击杀时冒出来、被矛打碎的战利品箱，物品被吸到李樱身上（用户 2026-10-02） */}
@@ -254,13 +254,13 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   );
 };
 
-// 一镜到底的一截：段内第 frame 格（1/24 秒一格，带小数）= 全局帧 `起` + frame。整条一镜到底是 6-1-4至9 的一截（6-1/段界.ts）。
+// 一镜到底的一截：段内第 sec 秒 = 画面时间 `起` + sec。整条一镜到底是 6-1-4至9 的一截（6-1/段界.ts）。
 // 声音（配乐接着 6-1-3 往下放、原版音效）照 6-穿塔斩首领 段.ts 的 cue 放（11-06 迁成原生段，决策 0015），这里只画画面
-export const OnerSegment: React.FC<{ 起: number }> = ({ 起: startFrame }) => {
-  const frame = useCurrentSec() * route.FPS;
+export const OnerSegment: React.FC<{ 起: number }> = ({ 起: start }) => {
+  const sec = useCurrentSec();
   return (
     <AbsoluteFill>
-      <OnerFrame F={startFrame + frame} farView={TWILIGHT_FAR_VIEW} />
+      <OnerFrame g={start + sec} farView={TWILIGHT_FAR_VIEW} />
     </AbsoluteFill>
   );
 };

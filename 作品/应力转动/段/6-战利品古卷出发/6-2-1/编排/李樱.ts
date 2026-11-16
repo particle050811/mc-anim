@@ -1,7 +1,7 @@
 // 李樱：关键姿态（模块加载时按手要到的位置反解一次），按时刻表在姿态间过渡，进门和走到屋子中间的走路。
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { mixPose, near, reach, walkSwing, withPose } from '../动作.ts';
-import { FPS, lastFrame, cues } from './时间线.ts';
+import { lastSec, cues } from './时间线.ts';
 import { LY_H, tableSpot, COMPASS_ON_TABLE, LY_END, LOOT_GRIP, lootTable, sub, enter, exitPath, walkPlans, trip } from './站位.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
@@ -69,9 +69,8 @@ const chain = (t: number, first: FigurePose, steps: [number, number, FigurePose]
 };
 
 // ---------- 李樱 ----------
-export const liying = (globalFrame: number): FigurePose => {
-  if (globalFrame >= lastFrame) return LY_END;
-  const t = globalFrame / FPS;
+export const liying = (t: number): FigurePose => {
+  if (t >= lastSec) return LY_END;
   // 6-2-1 进门
   if (t < cues.atTable + 0.01) {
     const progress = trip(t, walkPlans.enter[0], walkPlans.enter[1], enter.length, walkPlans.enter[2], walkPlans.enter[3]);

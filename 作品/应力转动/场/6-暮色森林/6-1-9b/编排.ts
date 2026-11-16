@@ -1,8 +1,8 @@
 // 6-1-9b 落地后（编排，纯函数）：第 1 场最后一段。6-1-9 一镜到底快到城堡时硬切过来，两人从天上落到终焉城堡主楼的屋顶平台上（落地编排.ts），
 // 城堡里空无一物，九胡东张西望，李樱垮了下来。
 //
-// 段内第 0 帧 = 一镜到底全局帧 `F0`（一镜到底时间轴的末帧，两人在这一帧站定），之后按全局帧接着往下画（物理时间原速走，九胡的尾巴照一镜到底的相位接着摆），
-// 机位和两人的动作由这里给。6-1-9 切在 F0 前一小节再早 `ONER_TRIM` 帧，中间的画面不演（见 落地编排.ts），配乐不跳、接着放。
+// 段内第 0 秒 = 一镜到底画面时间 `G0`（一镜到底时间轴的末帧，两人在这一帧站定），之后按一镜到底的时间接着往下画（物理时间原速走，九胡的尾巴照一镜到底的相位接着摆），
+// 机位和两人的动作由这里给。6-1-9 切在 G0 前一小节再早 `ONER_TRIM` 秒，中间的画面不演（见 落地编排.ts），配乐不跳、接着放。
 // 场景、光照、地形全是一镜到底那一套（终焉高原城堡网格、暮色光照、云海），不另搭。
 //
 // 声音（声音.tsx）：配乐前一半接着 6-1-9 一路放下来（[29, 1] 进 breakdown、[31, 1] 渐弱到无声）、两人的落地声，九胡在镜头切到她那一拍后 0.5 秒开口，李樱在她说完 0.4 秒后开口。
@@ -22,14 +22,13 @@ import { cameraAt as oneShotCamera, type Cam } from '../一镜到底/镜头.ts';
 import * as route from '../一镜到底/路线.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
-export const FPS = 24;
 // ---------- 接一镜到底 ----------
-export const F0 = route.totalFrames - 1;
-export const toGlobalFrame = (f: number) => F0 + f;
+export const G0 = route.totalLength - 1 / 24;
+export const toOnerSec = (t: number) => G0 + t;
 // 两人站的地方：脱手以后两人一起走的那个坐标系（路线.ts 的 `扫帚`，落地以后停住）落在屋顶上的那一点。朝向 0 = 两人面朝正北（+Y），
 // 所以下面的「场」坐标就是世界坐标平移过来：x 东、y 北、z 上，原点在两人中间的屋顶面上（李樱在 y +0.35、九胡在 −0.35，骑扫帚.tsx 的座次）。
 // 屋顶平台（6-1-9/编排.ts）在场坐标里约 x −23～+24、y −7～+40，紫色力场方块 x −10～+11、y +6～+27、高 11 格：机位都放在力场外面（进了力场整个画面蒙一层紫）
-const B0 = route.broom(F0).位置;
+const B0 = route.broom(G0).位置;
 const roofZ = choreo619.castleOrigin[2] + choreo619.ROOF_Z;
 export const sceneOrigin: V3 = [B0[0], B0[1], roofZ];
 export const fromScene = (p: number[]): V3 => [sceneOrigin[0] + p[0], sceneOrigin[1] + p[1], sceneOrigin[2] + p[2]];
@@ -37,13 +36,13 @@ const toScene = (p: number[]): V3 => [p[0] - sceneOrigin[0], p[1] - sceneOrigin[
 
 // ---------- 配乐和台词 ----------
 const song = ch6FlightMusic.song;
-// 6-1-9 和本段之间剪掉的画面：F0 前一小节（用户 10-18 嫌落地后空镜头太多），再早 `ONER_TRIM` 帧（用户 10-20：「这边画面可以再减掉一点」，剪掉俯冲扎向城垛的那截）。
-// 落地编排.ts 的 `F_CUT` = F0 − 这两截
-export const BAR_CUT_FRAMES = Math.round(song.analysis.网格.每小节拍数 * song.analysis.网格.拍长 * FPS);
-export const ONER_TRIM = 16;
+// 6-1-9 和本段之间剪掉的画面：G0 前一小节（用户 10-18 嫌落地后空镜头太多），再早 `ONER_TRIM` 秒（用户 10-20：「这边画面可以再减掉一点」，剪掉俯冲扎向城垛的那截）。
+// 落地编排.ts 的 `G_CUT` = G0 − 这两截；一小节按 1/24 秒一格取整
+export const BAR_CUT = Math.round(song.analysis.网格.每小节拍数 * song.analysis.网格.拍长 * 24) / 24;
+export const ONER_TRIM = 16 / 24;
 // 只剪画面不剪配乐，配乐接着 6-1-9 一路放（用户 10-20：「这个音乐不要截一部分拼起来 你直接一次性放完不行吗？ 你不要硬凑时长一致好吧」）：
-// 本段第 f 帧 = 一镜到底在 `F_CUT` + f 那一刻的配乐（同 一镜到底/画面.tsx：6-1-3 编排的 `songSec`(6-1-3 帧数 − 1 + 全局帧)）
-export const musicStartSec = P613.songSec(P613.FRAMES - 1 + F0 - BAR_CUT_FRAMES - ONER_TRIM);
+// 本段第 t 秒 = 一镜到底在 `G_CUT` + t 那一刻的配乐（6-1-3 编排的 `songSec`(6-1-3 末帧 + 一镜到底的秒)）
+export const musicStartSec = P613.songSec(P613.LENGTH - 1 / 24 + G0 - BAR_CUT - ONER_TRIM);
 // 镜头升到顶、硬切到九胡的那一拍（段内秒数）：[28, 1] 重拍；[29, 1] 的 breakdown 在九胡说话时进来
 export const cutBeatSec = songSec(song, [28, 1]) - musicStartSec;
 // 台词落点（段内秒数；开口 = 第一个有声的时刻，同 台词轨）。九胡在切到她那一拍后 0.5 秒开口，李樱在她说完 0.4 秒后开口。字幕从这里取每句话的时间。
@@ -55,11 +54,11 @@ export const lineTimes = {
   jiuhu: { id: jiuhuLineId, lineStart: jiuhuLineStart, lineEnd: jiuhuLineStart + lineTable[jiuhuLineId].有声长 },
   liYing: { id: liyingLineId, lineStart: liyingLineStart, lineEnd: liyingLineStart + lineTable[liyingLineId].有声长 },
 } as const;
-// 台词轨要的（段内帧）
-export const lineCues = [lineTimes.jiuhu, lineTimes.liYing].map((s) => ({ id: s.id, 帧: s.lineStart * FPS }));
+// 口型要的（帧 写段内秒，mouthAt 每秒给 1）
+export const lineCues = [lineTimes.jiuhu, lineTimes.liYing].map((s) => ({ id: s.id, 帧: s.lineStart }));
 
 // ---------- 时刻（段内秒数） ----------
-export const landFrame = 4; // 李樱着地（段内帧）：切过来两人已经在画面左边往下滑（用户 10-18 要短）
+export const landTime = 4 / 24; // 李樱着地（段内秒）：切过来两人已经在画面左边往下滑（用户 10-18 要短）
 const cutB = cutBeatSec + 0.16; // 硬切到九胡：重拍后 4 帧，镜头升到顶
 export const cues = {
   // 镜头 A：先停在一镜到底末帧的机位看两人落地站起，再升到二人身后上方往北看，升到顶正好硬切
@@ -73,11 +72,10 @@ export const cues = {
   secondHalf: lineTimes.liYing.lineStart + 1.35,
 };
 export const segSec = cues.pullBack[1] + 0.4;
-export const frameCount = Math.round(segSec * FPS) + 1;
 
 // ---------- 机位 ----------
-// 场坐标里写，见 场。A0 = 一镜到底时间轴末帧（F0）的机位（原样取 镜头.ts）
-const C0: Cam = oneShotCamera(F0);
+// 场坐标里写，见 场。A0 = 一镜到底时间轴末帧（G0）的机位（原样取 镜头.ts）
+const C0: Cam = oneShotCamera(G0);
 type SceneCam = { pos: number[]; tgt: number[]; lens: number };
 const camToScene = (c: Cam): SceneCam => ({ pos: toScene(c.pos), tgt: toScene(c.tgt), lens: c.lens });
 const camFromScene = (c: SceneCam): Cam => ({ pos: fromScene(c.pos), tgt: fromScene(c.tgt), lens: c.lens });
@@ -116,8 +114,7 @@ const orbitLerp = (from: SceneCam, to: SceneCam, pivot: number[], k: number, ka 
   return { pos, tgt: aim, lens: Math.exp(lerp(Math.log(from.lens), Math.log(to.lens), k)) };
 };
 const pairCenter = [0, 0, 1.2];
-export const camPose = (frame: number): Cam => {
-  const t = frame / FPS;
+export const camPose = (t: number): Cam => {
   const poses = camPoses;
   if (t <= cues.rise[0]) return C0; // 原样用一镜到底末帧的机位
   if (t < cues.cutB) {

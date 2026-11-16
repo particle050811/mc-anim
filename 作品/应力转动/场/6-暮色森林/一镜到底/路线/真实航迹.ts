@@ -4,7 +4,7 @@ import { realFlight, type Anchor } from '@engine/flight/真实飞行.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { sub, len, D0, ORDER, placeName } from './输入表.ts';
 import { samples, NP, TAB_S, bisect, routeLength, plannedPos, speedAt, headingRate, markDist, routeDist } from './航线.ts';
-import { totalFrames, physicalTime, frameAtDist } from './时钟.ts';
+import { totalLength, physicalTime, secAtDist } from './时钟.ts';
 import { smoothstep01, rad } from '@engine/core/数学.ts';
 
 // ---------- 规划航线的方位、内倾 ----------
@@ -34,13 +34,14 @@ export const plannedBank = (dist: number) => {
     sum += headingRate(Math.min(routeLength, Math.max(0, dist + (k / 4) * windowM))) * weight;
     weightSum += weight;
   }
-  // 起点（接 6-1-3 末帧，那里不横滚）前 0.5 秒从 0 渐上来：窗口往前看，起飞马上就拐的话第 0 帧已经压了 0.6°
+  // 起点（接 6-1-3 末帧，那里不横滚）前 0.5 秒从 0 渐上来：窗口往前看，起飞马上就拐的话首帧已经压了 0.6°
   return maxBankDeg * Math.tanh((0.3 * (sum / weightSum)) / 50) * smoothstep01(dist / (3 * windowM));
 };
 
 // ---------- 真实飞行 ----------
 // 用户 10-05 要求模拟真实飞行，10-06 嫌湍流影响流畅：在规划航线上叠 lib/真实飞行.ts 的横向偏移，只留慢的部分（驾驶员追踪、航向漂移、修航向时的操纵内倾）。
-// 航迹锚住（扰动为 0）：第 0 帧；每处穿刺从速度降到 450 米/秒以下到加回 450 的地方，前后各 24 帧渐变（放不下的并成一个锚）。种子 3、侧向参数是直航时扫过定的
+// 航迹锚住（扰动为 0）：首帧；每处穿刺从速度降到 450 米/秒以下到加回 450 的地方，前后各 1 秒渐变（放不下的并成一个锚）。种子 3、侧向参数是直航时扫过定的。
+// 锚点的时刻、渐变都按画面秒给（realFlight 的 fps 传 1）
 const noBump = { amplitude: 0 };
 const realFlightParams = {
   lateral: { frequency: 2.5, damping: 0.7, drift: 3.0, driftScale: 1500, driftHighPass: 4000 },
@@ -51,36 +52,37 @@ const realFlightParams = {
 };
 const realFlightSeed = 3;
 const anchorSpeed = 450;
-const anchorFadeFrames = 24;
-const startFadeFrames = 12;
+const anchorFadeSec = 1;
+const startFadeSec = 0.5;
 const distPastSpeed = (s0: number, dir: 1 | -1, minSpeed: number) => {
   let dist = s0;
   while (dist > 0 && dist < routeLength && speedAt(dist) < minSpeed) dist += dir * 2;
   return dist;
 };
-export type AnchorSeg = { 名: string; 帧: number; 止帧: number; 前: number; 后: number };
+// 起、止：画面秒；前、后：渐变秒
+export type AnchorSeg = { 名: string; 起: number; 止: number; 前: number; 后: number };
 export const trackAnchors: AnchorSeg[] = (() => {
-  const anchors: AnchorSeg[] = [{ 名: '6-1-3 末帧', 帧: 0, 止帧: 0, 前: 0, 后: startFadeFrames }];
+  const anchors: AnchorSeg[] = [{ 名: '6-1-3 末帧', 起: 0, 止: 0, 前: 0, 后: startFadeSec }];
   ORDER.forEach((bossName, i) => {
     const isLast = i === ORDER.length - 1;
     const anchor: AnchorSeg = {
       名: isLast ? `${placeName(bossName)} + 降落` : placeName(bossName),
-      帧: frameAtDist(distPastSpeed(markDist(`${bossName}.前`), -1, anchorSpeed)),
-      止帧: isLast ? totalFrames - 1 : frameAtDist(distPastSpeed(markDist(`${bossName}.后`), 1, anchorSpeed)),
-      前: anchorFadeFrames,
-      后: anchorFadeFrames,
+      起: secAtDist(distPastSpeed(markDist(`${bossName}.前`), -1, anchorSpeed)),
+      止: isLast ? totalLength - 1 / 24 : secAtDist(distPastSpeed(markDist(`${bossName}.后`), 1, anchorSpeed)),
+      前: anchorFadeSec,
+      后: anchorFadeSec,
     };
     const prevAnchor = anchors[anchors.length - 1];
-    if (anchor.帧 - prevAnchor.止帧 < prevAnchor.后 + anchor.前) {
-      prevAnchor.止帧 = anchor.止帧;
+    if (anchor.起 - prevAnchor.止 < prevAnchor.后 + anchor.前) {
+      prevAnchor.止 = anchor.止;
       prevAnchor.名 = `${prevAnchor.名} + ${anchor.名}`;
       prevAnchor.后 = anchor.后;
     } else anchors.push(anchor);
   });
   return anchors;
 })();
-const toAnchorPoints = (a: AnchorSeg[]): Anchor[] => a.map(({ 帧: frame, 止帧: endFrame, 前: fadeBefore, 后: fadeAfter }) => ({ 帧: frame, 止帧: endFrame, 前: fadeBefore, 后: fadeAfter }));
-const rawFlight = realFlight({ 种子: realFlightSeed, 起帧: 0, 止帧: totalFrames - 1, distAt: routeDist, frameToTime: physicalTime, anchors: toAnchorPoints(trackAnchors), 参数: realFlightParams });
+const toAnchorPoints = (a: AnchorSeg[]): Anchor[] => a.map(({ 起: start, 止: end, 前: fadeBefore, 后: fadeAfter }) => ({ 帧: start, 止帧: end, 前: fadeBefore, 后: fadeAfter }));
+const rawFlight = realFlight({ 种子: realFlightSeed, 起帧: 0, 止帧: totalLength - 1 / 24, fps: 1, distAt: routeDist, frameToTime: physicalTime, anchors: toAnchorPoints(trackAnchors), 参数: realFlightParams });
 const DQ = 2;
 const NQ = Math.ceil(routeLength / DQ);
 const offsetX = new Float64Array(NQ + 1);
@@ -117,11 +119,13 @@ export const tangentAt = (dist: number): V3 => {
   const deltaLen = len(delta) || 1;
   return [delta[0] / deltaLen, delta[1] / deltaLen, delta[2] / deltaLen];
 };
-// 操纵内倾（扫帚横滚里真实飞行的那一份）：只取驾驶员自己偏开、修回时压的那一点，锚点渐变里拉回的那一下压掉，再 ±8 帧三角平滑
+// 操纵内倾（扫帚横滚里真实飞行的那一份）：只取驾驶员自己偏开、修回时压的那一点，锚点渐变里拉回的那一下压掉，再 ±8 格三角平滑。
+// 表每 1/24 秒一格
+const STEER_SAMPLES_PER_SEC = 24;
 const steerBankTable = (() => {
-  const frameCount = totalFrames;
-  const weightAt = (F: number) => disturbance.at(Math.min(frameCount - 1, Math.max(0, F))).weight;
-  const raw = Array.from({ length: frameCount }, (_, F) => disturbance.at(F).bank * weightAt(F) ** 2 * weightAt(F + 12) ** 2);
+  const frameCount = Math.round(totalLength * STEER_SAMPLES_PER_SEC);
+  const weightAt = (i: number) => disturbance.at(Math.min(frameCount - 1, Math.max(0, i)) / STEER_SAMPLES_PER_SEC).weight;
+  const raw = Array.from({ length: frameCount }, (_, i) => disturbance.at(i / STEER_SAMPLES_PER_SEC).bank * weightAt(i) ** 2 * weightAt(i + 12) ** 2);
   const halfWin = 8;
   return raw.map((_, i) => {
     let sum = 0;
@@ -134,8 +138,8 @@ const steerBankTable = (() => {
     return (sum / weightSum) * weightAt(i);
   });
 })();
-export const steerBank = (frame: number) => {
-  const x = Math.min(Math.max(frame, 0), steerBankTable.length - 1);
+export const steerBank = (g: number) => {
+  const x = Math.min(Math.max(g * STEER_SAMPLES_PER_SEC, 0), steerBankTable.length - 1);
   const i = Math.min(Math.floor(x), steerBankTable.length - 2);
   return steerBankTable[i] + (steerBankTable[i + 1] - steerBankTable[i]) * (x - i);
 };

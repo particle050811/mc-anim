@@ -2,7 +2,7 @@
 import { sample, sampleV, type Key, type VKey } from '@engine/anim/anim.ts';
 import * as K624 from '../../6-2-4/编排.ts';
 import { D2R } from '../动作.ts';
-import { FPS, lastFrame, cues, lineStarts, segmentStartSec } from './时间线.ts';
+import { lastSec, cues, lineStarts, segmentStartSec } from './时间线.ts';
 import { F624 } from './站位.ts';
 
 // ---------- 镜头（房间本地坐标，最后换到世界） ----------
@@ -10,7 +10,7 @@ export type Cam = { pos: number[]; tgt: number[]; lens: number };
 const C1 = { pos: [-0.4, 5.6, 1.75], tgt: [0, -0.3, 1.1], lens: 28 }; // 6-2-4 首帧机位（6-2-4/编排.ts 的 C1.from / C1.tgt）
 // [秒, 机位, 看向, 焦距]
 const { seg22, seg23, uiClose } = segmentStartSec;
-const quark = lineStarts.quarkTome / FPS; // 夸克古卷那句开口，铁砧页同时浮出
+const quark = lineStarts.quarkTome; // 夸克古卷那句开口，铁砧页同时浮出
 const CAM: [number, number[], number[], number][] = [
   // 6-2-1：桌上的战利品和指南针，窗外是海；李樱从画面左边走进来，站到桌子后面；拿起来看的时候慢慢推近。
   // 两个界面分在画面左右上角（看右手的毛皮弹在左边，看左手的血液弹在右边），人在中间不被挡住
@@ -38,17 +38,17 @@ const CAM: [number, number[], number[], number][] = [
   [uiClose + 4.375, [1.2, 2.0, 1.8], [0.45, -1.8, 1.25], 30],
   [cues.end, C1.pos, C1.tgt, C1.lens],
 ];
-const CAM_POS: VKey[] = CAM.map(([sec, pos]) => [sec * FPS, pos]);
-const CAM_TGT: VKey[] = CAM.map(([sec, , tgt]) => [sec * FPS, tgt]);
-const CAM_LENS: Key[] = CAM.map(([sec, , , lens]) => [sec * FPS, lens]);
+const CAM_POS: VKey[] = CAM.map(([sec, pos]) => [sec, pos]);
+const CAM_TGT: VKey[] = CAM.map(([sec, , tgt]) => [sec, tgt]);
+const CAM_LENS: Key[] = CAM.map(([sec, , , lens]) => [sec, lens]);
 export const toWorld = (point: number[]): number[] => {
   const angle = K624.ROOM.heading * D2R;
   const origin = K624.ROOM.origin;
   return [point[0] * Math.cos(angle) - point[1] * Math.sin(angle) + origin[0], point[0] * Math.sin(angle) + point[1] * Math.cos(angle) + origin[1], point[2] + origin[2]];
 };
-export const cameraLocal = (G: number): Cam => ({ pos: sampleV(CAM_POS, G), tgt: sampleV(CAM_TGT, G), lens: sample(CAM_LENS, G) });
-export const camera = (globalFrame: number): Cam => {
-  if (globalFrame >= lastFrame) return K624.camera(F624);
-  const local = cameraLocal(globalFrame);
+export const cameraLocal = (g: number): Cam => ({ pos: sampleV(CAM_POS, g), tgt: sampleV(CAM_TGT, g), lens: sample(CAM_LENS, g) });
+export const camera = (g: number): Cam => {
+  if (g >= lastSec) return K624.camera(F624);
+  const local = cameraLocal(g);
   return { pos: toWorld(local.pos), tgt: toWorld(local.tgt), lens: local.lens };
 };

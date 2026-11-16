@@ -30,11 +30,12 @@ import * as motion from './动作改进.ts';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { renderInput } from '@engine/core/渲染设置.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
+import { onTick } from '../时刻.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
 
 // 李樱用哪一版动作：原版（6-1-2-斩娜迦-旧动作）是 编排.ts 的 `liying`；正式的 6-1-2-斩娜迦（动作改进）换成 动作改进.ts 的 `liyingV2`（人、残影、刀光都跟着换）
-type LiyingVersion = (frame: number) => ReturnType<typeof choreo.liying>;
+type LiyingVersion = (t: number) => ReturnType<typeof choreo.liying>;
 export const LiyingVersion = React.createContext<LiyingVersion>(choreo.liying);
 
 
@@ -65,10 +66,10 @@ const defaultMazeLight: MazeLightPreset = '一镜';
 const meshAO = Boolean((renderInput() as { meshAO?: boolean }).meshAO);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
-// 口型用的台词开口帧（段内帧，cue 在 段/6-斩娜迦/段.ts）：打击停顿以后的台词跟着往后挪
-const nagaLineCues = (hitStop: number) => [
-  { id: '6-1-2-李樱-不值一提', 帧: choreo.lineStartFrame + hitStop },
-  { id: '6-1-3-九胡-等等我', 帧: choreo.segFrame(choreo.S3 + choreo.MAZE_SHOUT) + hitStop },
+// 口型用的台词开口（段内秒，cue 在 段/6-斩娜迦/段.ts）：打击停顿以后的台词跟着往后挪。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
+const nagaLineCues = (hitStopSec: number) => [
+  { id: '6-1-2-李樱-不值一提', 帧: choreo.lineStartSec + hitStopSec },
+  { id: '6-1-3-九胡-等等我', 帧: choreo.segSec(choreo.S3 + choreo.MAZE_SHOUT) + hitStopSec },
 ];
 type CamPose = { lens: number; pos: number[]; tgt: number[] };
 const Rig: React.FC<{ k: CamPose }> = ({ k }) => {
@@ -90,7 +91,7 @@ const Rig: React.FC<{ k: CamPose }> = ({ k }) => {
 
 // 刀上两点（刀光的根、尖）在任意剧情秒的场景坐标（庭院本地）
 export const makeLiyingBlade = (liying: LiyingVersion) => (sec: number): BladePos => {
-  const state = liying(sec * choreo.FPS);
+  const state = liying(sec);
   const handMat = handMatrix(state.pose, 1.875, 'R').multiply(new THREE.Matrix4().makeRotationFromQuaternion(bladeInHand(state.pose, state.blade, state.bladeSide)));
   const at = (z: number): V3 => {
     const point = new THREE.Vector3(0, bladeCenterY(z), z).applyMatrix4(handMat);
@@ -109,8 +110,8 @@ const groupTransform = (mat?: THREE.Matrix4) => {
 };
 
 // 嘴：说话的口型（残影不给）
-export const LiYingAt: React.FC<{ f: number; ghost?: boolean; mouth?: Mouth }> = ({ f: frame, mouth: mouth }) => {
-  const state = React.useContext(LiyingVersion)(frame);
+export const LiYingAt: React.FC<{ t: number; ghost?: boolean; mouth?: Mouth }> = ({ t, mouth: mouth }) => {
+  const state = React.useContext(LiyingVersion)(t);
   const pose = state.pose;
   return (
     <>
@@ -137,19 +138,19 @@ export const LiYingAt: React.FC<{ f: number; ghost?: boolean; mouth?: Mouth }> =
 
 const hitGround: V3 = [choreo.CUT_X, choreo.DASH_Y, 0];
 
-// fn：娜迦、宝箱用的剧情帧（动作改进版收刀晚了，娜迦跟着晚炸，见 动作改进.ts 的 娜迦时间）
-const Action: React.FC<{ f: number; fn?: number; liYingMouth?: Mouth; jiuhuMouth?: Mouth }> = ({ f: frame, fn = frame, liYingMouth, jiuhuMouth }) => {
-  const naga = choreo.naga(fn);
-  const ch = choreo.chest(fn);
-  const jh = choreo.jiuhu(frame);
+// t：剧情时间；tn：娜迦、宝箱用的剧情时间（动作改进版收刀晚了，娜迦跟着晚炸，见 动作改进.ts 的 `nagaWarp`）
+const Action: React.FC<{ t: number; tn?: number; liYingMouth?: Mouth; jiuhuMouth?: Mouth }> = ({ t, tn = t, liYingMouth, jiuhuMouth }) => {
+  const naga = choreo.naga(tn);
+  const ch = choreo.chest(tn);
+  const jh = choreo.jiuhu(t);
   const liyingVersion = React.useContext(LiyingVersion);
   const bladeAt = React.useMemo(() => (liyingVersion === choreo.liying ? liyingBlade : makeLiyingBlade(liyingVersion)), [liyingVersion]);
   return (
     <>
-      <LiYingAt f={frame} mouth={liYingMouth} />
-      {choreo.ghosts(frame).map((g, i) => (
+      <LiYingAt t={t} mouth={liYingMouth} />
+      {choreo.ghosts(t).map((g, i) => (
         <Ghost.Provider key={i} value={{ color: '#e6e2f2', opacity: g.opacity }}>
-          <LiYingAt f={g.f} ghost />
+          <LiYingAt t={g.t} ghost />
         </Ghost.Provider>
       ))}
       <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} mouth={jiuhuMouth} />
@@ -160,10 +161,10 @@ const Action: React.FC<{ f: number; fn?: number; liYingMouth?: Mouth; jiuhuMouth
       ))}
       <PoofBurst center={naga.poof.center} width={GAME_NAGA.headSize / 2} height={GAME_NAGA.headSize} sec={naga.poof.sec} seed={99} />
       <Debris sec={naga.debris.sec} origin={naga.debris.origin} seed={9} colors={GAME_NAGA.debris} count={18} />
-      <DustPuffs puffs={choreo.dust(frame)} />
+      <DustPuffs puffs={choreo.dust(t)} />
       {/* 夜幕阎魔刀的刀光拖尾和刀穿过脖子那一刻的命中闪光、血滴 */}
-      <BladeTrail bladeAt={bladeAt} startSec={choreo.bladeTrailFrames.start / choreo.FPS} endSec={choreo.bladeTrailFrames.end / choreo.FPS} sec={frame / choreo.FPS} />
-      <NightfallHit feet={hitGround} width={GAME_NAGA.segmentSize} height={GAME_NAGA.segmentSize} sec={(frame - choreo.bladeTrailFrames.hit) / choreo.FPS} seed={117} />
+      <BladeTrail bladeAt={bladeAt} startSec={choreo.bladeTrailTimes.start} endSec={choreo.bladeTrailTimes.end} sec={t} />
+      <NightfallHit feet={hitGround} width={GAME_NAGA.segmentSize} height={GAME_NAGA.segmentSize} sec={t - choreo.bladeTrailTimes.hit} seed={117} />
       {ch.scale > 0 && (
         <group position={ch.loc} scale={ch.scale}>
           {/* 娜迦死后掉落物装进暮色木箱（游戏里暮色橡木、林冠木随机二选一，用户 2026-10-02 要用暮色的箱子，同 6-1-5 巫妖挑暮色橡木） */}
@@ -176,36 +177,36 @@ const Action: React.FC<{ f: number; fn?: number; liYingMouth?: Mouth; jiuhuMouth
 
 const nagaLandmarks: ['娜迦庭院'] = ['娜迦庭院'];
 // 动作改进的开关（见 动作改进.ts）。全不给就是原版（6-1-2-斩娜迦-旧动作）；正式的 6-1-2-斩娜迦 给 动作改进.ts 的 `official`。
-// 动作改进：李樱换成错开起止、急停弹簧、呼吸微动的那一版；打击停顿：斩中时整个画面定格几帧（0 = 不停，总长跟着加这么多帧）；
+// 动作改进：李樱换成错开起止、急停弹簧、呼吸微动的那一版；打击停顿：斩中时整个画面定格多久（秒；0 = 不停，总长跟着加这么久）；
 // 新机位：迅冲、俯拍斩击拉近，收刀换成参考的近景低机位（动作改进.ts 的 `cameraV2`）；
 // 收刀修前：不加收刀约束（修穿模以前的样子，核对用）；跟拍：机位跟着李樱（全身 / 腰间特写），只用来新旧对比、核对穿模
-export type NagaShotProps = { mazeLight?: MazeLightPreset; motionImproved?: boolean; hitStopFrames?: number; newCams?: boolean; preSheathFix?: boolean; followMode?: '全身' | '腰' };
-const preFixLiying = (f: number) => choreo.liying(f, { sheathTiming: '关' });
-const followCamPose = (frame: number, mode: '全身' | '腰'): CamPose => {
-  const [x, y, z] = choreo.liyingLoc(frame);
+export type NagaShotProps = { mazeLight?: MazeLightPreset; motionImproved?: boolean; hitStopSec?: number; newCams?: boolean; preSheathFix?: boolean; followMode?: '全身' | '腰' };
+const preFixLiying = (t: number) => choreo.liying(t, { sheathTiming: '关' });
+const followCamPose = (t: number, mode: '全身' | '腰'): CamPose => {
+  const [x, y, z] = choreo.liyingLoc(t);
   return mode === '全身'
     ? { lens: 35, pos: [x + 3.6, y + 2.4, z + 0.5], tgt: [x, y, z + 0.95] }
     : { lens: 40, pos: [x + 3.3, y + 2.2, z + 1.0], tgt: [x, y, z + 0.8] };
 };
-// 段内帧（Remotion 帧）→ 剧情帧和这一帧的机位。伤害数字层也调它，和画面同帧同机位。
-// 编排里的时间轴是剧情帧（助跑中途跳过了一段，见 编排.ts 的 `story`）；打击停顿在剧情帧上再停住几帧
-export const nagaShotCam = ({ hitStopFrames = 0, newCams = false, followMode: followMode }: NagaShotProps, frame: number) => {
-  const storyFrame = motion.hitStopFrames(hitStopFrames)(choreo.story(frame + 1));
-  const cam: CamPose = followMode ? followCamPose(storyFrame, followMode) : newCams ? motion.cameraV2(storyFrame) : choreo.camera(storyFrame);
-  return { f: storyFrame, cam: cam };
+// 段内秒 → 剧情时间和这一刻的机位。伤害数字层也调它，和画面同帧同机位。
+// 编排里的时间轴是剧情时间（助跑中途跳过了一段，见 编排.ts 的 `story`）；打击停顿在剧情时间上再停住一会儿。
+// 剧情时间落到刻上（../时刻.ts）：跳过、停顿都是整格，算出来本来就在刻上，只消掉加减带的浮点零头，切镜、断开这些正好落在帧上的判断才和旧的一致
+export const nagaShotCam = ({ hitStopSec = 0, newCams = false, followMode: followMode }: NagaShotProps, sec: number) => {
+  const storyTime = onTick(motion.hitStopTimes(hitStopSec)(choreo.story(sec + 1 / 24)));
+  const cam: CamPose = followMode ? followCamPose(storyTime, followMode) : newCams ? motion.cameraV2(storyTime) : choreo.camera(storyTime);
+  return { t: storyTime, cam: cam };
 };
 export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
-  const { motionImproved: motionV2 = false, hitStopFrames = 0, newCams = false, preSheathFix = false, followMode: followMode } = props;
+  const { motionImproved: motionV2 = false, hitStopSec = 0, newCams = false, preSheathFix = false, followMode: followMode } = props;
   const sec = useCurrentSec();
-  const frame = sec * choreo.FPS;
   const { width, height } = useVideoConfig();
-  const { f: storyFrame, cam: cam } = nagaShotCam({ hitStopFrames, newCams, followMode: followMode }, frame);
+  const { t: storyTime, cam: cam } = nagaShotCam({ hitStopSec, newCams, followMode: followMode }, sec);
   // 光：庭院几个镜头 70°/28°；迷宫镜头（S3 起）按 迷宫光 换（见上面）
-  const mazePreset = storyFrame >= choreo.S3 && !cliSunDir && !cliGain ? mazeLightPresets[props.mazeLight ?? defaultMazeLight] : null;
+  const mazePreset = storyTime >= choreo.S3 && !cliSunDir && !cliGain ? mazeLightPresets[props.mazeLight ?? defaultMazeLight] : null;
   const lightDir = mazePreset ? mazePreset.dir : courtyardLightDir;
   const lightGain = mazePreset ? mazePreset.intensity : courtyardLightGain;
   const liyingVersion = motionV2 ? motion.liyingV2 : preSheathFix ? preFixLiying : choreo.liying;
-  const lineCues = nagaLineCues(hitStopFrames);
+  const lineCues = nagaLineCues(hitStopSec);
   useTwilightFog(lightDir);
   // 不超采样（用户 10-07 定，见 lib/渲染级别.ts）：720p 时 dpr=2 远处方块、树叶、海带出摩尔纹，超采样只减半，3 倍反而更差（非整数倍缩放）
   return (
@@ -233,7 +234,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
           <LandmarkPlacement 名="娜迦庭院">
             <SkyDome twilight sun={lightDir} />
             <LiyingVersion.Provider value={liyingVersion}>
-              <Action f={storyFrame} fn={motionV2 ? motion.nagaWarp(storyFrame) : storyFrame} liYingMouth={mouthAt(lineCues, '李樱', frame)} jiuhuMouth={mouthAt(lineCues, '九胡', frame)} />
+              <Action t={storyTime} tn={motionV2 ? motion.nagaWarp(storyTime) : storyTime} liYingMouth={mouthAt(lineCues, '李樱', sec, 1)} jiuhuMouth={mouthAt(lineCues, '九胡', sec, 1)} />
             </LiyingVersion.Provider>
           </LandmarkPlacement>
         </group>
