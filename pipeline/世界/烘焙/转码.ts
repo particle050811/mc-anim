@@ -90,7 +90,7 @@ export type TranscodeOptions = { 从?: string; noRegister?: boolean; threads: nu
 export const transcodePack = async (pack: string, o: TranscodeOptions) => {
   const terrainTable = readTerrainTable().pack;
   const oldVersion = o.从 ?? terrainTable[pack]?.version;
-  if (!oldVersion) throw new Error(`地形包 ${pack} 没登记，用 --from <version> 指定转哪一版`);
+  if (!oldVersion) throw new Error(`地形包 ${pack} 没登记，用 --from <版本> 指定转哪一版`);
   const oldDir = versionDir(pack, oldVersion);
   if (!fs.existsSync(oldDir)) throw new Error(`没有 ${oldDir}`);
   const libFormat = (await loadVoxelLib()).sectionPack.formatVersion;

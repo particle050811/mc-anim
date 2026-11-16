@@ -72,7 +72,7 @@ const mcai = (argv: string[]) => runForeground([...mcaiCommand(), ...argv], { en
 
 export const gameExportCommands: Record<string, Command> = {
   gamedata: {
-    usage: 'gamedata export [--to <目录>] [--only biome|方块] [--blocks <通配,…>]  |  gamedata verify <目录>',
+    usage: 'gamedata export [--to <目录>] [--only 群系|方块] [--blocks <通配,…>]  |  gamedata verify <目录>',
     note: '游戏开着时导出群系色表、方块表（取材 mod 的 biomes、blocks），并和手写的 群系色.json、方块表.json 逐项核对；默认写到 run/草稿/<UTC>-工作-游戏导表/',
     跑: async (args, runRecord) => {
       const [subcommand, ...rest] = args;

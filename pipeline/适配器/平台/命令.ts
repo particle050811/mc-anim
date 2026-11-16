@@ -34,7 +34,7 @@ const run: Command['跑'] = async (args, runRecord) => {
     console.log(`${targetPath}（${countText}，${rawPack.requestCount} 次请求${rawPack.stoppedByRiskControl ? `，取数中途遇风控停了：${rawPack.stoppedByRiskControl}` : ''}）`);
     return;
   }
-  if (action !== 'analyze' || p.位置.length !== 1) throw new UsageError('platform import <json> 或 platform analyze [--head <sec>] [--tail <sec>]');
+  if (action !== 'analyze' || p.位置.length !== 1) throw new UsageError('platform import <json> 或 platform analyze [--head <秒>] [--tail <秒>]');
   const headSec = parseSec(p.value['--head'], '--head') ?? defaultOpeningWindow;
   const tailSec = parseSec(p.value['--tail'], '--tail');
   const deliveryList = readDeliveryList(deliveryRoot());
@@ -112,8 +112,8 @@ ${bilibiliAdvice(submissions, biliAligned).map((s, i) => `${i + 1}. ${s}`).join(
 };
 
 const platform: Command = {
-  usage: 'platform import <json> | platform analyze [--head <sec>] [--tail <sec>]',
-  note: 'import：把浏览器里 pipeline/适配器/bili/取数.js 或 抖音/取数.js 下载的包挪进数据根 platform/<bilibili|抖音>/<UTC>/；analyze：读各平台最新一份，对到本作品的交付，出 预览/<UTC>-平台数据分析/（抖音前 5 sec、B 站封标、各平台窗后按段的在场流失、两平台对照、分平台建议）',
+  usage: 'platform import <json> | platform analyze [--head <秒>] [--tail <秒>]',
+  note: 'import：把浏览器里 pipeline/适配器/bili/取数.js 或 抖音/取数.js 下载的包挪进数据根 平台/<bilibili|抖音>/<UTC>/；analyze：读各平台最新一份，对到本作品的交付，出 预览/<UTC>-平台数据分析/（抖音前 5 秒、B 站封标、各平台窗后按段的在场流失、两平台对照、分平台建议）',
   跑: run,
 };
 
