@@ -21,7 +21,7 @@
 import * as K624 from '../6-2-4/编排.ts';
 import { lastSec } from './编排/时间线.ts';
 
-export { type SegmentName, segmentTable, lineStarts, compassUiOpenSec, ancientCityLineStart, segmentSteps, lastSec, cues, uiState } from './编排/时间线.ts';
+export { type SegmentName, segmentTable, lineStarts, compassUiOpenSec, ancientCityLineStart, lastSec, cues, uiState } from './编排/时间线.ts';
 export { COMPASS_SIZE, enter, exitPath, jiuhuPath, walkPlans, trip } from './编排/站位.ts';
 export { liying } from './编排/李樱.ts';
 export { type JiuhuState, jiuhu } from './编排/九胡.ts';
