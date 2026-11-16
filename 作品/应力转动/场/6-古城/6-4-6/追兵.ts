@@ -1,5 +1,5 @@
 // 6-4-6 追来、6-4-7 贪功两段共用的追兵戏（古城4x）：二人从传送门一路强者跳过来、落进场子、站住说话，6-4-7 刘心忠一跳踩下去。
-// 两段和 6-4-5 一条时钟：追兵钟 τ = 秒，从 6-4-5 第 0 秒起。6-4-5 → 6-4-6 → 6-4-7 都是硬切、不共用帧（用户 10-18 定的段界规矩），后一段 0 秒是前一段末帧的下一格（1/24 秒）：
+// 两段和 6-4-5 一条时钟：追兵钟 τ = 秒，从 6-4-5 第 0 秒起。6-4-5 → 6-4-6 → 6-4-7 都是硬切、不共用帧（用户 10-18 定的段界规矩），后一段 0 秒是前一段末帧的下一帧：
 //   6-4-6 第 t 秒 τ = 6-4-5 段长 + 砍头 + t；6-4-7 第 t 秒 τ = 6-4-5 段长 + 砍头 + 6-4-6 段长 + t。
 //   砍头：6-4-6 开头 7/12 秒二人在城心大殿里、巷子的洞顶把他们整个挡住（机位怎么挪都看不到），用户 10-19 让挪机位或删挡的，这里直接从他们出来那一刻起；那 7/12 秒追兵在画外。
 // 地点、落点、离地都在 ../古城4x布局.ts（`pursuerPath`、`liuXinzhongPursuitPath`、`pursuerStops`、`liuXinzhongStompPoint`、`huangPanLanding647`、`shrieks.第三次` / `第四次`、`handoffs.pursuerStart` / `六四八首`）。
@@ -34,7 +34,7 @@ export const durationSec647 = 157 / 24; // 末帧 = 第四次尖啸后 1.0 秒
 export const τ646 = (t: number) => K645.durationSec + headTrim646 + t;
 export const τ647 = (t: number) => K645.durationSec + headTrim646 + durationSec646 + t;
 export const startSec647 = τ647(0);
-const endSec647 = τ647(durationSec647 - 1 / 24);
+const endSec647 = τ647(durationSec647 - 1 / 60); // 6-4-7 末帧
 
 // ---------- 6-4-6：两路强者跳 ----------
 export const huangRoute = buildEliteRoute(pursuerPath, pursuerApexHeights, handoffs.pursuerStart.relSec645, pursuerStops.黄, '黄');

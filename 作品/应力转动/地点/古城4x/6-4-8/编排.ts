@@ -30,7 +30,7 @@ export const emergeDurationSec = 1.75;
 export const emergeSpeedup = WARDEN.emergeSec / emergeDurationSec;
 const tailSec = 5 / 6; // 站直以后再留 0.83 秒（触角一抖、头转向刘心忠、二人交换眼神）
 export const durationSec = emergeStartSec + emergeDurationSec + tailSec;
-export const lastSec = durationSec - 1 / 24; // 末帧（原来按 1/24 秒一格）
+export const lastSec = durationSec - 1 / 60; // 末帧（原来按 1/24 秒一格算，用户 11-16 定不留 1/24 秒的格）
 // 开始钻出以后过了几秒（画面时间、真实时间：人、碎屑、心跳都按它走）
 export const emergeSec = (t: number) => t - emergeStartSec;
 // 钻出动画放到第几秒（动画时间，快放 钻出倍速）

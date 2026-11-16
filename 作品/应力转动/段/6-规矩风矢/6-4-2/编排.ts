@@ -4,7 +4,7 @@
 //   转回箱子时弹出箱子界面，古城战利品一格一格 shift 点击拿走，跨进 6-4-3a 的 A1 拿完（用户 10-20：「这里应该显示拾取这个箱子里面的东西」，见「拾取」）。
 //   用户 10-12 删了「满四次……」内心独白；剧情里照游戏等 4.5 秒、黑暗 13 秒（260 刻），剪辑里只留够看懂的几截（见「跳切」）。
 // 时间：`liying`、`camera`、`wool`、`keyMoments` 等全按本段「剧情秒」（不跳，0 = 跳搭.ts 的 `start642`）；成片秒用 `toStorySec` 换（规矩.tsx、../6-4-2至3a/）。
-//   不整的秒数（n / 24）是原来按 1/24 秒一格手调的；「末帧」是原来 1/24 秒一格的最后一格，比下一截早 1/24 秒（`GRID`）。
+//   不整的秒数（n / 24）是原来按 1/24 秒一格手调的；「末帧」比下一截早一帧（`GRID`，1/60 秒；原来是 1/24 秒一格的最后一格，用户 11-16 定不留 1/24 秒的格）。
 //
 // 为什么是开箱惹出警告（1.20.1 javap 核对，jar 在 game/缓存/）：
 //   - Lootr 开箱：`LootrChestBlockEntity.startOpen` → `incrementOpeners` → gameEvent(CONTAINER_OPEN)，在 vibrations 标签里，源头是箱子方块中心。新城的箱子是夸克 quark:ancient_chest，镜头里画成 Lootr 战利品箱（共用箱子 模型/物品/箱子.tsx）。
@@ -25,9 +25,10 @@ import { lastFrame642, archery, chestArchery, cellCenter, footOf } from '../../.
 import type { Stack } from '@库/界面/箱子界面.tsx';
 import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
+import { segFps } from '@engine/段/段定义.ts';
 
 const tickSec = 1 / 20;
-const GRID = 1 / 24;
+const GRID = 1 / segFps;
 const toFrame = (t: number) => Math.round(t * 60) / 60; // 对齐到 1/60 秒（输出帧）
 
 // ---------- 接 6-4-1（跳切） ----------
@@ -89,7 +90,7 @@ export const darknessEndSec = darknessStartSec + darknessParams.durationTicks / 
 export const lines: LineAt[] = [];
 
 // ---------- 时间轴的尾巴 ----------
-// 黑暗退干净（黑暗止秒）他才动：0.6 秒低下头、手伸回箱子里，再翻 0.3 秒，再过 1/24 秒（对齐到 1/60 秒）就是 6-4-3a（同一个镜头接着翻 1.6 秒）
+// 黑暗退干净（黑暗止秒）他才动：0.6 秒低下头、手伸回箱子里，再翻 0.3 秒是末帧，下一帧（对齐到 1/60 秒）就是 6-4-3a（同一个镜头接着翻 1.6 秒）
 const recoverSec = darknessEndSec;
 const recoverDuration = 0.6;
 export const STORY_END = toFrame(recoverSec + recoverDuration + 0.3 + GRID); // 不跳的时间轴有多长（秒）= 6-4-3a 起点（6-4-3 剧情 0 秒），末帧是 STORY_END − GRID
@@ -162,7 +163,7 @@ const toEditSec = (t: number): number => {
 };
 
 // ---------- 李樱 ----------
-// 翻箱子（6-4-3a 首帧起接着翻，见 古城4x布局.ts 的 六四二末帧）：t 是 6-4-3 的剧情秒，本段末帧 t = −1/24，往前是负的
+// 翻箱子（6-4-3a 首帧起接着翻，见 古城4x布局.ts 的 六四二末帧）：t 是 6-4-3 的剧情秒，本段末帧 t = −1/60，往前是负的
 export const rummagePose = (t: number): FigurePose => lootPose(woolCFoot, FACE_CHEST, 0.3 + 0.2 * (0.5 + 0.5 * Math.sin(t * 7)), 1.4);
 const rummageAt = (t: number) => rummagePose(t - STORY_END);
 // 定住（用户 10-19：「你转头不转身体 很诡异」）：尖啸一响（反应 0.12 秒），头先猛地扭向尖啸体（西北，比他的眼睛低），肩跟着拧，
