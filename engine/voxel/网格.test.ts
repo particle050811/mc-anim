@@ -14,10 +14,15 @@ const mockTable = vi.hoisted(() => {
     '-z': [[16, 16, 0], [0, 16, 0], [0, 0, 0], [16, 0, 0]],
   };
   const blockFaceGroup = (textureIndex: number, tint = 0) => Object.entries(faceCorners).map(([d, c]) => [d, d, textureIndex, -1, tint, 1, ...c.flat(), 0, 0, 16, 0, 16, 16, 0, 16]);
+  // 半砖：z 压到 [z0, z1]（1/16 格）；顶面贴着格子顶才按上面剔
+  const slabFaceGroup = (textureIndex: number, z0: number, z1: number) =>
+    Object.entries(faceCorners).map(([d, c]) => [d, d === '+z' && z1 < 16 ? '' : d === '-z' && z0 > 0 ? '' : d, textureIndex, -1, 0, 1, ...c.flatMap(([x, y, z]) => [x, y, z === 16 ? z1 : z0]), 0, 0, 16, 0, 16, 16, 0, 16]);
+  // 顶面贴图转 90° 的整格方块（横放原木 axis=x 和 axis=z 的顶面就差这一下）
+  const turnedTopFaceGroup = (textureIndex: number) => blockFaceGroup(textureIndex).map((f) => (f[0] === '+z' ? [...f.slice(0, 18), 16, 0, 16, 16, 0, 16, 0, 0] : f));
   return {
     blockTable: {
       贴图: ['test:block/stone', 'test:block/dirt', 'test:block/grass', 'test:block/leaves', 'test:block/water'],
-      面组: [blockFaceGroup(0), blockFaceGroup(1), blockFaceGroup(2, 1), blockFaceGroup(3, 1), blockFaceGroup(4, 1)],
+      面组: [blockFaceGroup(0), blockFaceGroup(1), blockFaceGroup(2, 1), blockFaceGroup(3, 1), blockFaceGroup(4, 1), slabFaceGroup(0, 0, 8), slabFaceGroup(0, 8, 16), turnedTopFaceGroup(1)],
       // 标志：类（0 实心 1 镂空 3 液体）+ 4 满 + 8 遮 + 16 光
       方块: {
         'test:stone': [4 + 8 + 16, null, 0],
@@ -25,6 +30,9 @@ const mockTable = vi.hoisted(() => {
         'test:grass_block': [4 + 8 + 16, 'grass', 2],
         'test:oak_leaves': [1 + 8 + 16, 'foliage', 3],
         'test:water': [3, 'water', 4],
+        'test:slab[type=bottom]': [16, null, 5],
+        'test:slab[type=top]': [16, null, 6],
+        'test:dirt_turned': [4 + 8 + 16, null, 7],
       },
     },
     群系色: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } },
@@ -71,6 +79,30 @@ describe('区段网格', () => {
     expect(groupFaceCount(m.实心, 4)).toBeGreaterThanOrEqual(3);
     // 草方块四个侧面露在外面
     for (const g of [0, 1, 2, 3]) expect(groupFaceCount(m.实心, g)).toBeGreaterThanOrEqual(1);
+  });
+  it('深度或贴图朝向不同的面不合并（下半砖挨上半砖、横放原木 x 挨 z）', () => {
+    const topFaces = (a: string, b: string) => {
+      const [va, vb] = [voxelFromState(a)!, voxelFromState(b)!];
+      const grid = makeSectionGrid(4, 3, (x, y, z) => (z === 0 ? 1 : z === 1 && y === 1 && x === 1 ? 6 : z === 1 && y === 1 && x === 2 ? 7 : 0));
+      grid.palette.push({ v: va, c: [255, 255, 255] }, { v: vb, c: [255, 255, 255] });
+      const m = buildSectionMesh(grid, false);
+      const out: { z: number; x0: number; x1: number; uv: number[] }[] = [];
+      for (const g of [m.实心, m.花草])
+        for (let f = g.段[4]!; f < g.段[5]!; f++) {
+          const z = g.pos[f * 12 + 2]! / 64;
+          if (z <= 1) continue;
+          const xs = [0, 1, 2, 3].map((c) => g.pos[f * 12 + c * 3]! / 64);
+          out.push({ z, x0: Math.min(...xs), x1: Math.max(...xs), uv: Array.from(g.uv.slice(f * 8, f * 8 + 8)) });
+        }
+      return out.sort((p, q) => p.x0 - q.x0);
+    };
+    const slabs = topFaces('test:slab[type=bottom]', 'test:slab[type=top]');
+    expect(slabs.map((f) => [f.x0, f.x1, f.z])).toEqual([[0, 1, 1.5], [1, 2, 2]]);
+    const logs = topFaces('test:dirt', 'test:dirt_turned');
+    expect(logs.map((f) => [f.x0, f.x1])).toEqual([[0, 1], [1, 2]]);
+    expect(logs[0]!.uv).not.toEqual(logs[1]!.uv);
+    // 对照：同种方块照样并成一张
+    expect(topFaces('test:dirt', 'test:dirt').map((f) => [f.x0, f.x1])).toEqual([[0, 2]]);
   });
   it('树叶第 0 级画进镂空（叶子之间的面也画），粗级画成实心树叶（叶子之间剔掉）', () => {
     const leafPile = makeSectionGrid(4, 3, (x, y, z) => (z >= 1 && x >= 2 && x <= 3 && y >= 2 && y <= 3 ? 4 : z === 0 ? 1 : 0));
