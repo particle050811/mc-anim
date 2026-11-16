@@ -214,5 +214,8 @@ describe('重放', () => {
     const sh = buildReplayScript(r, '测试');
     expect(sh).toContain(`"$ANIM" mcai batch`);
     expect(sh).toContain(`'cmd execute in minecraft:overworld run setblock 9 61 8 minecraft:glass'`);
+    // 进存档默认冻结：编辑前解冻、编辑完照原样冻回去
+    expect(sh.indexOf('mcai unfreeze')).toBeLessThan(sh.indexOf('setblock 9 61 8'));
+    expect(sh.indexOf('mcai freeze')).toBeGreaterThan(sh.indexOf('forceload remove'));
   });
 });
