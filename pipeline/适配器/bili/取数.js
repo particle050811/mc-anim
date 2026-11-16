@@ -28,23 +28,23 @@ async (page) => {
       try {
         const j = await fetchJson(url);
         if (j.code !== 0) {
-          errors.push({ 名: fetchName, code: j.code, message: j.message });
+          errors.push({ name: fetchName, code: j.code, message: j.message });
           return null;
         }
         return j.data;
       } catch (e) {
         if (e instanceof RiskControlError) throw e;
-        errors.push({ 名: fetchName, message: String(e) });
+        errors.push({ name: fetchName, message: String(e) });
         return null;
       }
     };
     const M = 'https://member.bilibili.com/x/web/data';
     const A = 'https://api.bilibili.com/x';
-    const rawPack = { 版本: 1, 取于: new Date().toISOString(), 账号: {}, 稿件: [], 错误: errors, 请求数: 0, 停于风控: null };
+    const rawPack = { version: 1, fetchedAt: new Date().toISOString(), account: {}, submissions: [], errors: errors, requestCount: 0, stoppedByRiskControl: null };
     try {
       // 账号层：近 7 天概况（tab 0 播放类、1 互动类、2 粉丝类）和播放趋势
-      for (const tab of [0, 1, 2]) rawPack.账号[`概况${tab}`] = await tryFetch(`概况${tab}`, `${M}/v2/overview/stat/num?period=0&tab=${tab}`);
-      rawPack.账号.播放趋势 = await tryFetch('播放趋势', `${M}/v2/overview/stat/graph?period=0&type=play`);
+      for (const tab of [0, 1, 2]) rawPack.account[`overview${tab}`] = await tryFetch(`概况${tab}`, `${M}/v2/overview/stat/num?period=0&tab=${tab}`);
+      rawPack.account.playTrend = await tryFetch('播放趋势', `${M}/v2/overview/stat/graph?period=0&type=play`);
       // 稿件列表（分页）和各稿件指标对比
       const items = [];
       for (let pn = 1; pn <= 20; pn++) {
@@ -53,46 +53,46 @@ async (page) => {
         items.push(...d.list);
         if (items.length >= (d.pager?.total ?? 0) || d.list.length < 20) break;
       }
-      rawPack.账号.对比 = await tryFetch('稿件对比', `${M}/archive_diagnose/compare?size=50`);
-      const compareMap = new Map((rawPack.账号.对比?.list ?? []).map((x) => [x.bvid, x]));
+      rawPack.account.comparison = await tryFetch('稿件对比', `${M}/archive_diagnose/compare?size=50`);
+      const compareMap = new Map((rawPack.account.comparison?.list ?? []).map((x) => [x.bvid, x]));
       for (const a of items) {
         const b = a.bvid;
-        const submission = { bvid: b, aid: a.aid, 标题: a.title, 时长: a.duration, 发布: a.pubtime, 列表项: a, 对比: compareMap.get(b) ?? null };
-        submission.详情 = await tryFetch(`详情 ${b}`, `${M}/v3/archive/view?bvid=${b}`);
-        submission.播放分析 = await tryFetch(`播放分析 ${b}`, `${M}/archive_diagnose/play_analyze?bvid=${b}`);
-        submission.总览 = await tryFetch(`总览 ${b}`, `${M}/archive_diagnose/overview?bvid=${b}`);
-        submission.转粉 = await tryFetch(`转粉 ${b}`, `${M}/archive_diagnose/trans_fans_analyze?bvid=${b}`);
-        if (submission.转粉) delete submission.转粉.improve_idea; // 推荐的别人的稿件，和本稿无关
-        submission.播放趋势 = await tryFetch(`播放趋势 ${b}`, `${M}/archive_diagnose/trend?type=play&bvid=${b}`);
-        submission.涨粉趋势 = await tryFetch(`涨粉趋势 ${b}`, `${M}/archive_diagnose/trend?type=fan&bvid=${b}`);
-        submission.分P = [];
-        for (const v of submission.详情?.videos ?? []) {
-          const p = { cid: v.cid, 标题: v.title, 时长: v.duration };
+        const submission = { bvid: b, aid: a.aid, title: a.title, duration: a.duration, release: a.pubtime, listItem: a, comparison: compareMap.get(b) ?? null };
+        submission.details = await tryFetch(`详情 ${b}`, `${M}/v3/archive/view?bvid=${b}`);
+        submission.playAnalysis = await tryFetch(`播放分析 ${b}`, `${M}/archive_diagnose/play_analyze?bvid=${b}`);
+        submission.overview = await tryFetch(`总览 ${b}`, `${M}/archive_diagnose/overview?bvid=${b}`);
+        submission.fanConversion = await tryFetch(`转粉 ${b}`, `${M}/archive_diagnose/trans_fans_analyze?bvid=${b}`);
+        if (submission.fanConversion) delete submission.fanConversion.improve_idea; // 推荐的别人的稿件，和本稿无关
+        submission.playTrend = await tryFetch(`播放趋势 ${b}`, `${M}/archive_diagnose/trend?type=play&bvid=${b}`);
+        submission.followerTrend = await tryFetch(`涨粉趋势 ${b}`, `${M}/archive_diagnose/trend?type=fan&bvid=${b}`);
+        submission.parts = [];
+        for (const v of submission.details?.videos ?? []) {
+          const p = { cid: v.cid, title: v.title, duration: v.duration };
           // 留存（viewer_quit）和弹幕分布（dm），各带同类稿件的 peer_*
-          p.留存 = await tryFetch(`留存 ${b}`, `${M}/v2/archive/analyze/graph?cid=${v.cid}`);
-          p.弹幕 = [];
+          p.retention = await tryFetch(`留存 ${b}`, `${M}/v2/archive/analyze/graph?cid=${v.cid}`);
+          p.danmaku = [];
           for (let pn = 1; pn <= danmakuMaxPages; pn++) {
             const d = await tryFetch(`弹幕 ${b}`, `${A}/v2/dm/search?oid=${v.cid}&type=1&pn=${pn}&ps=100&order=ctime&sort=asc`);
             const items = d?.result ?? [];
             // 只留内容和时间轴，不留发送者身份
-            for (const x of items) p.弹幕.push({ progress: x.progress, msg: x.msg, ctime: x.ctime, mode: x.mode, like: x.like_count, pool: x.pool });
-            if (items.length < 100 || p.弹幕.length >= (d?.page?.total ?? 0)) break;
+            for (const x of items) p.danmaku.push({ progress: x.progress, msg: x.msg, ctime: x.ctime, mode: x.mode, like: x.like_count, pool: x.pool });
+            if (items.length < 100 || p.danmaku.length >= (d?.page?.total ?? 0)) break;
           }
-          submission.分P.push(p);
+          submission.parts.push(p);
         }
-        submission.评论 = [];
+        submission.commentCount = [];
         for (let pn = 1; pn <= commentMaxPages; pn++) {
           const d = await tryFetch(`评论 ${b}`, `${A}/v2/reply/up/fulllist?order=1&filter=-1&type=1&bvid=${b}&pn=${pn}&ps=50&charge_plus_filter=false`);
           const items = d?.list ?? [];
-          for (const x of items) submission.评论.push({ msg: x.content?.message ?? x.message, ctime: x.ctime, like: x.like, 回复数: x.count ?? x.rcount, 是回复: !!(x.parent && x.parent !== 0) });
-          if (items.length < 50 || submission.评论.length >= (d?.page?.total ?? 0)) break;
+          for (const x of items) submission.commentCount.push({ msg: x.content?.message ?? x.message, ctime: x.ctime, like: x.like, replyCount: x.count ?? x.rcount, isReply: !!(x.parent && x.parent !== 0) });
+          if (items.length < 50 || submission.commentCount.length >= (d?.page?.total ?? 0)) break;
         }
-        rawPack.稿件.push(submission);
+        rawPack.submissions.push(submission);
       }
     } catch (e) {
-      rawPack.停于风控 = String(e.message ?? e);
+      rawPack.stoppedByRiskControl = String(e.message ?? e);
     }
-    rawPack.请求数 = attempts;
+    rawPack.requestCount = attempts;
     const now = new Date();
     const pad2 = (n) => String(n).padStart(2, '0');
     const downloadName = `bili-数据-${pad2(now.getUTCMonth() + 1)}${pad2(now.getUTCDate())}-${pad2(now.getUTCHours())}${pad2(now.getUTCMinutes())}.json`;
@@ -106,10 +106,10 @@ async (page) => {
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
     return {
       downloadName,
-      请求数: attempts,
-      停于风控: rawPack.停于风控,
-      错误: errors.slice(0, 20),
-      稿件: rawPack.稿件.map((s) => ({ bvid: s.bvid, 标题: s.标题, 时长: s.时长, retentionPointCount: s.分P[0]?.留存?.viewer_quit?.length ?? 0, 弹幕: s.分P.reduce((n, p) => n + p.弹幕.length, 0), 评论: s.评论.length })),
+      requestCount: attempts,
+      stoppedByRiskControl: rawPack.stoppedByRiskControl,
+      errors: errors.slice(0, 20),
+      submissions: rawPack.submissions.map((s) => ({ bvid: s.bvid, title: s.title, duration: s.duration, retentionPointCount: s.parts[0]?.retention?.viewer_quit?.length ?? 0, danmaku: s.parts.reduce((n, p) => n + p.danmaku.length, 0), commentCount: s.commentCount.length })),
     };
   });
 }

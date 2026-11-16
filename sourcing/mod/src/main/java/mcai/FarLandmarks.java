@@ -35,8 +35,8 @@ import java.nio.file.Path;
  * 网格中心区块 → 那一点的群系 → dimension 文件的 landmark_placement_allowed_biomes，没登记的群系按 pickVarietyLandmark 抽签）。
  * 网格是 mcai 放大过的（TwilightGrid，64 区块，跟着 LegacyLandmarkPlacementsMixin 走），所以扫的是 `getNearestCenterXZ` 给的中心。
  * 放置选中后再照 ChunkGenerator.tryGenerateStructure 调结构自己的 generate（结构的 biomes 过滤、摆放点），isValid 才是游戏真会生成的。
- * 任务：{"维度": "...", "x0", "z0", "x1", "z1"（方块坐标）, "出": "<文件>"}。输出 JSON 数组，每项：结构、地标、中心（方块 x、z）、区块、群系、
- * 生成（true/false）、范围（生成的才有：结构外包框 [x0, y0, z0, x1, y1, z1]，补预生成小块按它定）。
+ * 任务：{"dimension": "...", "x0", "z0", "x1", "z1"（方块坐标）, "出": "<文件>"}。输出 JSON 数组（pipeline/世界/远景/地标.ts 读），每项：结构、landmarks（地标名）、中心（方块 x、z）、区块、biome（群系）、
+ * generated（true/false）、bounds（生成的才有：结构外包框 [x0, y0, z0, x1, y1, z1]，补预生成小块按它定）。
  * 在服务端主线程上跑（群系和高度从生成器现算，不读不建区块），日志「mcai 地标：完成 <出>」。
  */
 public final class FarLandmarks {
@@ -47,8 +47,8 @@ public final class FarLandmarks {
 
     public static void run(MinecraftServer server, Path jobFile) throws IOException {
         JsonObject job = JsonParser.parseString(Files.readString(jobFile, StandardCharsets.UTF_8)).getAsJsonObject();
-        ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(job.get("维度").getAsString())));
-        if (level == null) throw new IOException("没有这个维度：" + job.get("维度").getAsString());
+        ServerLevel level = server.getLevel(ResourceKey.create(Registries.DIMENSION, new ResourceLocation(job.get("dimension").getAsString())));
+        if (level == null) throw new IOException("没有这个维度：" + job.get("dimension").getAsString());
         int x0 = job.get("x0").getAsInt(), z0 = job.get("z0").getAsInt(), x1 = job.get("x1").getAsInt(), z1 = job.get("z1").getAsInt();
         ChunkGenerator gen = level.getChunkSource().getGenerator();
         ChunkGeneratorStructureState state = level.getChunkSource().getGeneratorState();
@@ -75,26 +75,26 @@ public final class FarLandmarks {
                         StructureStart start = st.generate(level.registryAccess(), gen, gen.getBiomeSource(), state.randomState(), level.getStructureManager(),
                                 state.getLevelSeed(), new ChunkPos(ccx, ccz), 0, level, st.biomes()::contains);
                         JsonObject o = new JsonObject();
-                        o.addProperty("生成", start.isValid());
+                        o.addProperty("generated", start.isValid());
                         if (start.isValid()) {
                             BoundingBox bb = start.getBoundingBox();
                             JsonArray box = new JsonArray();
                             for (int v : new int[]{bb.minX(), bb.minY(), bb.minZ(), bb.maxX(), bb.maxY(), bb.maxZ()}) box.add(v);
-                            o.add("范围", box);
+                            o.add("bounds", box);
                         }
                         o.addProperty("结构", e.structure().unwrapKey().map(k -> k.location().toString()).orElse("?"));
-                        o.addProperty("地标", forced.getLandmark().name);
+                        o.addProperty("landmarks", forced.getLandmark().name);
                         o.addProperty("x", center.getX());
                         o.addProperty("z", center.getZ());
                         o.addProperty("区块x", ccx);
                         o.addProperty("区块z", ccz);
-                        o.addProperty("群系", biome.unwrapKey().map(k -> k.location().toString()).orElse("?"));
+                        o.addProperty("biome", biome.unwrapKey().map(k -> k.location().toString()).orElse("?"));
                         out.add(o);
                     }
                 }
             }
         Files.writeString(Path.of(job.get("出").getAsString()), out.toString(), StandardCharsets.UTF_8);
-        long valid = out.asList().stream().filter(e -> e.getAsJsonObject().get("生成").getAsBoolean()).count();
+        long valid = out.asList().stream().filter(e -> e.getAsJsonObject().get("generated").getAsBoolean()).count();
         LOG.info("mcai 地标：完成 {}（{} 个网格中心，选中 {} 座，生成 {} 座，网格 {} 区块）", job.get("出").getAsString(), cells, out.size(), valid, grid);
     }
 }

@@ -27,19 +27,19 @@ async (page) => {
         const j = await fetchJson(url);
         const code = j.status_code ?? j.BaseResp?.StatusCode ?? 0;
         if (code !== 0) {
-          errors.push({ 名: fetchName, code, message: j.status_msg ?? j.BaseResp?.StatusMessage });
+          errors.push({ name: fetchName, code, message: j.status_msg ?? j.BaseResp?.StatusMessage });
           if (/频繁|验证|风控|risk|limit/i.test(String(j.status_msg ?? ''))) throw new RiskControlError(`${fetchName}：${j.status_msg}`);
           return null;
         }
         return j;
       } catch (e) {
         if (e instanceof RiskControlError) throw e;
-        errors.push({ 名: fetchName, message: String(e) });
+        errors.push({ name: fetchName, message: String(e) });
         return null;
       }
     };
     const J = 'https://creator.douyin.com/janus/douyin/creator';
-    const rawPack = { 版本: 1, 平台: '抖音', 取于: new Date().toISOString(), 作品: [], 错误: errors, 请求数: 0, 停于风控: null };
+    const rawPack = { version: 1, platform: '抖音', fetchedAt: new Date().toISOString(), work: [], errors: errors, requestCount: 0, stoppedByRiskControl: null };
     try {
       const items = [];
       let cursor = 0;
@@ -52,29 +52,29 @@ async (page) => {
       // 只取视频（图文没有播放进度）
       for (const a of items.filter((x) => x.duration > 0)) {
         const id = a.aweme_id;
-        const work = { id, 标题: a.desc, 时长毫秒: a.duration, 发布: a.create_time, 统计: a.statistics };
+        const work = { id, title: a.desc, durationMs: a.duration, release: a.create_time, stats: a.statistics };
         const m = await tryFetch(`指标 ${id}`, `https://creator.douyin.com/web/api/creator/item/mget?ids=${id}&fields=metrics`);
-        work.指标 = m?.items?.[0]?.metrics ?? null;
+        work.metrics = m?.items?.[0]?.metrics ?? null;
         const fetchTrend = async (keyword, type) => {
           const d = await tryFetch(`${keyword} ${id}`, `${J}/data/realtime/analysis/data_center?user_id=&item_id=${id}&analysis_type=${type}&${commonQuery}`);
-          return d ? { 本作: d.analysis_trend?.current_item ?? [], 同类作者: d.analysis_trend?.similar_author ?? [] } : null;
+          return d ? { ownWork: d.analysis_trend?.current_item ?? [], peerAuthors: d.analysis_trend?.similar_author ?? [] } : null;
         };
-        work.留存 = await fetchTrend('留存', 1);
-        work.跳出 = await fetchTrend('跳出', 7);
+        work.retention = await fetchTrend('留存', 1);
+        work.bounce = await fetchTrend('跳出', 7);
         const p = await tryFetch(`进度 ${id}`, `${J}/bff/data/progress/analysis/v2?item_id=${id}&${commonQuery}`);
-        work.进度 = p ? { 跳过: p.jump_forward ?? [], 回看: p.jump_backward ?? [] } : null; // video_data 里是带签名的播放地址，不留
+        work.progress = p ? { skipped: p.jump_forward ?? [], rewatch: p.jump_backward ?? [] } : null; // video_data 里是带签名的播放地址，不留
         const s = await tryFetch(`来源 ${id}`, `${J}/data/item/play/source?item_id=${id}&${commonQuery}`);
-        work.来源 = s?.play_source ?? null;
+        work.source = s?.play_source ?? null;
         const k = await tryFetch(`搜索词 ${id}`, `${J}/data/item_analysis/search/keyword?id=${id}&${commonQuery}`);
-        work.搜索词 = k ? { 看后搜: k.inspire_search ?? [], 搜到: k.show_from ?? [] } : null;
+        work.searchTerms = k ? { searchAfterWatch: k.inspire_search ?? [], searchHits: k.show_from ?? [] } : null;
         const b = await tryFetch(`弹幕 ${id}`, `${J}/bff/data/bullet/analysis/v2?item_id=${id}&${commonQuery}`);
-        work.弹幕 = b?.current_item ?? null;
-        rawPack.作品.push(work);
+        work.danmaku = b?.current_item ?? null;
+        rawPack.work.push(work);
       }
     } catch (e) {
-      rawPack.停于风控 = String(e.message ?? e);
+      rawPack.stoppedByRiskControl = String(e.message ?? e);
     }
-    rawPack.请求数 = attempts;
+    rawPack.requestCount = attempts;
     const now = new Date();
     const pad2 = (n) => String(n).padStart(2, '0');
     const downloadName = `抖音-数据-${pad2(now.getUTCMonth() + 1)}${pad2(now.getUTCDate())}-${pad2(now.getUTCHours())}${pad2(now.getUTCMinutes())}.json`;
@@ -88,10 +88,10 @@ async (page) => {
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
     return {
       downloadName,
-      请求数: attempts,
-      停于风控: rawPack.停于风控,
-      错误: errors.slice(0, 20),
-      作品: rawPack.作品.map((s) => ({ id: s.id, 标题: s.标题.slice(0, 20), 秒: s.时长毫秒 / 1000, retentionPointCount: s.留存?.本作.length ?? 0, hasMetrics: !!s.指标 })),
+      requestCount: attempts,
+      stoppedByRiskControl: rawPack.stoppedByRiskControl,
+      errors: errors.slice(0, 20),
+      work: rawPack.work.map((s) => ({ id: s.id, title: s.title.slice(0, 20), sec: s.durationMs / 1000, retentionPointCount: s.retention?.ownWork.length ?? 0, hasMetrics: !!s.metrics })),
     };
   });
 }
