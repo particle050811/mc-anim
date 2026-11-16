@@ -39,7 +39,7 @@ const originalSizeIds = new Set(['贴图/场景/天空/clouds']);
 export const maxUpscale = (styleText: string | null, resCap?: number, trialRes?: number): { factor: number; basis: string } => {
   if (trialRes !== undefined) {
     const factor = Math.min(trialRes, resCap ?? trialRes) / 16;
-    return { factor, basis: `指定 ${trialRes}x（材质包.toml 的 分辨率 或 ANIM_PACKS_TRY）：不按画风整除，最多 ${factor} 倍（${16 * factor}x）${resCap !== undefined ? `，封顶 ${resCap}` : ''}` };
+    return { factor, basis: `指定 ${trialRes}x（材质包.toml 的 resolution 或 ANIM_PACKS_TRY）：不按画风整除，最多 ${factor} 倍（${16 * factor}x）${resCap !== undefined ? `，封顶 ${resCap}` : ''}` };
   }
   const getLimit = (constName: string) => {
     const m = styleText ? new RegExp(`export const ${constName} = (\\d+)`).exec(styleText) : null;
@@ -185,7 +185,7 @@ export const buildResourcePackOverride = (workRoot: string, packSelection = read
   const assetTable = readAssetRegistryBoth(workRoot).entryMap;
   const packs = packSelection.pack.map((id) => {
     const e = assetTable.get(id);
-    if (!e || e.category !== '材质包') throw new Error(`${id} 没在资产表登记成 类别 = "材质包"（assets/registry/材质包.toml），先登记、anim assets add ${id} <包.zip>`);
+    if (!e || e.category !== '材质包') throw new Error(`${id} 没在资产表登记成 category = "材质包"（assets/registry/材质包.toml），先登记、anim assets add ${id} <包.zip>`);
     return { id, name: id.slice('材质包/'.length), visibility: e.visibility, license: e.license, entry: assetLock[id]!, zip: resolveAsset(id, assetLock).file };
   });
   const blockTable = JSON.parse(fs.readFileSync(resolveAsset(blockTableId, assetLock).file, 'utf8')) as { 贴图: string[] };

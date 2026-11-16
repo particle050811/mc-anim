@@ -1,7 +1,7 @@
 // anim extract --register / --licenses：取材产物自动写资产表、资产锁，许可按 jar 继承（许可.ts）。
 // 资产表是人写的 TOML，这里只做两种文本改动，别的行（注释、旧路径、说明）一字不动：
-//   追加：新 id 在表尾加一条 [["资产"]]（表文件 = id 第一段，<类>.toml；配方写了「作品」的进 <作品根>/资产表/）；
-//   改许可：已登记、许可是 LicenseRef-待定 的，只换那一条的「许可」行。
+//   追加：新 id 在表尾加一条 [["asset"]]（表文件 = id 第一段，<类>.toml；配方写了「作品」的进 <作品根>/资产表/）；
+//   改许可：已登记、许可是 LicenseRef-待定 的，只换那一条的 "license" 行。
 import fs from 'node:fs';
 import path from 'node:path';
 import { workAssetRegistryDir, assetRegistryDir, libName, type Visibility, type AssetEntry } from '../资产/资产表.ts';
@@ -12,29 +12,29 @@ import { defaultParts, inheritLicense, licenseTable, pendingLicense, type Inheri
 
 const quote = (s: string) => JSON.stringify(s);
 
-/** 一条资产表条目的 TOML 文本（和 assets/registry 里现有的写法一样：id 裸键，中文键加引号） */
+/** 一条资产表条目的 TOML 文本（和 assets/registry 里现有的写法一样：id 裸键，别的键加引号） */
 export const entryText = (e: Pick<AssetEntry, 'id' | 'category' | 'source' | 'license' | 'visibility' | 'note'>) =>
   [
-    '[["资产"]]',
+    '[["asset"]]',
     `id = ${quote(e.id)}`,
-    `"类别" = ${quote(e.category)}`,
-    `"来源" = ${quote(e.source)}`,
-    `"许可" = ${quote(e.license)}`,
-    `"可见性" = ${quote(e.visibility)}`,
-    ...(e.note ? [`"说明" = ${quote(e.note)}`] : []),
+    `"category" = ${quote(e.category)}`,
+    `"source" = ${quote(e.source)}`,
+    `"license" = ${quote(e.license)}`,
+    `"visibility" = ${quote(e.visibility)}`,
+    ...(e.note ? [`"note" = ${quote(e.note)}`] : []),
   ].join('\n') + '\n';
 
 /** 在资产表文本尾部追加几条（文件不存在时由调用方给表头） */
 export const appendEntries = (raw: string, entries: Parameters<typeof entryText>[0][]) =>
   entries.reduce((t, e) => `${t.replace(/\n*$/, '\n')}\n${entryText(e)}`, raw);
 
-/** 把表里 id 那一条的「许可」行换成新值；找不到那一条或那一条没有许可行就报错 */
+/** 把表里 id 那一条的 "license" 行换成新值；找不到那一条或那一条没有许可行就报错 */
 export const setLicense = (raw: string, id: string, newLicense: string): string => {
-  const sections = raw.split(/(?=^\[\["资产"\]\]$)/m);
+  const sections = raw.split(/(?=^\[\["asset"\]\]$)/m);
   const i = sections.findIndex((b) => new RegExp(`^id = ${quote(id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm').test(b));
   if (i < 0) throw new Error(`表里没有 id = ${quote(id)}`);
-  const newBlock = sections[i]!.replace(/^"许可" = "[^"\n]*"$/m, `"许可" = ${quote(newLicense)}`);
-  if (newBlock === sections[i] && !/^"许可" = /m.test(sections[i]!)) throw new Error(`「${id}」那一条没有 "许可" 行`);
+  const newBlock = sections[i]!.replace(/^"license" = "[^"\n]*"$/m, `"license" = ${quote(newLicense)}`);
+  if (newBlock === sections[i] && !/^"license" = /m.test(sections[i]!)) throw new Error(`「${id}」那一条没有 "license" 行`);
   sections[i] = newBlock;
   return sections.join('');
 };
@@ -117,7 +117,7 @@ export const reverseLookupJar = (e: SourcingEntry, jarPath: (id: string) => stri
 export const recipeVisibility = (e: SourcingEntry): Visibility => {
   if (e.visibility) return e.visibility;
   if (e.publicVersion === '提取') return '提取';
-  throw new Error(`「${e.displayName}」公开版不是「提取」，--register 不知道新产物的可见性：在配方里写 "可见性" = "发布" / "私有" / "公开"`);
+  throw new Error(`「${e.displayName}」公开版不是「提取」，--register 不知道新产物的可见性：在配方里写 "visibility" = "发布" / "私有" / "公开"`);
 };
 
 export type PendingRegister = { id: string; file: string };
