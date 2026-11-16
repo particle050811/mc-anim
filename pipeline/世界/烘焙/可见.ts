@@ -8,10 +8,11 @@
 import type { SectionData, PackageInfo } from '../../../engine/voxel/区段包.ts';
 import type { VoxelLib } from '../体素库.ts';
 import { toColumnMajor, fromColumnMajor } from './区段编码.ts';
-import { sectionCells, paddedSectionCols } from '../../../engine/voxel/区段.ts';
 import type { SectionSource } from './区段源.ts';
 
-export const windowEdge = paddedSectionCols;
+// 同 engine/voxel/区段.ts 的 paddedSectionCols（pipeline 不静态引 engine 的非纯模块；VisibleEnv 开环境时对一遍）
+export const windowEdge = 66;
+const sectionCells = windowEdge - 2;
 
 /** 保真范围：游戏 x0, z0, x1, z1（两端都含）。渲染时会挖开、整平导入地形的地方，碰到的区段整块原样保留（世界声明 [[烘焙.保真]]） */
 export type PreserveBox = [number, number, number, number];
@@ -162,6 +163,7 @@ export class VisibleEnv {
 
   constructor(voxelLib: VoxelLib, source: SectionSource, settings: VisibleSettings) {
     this.source = source;
+    if (voxelLib.sectionPack.paddedSectionCols !== windowEdge) throw new Error(`可见.ts 的窗口边 ${windowEdge} 和 engine 的区段 ${voxelLib.sectionPack.paddedSectionCols} 列对不上`);
     const info = source.info;
     ({ fullMask: this.fullMask, occlusion: this.occlusion } = stateTable(voxelLib, info));
     this.fillId = info.状态.indexOf(settings.fillBlock);

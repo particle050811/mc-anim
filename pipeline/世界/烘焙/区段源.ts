@@ -13,7 +13,7 @@ import { decodeSectionFormat2 } from './格式2解码.ts';
 import { decodeSectionFormat3 } from './格式3解码.ts';
 import { blockFiles, blockCoordsFromName, blockFormat, readBlockIndex, readPackModel, decodeFormat1Section } from './读区段.ts';
 
-export type SourceSection = { slot: number; id: SectionId; 字节数: number; 取: () => SectionData };
+export type SourceSection = { slot: number; id: SectionId; byteCount: number; 取: () => SectionData };
 export interface SectionSource {
   readonly dir: string;
   readonly info: PackageInfo;
@@ -81,7 +81,7 @@ export const openSectionSource = (voxelLib: VoxelLib, dir: string, fillBlock = '
         items.sort((a, b) => a.off - b.off);
         for (const { slot, off, len } of items) {
           const raw = new Uint8Array(buf.buffer, buf.byteOffset + off, len), id = P.sectionAtIndex(ti, tj, slot);
-          yield { slot, id, 字节数: len, 取: () => decode(raw, id) };
+          yield { slot, id, byteCount: len, 取: () => decode(raw, id) };
         }
       },
       close,
@@ -175,7 +175,7 @@ export const openSectionSource = (voxelLib: VoxelLib, dir: string, fillBlock = '
       for (const slot of [...m.keys()].sort((a, b) => a - b)) {
         const id = m.get(slot)!;
         const bytes = [0, 1].reduce((s, b) => s + oldBytes(id.L, 2 * id.i, 2 * id.j + b) + oldBytes(id.L, 2 * id.i + 1, 2 * id.j + b), 0);
-        yield { slot, id, 字节数: bytes, 取: () => merge(id.L, id.i, id.j)! };
+        yield { slot, id, byteCount: bytes, 取: () => merge(id.L, id.i, id.j)! };
       }
     },
     close,

@@ -5,7 +5,7 @@
 // 细一级的一格在画面上还有 像素 个像素以上，就换成细一级的四块。四叉树保证同一处只画一级，不重叠也不漏。
 
 export const sectionCells = 64;
-export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 66 列（区段包、编码、解码共用；放这里是因为 pipeline 能直接 import 这个文件）
+export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 66 列（区段包、解码共用；pipeline 经体素库取，可见.ts 另写死一份并对过）
 export const coarsestLevel = 6; // 一格 64 米，一块 4 公里
 export type SectionId = { L: number; i: number; j: number };
 export const sectionKey = (q: SectionId) => `${q.L}|${q.i}|${q.j}`;

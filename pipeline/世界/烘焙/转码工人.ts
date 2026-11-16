@@ -65,7 +65,7 @@ const transcode = ({ oldDir, 新: newDir, 名: fileName, visible, fill }: Transc
     off += packed.length;
     segments.push(packed);
     result.区段++;
-    result.旧字节 += s.字节数;
+    result.旧字节 += s.byteCount;
     result.新字节 += packed.length;
   }
   const [ti, tj] = blockCoordsFromName(fileName);
@@ -114,7 +114,7 @@ const compareCells = async ({ oldDir, 新: newDir, 名: fileName, visible, fill 
     }
     result.区段++;
     result.格 += ca.length;
-    result.旧字节 += s.字节数;
+    result.旧字节 += s.byteCount;
     result.新字节 += b.字节.length;
   }
   if (newSections.size) throw new Error(`${fileName}：新包多出 ${newSections.size} 个区段`);

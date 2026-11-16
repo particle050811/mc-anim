@@ -2,7 +2,6 @@
 import type { VoxelLib } from '../体素库.ts';
 import type { SectionModel } from '../../../engine/voxel/区段模型.ts';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
-import { paddedSectionCols } from '../../../engine/voxel/区段.ts';
 /** 区段每边几列：按 runCounts 的长度算（格式 4 是 66；转码读格式 3 时是 34，编码规则一样，只差列数） */
 export const sideOf = (d: Pick<SectionData, 'runCounts'>) => {
   const side = Math.round(Math.sqrt(d.runCounts.length));
@@ -111,7 +110,7 @@ export const fromColumnMajor = (id: { L: number; i: number; j: number }, kBottom
 let runLengths = new Uint16Array(1 << 20);
 
 /** 边：区段每边几列（解码器 wasm/区段解码.ts 写死 66，34 只给测试、转码核对旧格式用） */
-export const walkModel = (rc: BitSink, cm: Uint16Array, nz: number, paletteSize: number, L: number, codeTable: Uint16Array, palette: Uint16Array, sectionSide = paddedSectionCols) => {
+export const walkModel = (rc: BitSink, cm: Uint16Array, nz: number, paletteSize: number, L: number, codeTable: Uint16Array, palette: Uint16Array, sectionSide: number) => {
   const columnCount = sectionSide * sectionSide;
   let bits = 1;
   while (1 << bits < paletteSize) bits++;
