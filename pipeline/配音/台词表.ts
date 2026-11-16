@@ -45,7 +45,8 @@ export const readWorkLines = (file: string): WorkLines | null => (fs.existsSync(
 
 export type TomlValue = string | number | boolean | readonly TomlValue[] | { readonly [k: string]: TomlValue };
 
-const keyText = (k: string) => (/^[A-Za-z0-9_-]+$/.test(k) ? k : JSON.stringify(k));
+// 盘上台词.toml 的键一律带引号（id 除外），写回跟着写，免得值没变的行也因引号出 diff
+const keyText = (k: string) => JSON.stringify(k);
 /** 单行 TOML 值。数是整数的写成 x.0（开口这类秒数和现有写法一致） */
 export const tomlValue = (v: TomlValue): string => {
   if (typeof v === 'string') return JSON.stringify(v);
@@ -85,7 +86,7 @@ export const editLineField = (text: string, id: string, fields: Record<string, T
   const isHeader = headerLines(lines);
   let startIndex = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (!isHeader[i] || !/^\s*\[\[\s*"?台词"?\s*\]\]\s*$/.test(lines[i]!)) continue;
+    if (!isHeader[i] || !/^\s*\[\[\s*"?lines"?\s*\]\]\s*$/.test(lines[i]!)) continue;
     let j = i + 1;
     while (j < lines.length && !isHeader[j]) {
       if (keyName(lines[j]!) === 'id' && parse(lines[j]!).id === id) startIndex = i;

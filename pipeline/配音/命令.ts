@@ -249,7 +249,7 @@ const ensureRegistered = (id: string, source: string, license: string, visibilit
   const f = path.join(workAssetRegistryDir(workRoot()), '配音.toml');
   fs.mkdirSync(path.dirname(f), { recursive: true });
   const headerText = fs.existsSync(f) ? '' : '# 作品资产表：配音成品和原件（anim voice use 补的条目，可手改 来源、许可、说明）。字段见 assets/README.md。\n';
-  const lines = ['', '[["资产"]]', `id = ${JSON.stringify(id)}`, '"类别" = "配音"', `"来源" = ${JSON.stringify(source)}`, `"许可" = ${JSON.stringify(license)}`, `"可见性" = ${JSON.stringify(visibility)}`, ''].join('\n');
+  const lines = ['', '[["asset"]]', `id = ${JSON.stringify(id)}`, '"category" = "配音"', `"source" = ${JSON.stringify(source)}`, `"license" = ${JSON.stringify(license)}`, `"visibility" = ${JSON.stringify(visibility)}`, ''].join('\n');
   fs.appendFileSync(f, headerText + lines);
   return true;
 };

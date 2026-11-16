@@ -31,8 +31,8 @@ const writeSeg = (soundsCode: string) =>
     path.join(segDir, '段.ts'),
     `import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';
 import soundTable from './声音表.生成.ts';
-const 线 = defineSceneTimeline({ scene: '核对', events: { start: { 在: { sec: 0 } }, 响: { 在: { sec: 0.5 } }, end: { 在: { sec: 2 } } } });
-export default windowSeg(线, { start: '起', end: '止', soundTable, sound: ({ 放, 说, continueLine, events }) => [${soundsCode}] });
+const 线 = defineSceneTimeline({ scene: '核对', events: { 起: { 在: { sec: 0 } }, 响: { 在: { sec: 0.5 } }, 止: { 在: { sec: 2 } } } });
+export default windowSeg(线, { start: '起', end: '止', soundTable, sound: ({ 放, 说, continueLine, events: 事件 }) => [${soundsCode}] });
 `,
   );
 const root = codeRoot();
@@ -45,7 +45,7 @@ afterEach(() => fs.rmSync(segDir, { recursive: true, force: true }));
 
 describe('生成一段', () => {
   it('没有声音表也能起步：收集用到的声音、写两份文件；再跑一次不改', async () => {
-    writeSeg(`放('音效/门', 事件.响, -12), 说('甲', 事件.响), 放('配乐/私', 0, { 响度: -20, 名: '歌' })`);
+    writeSeg(`放('音效/门', 事件.响, -12), 说('甲', 事件.响), 放('配乐/私', 0, { loudness: -20, name: '歌' })`);
     const r = await generateSeg(path.join(segDir, '段.ts'), root, makeEnv());
     expect(r.changed).toEqual([soundTableFile, soundUrlFile]);
     expect(r.segment.sound).toEqual([
@@ -102,7 +102,7 @@ describe('生成一段', () => {
 import soundTable from './声音表.生成.ts';
 const 线 = defineSceneTimeline({
   scene: '核对',
-  events: { start: { 在: { sec: 0 } }, 切: { 在: { sec: 2 } }, end: { 在: { sec: 4 } } },
+  events: { 起: { 在: { sec: 0 } }, 切: { 在: { sec: 2 } }, 止: { 在: { sec: 4 } } },
   sound: [{ asset: '音效/门', 在: { sec: ${doorSec} }, peakDb: -12 }, { asset: '配乐/私', 在: { sec: 3 }, 增益: 0.5 }],
 });
 export default windowSeg(线, { start: '切', end: { 长秒: 1 }, soundTable });

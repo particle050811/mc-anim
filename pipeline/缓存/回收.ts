@@ -221,8 +221,8 @@ export const planTemp = (tempFiles: readonly PlainFile[], now: number): WithReas
 /** 认可记录 <作品根>/认可/<平台>/<段键>.toml 的 段 和 指纹（只取这两项，别的字段坏了也不影响回收） */
 export const readApprovedFingerprint = (file: string): { segment: string; fingerprint: string } | null => {
   const t = fs.readFileSync(file, 'utf8');
-  const segKey = /^"段"\s*=\s*"([^"]+)"/m.exec(t)?.[1];
-  const fingerprint = /^"指纹"\s*=\s*"([0-9a-f]{16,64})"/m.exec(t)?.[1];
+  const segKey = /^"segment"\s*=\s*"([^"]+)"/m.exec(t)?.[1];
+  const fingerprint = /^"fingerprint"\s*=\s*"([0-9a-f]{16,64})"/m.exec(t)?.[1];
   return segKey && fingerprint ? { segment: segKey, fingerprint: fingerprint } : null;
 };
 

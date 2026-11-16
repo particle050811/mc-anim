@@ -126,7 +126,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   it('不是现行的认可（CRF1 时代的 1440p）：报要重新认可，不解码', async () => {
     const f = approvalFile('甲');
     const raw = fs.readFileSync(f, 'utf8');
-    fs.writeFileSync(f, raw.replace(/^"宽" = 320$/m, '"宽" = 2560').replace(/^"高" = 180$/m, '"高" = 1440'));
+    fs.writeFileSync(f, raw.replace(/^"width" = 320$/m, '"width" = 2560').replace(/^"height" = 180$/m, '"height" = 1440'));
     expect(fs.readFileSync(f, 'utf8')).not.toBe(raw);
     try {
       readPixelCalls.length = 0;
@@ -142,7 +142,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   it('认可记录的抽样间隔和段签不一样：签名里没有要的帧，解切片重算、都比像素，过', async () => {
     const f = approvalFile('甲');
     const raw = fs.readFileSync(f, 'utf8');
-    fs.writeFileSync(f, raw.replace(/^"间隔" = 24$/m, '"间隔" = 7'));
+    fs.writeFileSync(f, raw.replace(/^"interval" = 24$/m, '"interval" = 7'));
     expect(fs.readFileSync(f, 'utf8')).not.toBe(raw);
     try {
       readPixelCalls.length = 0;

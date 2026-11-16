@@ -44,7 +44,7 @@ export const readApproval = (file: string): ApprovalRecord | null => {
     loudness: (t['loudness'] as number | undefined) ?? null,
     onsets: Array.isArray(t['onsets']) ? (t['onsets'] as string[]).map(onsetFromString) : null,
     prevFingerprint: (t['prevFingerprint'] as string | undefined) ?? null,
-    ...(typeof t['换算'] === 'string' ? { conversion: t['换算'] } : {}),
+    ...(typeof t['conversion'] === 'string' ? { conversion: t['conversion'] } : {}),
   };
 };
 
@@ -55,23 +55,23 @@ const splitLines = <T>(xs: T[], n: number) => Array.from({ length: Math.ceil(xs.
 export const approvalText = (r: ApprovalRecord) =>
   [
     '# anim verify accept 生成，别手改',
-    `"段" = ${quote(r.segment)}`,
-    `"指纹" = ${quote(r.fingerprint)}`,
-    `"平台" = ${quote(r.platform)}`,
-    `"渲染级别" = ${quote(r.renderLevel)}`,
-    `"认可于" = ${quote(r.approvedAt)}`,
-    `"提交" = ${quote(r.commit)}`,
-    `"理由" = ${quote(r.reason)}`,
-    ...(r.prevFingerprint ? [`"上一版指纹" = ${quote(r.prevFingerprint)}`] : []),
-    `"宽" = ${r.width}`,
-    `"高" = ${r.height}`,
-    `"帧数" = ${r.frameCount}`,
-    `"间隔" = ${r.interval}`,
-    ...(r.conversion ? [`"换算" = ${quote(r.conversion)}`] : []),
-    ...(r.audioSha ? [`"音频sha" = ${quote(r.audioSha)}`] : []),
-    ...(r.loudness !== null ? [`"响度" = ${r.loudness}`] : []),
-    ...(r.onsets ? [`"起音" = [`, ...splitLines(r.onsets.map((x) => quote(onsetToString(x))), 8).map((line) => `  ${line.join(', ')},`), ']'] : []),
-    ...r.frame.flatMap((f) => ['', '[["帧"]]', `"帧" = ${f.frame}`, `"哈希" = ${quote(f.hash)}`, `"块均值" = [`, ...f.blockMeans.map((x) => `  ${quote(x)},`), ']']),
+    `"segment" = ${quote(r.segment)}`,
+    `"fingerprint" = ${quote(r.fingerprint)}`,
+    `"platform" = ${quote(r.platform)}`,
+    `"renderLevel" = ${quote(r.renderLevel)}`,
+    `"approvedAt" = ${quote(r.approvedAt)}`,
+    `"commit" = ${quote(r.commit)}`,
+    `"reason" = ${quote(r.reason)}`,
+    ...(r.prevFingerprint ? [`"prevFingerprint" = ${quote(r.prevFingerprint)}`] : []),
+    `"width" = ${r.width}`,
+    `"height" = ${r.height}`,
+    `"frameCount" = ${r.frameCount}`,
+    `"interval" = ${r.interval}`,
+    ...(r.conversion ? [`"conversion" = ${quote(r.conversion)}`] : []),
+    ...(r.audioSha ? [`"audioSha" = ${quote(r.audioSha)}`] : []),
+    ...(r.loudness !== null ? [`"loudness" = ${r.loudness}`] : []),
+    ...(r.onsets ? [`"onsets" = [`, ...splitLines(r.onsets.map((x) => quote(onsetToString(x))), 8).map((line) => `  ${line.join(', ')},`), ']'] : []),
+    ...r.frame.flatMap((f) => ['', '[["frame"]]', `"frame" = ${f.frame}`, `"hash" = ${quote(f.hash)}`, `"blockMeans" = [`, ...f.blockMeans.map((x) => `  ${quote(x)},`), ']']),
   ].join('\n') + '\n';
 
 export const writeApproval = (file: string, r: ApprovalRecord) => {

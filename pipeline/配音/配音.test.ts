@@ -7,29 +7,29 @@ import type { AssetLock } from '../资产/资产锁.ts';
 
 const tableText = [
   '# 注释留着',
-  '["配音"]',
-  '"种子" = [7]',
+  '["voice"]',
+  '"seed" = [7]',
   '',
-  '["音色"."李樱"]',
-  '"参考" = "音色/李樱/参考音频"',
-  '"逐字稿" = "在拔刀剑迅冲斩面前"',
+  '["timbre"."李樱"]',
+  '"reference" = "音色/李樱/参考音频"',
+  '"transcript" = "在拔刀剑迅冲斩面前"',
   '',
-  '[["台词"]]',
+  '[["lines"]]',
   'id = "7-李樱-五万血"',
-  '"角色" = "李樱"',
-  '"文本" = "五万血？"',
-  '"开口" = 0.03',
+  '"character" = "李樱"',
+  '"text" = "五万血？"',
+  '"mouthOpen" = 0.03',
   '',
-  '["台词"."口型手修"]',
-  '"成品sha" = "bbbbbbbbbbbb"',
-  '"字" = [',
+  '["lines"."lipManual"]',
+  '"finishedSha" = "bbbbbbbbbbbb"',
+  '"char" = [',
   '  ["五", 0.1, 0.2],',
   ']',
   '',
-  '[["台词"]]',
+  '[["lines"]]',
   'id = "7-李樱-溜了"',
-  '"角色" = "李樱"',
-  '"文本" = "溜了"',
+  '"character" = "李樱"',
+  '"text" = "溜了"',
   '',
 ].join('\n');
 
@@ -70,27 +70,27 @@ describe('台词表', () => {
 
   it('写回只动那一句的那几行：改已有的、在子表前插新的、删掉、整数写成 x.0，注释和别的句子不动', () => {
     const updatedText = editLineField(tableText, '7-李樱-五万血', { mouthOpen: 0, voice: '配音/7-李樱-五万血', lip: { finishedSha: 'bbbbbbbbbbbb' } });
-    expect(updatedText).toContain('"开口" = 0.0\n"配音" = "配音/7-李樱-五万血"\n"口型" = { "成品sha" = "bbbbbbbbbbbb" }\n\n["台词"."口型手修"]');
+    expect(updatedText).toContain('"mouthOpen" = 0.0\n"voice" = "配音/7-李樱-五万血"\n"lip" = { "finishedSha" = "bbbbbbbbbbbb" }\n\n["lines"."lipManual"]');
     expect(updatedText.startsWith('# 注释留着\n')).toBe(true);
     const t = parseWorkLines(updatedText);
     expect(t.lines[0]!.lipManual?.char).toEqual([['五', 0.1, 0.2]]);
     expect(t.lines[1]).toEqual({ id: '7-李樱-溜了', character: '李樱', text: '溜了' });
     const stripped = editLineField(updatedText, '7-李樱-五万血', { voice: undefined });
-    expect(stripped).not.toContain('"配音" =');
+    expect(stripped).not.toContain('"voice" =');
     const editedText = editLineField(tableText, '7-李樱-溜了', { mouthOpen: 0.03 });
     expect(parseWorkLines(editedText).lines[1]!.mouthOpen).toBe(0.03);
     expect(() => editLineField(tableText, '7-李樱-没有', { mouthOpen: 0 })).toThrow(/没有 id = "7-李樱-没有"/);
   });
 
   it('写回：句子里有多行数组也认得出边界；改出来和预期内容不一致的不写、报错', () => {
-    const multiLines = ['[["台词"]]', 'id = "7-李樱-溜了"', '"角色" = "李樱"', '"种子" = [', '  [1],', '  [2]', ']', '"文本" = "溜了"', '', '[["台词"]]', 'id = "7-李樱-开到了"', '"文本" = "开到了"', ''].join('\n');
+    const multiLines = ['[["lines"]]', 'id = "7-李樱-溜了"', '"character" = "李樱"', '"seed" = [', '  [1],', '  [2]', ']', '"text" = "溜了"', '', '[["lines"]]', 'id = "7-李樱-开到了"', '"text" = "开到了"', ''].join('\n');
     const updatedText = editLineField(multiLines, '7-李樱-溜了', { mouthOpen: 0.03 });
     expect(parseWorkLines(updatedText).lines[0]).toEqual({ id: '7-李樱-溜了', character: '李樱', seed: [[1], [2]], text: '溜了', mouthOpen: 0.03 });
-    expect(updatedText).toContain('"文本" = "溜了"\n"开口" = 0.03\n');
-    const arrayAtEnd = ['[["台词"]]', 'id = "7-李樱-溜了"', '"文本" = "溜了"', '"种子" = [', '  1,', ']', '# 注释', ''].join('\n');
-    expect(editLineField(arrayAtEnd, '7-李樱-溜了', { mouthOpen: 0.03 })).toContain(']\n"开口" = 0.03\n# 注释');
+    expect(updatedText).toContain('"text" = "溜了"\n"mouthOpen" = 0.03\n');
+    const arrayAtEnd = ['[["lines"]]', 'id = "7-李樱-溜了"', '"text" = "溜了"', '"seed" = [', '  1,', ']', '# 注释', ''].join('\n');
+    expect(editLineField(arrayAtEnd, '7-李樱-溜了', { mouthOpen: 0.03 })).toContain(']\n"mouthOpen" = 0.03\n# 注释');
     // 多行字符串里像键的行：按行改会改错地方，校验拦下
-    const multiLineText = ['[["台词"]]', 'id = "7-李樱-溜了"', '"说明" = """', '"开口" = 1.0', '"""', '"文本" = "溜了"', ''].join('\n');
+    const multiLineText = ['[["lines"]]', 'id = "7-李樱-溜了"', '"说明" = """', '"mouthOpen" = 1.0', '"""', '"text" = "溜了"', ''].join('\n');
     expect(() => editLineField(multiLineText, '7-李樱-溜了', { mouthOpen: 0.03 })).toThrow(/按行改不了/);
   });
 });
@@ -149,11 +149,11 @@ describe('wav秒数', () => {
 describe('排合成批', () => {
   const workLineTable = parseWorkLines(
     [
-      '["配音"]', '"种子" = [1, 2]',
-      '["音色"."李樱"]', '"参考" = "音色/李樱/参考音频"', '"逐字稿" = "在拔刀剑迅冲斩面前"',
-      '[["台词"]]', 'id = "7-李樱-五万血"', '"角色" = "李樱"', '"文本" = "5万血？"', '"念" = "五万血？"',
-      '[["台词"]]', 'id = "7-李樱-溜了"', '"角色" = "李樱"', '"文本" = "溜了"',
-      '["台词"."合成"]', '"后端" = "别的后端"', '"念" = "溜了溜了"', '"参考" = "音色/李樱/别的"', '"逐字稿" = "别的"', '"种子" = [9]', '"语气参考" = "配音/没登记"',
+      '["voice"]', '"seed" = [1, 2]',
+      '["timbre"."李樱"]', '"reference" = "音色/李樱/参考音频"', '"transcript" = "在拔刀剑迅冲斩面前"',
+      '[["lines"]]', 'id = "7-李樱-五万血"', '"character" = "李樱"', '"text" = "5万血？"', '"spoken" = "五万血？"',
+      '[["lines"]]', 'id = "7-李樱-溜了"', '"character" = "李樱"', '"text" = "溜了"',
+      '["lines"."synth"]', '"backend" = "别的后端"', '"spoken" = "溜了溜了"', '"reference" = "音色/李樱/别的"', '"transcript" = "别的"', '"seed" = [9]', '"toneRef" = "配音/没登记"',
     ].join('\n'),
   );
   const assetLock: AssetLock = {
