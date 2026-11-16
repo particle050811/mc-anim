@@ -37,6 +37,7 @@ import { sectionFormatVersion } from './区段模型.ts';
 import { voxelFromState, blockProps, buildTintTable, biomeIndex } from './真实方块表.ts';
 import { sectionCells, paddedSectionCols, coarsestLevel, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
+import { base64Bytes } from '../core/base64.ts';
 
 export { paddedSectionCols };
 // 1：行程 gzip；2：全局初值逐格预测；3：每包模型（模型.bin）、32 类状态条件概率；4：区段从 32×32 改成 64×64（66 列带邻圈）、块从 2048 米改成 4096 米，编码同 3。
@@ -162,7 +163,7 @@ export const sectionToVoxels = (data: SectionData, tables: PackTable): VoxelGrid
 export type CoarseHeightMap = { cell: number; x0: number; y0: number; nx: number; ny: number; height: Int16Array };
 export const decodeCoarseHeight = (info: Pick<PackageInfo, 'coarseHeight'>): CoarseHeightMap => {
   const { cell: cellM, x0, y0, nx, ny, height: heightsB64 } = info.coarseHeight;
-  const bytes = Uint8Array.from(atob(heightsB64), (ch) => ch.charCodeAt(0));
+  const bytes = base64Bytes(heightsB64);
   return { cell: cellM, x0, y0, nx, ny, height: new Int16Array(bytes.buffer, 0, nx * ny) };
 };
 // 场景坐标 (x, y) 那一格里最高那块方块的顶（场景 z）；没有数据是 −Infinity（地形跟随取最高时不算它；选区段 用时 lib/体素/导入地形.ts 换成 0，见那里）
