@@ -29,7 +29,7 @@ export const farAoKeep = (distM: number) => {
   return 1 - (1 - farAo.keep) * t * t * (3 - 2 * t);
 };
 import type { V3 } from '../model/parts.tsx';
-import { selfLight } from '../light/光照配比.ts';
+import { selfLight, blockGlow } from '../light/光照配比.ts';
 import { orderInGroup } from '../core/稳定排序.ts';
 import { blockAtlas, blockAtlasGlsl } from './真实方块图集.ts';
 import { posScale, groupCount, skirtGroupStart, type FaceGroup } from './网格.ts';
@@ -46,6 +46,7 @@ varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varyin
 const FRAG_HEAD = `
 uniform sampler2D blockAtlas;
 uniform float selfLight;
+uniform float blockGlow;
 varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varying float vTop;
 float specMask;
 float farK;
@@ -124,6 +125,7 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.blockAtlas = { value: tex };
     sh.uniforms.selfLight = selfLight;
+    sh.uniforms.blockGlow = blockGlow;
     sh.uniforms.aoPass = aoPassUniform;
     sh.uniforms.uSec = sectionDisplacement;
     // vW：世界坐标里的格（随机转按格算）：缩放（一格 格 米）逐网格画时在 modelMatrix 里、批绘制时在 uSec.w 里，除回去
@@ -135,7 +137,8 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
       .replace('#include <map_fragment>', fragMap(materialClass === '镂空' || materialClass === '花草'))
       // 水的高光是倒影（粗糙度 0.1），不压
       .replace('#include <aomap_fragment>', materialClass === '水' ? '#include <aomap_fragment>' : '#include <aomap_fragment>\n  reflectedLight.directSpecular *= specMask;\n  reflectedLight.indirectSpecular *= specMask;')
-      .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * selfLight;')
+      // 发光方块：顶点色第 4 个字节是 255 − 贴图发光（网格.ts），乘发光倍数（光照配比.ts 的 blockGlow，默认 0），和全片的自发光取大的
+      .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * max(selfLight, (1.0 - vCol.a) * blockGlow);')
       // 屏幕 AO 第 1 遍（aoPass = 1）：alpha 输出 AO 减掉的比例（见 远处AO），AO 按 1 − alpha 压（lib/体素/屏幕AO.tsx）
       .replace('#include <opaque_fragment>', `#include <opaque_fragment>\n  if (aoPass > 0.5) gl_FragColor.a = smoothstep(${farAo.start.toFixed(1)}, ${farAo.full.toFixed(1)}, length(vViewPosition)) * ${(1 - farAo.keep).toFixed(3)};`);
     // 水：波纹、菲涅尔、天光反射，和导出网格的水同一段（lib/水面.ts）

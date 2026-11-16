@@ -108,3 +108,14 @@ export const useSelfLight = (k: number) => {
   useWriter(selfLightSlot, restoreOverworldEmissive);
   selfLight.value = k;
 };
+// 发光方块（engine/voxel/方块发光.ts）的自发光倍数：体素材质里 贴图色 × 发光强度 × 这个数，和 自发光 取大的。默认 0（主世界、暮色画面不变），
+// 世界自己开（下界，作品/亚波伦不放水/地点/真下界.tsx）；卸下时回 0
+export const blockGlow = { value: 0 };
+const blockGlowSlot = newWriteSlot();
+const resetBlockGlow = () => {
+  blockGlow.value = 0;
+};
+export const useBlockGlow = (k: number) => {
+  useWriter(blockGlowSlot, resetBlockGlow);
+  blockGlow.value = k;
+};
