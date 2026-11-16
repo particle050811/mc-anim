@@ -2,7 +2,7 @@
 
 Linker（BaiGave 的 Blender 插件，和我们同一定位）的问题都提到 GitHub 反馈仓库 `Linker-DEV-Team/linker-feedback`。作者那边每两小时自动查一次：AI 先分析、查重、尝试修复，再经测试和开发者评审，发版后在原 issue 回复。这个流程是用户在 Linker 交流群里提议的（用户 11-15 说）。群里的消息不会进这个流程，问题一律提 issue。
 
-第一次按这份文档报的是 [#2](https://github.com/Linker-DEV-Team/linker-feedback/issues/2)（`cull_caves` 卡住），可以照着写。
+第一次按这份文档报的是 [#2](https://github.com/Linker-DEV-Team/linker-feedback/issues/2)（导入卡住，起初以为是 `cull_caves`，查下来是玩家死了），可以照着写。
 
 ## 先查重，一次一题
 
@@ -77,7 +77,7 @@ gh issue create -R Linker-DEV-Team/linker-feedback --title "[Bug] <一句话>" -
 
 Linker 只能在 Windows 上跑，用渲染笔记本（`ssh render-laptop`）。11-07 起的测试环境都在 `D:\linker-test`：
 
-- `mc\`：portablemc 装的 NeoForge 1.21.1 客户端，存档是 `mc\saves\world`（种子 20261107）。
+- `mc\`：portablemc 装的 NeoForge 1.21.1 客户端，存档是 `mc\saves\world`（种子 20261107）。玩家是生存模式，客户端开久了会被幻翼打死；玩家死着时导入会空等 5 分钟后报 `range_bake_progress_stalled`（#2），先在游戏里点「重生」。
 - `launch-client-20.cmd`：用来起客户端。要用计划任务 `LinkerTestClient20` 在桌面会话里起（`schtasks /run`）；8765 端口开始监听就说明游戏进了存档。
 - `req\`：请求 JSON。
 - `runall-20.py <名…>`：按顺序跑这些请求，每次的耗时和峰值内存记在 `results\progress.log`，产物放在 `runs\<名>\`。
