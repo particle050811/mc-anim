@@ -121,7 +121,7 @@ export const hopAir = (pose: FigurePose, u: number, rightTuck = 1): FigurePose =
     legLRoll: -6,
   };
 };
-// 落地卸力（sinceLand 秒）：2 帧压到底、蹲住，0.35 秒起来（同 7-1 的落地缓冲，短一点：急退以后立刻要摆架势）
+// 落地卸力（sinceLand 秒）：0.08 秒压到底、蹲住，0.35 秒起来（同 7-1 的落地缓冲，短一点：急退以后立刻要摆架势）
 export const landingCushion = (sinceLand: number) => {
   if (sinceLand < 0 || sinceLand >= 0.42) return 0;
   if (sinceLand < 0.08) return 0.6 + 0.4 * smoothstep01(sinceLand / 0.08);

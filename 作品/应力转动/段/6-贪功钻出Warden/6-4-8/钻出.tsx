@@ -9,23 +9,23 @@ import { AncientCity4xCanvas } from '../../../地点/古城4x/6-4-1/古城画面
 import * as choreo from '../../../地点/古城4x/6-4-8/编排.ts';
 import { rad } from '@engine/core/数学.ts';
 
-// f：本段帧（6-4-7至9 的中间一截，见 ../6-4-7至9/）
-export const EmergeView: React.FC<{ f: number }> = ({ f: frame }) => {
+// segSec：本段秒（6-4-7至9 的中间一截，见 ../6-4-7至9/）
+export const EmergeView: React.FC<{ t: number }> = ({ t: segSec }) => {
   const { width, height } = useVideoConfig();
-  const wardenProps = choreo.warden(frame);
-  const pursuerPoses = choreo.pursuers(frame);
-  const t = choreo.emergeSec(frame);
+  const wardenProps = choreo.warden(segSec);
+  const pursuerPoses = choreo.pursuers(segSec);
+  const t = choreo.emergeSec(segSec);
   return (
-    <AncientCity4xCanvas 段="6-4-8" cam={choreo.camera(frame)} width={width} height={height} wool={choreo.woolNames}>
+    <AncientCity4xCanvas 段="6-4-8" cam={choreo.camera(segSec)} width={width} height={height} wool={choreo.woolNames}>
       <group position={choreo.WARDEN_AT} rotation={[0, 0, rad(choreo.WARDEN_YAW)]}>
         <Warden {...wardenProps} />
       </group>
       {/* 碎屑：跟着钻出动画快放，只撒 碎屑秒（1.18 秒），每刻 15 个（见 编排.ts 文件头） */}
       {t >= 0 && <BlockCrumbs center={choreo.WARDEN_AT} sec={t} perTick={15} durationSec={choreo.crumbSec} seed={3} />}
-      <ShriekRings p={choreo.SHRIEKER} sec={choreo.shriekSec(frame)} />
+      <ShriekRings p={choreo.SHRIEKER} sec={choreo.shriekSec(segSec)} />
       <LiuXinzhong pose={pursuerPoses.刘} />
       {/* 拉弓：急退落地以后搭箭拉满，弓的贴图照原版三档换（编排.ts 的 bowAt） */}
-      <HuangPan pose={pursuerPoses.黄} bow={choreo.bowAt(frame)} />
+      <HuangPan pose={pursuerPoses.黄} bow={choreo.bowAt(segSec)} />
     </AncientCity4xCanvas>
   );
 };

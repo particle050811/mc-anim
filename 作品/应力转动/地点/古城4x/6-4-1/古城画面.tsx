@@ -44,7 +44,7 @@ const Rig: React.FC<{ c: Cam; far?: number }> = ({ c: camSpec, far = 900 }) => {
 // 箱子方块 [x, y, z]（游戏坐标）在网格里的那一格，用来把网格里画死的箱子藏掉
 const chestHideBox = ([x, y, z]: number[]) => [x + 720 + 0.02, 239 - z + 0.02, y + 50 + 0.001, x + 721 - 0.02, 240 - z - 0.02, y + 51 - 0.02];
 
-// 地上的羊毛：placed 是已放下的（底面中心）；刚放下的一块用 pop（0～1）从小长到整块，2 帧过渡。
+// 地上的羊毛：placed 是已放下的（底面中心）；刚放下的一块用 pop（0～1）从小长到整块（各段 1/12～1/8 秒长满）。
 export const PlacedWool: React.FC<{ blocks: V3[]; popping?: { p: V3; k: number }[] }> = ({ blocks, popping = [] }) => (
   <>
     {blocks.length > 0 && <WoolBlocks blocks={blocks} />}

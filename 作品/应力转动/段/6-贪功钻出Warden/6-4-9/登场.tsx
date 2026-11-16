@@ -10,17 +10,17 @@ import * as K648 from '../../../地点/古城4x/6-4-8/编排.ts';
 import * as choreo from '../../../地点/古城4x/6-4-9/编排.ts';
 import { rad } from '@engine/core/数学.ts';
 
-// f：本段帧（6-4-7至9 的后一截，见 ../6-4-7至9/）
-export const RevealView: React.FC<{ f: number }> = ({ f: frame }) => {
+// t：本段秒（6-4-7至9 的后一截，见 ../6-4-7至9/）
+export const RevealView: React.FC<{ t: number }> = ({ t }) => {
   const { width, height } = useVideoConfig();
-  const pursuerPoses = choreo.pursuers(frame);
+  const pursuerPoses = choreo.pursuersAt(t);
   return (
-    <AncientCity4xCanvas 段="6-4-9" cam={choreo.camera(frame)} width={width} height={height} wool={K648.woolNames}>
+    <AncientCity4xCanvas 段="6-4-9" cam={choreo.camera(t)} width={width} height={height} wool={K648.woolNames}>
       <group position={choreo.WARDEN_AT} rotation={[0, 0, rad(choreo.WARDEN_YAW)]}>
-        <Warden {...choreo.warden(frame)} />
+        <Warden {...choreo.wardenAt(t)} />
       </group>
       <LiuXinzhong pose={pursuerPoses.刘} />
-      <HuangPan pose={pursuerPoses.黄} bow={choreo.bowAt(frame)} />
+      <HuangPan pose={pursuerPoses.黄} bow={choreo.bowTextureAt(t)} />
     </AncientCity4xCanvas>
   );
 };

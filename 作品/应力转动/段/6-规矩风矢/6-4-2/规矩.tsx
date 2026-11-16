@@ -1,5 +1,5 @@
 // 6-4-2 规矩：放大 4 倍的新城（古城4x画布，10-13）里，李樱跳切到兵营南门外（Q4），一小跳进城西头兵营，落在 #210 跟前开箱惹出第一次尖啸，定住不动，等黑暗效果过去接着翻箱子。
-// 编排见 编排.ts；成片段是 ../6-4-2至3a/，声音照那段 段.ts 的 cue 放。首帧接 6-4-1（中间四跳不演），末帧的下一帧是 6-4-3a 首帧（../古城4x布局.ts 的 六四二末帧），两段合成 6-4-2至3a（../6-4-2至3a/）。跳切（编排.ts）的成片帧用 剧情帧() 换。
+// 编排见 编排.ts；成片段是 ../6-4-2至3a/，声音照那段 段.ts 的 cue 放。首帧接 6-4-1（中间四跳不演），末帧的下一帧是 6-4-3a 首帧（../古城4x布局.ts 的 六四二末帧），两段合成 6-4-2至3a（../6-4-2至3a/）。跳切（编排.ts）的成片秒用 toStorySec() 换。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { FOG_4X } from '../../../地点/古城4x.tsx';
@@ -23,15 +23,14 @@ export const HIDE: number[][] = choreo.sensors.flatMap(([x, y, z]) => {
 });
 const blockBottomCenter = ([x, y, z]: number[]) => G4(x + 0.5, y, z + 0.5);
 
-// f 是剧情帧（编排.ts 的时间轴，不跳），可以带小数（核对用）；cam 不给就是这一帧镜头的机位
-export const RulesView: React.FC<{ f: number; cam?: Cam }> = ({ f: storyFrame, cam }) => {
+// t 是剧情秒（编排.ts 的时间轴，不跳）；cam 不给就是这一刻镜头的机位
+export const RulesView: React.FC<{ t: number; cam?: Cam }> = ({ t, cam }) => {
   const { width, height } = useVideoConfig();
-  const woolState = choreo.wool(storyFrame);
-  const t = storyFrame / choreo.FPS;
-  const tendrilClock = choreo.sensorClock(storyFrame);
+  const woolState = choreo.wool(t);
+  const tendrilClock = choreo.sensorClock(t);
   return (
-    <AncientCity4xCanvas 段="6-4-2" cam={cam ?? choreo.camera(storyFrame)} width={width} height={height} hide={HIDE} wool={woolState.wool} growingWool={woolState.growingWool} chestOpening={choreo.openChest(storyFrame)}>
-      <LiYingWithBlade pose={choreo.liying(storyFrame)} />
+    <AncientCity4xCanvas 段="6-4-2" cam={cam ?? choreo.camera(t)} width={width} height={height} hide={HIDE} wool={woolState.wool} growingWool={woolState.growingWool} chestOpening={choreo.openChest(t)}>
+      <LiYingWithBlade pose={choreo.liying(t)} />
       {choreo.sensors.map((b, i) => (
         <SculkSensor key={i} p={blockBottomCenter(b)} 秒={tendrilClock} secSinceActive={t - choreo.activateSecs[i]} seed={i + 1} />
       ))}

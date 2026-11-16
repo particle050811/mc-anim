@@ -12,10 +12,10 @@
 import { sample, type Key } from '@engine/anim/anim.ts';
 import { G4 } from '../../../地点/古城4x.tsx';
 import * as choreo643 from '../6-4-3/编排.ts';
-import { frameFractional } from '../6-4-3/时间线.ts';
+import { secFractional } from '../6-4-3/时间线.ts';
+import type { LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
-export const FPS = 24;
 // 李樱旁边那个感测体（6-4-3/编排.ts 的 感测体们[0]）激活、尖啸体喷声波的剧情时刻
 const sensor0StoryT = -choreo643.sensorStates(0)[0].secSinceActive;
 const shriekStoryT = choreo643.shriek!.t;
@@ -27,16 +27,17 @@ const startStoryT = sensor0StoryT - leadSec;
 // 段内秒（声音落点用）：感测体咔嗒、尖啸（尖啸要放 10 秒多，6-4-5 开头从响到的地方接着放）
 export const clickSec = leadSec;
 export const shriekSec = clickSec + (shriekStoryT - sensor0StoryT);
-// 台词落点（段内帧，A8 字幕读这里）：李樱「烦死了！」（src/配音/6-4-4-李樱-烦死了.wav，从原来「两次了。烦死了！」的配音里切出来的后半句）
-export const lines = { annoyed: { id: '6-4-4-李樱-烦死了', 帧: Math.round((shriekSec + lineDelaySec) * FPS) } } as const;
-export const frameCount = Math.round((shriekSec + lineDelaySec + lineSec + tailSec) * FPS);
+const toFrame = (sec: number) => Math.round(sec * 60) / 60; // 段长对齐到 1/60 秒（输出帧）
+// 台词落点（段内秒）：李樱「烦死了！」（src/配音/6-4-4-李樱-烦死了.wav，从原来「两次了。烦死了！」的配音里切出来的后半句）
+export const lines = { annoyed: { id: '6-4-4-李樱-烦死了', 秒: shriekSec + lineDelaySec } } as const satisfies Record<string, LineAt>;
+const durationSec = toFrame(shriekSec + lineDelaySec + lineSec + tailSec);
 
-// ---------- 时钟 ----------
-export const storySecAt = (f: number) => startStoryT + f / FPS;
-// 6-4-3 主时间线上带小数的全局帧（挡箭画面 按它画）
-export const deflectFrameAt = (f: number) => frameFractional(storySecAt(f));
+// ---------- 时钟（t = 段内秒） ----------
+export const storySecAt = (t: number) => startStoryT + t;
+// 6-4-3 主时间线上的画面秒（挡箭画面 按它画）
+export const deflectSecAt = (t: number) => secFractional(storySecAt(t));
 
 // ---------- 机位 ----------
 const camPose: Cam = { pos: G4(-1092.3, -45.3, 189.7), tgt: G4(-1087.2, -45.0, 194.2), lens: 22 };
-const LENS: Key[] = [[0, 22], [frameCount, 24]];
-export const camera = (f: number): Cam => ({ ...camPose, lens: sample(LENS, f) });
+const LENS: Key[] = [[0, 22], [durationSec, 24]];
+export const camera = (t: number): Cam => ({ ...camPose, lens: sample(LENS, t) });

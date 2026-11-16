@@ -63,8 +63,8 @@ export const rockLandSec = (() => {
   const i = geom.breachBlocks.findIndex((x) => x.join() === fallBlock.join());
   return geom.deflect + geom.breachTimes[i] + Math.sqrt((2 * (geom.blockCenter(fallBlock)[2] - groundZ - 0.5)) / 16);
 })();
-export const debrisBursts = (globalFrame: number): DebrisBurst[] => {
-  const t = storySecAt(globalFrame);
+export const debrisBursts = (g: number): DebrisBurst[] => {
+  const t = storySecAt(g);
   return geom.breachBlocks.map((block, i) => {
     const hitSec = geom.deflect + geom.breachTimes[i];
     const base = { dir: [0, 0, -1] as V3, origin: geom.blockCenter(block), seed: 30 + i, hidden: true };
