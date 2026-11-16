@@ -4,7 +4,7 @@
 // anim verify accept <段…> --reason <…> [--render]：把现在的切片记成认可版，写 <作品根>/认可/<平台>/<段键>.toml（进 Git）；一次可认可多段、共用一个理由，
 //   但要逐段点名（一个选择器对上多段就拒，见 认可.ts 的 点名不唯一）。认可文件都写完再从这版的切片抽认可参考。
 // anim verify backfill [<选择器…>]：从认可那版的切片抽出认可参考，之后认可那版删了也能比像素。
-// anim verify frames <选择器…> [--frames …] --save <名> | --compare <名> [--keep-images <目录>]：每帧 PNG 的 sha 存一份、再渲一次比，见 逐帧校验.ts。
+// anim verify frames <选择器…> [--frames …] --save <名> [--no-images] | --compare <名> [--tolerance <级>] [--keep-images <目录>]：每帧 PNG 的 sha 存一份、再渲一次比、报差多少，见 逐帧校验.ts。
 // 一律按视频级比；真要抽帧解码时才过放行闸（一次命令只过一次；指纹和认可版一样的段不解码、不等闸，用户 10-30 授权），
 // 缺切片加 --render 时渲染照旧过渲染闸（和 anim film 同一条路，出片/渲段.ts）。指纹一样、但段签说同一指纹重渲过（签名和认可记录不一样，或切片大小改于和段签记的不一样）的照样比：
 // 这时现在的切片不是认可那版，认可那版的像素只取认可参考，或段签证明是认可那版的切片，不拿现在的冒充。
@@ -77,10 +77,10 @@ const writePreviewNote = (previewDir: string, items: { key: string; comparedWith
   fs.writeFileSync(path.join(previewDir, '00-说明.md'), lines.join('\n'), 'utf8');
 };
 
-const perFrameNote = '--save 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --frames 是整段，不覆盖已有的）；--compare 再渲一次、列出不同的帧，有不同退出码 1：照基准存的帧连着渲，给了 --frames 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--keep-images 给空目录，在 --save 时留全部 PNG，在 --compare 时只留不同的帧。不写母版，不碰段签和认可';
+const perFrameNote = '--save 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --frames 是整段，不覆盖已有的），PNG 留在旁边的 <段键>/（--no-images 不留，比的时候就报不了差多少）；--compare 再渲一次、列出不同的帧，每帧报差像素占比（任一通道差 >0、>8、>32）、最大差、块平均差（和 anim reuse 同一套），结尾列最差的几帧；有不同退出码 1，--tolerance <级> 把最大差不超过它的帧算过（默认不给，逐字节）。照基准存的帧连着渲，给了 --frames 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--keep-images 给空目录，在 --save 时 PNG 留在那里，在 --compare 时只留不同的帧。不写母版，不碰段签和认可';
 
 const verifyCmd: Command = {
-  usage: 'verify [<选择器…>] [--render] [--to-preview <主题>]；verify accept <段…> --reason <…> [--render]；verify backfill [<选择器…>]；verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名>|--compare <名> [--keep-images <目录>]',
+  usage: 'verify [<选择器…>] [--render] [--to-preview <主题>]；verify accept <段…> --reason <…> [--render]；verify backfill [<选择器…>]；verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名> [--no-images]|--compare <名> [--tolerance <级>] [--keep-images <目录>]',
   note: `指纹变了的段抽帧和认可版比（比切片，按输出帧；--render 先把缺的切片渲出来），超过阈值就要 anim verify accept；认可记录是旧档的（1440p、编排帧数）报要重新认可。frames：${perFrameNote}`,
   跑: async (args, runRecord) => {
     if (args[0] === 'accept') return acceptCmd.跑(args.slice(1), runRecord);
@@ -292,20 +292,23 @@ const backfillRef: Command = {
 };
 
 const perFrameCmd: Command = {
-  usage: 'verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名>|--compare <名> [--keep-images <目录>]',
+  usage: 'verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名> [--no-images]|--compare <名> [--tolerance <级>] [--keep-images <目录>]',
   note: perFrameNote,
   跑: async (args, runRecord) => {
-    const p = parseArgs(args, { value: ['--frames', '--save', '--compare', '--keep-images'] });
+    const p = parseArgs(args, { value: ['--frames', '--save', '--compare', '--keep-images', '--tolerance'], toggles: ['--no-images'] });
     if (!p.位置.length) throw new UsageError('要给选择器（段键、段名、编号、场键、章）');
     const [saveName, compareName] = [p.value['--save'], p.value['--compare']];
     if ((saveName === undefined) === (compareName === undefined)) throw new UsageError('--save <名> 和 --compare <名> 要给一个，只给一个');
     const checkName = (saveName ?? compareName)!;
     if (!isValidTopic(checkName)) throw new UsageError(`名字「${checkName}」不能当文件夹名（不能有 <>:"/\\|?* 和控制字符，不以点或空格开头结尾）`);
     const frames = p.value['--frames'] ? parseFrames(p.value['--frames']) : null;
+    if (p.toggles.has('--no-images') && saveName === undefined) throw new UsageError('--no-images 只跟 --save：比的时候本来只留不同的帧');
+    const toleranceText = p.value['--tolerance'];
+    if (toleranceText !== undefined && (compareName === undefined || !/^\d+$/.test(toleranceText) || Number(toleranceText) > 255)) throw new UsageError(`--tolerance 只跟 --compare，写 0～255 的整数级（任一通道的最大差）：${toleranceText}`);
     const cues = await runCuesBeforeRender();
     const segments = await selectSegs(p.位置);
     checkSelectedSegCues(cues, segments);
-    return runPerFrame(segments, { checkMode: saveName !== undefined ? '存' : '比', name: checkName, frame: frames, keepDir: p.value['--keep-images'] ?? null, runRecord });
+    return runPerFrame(segments, { checkMode: saveName !== undefined ? '存' : '比', name: checkName, frame: frames, keepDir: p.value['--keep-images'] ?? null, noImages: p.toggles.has('--no-images'), tolerance: toleranceText === undefined ? null : Number(toleranceText), runRecord });
   },
 };
 
