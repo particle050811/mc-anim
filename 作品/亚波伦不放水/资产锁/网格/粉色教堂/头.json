@@ -1,6 +1,6 @@
 {
+  "lib": "私有",
   "sha256": "80f8f71c4dae9a5942fc30f477da7e5d70bf1952be41c964374cacdc43903faa",
-  "suffix": ".json",
   "size": 25238,
-  "lib": "私有"
+  "suffix": ".json"
 }

@@ -1,6 +1,6 @@
 {
+  "lib": "store",
   "sha256": "1e4f7fd523679fd58d682bac0a2d1ad41c81753f0470875da4437d5117c9d6ca",
-  "suffix": ".png",
   "size": 327,
-  "lib": "store"
+  "suffix": ".png"
 }

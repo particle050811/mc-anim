@@ -1,6 +1,6 @@
 {
+  "lib": "store",
   "sha256": "344a005f4d27fdee5d81ca129e5664a8fecc01b46cf5123a70d685721f9e2bcb",
-  "suffix": ".bin",
   "size": 1994882,
-  "lib": "store"
+  "suffix": ".bin"
 }

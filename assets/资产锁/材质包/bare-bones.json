@@ -1,6 +1,6 @@
 {
+  "lib": "私有",
   "sha256": "f362e683a1e59aed2fab35c839b2cb30ad3f60d509bed4414de9a9351884e4cd",
-  "suffix": ".zip",
   "size": 7791662,
-  "lib": "私有"
+  "suffix": ".zip"
 }

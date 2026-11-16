@@ -1,6 +1,6 @@
 {
+  "lib": "私有",
   "sha256": "c5621f95bdd93c829ea9a8e70d6fc05bed8a10724ffd9cf17a499c2f45cab219",
-  "suffix": ".fsh",
   "size": 3408,
-  "lib": "私有"
+  "suffix": ".fsh"
 }

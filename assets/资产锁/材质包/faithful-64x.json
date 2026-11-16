@@ -1,6 +1,6 @@
 {
+  "lib": "store",
   "sha256": "7420e04b09c5ff758df781ad1f591a49fe3560c120700f41fb683c62c986d400",
-  "suffix": ".zip",
   "size": 9608212,
-  "lib": "store"
+  "suffix": ".zip"
 }
