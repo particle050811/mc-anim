@@ -17,7 +17,7 @@ describe('资产锁', () => {
     writeAssetLock({ 'b/乙': { lib: 'store', suffix: '.png', size: 1, sha256: 'b'.repeat(64) }, 'b/甲/深': { sha256: 'a'.repeat(64), size: 2, lib: '私有', suffix: '.wav' }, 'b-c/丙': { sha256: 'c'.repeat(64), size: 3, lib: 'store', suffix: '.png' } }, d);
     const f = path.join(d, 'b', '甲', '深.json');
     const text = fs.readFileSync(f, 'utf8');
-    expect(text).toBe(JSON.stringify({ sha256: 'a'.repeat(64), suffix: '.wav', size: 2, lib: '私有' }, null, 2) + '\n');
+    expect(text).toBe(JSON.stringify({ lib: '私有', sha256: 'a'.repeat(64), size: 2, suffix: '.wav' }, null, 2) + '\n');
     // 按 id 的码位排：'-' U+002D 在 '/' U+002F 前面（按文件路径排就会反过来）；乙 U+4E59 在 甲 U+7532 前面
     expect(Object.keys(readAssetLock(d))).toEqual(['b-c/丙', 'b/乙', 'b/甲/深']);
     const py = spawnSync(process.platform === 'win32' ? 'python' : 'python3', ['-c', 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf-8")); sys.stdout.buffer.write((json.dumps(d,sort_keys=True,ensure_ascii=False,indent=2)+"\\n").encode())', f], { encoding: 'utf8' });
@@ -61,13 +61,13 @@ describe('资产锁', () => {
 });
 
 describe('资产表', () => {
-  it('中文键要加引号；缺字段、取值不对、来源格式不对、重复 id 都报出来', () => {
+  it('键加不加引号都认；缺字段、取值不对、来源格式不对、重复 id 都报出来', () => {
     const d = tmp();
     fs.writeFileSync(
       path.join(d, '贴图.toml'),
-      ['[["资产"]]', 'id = "贴图/甲"', '"类别" = "贴图"', '"来源" = "手工:画的"', '"许可" = "MIT"', '"可见性" = "公开"', '', '[["资产"]]', 'id = "贴图/乙"', '"类别" = "贴图"', '"来源" = "随便"', '"许可" = "MIT"', '"可见性" = "半公开"', '', '[["资产"]]', 'id = "贴图/丙"', '"类别" = "贴图"', '"来源" = "提取:网格图集@多个jar"', '"许可" = "MIT"', '"可见性" = "提取"', '', '[["资产"]]', 'id = "贴图/丁"', '"类别" = "贴图"', '"来源" = "提取:网格图集@0bdc89263616+56b71336d2b4"', '"许可" = "MIT"', '"可见性" = "提取"'].join('\n'),
+      ['[["asset"]]', 'id = "贴图/甲"', 'category = "贴图"', 'source = "手工:画的"', 'license = "MIT"', 'visibility = "公开"', '', '[["asset"]]', 'id = "贴图/乙"', '"category" = "贴图"', '"source" = "随便"', '"license" = "MIT"', '"visibility" = "半公开"', '', '[["asset"]]', 'id = "贴图/丙"', '"category" = "贴图"', '"source" = "提取:网格图集@多个jar"', '"license" = "MIT"', '"visibility" = "提取"', '', '[["asset"]]', 'id = "贴图/丁"', '"category" = "贴图"', '"source" = "提取:网格图集@0bdc89263616+56b71336d2b4"', '"license" = "MIT"', '"visibility" = "提取"'].join('\n'),
     );
-    fs.writeFileSync(path.join(d, '音效.toml'), ['[["资产"]]', 'id = "贴图/甲"', '"类别" = "音效"', '"来源" = "提取:原版音效@0123456789ab"', '"许可" = "MIT"', '"可见性" = "提取"'].join('\n'));
+    fs.writeFileSync(path.join(d, '音效.toml'), ['[["asset"]]', 'id = "贴图/甲"', '"category" = "音效"', '"source" = "提取:原版音效@0123456789ab"', '"license" = "MIT"', '"visibility" = "提取"'].join('\n'));
     const { entryMap, issues } = readAssetRegistry(d);
     expect(entryMap.get('贴图/甲')?.表).toBe('音效.toml');
     expect(issues).toEqual([
@@ -85,7 +85,7 @@ describe('资产表', () => {
   });
 });
 
-const assetToml = (id: string, visibility = '公开') => ['[["资产"]]', `id = "${id}"`, `"类别" = "${id.split('/')[0]}"`, '"来源" = "手工:测试"', '"许可" = "MIT"', `"可见性" = "${visibility}"`].join('\n');
+const assetToml = (id: string, visibility = '公开') => ['[["asset"]]', `id = "${id}"`, `"category" = "${id.split('/')[0]}"`, '"source" = "手工:测试"', '"license" = "MIT"', `"visibility" = "${visibility}"`].join('\n');
 
 /** 一个临时的共用侧（资产表目录、资产锁）、一部作品（作品根下 资产表/、资产锁/）和数据根 */
 const makeSides = (sharedEntries: string[], workEntries: string[]) => {
