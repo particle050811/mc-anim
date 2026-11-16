@@ -1,0 +1,11 @@
+# 格式：资产表　位置：assets/registry/*.toml、作品/*/资产表/*.toml
+# 读写：pipeline/资产/资产表.ts、取材/登记.ts、检查/规则/资产.ts　分类：Git　现有 31 个文件（31 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+可见性	visibility
+旧路径	oldPath
+来源	source
+类别	category
+许可	license
+说明	note
+资产	asset

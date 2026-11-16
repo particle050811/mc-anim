@@ -1,0 +1,20 @@
+# 格式：段签历史　位置：<数据根>/段签/<作品>/<段>/<h>/历史.jsonl
+# 读写：pipeline/段签/段签.ts、指纹/认指纹.ts　分类：数据根　现有 394 个文件（394 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+上次字节sha	prevByteSha
+上次派生于	prevDerivedAt
+原渲	origRender
+字节sha	byteSha
+存于	storedAt
+存法	storeKind
+帧	frame
+怎么复制	copyMethod
+沿用	reuse
+理由	reason
+结论	verdict
+自	reusedFrom
+记于	recordedAt
+说明	note
+转码	transcode
+这次字节sha	newByteSha

@@ -1,0 +1,20 @@
+# 格式：配乐分析　位置：作品/*/配乐/*.分析.json
+# 读写：engine/audio/曲目.ts　分类：Git　现有 1 个文件（1 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+低频	lowBand
+全频	fullBand
+分窗残差毫秒	windowResidualMs
+拍长	beatSec
+拟合	fit
+时长	duration
+残差均方根毫秒	residualRmsMs
+每小节拍数	beatsPerBar
+每秒	perSec
+波形	waveform
+生成	generated
+网格	grid
+说明	note
+起音数	onsetCount
+音频	audio
+首个强拍	firstDownbeat

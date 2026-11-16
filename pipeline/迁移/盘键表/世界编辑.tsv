@@ -1,0 +1,7 @@
+# 格式：世界编辑　位置：sourcing/worlds/*.编辑.toml
+# 读写：pipeline/世界/编辑/编辑文件.ts　分类：Git　现有 2 个文件（2 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+命令	command
+步	step
+说明	note

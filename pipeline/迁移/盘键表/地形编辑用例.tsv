@@ -1,0 +1,9 @@
+# 格式：地形编辑用例　位置：sourcing/mod/test/terrain-edit-cases/*.json、sourcing/datapacks/*/data/mcai/*.json
+# 读写：sourcing/mod/test/TerrainEditTest.java、terrain-edit-reference.mjs（不在 TS 改名里，要手改）　分类：Git　现有 73 个文件（5 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+框	box
+每个函数点数	pointsPerFunction
+种子	seed
+说明	note
+错例	badCases

@@ -1,0 +1,19 @@
+# 格式：规矩　位置：作品/*/规矩.toml、rules/*.toml
+# 读写：pipeline/检查/规则/规矩.ts、engine/core/例外.ts　分类：Git　现有 3 个文件（3 个含中文键）
+# 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+中文键	英文键
+例外	exceptions
+值	value
+出处	provenance
+单位	unit
+原因	cause
+原话	quotes
+场	scene
+备注	remark
+段	segment
+级别	level
+落点	placement
+规矩	rule
+说明	note
+针对	appliesTo
+默认值	defaultValue
