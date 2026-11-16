@@ -117,7 +117,7 @@ export const summonPlans = {
   /** 约 6 秒：仪式 2.5 秒、过渡 3.5 秒 */
   短: { name: '短', offeringVanishSec: 1.5, offeringFlyInSec: 0, completed: 2.5, 提示: 3.6, whisperSec: 4.8, appear: 6, totalSec: 7 },
   /** 约 10 秒：仪式 4 秒、过渡 6 秒 */
-  length: { name: '长', offeringVanishSec: 2.6, offeringFlyInSec: 0, completed: 4, 提示: 6, whisperSec: 8, appear: 10, totalSec: 11 },
+  长: { name: '长', offeringVanishSec: 2.6, offeringFlyInSec: 0, completed: 4, 提示: 6, whisperSec: 8, appear: 10, totalSec: 11 },
 } satisfies Record<string, SummonPlan>;
 
 const linearMap = (x: number, x0: number, x1: number, y0: number, y1: number) => y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
