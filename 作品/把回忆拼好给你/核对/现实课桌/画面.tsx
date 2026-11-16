@@ -7,12 +7,12 @@ import { RealDesk } from '../../现实/课桌.tsx';
 import { splitScreenCount, realFraming } from '../../场/2-门口/分屏参数.ts';
 import { orthoTop } from '../../画风.ts';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 
 const leftWidth = aspect.width / 2;
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: leftWidth, height: aspect.height, overflow: 'hidden' }}>

@@ -3,10 +3,10 @@ import type React from 'react';
 import { EndShot } from '../../场/2-末地/镜头.tsx';
 import { events } from '../../场/2-末地/编排.ts';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   return <EndShot f={events.photoEggPounce} clean={v.clean} />;
 };
 

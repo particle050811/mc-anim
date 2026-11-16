@@ -3,10 +3,10 @@
 // 默认材质的帧不传 mcLight，画布只放一盏强度 π 的环境光（漫反射 = 贴图原色）。地面是方块，顶面、南北面、东西面按 MC 的 1、0.8、0.6 平涂，看脚贴不贴地。
 // 正交缩放：三视图页面上每格 128 像素（出片每格 256 像素），只为看清楚，史蒂夫一个贴图像素 15 像素、苦力怕 16 像素；成片的像素密度看「像素密度」那帧。
 import { useThree } from '@react-three/fiber';
-import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
+import { CheckCanvas, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
@@ -16,7 +16,6 @@ import { SteveFirstPersonArm } from '@库/角色/史蒂夫第一人称.tsx';
 import { CREEPER, Creeper, type CreeperPose, creeperLookAt } from '@库/生物/苦力怕.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { views, type StevePosePreset, type CreeperPosePreset } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 import { sceneToThree } from '@engine/core/three换算.ts';
 
 const originPos: V3 = [0, 0, 0];
@@ -103,14 +102,14 @@ const TriView: React.FC<{ children: React.ReactNode; lit?: boolean; antialias?: 
   <>
     {cameraRigs.map((m, i) => (
       <div key={m.name} style={{ position: 'absolute', left: panel.间 + i * (panel.width + panel.间), top: panel.top, width: panel.width, height: panel.height, background: '#8fa3b8' }}>
-        <ThreeCanvas orthographic flat width={panel.width} height={panel.height} gl={{ antialias: !!antialias }}>
+        <CheckCanvas orthographic flat width={panel.width} height={panel.height} antialias={!!antialias}>
           <OrthoRig viewDir={m.viewDir} />
           {lit && <ambientLight intensity={Math.PI} />}
-          <group rotation={[-Math.PI / 2, 0, 0]}>
+          <ZUp>
             <Ground />
             {children}
-          </group>
-        </ThreeCanvas>
+          </ZUp>
+        </CheckCanvas>
         <div style={{ position: 'absolute', left: 10, bottom: 8, fontSize: 18, color: '#ffffff', textShadow: '0 1px 3px #000' }}>{m.name}</div>
       </div>
     ))}
@@ -138,10 +137,10 @@ const densityStands: { name: string; x: number }[] = [
 ];
 const PixelDensity: React.FC = () => (
   <div style={{ position: 'absolute', left: panel.间, top: panel.top, width: grid.width, height: grid.height, background: '#8fa3b8' }}>
-    <ThreeCanvas orthographic flat width={grid.width} height={grid.height} gl={{ antialias: false }}>
+    <CheckCanvas orthographic flat width={grid.width} height={grid.height} antialias={false}>
       <OrthoRig viewDir={[0, 1, 0]} pxPerCell={grid.pxPerCell} />
       <ambientLight intensity={Math.PI} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         {Array.from({ length: 15 }, (_, i) => (
           <mesh key={i} position={[i - 7, 0, -0.5]} material={grassMaterials[i % 2]}>
             <boxGeometry args={[1, 1, 1]} />
@@ -155,8 +154,8 @@ const PixelDensity: React.FC = () => (
           )),
         )}
         {densityStands.map((p, i) => (i === 2 ? <Creeper key={p.name} pose={{ loc: [p.x, 0, 0] }} /> : <Steve key={p.name} pose={attention([p.x, 0, 0], i === 1 ? 1 : undefined)} />))}
-      </group>
-    </ThreeCanvas>
+      </ZUp>
+    </CheckCanvas>
     {densityStands.map((p) => (
       <div key={p.name} style={{ position: 'absolute', left: grid.width / 2 - p.x * grid.pxPerCell - 110, width: 220, top: grid.height / 2 + 1.5 * grid.pxPerCell, textAlign: 'center', fontSize: 16, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
         {p.name}
@@ -171,7 +170,7 @@ const PixelDensity: React.FC = () => (
 );
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const { width, height } = useVideoConfig();
   let content: React.ReactNode = null;
   if (v.subject === '史蒂夫') {

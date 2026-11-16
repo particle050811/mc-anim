@@ -4,10 +4,10 @@ import type React from 'react';
 import { AbsoluteFill, Freeze } from 'remotion';
 import { TimeLagSplit } from '../../场/2-门口/时差分屏.tsx';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <Freeze frame={v.frame}>

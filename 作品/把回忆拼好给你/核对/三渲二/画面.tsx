@@ -2,6 +2,7 @@
 // 待迁移（私有资产）：对照用的游戏截图私有（核对段，不进成片），公开构建缺了怎么降级还没定
 import React, { useLayoutEffect, useRef } from 'react';
 import { AbsoluteFill, Img } from 'remotion';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
@@ -27,7 +28,6 @@ import { firstFloor, FirstFloorLighting, hallLamps } from '../../地点/隐世�
 import { pixelCount, orthoRig, orthoTop } from '../../画风.ts';
 import { palette } from '../../色板.ts';
 import { firstFloorRig, sideLookAt, views, perspectiveRig, type View } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 
 const houseInfo = houseRaw as unknown as BlockMeshInfo;
 const widthPx = 1280;
@@ -104,7 +104,7 @@ const PixelTextLine: React.FC = () => {
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const tone = palette[v.tone ?? '夏日白天'];
   const cameraRig = rigParams(v);
   return (

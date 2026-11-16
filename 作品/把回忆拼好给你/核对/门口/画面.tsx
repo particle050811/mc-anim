@@ -10,6 +10,7 @@ import { uiFontFamily } from '@库/界面/基础.tsx';
 import { MaidBubble, bubbleAnchorHeight } from '@库/界面/女仆气泡.tsx';
 import { PixelChatBar } from '@库/界面/像素聊天栏.tsx';
 import { aspect } from '../../分镜/时间.ts';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 import { filmScale as filmScale } from '@engine/三渲二/像素.ts';
 import { Outline } from '@engine/三渲二/描边.tsx';
 import { sideProjection } from '../../地点/侧剖面.tsx';
@@ -19,7 +20,6 @@ import { pixelFont } from '../../界面/像素字.ts';
 import { halfScreenFraming, fullScreenFraming, orthoTop, defaultSkyArc, type DoorFraming } from '../../场/2-门口/参数.ts';
 import { DoorCanvas } from '../../场/2-门口/门口.tsx';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 
 const width = aspect.width, height = aspect.height;
 const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入游戏
@@ -77,7 +77,7 @@ const CelestialPath: React.FC<{ framing: DoorFraming }> = ({ framing }) => {
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const houseProps = { doorOpen: v.doorOpen, chestOpen: v.chestOpen, treeProgress: v.treeProgress, hasSign: v.hasSign, 刻: v.刻, lightDarkAmp: v.lightDarkAmp, tone: v.tone, topDepth: v.topDepth };
   const framing = fullScreenFraming(v.N);
   const N = framing.pxPerCell / 16;

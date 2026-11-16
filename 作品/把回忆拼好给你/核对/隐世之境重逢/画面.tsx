@@ -1,8 +1,8 @@
 // 隐世之境重逢核对的画面：按视图表一帧画一个视图，右下角写视图名（右下角本来就是封面的时长角标区，不挡构图）。
 // 灯光先用一楼现成的那套（三渲二平涂底座还没并进来）。她用现成的魔法酒狐站姿（新表情、拿花另一路在做），头按门口的眼睛现算转过来看你。
-import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
+import { CheckCanvas, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
@@ -16,7 +16,6 @@ import { liYing, cameraRig } from '../../场/2-隐世之境/参数.ts';
 import { coverSafeArea } from '../../场/2-隐世之境/封面.ts';
 import { CoverChatLine, ReunionBubble } from '../../场/2-隐世之境/叠层.tsx';
 import { views, type View } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 
 const yellow = '#FFFF55';
 // 成片画幅的封面：48.61 出的「Steve加入了游戏」到 49.96 过了 27 刻，还是满亮；聊天栏缩放照原版 2560×1440 的界面尺寸 6
@@ -88,21 +87,20 @@ const World: React.FC<{ v: View }> = ({ v }) => {
   const pose = { ...standPose(liYing.feet), yaw: v.bodyFacing ?? liYing.bodyFacing };
   const gaze = liYingLookAt(doorwayEye, pose);
   return (
-    <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
-      <color attach="background" args={[skyColor]} />
+    <CheckCanvas width={aspect.width} height={aspect.height} background={skyColor}>
       <FirstPersonRig 眼={rig.眼} 看={rig.看} fov={rig.fov} near={'nearClip' in rig ? rig.nearClip : undefined} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         <HiddenLandReunionBackdrop 眼={rig.眼} doorLight={v.doorLight ?? true}>
           {v.hasLiYing && <MagicalWineFox pose={pose} stancePose="站" 看={gaze} expression="无" />}
           {v.showAnnotation && <Annotation bodyFacing={pose.yaw} />}
         </HiddenLandReunionBackdrop>
-      </group>
-    </ThreeCanvas>
+      </ZUp>
+    </CheckCanvas>
   );
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const rig = rigOf(v);
   const pose = { ...standPose(liYing.feet), yaw: v.bodyFacing ?? liYing.bodyFacing };
   const [pitch, yaw] = liYingLookAt(doorwayEye, pose);

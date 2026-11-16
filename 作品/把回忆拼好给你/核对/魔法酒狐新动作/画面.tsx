@@ -4,10 +4,10 @@
 // 三渲二的帧：成片的画法（engine/三渲二 的画布、本作品的正交像素机位和调子），她套 贴图像素对齐（只吸附）和描边；
 // 画布只开 320×180 页面像素，CSS 最近邻放大 4 倍铺满，看得清成片上的每个像素。
 import { useThree } from '@react-three/fiber';
-import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
+import { CheckCanvas, CheckLabel, checkGrey, NeutralLights, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
@@ -22,7 +22,6 @@ import { aspect } from '../../分镜/时间.ts';
 import { FirstPersonRig } from '../../地点/机位.tsx';
 import { MoonBellLily } from '../../物品/月铃兰.tsx';
 import { views, type View } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 import { sceneToThree } from '@engine/core/three换算.ts';
 
 const originPos: V3 = [0, 0, 0];
@@ -114,32 +113,28 @@ const ToonPicture: React.FC<{ v: View; props: MagicalWineFoxExProps }> = ({ v, p
 );
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const { props, 眼: eye, 看: lookAt, fov } = setupView(v);
   if (v.toon)
     return (
       <AbsoluteFill style={{ background: '#000000' }}>
         <ToonPicture v={v} props={props} />
-        <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-          <div>{v.name}</div>
+        <CheckLabel title={v.name}>
           <div style={{ fontSize: 16 }}>成片像素密度，最近邻放大 {toonScale} 倍</div>
-        </div>
+        </CheckLabel>
       </AbsoluteFill>
     );
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas key={v.ortho ? '正交' : '透视'} orthographic={!!v.ortho} width={aspect.width} height={aspect.height} gl={{ antialias: !v.ortho }}>
-        <color attach="background" args={['#5a5e66']} />
+      <CheckCanvas key={v.ortho ? '正交' : '透视'} orthographic={!!v.ortho} width={aspect.width} height={aspect.height} background={checkGrey.background} antialias={!v.ortho}>
         {v.ortho ? <OrthoRig 眼={eye} 看={lookAt} /> : <FirstPersonRig 眼={eye} 看={lookAt} fov={fov} />}
-        <group rotation={[-Math.PI / 2, 0, 0]}>
-          <ambientLight intensity={0.55 * Math.PI} />
-          <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
+        <ZUp>
+          <NeutralLights />
           <Ground />
           {v.legacyComponent ? <MagicalWineFox pose={props.pose} stancePose="站" blink={v.blink} sec={v.sec} /> : <MagicalWineFoxEx {...props} />}
-        </group>
-      </ThreeCanvas>
-      <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.name}</div>
+        </ZUp>
+      </CheckCanvas>
+      <CheckLabel title={v.name}>
         <div style={{ fontSize: 16 }}>
           姿势 {v.stancePose}
           {v.expression ? `，表情 ${v.expression}` : ''}
@@ -148,7 +143,7 @@ const picture: React.FC = () => {
           {v.legacyComponent ? '，旧组件 MagicalWineFox 姿势=站' : ''}
           {v.ortho ? '，正交' : ''}
         </div>
-      </div>
+      </CheckLabel>
     </AbsoluteFill>
   );
 };
