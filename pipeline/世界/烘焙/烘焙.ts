@@ -33,6 +33,8 @@ export type BakeParams = {
   output: string;
   lib: VoxelLib;
   log?: (s: string) => void;
+  /** 发光优先（合并.ts）：粗级合并时露在外面的发光方块优先，远处的熔岩、火不被合成岩石。世界声明 [bake] glowFirst，不给 = 照 Voxy 原样 */
+  glowFirst?: boolean;
   /** 可见变换（可见.ts）：定稿时埋住的格换填充方块、封死的腔填实，保真范围原样。不给 = 原样（anim world bake 按世界声明总是给） */
   visible?: VisibleSettings | null;
 };
@@ -243,7 +245,7 @@ export const bake = async (p: BakeParams): Promise<BakeResult> => {
       }
     writer.writeLevel(level, ti, tj);
     for (let levelNo = 1; levelNo <= coarsestLevel; levelNo++) {
-      level = mergeLevel(level, entryTable, voxelLib.knowledge.mergeKey, zb, zt);
+      level = mergeLevel(level, entryTable, voxelLib.knowledge.mergeKey, zb, zt, p.glowFirst === true);
       writer.writeLevel(level, ti, tj);
     }
     writer.writeBlock(ti, tj);
