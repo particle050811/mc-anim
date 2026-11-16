@@ -28,7 +28,7 @@ export const attachmentLimitBytes = 2 * 1024 ** 3;
 /** 随发布.toml：仓库 = "<owner>/<repo>"，标签 = "<tag>"，段 = [段键或章, …]（章写成字符串） */
 export const readReleaseManifest = (text: string): ReleaseManifest => {
   const d = parse(text) as Record<string, unknown>;
-  const expectedShape = `${releaseTableName} 要写 "仓库" = "<owner>/<repo>"、"标签" = "<tag>"、"段" = ["<段键或章>", …]`;
+  const expectedShape = `${releaseTableName} 要写 "repo" = "<owner>/<repo>"、"label" = "<tag>"、"segment" = ["<段键或章>", …]`;
   if (typeof d.repo !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(d.repo)) throw new Error(expectedShape);
   if (typeof d.label !== 'string' || !/^[\x21-\x7e]+$/.test(d.label)) throw new Error(`${expectedShape}（标签只用 ASCII）`);
   if (!Array.isArray(d.segment) || !d.segment.length || d.segment.some((x) => typeof x !== 'string' || !x)) throw new Error(expectedShape);

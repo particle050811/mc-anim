@@ -38,7 +38,7 @@ import { PackBlockSource, SaveBlockSource } from ${fileUrl('../查询/源.ts')};
 import fs from 'node:fs';
 import path from 'node:path';
 const lib = await loadVoxelLib();
-const 编辑 = parseEdits('[["步"]]\\n"命令" = ["setblock 5 70 5 minecraft:glass", "fill 20 61 2 22 63 4 minecraft:oak_planks"]', '/x/测.编辑.toml', lib.knowledge, () => { throw new Error('没有结构'); });
+const 编辑 = parseEdits('[["step"]]\\n"command" = ["setblock 5 70 5 minecraft:glass", "fill 20 61 2 22 63 4 minecraft:oak_planks"]', '/x/测.编辑.toml', lib.knowledge, () => { throw new Error('没有结构'); });
 const 区目录 = path.join(${JSON.stringify(worldDir)}, 'region');
 const 源们 = () => {
   const 器 = new EditApplier(编辑, new RegionSource(区目录, '1', null));

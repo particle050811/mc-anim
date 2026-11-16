@@ -19,8 +19,8 @@ describe('随仓库', () => {
   const makeBundleSet = (...entries: [string, LockEntry][]): BundleSet => ({ files: new Map(entries.map(([id, e]) => [e.sha256, { entry: e, ids: [id] }])), privateFiles: [], privateLibItems: new Map(), segKeys: ['2-甲'], terrain: [], issues: [] });
 
   it('随仓库.toml 只认非空的字符串数组', () => {
-    expect(readRepoManifest('"段" = ["2", "核对-封面帧"]').segment).toEqual(['2', '核对-封面帧']);
-    expect(() => readRepoManifest('"段" = [2]')).toThrow(/章也写成字符串/);
+    expect(readRepoManifest('"segment" = ["2", "核对-封面帧"]').segment).toEqual(['2', '核对-封面帧']);
+    expect(() => readRepoManifest('"segment" = [2]')).toThrow(/章也写成字符串/);
     expect(() => readRepoManifest('')).toThrow(/段/);
   });
 

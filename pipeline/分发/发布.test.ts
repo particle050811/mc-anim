@@ -24,10 +24,10 @@ const releaseLock = (o: Partial<ReleaseLock> = {}): ReleaseLock => ({
 
 describe('挂 Release 发字节', () => {
   it('随发布.toml 要仓库、ASCII 标签、非空段', () => {
-    expect(readReleaseManifest('"仓库" = "a/b"\n"标签" = "assets-v1"\n"段" = ["6", "核对"]')).toEqual({ repo: 'a/b', label: 'assets-v1', segment: ['6', '核对'] });
-    expect(() => readReleaseManifest('"仓库" = "a"\n"标签" = "v1"\n"段" = ["6"]')).toThrow();
-    expect(() => readReleaseManifest('"仓库" = "a/b"\n"标签" = "版本一"\n"段" = ["6"]')).toThrow();
-    expect(() => readReleaseManifest('"仓库" = "a/b"\n"标签" = "v1"\n"段" = []')).toThrow();
+    expect(readReleaseManifest('"repo" = "a/b"\n"label" = "assets-v1"\n"segment" = ["6", "核对"]')).toEqual({ repo: 'a/b', label: 'assets-v1', segment: ['6', '核对'] });
+    expect(() => readReleaseManifest('"repo" = "a"\n"label" = "v1"\n"segment" = ["6"]')).toThrow();
+    expect(() => readReleaseManifest('"repo" = "a/b"\n"label" = "版本一"\n"segment" = ["6"]')).toThrow();
+    expect(() => readReleaseManifest('"repo" = "a/b"\n"label" = "v1"\n"segment" = []')).toThrow();
   });
 
   it('附件名只用 ASCII，字节附件名跟着内容变', () => {

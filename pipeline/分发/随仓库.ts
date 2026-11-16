@@ -28,7 +28,7 @@ const shaNamePattern = /^[0-9a-f]{64}$/;
 /** 随仓库.toml：段 = [段键或章, …]（章写成字符串，如 "2"；「全部」是清单里的每一段） */
 export const readRepoManifest = (text: string): { segment: string[] } => {
   const doc = parse(text) as { segment?: unknown };
-  if (!Array.isArray(doc.segment) || !doc.segment.length || doc.segment.some((x) => typeof x !== 'string' || !x)) throw new Error(`${repoTableName} 要写 "段" = ["<段键或章>", …]（章也写成字符串）`);
+  if (!Array.isArray(doc.segment) || !doc.segment.length || doc.segment.some((x) => typeof x !== 'string' || !x)) throw new Error(`${repoTableName} 要写 "segment" = ["<段键或章>", …]（章也写成字符串）`);
   return { segment: doc.segment as string[] };
 };
 

@@ -1,8 +1,8 @@
 // 世界的编辑文件 sourcing/worlds/<世界>.编辑.toml：烘焙前按顺序套到存档读出的方块上（存档本身不动），让 Agent 不开游戏就能改地形。
-//   "说明" = "整份编辑是干什么的"            （键带引号：TOML 1.0 的裸键只能是 ASCII，和世界声明一样）
-//   [["步"]]
-//   "说明" = "这一步为什么"
-//   "命令" = "fill 39000 70 -1000 39010 75 -990 minecraft:stone"     # 也可以是数组，或多行字符串（一行一条，# 开头的行不算）
+//   note = "整份编辑是干什么的"
+//   [[step]]
+//   note = "这一步为什么"
+//   command = "fill 39000 70 -1000 39010 75 -990 minecraft:stone"     # 也可以是数组，或多行字符串（一行一条，# 开头的行不算）
 // 命令写法见 命令.ts。方块状态按方块表校验，结构文件读进来记 sha（编辑集.sha256 = 编辑文件 + 用到的结构字节，进地形登记的来源）。
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -40,15 +40,15 @@ export const structureBytes = (structNameOrPath: string, baseDir: string): Buffe
 const spreadCommands = (commandTable: Record<string, unknown>, fileName: string): [string, string, string | undefined][] => {
   const steps = commandTable['step'];
   if (steps === undefined) return [];
-  if (!Array.isArray(steps)) throw new EditFileError(`${fileName}：步 要写成 [["步"]]`);
+  if (!Array.isArray(steps)) throw new EditFileError(`${fileName}：step 要写成 [[step]]`);
   const out: [string, string, string | undefined][] = [];
   steps.forEach((s: Record<string, unknown>, i) => {
     const stepSource = `${fileName} 第 ${i + 1} 步`;
     const note = typeof s['note'] === 'string' ? (s['note'] as string) : undefined;
     const command = s['command'];
     const lines = typeof command === 'string' ? command.split('\n') : Array.isArray(command) && command.every((c) => typeof c === 'string') ? (command as string[]) : null;
-    if (!lines) throw new EditFileError(`${stepSource}：命令 要是字符串或字符串数组`);
-    for (const k of Object.keys(s)) if (k !== 'note' && k !== 'command') throw new EditFileError(`${stepSource}：不认识的字段 ${k}（只有 说明、命令）`);
+    if (!lines) throw new EditFileError(`${stepSource}：command 要是字符串或字符串数组`);
+    for (const k of Object.keys(s)) if (k !== 'note' && k !== 'command') throw new EditFileError(`${stepSource}：不认识的字段 ${k}（只有 note、command）`);
     for (const line of lines.map((x) => x.trim()).filter((x) => x && !x.startsWith('#'))) out.push([line, stepSource, note]);
   });
   return out;
@@ -63,7 +63,7 @@ export const parseEdits = (text: string, file: string, knowledge: Pick<BlockKnow
   } catch (e) {
     throw new EditFileError(`${fileName} 不是合法的 TOML：${(e as Error).message}`);
   }
-  for (const k of Object.keys(editTable)) if (k !== 'note' && k !== 'step') throw new EditFileError(`${fileName}：不认识的字段 ${k}（顶层只有 说明、[["步"]]）`);
+  for (const k of Object.keys(editTable)) if (k !== 'note' && k !== 'step') throw new EditFileError(`${fileName}：不认识的字段 ${k}（顶层只有 note、[[step]]）`);
   const stateIndex = new BlockTableIndex(knowledge.allStates);
   const known = new Set(knowledge.allStates);
   const structureCache = new Map<string, { 结构: Structure; bytes: Buffer }>();

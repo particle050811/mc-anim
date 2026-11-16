@@ -54,7 +54,7 @@ afterAll(() => {
 });
 
 const makeWorldDecl = (datapacks: string[], extra = '') =>
-  parseDecl(`"名称" = "测试新世界"\n"服务端" = "某服务端"\n"维度" = "minecraft:overworld"\n"种子" = 1752\n"Forge" = "1.20.1-47.4.10"\n"数据包" = ${JSON.stringify(datapacks)}\n${extra}`, '测试新世界');
+  parseDecl(`"displayName" = "测试新世界"\n"server" = "某服务端"\n"dimension" = "minecraft:overworld"\n"seed" = 1752\n"Forge" = "1.20.1-47.4.10"\n"datapacks" = ${JSON.stringify(datapacks)}\n${extra}`, '测试新世界');
 
 const setupServer = (mcaiClass?: string) => {
   const server = makeTempDir();
@@ -76,7 +76,7 @@ describe('建新世界', () => {
 
   it('声明的 世界类型、生成结构 默认 normal、true，可改', () => {
     expect(makeWorldDecl([])).toMatchObject({ worldType: 'minecraft:normal', generateStructures: true });
-    expect(makeWorldDecl([], '"生成结构" = false\n"世界类型" = "minecraft:large_biomes"\n')).toMatchObject({ worldType: 'minecraft:large_biomes', generateStructures: false });
+    expect(makeWorldDecl([], '"generateStructures" = false\n"世界类型" = "minecraft:large_biomes"\n')).toMatchObject({ worldType: 'minecraft:large_biomes', generateStructures: false });
   });
 
   it('数据包：sourcing/datapacks 里的目录、服务端 世界数据包/ 里的 zip 都找得到，找不到列出找过的地方', async () => {
@@ -101,7 +101,7 @@ describe('建新世界', () => {
   it.skipIf(process.platform === 'win32')('建世界：放数据包、临时改属性、核对模组认出、建出 level.dat，属性文件改回原文', async () => {
     const server = setupServer('mcai/TwilightGrid.class'), saveDir = path.join(server, '新世界');
     const logs: string[] = [];
-    const r = await buildWorld({ decl: makeWorldDecl(['通用/不生成龙巢', '暮色放大4倍'], '"生成结构" = false\n'), serverDir: server, save: saveDir, 说: (s) => logs.push(s), commands: ['say 你好', 'expect:收到 say 你好'] }).catch((e) => {
+    const r = await buildWorld({ decl: makeWorldDecl(['通用/不生成龙巢', '暮色放大4倍'], '"generateStructures" = false\n'), serverDir: server, save: saveDir, 说: (s) => logs.push(s), commands: ['say 你好', 'expect:收到 say 你好'] }).catch((e) => {
       throw new Error(`${e.message}\n${logs.join('\n')}`);
     });
     expect(r.datapacks).toEqual(['不生成龙巢', '暮色放大4倍']);
