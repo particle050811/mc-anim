@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: { 贴图: [], 面组: [], 方块: {} } }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { biome: {} } }));
+vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { 群系: {} } }));
 const P = await import('./区段包.ts');
 const { mulberry32 } = await import('../core/数学.ts');
 const { sectionCells, coarsestLevel } = await import('./区段.ts');

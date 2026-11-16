@@ -4,7 +4,7 @@ import { stevePose, steveRootMatrix } from '@库/角色/史蒂夫.tsx';
 import { joints, jointRootMatrix, meshSection, legExtend, squatLegAngle, hipHeight } from './史蒂夫关节.ts';
 
 // 库里的史蒂夫一 import 就要模型和皮肤的字节；这里只算姿势，给个空模型和 1×1 的图
-vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { width: { texW: 64, texH: 64, parts: [] } } } }));
+vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { 宽: { texW: 64, texH: 64, parts: [] } } } }));
 vi.mock('asset:贴图/角色/巨人/史蒂夫', () => ({ default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' }));
 
 describe('史蒂夫关节', () => {

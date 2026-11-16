@@ -7,7 +7,7 @@ import { addJointAction, landWeight, chargeWeight } from './史蒂夫关节动�
 import { defineWalk } from './史蒂夫走位.ts';
 
 // 库里的史蒂夫一 import 就要模型和皮肤的字节；这里只算姿势，给个空模型和 1×1 的图
-vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { width: { texW: 64, texH: 64, parts: [] } } } }));
+vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { 宽: { texW: 64, texH: 64, parts: [] } } } }));
 vi.mock('asset:贴图/角色/巨人/史蒂夫', () => ({ default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' }));
 
 // 往 +y 匀速走 2 格/秒；0.5 秒处脚下高了一格（地形的台阶，不是跳）；1.0～1.5 秒跳一下（重力 24.6，落回原高）

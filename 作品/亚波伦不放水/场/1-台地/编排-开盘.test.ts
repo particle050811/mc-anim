@@ -5,7 +5,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 const emptyImage = { default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' };
-vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { width: { texW: 64, texH: 64, parts: [] } } } }));
+vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { 宽: { texW: 64, texH: 64, parts: [] } } } }));
 vi.mock('asset:贴图/角色/巨人/史蒂夫', () => emptyImage);
 vi.mock('asset:模型/角色/娘化亚波伦', () => ({ default: { texW: 1, texH: 1, bones: [] } }));
 vi.mock('asset:动画/角色/娘化亚波伦/main', () => ({ default: { animations: {} } }));
