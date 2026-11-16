@@ -136,7 +136,7 @@ describe('日志过滤', () => {
     recordSchedulerEvent(e.logDir, '拿锁', { task: 'U', initiator: { lane: '别的' } });
     expect(countLines(await runCmd(e, 'log', '--route', '纹理核对'))).toBe(3);
   });
-  it('--from --to 按时刻比：只给日期的 --to 含当天；month-日和 --day 同格式；写错报用法错误', async () => {
+  it('--from --to 按时刻比：只给日期的 --to 含当天；月-日和 --day 同格式；写错报用法错误', async () => {
     const e = makeSchedEnv();
     for (const t of ['2026-10-31T23:59:00Z', '2026-11-01T08:00:00Z', '2026-11-02T00:00:00Z']) recordSchedulerEvent(e.logDir, '测试', {}, Date.parse(t));
     expect(countLines(await runCmd(e, 'log', '--to', '2026-11-01'))).toBe(2);

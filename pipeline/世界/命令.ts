@@ -85,7 +85,7 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   transcode: {
-    usage: 'transcode <pack…> [--from <version>] [--no-register] [--threads <n>]',
+    usage: 'transcode <包…> [--from <版本>] [--no-register] [--threads <n>]',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { value: ['--from', '--threads'], toggles: ['--no-register'] });
       if (!p.位置.length) throw new UsageError('要给包名（assets/地形版本.json 里的键）');
@@ -209,7 +209,7 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   pregen: {
-    usage: 'pregen <world> [--box <name> | --corners <x1,z1,x2,z2>] [--apply [--sandbox] [--save-dir <世界目录>] [--server-dir <服务端目录>] [--heap 12G] [--gen-threads <n>] [--stuck-minutes 10] [--old-gen-limit 90] [--max-stalled-restarts 3] [--no-fill-holes] [--from-scratch]]',
+    usage: 'pregen <世界> [--box <名> | --corners <x1,z1,x2,z2>] [--apply [--sandbox] [--save-dir <世界目录>] [--server-dir <服务端目录>] [--heap 12G] [--gen-threads <n>] [--stuck-minutes 10] [--old-gen-limit 90] [--max-stalled-restarts 3] [--no-fill-holes] [--from-scratch]]',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { value: ['--box', '--corners', '--save-dir', '--server-dir', '--heap', '--gen-threads', '--stuck-minutes', '--old-gen-limit', '--max-stalled-restarts'], toggles: ['--apply', '--sandbox', '--no-fill-holes', '--from-scratch'] });
       if (p.位置.length !== 1) throw new UsageError('要给一个世界名');
