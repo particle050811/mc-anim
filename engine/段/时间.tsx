@@ -5,6 +5,15 @@
 import React, { type ReactNode } from 'react';
 import { Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
 
+/**
+ * 这一层（最近的 Sequence，不在 Sequence 里就是整段）当前这一帧之后还有几秒（最后一帧时为 0）。
+ * 只给往后看的东西用：体素世界按航线提前备区段不越过这一截的末尾（engine/voxel/世界.tsx 的 `useLookahead`）
+ */
+export const useSecLeft = (): number => {
+  const { durationInFrames, fps } = useVideoConfig();
+  return Math.max(0, durationInFrames - 1 - useCurrentFrame()) / fps;
+};
+
 /** Composition 一秒几帧。只给时间工具自己和声音换算用，画面代码用秒 */
 export const useFrameRate = (): number => useVideoConfig().fps;
 

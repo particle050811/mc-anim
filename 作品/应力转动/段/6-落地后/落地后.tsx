@@ -75,7 +75,7 @@ export const tweakRiders = (t: number) => (onerRiders: Riders): Riders => {
 };
 
 export const AfterLandingView: React.FC<{ t: number; cam?: ReturnType<typeof choreo.camPose> }> = ({ t, cam: camOverride }) => (
-  <OnerFrame g={choreo.toOnerSec(t)} cam={camOverride ?? choreo.camPose(t)} tweakRiders={tweakRiders(t)} extra={<LandingParticles g={choreo.toOnerSec(t)} />} />
+  <OnerFrame g={choreo.toOnerSec(t)} cam={camOverride ?? choreo.camPose(t)} ahead={camOverride ? undefined : (dt) => choreo.camPose(t + dt)} tweakRiders={tweakRiders(t)} extra={<LandingParticles g={choreo.toOnerSec(t)} />} />
 );
 
 // 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（definePicture 自动挂）；t 是段内秒

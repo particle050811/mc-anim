@@ -37,7 +37,7 @@ export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
         <FlightFog visibility={choreo.visibility(globalSec)} far={trialFarM(terrain.farM)} />
-        <FlightRig c={cam} near={0.02} />
+        <FlightRig c={cam} near={0.02} ahead={(dt) => choreo.camera(globalSec + dt)} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 天、灯、云（lib/主世界光照.tsx）；日光投影见 lib/飞行镜头.tsx 的 `OverworldSunLight` */}
