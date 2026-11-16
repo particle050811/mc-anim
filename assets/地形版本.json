@@ -2,22 +2,22 @@
   "note": "地形区段包（正式段用的和只给预览用的都登记，后者在 说明 里写清）：<数据根>/terrain/<包名>/<版本>/，版本是内容指纹，目录只写不改。文件数、大小、清单sha256 由 anim world bake、转码 算（清单sha256 = 按相对路径排好的「路径\\tsha256」逐行再取 sha256）",
   "pack": {
     "暮色放大-1752-扩展": {
-      "version": "f9189151eaaa",
-      "source": "手工:取材服务端生成的暮色森林（放大 4 倍）存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 b29dfba0d167 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 d85050c74ee2 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 c42d60d01992 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 a5acd7e9165b 改键名",
+      "version": "4b8aed73c49f",
+      "source": "手工:取材服务端生成的暮色森林（放大 4 倍）存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 b29dfba0d167 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 d85050c74ee2 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 c42d60d01992 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 a5acd7e9165b 改键名；anim world transcode 从 a5acd7e9165b 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 58,
-      "size": 257606908,
-      "manifestSha256": "ce19599cb93fa8f9994d3ea7c40385afe55f4921eb7334f770784137ede275f2"
+      "fileCount": 19,
+      "size": 227992975,
+      "manifestSha256": "2449d1734686fb8759f33f440a51bfcc148e1a0cc6303ac883ed9e830c5c3cbf"
     },
     "主世界-116": {
-      "version": "7e41ece2fc99",
-      "source": "手工:取材服务端生成的主世界存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 9cd3fdcf8361 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 43b681414058 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 5c8a6378419e 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 4f4ce09adc78 改键名",
+      "version": "380a9da31469",
+      "source": "手工:取材服务端生成的主世界存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 9cd3fdcf8361 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 43b681414058 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 5c8a6378419e 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 4f4ce09adc78 改键名；anim world transcode 从 4f4ce09adc78 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 63,
-      "size": 257719626,
-      "manifestSha256": "b7c36836692500268539a9a7fba033cb9a7d92474a31dc18df038567eb565953"
+      "fileCount": 26,
+      "size": 224929886,
+      "manifestSha256": "dffff0e22e9f36a2c39cc78ca44c3c4e2271456195e79d8848843fdb276acce6"
     },
     "主世界-116-远景": {
       "version": "811fc551250c",
@@ -30,24 +30,24 @@
       "manifestSha256": "428b97206dafdd58a735103d14f064a0183cf642c884aa70e1818dc10b9ba09c"
     },
     "暮色-远景片场": {
-      "version": "e53f7a675223",
-      "source": "手工:取材客户端-远景 片场存档里原版尺寸的暮色森林，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 dd06ec2eff1c 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 16e7bc057f0d 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 df4e879500e6 改键名",
+      "version": "95ce837a0421",
+      "source": "手工:取材客户端-远景 片场存档里原版尺寸的暮色森林，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 dd06ec2eff1c 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 16e7bc057f0d 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 df4e879500e6 改键名；anim world transcode 从 e53f7a675223 转成格式 4（64×64 区段、每包状态条件模型；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
       "note": "地标网格就是从这片地导出的；正式段不用，旧项目 地貌导入预览、地标巡检 用",
       "fileCount": 7,
-      "size": 4932055,
-      "manifestSha256": "d26150b5213e7a08360b7d77a6d25f3f904873b67055e781a95db848a2f6d0e9"
+      "size": 4481948,
+      "manifestSha256": "f216018fe5e28d724d72d46545ff278f478d84d7640f36d918ecaaa52907b26a"
     },
     "测试-修整-岛": {
-      "version": "f50e095335df",
-      "source": "手工:取材服务端-主世界 测试-修整-种子116 存档的 RX 75～79、RZ -5～0，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 887d3c5c1b89 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 ea8e4fb3f0a4 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 2ee8d068d56b 改键名",
+      "version": "59f6f772db5a",
+      "source": "手工:取材服务端-主世界 测试-修整-种子116 存档的 RX 75～79、RZ -5～0，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 887d3c5c1b89 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 ea8e4fb3f0a4 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 2ee8d068d56b 改键名；anim world transcode 从 f50e095335df 转成格式 4（64×64 区段、每包状态条件模型，过可见变换；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
       "note": "主世界修整的试验包；正式段不用，旧项目 主世界修整窗外、主世界远景预览 用",
-      "fileCount": 9,
-      "size": 14449856,
-      "manifestSha256": "83d856cb5616b02a835796eeb8c438993a4c46f041b52f43b2af6c15272b0eea"
+      "fileCount": 7,
+      "size": 6885011,
+      "manifestSha256": "eddc1a7f981c26776266c6b3e1e527b144b8b95efe0455b199ccb044eca9e7af"
     },
     "暮色放大-1752-远景": {
       "version": "7d762d294e6a",
@@ -59,22 +59,22 @@
       "manifestSha256": "af8dcc0a519b81c152b12a24a189a8d6d64c32b09df2e6cebf136c7d621e0b45"
     },
     "暮色放大-1752-远地标": {
-      "version": "330fab40bc05",
-      "source": "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙；盘键迁移从 cda55bb7f0a2 改键名",
+      "version": "3dc2980684fe",
+      "source": "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙；盘键迁移从 cda55bb7f0a2 改键名；anim world transcode 从 cda55bb7f0a2 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 162,
-      "size": 35750886,
-      "manifestSha256": "0117dc6668d98153e8ed013ac59ea3197cbfcbf892fe6b89392c8cdc9a8cb365"
+      "fileCount": 54,
+      "size": 26208281,
+      "manifestSha256": "05d4eda68ada77330ea37f73c30449932cb24e5a82b90e15faa4ff4278a01381"
     },
     "下界-无结构-1110": {
-      "version": "ee02641c105d",
-      "source": "取材服务端 下界-无结构-1110 存档的下界 RX 0～2、RZ -3～0，套编辑层（场地一带的模组岩层换成下界岩，地形不动），anim world bake 烘焙（全高），套编辑 sourcing/worlds/下界-无结构-1110.编辑.toml（2 条命令，sha256 ae4ee1294b68）；盘键迁移从 052c14aea78a 改键名",
+      "version": "2c8d7316dd0e",
+      "source": "取材服务端 下界-无结构-1110 存档的下界 RX 0～2、RZ -3～0，套编辑层（场地一带的模组岩层换成下界岩，地形不动），anim world bake 烘焙（全高），套编辑 sourcing/worlds/下界-无结构-1110.编辑.toml（2 条命令，sha256 ae4ee1294b68）；盘键迁移从 052c14aea78a 改键名；anim world transcode 从 ee02641c105d 转成格式 4（64×64 区段、每包状态条件模型，过可见变换；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
       "fileCount": 5,
-      "size": 18511736,
-      "manifestSha256": "88a13ef5c5cef64fbb8a1209ae74a992aea1bb84c7389b41ee38083cc4d42dda"
+      "size": 8262541,
+      "manifestSha256": "d7c2d95f6e3157d536e51d2fcd2d58a4c06f0d81fc913a723a8280f652ff86cc"
     }
   }
 }
