@@ -62,6 +62,17 @@ describe('新段', () => {
     expect(readText(workRoot, '段/1-开门/画面.tsx')).not.toContain('1-开门');
   });
 
+  it('核对段：视图表模板，一秒一个视图、没有声音，排进清单', async () => {
+    newWork(tempDir, '试作');
+    const workRoot = path.join(tempDir, '作品', '试作');
+    const written = newSegment(workRoot, '核对-灯', {});
+    expect(written.map((f) => path.relative(workRoot, f)).sort()).toEqual(['核对/灯/段.ts', '核对/灯/画面.tsx', '核对/灯/视图.ts', '清单.ts'].sort());
+    const seg = (await freshExec(path.join(workRoot, '核对/灯/段.ts'), codeRoot())).default as SegmentDef;
+    expect([seg.scene, seg.sec, seg.width, seg.height, seg.terrain, seg.sound]).toEqual(['核对', 2, 1280, 720, [], undefined]);
+    expect(readText(workRoot, '清单.ts')).toMatch(/\{ key: '核对-灯', 章: '核对' \},\n\];/);
+    expect(readText(workRoot, '核对/灯/画面.tsx')).toMatch(/@engine\/段\/核对画面\.tsx/);
+  });
+
   it('老场（只有 defineSeg 写的老段、没有场时间线）：用 continueOldSeg 摆上老段，新段接在最后一个老段后面，老段文件不动', async () => {
     newWork(tempDir, '试作');
     const workRoot = path.join(tempDir, '作品', '试作');
