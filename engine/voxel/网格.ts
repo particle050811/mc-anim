@@ -14,14 +14,14 @@
 //   区段改成 64×64 后少了中间那道，6-穿塔斩首领 1060 的洞壁漏出棋盘格光斑。补回来以后阴影和 32×32 时一样（用户 11-16 定修到和改前一样暗）。
 // - 面朝向亮度不烤进顶点（不照 Voxy 的 computeDirectionalFaceTint）：明暗全交给灯算，和导出网格（lib/方块网格.tsx）一致（用户 10-04 定）。
 // - 环境光遮蔽不在网格里：照 Voxy 用屏幕空间的（lib/体素/屏幕AO.tsx），网格不算顶点 AO，四个角一样亮，合并得更多。
-import { voxelFromState, blockProps, faceTable, faceStride } from './真实方块表.ts';
+import { voxelFromState, blockProps, faceTable, faceStride, textureGlow } from './真实方块表.ts';
 import type { VoxelGrid } from './生成.ts';
 
 const { full: FULL, leaf: LEAF, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS, plant: PLANT } = blockProps;
 const FACES = faceTable;
 
 // 一组面（同一种材质）：每个顶点 位置 xyz（相对体素块原点、以格为单位 × 64，Int16）、uv（× 16，Int16）、
-// 贴图（底层号 + 4096 × 乘染色 + 8192 × 随机转；叠加层，65535 = 没有；另一面的贴图号 + 4096 × 乘染色：侧面存这块方块的顶面、顶面存它的侧面，65535 = 没有，远处两面按它混成一样的颜色，见 lib/体素/材质.ts 的 台阶并色；空着）、颜色（染色 rgb，sRGB 字节；第 4 个字节空着，顶点属性按 4 字节对齐）。
+// 贴图（底层号 + 4096 × 乘染色 + 8192 × 随机转；叠加层，65535 = 没有；另一面的贴图号 + 4096 × 乘染色：侧面存这块方块的顶面、顶面存它的侧面，65535 = 没有，远处两面按它混成一样的颜色，见 lib/体素/材质.ts 的 台阶并色；空着）、颜色（染色 rgb，sRGB 字节；第 4 个字节 = 255 − 贴图发光，真实方块表.ts 的 贴图发光，不发光的是 255）。
 // 面按朝向排好：段[g]～段[g + 1] 是第 g 组（+x -x +y -y +z -z 不沿轴，再是 +x -x +y -y 的裙边，见文件头）
 export type FaceGroup = { n: number; pos: Int16Array; uv: Int16Array; tex: Uint16Array; col: Uint8Array; segment: number[] };
 export type SectionMesh = { 实心: FaceGroup; 镂空: FaceGroup; 实心树叶: FaceGroup; 水: FaceGroup; 花草: FaceGroup; shadowPlanes: FaceGroup; faceCount: number };
@@ -69,7 +69,7 @@ class FaceBuffer {
       this.col[colorAt] = red;
       this.col[colorAt + 1] = green;
       this.col[colorAt + 2] = blue;
-      this.col[colorAt + 3] = 255;
+      this.col[colorAt + 3] = 255 - textureGlow[t0 & 4095];
     }
     this.n++;
   }

@@ -44,6 +44,8 @@ export type WorldDecl = {
   packDimension: string;
   /** 烘焙时整个高度都存（有顶的维度：从上往下第一层是基岩顶，按「最高整格方块 = 地表」只会存下一层顶）；见 烘焙/烘焙.ts 的 全高 */
   fullHeight: boolean;
+  /** 烘焙时粗级合并发光优先（烘焙/合并.ts）：露在外面的熔岩、火、萤石……远处不被合成岩石。[bake] glowFirst，不写 false（照 Voxy 原样） */
+  glowFirst: boolean;
   seed?: string;
   /** 建新世界时写进 server.properties 的 level-type；不写 minecraft:normal（地形模组改的是普通世界，large_biomes 和 Tectonic 互斥） */
   worldType: string;
@@ -113,6 +115,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
     if (!packDimension) throw fileError(`维度 ${dimension} 不认识，要在 [烘焙] 写 包维度（包.json 的 维度）`);
     if (bake.全高 !== undefined && typeof bake.全高 !== 'boolean') throw fileError('烘焙.全高 要写 true 或 false');
     const fullHeight = typeof bake.全高 === 'boolean' ? bake.全高 : (knownDim?.fullHeight ?? false);
+    if (bake.glowFirst !== undefined && typeof bake.glowFirst !== 'boolean') throw fileError('烘焙.glowFirst 要写 true 或 false');
     const parseOrigin = (v: unknown, fieldName: string): [number, number, number] | undefined => {
       if (v === undefined) return undefined;
       if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isInteger)) throw fileError(`${fieldName} 要写 [ox, oy, oz] 三个整数`);
@@ -183,6 +186,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       dimension: dimension,
       packDimension,
       fullHeight,
+      glowFirst: bake.glowFirst === true,
       seed: d.seed === undefined ? undefined : String(d.seed),
       worldType: typeof d.世界类型 === 'string' ? d.世界类型 : 'minecraft:normal',
       generateStructures: d.generateStructures !== false,

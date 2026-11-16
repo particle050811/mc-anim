@@ -10,7 +10,7 @@
 //     满 整格不透明（挡住贴着它的面）、遮 整格碰撞箱（环境光遮蔽里算挡光，树叶也算）、叶 树叶（整格、镂空）、
 //     光 模型要不要环境光遮蔽（花草是 false）、层 渲染层 0 实心 / 1 镂空 / 2 半透明（冰） / 3 液体、染 染色路（见 染色路名）、
 //     转 顶面随机转（草方块、泥土：方块状态里 4 个只差 y 旋转的变体）、偏 花草按位置水平偏移（OffsetType.XZ）、草 不挡光的小东西（花草）、
-//     十字 有不沿轴的面（花草的十字模型）
+//     十字 有不沿轴的面（花草的十字模型）、发光 自发光 0～255（方块发光.ts）
 //   面表[体素值]：这种方块的全部面，每面 面长 个数：
 //     [朝向 0～5（+x -x +y -y +z -z，场景坐标）或 6 = 不沿轴, 剔除方向 0～5 或 6 = 不剔, 贴图号, 叠加贴图号（草方块侧面的草边，-1 = 没有）,
 //      染（底层乘不乘染色）, 明暗（按朝向分不分亮度）, 四个角 xyz（方块里 0～1，从外面看顺时针：左上 右上 右下 左下）, 四个角 uv（一张贴图为 1）,
@@ -21,6 +21,7 @@
 //     染色路 0 不染 1 草 2 树叶 3 林冠树叶 4 红树叶 5 水 6～ 定值（云杉叶 #619961、白桦叶 #80a755、睡莲 #208030……，规则见 关键帧方块.py）
 import raw from 'asset:数据/场景/关键帧/方块表';
 import { biomeIds, biomeColors, grassColor, foliageColor, waterColor } from './群系色.ts';
+import { blockGlow } from './方块发光.ts';
 
 type FaceData = (string | number)[];
 // 一条方块：[标志, 染色路, 面组号...]，标志 = 类（0 实心 1 镂空 2 半透明 3 液体）+ 4 满 + 8 遮 + 16 光 + 32 转 + 64 偏（见 关键帧方块.py）
@@ -138,7 +139,26 @@ blockNames.forEach((stateName, i) => {
   });
   FACES[voxel] = faceBuf;
 });
-export const blockProps = { full: FULL, occlusion: OCC, leaf: LEAF, 光: AO, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS, plant: PLANT, cross: CROSS, opaque: OPAQ };
+// 自发光（方块发光.ts）：每种方块 0～255；按贴图再取一份（贴图发光）：用到这张贴图的发光方块里最亮的，但原版有不发光的方块也用它就算不亮
+// （南瓜灯的侧面和南瓜共用，不亮；只有刻脸那面亮）。模组方块借原版贴图的不算（匠魂的 ichor_slime 借了熔岩贴图，不能因此让熔岩不亮）。
+// 网格把贴图发光写进顶点（网格.ts），合并键里本来就有贴图号，同一张贴图发光一样，合并不用另加键
+const GLOW = new Uint8Array(tableSize);
+const textureGlowMax = new Uint8Array(DATA.贴图.length);
+const textureVanillaDark = new Uint8Array(DATA.贴图.length);
+blockNames.forEach((stateName, i) => {
+  const voxel = i + 1;
+  GLOW[voxel] = Math.round(blockGlow(stateName) * 255);
+  const vanilla = stateName.startsWith('minecraft:');
+  const faceBuf = FACES[voxel];
+  for (let base = 0; base < faceBuf.length; base += faceStride)
+    for (const t of [faceBuf[base + 2], faceBuf[base + 3]]) {
+      if (t < 0) continue;
+      if (GLOW[voxel]) textureGlowMax[t] = Math.max(textureGlowMax[t], GLOW[voxel]);
+      else if (vanilla) textureVanillaDark[t] = 1;
+    }
+});
+export const textureGlow = textureGlowMax.map((g, t) => (textureVanillaDark[t] ? 0 : g));
+export const blockProps = { full: FULL, occlusion: OCC, leaf: LEAF, 光: AO, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS, plant: PLANT, cross: CROSS, opaque: OPAQ, glow: GLOW };
 export const voxelCount = tableSize;
 export const faceTable: readonly Float32Array[] = FACES;
 export const textureNames: readonly string[] = DATA.贴图;

@@ -23,6 +23,8 @@ export type BlockKnowledge = {
   tint: Uint8Array;
   opaque: Uint8Array;
   full: Uint8Array;
+  /** 自发光 0～255（engine/voxel/方块发光.ts）；测试的小表可以不给 = 都不发光 */
+  glow?: Uint8Array;
   mergeKey: (op: number, L: number, lx: number, ly: number, lz: number, prio: number) => number;
   biomeScaleSeed: (seed: string) => Promise<bigint>;
   biomeCell: (scaleSeed: bigint, x: number, y: number, z: number) => [number, number, number];
@@ -52,6 +54,7 @@ export const loadVoxelLib = () =>
       tint: blockTable.blockProps.tint,
       opaque: blockTable.blockProps.opaque,
       full: blockTable.blockProps.full,
+      glow: blockTable.blockProps.glow,
       mergeKey: generator.mergeKey,
       biomeScaleSeed: (s) => biomeColor.biomeZoomSeed(s),
       biomeCell: biomeColor.biomeCell,

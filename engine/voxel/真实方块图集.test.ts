@@ -61,7 +61,7 @@ describe('方块图集', () => {
     expect(hash(...allLevels(a.original))).toMatchInlineSnapshot(`"ff919fc75bd3c4dda2ee65f59b4017ebe6a8ff0c046eeb8c391eebd3804f5abe"`);
     expect(hash(...allLevels(a.solid))).toMatchInlineSnapshot(`"b1ed730fe126b7192cc3237d81e9dadd2d9bd7e500cb0bd3b19fed2ef5856d1a"`);
     expect(hash(atlas.blockAtlasGlsl())).toMatchInlineSnapshot(`"d6dd78968605f7f960fbd919567955526c7be4add9effbd04c08233b6bc82034"`);
-    expect(hash(...(['实心', '镂空', '实心树叶', '水', '花草'] as const).map((k) => shaderSource(materialModule, k)))).toMatchInlineSnapshot(`"91e32f0635095eb03d724026260104f139e0f1cfb659f80c4f0e30b8ff199b17"`);
+    expect(hash(...(['实心', '镂空', '实心树叶', '水', '花草'] as const).map((k) => shaderSource(materialModule, k)))).toMatchInlineSnapshot(`"b5b1af615d03bdaace6befc7735ac670611bb745516ce4d8b0647ee10d893691"`);
   });
   it('纯色方块：16 像素一格的压色和支持高清之前一样', async () => {
     const { flattenAtlasColors } = await import('./纯色方块.ts');

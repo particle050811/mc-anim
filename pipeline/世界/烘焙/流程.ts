@@ -54,7 +54,7 @@ export const bakeWorld = async (w: WorldDecl, o: BakeOptions): Promise<PackResul
       const t0 = performance.now();
       // 可见变换总是做（用户 11-15 定「这个要用」）：保真范围外埋住的格换填充方块，见 烘焙/可见.ts
       const visible = { fillBlock: w.visible.fillBlock, faithful: w.visible.faithful.map((x) => x.boxes) };
-      r = await bake({ regions, getRegion: (rx, rz) => regionSource.region(rx, rz), dimension: w.packDimension, origin: b.origin, fullHeight: w.fullHeight, output: staging.dir, lib: voxelLib, log: o.log, visible });
+      r = await bake({ regions, getRegion: (rx, rz) => regionSource.region(rx, rz), dimension: w.packDimension, origin: b.origin, fullHeight: w.fullHeight, glowFirst: w.glowFirst, output: staging.dir, lib: voxelLib, log: o.log, visible });
       o.log(`烘焙完，${((performance.now() - t0) / 1000).toFixed(1)} 秒；${r.blockFileCount} 个块文件，${r.pack.state.length} 种状态、${r.pack.biome.length} 种群系、${r.entryCount} 种条目；缺状态 ${r.missingStates.size} 种、群系 ${r.missingBiomes.size} 种（见 缺失.tsv）`);
       ({ version: version, 目录: dir } = release(b.name, staging.dir));
     } finally {

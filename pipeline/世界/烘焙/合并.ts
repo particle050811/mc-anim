@@ -27,8 +27,54 @@ export class SegmentBuffer {
   }
 }
 
-/** 第 L 级 ← 第 L−1 级；zb、zt 是第 0 级最低、最高一格（场景 z） */
-export const mergeLevel = (prev: Level, entryTable: EntryTable, mergeKey: (op: number, L: number, lx: number, ly: number, lz: number, prio: number) => number, zb: number, zt: number): Level => {
+// 发光优先（世界声明 [bake] glowFirst，用户 11-16 要远处的火、熔岩也亮）：发光方块（engine/voxel/方块发光.ts）露在外面的，合并时比谁都优先（不透明度当 16），
+// 不然墙上一格熔岩、地上的火、挂在顶上的萤石在粗级里全被地狱岩盖掉。「露在外面」按段算：这一段里有一格的六个邻格之一是空气、或者不是整格也不发光的方块（花草），
+// 整段都算（熔岩海从海面到底是一段，海面露着，海底也算，被上面的熔岩挡着看不见）。封在岩壁里的一格熔岩（原版的封闭泉）六面都是整格，不算，否则远处岩壁上会冒出一片熔岩点。
+const glowOpaque = 16;
+/** 上一级每一段算不算露在外面的发光方块（1 = 是） */
+const exposedGlowRuns = (prev: Level, entryTable: EntryTable): Uint8Array => {
+  const { entries: pe, bottoms: pb, runStarts, W, kt } = prev;
+  const { entryGlow, entryAsAir, entryFullCube } = entryTable;
+  const out = new Uint8Array(pe.length);
+  const opens = (e: number) => entryAsAir[e] === 1 || (!entryFullCube[e] && !entryGlow[e]);
+  // 第 c 列第 k 格的条目（列外、没数据的列当不露：包边上不知道外面是什么，按岩壁算）
+  const entryAt = (c: number, k: number, hint: { r: number }) => {
+    const end = runStarts[c + 1]!;
+    let r = Math.max(hint.r, runStarts[c]!);
+    if (r >= end) return -1;
+    if (k > kt) return 0;
+    while (r < end - 1 && pb[r]! > k) r++;
+    hint.r = r;
+    return pb[r]! > k ? -1 : pe[r]!;
+  };
+  for (let c = 0; c < W * W; c++) {
+    const x = c % W, y = (c - x) / W;
+    const r0 = runStarts[c]!, r1 = runStarts[c + 1]!;
+    const neighbors = [x + 1 < W ? c + 1 : -1, x > 0 ? c - 1 : -1, y + 1 < W ? c + W : -1, y > 0 ? c - W : -1];
+    const hints = neighbors.map((n) => ({ r: n < 0 ? 0 : runStarts[n]! }));
+    for (let r = r0; r < r1; r++) {
+      if (!entryGlow[pe[r]!]) continue;
+      const top = r === r0 ? kt : pb[r - 1]! - 1;
+      const bottom = pb[r]!;
+      let exposed = r === r0 || opens(pe[r - 1]!) || (r + 1 < r1 && opens(pe[r + 1]!));
+      for (let k = top; !exposed && k >= bottom; k--)
+        for (let t = 0; t < 4; t++) {
+          const n = neighbors[t]!;
+          if (n < 0) continue;
+          const e = entryAt(n, k, hints[t]!);
+          if (e >= 0 && opens(e)) {
+            exposed = true;
+            break;
+          }
+        }
+      if (exposed) out[r] = 1;
+    }
+  }
+  return out;
+};
+
+/** 第 L 级 ← 第 L−1 级；zb、zt 是第 0 级最低、最高一格（场景 z）；发光优先 见上 */
+export const mergeLevel = (prev: Level, entryTable: EntryTable, mergeKey: (op: number, L: number, lx: number, ly: number, lz: number, prio: number) => number, zb: number, zt: number, glowFirst = false): Level => {
   const levelNo = prev.L + 1;
   const width = prev.W >> 1;
   const kb = Math.floor(zb / 2 ** levelNo);
@@ -39,6 +85,7 @@ export const mergeLevel = (prev: Level, entryTable: EntryTable, mergeKey: (op: n
   const runBuf = new SegmentBuffer();
   const { entries: pe, bottoms: pb } = prev;
   const { entryAsAir, entryOpaque } = entryTable;
+  const glowRuns = glowFirst ? exposedGlowRuns(prev, entryTable) : null;
   const cur = new Int32Array(4);
   const end = new Int32Array(4);
   // 子列 t = b·2 + a：a 是 x 方向（东），b 是场景 y 方向（北）
@@ -78,7 +125,7 @@ export const mergeLevel = (prev: Level, entryTable: EntryTable, mergeKey: (op: n
             const subX = t & 1, subY = t >> 1;
             const eh = pe[runIdx]!;
             if (!entryAsAir[eh]) {
-              const key = mergeKey(entryOpaque[eh]!, 1, subX, subY, 1, 0);
+              const key = mergeKey(glowRuns?.[runIdx] ? glowOpaque : entryOpaque[eh]!, 1, subX, subY, 1, 0);
               if (key > best) (best = key), (bestEntry = eh);
             }
             if (wholeRun) continue;
@@ -87,7 +134,7 @@ export const mergeLevel = (prev: Level, entryTable: EntryTable, mergeKey: (op: n
             if (r2 >= end[t]!) continue;
             const el = pe[r2]!;
             if (!entryAsAir[el]) {
-              const key = mergeKey(entryOpaque[el]!, 1, subX, subY, 0, 0);
+              const key = mergeKey(glowRuns?.[r2] ? glowOpaque : entryOpaque[el]!, 1, subX, subY, 0, 0);
               if (key > best) (best = key), (bestEntry = el);
             }
           }

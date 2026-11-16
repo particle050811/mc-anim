@@ -21,6 +21,8 @@ export class EntryTable {
   entryAsAir = new Uint8Array(entryLimit);
   /** 整格不透明（算地表） */
   entryFullCube = new Uint8Array(entryLimit);
+  /** 发光方块（engine/voxel/方块发光.ts），合并时的发光优先用（合并.ts） */
+  entryGlow = new Uint8Array(entryLimit);
   stateVoxel: number[] = [0];
   /** 群系号 → 1 = 群系色表里有 */
   biomeKnown: number[] = [];
@@ -72,6 +74,7 @@ export class EntryTable {
       this.entryOpaque[entry] = OPAQ[voxel]!;
       this.entryAsAir[entry] = voxel ? 0 : 1;
       this.entryFullCube[entry] = FULL[voxel] && !canopyLeafRe.test(this.stateList[st]!) ? 1 : 0;
+      this.entryGlow[entry] = this.knowledge.glow?.[voxel] ? 1 : 0;
     }
     return entry;
   }
