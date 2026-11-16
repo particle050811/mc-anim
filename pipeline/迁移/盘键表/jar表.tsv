@@ -1,17 +1,14 @@
 # 格式：jar表　位置：sourcing/jars.toml
 # 读写：pipeline/取材/清单.ts、许可.ts　分类：Git　现有 1 个文件（1 个含中文键）
 # 一行「中文键<TAB>英文键」；@map 行是键为数据的位置（不改），见 pipeline/迁移/键表.ts
+# 许可 的键（代码、资源、声音、结构、模型、原文、依据）不改：前五个是许可部分的取值，取材配方的「许可部分」按值写同一套
 中文键	英文键
 下载	download
 也认	alsoAccept
 产物	artifacts
-代码	code
-依据	basis
 到	dest
-原文	raw
 另需	requiresAlso
 名称	displayName
-声音	sound
 安装器	installer
 客户端	client
 怎么得到	howToGet
@@ -21,13 +18,12 @@
 映射	mappings
 来源页	sourcePage
 根	root
-模型	model
 模组	mods
 版本	version
 用途	purpose
-结构	structure
 自动	auto
 要自己生成	selfGenerated
 许可	license
-资源	assets
 资源索引	assetIndex
+@map	*.[].许可
+@map	*.*.[].许可
