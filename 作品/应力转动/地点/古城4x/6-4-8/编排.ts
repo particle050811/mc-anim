@@ -29,7 +29,7 @@ export const emergeStartSec = 0.5; // 0.5 秒开始钻出（开头半秒地面�
 export const emergeDurationSec = 1.75;
 export const emergeSpeedup = WARDEN.emergeSec / emergeDurationSec;
 const tailSec = 5 / 6; // 站直以后再留 0.83 秒（触角一抖、头转向刘心忠、二人交换眼神）
-export const durationSec = emergeStartSec + Math.ceil(emergeDurationSec * 24) / 24 + tailSec;
+export const durationSec = emergeStartSec + emergeDurationSec + tailSec;
 export const lastSec = durationSec - 1 / 24; // 末帧（原来按 1/24 秒一格）
 // 开始钻出以后过了几秒（画面时间、真实时间：人、碎屑、心跳都按它走）
 export const emergeSec = (t: number) => t - emergeStartSec;
@@ -160,8 +160,8 @@ export const bowAt = (t: number) => bowTextureFor(bowDrawAt(t) > 0.05, bowDrawAt
 
 // ---------- 机位 ----------
 const wardenPos: V3 = WARDEN_AT;
-// 钻出提速以后，镜头跟着它往上爬的那几个点按同一个倍数挪（钻出后 0.83、1.25、5 秒 → 0.21、0.33、1.29 秒，钻出动画里是同一个时刻），6-4-9 首帧接本段末帧
-const remapEmerge = (origSec: number) => emergeStartSec + Math.round((origSec / emergeSpeedup) * 24) / 24;
+// 钻出提速以后，镜头跟着它往上爬的那几个点按同一个倍数挪（钻出后 0.83、1.25、5 秒 → 0.22、0.33、1.31 秒，钻出动画里是同一个时刻），6-4-9 首帧接本段末帧
+const remapEmerge = (origSec: number) => emergeStartSec + origSec / emergeSpeedup;
 // 二人往后急退（1.125～1.75 秒）正冲着镜头来，镜头跟着往后退 4 格、往北 1.5 格，看点压到监守者身前偏南的地面（1.25～2.33 秒），三个人都留在画面里，监守者还是那么大（用户 10-18 要二人有反应）
 const CAM_POS: VKey[] = [
   [0, G4(-847.0, -41.8, 223.8)],

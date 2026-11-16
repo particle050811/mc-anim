@@ -27,10 +27,10 @@ const startStoryT = sensor0StoryT - leadSec;
 // 段内秒（声音落点用）：感测体咔嗒、尖啸（尖啸要放 10 秒多，6-4-5 开头从响到的地方接着放）
 export const clickSec = leadSec;
 export const shriekSec = clickSec + (shriekStoryT - sensor0StoryT);
-const toGrid = (sec: number) => Math.round(sec * 24) / 24;
+const toFrame = (sec: number) => Math.round(sec * 60) / 60; // 段长对齐到 1/60 秒（输出帧）
 // 台词落点（段内秒）：李樱「烦死了！」（src/配音/6-4-4-李樱-烦死了.wav，从原来「两次了。烦死了！」的配音里切出来的后半句）
-export const lines = { annoyed: { id: '6-4-4-李樱-烦死了', 秒: toGrid(shriekSec + lineDelaySec) } } as const satisfies Record<string, LineAt>;
-const durationSec = toGrid(shriekSec + lineDelaySec + lineSec + tailSec);
+export const lines = { annoyed: { id: '6-4-4-李樱-烦死了', 秒: shriekSec + lineDelaySec } } as const satisfies Record<string, LineAt>;
+const durationSec = toFrame(shriekSec + lineDelaySec + lineSec + tailSec);
 
 // ---------- 时钟（t = 段内秒） ----------
 export const storySecAt = (t: number) => startStoryT + t;

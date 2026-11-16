@@ -28,11 +28,12 @@ import type { Cam } from '@engine/core/机位.ts';
 
 const tickSec = 1 / 20;
 const GRID = 1 / 24;
-const toGrid = (t: number) => Math.round(t * 24) / 24;
+const toFrame = (t: number) => Math.round(t * 60) / 60; // 对齐到 1/60 秒（输出帧）
 
 // ---------- 接 6-4-1（跳切） ----------
-// 本段剧情 0 秒 = 跳搭.ts 的 `start642`：他往 Q4 落下，离落地还有 5/12～11/24 秒（剧情时间的原点，成片从翻进兵营那一跳的半空演起）。
-export const start642 = Math.floor((jumpBuild.landSec('Q4') - 5 / 12) * 24) / 24;
+// 本段剧情 0 秒 = 跳搭.ts 的 `start642`：他往 Q4 落下，离落地还有 5/12 秒多一点（不到 1/60 秒）。只是剧情时间的原点，成片从翻进兵营那一跳的半空演起；
+// 落在 1/60 秒上，本段剧情秒对齐到输出帧的切点在跳搭.ts 的剧情秒里也对齐
+export const start642 = Math.floor((jumpBuild.landSec('Q4') - 5 / 12) * 60) / 60;
 const toJumpSec = (t: number) => t + start642; // 本段剧情秒 → 跳搭.ts 的剧情秒
 
 // ---------- 路线 ----------
@@ -88,10 +89,10 @@ export const darknessEndSec = darknessStartSec + darknessParams.durationTicks / 
 export const lines: LineAt[] = [];
 
 // ---------- 时间轴的尾巴 ----------
-// 黑暗退干净（黑暗止秒）他才动：0.6 秒低下头、手伸回箱子里，再翻 0.3 秒，再过 1/24 秒就是 6-4-3a（同一个镜头接着翻 1.6 秒）
+// 黑暗退干净（黑暗止秒）他才动：0.6 秒低下头、手伸回箱子里，再翻 0.3 秒，再过 1/24 秒（对齐到 1/60 秒）就是 6-4-3a（同一个镜头接着翻 1.6 秒）
 const recoverSec = darknessEndSec;
 const recoverDuration = 0.6;
-export const STORY_END = toGrid(recoverSec + recoverDuration + 0.3) + GRID; // 不跳的时间轴有多长（秒）= 6-4-3a 起点（6-4-3 剧情 0 秒），末帧是 STORY_END − GRID
+export const STORY_END = toFrame(recoverSec + recoverDuration + 0.3 + GRID); // 不跳的时间轴有多长（秒）= 6-4-3a 起点（6-4-3 剧情 0 秒），末帧是 STORY_END − GRID
 
 // ---------- 拾取（用户 10-20：「这里应该显示拾取这个箱子里面的东西 箱子里面就有一些古城的战利品」） ----------
 // 原文第 6 章只写「看见战利品箱，他便打开，拿走里面的东西就迅速跳走」，没写开到什么；古卷第 7 章才开到（7-2-2至3），这里没有。
@@ -132,12 +133,12 @@ export const lootUi = (sec: number): LootUiState => {
 //   镜头 1（兵营里，感测体、尖啸体身后往东南看）：他翻进兵营落在 C 上前 0.25 秒起，开箱 → 振动 → 尖啸 → 他扭身定住，尖啸后 1 秒切；
 //   镜头 2（他东南高处越过他的背看尖啸体）：低吼前 0.1 秒起，低吼、黑雾压下来，渐入完、第一下脉动最暗以后再停半秒切；
 //   镜头 3（箱子南边，慢慢落到 6-4-3a 首帧机位）：渐出还剩 0.6 秒时切进来，黑雾退开，他转回箱子接着翻，不切接 6-4-3a。
-// 切点都取整到 1/24 秒的格；判断落在哪个窗口时留 1e-9 秒的余量，切点正好落在输出帧上时算后一个窗口
-export const cutStart = toGrid(landCSec - 1 / 4);
-export const cutA = toGrid(shriek.t + 1.0); // 镜头 1 到它为止
-export const cutB = toGrid(darknessStartSec - 0.1); // 镜头 2 从这一刻（剧情秒）起
-export const jumpCut = toGrid(darknessStartSec + 1.6); // 镜头 2 到它为止（渐入 1.1 秒，第一下脉动最暗在 1.1 秒）
-export const resumeSec = toGrid(darknessEndSec - 0.6); // 镜头 3 从这一刻（剧情秒）起
+// 切点都对齐到 1/60 秒（输出帧），各截长是整帧；判断落在哪个窗口时留 1e-9 秒的余量，切点正好落在输出帧上时算后一个窗口
+export const cutStart = toFrame(landCSec - 1 / 4);
+export const cutA = toFrame(shriek.t + 1.0); // 镜头 1 到它为止
+export const cutB = toFrame(darknessStartSec - 0.1); // 镜头 2 从这一刻（剧情秒）起
+export const jumpCut = toFrame(darknessStartSec + 1.6); // 镜头 2 到它为止（渐入 1.1 秒，第一下脉动最暗在 1.1 秒）
+export const resumeSec = toFrame(darknessEndSec - 0.6); // 镜头 3 从这一刻（剧情秒）起
 const storyWindows: [number, number][] = [[cutStart, cutA], [cutB, jumpCut], [resumeSec, STORY_END]];
 export const END = storyWindows.reduce((n, [winStart, winEnd]) => n + winEnd - winStart, 0); // 段长（成片秒）
 // 成片秒 → 剧情秒

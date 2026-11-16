@@ -48,7 +48,7 @@ const halfFollow = (t: number, refZ: number, k = 0.5): V3 => {
 //   1a 通道里、他北边 8 米、比脚底高 2 米，看背影；他转身面朝镜头一蹲、一跳迎着镜头飞起来，镜头仰着跟，飞出画面上沿就切。
 //   1b 北墙外（大院北边空地，z 196，比城地面高 13 米，头顶岩顶 y −33）往南侧拍：他冲上墙头（P1），顺墙头往西一蹬（往 P2）。机位顺他往西横移，焦距 30～36。
 const J1 = jumpBuild.jumpOnto('P1');
-export const cut1b = Math.round((J1.f0 + 3 / 8) * 24) / 24;
+export const cut1b = J1.f0 + 3 / 8;
 const cam1a = (f: number): Cam => ({ pos: G4(-708.6, -47.8, 232.0), tgt: torsoAt(f), lens: f < J1.f0 ? 26 : 26 - 6 * smoothstep01((f - J1.f0) / (3 / 8)) });
 const C1_POS: VKey[] = [
   [cut1b, G4(-714.0, -37.5, 196.5)],

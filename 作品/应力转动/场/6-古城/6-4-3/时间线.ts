@@ -161,6 +161,6 @@ export const swingStartSec = gridSecAt(geom.drawStart);
 export const deflectSec = gridSecAt(geom.deflect);
 export const slashSpawnSec = gridSecAt(geom.swingTime);
 // 黄叛「纳命来」的开口（画面秒）：放箭前 3/4 秒（用户 10-12 在剪映里放的位置，「来」正对放箭）；用户 10-18 删了等拉弓以后前半句落在李樱翻箱子的镜头里。
-// 画面的点头口型用；声音照 段/6-规矩风矢 段.ts 的台词 cue 放（原来在 声音.tsx，那份声音表 11-06 迁成原生段后没人用、删了）
+// 画面的点头口型用；声音照 段/6-规矩风矢 段.ts 的台词 cue 放（原来在 声音.tsx，那份声音表 11-06 迁成原生段后没人用、删了），两边要一起改。放箭那一刻对齐到 1/60 秒（输出帧）
 export const shoutLeadSec = 3 / 4;
-export const shoutLine: LineAt = { id: '6-4-3a-黄叛-纳命来', 秒: Math.round(secFractional(geom.shootTime) * samplesPerSec) / samplesPerSec - shoutLeadSec };
+export const shoutLine: LineAt = { id: '6-4-3a-黄叛-纳命来', 秒: Math.round(secFractional(geom.shootTime) * 60) / 60 - shoutLeadSec };

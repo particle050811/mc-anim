@@ -29,7 +29,7 @@ const startStance = (yaw: number): FigurePose => ({
 });
 const turnStart = 5 / 24; // 换完物品往北转身（0.3 秒转过来）
 const turnLen = 7 / 24;
-const windupSec = Math.round(elite.takeoffCrouchSec * 24) / 24;
+const windupSec = elite.takeoffCrouchSec;
 export const firstJumpSec = 2 / 3; // 转过来以后多蹲 1/6 秒再走
 
 // ---------- 跳的走法（用户 10-18 定：跳跃优先观感、不必严格重力） ----------
@@ -213,12 +213,12 @@ export const footAt = (t: number): V3 => {
 export const chestBlockB = chestB.block;
 
 // ---------- 跳切 ----------
-// 一段成片 = 剧情时间线上首尾相接的几个窗口（剧情秒 [起, 止)），窗口之间跳过的剧情不演（跳切）。窗口两头取整到 1/24 秒的格。
+// 一段成片 = 剧情时间线上首尾相接的几个窗口（剧情秒 [起, 止)），窗口之间跳过的剧情不演（跳切）。窗口两头对齐到 1/60 秒（输出帧），切点落在帧上、段长是整帧。
 // 判断落在哪个窗口时留 1e-9 秒的余量：切点正好落在输出帧上时算后一个窗口
 export type CutWindow = { 名: string; 起: number; 止: number };
-const toGrid = (t: number) => Math.round(t * 24) / 24;
+const toFrame = (t: number) => Math.round(t * 60) / 60;
 export const cutWindows = (windows: CutWindow[]) => {
-  const rounded = windows.map((w) => ({ ...w, 起: toGrid(w.起), 止: toGrid(w.止) }));
+  const rounded = windows.map((w) => ({ ...w, 起: toFrame(w.起), 止: toFrame(w.止) }));
   const firstSecs: number[] = [];
   let total = 0;
   for (const win of rounded) {

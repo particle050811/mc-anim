@@ -64,6 +64,8 @@ const heardFrom = (steps: Step[]) => {
 };
 const approachHeard = heardFrom([...approachSteps('刘'), ...approachSteps('黄')]);
 // 第三下（本段第二下）听到后 5 刻起吼，第 25 刻（1.25 秒）出声、往前一扑
+// 往上取整到 1/24 秒的格暂时留着：去掉（真值 3.7667 秒本来就在 1/60 秒上）吼、全景切点、段尾都提前 1/40 秒，6-贪功钻出Warden 段长和吼声 cue 跟着改，
+// 第 7 章 7-1 按帧接的 `END` 也从 145 帧变 144 帧，要等第 7 章改按秒、用户定了再动
 export const roarStart = Math.ceil((approachHeard[1] + 5 / 20) * 24 - 1e-9) / 24;
 export const roarSoundSec = roarStart + 1.25;
 
