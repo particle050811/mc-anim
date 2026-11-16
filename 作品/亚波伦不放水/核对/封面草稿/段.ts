@@ -1,7 +1,7 @@
 // 封面草稿（用户 11-09：「在空中把聚晶面板展开到最大，我觉得这个画面非常有冲击力，可以当做封面」）：16:9 的封面构图方案，一秒一个（视图.ts）。
 // 只出静帧挑构图用：背景是下界荒地的样子（下界岩地、熔岩池、暗红的雾），不是真地形；标题字没加。现在是三稿四案、四稿三案、五稿三案、六稿三案、八稿三案（轮盘从杖尖张开；四稿她在左上、杖指右下、盘正对镜头；五稿史蒂夫和结界不出镜、镜头正对盘心；六稿只用 71 个、盘垂直杖身斜着看、杖握在手里；八稿镜头在她下方仰拍、杖指着镜头、盘的正面朝镜头，都是用户 11-10 定），一稿、二稿在 Git 历史里。
-import { defineSeg } from '@engine/段/段定义.ts';
+import { checkSeg } from '@engine/段/核对段.ts';
 import { realNetherPack } from '../../地点/真下界位置.ts';
 import { aspect, plans } from './视图.ts';
 
-export default defineSeg({ scene: '核对', sec: plans.length, width: aspect.width, height: aspect.height, terrain: [realNetherPack] });
+export default checkSeg({ sec: plans.length, aspect, terrain: [realNetherPack] });

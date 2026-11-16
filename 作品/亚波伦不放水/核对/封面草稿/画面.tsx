@@ -4,10 +4,10 @@
 // 八稿起镜头在她下方仰拍、被她的杖指着，机位由杖反算（界面/指杖机位.ts）。
 // 轮盘的时刻取完全张开（第 40 刻）。每个方案那一秒的前半（第 60i 帧）是干净的构图，后半（第 60i+30 帧）叠方案名和 4:3、3:4 裁切参考框。
 import { useThree } from '@react-three/fiber';
-import { ThreeCanvas } from '@remotion/three';
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
+import { CheckCanvas, ZUp } from '@engine/段/核对画面.tsx';
 import { smoothstep01 } from '@engine/core/数学.ts';
 import { type Cam, sightDir } from '@engine/core/机位.ts';
 import { hash2 } from '@engine/core/噪声.ts';
@@ -270,7 +270,7 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
     <>
       <PlaceRig cameraRig={cameraRig} far={v.farView ? 1400 : undefined} />
       {v.farView ? <ScreenAo /> : <fog attach="fog" args={[fogColor, 16, 70]} />}
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         {!v.farView && <SkyDome 心={cameraRig.pos} />}
         {/* 真下界自己带灯（地点/真下界.tsx），再加这几盏会把地形照得比用户看过的亮 */}
         {!v.farView && (
@@ -286,7 +286,7 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
         {v.steve && <Steve pose={steveLookAt(stevePose(v.steve.位, 0), [...(v.steve.看 ?? headPos)])} mcLight={1} />}
         {v.cage && <Cage settings={v.cage} />}
         <WandTipWheel 杖={wheelWand} facing={facing === '正对镜头' ? { faceCamera: cameraRig } : facing} {...placement} params={params} cellsPerPixel={v.wheel.cellsPerPixel} renderOrder={v.wheel.wheelInFront ? 5 : -1} />
-      </group>
+      </ZUp>
     </>
   );
 };
@@ -319,9 +319,9 @@ const picture: React.FC = () => {
   const annotationBlink = sec % 1 >= 0.5;
   return (
     <AbsoluteFill style={{ background: zenithColor }}>
-      <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
+      <CheckCanvas width={width} height={height}>
         <Scene v={v} />
-      </ThreeCanvas>
+      </CheckCanvas>
       {annotationBlink && (
         <>
           <CropFrame centerLine={v.cropCenterLine} />

@@ -1,13 +1,8 @@
 // 晋升之环核对的画面：灰底或暗红底（带雾）、一块地面；环单独并排，或戴在娘化亚波伦、史蒂夫头后。视图表在 视图.ts。
-// 机位：坐标照场景约定（Z 朝上），进 three 换成 Y 朝上，场景内容放在 rotation [−π/2, 0, 0] 的 group 里。
 // 画布开抗锯齿：环是顺滑的真几何，不开的话圆的边是锯齿。史蒂夫没做 UV 内收（见 @库/角色/史蒂夫.tsx），开了以后他的轮廓可能冒出贴图相邻格子的颜色，这里只看环，不管。
-import { ThreeCanvas } from '@remotion/three';
-import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import * as THREE from 'three';
-import { sceneToThree } from '@engine/core/three换算.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { CheckCamera, CheckCanvas, CheckGround, CheckLabel, NeutralLights, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
 import { RingedSteve } from '../../角色/戴环史蒂夫.tsx';
 import { GirlYaBoLun, hover, stand } from '../../角色/娘化亚波伦.tsx';
@@ -18,20 +13,8 @@ import { twoPeoplePos, singleView, sideBySide, aspect, views, type View } from '
 const baseColors = { 灰: { background: '#5a5e66', ground: '#8a8f98' }, 暗红: { background: '#3a0a07', ground: '#3b1513' } } as const;
 
 const CameraRig: React.FC<{ v: View }> = ({ v }) => {
-  const { camera, gl } = useThree();
-  gl.toneMapping = THREE.NeutralToneMapping;
-  gl.toneMappingExposure = 1.0;
-  const cam = camera as THREE.PerspectiveCamera;
   const lift = v.pictureMode.type === '戴' ? (v.pictureMode.lift ?? 0) : 0;
-  cam.fov = v.fov;
-  cam.near = 0.05;
-  cam.far = 256;
-  cam.position.copy(sceneToThree([v.眼[0], v.眼[1], v.眼[2] + lift]));
-  cam.up.set(0, 1, 0);
-  cam.lookAt(sceneToThree([v.看[0], v.看[1], v.看[2] + lift]));
-  cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
-  return null;
+  return <CheckCamera eye={[v.眼[0], v.眼[1], v.眼[2] + lift]} target={[v.看[0], v.看[1], v.看[2] + lift]} fov={v.fov} />;
 };
 
 const Content: React.FC<{ v: View }> = ({ v }) => {
@@ -67,30 +50,22 @@ const Content: React.FC<{ v: View }> = ({ v }) => {
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const colorSet = baseColors[v.bottomBackground];
   return (
     <AbsoluteFill style={{ background: colorSet.background }}>
       <div style={{ width: aspect.width, height: aspect.height }}>
-        <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
-          <color attach="background" args={[colorSet.background]} />
+        <CheckCanvas width={aspect.width} height={aspect.height} background={colorSet.background}>
           {v.bottomBackground === '暗红' && <fog attach="fog" args={[colorSet.background, 30, 140]} />}
           <CameraRig v={v} />
-          <group rotation={[-Math.PI / 2, 0, 0]}>
-            <ambientLight intensity={0.55 * Math.PI} />
-            <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
-            <mesh position={[0, 0, -0.05]}>
-              <boxGeometry args={[160, 160, 0.1]} />
-              <meshStandardMaterial color={colorSet.ground} />
-            </mesh>
+          <ZUp>
+            <NeutralLights />
+            <CheckGround size={160} color={colorSet.ground} />
             <Content v={v} />
-          </group>
-        </ThreeCanvas>
+          </ZUp>
+        </CheckCanvas>
       </div>
-      <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.name}</div>
-        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
-      </div>
+      <CheckLabel title={v.name} note={v.note} />
     </AbsoluteFill>
   );
 };
