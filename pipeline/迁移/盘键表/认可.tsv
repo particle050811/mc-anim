@@ -11,6 +11,7 @@
 帧数	frameCount
 平台	platform
 指纹	fingerprint
+换算	conversion
 提交	commit
 段	segment
 渲染级别	renderLevel
