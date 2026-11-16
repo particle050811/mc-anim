@@ -40,7 +40,7 @@ export const BowFans: React.FC<{ t: number; fans: BowWindFan[] }> = ({ t, fans }
     <>
       {fans.map((fan) => (
         <group key={fan.种子} position={fan.心} quaternion={fanQuat(fan.dir)} scale={fan.sideLength}>
-          <EncasedFan spin={(t - fan.spinStart) * 24 * 30 * (fan.rotSpeedRpm / 256)} thickBlades ghost opacity={0.55 * fan.visibility} />
+          <EncasedFan spin={(t - fan.spinStart) * 720 * (fan.rotSpeedRpm / 256)} thickBlades ghost opacity={0.55 * fan.visibility} />
         </group>
       ))}
       {airflow.length > 0 && <AirFlowQuads items={airflow} />}

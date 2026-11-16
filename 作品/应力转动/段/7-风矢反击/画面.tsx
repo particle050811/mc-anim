@@ -6,6 +6,5 @@ import * as choreo from '../../场/7-黑暗监守/7-1-5/编排.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
-export const c715FrameCount = choreo.END;
 export const C715: React.FC = () => <SpeedRampSegment v={choreo.speedRamp} camera={choreo.camera} />;
 export default definePicture(seg, soundUrl, C715);

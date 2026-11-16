@@ -15,7 +15,6 @@ import { smoothstep01, lerpV } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
 export const segmentId = '7-3-3' as const;
-export const FPS = timeline.FPS;
 
 const startT = timeline.segmentStartT(segmentId);
 const endT = timeline.segmentEndT(segmentId);
@@ -35,7 +34,6 @@ export const speedRamp = buildSpeedRamp(
   ],
   [stopT],
 );
-export const END = speedRamp.总帧数;
 export const timeAt = speedRamp.storyTime;
 
 const cuts = [startT, timeline.hitT + 0.3, timeline.leap3T + 0.45]; // 箭的暴击数字、他头上的数字在同框镜头里弹出来再切

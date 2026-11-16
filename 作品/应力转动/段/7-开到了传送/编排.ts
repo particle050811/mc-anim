@@ -1,4 +1,4 @@
-// 7-2-2至3 开到了、传送：机位、箱子界面和本段时刻，纯函数，输入段内帧 f（0 起，24 帧/秒）。戏在 ../7-2/戏.ts，时刻在 ../7-2/时间线.ts。本段第 0 帧接 7-2-1 末帧的下一帧。
+// 7-2-2至3 开到了、传送：机位、箱子界面和本段时刻，纯函数，输入段内秒 sec（0 起）。戏在 ../7-2/戏.ts，时刻在 ../7-2/时间线.ts。本段第 0 秒接 7-2-1 末格的下一格。
 // 戏：李樱强者跳落到 #240 跟前垫的羊毛 X 上，掀开战利品箱（Lootr，开盖换已开贴图）；开箱振动传给三个感测体再传给 8 格外的尖啸体，尖啸；
 //   他不理，箱子界面弹出，思索引线指出古卷：「开到了！」shift 点击把古卷、附魔钻石护腿移进物品栏（用户 10-19 定：开到的东西在界面里指出来，进物品栏、不拿在手上；
 //   界面只画箱子部分，东西从箱子格里消失，不交代物品栏）；
@@ -7,27 +7,24 @@
 //   镜头停在空羊毛上 0.6 秒，在尖啸体回应（尖啸后 4.5 秒：黑暗、再召唤监守者）之前收住。尖啸体为什么叫：见 ../7-2/时间线.ts 文件头。
 // 开箱到传走是一个镜头，所以是一段（用户 10-18 定：一个镜头不拆进两段）：小屋里南边上空 28mm 正对北俯看，慢推到传走，尖啸体在画面外。
 import type { V3 } from '@engine/model/parts.tsx';
-import { FPS } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import * as timeline from '../../场/7-李樱撤离/7-2/时间线.ts';
 import * as geom from '../../场/7-李樱撤离/7-2/几何.ts';
 import type { Stack } from '@库/界面/箱子界面.tsx';
 import { lerp, smoothstep01, lerpV } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
-export { FPS };
 export const segmentId = '7-2-2至3' as const;
-export const segmentStartFrame = timeline.segmentStartFrame[segmentId];
-export const frameCount = timeline.frameCountOf(segmentId);
-export const sf = (f: number) => segmentStartFrame + f;
+export const sceneSec = (sec: number) => timeline.sceneSecAt(segmentId, sec); // 场内秒
+const segmentStartSec = sceneSec(0);
 
 // ---------- 台词 ----------
 // id 沿用配音时的「7-2-2-李樱-开到了」（配音文件、口型按 id 存）
-export const gotItLineFrame = Math.round(timeline.gotItLineT * FPS) - segmentStartFrame;
-export const lines: { id: string; 帧: number; text: string; estDuration: number }[] = [
-  { id: '7-2-2-李樱-开到了', 帧: gotItLineFrame, text: '开到了！', estDuration: timeline.gotItLineDur },
+export const gotItLineSec = timeline.gotItLineT - segmentStartSec;
+export const lines: { id: string; startSec: number; text: string; estDuration: number }[] = [
+  { id: '7-2-2-李樱-开到了', startSec: gotItLineSec, text: '开到了！', estDuration: timeline.gotItLineDur },
 ];
-// 传走那一帧（段内，带小数）
-export const teleportFrame = timeline.teleportSec * FPS - segmentStartFrame;
+// 给 mouthAt 的句子：它的 帧 和 fps 是同一个单位，这里都用秒（fps 传 1）
+export const mouthCues = lines.map(({ id, startSec }) => ({ id, 帧: startSec }));
 
 // ---------- 机位 ----------
 // 段首 → 传走那一刻慢慢推近，之后停住、目标往下落到空羊毛上。
@@ -38,8 +35,8 @@ const camX = feet[0] - 0.5; // 箱子和他之间：箱子在画面左边、他�
 const B0: Cam = { pos: [camX, feet[1] - 4.8, feet[2] + 3.6], tgt: [camX, feet[1] - 0.2, feet[2] + 0.7], lens: 28 };
 const B1: Cam = { pos: [camX, feet[1] - 4.2, feet[2] + 3.3], tgt: [camX, feet[1] - 0.2, feet[2] + 0.65], lens: 30 };
 const pushStartSec = timeline.cutToChestSec;
-export const camera = (f: number): Cam => {
-  const sec = sf(f) / FPS;
+export const camera = (localSec: number): Cam => {
+  const sec = sceneSec(localSec);
   const k = smoothstep01((sec - pushStartSec) / (timeline.teleportSec - pushStartSec));
   const settle = smoothstep01((sec - timeline.teleportSec - 0.1) / 0.6);
   return { pos: lerpV(B0.pos, B1.pos, k), tgt: [camX, B1.tgt[1], lerp(lerp(B0.tgt[2], B1.tgt[2], k), feet[2] + 0.2, settle)], lens: lerp(B0.lens, B1.lens, k) };
@@ -65,8 +62,8 @@ const leggingsFrom = 15;
 export const tomeSlot = tomeFrom;
 
 export type ChestUiState = { visibility: number; chest: (Stack | null)[]; hovered?: number; callout: number; calloutOpacity: number };
-export const chestUi = (f: number): ChestUiState => {
-  const sec = sf(f) / FPS;
+export const chestUi = (localSec: number): ChestUiState => {
+  const sec = sceneSec(localSec);
   const visibility = smoothstep01((sec - timeline.uiOpenSec) / 0.12) * (1 - smoothstep01((sec - timeline.lidCloseSec) / 0.08));
   const chest: (Stack | null)[] = Array.from({ length: 27 }, (_, i) => lootSlots[i] ?? null);
   if (sec >= timeline.tomeClickSec) chest[tomeFrom] = null;

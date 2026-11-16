@@ -13,7 +13,6 @@ import { mod } from '@engine/core/数学.ts';
 
 const heights = heightsJson as unknown as { 步: number; 马: number[]; 监守者: number[] };
 
-export const FPS = 24;
 export const relY = (rel: number) => rel - 51;
 
 // ---------- 一圈路：拐点（游戏 x, z）+ 拐角磨圆的半径，闭合；程 s 从第 0 个拐点起顺着走 ----------

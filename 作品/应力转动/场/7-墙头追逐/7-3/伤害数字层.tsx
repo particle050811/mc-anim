@@ -32,11 +32,11 @@ const hits = [
 const liuEyeAtHit = play.liuEye(timeline.hitT);
 const liuHit = { T: timeline.hitT, damage: sonicBoomDamage, anchor: damageNumberAnchor(sceneToThree([liuEyeAtHit[0], liuEyeAtHit[1], liuEyeAtHit[2] - 1.62]), 1.8, 7351) };
 
-const makeLayer = (timeAt: (frame: number) => number, camera: (frame: number) => Cam): React.FC => () => {
-  const frame = useCurrentSec() * timeline.FPS; // 编排的帧是 1/24 秒一格
+const makeLayer = (timeAt: (sec: number) => number, camera: (sec: number) => Cam): React.FC => () => {
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const T = timeAt(frame);
-  const cam = camera(frame);
+  const T = timeAt(sec);
+  const cam = camera(sec);
   const cam3 = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   const feet = sceneToThree(play.wardenState(T).p);
   const numbers: DamageNumberItem[] = [

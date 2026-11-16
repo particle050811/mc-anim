@@ -5,8 +5,6 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { handoffs, scene71, scene73, footOf } from '../布局.ts';
 
-export const FPS = 24;
-
 // ---------- 接 7-1-7 末帧（契约：古城4x布局.ts 的 衔接.七三首；第 1 场改了数，这里跟着变） ----------
 export const handoff = handoffs.handoffTo73;
 export const horseStart: V3 = handoff.horse; // 北墙头、朝北站着

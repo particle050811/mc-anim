@@ -1,4 +1,4 @@
-// 7-1-7 骏马：本段机位和变速。动作全在 ../7-1/戏.ts（见 ../7-1/时间线.ts），本段第 0 帧接 7-1-6 末帧的下一帧。
+// 7-1-7 骏马：本段机位和变速。动作全在 ../7-1/戏.ts（见 ../7-1/时间线.ts），本段第 0 秒接 7-1-6 末格的下一格。
 // 戏：监守者从 C1 扑向落在 C2 的刘心忠、挥臂扑空，刘心忠闪避 10 米、半空里甩出护盾；它压到盾前一拍接一拍地拍（冷却一好就拍，第三拍拍碎），
 //   刘心忠趁这工夫召出幽灵马、翻身上马；黄叛在高台上接着开鼓风机射风矢，第一支和第二拍同一刻钉上它、第二支在第三拍之前（伤害见 ../7-1/戏/伤害.ts）；
 //   碎的那一下马一跃跳上北墙头（6 格高，原版跳不上，默认一跃而上）；它照样追到墙脚下，收在马落上墙头（末帧 = 衔接.七三首，第 3 场接着追）。
@@ -15,7 +15,6 @@ import { buildCameraRig, type SpeedRampShot } from '../../../地点/古城4x/7-1
 import { smoothstep01, lerpV } from '@engine/core/数学.ts';
 
 export const segmentId = '7-1-7' as const;
-export const FPS = timeline.FPS;
 
 const startT = timeline.segmentStartT(segmentId);
 const endT = timeline.segmentEndT(segmentId);
@@ -27,7 +26,6 @@ export const speedRamp = buildSpeedRamp(
   [[startT, 1]],
   shieldHits,
 );
-export const END = speedRamp.总帧数;
 export const timeAt = speedRamp.storyTime;
 
 const horsePos = (t: number): V3 => play.horseState(t)?.p ?? play.liuXinzhongPos(t);
@@ -60,4 +58,4 @@ const shots: SpeedRampShot[] = [
   },
 ];
 export const camera = buildCameraRig(speedRamp, shots);
-export const shotIndex = (frame: number) => cuts.filter((c) => timeAt(frame) >= c).length - 1;
+export const shotIndex = (sec: number) => cuts.filter((c) => timeAt(sec) >= c).length - 1;

@@ -8,7 +8,6 @@ import { G4 } from '../../古城4x.tsx';
 import { vanilla, elite, baseSpeed, shieldPoint, scene71, wallTopLanding as wallEntry4x, wallJumpTakeoff, footOf, handoffs, huangPanPerch, type BlockPos } from '../布局.ts';
 import * as K649 from '../6-4-9/编排.ts';
 
-export const FPS = 24;
 export const floorZ = -1; // 场子地面（脚底 y −51）
 
 // ---------- 接 6-4-9 末帧 ----------

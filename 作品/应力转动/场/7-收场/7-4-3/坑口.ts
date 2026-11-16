@@ -1,4 +1,4 @@
-// 7-4-3 镜头 1 坑口：刘心忠、黄叛从竖井里强者跳上来，落在坑北沿（用户 10-19 定：只演最后一跳，镜头要看到他们从下往上飞起来）。纯函数，输入段内帧 f。
+// 7-4-3 镜头 1 坑口：刘心忠、黄叛从竖井里强者跳上来，落在坑北沿（用户 10-19 定：只演最后一跳，镜头要看到他们从下往上飞起来）。纯函数，输入段内秒。
 // 场景、坑、竖井、卫兵和 6-3-10 末帧同一套（6-3-8/画面.tsx 的 PursuerScene）；坑口没有幽灵马：召唤的马爬不上 141 米的竖井，留在了下面。
 // 6-3-10 围在坑口的九个卫兵还在原位往下看（`guardPoseAt` 取 6-3-10 末帧）；两人冒出井口时各自一惊：蹲着的站起来、往后让半步，
 //   头先、身子随后转过去盯着离自己近的那一个。
@@ -6,7 +6,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { type FigurePose } from '@库/角色/骨架.tsx';
 import { eliteLeap, type Jump } from '../../../地点/古城4x/布局/强者.ts';
-import { flightPose, landPose, mixPose, nearYaw, standAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { FPS as cityPlayFps, flightPose, landPose, mixPose, nearYaw, standAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { shaftCellCenter } from '../../../地点/边城/6-3-下坠/编排.ts';
 import pitSurfaceTable from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
 import { guardPoseAt, lastSec as lastSec6, guardPositions, type GuardPose } from '../../../地点/边城/6-3-8/编排.ts';
@@ -14,7 +14,8 @@ import { borderTownPos } from '../../../地点/主世界116.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
-const FPS = 24;
+// `eliteLeap` 的 f0、f1 和 `flightPose`、`landPose` 的帧都按 古城戏 的旧网格（1/24 秒一格）数，这里秒乘它换过去
+const leapCellsPerSec = cityPlayFps;
 const D2R = Math.PI / 180;
 const add = (a: number[], b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const yawTo = (p: number[], q: number[]) => Math.atan2(-(q[0] - p[0]), q[1] - p[1]) / D2R;
@@ -33,48 +34,49 @@ const onSurface = (dx: number, dy: number): V3 => {
 };
 
 // ---------- 两人 ----------
-const LAND_LEN = 6; // 落地深蹲（强者.ts 的 landingSquatSec 0.25 秒）
-const RISE_LEN = 8; // 蹲完站直
-type Leaper = { leap: Jump; armRScale: number; look: (f: number) => { yaw: number; headYaw: number; headPitch: number } };
-const leaper = (dx0: number, dy0: number, dx1: number, dy1: number, f0: number) => {
+const LAND_SEC = 0.25; // 落地深蹲（强者.ts 的 landingSquatSec）
+const RISE_SEC = 1 / 3; // 蹲完站直
+type Leaper = { leap: Jump; armRScale: number; look: (t: number) => { yaw: number; headYaw: number; headPitch: number } };
+const leaper = (dx0: number, dy0: number, dx1: number, dy1: number, startSec: number) => {
   const c = shaftCellCenter();
-  return eliteLeap(add(c, [dx0, dy0, -15]), onSurface(dx1, dy1), 7, f0);
+  return eliteLeap(add(c, [dx0, dy0, -15]), onSurface(dx1, dy1), 7, startSec * leapCellsPerSec);
 };
-const liuLeap = leaper(-0.6, -0.7, -1.3, 4.7, 10);
-const huangLeap = leaper(0.6, -0.5, 1.4, 4.4, 15);
-export const landFrame = { 刘: liuLeap.f1, 黄: huangLeap.f1 };
-// 冒出井口（脚底高过井口一圈的坑面）的那一帧，卫兵从这一刻起反应
-const emergeFrame = (L: Jump) => L.f0 + (L.tUp - Math.sqrt(Math.max(0, L.top - (L.p0[2] + 7)) / 16)) * FPS;
-export const firstEmergeFrame = emergeFrame(liuLeap);
+const liuLeap = leaper(-0.6, -0.7, -1.3, 4.7, 5 / 12);
+const huangLeap = leaper(0.6, -0.5, 1.4, 4.4, 0.625);
+const landSec = (L: Jump) => L.f1 / leapCellsPerSec;
+// 冒出井口（脚底高过井口一圈的坑面）的那一刻，卫兵从这一刻起反应
+const emergeSec = (L: Jump) => L.f0 / leapCellsPerSec + L.tUp - Math.sqrt(Math.max(0, L.top - (L.p0[2] + 7)) / 16);
 
 // 落地站直以后：黄叛先扭头看刘心忠、身子跟着侧过来；刘心忠扫一眼东边围着的卫兵，身子也带过去一点
-const huangLook = (f: number) => {
-  const k = smoothstep01((f - huangLeap.f1 - LAND_LEN - 2) / 7);
+const huangLook = (t: number) => {
+  const k = smoothstep01((t - landSec(huangLeap) - LAND_SEC - 1 / 12) / (7 / 24));
   const toLiu = wrap(yawTo(huangLeap.p1, liuLeap.p1) - huangLeap.yaw);
-  const body = smoothstep01((f - huangLeap.f1 - LAND_LEN - 5) / 9) * toLiu * 0.45;
+  const body = smoothstep01((t - landSec(huangLeap) - LAND_SEC - 5 / 24) / 0.375) * toLiu * 0.45;
   return { yaw: huangLeap.yaw + body, headYaw: k * toLiu - body, headPitch: -4 * k };
 };
-const liuLook = (f: number) => {
-  const k = smoothstep01((f - liuLeap.f1 - LAND_LEN - 6) / 8);
-  const body = smoothstep01((f - liuLeap.f1 - LAND_LEN - 9) / 10) * -14;
+const liuLook = (t: number) => {
+  const k = smoothstep01((t - landSec(liuLeap) - LAND_SEC - 0.25) / (1 / 3));
+  const body = smoothstep01((t - landSec(liuLeap) - LAND_SEC - 0.375) / (5 / 12)) * -14;
   return { yaw: liuLeap.yaw + body, headYaw: -30 * k - body, headPitch: -6 * k };
 };
 const LEAPERS: Record<'刘' | '黄', Leaper> = {
   刘: { leap: liuLeap, armRScale: 0.5, look: liuLook },
   黄: { leap: huangLeap, armRScale: 1, look: huangLook },
 };
-export const leaperPose = (who: '刘' | '黄', f: number): FigurePose | null => {
+export const leaperPose = (who: '刘' | '黄', t: number): FigurePose | null => {
   const { leap, armRScale, look } = LEAPERS[who];
-  if (f < leap.f0) return null; // 还在井下
-  if (f < leap.f1) return flightPose(leap, f, { place: false, armRScale });
-  const s = f - leap.f1;
-  const lk = look(f);
-  if (s < LAND_LEN) return landPose(leap.p1, leap.yaw, s, LAND_LEN);
+  const cell = t * leapCellsPerSec;
+  const landCells = LAND_SEC * leapCellsPerSec;
+  if (cell < leap.f0) return null; // 还在井下
+  if (cell < leap.f1) return flightPose(leap, cell, { place: false, armRScale });
+  const s = cell - leap.f1;
+  const lk = look(t);
+  if (s < landCells) return landPose(leap.p1, leap.yaw, s, landCells);
   const stand = standAt(leap.p1, nearYaw(leap.yaw, lk.yaw), lk.headYaw, lk.headPitch);
-  return mixPose(landPose(leap.p1, leap.yaw, LAND_LEN, LAND_LEN), { ...stand, loc: leap.p1 }, smoothstep01((s - LAND_LEN) / RISE_LEN));
+  return mixPose(landPose(leap.p1, leap.yaw, landCells, landCells), { ...stand, loc: leap.p1 }, smoothstep01((s / leapCellsPerSec - LAND_SEC) / RISE_SEC));
 };
-const chestOf = (who: '刘' | '黄', f: number): V3 | null => {
-  const p = leaperPose(who, f);
+const chestOf = (who: '刘' | '黄', t: number): V3 | null => {
+  const p = leaperPose(who, t);
   return p ? add(p.loc, [0, 0, 1.2]) : null;
 };
 
@@ -86,22 +88,15 @@ const jitter01 = (i: number, k: number) => {
   return x - Math.floor(x);
 };
 export const guardCount = guardPositions.length;
-// 盯着的人：落点离自己近的那一个；冒出井口后 3～8 帧反应过来
+// 盯着的人：落点离自己近的那一个；冒出井口后 1/8～1/3 秒反应过来
 const guardReaction = (i: number) => {
   const feet = add(borderTownPos, guardPoseAt(guardBaseSec, i).pos);
   const who: '刘' | '黄' = Math.hypot(liuLeap.p1[0] - feet[0], liuLeap.p1[1] - feet[1]) < Math.hypot(huangLeap.p1[0] - feet[0], huangLeap.p1[1] - feet[1]) ? '刘' : '黄';
-  return { who, feet, react: (emergeFrame(LEAPERS[who].leap) + 3 + 5 * jitter01(i, 21)) / FPS };
+  return { who, feet, react: emergeSec(LEAPERS[who].leap) + 0.125 + (5 / 24) * jitter01(i, 21) };
 };
-// 往后让半步的脚步声（离落点最近的两个卫兵，那一步落地的时刻）
-export const guardSteps = () =>
-  Array.from({ length: guardCount }, (_, i) => ({ i, ...guardReaction(i) }))
-    .sort((a, b) => Math.hypot(a.feet[0] - LEAPERS[a.who].leap.p1[0], a.feet[1] - LEAPERS[a.who].leap.p1[1]) - Math.hypot(b.feet[0] - LEAPERS[b.who].leap.p1[0], b.feet[1] - LEAPERS[b.who].leap.p1[1]))
-    .slice(0, 2)
-    .map((g) => ({ i: g.i, 帧: Math.round((g.react + 0.35) * FPS), 位置: g.feet }));
-export const guardPose = (f: number, i: number): GuardPose => {
+export const guardPose = (t: number, i: number): GuardPose => {
   const base = guardPoseAt(guardBaseSec, i);
   const { who, react, feet } = guardReaction(i);
-  const t = f / FPS;
   const k = (t0: number, dur: number) => smoothstep01((t - t0) / dur);
   const stand = k(react, 0.2);
   // 往后让半步：背离那个人的落点
@@ -111,7 +106,7 @@ export const guardPose = (f: number, i: number): GuardPose => {
   const backDist = 0.7 * backK;
   const pos: V3 = [base.pos[0] + (away[0] / awayLen) * backDist, base.pos[1] + (away[1] / awayLen) * backDist, base.pos[2]];
   // 头先、身子晚 0.12 秒跟着转过去（转八成五）
-  const target = chestOf(who, f) ?? add(shaftCellCenter(), [0, 0, -3]);
+  const target = chestOf(who, t) ?? add(shaftCellCenter(), [0, 0, -3]);
   const eye = add(add(borderTownPos, pos), [0, 0, 1.62]);
   const wantYaw = base.bodyYaw + wrap(yawTo(eye, target) - base.bodyYaw);
   const bodyYaw = lerp(base.bodyYaw, base.bodyYaw + wrap(wantYaw - base.bodyYaw) * 0.85, k(react + 0.12, 0.35));
@@ -128,17 +123,19 @@ export const guardPose = (f: number, i: number): GuardPose => {
 
 // ---------- 机位 ----------
 // 坑北边、两个北侧卫兵身后高处（离地 4.8 米）往南俯看井口；两人冲上来、落到镜头前面，镜头只跟着俯仰、左右摇（不推）
-const rawTarget = (f: number): V3 => {
+const rawTarget = (t: number): V3 => {
   const c = shaftCellCenter();
-  const pts = (['刘', '黄'] as const).map((w) => chestOf(w, f)).filter((p): p is V3 => !!p && p[2] > c[2] - 7);
+  const pts = (['刘', '黄'] as const).map((w) => chestOf(w, t)).filter((p): p is V3 => !!p && p[2] > c[2] - 7);
   if (!pts.length) return add(c, [0, 0.8, -3]);
   const m = pts.reduce((a, p) => add(a, p), [0, 0, 0] as V3).map((v) => v / pts.length) as V3;
   return [lerp(c[0], m[0], 0.7), m[1], m[2] - 0.6];
 };
-export const pitCam = (f: number): Cam => {
+// 取平均的取样：1/24 秒一个（沿用 24 帧网格时的取样）
+const camSamplesPerSec = 24;
+export const pitCam = (t: number): Cam => {
   const c = shaftCellCenter();
-  // 前后 9 帧的平均（往前多看几帧，人冲得快，镜头不能落在后面），免得人一冒头镜头就一跳
+  // 前后 9 个取样的平均（往前多看几个，人冲得快，镜头不能落在后面），免得人一冒头镜头就一跳
   let acc: V3 = [0, 0, 0];
-  for (let k = -3; k <= 5; k++) acc = add(acc, rawTarget(f + k));
+  for (let k = -3; k <= 5; k++) acc = add(acc, rawTarget(t + k / camSamplesPerSec));
   return { pos: add(c, [0.4, 10.5, 4.8]), tgt: acc.map((v) => v / 9) as V3, lens: 26 };
 };

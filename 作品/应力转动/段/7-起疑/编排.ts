@@ -1,4 +1,4 @@
-// 7-4-4 起疑：时间轴、机位、人的姿势，纯函数，输入帧号 f（0 起，24 帧/秒）。画面在 画面.tsx，声音在 声音.tsx。
+// 7-4-4 起疑：时间轴、机位、人的姿势，纯函数，输入段内秒。画面在 画面.tsx，声音在 声音.tsx。
 // 戏（正篇/07-监守者之怒/脚本规划.md 7-4-4，简单版）：边城新城主乔雷夫在城主府书房读报告，手顺着字往下，停在「贼人已死于怪物之手。」那一行，攥紧，把这一页捏皱；抬头望向窗外。黑场，接第八章正文。
 //   原文只有一句「他似乎隐约察觉……」，不用旁白，全靠这几个动作。
 // 报告：和 7-4-3 同一本（7-4-3/书页.字.json），摊在书桌上。原版书页不会皱：右页被攥皱是 模型/物品/书.tsx 的 `crumpleAt`（网格往握点收、起褶），只为给 Seedance 看「手攥紧、纸被捏皱」；换成纸、地图之类原版物品的话见 预览/第7章/00-说明.md。
@@ -23,11 +23,10 @@ import type { Cam } from '@engine/core/机位.ts';
 
 export { bookPages as bookPages } from '../../场/7-收场/7-4-3/编排.ts';
 
-export const FPS = 24;
-export const shot1End = 48; // 背影 2 秒
-export const shot2End = 168; // 书 5 秒
-export const END = 240; // 抬头 3 秒（含最后 1 秒黑场），共 10 秒
-export const blackoutStart = END - 24;
+const shot1End = 2; // 背影 2 秒
+const shot2End = 7; // 书 5 秒
+const END = 10; // 抬头 3 秒（含最后 1 秒黑场），共 10 秒
+const blackoutStart = END - 1;
 
 export const roomToWorld = (localPos: number[]): V3 => {
   const cityPos = toTownPoint(lordStudy, localPos);
@@ -38,8 +37,7 @@ export const roomToWorld = (localPos: number[]): V3 => {
 // ---------- 书 ----------
 // 字头朝北（乔雷夫坐在南边看是正的）。书脊中点（本地）：东西按右臂定——右臂（连袖子半宽 2.25 像素）的西侧在右页正文右边 2 个界面像素，
 // 南北让「贼人已死于怪物之手。」那一行（第 3 行）落在手自然搭着的地方
-export const thiefLine = 2;
-export const holdFrame = 72;
+const thiefLine = 2;
 const armHalf = (2.25 * qiaoLeifuHeight) / 32;
 const textRight = 132; // 界面像素，正文最宽到 130
 const holdTipY = -2.6;
@@ -53,18 +51,17 @@ const hipHeight = (12 / 32) * qiaoLeifuHeight;
 // 右手末端（手臂方块下端面的下沿）读到第几行：一行行往下，停在第 3 行；攥紧时往下压、往回收（格）
 const readLineKeys: Key[] = [
   [0, 0],
-  [24, 1],
-  [48, 1.6],
-  [70, thiefLine],
+  [1, 1],
+  [2, 1.6],
+  [35 / 12, thiefLine],
 ];
 const pressKeys: Key[] = [
-  [102, 0],
-  [124, 0.6],
-  [156, 1],
+  [4.25, 0],
+  [31 / 6, 0.6],
+  [6.5, 1],
 ];
-const basePose = (frame: number): FigurePose => {
-  const t = frame / FPS;
-  const lookUp = sample([[shot2End + 10, 0], [shot2End + 50, 1]] as Key[], frame);
+const basePose = (t: number): FigurePose => {
+  const lookUp = sample([[shot2End + 5 / 12, 0], [shot2End + 25 / 12, 1]] as Key[], t);
   return {
     // 髋抬高 2 像素，大腿（4 像素粗）下面正好贴着坐面：桌面比他肩膀低不了多少，坐低了胳膊搭不到纸面上
     ...standPose([lordStudy.chair[0], lordStudy.chair[1] + 0.2, lordStudy.chair[2] - hipHeight + (2 * qiaoLeifuHeight) / 32]),
@@ -94,18 +91,19 @@ export const bookOnDesk: V3 = [
 ];
 const lineTipY = (k: number) => bookOnDesk[1] + pageHeight / 2 - (lineAt(k) + lineHalf) * guiPixel;
 // 手末端下沿落到那一行、贴着纸面最高处；够不着靠前倾（上身前后挪）和抬放胳膊一起凑
-export const qiaoLeifuPose = (frame: number): FigurePose => {
-  if (frame >= shot2End) return reachAt(shot2End - 1, basePose(frame));
-  return reachAt(frame, basePose(frame));
+// 镜 3 里手停在镜 2 最后一帧的样子
+export const qiaoLeifuPose = (t: number): FigurePose => {
+  if (t >= shot2End) return reachAt(shot2End - 1 / 60, basePose(t));
+  return reachAt(t, basePose(t));
 };
-const reachAt = (handFrame: number, pose: FigurePose): FigurePose => {
-  const press = sample(pressKeys, handFrame);
-  const target: V3 = [tipX, lineTipY(sample(readLineKeys, handFrame)) - 0.03 * press, lordStudy.deskTopZ + pageEdgeTop + 0.008 - 0.006 * press];
+const reachAt = (handSec: number, pose: FigurePose): FigurePose => {
+  const press = sample(pressKeys, handSec);
+  const target: V3 = [tipX, lineTipY(sample(readLineKeys, handSec)) - 0.03 * press, lordStudy.deskTopZ + pageEdgeTop + 0.008 - 0.006 * press];
   return reachFigure(pose, qiaoLeifuHeight, 'R', tipSlot, target, [['armR', 1e-4], ['pitch', 2e-3, [-16, 0]]]);
 };
 // 右页上攥住的点（界面像素，纸框里）：那一行的行尾、手底下
 export const pageGripPt: [number, number] = [textRight + 6, lineY(thiefLine) + 4];
-export const crumpleAt = (f: number) => sample([[112, 0], [156, 1]] as Key[], f);
+export const crumpleAt = (t: number) => sample([[14 / 3, 0], [6.5, 1]] as Key[], t);
 
 // ---------- 镜头 ----------
 const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({
@@ -115,7 +113,7 @@ const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({
   roll: a.roll,
 });
 const smooth = (x: number) => x * x * (3 - 2 * x);
-const ramp = (f: number, f0: number, f1: number) => smooth(Math.min(1, Math.max(0, (f - f0) / (f1 - f0))));
+const ramp = (t: number, t0: number, t1: number) => smooth(Math.min(1, Math.max(0, (t - t0) / (t1 - t0))));
 const shot1aCam: Cam = { pos: [5.5, -7.3, 2.5], tgt: [5.5, -1.0, 1.7], lens: 26 };
 const shot1bCam: Cam = { pos: [5.5, -6.2, 2.25], tgt: [5.5, -1.0, 1.6], lens: 28 };
 // 书：书北半边正上方往下、稍往南看，滚 180° 让画面上方朝北、字是正的；两页和右边的手都在画面里，整镜慢推一点点。
@@ -125,13 +123,13 @@ const shot2aCam: Cam = { pos: [spreadAim[0], spreadAim[1] + 0.35, spreadAim[2] +
 const shot2bCam: Cam = { pos: [spreadAim[0], spreadAim[1] + 0.35, spreadAim[2] + 1.38], tgt: spreadAim, lens: 46, roll: 180 };
 const shot3aCam: Cam = { pos: [5.7, -5.4, 2.0], tgt: [5.5, -1.0, 1.75], lens: 32 };
 const shot3bCam: Cam = { pos: [5.7, -5.1, 1.95], tgt: [5.5, -1.0, 1.85], lens: 33 };
-export const localCam = (frame: number): Cam => {
-  if (frame < shot1End) return lerpCam(shot1aCam, shot1bCam, ramp(frame, 0, shot1End));
-  if (frame < shot2End) return lerpCam(shot2aCam, shot2bCam, ramp(frame, shot1End, shot2End));
-  return lerpCam(shot3aCam, shot3bCam, ramp(frame, shot2End, END));
+const localCam = (t: number): Cam => {
+  if (t < shot1End) return lerpCam(shot1aCam, shot1bCam, ramp(t, 0, shot1End));
+  if (t < shot2End) return lerpCam(shot2aCam, shot2bCam, ramp(t, shot1End, shot2End));
+  return lerpCam(shot3aCam, shot3bCam, ramp(t, shot2End, END));
 };
-export const camAt = (frame: number): Cam => {
-  const local = localCam(frame);
+export const camAt = (t: number): Cam => {
+  const local = localCam(t);
   return { pos: roomToWorld(local.pos), tgt: roomToWorld(local.tgt), lens: local.lens, roll: local.roll };
 };
-export const blackout = (f: number) => sample([[blackoutStart, 0], [END - 4, 1]] as Key[], f);
+export const blackout = (t: number) => sample([[blackoutStart, 0], [END - 1 / 6, 1]] as Key[], t);

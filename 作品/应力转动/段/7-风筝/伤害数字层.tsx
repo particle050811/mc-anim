@@ -15,16 +15,16 @@ const hitboxHeight = 2.9;
 // 每一下：在哪个镜头里出
 const shown = play.hits.map((h, n) => {
   const height = h.kind === '炮' ? hitboxHeight : play.arrows[h.i].stuck[2] - play.wardenState(h.T).p[2] + 0.2;
-  const shot = Array.from({ length: choreo.shotCount }, (_, i) => i + 1).find((k) => choreo.frameInShot(k, h.T) !== undefined)!;
+  const shot = Array.from({ length: choreo.shotCount }, (_, i) => i + 1).find((k) => choreo.secInShot(k, h.T) !== undefined)!;
   return { ...h, height, shot, seed: 7451 + n };
 });
 
 export const DamageLayer741: React.FC = () => {
-  const frame = useCurrentSec() * choreo.FPS; // 编排的帧是 1/24 秒一格
+  const sec = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const T = choreo.storyT(frame);
-  const k = choreo.shotIndex(frame);
-  const cam = choreo.camera(frame);
+  const T = choreo.storyT(sec);
+  const k = choreo.shotIndex(sec);
+  const cam = choreo.camera(sec);
   const cam3 = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   const feet = sceneToThree(play.wardenState(T).p);
   const numbers: DamageNumberItem[] = shown
