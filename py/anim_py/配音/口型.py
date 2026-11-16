@@ -294,7 +294,7 @@ def pinyin(hanzi: str) -> list[list[str]]:
 
 
 def compute_lip_shapes(text: str, duration: float, unit_timings: list) -> list:
-    """念：对齐用的字（台词的「念」，没写同「文本」）；时长：配音成品的秒数（round 到 3 位）；字：[[单位, 起秒, 止秒]]。返回 [[秒, 嘴型]]"""
+    """念：对齐用的字（台词.toml 的 spoken，没写同 text）；时长：配音成品的秒数（round 到 3 位）；字：[[单位, 起秒, 止秒]]。返回 [[秒, 嘴型]]"""
     hanzi = ''.join(re.findall(r'[一-鿿]', text))
     pys = pinyin(hanzi) if hanzi else []
     phones: list[Phone] = []

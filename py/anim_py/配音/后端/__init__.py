@@ -17,7 +17,7 @@ class SynthRequest:
     """一个候选：一句台词用一个种子念一遍。路径都是 anim 给的绝对路径。"""
 
     id: str
-    spoken: str  # 交给 TTS 的字（台词的「念」，没写同「文本」）
+    spoken: str  # 交给 TTS 的字（台词.toml 的 spoken，没写同 text）
     language: str  # 中文、日语、英语、粤语
     参考音频: str  # 角色音色参考 wav
     参考逐字稿: str
@@ -26,7 +26,7 @@ class SynthRequest:
     tone: str = ''  # 这句的情境和语气描述（只给支持文字控制语气的后端）
     toneRef: str = ''  # 情绪参考 wav（IndexTTS2 这类分开音色和语气的后端）
     语气强度: float | None = None
-    character: str = ''  # 台词.toml 的角色（按名字取音色的后端用）
+    character: str = ''  # 台词.toml 的 character（按名字取音色的后端用）
     params: dict = field(default_factory=dict)  # 后端自己的参数，覆盖默认
 
 
