@@ -1,14 +1,14 @@
 // anim still 的 --tele：照原镜头只把原帧里的一个矩形用整张画布原生渲出来（docs/望远.md，用户 11-15 定做）。
-// 同 --shading 的做法：只在 still 的包里把 engine/core/望远.ts 加进入口，矩形经页面环境变量传；段的闭包、inputProps、打包规则都不动，不进指纹，
+// 同 --shading 的做法：只在 still 的包里把 engine/段/望远.ts 加进入口，矩形经页面环境变量传；段的闭包、inputProps、打包规则都不动，不进指纹，
 // film 不认，切片不会混进望远的画面。入口多一项，webpack 缓存目录另起一个（Remotion 按整份配置算缓存名），不和平时的包互相冲。
 import path from 'node:path';
 import type { WebpackOverrideFn } from '@remotion/bundler';
 import { codeRoot } from '../环境/路径.ts';
 
-/** 页面读的环境变量名（engine/core/望远.ts 里同一个名字） */
+/** 页面读的环境变量名（engine/段/望远.ts 里同一个名字） */
 export const telescopeEnvName = 'REMOTION_ANIM_TELE';
 
-const telescopeEntry = () => path.join(codeRoot(), 'engine', 'core', '望远.ts');
+const telescopeEntry = () => path.join(codeRoot(), 'engine', '段', '望远.ts');
 
 /** 套在 webpack改写 外面：望远入口排在作品入口前面（它先 import 设置，再改细分门槛、接管镜头，段模块求值时已经改好） */
 export const applyTelescope =
@@ -23,7 +23,7 @@ export const applyTelescope =
 
 /** x、y、宽、高：矩形在原帧上的像素（左上角起）；倍 = 全宽 ÷ 宽；名：文件名后缀；值：给页面的 JSON */
 export type TelescopeConfig = { x: number; y: number; 宽: number; 高: number; zoom: number; fineLevel: boolean; 真值: boolean; 名: string; 值: string };
-/** 细一级：远处强制用更细的一级；真值：着色器里按像素大小做的远处简化照望远后的像素算（engine/core/望远.ts）。开了哪个，出来的都不再是原帧那块的放大 */
+/** 细一级：远处强制用更细的一级；真值：着色器里按像素大小做的远处简化照望远后的像素算（engine/段/望远.ts）。开了哪个，出来的都不再是原帧那块的放大 */
 export type TelescopeToggle = { fineLevel?: boolean; 真值?: boolean };
 
 const parseNum = (s: string, displayName: string) => {

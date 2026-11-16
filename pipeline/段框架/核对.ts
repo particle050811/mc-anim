@@ -1,7 +1,7 @@
 // anim check 的 加载 规则调这里：段框架的段，生成的声音表、声音地址要和 段.ts 现在的 cue 对得上（不量音频，数取锁里的、缓存的或盘上表里的）；
 // continueOldSeg 做的场时间线抄的老段段长要和老段对得上。
-import type { CheckReport, CheckContext } from '../检查/上下文.ts';
-import type { SegItem } from '../检查/内容.ts';
+import type { CheckReport, CheckContext } from '../源码/上下文.ts';
+import type { SegItem } from '../源码/内容.ts';
 import { isFrameworkSeg } from '../../engine/段/窗口段.ts';
 import { checkOldSeg } from '../../engine/段/老段接续.ts';
 import { checkSeg, type LineRow } from './生成.ts';

@@ -4,20 +4,19 @@
 // 加 anim film 自己要读的（音效起音；有台词时字幕卡的像素字）。可见性是私有的一律不带：私有配乐缺了换静音（资产/私有配乐.ts）。
 // 字节在 私有/ 库、可见性已改成公开的（用户 11-13 定全部公开，库不搬，见 docs/决策/0017-全部公开.md）记进 私有库件：随仓库的 字节/ 只放 store 布局，不带它们，挂 Release 的带。
 // 选了材质包的段按它的选用取字节（材质包.toml，资产锁.ts 套材质包）：带的是换过的那份；环境变量的试样不算。
-// 同一个包里别的段（核对段等）import、又不在集合里的字节，公开仓库没有，打包时换成占位（资产/缺字节.ts）。
+// 同一个包里别的段（核对段等）import、又不在集合里的字节，公开仓库没有，打包时换成占位（缺字节.ts）。
 // anim assets vendor 照它重写 字节/（从数据根 store 拷、逐件核 sha），anim check 核对 字节/ 和集合一致；
 // anim film/still/studio 开头 补字节：字节/ 里数据根 store/ 还没有的核过 sha 补进去（APFS 克隆，别的文件系统退成普通复制），已有的不动。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
-import { closure, type CheckContext } from '../检查/上下文.ts';
-import { readContent } from '../检查/内容.ts';
-import { readLineTable } from '../检查/规则/台词.ts';
-import { readAssetRegistryBoth } from './资产表.ts';
+import { closure, type CheckContext } from '../源码/上下文.ts';
+import { readContent, readLineTable } from '../源码/内容.ts';
+import { readAssetRegistryBoth } from '../资产/资产表.ts';
 import { pixelFontAsset } from '../合成/字幕卡.ts';
 import { hintMissingRelease } from './发布锁.ts';
-import { bytesPath, applySwap, applyResourcePack, resourcePackSelectionKey, readResourcePackSelection, type AssetLock, type LockEntry } from './资产锁.ts';
+import { bytesPath, applySwap, applyResourcePack, resourcePackSelectionKey, readResourcePackSelection, type AssetLock, type LockEntry } from '../资产/资产锁.ts';
 
 export const repoTableName = '随仓库.toml';
 export const bytesDirName = '字节';
@@ -41,7 +40,7 @@ export type BundleSet = {
   privateFiles: string[];
   /** 字节在 私有/ 库、可见性不是私有的（旧私有改公开、按 cue 现取的配乐）：sha256 → 条目和 id；只挂 Release 发 */
   privateLibItems: Map<string, BundledItem>;
-  /** 这些段声明的地形包（随仓库不带，挂 Release 的才发，见 资产/发布.ts） */
+  /** 这些段声明的地形包（随仓库不带，挂 Release 的才发，见 发布.ts） */
   地形: string[];
   /** 选中的段键 */
   segKeys: string[];

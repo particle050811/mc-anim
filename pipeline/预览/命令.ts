@@ -11,7 +11,7 @@ import { cleanupSummary, planDefaultCleanup, executeCleanup, previewKeepDays } f
 import { dataRoot } from '../环境/配置.ts';
 import { loadAllSegments } from '../清单/清单.ts';
 import { readWorkAssetLock } from '../资产/资产锁.ts';
-import { fillBytesAndReport } from '../资产/随仓库.ts';
+import { fillBytesAndReport } from '../分发/随仓库.ts';
 import { preparePrivateMusic, missingMusicHint } from '../资产/私有配乐.ts';
 import { runCuesBeforeRender } from '../段框架/自动.ts';
 import { fullTableEnv } from '../渲/地形注入.ts';

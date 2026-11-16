@@ -8,23 +8,24 @@
 import ts from 'typescript';
 import type { BaseMoment, EventDef, SeriesSegDef, WindowEnd } from '../../engine/段/时间线.ts';
 import type { SongMoment } from '../../engine/段/歌网格.ts';
-import type { Moment as StoryboardTime, EventDef as storyboardEventDef, SegmentWindowDef as StoryboardSegWindow } from '../../作品/把回忆拼好给你/分镜/时间.ts';
 
-// 认形状用的键从类型取，不写死：字段改名、加减键时 tsc 逼着这里跟上，改名工具（pipeline/改名）也会把这里的键并进字段那一组
+// 认形状用的键从类型取，不写死：字段改名、加减键时 tsc 逼着这里跟上，改名工具（pipeline/改名）也会把这里的键并进字段那一组。
+// 分镜.ts 的写法（作品/把回忆拼好给你/分镜/时间.ts）pipeline 不引（只认作品的纯模块）：它的时刻、事件、段窗的键在不在这里认的形状里，由 去依据.test.ts 拿作品的类型核。
 type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
 /** 联合类型各支的键合起来，一个键一项；少写、多写、写错都编译不过 */
-type KeyTable<T> = { readonly [K in keyof UnionToIntersection<T>]-?: true };
-const timeKeyTable: KeyTable<BaseMoment | SongMoment | StoryboardTime> = { 秒: true, 帧: true, after: true, addSec: true, addFrames: true, beat: true, measure: true, 句: true, 点: true };
-const segWindowKeyTable: KeyTable<SeriesSegDef | StoryboardSegWindow> = { 名: true, 键: true, 起: true, 止: true, 依据: true };
+export type KeyTable<T> = { readonly [K in keyof UnionToIntersection<T>]-?: true };
+const timeKeyTable: KeyTable<BaseMoment | SongMoment> = { 秒: true, 帧: true, after: true, addSec: true, addFrames: true, beat: true, measure: true, 句: true, 点: true };
+/** 分镜.ts 的段窗用 键，串段定义用 名 */
+export const segKeyField = '键';
+const segWindowKeyTable = { ...({ 名: true, 起: true, 止: true, 依据: true } satisfies KeyTable<SeriesSegDef>), [segKeyField]: true };
 const frameCountEndKeyTable: KeyTable<Exclude<WindowEnd, BaseMoment | string>> = { 帧数: true };
-export const basisKey: keyof EventDef & keyof storyboardEventDef & keyof SeriesSegDef = '依据';
-const atKey: keyof EventDef & keyof storyboardEventDef = '在';
-const segKeyField: keyof StoryboardSegWindow = '键';
+export const basisKey = '依据' satisfies keyof EventDef & keyof SeriesSegDef;
+export const atKey = '在' satisfies keyof EventDef;
 const segNameKey: keyof SeriesSegDef = '名';
-const startKey: keyof SeriesSegDef & keyof StoryboardSegWindow = '起';
-const endKey: keyof SeriesSegDef & keyof StoryboardSegWindow = '止';
-const timeKeys = new Set(Object.keys(timeKeyTable));
-const segWindowKeys = new Set(Object.keys(segWindowKeyTable));
+export const startKey = '起' satisfies keyof SeriesSegDef;
+export const endKey = '止' satisfies keyof SeriesSegDef;
+export const timeKeys = new Set(Object.keys(timeKeyTable));
+export const segWindowKeys = new Set(Object.keys(segWindowKeyTable));
 const frameCountEndKey = new Set(Object.keys(frameCountEndKeyTable));
 
 const keyName = (p: ts.ObjectLiteralElementLike) => (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) ? p.name.text : null);

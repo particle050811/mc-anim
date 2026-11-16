@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import spawn from 'cross-spawn';
 import { config } from '../环境/配置.ts';
 import { lowPriority, runCapture } from '../环境/子进程.ts';
-import { registerCleanup } from '../闸/收尾.ts';
+import { registerCleanup } from '../环境/收尾.ts';
 
 export const defaultFrameStep = 24;
 export const blockCols = 16;

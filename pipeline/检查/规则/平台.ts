@@ -2,7 +2,7 @@
 // 不靠大小写区分、Unicode 用 NFC）；结构层路径只用 ASCII（顶层目录（库、作品 除外，用户定的名字）、py/ 下的包、sourcing/mod/ 整棵树、作品/<名>/认可/<平台>）；
 // 代码里不开 shell：JS/TS 的 shell 选项、exec/execSync（传字符串命令，Node 隐式起 sh/cmd.exe）、spawn/execFile 不带参数数组，
 // Python 的 shell=True、os.system/os.popen、subprocess.getoutput/getstatusoutput；Python 不用 fcntl（Windows 没有）。
-import { codeExtRegex, type CheckReport, type CheckContext } from '../上下文.ts';
+import { codeExtRegex, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { propertyName, lineNo, parseSource, walk, ts } from '../语法.ts';
 
 const reservedNameRegex = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])(\..*)?$/i;

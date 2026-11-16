@@ -1,7 +1,7 @@
 // 渲段：唯一的出片路（用户 11-06「要改 改成直接出带字幕的成片」「那个 render 不用了 可以直接删了吧」，决策/0014）。
-// 每段渲出来就是成片的一截（段产物.ts）：画面按成片参数直接压成 <指纹>.mp4；声音 <指纹>.wav 和画面同一遍出（separateAudioTo，决策/0015）；成片只接不重压（合成/拼成片.ts）。
+// 每段渲出来就是成片的一截（段产物.ts）：画面按成片参数直接压成 <指纹>.mp4；声音 <指纹>.wav 和画面同一遍出（separateAudioTo，决策/0015）；成片只接不重压（拼成片.ts）。
 // 指纹对得上就不渲（✓ 已是最新）。要渲的每段排队过一次渲染闸（任务种 render，耗时表标签 render:<作品>/<段>:<级别>），闸里依次：
-//   画面、声音同一遍出（Remotion 直出，核帧数 = 输出窗帧数）→ 从这两份派生段签（段签/，verify 的签名、首尾小图、声音.flac）→ 删同段同级别的旧产物（缓存/钉.ts）。
+//   画面、声音同一遍出（Remotion 直出，核帧数 = 输出窗帧数）→ 从这两份派生段签（验收/段签.ts，verify 的签名、首尾小图、声音.flac）→ 删同段同级别的旧产物（缓存/钉.ts）。
 // 删旧只在主检出做（worktree 渲的是没合并的改动，「旧」很可能还是 main 的当前指纹）；命中「已是最新」的也清一遍（worktree 里渲的合进来后第一次出片走这里）。
 // 段目录下 本机地形.txt 写的区段包本机没有就跳过这段（用户 10-31 定，不让一条批量渲染死在核对段上）。
 import fs from 'node:fs';
@@ -11,26 +11,26 @@ import { masterDir } from '../环境/作品数据.ts';
 import { dataRoot } from '../环境/配置.ts';
 import { workName, workRoot } from '../环境/作品.ts';
 import type { SegInfo } from '../清单/清单.ts';
-import { fillBytesAndReport } from '../资产/随仓库.ts';
+import { fillBytesAndReport } from '../分发/随仓库.ts';
 import { perGroupWithResourcePacks } from '../资产/资产锁.ts';
 import { passRenderGate, registerTempFile } from '../闸/闸.ts';
 import { recordTiming, estimateTiming, type RunRecord } from '../运行记录/记录.ts';
 import { recordPhase, measureStage } from '../运行记录/阶段.ts';
 import type { DetailCollector } from '../运行记录/渲染明细.ts';
 import { deleteOld, hasOldToDelete } from '../缓存/钉.ts';
-import { deriveSegStamp } from '../段签/段签.ts';
-import { driftHint } from '../段签/取.ts';
-import { segRenderEnv } from './地形注入.ts';
-import { startWholeMeasure, recordMeasuredFrames } from './地形用量.ts';
-import { waitSolveCacheWrites } from './求解缓存收集.ts';
-import { writeFingerprint, markUsed } from './母版.ts';
-import { renderMedia } from './渲染器.ts';
-import { openSession, findComposition, renderLabel, missingLocalTerrain, measureRender } from './渲.ts';
-import { segmentProducts, type SegArtifact } from './段产物.ts';
-import { frameTimeoutMs } from './设置.ts';
-import { videoInfo } from './探测.ts';
+import { deriveSegStamp } from '../验收/段签.ts';
+import { driftHint } from '../验收/取段签.ts';
+import { segRenderEnv } from '../渲/地形注入.ts';
+import { startWholeMeasure, recordMeasuredFrames } from '../渲/地形用量.ts';
+import { waitSolveCacheWrites } from '../渲/求解缓存收集.ts';
+import { writeFingerprint, markUsed } from '../渲/母版.ts';
+import { renderMedia } from '../渲/渲染器.ts';
+import { openSession, findComposition, renderLabel, missingLocalTerrain, measureRender } from '../渲/渲.ts';
+import { segmentProducts, type SegArtifact } from '../渲/段产物.ts';
+import { frameTimeoutMs } from '../渲/设置.ts';
+import { videoInfo } from '../渲/探测.ts';
 
-export { segmentProducts, type SegArtifact } from './段产物.ts';
+export { segmentProducts, type SegArtifact } from '../渲/段产物.ts';
 
 /** 这段的当前画面、声音指纹（删旧时都不算旧） */
 const currentFingerprints = (r: SegArtifact) => [r.画面指纹.指纹, r.声音指纹.指纹];

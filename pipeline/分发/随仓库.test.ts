@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { compareBytes, fillBytes, writeRepoBundle, bytesDir, readRepoManifest, type BundleSet } from './随仓库.ts';
-import type { LockEntry } from './资产锁.ts';
+import type { LockEntry } from '../资产/资产锁.ts';
 
 const tmp = (prefix: string) => fs.mkdtempSync(path.join(os.tmpdir(), `anim-${prefix}-`));
 const sha = (b: string | Buffer) => crypto.createHash('sha256').update(b).digest('hex');

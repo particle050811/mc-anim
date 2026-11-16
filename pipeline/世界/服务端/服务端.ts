@@ -1,4 +1,4 @@
-import {gateRecordKilled,signalCodes} from '../../闸/收尾.ts';
+import {gateRecordKilled,signalCodes} from '../../环境/收尾.ts';
 // 起取材用的专用服务端（不是客户端）：开服、等就绪、发命令、等日志、正常停服。旧项目 游戏取材/取材服务端.py 按本仓库重写。
 // - 存档可以不在服务端目录下：--universe <存档上一级> --world <存档目录名>，服务端目录只当程序和配置用（沙盒.ts 就靠这个）。
 // - 端口每次挑一个空闲的（--port）：同一台机器上几个服务端（暮色、主世界、沙盒）可以同时开，不用改 server.properties。

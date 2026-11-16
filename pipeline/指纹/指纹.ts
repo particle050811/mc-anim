@@ -8,7 +8,7 @@
 //   平台    process.platform-arch（跨平台不要求逐像素一致）
 //   私有配乐 闭包里有 engine/audio/私有配乐.ts 的段（按 cue 现取、不打进包）：本段 cue 里的私有配乐记 sha 或「缺:静音」（资产/私有配乐.ts）；
 //           没有这一项的段不写这个键，指纹和加这项之前一样
-//   缺字节  闭包里 import 的资产字节不在数据根（公开仓库只带 随仓库.toml 的段要用的）、打进的是占位的（资产/缺字节.ts）：记这些 id；都在就不写这个键
+//   缺字节  闭包里 import 的资产字节不在数据根（公开仓库只带 随仓库.toml 的段要用的）、打进的是占位的（分发/缺字节.ts）：记这些 id；都在就不写这个键
 // 指纹 = 项按键排序后的 JSON 的 sha256；.指纹.json 另存 明细（路径 → 模块哈希、asset id → sha），不进指纹，只给 anim stale 说明是哪个文件变了。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -19,7 +19,7 @@ import { buildMerkleGraph, textFileHash, compileOptions, lockedVersion, MERKLE_A
 import { dataRoot } from '../环境/配置.ts';
 import { groupByResourcePackSelection, withResourcePackSelection, readWorkAssetLock } from '../资产/资产锁.ts';
 import { segPrivateMusic, privateMusicModule } from '../资产/私有配乐.ts';
-import { missingBytes } from '../资产/缺字节.ts';
+import { missingBytes } from '../分发/缺字节.ts';
 import type { SegInfo } from '../清单/清单.ts';
 import { segDurSec } from '../../engine/段/段定义.ts';
 

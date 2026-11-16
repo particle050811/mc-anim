@@ -12,14 +12,14 @@ process.env.ANIM_DATA = dataRoot;
 
 const { config } = await import('../环境/配置.ts');
 const { runCapture, runCaptureBytes } = await import('../环境/子进程.ts');
-const { readSegStamp, segStampComplete, matchesMaster, matchesSlice } = await import('../段签/段签.ts');
+const { readSegStamp, segStampComplete, matchesMaster, matchesSlice } = await import('./段签.ts');
 const { writeFingerprint, fingerprintHistory } = await import('../渲/母版.ts');
 const { segPicturePath, segSoundPath, pairedSoundFingerprint } = await import('../渲/段产物.ts');
 const { runBundledFfmpeg } = await import('../渲/自带ffmpeg.ts');
 const { scanKey } = await import('../缓存/钉.ts');
 const { pickFrames, stillCannotProve, compareFrame, frameToYuv, sliceToYuvFilter, findOldVersion, registerReuse, hasNewFingerprint, readOldFrames, cloneFile } = await import('./认指纹.ts');
-type SegFingerprint = import('./指纹.ts').SegFingerprint;
-type FingerprintItem = import('./指纹.ts').FingerprintItem;
+type SegFingerprint = import('../指纹/指纹.ts').SegFingerprint;
+type FingerprintItem = import('../指纹/指纹.ts').FingerprintItem;
 
 const work = '测试作品';
 const segKey = '核对-认指纹';

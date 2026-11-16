@@ -3,8 +3,8 @@
 // - export default 是一份环境描述或环境轨，用 engine/light/环境.ts 的 定义环境、定义环境轨 再核一遍（直接写字面量、没套 定义… 的也查到）；
 // - 画法有模块：engine/light/画法/<名>.tsx 或 库/画法/<名>.tsx，里面 defineDraw('<名>', …)；
 // - 关键帧落在段里：帧 < 段.ts 的帧数（场目录的按场内帧取，帧数不在一处，不查）。
-import type { SegItem } from './内容.ts';
-import { isEnvDecl, type CheckReport, type CheckContext } from './上下文.ts';
+import type { SegItem } from '../源码/内容.ts';
+import { isEnvDecl, type CheckReport, type CheckContext } from '../源码/上下文.ts';
 
 const envModulePath = 'engine/light/环境.ts';
 export const drawMethodDirs = ['engine/light/画法', '库/画法'] as const;

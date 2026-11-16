@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { mainCheckout } from '../环境/路径.ts';
 import { utcMonthDayTime } from '../运行记录/记录.ts';
-import { stableJson } from './指纹.ts';
+import { stableJson } from '../指纹/指纹.ts';
 import type { FrameCompare } from './认指纹.ts';
 
 export type SampleBasis = { 作品: string; 段: string; 旧指纹: string; 旧片sha: string; 宽: number; 高: number; 总帧数: number; 帧号: number[]; 级别: string; 平台: string; 主机: string; 后端: string; 输出fps: number; 缩放: number; 阈值: string };

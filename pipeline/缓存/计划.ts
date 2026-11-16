@@ -11,7 +11,7 @@ import { 读进程 } from '../闸/孤儿.ts';
 import { removeBundles } from '../渲/打包残留.ts';
 import { addCurrentFingerprints } from './当前指纹.ts';
 import { referenceFileLookup } from './钉.ts';
-import { findDuplicates, executeDedup, readLedger, writeLedger, canClone, type DedupGroup, type DedupLedger } from './去重.ts';
+import { findDuplicates, executeDedup, readLedger, writeLedger, canClone, type DedupGroup, type DedupLedger } from '../环境/去重.ts';
 import { ShaCache } from './sha缓存.ts';
 import {
   KeepSet, addDelivery, addApprovals, unrecognizedEntries, listDir, scanMedia, scanWebpack, latestModifiedAt, dirSize, isLockHeld, planMedia, planTemp, planDrafts, planWebpack, planStaging, scanStaging,

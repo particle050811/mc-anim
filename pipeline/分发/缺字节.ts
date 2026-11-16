@@ -11,8 +11,8 @@ import type { WebpackOverrideFn } from '@remotion/bundler';
 import { dataRoot } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { workName } from '../环境/作品.ts';
-import { closure, CheckContext, type DepGraph } from '../检查/上下文.ts';
-import { bytesPath, readWorkAssetLock, type AssetLock } from './资产锁.ts';
+import { closure, CheckContext, type DepGraph } from '../源码/上下文.ts';
+import { bytesPath, readWorkAssetLock, type AssetLock } from '../资产/资产锁.ts';
 
 /** 这些 id 里登记了、字节又不在数据根的（不管私有还是提取） */
 export const missingBytes = (ids: Iterable<string>, assetLock: AssetLock, dataRoot: string): string[] =>

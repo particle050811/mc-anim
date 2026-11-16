@@ -15,12 +15,12 @@ import { segStampDir } from '../环境/作品数据.ts';
 import { config } from '../环境/配置.ts';
 import { workName } from '../环境/作品.ts';
 import { lowPriority, runCmd } from '../环境/子进程.ts';
-import { registerTempFile } from '../闸/收尾.ts';
+import { registerTempFile } from '../环境/收尾.ts';
 import { atomicWrite } from '../渲/母版.ts';
-import { audioStream } from '../验收/帧流.ts';
-import { compareBlockMeans, readThresholds } from '../验收/比较.ts';
-import { scanMaster } from '../验收/验收.ts';
-import type { Signature } from '../验收/认可.ts';
+import { audioStream } from './帧流.ts';
+import { compareBlockMeans, readThresholds } from './比较.ts';
+import { scanMaster } from './验收.ts';
+import type { Signature } from './认可.ts';
 import { stageTiming, type StageRecord } from '../运行记录/阶段.ts';
 
 export const segStampVersion = 3;

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { codeRoot } from '../环境/路径.ts';
-import { CheckReport, CheckContext } from './上下文.ts';
+import { CheckReport, CheckContext } from '../源码/上下文.ts';
 import { runTsc, tscCacheFile } from './规则/类型.ts';
 import { runRule, makeRepo } from './测试夹具.ts';
 

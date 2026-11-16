@@ -10,15 +10,15 @@ import path from 'node:path';
 import { masterDir, segStampDir } from '../环境/作品数据.ts';
 import { workName } from '../环境/作品.ts';
 import { runCapture } from '../环境/子进程.ts';
-import { canClone } from '../缓存/去重.ts';
+import { canClone } from '../环境/去重.ts';
 import { atomicWrite, fingerprintHistory, writeFingerprint, fingerprintFile, markUsed } from '../渲/母版.ts';
 import { segPicturePath, segSoundPath, sameTier, pairedSoundFingerprint } from '../渲/段产物.ts';
 import { videoInfo } from '../渲/探测.ts';
 import { runBundledFfmpeg } from '../渲/自带ffmpeg.ts';
-import { makeSegStamp, matchesSlice, readSegStamp, segStampComplete, segStampFile, soundFileName, stampFileName, historyFileName, type SegStamp, type ReuseRecord } from '../段签/段签.ts';
-import { frameStream } from '../验收/帧流.ts';
-import { judgeBlockDiff, blockDiffNote, computeBlockDiff, conversion, yuvToRgb, type Threshold } from '../验收/比较.ts';
-import { stableJson, type SegFingerprint, type FingerprintItem } from './指纹.ts';
+import { makeSegStamp, matchesSlice, readSegStamp, segStampComplete, segStampFile, soundFileName, stampFileName, historyFileName, type SegStamp, type ReuseRecord } from './段签.ts';
+import { frameStream } from './帧流.ts';
+import { judgeBlockDiff, blockDiffNote, computeBlockDiff, conversion, yuvToRgb, type Threshold } from './比较.ts';
+import { stableJson, type SegFingerprint, type FingerprintItem } from '../指纹/指纹.ts';
 
 /** 默认抽几帧（含首、尾）：首尾加中间均匀 10 帧。12 帧在两部作品上出帧约 10～30 秒，比整段重渲省得多；用户点名的「首、尾 + 均匀抽十来帧」 */
 export const DEFAULT_SAMPLE_COUNT = 12;
@@ -133,7 +133,7 @@ export const readOldFrames = async (oldVersion: OldVersion, frames: readonly num
   return frameBuffers;
 };
 
-/** 大文件复制：Mac 上 cp -c（APFS clonefile，不占空间；和 缓存/去重.ts 同一种克隆），不行退回硬链接，再不行整份复制。到 已经在就抛 */
+/** 大文件复制：Mac 上 cp -c（APFS clonefile，不占空间；和 环境/去重.ts 同一种克隆），不行退回硬链接，再不行整份复制。到 已经在就抛 */
 export const cloneFile = (fromPath: string, destPath: string): '克隆' | '硬链接' | '复制' => {
   if (fs.existsSync(destPath)) throw new Error(`${destPath} 已经在了，不覆盖`);
   if (canClone()) {

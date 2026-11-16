@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CheckContext } from './上下文.ts';
+import { CheckContext } from '../源码/上下文.ts';
 import { base, runRule, makeRepo } from './测试夹具.ts';
 import { runChecks } from './检查.ts';
 

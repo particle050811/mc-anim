@@ -2,7 +2,7 @@
 // 和烘焙的差别（docs/世界.md）：游戏里 setblock / fill 会触发方块更新（沙子掉、水流），1.20.1 没有不更新的写法；结构在这里展开成 fill / setblock，
 // 不用先把结构文件放进存档。fill、clone 超过游戏上限 32768 格的拆成几块；hollow / outline 拆成面和内部。
 // 没加载的区块里命令会失败，所以先 forceload add（每条最多 256 个区块），等一下再改，改完 forceload remove（原来就强制加载的也会被去掉）。
-import { splitWords, volume, type Box, type EditStep } from './命令.ts';
+import { splitWords, volume, type Box, type EditStep } from './编辑命令.ts';
 import type { EditSet } from './编辑文件.ts';
 import { transformPos, transformState, cellIndex } from './结构.ts';
 

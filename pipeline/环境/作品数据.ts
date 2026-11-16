@@ -6,7 +6,7 @@ import { workName } from './作品.ts';
 /** 按作品分的位置：<数据根>/<类…>/<作品>/<键…> */
 const workDataPath = (prefixKind: string[], work: string, pathKeys: string[]) => dataPath(...prefixKind, work, ...pathKeys);
 export const masterDir = (segKey: string, work = workName()) => workDataPath(['cache', '母版'], work, [segKey]);
-/** 段签：段签/<作品>/<段键>/<指纹前 16 位>/（签.json、声音.flac、历史.jsonl），渲过一个指纹就留一份，母版删了也在（pipeline/段签/） */
+/** 段签：段签/<作品>/<段键>/<指纹前 16 位>/（签.json、声音.flac、历史.jsonl），渲过一个指纹就留一份，母版删了也在（pipeline/验收/段签.ts） */
 export const segStampDir = (segKey: string, fingerprint: string, work = workName()) => workDataPath(['段签'], work, [segKey, fingerprint.slice(0, 16)]);
 /**
  * 认可参考：认可那版的抽样帧（全分辨率 FFV1，存解出来的 yuv420p 原样；从认可那版的切片抽），

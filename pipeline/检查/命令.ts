@@ -5,7 +5,7 @@ import { UsageError, parseArgs } from '../cli/参数.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { workName, workRoot, WorkSelectError } from '../环境/作品.ts';
 import { utcTime } from '../运行记录/记录.ts';
-import { ruleNames, type RuleKind } from './上下文.ts';
+import { ruleNames, type RuleKind } from '../源码/上下文.ts';
 import { ruleTable, runChecks, violationCount } from './检查.ts';
 
 export const checkCommands: Record<string, Command> = {

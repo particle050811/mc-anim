@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { maxUpscale, copyTextures } from './材质包.ts';
-import { workResourcePackSelections, resourcePackSelectionKey, applyResourcePack, currentResourcePackSelection, groupByResourcePackSelection, verifySegResourcePacks, withResourcePackSelection, resourcePackLockPath, readResourcePackSelection, readResourcePackTable, type ResourcePackSelection, type ResourcePackLock, type AssetLock } from './资产锁.ts';
+import { workResourcePackSelections, resourcePackSelectionKey, applyResourcePack, currentResourcePackSelection, groupByResourcePackSelection, verifySegResourcePacks, withResourcePackSelection, resourcePackLockPath, readResourcePackSelection, readResourcePackTable, type ResourcePackSelection, type ResourcePackLock, type AssetLock } from '../资产/资产锁.ts';
 
 const lockEntry = (c: string) => ({ sha256: c.repeat(64), 大小: 1, 库: 'store' as const, 后缀: '.png' });
 

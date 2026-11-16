@@ -11,10 +11,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import { codeRoot } from '../环境/路径.ts';
-import { readManifest } from '../取材/清单.ts';
-import { jarPath } from '../取材/提取.ts';
-import { readAssetRegistryBoth } from './资产表.ts';
-import { importToStore, resourcePackLockPath, resolveAsset, readWorkAssetLock, readResourcePackSelection, type ResourcePackLock, type AssetLock, type LockEntry } from './资产锁.ts';
+import { readManifest } from './清单.ts';
+import { jarPath } from './提取.ts';
+import { readAssetRegistryBoth } from '../资产/资产表.ts';
+import { importToStore, resourcePackLockPath, resolveAsset, readWorkAssetLock, readResourcePackSelection, type ResourcePackLock, type AssetLock, type LockEntry } from '../资产/资产锁.ts';
 
 const atlasId = '贴图/场景/关键帧/方块表';
 const blockTableId = '数据/场景/关键帧/方块表';

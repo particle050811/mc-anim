@@ -24,7 +24,7 @@ vi.mock('../渲/段产物.ts', () => ({
 }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), loadAllSegments: async () => [] }));
 vi.mock('../闸/闸.ts', async (actual) => ({ ...(await actual<typeof import('../闸/闸.ts')>()), passRenderGate: <T>(fn: () => Promise<T>) => (fake.闸++, fn()) }));
-vi.mock('../资产/随仓库.ts', () => ({ fillBytesAndReport: () => {} }));
+vi.mock('../分发/随仓库.ts', () => ({ fillBytesAndReport: () => {} }));
 vi.mock('../渲/求解缓存收集.ts', () => ({ waitSolveCacheWrites: async () => {}, collectSolveCache: () => {} }));
 vi.mock('../渲/渲.ts', async (actual) => ({
   ...(await actual<typeof import('../渲/渲.ts')>()),

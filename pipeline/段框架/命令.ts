@@ -13,19 +13,13 @@ import { readWorkAssetLock } from '../资产/资产锁.ts';
 import { readLineTable } from '../合成/台词落点.ts';
 import type { ManifestEntry } from '../../engine/段/清单条目.ts';
 import type { SegmentDef } from '../../engine/段/段定义.ts';
-import { soundTableFile, freshExec, collectExec, checkSeg, generateSeg, type GenerateEnv } from './生成.ts';
+import { isFrameworkSegDir, freshExec, collectExec, checkSeg, generateSeg, type GenerateEnv } from './生成.ts';
 import { isFrameworkSeg } from '../../engine/段/窗口段.ts';
 import { getAudioMeasure, knownAudioMeasure } from './音频数.ts';
 import { newWork, newSegment, type SceneLegacySeg } from './新作品.ts';
 import { loadAllSegments } from '../清单/清单.ts';
 
 type WorkManifest = { manifest: readonly ManifestEntry[]; segDir: (segKey: string) => string; segmentName: (t: ManifestEntry) => string; segmentCode: (segKey: string) => string | null };
-
-/** 一眼看得出的段框架的段：段.ts 直接引了 窗口段，或目录里已经有生成的声音表。看不出的（经场里的工厂间接用 窗口段）要执行一遍才知道 */
-export const isFrameworkSegDir = (segDir: string) => {
-  const segFile = path.join(segDir, '段.ts');
-  return fs.existsSync(path.join(segDir, soundTableFile)) || (fs.existsSync(segFile) && /@engine\/段\/窗口段(\.ts)?['"]/.test(fs.readFileSync(segFile, 'utf8')));
-};
 
 export const segFrameCommands: Record<string, Command> = {
   cues: {

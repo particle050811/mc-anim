@@ -1,7 +1,7 @@
 // anim check 的十一类规则（方案三-6，副本是 10-30 整体优化方案 0.6 加的，时间是 11-06 原生 60 帧加的，标识符是 11-15 代码名改英文加的）：类型、结构、清单、加载、台词、资产、规矩、平台、副本、时间、标识符。没有白名单：违规就改代码或改表。
 // 一次查一部作品（选项 作品；不给且只有一部就查它）；漫剧专属的表（台词、旧名、规矩）作品里没有、也没用到就跳过。
 // 「待迁移」不算违规：落点、例外还在旧项目、对应的段或场没搬进来的，列出来提醒，搬完自然消失。
-import { CheckReport, CheckContext, ruleNames, type RuleKind } from './上下文.ts';
+import { CheckReport, CheckContext, ruleNames, type RuleKind } from '../源码/上下文.ts';
 import { typeCheck } from './规则/类型.ts';
 import { checkStructure } from './规则/结构.ts';
 import { checkManifest } from './规则/清单.ts';

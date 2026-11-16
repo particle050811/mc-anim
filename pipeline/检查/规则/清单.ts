@@ -1,8 +1,8 @@
 // 清单：作品的 段/、核对/ 下的目录和清单一一对应；段键合规（<章>-<段名>，段名只用汉字、字母、数字，全片唯一）、
 // 不撞旧名表；场键合规、不撞旧名；同一场里标了「连续」的段，起帧正好接上一段末帧的下一帧。旧名表本身的格式也在这查。
-import { readContent, listExistingDirs } from '../内容.ts';
+import { readContent, listExistingDirs } from '../../源码/内容.ts';
 import { findOldNameClashes, findOldSegNameClashes, readOldNames } from '../旧名.ts';
-import type { CheckReport, CheckContext } from '../上下文.ts';
+import type { CheckReport, CheckContext } from '../../源码/上下文.ts';
 import { registeredDirs, missingDirHint } from '../../段框架/注册目录.ts';
 import { segFps } from '../../../engine/段/段定义.ts';
 

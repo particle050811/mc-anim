@@ -3,8 +3,8 @@
 // Math.random、Date.now、相对路径引的资产、写死的路径或主机名；不许 import 地形版本表、不许读时刻的 依据。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
 import os from 'node:os';
 import { checkSectionModelReg } from '../区段模型登记.ts';
-import { readContent } from '../内容.ts';
-import { codeExtRegex, isRenderCode, isPureModule, isTestOrDecl, type CheckReport, type CheckContext } from '../上下文.ts';
+import { readContent } from '../../源码/内容.ts';
+import { codeExtRegex, isRenderCode, isPureModule, isTestOrDecl, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
 import { dotPath, lineNo, parseSource, walk, ts } from '../语法.ts';
 import { basisKey } from '../../指纹/去依据.ts';
 import type * as assetDirModule from '../../../engine/core/资产目录.ts';

@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { runCapture } from '../环境/子进程.ts';
+import { runCapture } from './子进程.ts';
 
 export type DedupFile = { 路径: string; 大小: number; 改于: number };
 export type LedgerEntry = { 大小: number; 改于: number; ino: number; sha: string; 克隆自?: string };

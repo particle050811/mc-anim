@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import type { V3 } from '../model/parts.tsx';
 import { filmScale } from './像素.ts';
 import { sceneToThree } from '../core/three换算.ts';
+import type { PerspectiveRigParams } from '../core/机位.ts';
 
 export type Facing = '北' | '南' | '东' | '西';
 
@@ -31,17 +32,7 @@ export type OrthoRigParams = {
   depth?: number;
 };
 
-export type PerspectiveRigParams = {
-  种: '透视';
-  眼: V3;
-  看: V3;
-  /** 竖直视角（度），原版默认 70 */
-  fov?: number;
-  near?: number;
-  farPlane?: number;
-  /** 不给 = 画布宽 ÷ 画布高 */
-  aspectRatio?: number;
-};
+export type { PerspectiveRigParams };
 
 export type CameraRigParams = OrthoRigParams | PerspectiveRigParams;
 // 镜头朝向（three 世界坐标）：北 = 场景 +y = three −z

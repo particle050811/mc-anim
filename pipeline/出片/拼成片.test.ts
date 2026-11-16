@@ -1,5 +1,5 @@
 // anim film 的拼接（拼成片.ts）：两段现造的成片切片（60 帧输出）直接拷流接成一条，查总帧数、拼接表、manifest、
-// 声音按段长按样本截、拉到 −16 LUFS，--share 另出 1080p60 AV1。渲染那步（渲/渲段.ts）mock 掉，切片和声音用 ffmpeg 现造。
+// 声音按段长按样本截、拉到 −16 LUFS，--share 另出 1080p60 AV1。渲染那步（渲段.ts）mock 掉，切片和声音用 ffmpeg 现造。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -12,7 +12,7 @@ const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-拼成片测试-'))
 process.env.ANIM_DATA = dataRoot;
 
 const fake = vi.hoisted(() => ({ segments: [] as unknown[], outputs: [] as unknown[] }));
-vi.mock('../渲/渲段.ts', () => ({ renderSegments: async () => fake.outputs }));
+vi.mock('./渲段.ts', () => ({ renderSegments: async () => fake.outputs }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<object>()), loadAllSegments: async () => fake.segments }));
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<object>()), workName: () => '测试' }));
 
