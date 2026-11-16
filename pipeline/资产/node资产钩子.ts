@@ -17,7 +17,7 @@ export const resolve = (specifier: string, context: unknown, next: (s: string, c
   if (!specifier.startsWith('asset:')) return next(specifier, context);
   const id = specifier.slice('asset:'.length);
   const f = assetJsonMap[id];
-  if (!f) throw new Error(`Node 里只能 import JSON asset，且字节要在数据根：asset:${id} 不是（先 anim assets pull 或 anim assets add）`);
+  if (!f) throw new Error(`Node 里只能 import JSON 资产，且字节要在数据根：asset:${id} 不是（先 anim assets pull 或 anim assets add）`);
   const url = pathToFileURL(f);
   url.searchParams.set(paramsKey, id);
   return { url: url.href, shortCircuit: true };
