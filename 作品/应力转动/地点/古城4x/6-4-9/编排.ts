@@ -294,7 +294,7 @@ export const camera = (t: number): Cam => {
 };
 
 // ---------- 第 7 章还按 1/24 秒一格的帧号取（7-1/几何.ts、7-1/戏.ts、7-1/戏/公用.ts），等第 7 章改按秒后删 ----------
-const PER_SEC_7 = 24;
+export const PER_SEC_7 = 24;
 export const END = Math.round(durationSec * PER_SEC_7);
 export const pursuers = (f: number) => pursuersAt(f / PER_SEC_7);
 export const warden = (f: number) => wardenAt(f / PER_SEC_7);

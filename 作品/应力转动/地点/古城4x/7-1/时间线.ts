@@ -7,7 +7,7 @@
 import lineTableJson from 'asset:数据/配音/台词表';
 import { elite, eliteLeap } from '../布局.ts';
 import * as geom from './几何.ts';
-import { FPS as fps649 } from '../6-4-9/编排.ts';
+import { PER_SEC_7 as fps649 } from '../6-4-9/编排.ts';
 import { sceneFrames } from './段界.ts';
 
 const leapOf = (a: number[], b: number[], apex: number) => eliteLeap(a as [number, number, number], b as [number, number, number], apex);

@@ -13,5 +13,5 @@ export const elevationDeg = (from: number[], to: number[]) => (Math.atan2(to[2] 
 export const groundZ = geom.floorZ;
 export const gameSec = (t: number) => K649.gameSecAt(geom.handoffFrame649) + t;
 // 6-4-9 末帧以后的场时刻 t 照 6-4-9 接着演的：吼叫动画（吼到一半切过来）、二人的姿势（顶着吼声压低、吼完起来、喘气）
-export const roarAnimSec = (t: number) => K649.roarAnimSec(geom.handoffFrame649 + t * K649.FPS);
-export const pursuersAfter649 = (t: number) => K649.pursuers(geom.handoffFrame649 + t * K649.FPS);
+export const roarAnimSec = (t: number) => K649.roarAnimSec(geom.handoffFrame649 + t * K649.PER_SEC_7);
+export const pursuersAfter649 = (t: number) => K649.pursuers(geom.handoffFrame649 + t * K649.PER_SEC_7);
