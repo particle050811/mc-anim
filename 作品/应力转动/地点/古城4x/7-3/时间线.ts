@@ -10,6 +10,7 @@
 import { horseStart, towerTop, wallTopEast, avenue } from './几何.ts';
 import { leapApex, leapFrom, leapCellsPerSec, towerBrakeSec, knockSlide, wardenRouteToHold, wardenRouteToTower, wardenStairTopS, horseChaseSpeed, horseAccel } from './追逐.ts';
 import { G4 } from '../../古城4x.tsx';
+import { seenCellToFrame } from '../7-1/旧格对帧.ts';
 import { STEED } from '@库/生物/幽灵马.tsx';
 import { scene73 } from '../布局.ts';
 
@@ -79,16 +80,16 @@ export const gallopAccelSec = (horseChaseSpeed - leap3.horizSpeed) / horseAccel;
 
 // ---------- 分段（段界 = 切镜那一刻） ----------
 // 7-3-1 收在第一跃落地、刘心忠回身甩出第二炮之后；7-3-2 收在马上了塔顶刹住；7-3-3 收在马落到大道冲起来（再往后它出画、硬切 7-4-1）
-// 段首、段末是剧情时刻（7-3-3 有慢放，成片长度看 段.ts）。段末格比下一段的段首早一格；7-3-3 的段末是 seg3EndT 那一格
+// 段首、段末是剧情时刻（7-3-3 有慢放，成片长度看 段.ts）。7-3-1 从第 1 场末格的下一格（T = 1/24，旧编排的一格）演起；段末格比下一段的段首早 1/24 秒；7-3-3 的段末是 seg3EndT 那一刻
 const seg1EndT = mortarFireTs[1] + 0.12;
 const seg2EndT = towerStopT + 0.04;
 const seg3EndT = leap3LandT + 0.45;
-// 旧编排 1/24 秒一格，段界取整到格上；先按格数算再除以 24，和旧的逐格算法一位不差
-const oldCellOf = (T: number) => Math.round(T * 24);
+// 段界落到帧上（旧编排取整到 1/24 秒格上的段界挪到最近的帧，见 ../7-1/旧格对帧.ts）；按旧格计数、挪过的是小数格，先按格算再除以 24，同 ../7-1/时间线.ts
+const cellsAt = (T: number) => seenCellToFrame(Math.round(T * 24), T) / 2.5;
 export const segments = [
-  { id: '7-3-1', 名: '墙头', startCell: 1, lastCell: oldCellOf(seg1EndT) - 1 },
-  { id: '7-3-2', 名: '上塔', startCell: oldCellOf(seg1EndT), lastCell: oldCellOf(seg2EndT) - 1 },
-  { id: '7-3-3', 名: '音波', startCell: oldCellOf(seg2EndT), lastCell: oldCellOf(seg3EndT) },
+  { id: '7-3-1', 名: '墙头', startCell: 1, lastCell: cellsAt(seg1EndT) - 1 },
+  { id: '7-3-2', 名: '上塔', startCell: cellsAt(seg1EndT), lastCell: cellsAt(seg2EndT) - 1 },
+  { id: '7-3-3', 名: '音波', startCell: cellsAt(seg2EndT), lastCell: cellsAt(seg3EndT) },
 ];
 export type SegmentId = '7-3-1' | '7-3-2' | '7-3-3';
 const segmentOf = (segId: SegmentId) => segments.find((s) => s.id === segId)!;

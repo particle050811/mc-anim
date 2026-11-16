@@ -20,6 +20,7 @@ import * as geom from '../../场/7-收场/7-4-1/几何.ts';
 import * as X741 from '../../场/7-收场/7-4-1/戏.ts';
 import * as K741 from '../../场/7-收场/7-4-1/编排.ts';
 import { baseSpeed } from '../../地点/古城4x/布局.ts';
+import { seenCellToFrame } from '../../地点/古城4x/7-1/旧格对帧.ts';
 import { smoothstep01 } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
@@ -88,8 +89,8 @@ const firstShriekSec = Math.min(...wardenPlans.map((w) => chain.receivedSecs[w.s
 const pairMid: V3 = [(geom.horseChestSpot[0] + geom.huangPanChestSpot[0]) / 2, (geom.horseChestSpot[1] + geom.huangPanChestSpot[1]) / 2, 0];
 export const wardens = wardenPlans.map((plan) => {
   const shriekSec = Math.max(chain.receivedSecs[plan.shriekerIndex], firstShriekSec + plan.gap);
-  // 本段第几秒开始钻出：旧编排 1/24 秒一格，取整到格上（emergeCell 是格号）
-  const emergeCell = Math.round((shriekSec + 0.75) * 24);
+  // 本段第几秒开始钻出，落到帧上（../../地点/古城4x/7-1/旧格对帧.ts）；emergeCell 按旧格（1/24 秒）计数，挪过的是小数格
+  const emergeCell = seenCellToFrame(Math.round((shriekSec + 0.75) * 24), shriekSec + 0.75) / 2.5;
   const emergeAt = emergeCell / 24;
   const p = toScene(plan.格[0] + 0.5, plan.格[1], plan.格[2] + 0.5);
   // 游戏时间（驱动待机晃动、心跳发光）：让第一下心跳落在钻出后 1 秒（心跳整 2 秒一次，见 6-4-8 声音.tsx）
@@ -107,7 +108,7 @@ export const wardens = wardenPlans.map((plan) => {
   };
 });
 export type WardenPlan = (typeof wardens)[number];
-// 开始钻出以后过了几秒（画面时间）；按格数算再除以 24，和旧的逐格算法一位不差（钻出动画的阈值恰好落在帧上）
+// 开始钻出以后过了几秒（画面时间）；按格算再除以 24，没挪的那几只和旧的逐格算法一位不差（钻出动画的阈值恰好落在帧上）
 export const emergeSecAt = (w: WardenPlan, sec: number) => (sec * 24 - w.emergeCell) / 24;
 export const debrisSec = K8.crumbSec;
 export const wardenGameSec = (w: WardenPlan, sec: number) => 30 + sec + w.gameSecOffset;

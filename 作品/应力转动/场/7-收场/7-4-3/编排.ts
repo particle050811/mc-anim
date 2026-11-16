@@ -20,6 +20,7 @@ import { borderTownPos } from '../../../地点/主世界116.ts';
 import { charPos, closedBookBox, guiPixel, pageCharCount, pageHeight, pageWidth, type BookPage } from '@库/物品/书.tsx';
 import bookPageJson from 'asset:数据/镜头/7-4-3/书页.字';
 import { pitCam } from './坑口.ts';
+import { seenSecToFrameSec } from '../../../地点/古城4x/7-1/旧格对帧.ts';
 import { smoothstep01, lerpV } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 
@@ -51,7 +52,7 @@ const rightPageChars = pageCharCount(bookPages[1]);
 const thiefLineChars = [...bookPages[1].lines.slice(0, 3).join('')].length; // 前三行的字数（第三行是「贼人已死于怪物之手。」）
 const writing = (() => {
   const start = shot1End + 0.25;
-  const thiefLineEnd = start + Math.round(2.5 * thiefLineChars) / 24; // 取整到旧的 1/24 秒一格
+  const thiefLineEnd = start + seenSecToFrameSec((2.5 * thiefLineChars) / 24); // 落到帧上（../../../地点/古城4x/7-1/旧格对帧.ts）
   const pauseEnd = thiefLineEnd + 0.5;
   const signatureEnd = pauseEnd + (rightPageChars - thiefLineChars) / 12;
   return { start, thiefLineEnd, pauseEnd, signatureEnd };

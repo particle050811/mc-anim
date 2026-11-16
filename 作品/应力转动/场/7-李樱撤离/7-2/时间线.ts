@@ -11,12 +11,11 @@
 //   - 看界面、移东西要 2 秒多，关箱（container_close）时三个感测体都已过了 40 刻（激活 30 + 冷却 10），又咔嗒一遍；尖啸体在叫或在 10 秒警告冷却里，不再叫。
 //     开始按住传送石（item_interact_start）时感测体还在第二遍的 40 刻里，不响；用完（item_interact_finish）人已传走。时序由 戏.ts 核对。
 import { FPS as cityPlayFps } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { seenCellToFrame, seenSecToFrameSec } from '../../../地点/古城4x/7-1/旧格对帧.ts';
 import { eliteLeap, feetOnWool, wool722, lookoutFeet } from '../../../地点/古城4x/布局.ts';
 
 // 跳的接口（布局 的 eliteLeap、Jump 的 f0/f1，6-4-1/古城戏.ts 的 airPose、landPose）是 6 章共用的，按旧编排 1/24 秒一格数；本场的秒在调用处换成格
 export const leapCellsPerSec = cityPlayFps;
-// 旧编排 1/24 秒一格：镜头、段界取整到格上
-const snapToOldCell = (s: number) => Math.round(s * 24) / 24;
 const tickSec = 1 / 20;
 
 // ---------- 7-2-1 ----------
@@ -25,7 +24,7 @@ const tickSec = 1 / 20;
 export const jadeLineSec = 0.5; // 镜内秒：引线开始往上长（0.3 秒长到框）
 export const fiftyKHpLineT = 0.95; // 框出来 0.15 秒后开口
 export const fiftyKHpLineDur = 2.1; // 配音有声 2.10 秒（src/配音/台词表.json）
-export const jadeShotEndSec = snapToOldCell(fiftyKHpLineT + fiftyKHpLineDur + 0.13);
+export const jadeShotEndSec = seenSecToFrameSec(fiftyKHpLineT + fiftyKHpLineDur + 0.13); // 落到帧上（../../../地点/古城4x/7-1/旧格对帧.ts）
 
 // ---------- 跳、开箱 ----------
 // 切回他时他还望着场子，0.1 秒后转回身（往 #240）、蹲、跳
@@ -65,11 +64,11 @@ export const teleportSec = useStartSec + useTicks * tickSec; // 用满，传走�
 export const holdAfterTeleport = 0.6; // 人没了以后镜头再停多久：要赶在尖啸体回应（尖啸后 4.5 秒）之前
 
 // ---------- 段起止（场内秒） ----------
-// 段界：落地后 0.1 秒切到开箱的镜头（编排见 7-2-1、7-2-2至3）；7-2-2至3 从这一刻往后第一个整格起（旧编排往上取整到格）
+// 段界：落地后 0.1 秒切到开箱的镜头（编排见 7-2-1、7-2-2至3）；旧编排从这一刻往后第一个整格起（往上取整到 1/24 秒的格），挪到离那一格最近的帧上
 export const cutToChestSec = landSec + 0.1;
-export const sceneLastSec = snapToOldCell(teleportSec + holdAfterTeleport); // 本场最后一格
-// 段首按格数记，段内秒 → 场内秒先换成格再除以 24：和旧的逐格算法一位不差
-const segmentStartCell = { '7-2-1': 0, '7-2-2至3': Math.ceil(cutToChestSec * 24) } as const;
+export const sceneLastSec = seenSecToFrameSec(teleportSec + holdAfterTeleport); // 本场最后一格，落到帧上
+// 段首按旧格（1/24 秒）计数，挪过的是小数格；段内秒 → 场内秒先换成格再除以 24：没挪的段和旧的逐格算法一位不差（恰好落在事件时刻、刻边上的那一帧不换边）
+const segmentStartCell = { '7-2-1': 0, '7-2-2至3': seenCellToFrame(Math.ceil(cutToChestSec * 24), cutToChestSec) / 2.5 } as const;
 export type SegmentId = keyof typeof segmentStartCell;
 export const sceneSecAt = (segId: SegmentId, sec: number) => (segmentStartCell[segId] + sec * 24) / 24;
 

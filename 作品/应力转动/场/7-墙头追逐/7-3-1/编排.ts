@@ -2,16 +2,14 @@
 //   镜 1 场子里、中央台和北墙之间往西看：墙头的马拨头朝东一跃，墙脚下的它跟着冲；刘心忠在半空回身甩第一炮，炸在它身上。
 //   镜 2 墙外（北边）高处跟着马往东：马落在墙头东段，身后它顺台阶冒上墙头，刘心忠回身甩第二炮，切。
 import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
-import { camPoses, addOffset, type ShotCam } from '../../../地点/古城4x/7-1/机位.ts';
+import { camPoses, addOffset, localSecAt, type ShotCam } from '../../../地点/古城4x/7-1/机位.ts';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { lerpV } from '@engine/core/数学.ts';
 
 export const segmentId = '7-3-1' as const;
 export const timeAt = (sec: number) => timeline.tAt(segmentId, sec);
-// 场时刻 T 落在本段第几秒（取整到旧编排 1/24 秒的格上）
-const localSecAt = (T: number) => Math.round((T - timeline.segmentStartT(segmentId)) * 24) / 24;
-export const shot2Start = localSecAt(play.mortars[0].hitT + 0.12); // 炸开看清了再切
+export const shot2Start = localSecAt(timeline.segmentStartT(segmentId), play.mortars[0].hitT + 0.12); // 炸开看清了再切
 const horseChest = (sec: number) => addOffset(play.horseState(timeAt(sec)).p, [0, 0, 2.2]);
 const landX = G4(-853.5, -45, 212)[0];
 const shots: ShotCam[] = [

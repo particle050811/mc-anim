@@ -107,7 +107,9 @@ export const sceneEndT0 = wallLandT + 0.1;
 const names = { '7-1-1': '黑暗', '7-1-2': '恼鬼与火把', '7-1-3': '秒杀', '7-1-4': '逃', '7-1-5': '风矢', '7-1-6': '连跳', '7-1-7': '骏马' } as const;
 export type SegmentId = keyof typeof cutTs;
 const ids = Object.keys(cutTs) as SegmentId[];
-// 旧编排 1/24 秒一格，段界取整到格上。段的末格比下一段的段首早一格；最后一段的末格是 sceneEndT0 那一格。
+// 段界照旧编排取整到 1/24 秒的格上，不挪到帧上（别处取整到格上的时刻挪到了帧上，见 旧格对帧.ts）：变速段（7-1-3、7-1-7）的场时刻表从段首起每 1/24 秒一个样、
+//   打中护盾在那一样里定住，段首或段末一挪，打击停顿以后的样整个错开，场时刻差到 1/24 秒，超过用户允许的 1/120 秒（11-15）；第 3 场的时间轴（../7-3/戏.ts 的 scene1T）
+//   也从本场末格接着走。段的末格比下一段的段首早一格；最后一段的末格是 sceneEndT0 那一格。
 // 先按格数算再除以 24：和旧的逐格算法一位不差（恰好落在事件时刻上的那一帧不换边）
 const oldCellOf = (t: number) => Math.round(t * 24);
 export const segments = ids.map((id, i) => {

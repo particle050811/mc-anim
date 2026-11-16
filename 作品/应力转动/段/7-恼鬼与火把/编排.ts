@@ -11,8 +11,8 @@ import { lerpV } from '@engine/core/数学.ts';
 export const segmentId = '7-1-2' as const;
 export const lastSec = timeline.segmentLastSec(segmentId); // 段内最后一格（旧编排 1/24 秒一格）的秒
 export const timeAt = (sec: number) => timeline.tAt(segmentId, sec);
-export const shot1End = localSecAt(segmentId, 3.6);
-export const shot2End = localSecAt(segmentId, 4.5);
+export const shot1End = localSecAt(timeline.segmentStartT(segmentId), 3.6);
+export const shot2End = localSecAt(timeline.segmentStartT(segmentId), 4.5);
 const huangAndWarden = (k: number) => (sec: number): V3 => {
   const t = timeAt(sec);
   const huang = play.huangPanPos(t);
