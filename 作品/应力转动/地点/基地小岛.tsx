@@ -33,7 +33,7 @@ export const islandOffset: V3 = [1373.5 + (poolBlock.x - 1372) - overworldOrigin
 export const islandToWorld = (p: number[]): V3 => [p[0] + islandOffset[0], p[1] + islandOffset[1], p[2] + islandOffset[2]];
 
 
-// 地形只画到 主世界窗外.远（30 公里）：这几段镜头都在岛上贴着地面，雾用 主世界窗外.能见度（12 公里），30 公里外画了也看不见
+// 地形只画到 overworldWindowView.farM（20 公里）：这几段镜头都在岛上贴着地面，远雾在 20 公里拉满成天色，再远画了也看不见
 export const BaseIslandTerrain: React.FC<{ camPos: number[] }> = ({ camPos: camPos }) => {
   const terrain = useOverworldTerrain(overworldPack, overworldDistantPack, baseIslandDigBoxes, undefined, '基地小岛');
   useEffect(() => {

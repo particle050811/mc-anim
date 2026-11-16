@@ -18,7 +18,7 @@ import { WornSheath } from '@库/物品/拔刀剑.tsx';
 import { SpearInHand } from '@库/物品/下界合金长矛.tsx';
 import { ItemPickup, type PickupItem } from '@库/特效/物品拾取.tsx';
 import { TwilightTerrain, twilightLandmark, twilightHeightAboveGround, viewEdgeDistance, type TwilightLandmarkName } from '../../../地点/暮色新世界.tsx';
-import { cruiseFogFar, farViewOf, farViewLighting, TWILIGHT_FAR_VIEW, type TwilightFarView } from '../../../地点/暮色新世界/超远景.ts';
+import { cruiseFogFar, farViewOf, farViewLighting, twilightFarViewM, TWILIGHT_FAR_VIEW, type TwilightFarView } from '../../../地点/暮色新世界/超远景.ts';
 import * as P613 from '../6-1-3/编排.ts';
 import * as castleChoreo from '../6-1-9/编排.ts';
 import { LichScene, lichRiderTweak } from '../6-1-5/戏.tsx';
@@ -30,7 +30,6 @@ import { cameraAt, type Cam } from './镜头.ts';
 import * as route from './路线.ts';
 import { SpearDrill, LootLayer, drillGhost, drillSpin } from './战利品.tsx';
 import { rad, smoothstep01, lerp } from '@engine/core/数学.ts';
-import { trialFarM } from '@engine/light/高度雾.ts';
 
 const sheath = <WornSheath />;
 
@@ -201,7 +200,7 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; level?: RenderLevel; sc
 }) => {
   const far = farViewOf(officialFar);
   const { pixel: lodPixels, far: farLevel, dpr } = { ...LevelParams[level], ...overrides };
-  const farDist = far ? trialFarM(farLevel) : farLevel;
+  const farDist = far ? twilightFarViewM(farLevel) : farLevel;
   const { width, height } = useVideoConfig();
   const cam = camOverride ?? cameraAt(g);
   const broom = route.broom(g);
