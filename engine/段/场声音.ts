@@ -16,7 +16,7 @@ export type SceneSoundOptions = {
   /** 文件从第几秒放起 */
   入点秒?: number;
   速率?: number;
-  /** 循环：放完从文件头接着放，要给 止 */
+  /** 循环：放完从文件头接着放，要给 end */
   循环?: true;
   /** 整个声音最后几秒线性淡到 0（落在哪段就由哪段的那截带上） */
   fadeOutSec?: number;

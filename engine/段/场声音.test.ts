@@ -150,7 +150,7 @@ describe('场时间线的 声音 + 窗口段', () => {
   });
   it('重名、循环不给止、窗口反了都报错', () => {
     expect(() => defineSceneTimeline({ scene: '9-试', events: { a: { 在: { sec: 0 } } }, sound: [{ asset: '音效/x', 在: 'a' }, { asset: '音效/x', 在: { sec: 1 } }] })).toThrow(/重名「x」/);
-    expect(() => defineSceneTimeline({ scene: '9-试', events: { a: { 在: { sec: 0 } } }, sound: [{ asset: '音效/x', 在: 'a', 循环: true }] })).toThrow(/要给 止/);
+    expect(() => defineSceneTimeline({ scene: '9-试', events: { a: { 在: { sec: 0 } } }, sound: [{ asset: '音效/x', 在: 'a', 循环: true }] })).toThrow(/要给 end/);
     expect(() => defineSceneTimeline({ scene: '9-试', events: { a: { 在: { sec: 1 } } }, sound: [{ asset: '音效/x', 在: 'a', end: { sec: 0 } }] })).toThrow(/空的或反了/);
   });
 });

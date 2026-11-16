@@ -58,7 +58,7 @@ export const defineSceneTimeline = <const K extends string, Ext = never>(d: {
     const endSec = end === undefined ? undefined : isDurSec(end) ? startSec + end.长秒 : secAt(end);
     if (startSec < 0) throw new Error(`场声音「${soundName}」起在第 ${startSec} 秒，场时间线从 0 起`);
     if (endSec !== undefined && !(endSec > startSec)) throw new Error(`场声音「${soundName}」[${startSec}, ${endSec}) 是空的或反了`);
-    if (x.循环 && endSec === undefined) throw new Error(`场声音「${soundName}」循环，要给 止`);
+    if (x.循环 && endSec === undefined) throw new Error(`场声音「${soundName}」循环，要给 end`);
     if (x.fadeOutSec !== undefined && !(x.fadeOutSec > 0)) throw new Error(`场声音「${soundName}」：淡出秒要是正数`);
     return { ...options, name: soundName, startSec, ...(endSec !== undefined ? { endSec } : {}) };
   });
