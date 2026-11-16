@@ -96,13 +96,19 @@ const levelFlightZ = (() => {
   const point = courtyard.toWorld([820 * forwardXY[0], 820 * forwardXY[1], 0]);
   return cruiseHeight(point[0], point[1]) - courtyard.原点[2];
 })();
-// 起飞后几秒放平：在 18～46 格（1/24 秒）里按格挑（挑出来是 26/24）。
-// 没改成解出来的真值（早 12 毫秒）：本段末帧的扫帚位置跟着挪 2.6 米，一镜到底整条航线重解，六个首领的穿刺在画面里都早 125 毫秒、离开配乐卡点。
-// 用户 11-16 定 1/24 格的取整一处不留，这一处牵动一镜到底的卡点，留给用户定
+// 起飞后几秒放平：在 18/24～46/24 秒里解出正好爬到巡航高度的那一刻（真值，用户 11-16 定不再挑到 1/24 秒的格上）。
+// 末帧的扫帚位置跟着它挪，一镜到底整条航线跟着重解；穿刺对配乐的位置由一镜到底各首领放慢的 `起` 拉回原处（6-1-5、6-1-8、6-1-8b 编排）
 const flipDelay = (() => {
-  let best = 46;
-  for (let candidate = 18; candidate <= 46; candidate++) if (Math.abs(climbHeight(candidate / 24) - levelFlightZ) < Math.abs(climbHeight(best / 24) - levelFlightZ)) best = candidate;
-  return best / 24;
+  const miss = (sec: number) => climbHeight(sec) - levelFlightZ;
+  let lo = 18 / 24;
+  let hi = 46 / 24;
+  if (Math.sign(miss(lo)) === Math.sign(miss(hi))) throw new Error('6-1-3 放平：18/24～46/24 秒里爬不到（或一下就过了）巡航高度');
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (Math.sign(miss(mid)) === Math.sign(miss(lo))) lo = mid;
+    else hi = mid;
+  }
+  return (lo + hi) / 2;
 })();
 // 都落到刻上（时刻.ts）：切镜、上扫帚这些判断正好落在某一帧上，不能差一点浮点零头
 export const beats = {
@@ -138,13 +144,13 @@ const HOVER = 0.65;
 const Z_SINK = 0.35; // 4.4 一沉到底的高度
 export type BroomState = { pos: V3; yaw: number; pitch: number; roll: number; appear: number; speed: number };
 
-const LAUNCH = beats.takeoff - 0.5 / 24; // 起飞的瞬间（取那一格的中点：5.1 那一格已经离地）
+const LAUNCH = beats.takeoff; // 起飞的瞬间：这一刻起离地
 const speedAt = (t: number) => (t < LAUNCH ? 0 : speedAfter(t - LAUNCH));
 const GAMMA: Key[] = pathAngleKeys(flipDelay).map(([t, angle]) => [LAUNCH + t, angle]);
 const gammaAt = (t: number) => sample(GAMMA, t);
-// 航迹按 1/192 秒一步积分成表，到末帧后 2 格
+// 航迹按 1/192 秒一步积分成表，到末帧后再多 0.1 秒
 const FLIGHT_STEPS_PER_SEC = 192;
-const FLIGHT_LAST = Math.round((beats.last + 2 / 24 - LAUNCH) * FLIGHT_STEPS_PER_SEC);
+const FLIGHT_LAST = Math.round((beats.last + 0.1 - LAUNCH) * FLIGHT_STEPS_PER_SEC);
 const FLIGHT: V3[] = (() => {
   const out: V3[] = [];
   let horizDist = 0;
@@ -305,7 +311,7 @@ export const camera = (t: number): Cam => {
   const bp = broom(t).pos;
   if (t < beats.takeoff) return { pos: lerpV(C3_START, C3_PRE, (t - beats.sinkStart) / (beats.takeoff - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
   // 起飞那一帧起镜头跟着扫帚一起往上冲（相对位置从低机位慢慢挪到后上方），不原地仰头追（那样背景几乎全是天）：镜头和扫帚一样高平视，10 格内挪到后上方往下看
-  const pre = broom(beats.takeoff - 1 / 24).pos;
+  const pre = flightAt(LAUNCH);
   const off0 = [C3_PRE[0] - pre[0], C3_PRE[1] - pre[1], C3_PRE[2] - pre[2]];
   const k = smoothstep01((t - beats.takeoff) / (10 / 24));
   const off = lerpV(off0, C3_OFF, k);

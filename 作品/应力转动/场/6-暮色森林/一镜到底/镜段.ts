@@ -339,7 +339,7 @@ const addLandingSpan = () => {
     [40 / 24, { back: -3, height: 2.6, side: 7.5, lookAhead: 0, low: -0.4, focalLength: 26 }],
   ];
   const Keys = convertKeys(legacyKeys);
-  addSpan({ 名: '降落', 锚: route.G_LAND, Keys: [...Keys, [route.totalLength - route.G_LAND, Keys[Keys.length - 1][1]]], coreStart: route.G_LAND - 70 / 24, coreEnd: route.totalLength - 1 / 24 });
+  addSpan({ 名: '降落', 锚: route.G_LAND, Keys: [...Keys, [route.totalLength - route.G_LAND, Keys[Keys.length - 1][1]]], coreStart: route.G_LAND - 70 / 24, coreEnd: route.totalLength });
 };
 
 // 按时间顺序排：先后决定谁盖谁（镜头.ts 的合成）

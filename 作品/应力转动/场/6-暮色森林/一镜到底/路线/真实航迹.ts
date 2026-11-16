@@ -68,7 +68,7 @@ export const trackAnchors: AnchorSeg[] = (() => {
     const anchor: AnchorSeg = {
       名: isLast ? `${placeName(bossName)} + 降落` : placeName(bossName),
       起: secAtDist(distPastSpeed(markDist(`${bossName}.前`), -1, anchorSpeed)),
-      止: isLast ? totalLength - 1 / 24 : secAtDist(distPastSpeed(markDist(`${bossName}.后`), 1, anchorSpeed)),
+      止: isLast ? totalLength : secAtDist(distPastSpeed(markDist(`${bossName}.后`), 1, anchorSpeed)),
       前: anchorFadeSec,
       后: anchorFadeSec,
     };
@@ -82,7 +82,7 @@ export const trackAnchors: AnchorSeg[] = (() => {
   return anchors;
 })();
 const toAnchorPoints = (a: AnchorSeg[]): Anchor[] => a.map(({ 起: start, 止: end, 前: fadeBefore, 后: fadeAfter }) => ({ 帧: start, 止帧: end, 前: fadeBefore, 后: fadeAfter }));
-const rawFlight = realFlight({ 种子: realFlightSeed, 起帧: 0, 止帧: totalLength - 1 / 24, fps: 1, distAt: routeDist, frameToTime: physicalTime, anchors: toAnchorPoints(trackAnchors), 参数: realFlightParams });
+const rawFlight = realFlight({ 种子: realFlightSeed, 起帧: 0, 止帧: totalLength, fps: 1, distAt: routeDist, frameToTime: physicalTime, anchors: toAnchorPoints(trackAnchors), 参数: realFlightParams });
 const DQ = 2;
 const NQ = Math.ceil(routeLength / DQ);
 const offsetX = new Float64Array(NQ + 1);
@@ -120,7 +120,7 @@ export const tangentAt = (dist: number): V3 => {
   return [delta[0] / deltaLen, delta[1] / deltaLen, delta[2] / deltaLen];
 };
 // 操纵内倾（扫帚横滚里真实飞行的那一份）：只取驾驶员自己偏开、修回时压的那一点，锚点渐变里拉回的那一下压掉，再 ±8 格三角平滑。
-// 表每 1/24 秒一格
+// 表每 1/24 秒一个样本，样本之间线性插值
 const STEER_SAMPLES_PER_SEC = 24;
 const steerBankTable = (() => {
   const frameCount = Math.round(totalLength * STEER_SAMPLES_PER_SEC);
