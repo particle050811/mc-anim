@@ -48,13 +48,23 @@ export class BoxBuckets {
     return this.boxes.length === 0;
   }
   // bin 坐标的一点
+  // 每个面都要查，不在里面建闭包、数组
   has(x: number, y: number, z: number) {
+    const boxes = this.boxes;
     const cx = Math.floor(x + this.o[0]) - this.gx0, cz = Math.floor(z + this.o[2]) - this.gz0;
-    const inBox = (b: number[]) => x > b[0] && x < b[3] && y > b[1] && y < b[4] && z > b[2] && z < b[5];
-    if (cx < 0 || cz < 0 || cx >= this.nx || cz >= this.nz) return this.boxes.some(inBox);
+    if (cx < 0 || cz < 0 || cx >= this.nx || cz >= this.nz) {
+      for (let i = 0; i < boxes.length; i++) {
+        const b = boxes[i];
+        if (x > b[0] && x < b[3] && y > b[1] && y < b[4] && z > b[2] && z < b[5]) return true;
+      }
+      return false;
+    }
     const t = this.buckets[cx * this.nz + cz];
     if (!t) return false;
-    for (const i of t) if (inBox(this.boxes[i])) return true;
+    for (let j = 0; j < t.length; j++) {
+      const b = boxes[t[j]];
+      if (x > b[0] && x < b[3] && y > b[1] && y < b[4] && z > b[2] && z < b[5]) return true;
+    }
     return false;
   }
 }
@@ -66,28 +76,50 @@ export type Face = {
   s0: number; s1: number; t0: number; t1: number; // 面在 (tu, tv) 上的范围（bin）
   c: number[]; // 四个角在顶点里的序号：(s0,t0) (s1,t0) (s1,t1) (s0,t1)
 };
-export const readFace = (dv: DataView, at: number, stride: number): Face | null => {
-  const corners: number[][] = [];
-  for (let k = 0; k < 4; k++) corners.push([dv.getFloat32(at + k * stride, true), dv.getFloat32(at + k * stride + 4, true), dv.getFloat32(at + k * stride + 8, true)]);
-  const edgeU = [corners[1][0] - corners[0][0], corners[1][1] - corners[0][1], corners[1][2] - corners[0][2]];
-  const edgeV = [corners[3][0] - corners[0][0], corners[3][1] - corners[0][1], corners[3][2] - corners[0][2]];
-  const normal = [edgeU[1] * edgeV[2] - edgeU[2] * edgeV[1], edgeU[2] * edgeV[0] - edgeU[0] * edgeV[2], edgeU[0] * edgeV[1] - edgeU[1] * edgeV[0]];
-  const normalLen = Math.hypot(normal[0], normal[1], normal[2]);
+// 网格的每个面都读一遍：四个角、叉积都放在局部变量里，不建临时数组（算式和顺序不动，结果逐位不变）
+const cornerS = new Float64Array(4);
+const cornerT = new Float64Array(4);
+const nearestCorner = (ss: number, tt: number) => {
+  let best = 0, bd = Infinity;
+  for (let k = 0; k < 4; k++) {
+    const dist = Math.abs(cornerS[k] - ss) + Math.abs(cornerT[k] - tt);
+    if (dist < bd) { bd = dist; best = k; }
+  }
+  return best;
+};
+// out：结果写进这个对象（连它的 c）再返回它，逐面调的地方复用一个；要留着的自己拷一份
+export const readFace = (dv: DataView, at: number, stride: number, out?: Face): Face | null => {
+  const at1 = at + stride, at2 = at + 2 * stride, at3 = at + 3 * stride;
+  const x0 = dv.getFloat32(at, true), y0 = dv.getFloat32(at + 4, true), z0 = dv.getFloat32(at + 8, true);
+  const x1 = dv.getFloat32(at1, true), y1 = dv.getFloat32(at1 + 4, true), z1 = dv.getFloat32(at1 + 8, true);
+  const x2 = dv.getFloat32(at2, true), y2 = dv.getFloat32(at2 + 4, true), z2 = dv.getFloat32(at2 + 8, true);
+  const x3 = dv.getFloat32(at3, true), y3 = dv.getFloat32(at3 + 4, true), z3 = dv.getFloat32(at3 + 8, true);
+  const ux = x1 - x0, uy = y1 - y0, uz = z1 - z0;
+  const vx = x3 - x0, vy = y3 - y0, vz = z3 - z0;
+  const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+  const normalLen = Math.hypot(nx, ny, nz);
   if (normalLen < 1e-9) return null;
   let dir = -1;
-  for (let i = 0; i < 6; i++) if (dot(NORMALS[i], normal) / normalLen > 0.999) dir = i;
-  if (dir < 0) return { d: dir, w: 0, s0: 0, s1: 0, t0: 0, t1: 0, c: [] };
-  const sVals = corners.map((q) => dot(q, TU[dir])), t = corners.map((q) => dot(q, TV[dir]));
-  const s0 = Math.min(...sVals), s1 = Math.max(...sVals), t0 = Math.min(...t), t1 = Math.max(...t);
-  const nearestCorner = (ss: number, tt: number) => {
-    let best = 0, bd = Infinity;
-    for (let k = 0; k < 4; k++) {
-      const dist = Math.abs(sVals[k] - ss) + Math.abs(t[k] - tt);
-      if (dist < bd) { bd = dist; best = k; }
-    }
-    return best;
-  };
-  return { d: dir, w: dot(corners[0], NORMALS[dir]), s0, s1, t0, t1, c: [nearestCorner(s0, t0), nearestCorner(s1, t0), nearestCorner(s1, t1), nearestCorner(s0, t1)] };
+  for (let i = 0; i < 6; i++) {
+    const n = NORMALS[i];
+    if ((n[0] * nx + n[1] * ny + n[2] * nz) / normalLen > 0.999) dir = i;
+  }
+  if (dir < 0) {
+    if (!out) return { d: dir, w: 0, s0: 0, s1: 0, t0: 0, t1: 0, c: [] };
+    out.d = dir;
+    return out;
+  }
+  const tu = TU[dir], tv = TV[dir], n = NORMALS[dir];
+  const sA = x0 * tu[0] + y0 * tu[1] + z0 * tu[2], sB = x1 * tu[0] + y1 * tu[1] + z1 * tu[2], sC = x2 * tu[0] + y2 * tu[1] + z2 * tu[2], sD = x3 * tu[0] + y3 * tu[1] + z3 * tu[2];
+  const tA = x0 * tv[0] + y0 * tv[1] + z0 * tv[2], tB = x1 * tv[0] + y1 * tv[1] + z1 * tv[2], tC = x2 * tv[0] + y2 * tv[1] + z2 * tv[2], tD = x3 * tv[0] + y3 * tv[1] + z3 * tv[2];
+  const s0 = Math.min(sA, sB, sC, sD), s1 = Math.max(sA, sB, sC, sD), t0 = Math.min(tA, tB, tC, tD), t1 = Math.max(tA, tB, tC, tD);
+  cornerS[0] = sA; cornerS[1] = sB; cornerS[2] = sC; cornerS[3] = sD;
+  cornerT[0] = tA; cornerT[1] = tB; cornerT[2] = tC; cornerT[3] = tD;
+  const w = x0 * n[0] + y0 * n[1] + z0 * n[2];
+  if (!out) return { d: dir, w, s0, s1, t0, t1, c: [nearestCorner(s0, t0), nearestCorner(s1, t0), nearestCorner(s1, t1), nearestCorner(s0, t1)] };
+  out.d = dir; out.w = w; out.s0 = s0; out.s1 = s1; out.t0 = t0; out.t1 = t1;
+  out.c[0] = nearestCorner(s0, t0); out.c[1] = nearestCorner(s1, t0); out.c[2] = nearestCorner(s1, t1); out.c[3] = nearestCorner(s0, t1);
+  return out;
 };
 
 // 一面里 (s, t) ∈ [sa, sb] × [ta, tb] 那一块（双线性插值顶点属性）；搬到 (目标格, 目标方向) 给 `FaceTransfer`，
@@ -138,8 +170,14 @@ export const splitIntoCells = (face: Face) => {
   for (const [sa, sb] of splitRange(face.s0, face.s1)) for (const [ta, tb] of splitRange(face.t0, face.t1)) out.push([sa, sb, ta, tb]);
   return out;
 };
-// 一块（面上的范围）中心沿法向往里退 0.01 的点（bin）：落在这个面所属的那一格里
-export const innerPoint = (face: Face, sa: number, sb: number, ta: number, tb: number) => {
+// 同 `splitIntoCells`，不建数组：一面沿 s、t 各切成几格，和第 i 格的范围 [cellLo, cellHi]（逐面调的地方用）
+export const cellCount = (lo: number, hi: number) => (hi - lo <= 1.001 ? 1 : Math.round(hi - lo));
+export const cellLo = (lo: number, hi: number, i: number) => (hi - lo <= 1.001 ? lo : lo + i);
+export const cellHi = (lo: number, hi: number, n: number, i: number) => (hi - lo <= 1.001 || i === n - 1 ? hi : lo + i + 1);
+// 一块（面上的范围）中心沿法向往里退 0.01 的点（bin）：落在这个面所属的那一格里。out：写进这个数组（逐面调的地方复用一个）
+export const innerPoint = (face: Face, sa: number, sb: number, ta: number, tb: number, out: number[] = [0, 0, 0]) => {
   const sMid = (sa + sb) / 2, t = (ta + tb) / 2;
-  return [0, 1, 2].map((i) => (face.w - 0.01) * NORMALS[face.d][i] + sMid * TU[face.d][i] + t * TV[face.d][i]);
+  const n = NORMALS[face.d], tu = TU[face.d], tv = TV[face.d];
+  for (let i = 0; i < 3; i++) out[i] = (face.w - 0.01) * n[i] + sMid * tu[i] + t * tv[i];
+  return out;
 };
