@@ -24,17 +24,19 @@ import {
   shrieks, allWool, footOf, withHang, type BlockPos, type Jump,
 } from '../../../地点/古城4x/布局.ts';
 import { buildEliteRoute, eliteAirPose } from './走位.ts';
+import { segFps } from '@engine/段/段定义.ts';
 import { computeChain, cellKey } from './振动链.ts';
 
 // ---------- 段长、时钟（秒） ----------
 // 黄叛那句说完只留 0.4 秒（站着不动）；第三、四次尖啸隔 10.9 秒（> 10 秒冷却，振动链在下面自己核）
 export const headTrim646 = 7 / 12;
 export const durationSec646 = 139 / 12;
-export const durationSec647 = 157 / 24; // 末帧 = 第四次尖啸后 1.0 秒
+// 6-4-7 末帧在第 6.5 秒（= 第四次尖啸后 1.0 秒），段长再多一帧（原来是 157/24，多的是 1/24 秒一格，用户 11-16 定不留 1/24 秒的格）
+export const durationSec647 = 6.5 + 1 / segFps;
 export const τ646 = (t: number) => K645.durationSec + headTrim646 + t;
 export const τ647 = (t: number) => K645.durationSec + headTrim646 + durationSec646 + t;
 export const startSec647 = τ647(0);
-const endSec647 = τ647(durationSec647 - 1 / 60); // 6-4-7 末帧
+const endSec647 = τ647(durationSec647 - 1 / segFps); // 6-4-7 末帧
 
 // ---------- 6-4-6：两路强者跳 ----------
 export const huangRoute = buildEliteRoute(pursuerPath, pursuerApexHeights, handoffs.pursuerStart.relSec645, pursuerStops.黄, '黄');
