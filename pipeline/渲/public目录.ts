@@ -7,13 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { isWindows, publicDir, terrainRoot, dataRoot, solveCacheDir } from '../环境/配置.ts';
 import { privateMusicDir } from '../资产/私有配乐.ts';
-import { draftDir, draftLinkName } from './地形草稿.ts';
 
-// 键是盘上的链接名（engine 按 terrain/、solveCache/、私有配乐/、地形草稿/ 取），不是属性名，改名时别动
-const linkTable = () => {
-  const draft = draftDir();
-  return { terrain: terrainRoot(), solveCache: solveCacheDir(), 私有配乐: privateMusicDir(dataRoot()), ...(draft ? { [draftLinkName]: draft } : {}) };
-};
+// 键是盘上的链接名（engine 按 terrain/、solveCache/、私有配乐/ 取），不是属性名，改名时别动
+const linkTable = () => ({ terrain: terrainRoot(), solveCache: solveCacheDir(), 私有配乐: privateMusicDir(dataRoot()) });
 
 /** 建好（或校正）public 目录里的链接，返回 public 目录的路径 */
 export const ensurePublicDir = (): string => {
