@@ -54,7 +54,7 @@ export const broomFrame = (g: number) => {
   const right = [flatFwd[1], -flatFwd[0], 0];
   return { forward: t, flatFwd: flatFwd, right: right, normal: cross(right, t) };
 };
-// P 的位置部分 → 镜头位置（相对骑手）。方位绕竖直轴转（锁航向），仰角从扫帚前方往上量（一镜到底俯仰最快 2°/帧，镜头跟着转得匀）
+// P 的位置部分 → 镜头位置（相对骑手）。方位绕竖直轴转（锁航向），仰角从扫帚前方往上量（一镜到底俯仰最快 48°/秒，镜头跟着转得匀）
 export const camPosOf = (framing: Framing, g: number) => {
   const { forward: fwd, right: right, normal: normal } = broomFrame(g);
   const dist = Math.exp(framing.距);
