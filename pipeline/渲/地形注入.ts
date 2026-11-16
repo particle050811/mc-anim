@@ -7,6 +7,7 @@ const trialEnvName = 'REMOTION_ANIM_TRIAL';
 import { workName } from '../环境/作品.ts';
 import { segTerrainVersion, readTerrainVersionTable } from '../指纹/指纹.ts';
 import type { SegInfo } from '../清单/清单.ts';
+import { applyDraft, draftDir } from './地形草稿.ts';
 
 /**
  * 键是段键（段指纹的 段 字段就是）。出切片的渲染，地形一定传指纹的地形项（r.指纹.项.地形），不重读表：
@@ -14,11 +15,12 @@ import type { SegInfo } from '../清单/清单.ts';
  */
 export const segRenderEnv = (segKey: string, terrainFiles: Record<string, string>): Record<string, string> => ({
   [terrainVersionEnv]: JSON.stringify(terrainFiles),
-  [terrainUsageSegEnv]: `${workName()}/${segKey}`,
+  // 读草稿地形包时不记用量（用量按登记的版本收窄声明）
+  ...(draftDir() ? {} : { [terrainUsageSegEnv]: `${workName()}/${segKey}` }),
 });
 
 /** still、bench 不算指纹、不出切片，当场读表；多读：试看要多读的包（`试看地形`） */
-export const segTerrainNow = (s: Pick<SegInfo, '键' | '段'>, extraReads: readonly string[] = []): Record<string, string> => segTerrainVersion(s.键, [...new Set([...s.段.地形, ...extraReads])], readTerrainVersionTable());
+export const segTerrainNow = (s: Pick<SegInfo, '键' | '段'>, extraReads: readonly string[] = []): Record<string, string> => applyDraft(segTerrainVersion(s.键, [...new Set([...s.段.地形, ...extraReads])], readTerrainVersionTable()));
 
 /** anim still 的试看参数（engine/core/试看.ts）：shell 里设了就原样转给页面；只 still 转，film 不认，切片不会混进试看的画面 */
 export const trialEnv = (): Record<string, string> => (process.env[trialEnvName] ? { [trialEnvName]: process.env[trialEnvName]! } : {});
