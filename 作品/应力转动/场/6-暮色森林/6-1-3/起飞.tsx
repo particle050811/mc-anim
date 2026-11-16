@@ -24,6 +24,7 @@ import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
 import { LichScene } from '../6-1-5/戏.tsx';
 import { pierceTimes } from '../一镜到底/路线.ts';
+import { trialFarM } from '@engine/light/高度雾.ts';
 const sheath = <WornSheath />;
 
 // 只画画面；声音照用到它的段（6-起飞、6-穿塔斩首领）段.ts 的 cue 放
@@ -44,7 +45,7 @@ export const TakeOff: React.FC = () => {
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(t)} fogNear={twilightFogNear(choreo.fogFar(t))} aboveGround={choreo.aboveGround(t)} {...farViewLighting(choreo.farView(), choreo.farViewRamp(t))} farFog={choreo.farView() ? { far: LevelParams.视频.far, ramp: choreo.farViewRamp(t) } : undefined} />
+        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(t)} fogNear={twilightFogNear(choreo.fogFar(t))} aboveGround={choreo.aboveGround(t)} {...farViewLighting(choreo.farView(), choreo.farViewRamp(t))} farFog={choreo.farView() ? { far: trialFarM(LevelParams.视频.far), ramp: choreo.farViewRamp(t) } : undefined} />
         <FlightRig c={cam} />
         {/* 屏幕空间 AO：同 6-1-2、一镜到底一直开着（云也画在它里面） */}
         <ScreenAo />

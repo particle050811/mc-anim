@@ -17,6 +17,7 @@ import { BorderTown } from '../../边城轮廓.tsx';
 import { useFallTerrain } from '../6-3-下坠/地形.ts';
 import { borderTownPos } from '../../主世界116.ts';
 import * as choreo from './编排.ts';
+import { trialFarM } from '@engine/light/高度雾.ts';
 
 export const sheath = <WornSheath />;
 
@@ -35,13 +36,13 @@ export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
-        <FlightFog visibility={choreo.visibility(globalSec)} far={terrain.farM} />
+        <FlightFog visibility={choreo.visibility(globalSec)} far={trialFarM(terrain.farM)} />
         <FlightRig c={cam} near={0.02} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 天、灯、云（lib/主世界光照.tsx）；日光投影见 lib/飞行镜头.tsx 的 `OverworldSunLight` */}
           <FlightSky camPos={cam.pos} shadow={{ shadowFar: overworldShadowFar(choreo.visibility(globalSec)), aboveGround: cam.pos[2] - choreo.routeGround(cam.pos[0], cam.pos[1]) }} />
-          <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />
+          <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={trialFarM(terrain.farM)} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />
           <group position={borderTownPos}>
             <BorderTown />
           </group>

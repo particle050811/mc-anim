@@ -30,6 +30,7 @@ import { cameraAt, type Cam } from './镜头.ts';
 import * as route from './路线.ts';
 import { SpearDrill, LootLayer, drillGhost, drillSpin } from './战利品.tsx';
 import { rad, smoothstep01, lerp } from '@engine/core/数学.ts';
+import { trialFarM } from '@engine/light/高度雾.ts';
 
 const sheath = <WornSheath />;
 
@@ -199,7 +200,8 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; level?: RenderLevel; sc
   ...overrides
 }) => {
   const far = farViewOf(officialFar);
-  const { pixel: lodPixels, far: farDist, dpr } = { ...LevelParams[level], ...overrides };
+  const { pixel: lodPixels, far: farLevel, dpr } = { ...LevelParams[level], ...overrides };
+  const farDist = far ? trialFarM(farLevel) : farLevel;
   const { width, height } = useVideoConfig();
   const cam = camOverride ?? cameraAt(g);
   const broom = route.broom(g);
