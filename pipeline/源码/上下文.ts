@@ -21,6 +21,8 @@ export type Issue = { file?: string; 行?: number; text: string };
 export class CheckReport {
   violations: Issue[] = [];
   pendingMigration: Issue[] = [];
+  /** 提示：要处理但平时不算违规（发布锁和代码不一致，发布前才卡，用户 11-16 定） */
+  notices: Issue[] = [];
   skipped: string[] = [];
   infoLines: string[] = [];
   错(messageText: string, file?: string, lineNo?: number) {
@@ -28,6 +30,9 @@ export class CheckReport {
   }
   待(messageText: string, file?: string) {
     this.pendingMigration.push({ text: messageText, file: file });
+  }
+  notice(messageText: string, file?: string) {
+    this.notices.push({ text: messageText, file: file });
   }
 }
 
@@ -97,6 +102,8 @@ export type LoadResult = { modules?: Record<string, unknown>; errors?: string };
 export class CheckContext {
   readonly root: string;
   readonly deep: boolean;
+  /** --release：发布前、推送前的严格档，发布锁对不上算违规、还查 Release 上附件齐不齐 */
+  readonly release: boolean;
   readonly dataRoot: string | undefined;
   /** 规矩表出处 M/ 的根；不给就用配置 记忆（ANIM_MEMORY） */
   readonly memoryRoot: string | undefined;
@@ -107,9 +114,10 @@ export class CheckContext {
   #workName?: string;
   #workPrivateCache?: boolean;
 
-  constructor(root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; work?: string } = {}) {
+  constructor(root: string, options: { depthCheck?: boolean; release?: boolean; dataRoot?: string; memoryRoot?: string; work?: string } = {}) {
     this.root = fs.realpathSync(root);
     this.deep = options.depthCheck ?? false;
+    this.release = options.release ?? false;
     this.dataRoot = options.dataRoot;
     this.memoryRoot = options.memoryRoot;
     this.#workName = options.work;

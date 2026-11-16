@@ -63,7 +63,7 @@ export const makeRepo = (...fileLayers: FileTable[]): string => {
 };
 
 /** 在样例仓库上跑一类规则，返回违规文本（带文件前缀，方便 toMatch）和整份报告 */
-export const runRule = async (ruleName: RuleKind, root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; work?: string } = {}) => {
+export const runRule = async (ruleName: RuleKind, root: string, options: { depthCheck?: boolean; release?: boolean; dataRoot?: string; memoryRoot?: string; work?: string } = {}) => {
   const c = new CheckContext(root, options);
   const report = new CheckReport();
   try {

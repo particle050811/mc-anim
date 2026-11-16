@@ -5,7 +5,7 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { bytesAttachmentName, terrainAttachmentName, pullRelease, compareReleaseLock, readReleaseManifest, type ExpectedRelease } from './发布.ts';
+import { bytesAttachmentName, terrainAttachmentName, pullRelease, compareReleaseLock, readReleaseManifest, missingRemoteAttachments, type ExpectedRelease } from './发布.ts';
 import { missingAttachmentCount, type ReleaseLock } from './发布锁.ts';
 
 const releaseTable = { repo: 'a/b', label: 'assets-v1', segment: ['6'] };
@@ -46,6 +46,14 @@ describe('挂 Release 发字节', () => {
     expect(compareReleaseLock(releaseLock(), { ...expected, terrain: [{ pack: '主世界', version: 'def456' }] }, releaseTable).join()).toMatch(/terrain-def456\.tar/);
     expect(compareReleaseLock(releaseLock({ label: 'assets-v0' }), expected, releaseTable).join()).toMatch(/assets-v0/);
     expect(compareReleaseLock(releaseLock(), { ...expected, privateLibBytes: ['3'.repeat(64)] }, releaseTable).join()).toMatch(/少 1 件私有\/ 库的字节/);
+  });
+
+  it('Release 上还缺哪些附件：没建 Release 就是全缺，gh 查不了抛错', () => {
+    const lock = releaseLock();
+    expect(missingRemoteAttachments(lock, () => new Set(lock.attachments.map((a) => a.name)))).toEqual([]);
+    expect(missingRemoteAttachments(lock, () => new Set([terrainAttachmentName('abc123'), 'bytes-旧的.tar']))).toEqual([bytesAttachmentName([s1, s2])]);
+    expect(missingRemoteAttachments(lock, () => null)).toEqual(lock.attachments.map((a) => a.name));
+    expect(() => missingRemoteAttachments(lock, () => { throw new Error('gh release view 失败'); })).toThrow(/gh release view 失败/);
   });
 
   it('附件缺：数一下数据根还缺的字节、地形包目录在不在', () => {

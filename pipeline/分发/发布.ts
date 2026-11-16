@@ -159,14 +159,25 @@ export const packRelease = async (c: CheckContext, releaseTable: ReleaseManifest
   return { releaseLock: { repo: releaseTable.repo, label: releaseTable.label, attachments: attachments } satisfies ReleaseLock, newPacks, expected };
 };
 
-/** --upload：没有这个 Release 就建，再传 Release 上还没有的附件（本机 cache/发布/ 里要有） */
-export const uploadRelease = async (releaseLock: ReleaseLock, dataRoot: string) => {
+/** Release 上已有的附件名；还没建这个 Release 是 null。gh 没装、没登录、连不上抛错 */
+export const listRemoteAttachments = (releaseLock: Pick<ReleaseLock, 'repo' | 'label'>): Set<string> | null => {
   const viewResult = tryRun(['gh', 'release', 'view', releaseLock.label, '--repo', releaseLock.repo, '--json', 'assets', '--jq', '.assets[].name']);
-  if (viewResult.exitCode !== 0) {
-    if (!/release not found/i.test(viewResult.stderr)) throw new Error(`gh release view 失败（装了 gh、gh auth login 了吗）：${viewResult.stderr.trim()}`);
-    await runCmd(['gh', 'release', 'create', releaseLock.label, '--repo', releaseLock.repo, '--title', releaseLock.label, '--notes', '渲片用的字节和地形包，anim assets pull 按 <作品根>/发布锁.json 下载、核 sha、解进数据根。']);
-  }
-  const remoteNames = new Set(viewResult.exitCode === 0 ? viewResult.stdout.split('\n').filter(Boolean) : []);
+  if (viewResult.exitCode === 0) return new Set(viewResult.stdout.split('\n').filter(Boolean));
+  if (/release not found/i.test(viewResult.stderr)) return null;
+  throw new Error(`gh release view 失败（装了 gh、gh auth login 了吗）：${viewResult.stderr.trim()}`);
+};
+
+/** 发布锁里 Release 上还没有的附件名（发布前、推送前查：pack 了没传，别的机器 pull 会 404） */
+export const missingRemoteAttachments = (releaseLock: ReleaseLock, list = listRemoteAttachments): string[] => {
+  const remoteNames = list(releaseLock) ?? new Set<string>();
+  return releaseLock.attachments.map((a) => a.name).filter((n) => !remoteNames.has(n));
+};
+
+/** --upload：没有这个 Release 就建，再传 Release 上还没有的附件（本机 cache/发布/ 里要有）；传完再查一遍，还缺就报错 */
+export const uploadRelease = async (releaseLock: ReleaseLock, dataRoot: string) => {
+  const listed = listRemoteAttachments(releaseLock);
+  if (!listed) await runCmd(['gh', 'release', 'create', releaseLock.label, '--repo', releaseLock.repo, '--title', releaseLock.label, '--notes', '渲片用的字节和地形包，anim assets pull 按 <作品根>/发布锁.json 下载、核 sha、解进数据根。']);
+  const remoteNames = listed ?? new Set<string>();
   for (const a of releaseLock.attachments) {
     if (remoteNames.has(a.name)) continue;
     const f = path.join(releaseDir(dataRoot), a.name);
@@ -174,6 +185,9 @@ export const uploadRelease = async (releaseLock: ReleaseLock, dataRoot: string) 
     console.log(`传 ${a.name}（${(a.size / 1e6).toFixed(0)} MB）`);
     await runCmd(['gh', 'release', 'upload', releaseLock.label, f, '--repo', releaseLock.repo]);
   }
+  const stillMissing = missingRemoteAttachments(releaseLock);
+  if (stillMissing.length) throw new Error(`传完 Release ${releaseLock.label} 上还没有 ${stillMissing.join('、')}（${releaseLock.repo}），别 push，重跑 anim assets pack --upload`);
+  console.log(`Release ${releaseLock.label} 上发布锁的 ${releaseLock.attachments.length} 个附件都在`);
 };
 
 /** 字节搬进 store/（或 私有/）：核 sha、只读、先临时名再改名；已有的不动 */

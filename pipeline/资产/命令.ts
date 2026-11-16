@@ -89,7 +89,7 @@ const runPackRelease = async (upload: boolean, runRecord: Parameters<Command['�
     console.log(`${expected.段数} 段：${expected.bytes.length + expected.privateLibBytes.length} 件字节${expected.privateLibBytes.length ? `（私有/ 库 ${expected.privateLibBytes.length} 件）` : ''}、${expected.terrain.length} 个地形包，${releaseLock.attachments.length} 个附件共 ${(totalBytes / 1e9).toFixed(2)} GB；新打 ${newPacks.length} 个${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件：${expected.privateFiles.join('、')}` : ''}`);
     console.log(`写了 ${relativeToCodeRoot(path.join(workDir, releaseLockName))}`);
     if (upload) await uploadRelease(releaseLock, dataRoot());
-    else if (newPacks.length) console.log(`传上去：anim assets pack --upload（要 gh 登录），或手动 gh release upload ${releaseLock.label} <cache/发布/ 里的附件> --repo ${releaseLock.repo}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
+    else if (newPacks.length) console.log(`传上去：anim assets pack --upload（要 gh 登录），或手动 gh release upload ${releaseLock.label} <cache/发布/ 里的附件> --repo ${releaseLock.repo}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到（推送前 anim check --release 会卡）`);
   } finally {
     c.finalize();
   }

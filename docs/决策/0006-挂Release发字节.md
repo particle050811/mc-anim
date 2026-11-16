@@ -1,6 +1,6 @@
 # 0006 挂 Release 发字节
 
-- 状态：应力转动 已做（10-25）：第 6、7 章和核对段要的字节、地形包挂 GitHub Release `assets-v1`，`anim assets pull` 拉进数据根就能渲。11-13 起三部作品的全部段都这样发，`私有/` 库的字节也进附件（`0017-全部公开.md`）。
+- 状态：应力转动 已做（10-25）：第 6、7 章和核对段要的字节、地形包挂 GitHub Release `assets-v1`，`anim assets pull` 拉进数据根就能渲。11-13 起三部作品的全部段都这样发，`私有/` 库的字节也进附件（`0017-全部公开.md`）。11-16 起发布锁只在发布时卡，平时的 check 只提示（下面「只在发布时卡」）。
 - 依据：用户 10-25 的话（下面照录）。接着 `0005-随仓库发字节.md`：那边是小的字节进 Git，这边是大的挂 Release。
 
 ## 用户定的（10-25）
@@ -19,15 +19,25 @@
 | 发哪些字节 | 和随仓库发同一个算法（`随仓库.ts` 的 `算随仓库`），加这些段 `段.ts` 声明的地形包，版本取 `assets/地形版本.json` |
 | 附件 | 字节一个 tar `bytes-<sha 列表的 sha 前 12 位>.tar`，布局同 `store/`；地形每个包版本一个 tar `terrain-<版本>.tar`，布局同 `terrain/<包>/<版本>/`。名字只用 ASCII（GitHub 会改掉非 ASCII 的附件名），单个附件不超过 2 GiB |
 | 锁 | `<作品根>/发布锁.json`（`anim assets pack` 生成，不手改）：仓库、标签，每个附件的名字、sha256、大小、里面是什么 |
-| 打包、上传 | `anim assets pack [--upload]`：tar 打在 `<数据根>/cache/发布/`；锁里已有的同名附件不重打（tar 带时间戳，重打字节会变）；`--upload` 用 `gh` 建 Release、只传 Release 上还没有的 |
+| 打包、上传 | `anim assets pack [--upload]`：tar 打在 `<数据根>/cache/发布/`；锁里已有的同名附件不重打（tar 带时间戳，重打字节会变）；算不出该发的（段选不中、地形包没登记、数据根缺字节）直接报错不写锁；`--upload` 用 `gh` 建 Release、只传 Release 上还没有的，传完再查一遍，还缺就报错 |
 | 下载 | `anim assets pull`：先问附件在不在，404（发布锁比 Release 新）直接报清楚；系统 curl 下载（断点续传，认 `HTTPS_PROXY`）、核附件 sha、系统 tar 解开（Windows 10 起自带 curl.exe、bsdtar，UTF-8 文件名两边都对）；字节逐件核 sha 放进 `store/`，地形包核清单 sha、文件数、大小再放进 `terrain/`；已有的跳过 |
-| 核对 | `anim check` 的 资产：发布锁和照当前代码现算的一致（少了字节、换了地形版本、换了标签都报），不一致提示 `anim assets pack --upload` |
+| 核对 | 平时 `anim check` 的 资产：发布锁和照当前代码现算的比（少了字节、换了地形版本、换了标签），不一致只出一条「提示：」，不算违规、不改退出码，写明发布前要 `anim assets pack --upload`。发布前、推送前 `anim check --release`：不一致算违规，锁对上了再用 `gh` 查 Release 上附件齐不齐（查不了也算违规）。见下「只在发布时卡」 |
 | 缺了提示 | `anim still`、`film`、`studio` 开头：数据根缺发布锁里的东西时打一行「先 anim assets pull」。不自动下：地形包上 GB |
 
 - 内容变了附件名跟着变，旧附件留在 Release 上，和 `store/` 一样只增不改。
 - 求解缓存 `cache/求解/` 不发：空数据根渲的时候自己算出来。
 - 10-31 地形换逐格预测压缩（`0011-地形压缩.md`）后重打，旧附件留在 Release 上，旧提交还要用。
 - 验证（10-25）：Mac 空数据根只 `pull`，静帧和主数据根渲的逐字节相同。Windows 新 clone 空数据根 `pull` 后静帧和 Mac 内容一样，SSIM 0.97（贴图过滤差异，用户已接受）。GitHub 下载慢（0.4～0.9 MB/s）时，地形 tar 可以另行放进 `cache/发布/`，`pull` 认出 sha 对就不下、直接解。
+
+## 只在发布时卡（用户 11-16 定）
+
+- 起因：11-06 起 `anim check` 在 main 上一直红，失败的多半只因发布锁「随发布」和当前代码不一致。开发中每加减一件随发布的资产锁就过期，补锁要 `anim assets pack --upload` 上传 Release、每次要用户批，批一次只能绿到下次加资产；真违规（重复代码、资产没登记）混在里面看不出来（`预览/1111-0542-流程和代码评估` 第 1 条，超过 3 天在数据根 `archive/预览/`）。
+- 用户 11-16 同意评估的建议：发布锁改成只在发布时查，平时的 check 只提示不算违规。
+- 现在：
+  - 平时 `anim check`：发布锁对不上是一条「提示：」，结尾另数「N 条提示」，退出码不变。`随发布.toml` 写坏了、有发布锁没有 `随发布.toml`、算集合出错（段选不中、地形包没登记），以及别的资产违规照样算违规。
+  - 发布、推送前卡在这几处：`anim assets pack` 照当前代码重算，算不出就报错；`pack --upload` 传完再查 Release，缺附件就报错；推送前每部有 `随发布.toml` 的作品跑 `anim --work <名> check --release`（只查资产可写 `check assets --release`）：发布锁对不上算违规，对上了再查 Release 上附件齐不齐。顺序是 `pack --upload` → `check --release` → 推送。
+  - `check --release` 要联网、要 `gh` 登录；平时的 check 不联网。
+- 没做：没有 git 的推送钩子，推送前那一步靠人（或主 Agent）照上面跑；check 一次只查一部作品，三部要各跑一次。
 
 ## 没做的
 

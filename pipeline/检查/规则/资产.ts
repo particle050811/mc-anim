@@ -3,7 +3,8 @@ import { readModel, modelFileName, sectionFormatVersion } from '../../../engine/
 // 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁/）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
 // 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
 // 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（分发/随仓库.ts）。
-// 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（分发/发布.ts）。
+// 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（分发/发布.ts）。对不上平时只提示，--release（发布前、推送前）才算违规，
+//   还用 gh 查 Release 上附件齐不齐：补锁要上传 Release、每次要用户批，合并门槛卡它 check 就一直红、真违规混在里面（用户 11-16 定，docs/决策/0006）。
 // 写了 材质包.toml 的作品：[segment] 里的段键在清单里，每一种选用的覆盖层锁都建了、和现在登记的包对得上（资产/资产锁.ts 套材质包）。
 // 粒子帧/ 下 anim extract --particle-frames 生成的模块和定义、配方、锁对得上（取材/粒子帧.ts）。
 // --deep：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
@@ -19,7 +20,7 @@ import { mergeAssetRegistry, readAssetRegistry, type AssetSide, type AssetEntry 
 import { workResourcePackTablePath, workResourcePackSelections, bytesPath, applyResourcePack, readResourcePackTable, type AssetLock } from '../../资产/资产锁.ts';
 import { dataRoot as configDataRoot } from '../../环境/配置.ts';
 import { compareBytes, computeRepoBundle, readRepoManifest, repoTableName, bytesDirName } from '../../分发/随仓库.ts';
-import { compareReleaseLock, computeExpectedRelease, readReleaseManifest, releaseTableName } from '../../分发/发布.ts';
+import { compareReleaseLock, computeExpectedRelease, missingRemoteAttachments, readReleaseManifest, releaseTableName } from '../../分发/发布.ts';
 import { releaseLockName } from '../../分发/发布锁.ts';
 import { lacksAudioMetadata } from '../../资产/补量.ts';
 import { parseManifest } from '../../取材/清单.ts';
@@ -156,7 +157,7 @@ const checkResourcePack = async (c: CheckContext, report: CheckReport, assetLock
   }
 };
 
-/** 挂 Release 发的：写了 随发布.toml 的，发布锁.json 要和现算的一致；没写的不该有发布锁 */
+/** 挂 Release 发的：写了 随发布.toml 的，发布锁.json 要和现算的一致（平时只提示，--release 算违规、再查 Release 上附件齐不齐）；没写的不该有发布锁 */
 const checkReleaseBundle = async (c: CheckContext, report: CheckReport) => {
   const releaseListPath = c.workPath(releaseTableName);
   const lockFile = c.workPath(releaseLockName);
@@ -176,8 +177,21 @@ const checkReleaseBundle = async (c: CheckContext, report: CheckReport) => {
   if (expected.issues.length) return;
   const releaseLock = c.exists(lockFile) ? (JSON.parse(c.读(lockFile)) as Parameters<typeof compareReleaseLock>[0]) : undefined;
   const diffItems = compareReleaseLock(releaseLock, expected, releaseTable);
-  for (const q of diffItems) report.错(`随发布：${q}（anim assets pack --upload 照当前代码重打、传上去）`, lockFile);
-  if (!diffItems.length) report.infoLines.push(`随发布：${expected.段数} 段要的 ${expected.bytes.length} 件字节、${expected.terrain.length} 个地形包和 ${lockFile} 对得上${expected.privateLibBytes.length ? `（其中 私有/ 库 ${expected.privateLibBytes.length} 件）` : ''}${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件` : ''}`);
+  if (diffItems.length) {
+    if (c.release) for (const q of diffItems) report.错(`随发布：${q}（anim assets pack --upload 照当前代码重打、传上去）`, lockFile);
+    else report.notice(`随发布：发布锁和当前代码不一致（${diffItems.join('；')}）。平时不算违规；发布前要 anim assets pack --upload 照当前代码重打、传上去，推送前 anim check --release 会卡`, lockFile);
+    return;
+  }
+  report.infoLines.push(`随发布：${expected.段数} 段要的 ${expected.bytes.length} 件字节、${expected.terrain.length} 个地形包和 ${lockFile} 对得上${expected.privateLibBytes.length ? `（其中 私有/ 库 ${expected.privateLibBytes.length} 件）` : ''}${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件` : ''}`);
+  if (!c.release) return;
+  // 锁对上了还要附件真在 Release 上：pack 了没 --upload 就推送，别的机器 pull 会 404
+  try {
+    const missing = missingRemoteAttachments(releaseLock!);
+    if (missing.length) report.错(`随发布：Release ${releaseLock!.label} 上还没有 ${missing.join('、')}（anim assets pack --upload 传上去）`, lockFile);
+    else report.infoLines.push(`随发布：Release ${releaseLock!.label} 上 ${releaseLock!.attachments.length} 个附件都在`);
+  } catch (e) {
+    report.错(`随发布：查不了 Release 上的附件，发布前要能查到：${(e as Error).message}`, lockFile);
+  }
 };
 
 type TerrainTable = { pack?: Record<string, { version: string; manifestSha256?: string; fileCount?: number; size?: number; license?: string; visibility?: string }> };
