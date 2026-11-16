@@ -1,9 +1,9 @@
 {
   "sha256": "ac93750e337fe2c39b7b264e33ad73f0f824a93fe637def39b494d728cb4d32f",
-  "后缀": ".wav",
-  "响度": -18,
-  "大小": 96750,
-  "峰值": -4.7,
-  "库": "store",
-  "时长": 1.007
+  "suffix": ".wav",
+  "loudness": -18,
+  "size": 96750,
+  "peakDb": -4.7,
+  "lib": "store",
+  "duration": 1.007
 }

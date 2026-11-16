@@ -1,12 +1,12 @@
 {
-  "仓库": "particle050811/mc-anim",
-  "标签": "assets-v1",
-  "附件": [
+  "repo": "particle050811/mc-anim",
+  "label": "assets-v1",
+  "attachments": [
     {
-      "名": "bytes-288003eff097.tar",
+      "name": "bytes-288003eff097.tar",
       "sha256": "8febcc702c21e3403d070f82372929590e3fcf746ba0add8dfd31347133f7482",
-      "大小": 24839680,
-      "字节": [
+      "size": 24839680,
+      "bytes": [
         "029dfcb981fdf375fb0ae4657962b3d470e1a073932c3d3aefb15d3d9ba38670",
         "02be59e963ff97f90f20fdac1be2c5e05d14dc39f1d25b73933f87b8dc5f7a57",
         "047c950cb8e0205e6fb6da8b84d19e078b62856697acc173aa6c926e75b044e0",
@@ -268,7 +268,7 @@
         "ff14c1fa44a4ec05713a7ee2296cad6500096bc753bb3ff0e21977039e06fa5b",
         "ffaaf6638246534e8bc5efac4f21f49b3cdd9510de83c1e87f1ec3893e9107ad"
       ],
-      "私有库字节": [
+      "privateLibBytes": [
         "c31621fc073ab36417ec2546c8c88f3fa0117e9b2b3815e837dbcf31c84143fe",
         "d02d6031562db285f37a2c897f380da5064585b468c9f3e0781e569df8c7f189"
       ]
