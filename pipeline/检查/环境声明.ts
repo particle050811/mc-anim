@@ -3,6 +3,7 @@
 // - export default 是一份环境描述或环境轨，用 engine/light/环境.ts 的 定义环境、定义环境轨 再核一遍（直接写字面量、没套 定义… 的也查到）；
 // - 画法有模块：engine/light/画法/<名>.tsx 或 库/画法/<名>.tsx，里面 defineDraw('<名>', …)；
 // - 关键帧落在段里：帧 < 段.ts 的帧数（场目录的按场内帧取，帧数不在一处，不查）。
+import { segFps } from '../../engine/段/段定义.ts';
 import type { SegItem } from '../源码/内容.ts';
 import { isEnvDecl, type CheckReport, type CheckContext } from '../源码/上下文.ts';
 
@@ -59,11 +60,11 @@ export const checkEnvDecl = async (c: CheckContext, report: CheckReport, segment
     if (envTrack) {
       const segDir = p.slice(0, -'/环境.ts'.length);
       const seg = segments.find((s) => s.目录 === segDir);
-      // 环境轨的关键帧按 24 帧一秒（核对-环境 一个视图 1/24 秒）
-      const frameCount = seg?.definition ? Math.round(seg.definition.秒 * 24) : undefined;
+      // 环境轨的关键帧按输出帧算（核对-环境 一帧一个视图）
+      const frameCount = seg?.definition ? Math.round(seg.definition.秒 * segFps) : undefined;
       const outOfRange = frameCount === undefined ? [] : (v.keyframes as { 帧: number }[]).filter((k) => k.帧 >= frameCount);
       if (outOfRange.length) {
-        report.错(`关键帧 ${outOfRange.map((k) => k.帧).join('、')} 不在段里（段长 ${seg!.definition!.秒} 秒，一秒 24 帧共 ${frameCount} 帧）`, p);
+        report.错(`关键帧 ${outOfRange.map((k) => k.帧).join('、')} 不在段里（段长 ${seg!.definition!.秒} 秒，一秒 ${segFps} 帧共 ${frameCount} 帧）`, p);
         continue;
       }
     }
