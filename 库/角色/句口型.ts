@@ -14,8 +14,8 @@ const buildLipData = (lineCues: readonly LineCue[]): LipData => {
 };
 const cueFrames = (lineCues: readonly LineCue[]) => lineCues.map(({ 句: sentence, 帧: frame }) => ({ id: sentence.id, 帧: frame }));
 
-export const sentenceLip = (lineCues: readonly LineCue[], speaker: string, frame: number, fps = 24) => mouthAt(buildLipData(lineCues), cueFrames(lineCues), speaker, frame, fps);
+export const sentenceLip = (lineCues: readonly LineCue[], speaker: string, frame: number, fps: number) => mouthAt(buildLipData(lineCues), cueFrames(lineCues), speaker, frame, fps);
 
 /** 脸上没嘴的人说话时头随字轻点，用法同 口型.ts 的 withTalkNod */
-export const sentenceNod = <P extends { headPitch: number; headYaw: number }>(pose: P, lineCues: readonly LineCue[], speaker: string, frame: number, fps = 24): P =>
+export const sentenceNod = <P extends { headPitch: number; headYaw: number }>(pose: P, lineCues: readonly LineCue[], speaker: string, frame: number, fps: number): P =>
   withTalkNod(buildLipData(lineCues), pose, cueFrames(lineCues), speaker, frame, fps);
