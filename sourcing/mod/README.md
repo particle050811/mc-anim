@@ -18,7 +18,7 @@
 | --- | --- |
 | `cam` | 摆机位：`pos` 加 `look`（看向的点）或 `yaw`/`pitch`，可选 `fov`、`roll`、`dim`（跨维度） |
 | `shoot` | 截图存 PNG，分辨率和窗口大小无关（`size=3840x2160`）；机位、FOV、时间存进 PNG，`mcai meta` 读回 |
-| `freeze` / `unfreeze` | 冻结、解冻世界 |
+| `freeze` / `unfreeze` | 冻结、解冻世界（`game start` 进存档默认冻结） |
 | `setblock` / `fill` / `undo` | 放方块、填长方体（没有 /fill 的 32768 格上限），可连续撤销 |
 | `mesh` | 把一块区域导出成 `*.网格.json/.bin/.png`（几何 + 贴图图集），给 three.js 渲染 |
 | `cmd` | 以最高权限执行任意游戏命令并返回输出 |
@@ -44,10 +44,9 @@
 ```sh
 anim mcai build                                     # 编译，装进所有实例和 <游戏环境>/取材服务端*/ 的 mods/
 anim mcai game copyworld name=片场 from=<世界>        # 把取材服务端生成的世界复制成存档「片场」，只改复制品
-anim mcai game start world=片场                      # 起游戏、直接进存档，等到能接命令
+anim mcai game start world=片场                      # 起游戏、直接进存档、冻结世界，等到能接命令（live=1 不冻）
 
 anim mcai cam pos=264,100,488 pitch=90 yaw=180 dim=twilightforest:twilight_forest
-anim mcai freeze
 anim mcai shoot out=俯视.png size=3840x2160
 anim mcai mesh from=-40,0,195 to=56,95,270 out=巫妖塔.网格
 anim mcai fill from=250,1,490 to=262,12,500 block=minecraft:gold_block
