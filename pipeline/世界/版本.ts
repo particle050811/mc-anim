@@ -75,10 +75,10 @@ export const newStaging = (pack: string) => {
   return { dir, 放: () => releaseLock(lockPath) };
 };
 
-/** 暂存目录写完：算指纹、改名成 <包>/<版本>/（同样内容的版本已经有了就丢掉暂存）。返回版本和是不是新写的 */
-export const release = (pack: string, dir: string) => {
+/** 暂存目录写完：算指纹、改名成 <根>/<包>/<版本>/（同样内容的版本已经有了就丢掉暂存）。根默认是数据根 terrain/，试做的包可以放别处（transcode --to）。返回版本和是不是新写的 */
+export const release = (pack: string, dir: string, root = terrainRoot()) => {
   const fingerprint = dirFingerprint(dir);
-  const dest = versionDir(pack, fingerprint);
+  const dest = path.join(root, pack, fingerprint);
   const existed = fs.existsSync(dest);
   if (existed) fs.rmSync(dir, { recursive: true, force: true });
   else {

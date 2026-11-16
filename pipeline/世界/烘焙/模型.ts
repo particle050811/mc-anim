@@ -1,10 +1,9 @@
-// 抽样契约固定：文件名按 UTF-8 字节排、文件内按物理偏移排，各 L 每 40 段取第 0 段。
+// 抽样契约固定：块文件名按 UTF-8 字节排、文件内按物理偏移排（旧格式源按项号，见 区段源.ts），各 L 每 40 段取第 0 段。
 // 烘焙、旧包转码都从最终格子学；不依赖源格式、线程完成先后、时钟或机器路径。
 import { defaultModel, modelBytes, type SectionModel } from '../../../engine/voxel/区段模型.ts';
-import type { VoxelLib } from '../体素库.ts';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
-import { walkSections } from './读区段.ts';
-import { toColumnMajor, walkModel, encodeSection } from './区段编码.ts';
+import { walkSource, type SectionSource } from './区段源.ts';
+import { toColumnMajor, walkModel, encodeSection, sideOf } from './区段编码.ts';
 
 export const learnModel = (samples: () => Iterable<SectionData>): SectionModel => {
   const classes = 32, freq = new Map<number, number>();
@@ -23,7 +22,7 @@ export const learnModel = (samples: () => Iterable<SectionData>): SectionModel =
     walkModel({
       literal(u, v) { const s = d.palette[2 * v]!, c = map[d.palette[2 * u]!]!; lits[c * stride + s]!++; global[s]!++; rows[c]!++; },
       bit(p, i, b, s = 0) { if (p === ps) { const c = i < 1344 ? map[s]! : 0; counts[2 * (c * 1371 + i) + b]!++; total[2 * i + b]!++; } return b; },
-    }, toColumnMajor(d), d.nz, d.palette.length / 2, d.L, ps, d.palette);
+    }, toColumnMajor(d), d.nz, d.palette.length / 2, d.L, ps, d.palette, sideOf(d));
   }
   const init = new Uint16Array(classes * 1371);
   for (let c = 0; c < classes; c++) for (let i = 0; i < 1371; i++) {
@@ -39,12 +38,12 @@ export const learnModel = (samples: () => Iterable<SectionData>): SectionModel =
 };
 
 /** 变换：区段写进包之前要过的变换（可见.ts），训练就拿变换后的格子学 */
-export const trainPackModel = (voxelLib: VoxelLib, dir: string, transform: (d: SectionData) => SectionData = (d) => d) => {
+export const trainPackModel = (source: SectionSource, transform: (d: SectionData) => SectionData = (d) => d) => {
   let sectionCount = 0, sampleCount = 0;
   const samples = function* () {
     const counts = new Map<number, number>();
     sectionCount = 0; sampleCount = 0;
-    for (const s of walkSections(voxelLib, dir)) {
+    for (const s of walkSource(source)) {
       sectionCount++;
       const n = counts.get(s.id.L) ?? 0;
       counts.set(s.id.L, n + 1);
@@ -59,7 +58,7 @@ export const trainPackModel = (voxelLib: VoxelLib, dir: string, transform: (d: S
   if (sectionCount <= 1024) {
     const neutralModel = defaultModel();
     candidateBytes = modelBytes(sectionModel).length; neutralBytes = modelBytes(neutralModel).length;
-    for (const s of walkSections(voxelLib, dir)) {
+    for (const s of walkSource(source)) {
       const d = transform(s.取());
       candidateBytes += encodeSection(d, sectionModel).length;
       neutralBytes += encodeSection(d, neutralModel).length;

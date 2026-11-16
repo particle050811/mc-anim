@@ -1,5 +1,5 @@
 // 烘焙区段包：列段（一个区域一份）→ 区段包（格式和坐标见 engine/voxel/区段包.ts）。算法照旧项目 工具/导入/烘焙.ts，同样的列段烘出逐字节一样的包。
-// - 按 2048 米一块分块，每块四周多带 64 列（最粗一级一格），多带的那圈和隔壁块算出来一样，块之间不用通信。
+// - 按 4096 米一块分块（格式 4 起，以前 2048），每块四周多带 64 列（最粗一级一格），多带的那圈和隔壁块算出来一样，块之间不用通信。
 // - 往上每级 2×2 列并一列，每格照 Voxy 的 Mipper 从 2×2×2 子格挑代表（合并.ts）。
 // - 染色方块照游戏重挑群系（BiomeManager.getBiome 的种子抖动），交界颜色和 mcai mesh 导出的地标网格一致。
 // - 查不到的方块状态、群系照常烘焙，记进 缺失.tsv。
@@ -46,7 +46,8 @@ export const bake = async (p: BakeParams): Promise<BakeResult> => {
   const { coarsestLevel } = voxelLib.区段;
   const tileCols = voxelLib.sectionPack.tileSizeM;
   const [OX, OY, OZ] = p.原点;
-  if (OX % tileCols || OZ % tileCols) throw new Error(`原点的 x、z 要是 ${tileCols} 的整数倍，给的是 ${OX},${OZ}`);
+  // 原点仍按 2048 对齐（世界声明的规矩，声明.ts）：块从原点起按 4096 米切，只要区域（512 米）不跨块；不改成 4096，现有声明和地标坐标都不用动
+  if (OX % 2048 || OZ % 2048) throw new Error(`原点的 x、z 要是 2048 的整数倍，给的是 ${OX},${OZ}`);
   if (!p.regions.length) throw new Error('没有区域可烘');
   // 先落中性表的暂存包，等状态号和全部区段固定后再学一次；和转码共用定稿路径。
   const outDir = p.输出;

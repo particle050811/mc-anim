@@ -96,7 +96,7 @@ export class SaveBlockSource implements BlockSource {
   }
 }
 
-/** 地形包第 0 级：场景格 (i, j, k) = 游戏 (x − ox, oz − 1 − z, y − oy)，一个区段 32 × 32 列（带一圈相邻，34 × 34） */
+/** 地形包第 0 级：场景格 (i, j, k) = 游戏 (x − ox, oz − 1 − z, y − oy)，一个区段 sectionCells × sectionCells 列（带一圈相邻，paddedSectionCols 见方） */
 export class PackBlockSource implements BlockSource {
   readonly description: string;
   readonly packageInfo: PackageInfo;
@@ -146,11 +146,12 @@ export class PackBlockSource implements BlockSource {
   private segments(x: number, z: number): ColumnView | null {
     const [ox, oy, oz] = this.packageInfo.原点;
     const i = x - ox, j = oz - 1 - z;
-    const si = Math.floor(i / 32), sj = Math.floor(j / 32);
+    const { sectionCells } = this.库.区段, { paddedSectionCols } = this.库.sectionPack;
+    const si = Math.floor(i / sectionCells), sj = Math.floor(j / sectionCells);
     const s = this.区段(si, sj);
     if (!s) return null;
     const { d, 起: runStarts } = s;
-    const c = (j - sj * 32 + 1) * 34 + (i - si * 32 + 1);
+    const c = (j - sj * sectionCells + 1) * paddedSectionCols + (i - si * sectionCells + 1);
     if (runStarts[c] === runStarts[c + 1]) return null;
     const out: ColumnSeg[] = [];
     let topY = d.kBottom + d.nz - 1 + oy;

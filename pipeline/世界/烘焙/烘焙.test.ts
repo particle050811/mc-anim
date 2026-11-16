@@ -1,5 +1,5 @@
 // 烘焙端到端：小存档 → 套编辑 → 区段包，再用查询的两种来源（存档、包）对每列最高的方块，并核对同样的输入烘两次逐字节一样（版本 = 目录指纹靠这个）；旧格式转码回来也一样。
-// 可见变换：烘焙时做和烘完再 转码（格式 3 → 3）做逐字节一样，封死的腔填实、埋住的换石头，保真范围碰到的区段原样。
+// 可见变换：烘焙时做和烘完再 转码（格式 4 → 4）做逐字节一样，封死的腔填实、埋住的换石头，保真范围碰到的区段原样。
 // 体素库要在 Node 里注册 asset: 钩子才载得进来，vitest 自己转 import 不认，所以起一个子进程跑；数据根里没有方块表字节（刚 clone）就跳过。
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -32,7 +32,8 @@ import { RegionSource } from ${fileUrl('../区域源.ts')};
 import { parseEdits } from ${fileUrl('../编辑/编辑文件.ts')};
 import { EditApplier } from ${fileUrl('../编辑/套用.ts')};
 import { dirFingerprint } from ${fileUrl('../版本.ts')};
-import { blockFiles, sectionsInBlock, blockCoordsFromName, encodeFormat1Section } from ${fileUrl('./读区段.ts')};
+import { blockFiles, sectionsInBlock, encodeFormat1Section } from ${fileUrl('./读区段.ts')};
+import { toColumnMajor, fromColumnMajor } from ${fileUrl('./区段编码.ts')};
 import { transcodeDir, compareDirPerCell } from ${fileUrl('./转码.ts')};
 import { PackBlockSource, SaveBlockSource } from ${fileUrl('../查询/源.ts')};
 import fs from 'node:fs';
@@ -63,28 +64,43 @@ for (let z = 0; z < 16; z++)
     if (a?.y !== b?.y || a?.状态 !== b?.状态) 不同.push([x, z, a, b]);
   }
 
-// 把烘出来的包倒成格式 1（旧包的样子），转码回来要和直接烘的字节相同；改掉一格，逐格比要报出来
+// 把烘出来的包倒成格式 1（旧包的样子：一个 66 列的区段拆成 2×2 个 34 列的，核心全是空气的不要，按 2048 米一块放），
+// 转码回来要和直接烘的字节相同（这个小包每列都在一个旧区段的范围里，不用补填充）；改掉一格核心，逐格比要报出来
+const 拆成旧 = (d) => {
+  const cm = toColumnMajor(d), out = [];
+  for (let b = 0; b < 2; b++) for (let a = 0; a < 2; a++) {
+    const q = new Uint16Array(34 * 34 * d.nz);
+    let 有 = false;
+    for (let y = 0; y < 34; y++) for (let x = 0; x < 34; x++) {
+      const src = ((y + 32 * b) * 66 + x + 32 * a) * d.nz, dst = (y * 34 + x) * d.nz;
+      for (let k = 0; k < d.nz; k++) { q[dst + k] = cm[src + k]; if (cm[src + k] && x > 0 && y > 0 && x < 33 && y < 33) 有 = true; }
+    }
+    if (有) out.push(fromColumnMajor({ L: d.L, i: 2 * d.i + a, j: 2 * d.j + b }, d.kBottom, d.nz, q, d.palette, 34 * 34));
+  }
+  return out;
+};
 const 写旧包 = (源, 目标, 改一格) => {
   fs.mkdirSync(目标, { recursive: true });
-  for (const 名 of blockFiles(源)) {
-    const 索引 = new Uint32Array(2 * 库.sectionPack.tileEntryCount), 段们 = [];
-    let off = 库.sectionPack.tileHeaderLen, 改了 = false;
-    for (const s of sectionsInBlock(库, path.join(源, 名))) {
-      const d = s.取();
-      if (改一格 && !改了 && d.palette.length > 2) {
-        d.paletteIndex[0] = d.paletteIndex[0] === 1 ? 0 : 1;
-        改了 = true;
-      }
-      const gz = encodeFormat1Section(d);
-      索引[2 * s.slot] = off;
-      索引[2 * s.slot + 1] = gz.length;
-      off += gz.length;
-      段们.push(gz);
+  const 块们 = new Map();
+  let 改了 = false;
+  for (const 名 of blockFiles(源)) for (const s of sectionsInBlock(库, path.join(源, 名))) for (const d of 拆成旧(s.取())) {
+    if (改一格 && !改了 && d.palette.length > 2) {
+      let r = 0;
+      for (let c = 0; c < 35; c++) r += d.runCounts[c];
+      d.paletteIndex[r] = d.paletteIndex[r] === 1 ? 0 : 1;
+      改了 = true;
     }
-    const [ti, tj] = blockCoordsFromName(名);
+    const at = 库.sectionPack.sectionInTile(d), 键 = at.ti + '.' + at.tj;
+    if (!块们.has(键)) 块们.set(键, { ti: at.ti, tj: at.tj, 段们: [] });
+    块们.get(键).段们.push({ slot: at.slot, gz: encodeFormat1Section(d) });
+  }
+  for (const { ti, tj, 段们 } of 块们.values()) {
+    const 索引 = new Uint32Array(2 * 库.sectionPack.tileEntryCount);
+    let off = 库.sectionPack.tileHeaderLen;
+    for (const { slot, gz } of 段们) { 索引[2 * slot] = off; 索引[2 * slot + 1] = gz.length; off += gz.length; }
     const 头 = 库.sectionPack.encodeTileHeader(ti, tj, 索引);
     new DataView(头.buffer).setUint32(4, 1, true);
-    fs.writeFileSync(path.join(目标, 名), Buffer.concat([头, ...段们]));
+    fs.writeFileSync(path.join(目标, 库.sectionPack.tileFileName(ti, tj)), Buffer.concat([头, ...段们.map((x) => x.gz)]));
   }
   fs.writeFileSync(path.join(目标, '包.json'), JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(源, '包.json'), 'utf8')), 版本: 1 }));
   fs.copyFileSync(path.join(源, '缺失.tsv'), path.join(目标, '缺失.tsv'));
@@ -101,7 +117,7 @@ const 模型大小 = fs.statSync(path.join(根, 'a', '模型.bin')).size;
 const 逐格 = await compareDirPerCell(path.join(根, '旧'), path.join(根, '转'), 1);
 写旧包(path.join(根, 'a'), path.join(根, '坏'), true);
 const 比坏 = await compareDirPerCell(path.join(根, '坏'), path.join(根, '转'), 1).then(() => '没报', (e) => e.message);
-console.log(JSON.stringify({ versions: 版本们, compared: 比了, 不同: 不同.slice(0, 5), glassSample: 包.topBlockAt(5, 5), plankSample: 包.topBlockAt(21, 3), 空: 包.列(40, 3), convertedVersion: 转版本, reconvertedVersion: 重转版本, modelSize: 模型大小, perCellResult: 逐格, mismatchMessage: 比坏 }));
+console.log(JSON.stringify({ versions: 版本们, compared: 比了, 不同: 不同.slice(0, 5), glassSample: 包.topBlockAt(5, 5), plankSample: 包.topBlockAt(21, 3), 空: 包.列(70, 3), convertedVersion: 转版本, reconvertedVersion: 重转版本, modelSize: 模型大小, perCellResult: 逐格, mismatchMessage: 比坏 }));
 `;
 
 describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字节）', () => {
@@ -124,7 +140,7 @@ describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字�
     expect(o.不同).toEqual([]);
     expect(o.glassSample).toMatchObject({ y: 70, 状态: 'minecraft:glass' });
     expect(o.plankSample).toMatchObject({ y: 63, 状态: 'minecraft:oak_planks' });
-    expect(o.空).toBeNull(); // 区块 (2, 0) 没生成
+    expect(o.空).toBeNull(); // x 64 起的区段不在包里（同一个区段里没生成的区块是整列空气，不是 null）
     expect(o.convertedVersion).toBe(o.versions[0]); // anim world transcode 和直接烘的字节相同
     expect(o.reconvertedVersion).toBe(o.convertedVersion);
     expect(o.modelSize).toBe(16); // 极小包比较了含表的总成本，中性表更小
