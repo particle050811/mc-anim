@@ -98,6 +98,7 @@ export const segFrameCommands: Record<string, Command> = {
         console.log(`+ ${relativeToCodeRoot(f)}`);
       }
       if (targetKind === 'work') console.log(`\n下一步：anim --work ${name} cues，再 anim --work ${name} still 核对-起步 0 --to-preview 工作-${name}起步`);
+      else if (name!.startsWith('核对-')) console.log(`\n下一步：改 视图.ts 的视图表、画面.tsx，anim still ${name} 0 --to-preview 工作-${name}`);
       else console.log(`\n下一步：改 段.ts 的窗口和 cue、画面.tsx，跑 anim cues ${name}`);
     },
   },
