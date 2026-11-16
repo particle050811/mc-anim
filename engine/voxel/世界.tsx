@@ -14,6 +14,7 @@
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender, getRemotionEnvironment } from 'remotion';
+import { useFrameRate, useSecLeft } from '../段/时间.tsx';
 import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
@@ -113,7 +114,8 @@ const prefetchMaxFarRatio = 0.25;
 const prefetchMaxTurn = 0.2;
 const prefetchMaxZoom = 0.05;
 const prefetchMaxSections = 128;
-const prefetch = (worldKey: string, source: VoxelSource, toPrefetch: SectionId[]) => {
+// 记下的「最近用过」：按航线备的是往后第 k 帧要的，记成那一帧的时钟（`keptClock + k`），`trimKept` 先挤掉画过的、后挤掉还没轮到的
+const prefetch = (worldKey: string, source: VoxelSource, toPrefetch: SectionId[], usedStamp = keptClock) => {
   const prefetchPromise = (async () => {
     // 取齐的那一刻同步把体素块都拿出来：再等一轮，来源可能已经把它们丢了（导入地形.ts 的 ready、缓存上限）
     for (let pending = source.prefetch?.(toPrefetch, true); pending; pending = source.prefetch?.(toPrefetch, true)) await pending;
@@ -122,7 +124,7 @@ const prefetch = (worldKey: string, source: VoxelSource, toPrefetch: SectionId[]
         const voxels = source.sections(q);
         const V = voxels && { origin: voxels.origin, cell: voxels.cell, nz: voxels.nz };
         const mesh = voxels ? await buildMeshInPool(voxels, q.L >= 1, source.transferOwnership) : null;
-        keep(keptKey(worldKey, q), { mesh, V, used: keptClock, guessed: true });
+        keep(keptKey(worldKey, q), { mesh, V, used: usedStamp, guessed: true });
       }),
     );
   })()
@@ -134,6 +136,26 @@ const prefetch = (worldKey: string, source: VoxelSource, toPrefetch: SectionId[]
   for (const q of toPrefetch) prefetchInFlight.set(keptKey(worldKey, q), prefetchPromise);
 };
 const predictCamera = new THREE.PerspectiveCamera();
+
+// ---------- 按航线提前备区段（用户 11-16 定做）----------
+// 航线和镜头都是查表算的（各段的 编排.ts），往后几帧要哪些区段事先就算得出来。镜头组件（如 飞行镜头.tsx 的 FlightRig）用 `useLookahead` 登记
+// 「往后 dt 秒的机位」：把机位摆进给的相机、返回那时的镜头位置（同 `center`），算不出返回 null。登记了的画布不再按前几帧外推（上面「预取下一帧」），
+// 放行一帧后按航线算往后 1～`aheadFrames` 帧，把那几帧要新建的区段先取、先建好网格放进 `kept`；不越过这一截的末尾（切到下一截是新的画布、新的航线）。
+// 和预取下一帧一样只动 `kept`：每帧画出来的只取决于这一帧自己。
+// 往后看几帧：一帧新进视野的区段取、解、建网格要 100～500 ms（飞越俯冲、穿塔加速），和一帧的出图时间差不多，提前两三帧就够把等的藏进前几帧的出图里；
+// 再远只是多压内存（备好没用上的占着 `kept`）。块数另按 `预取最多块` 封顶（同时压在内存里的体素块有个数），超了就只备到前一帧。
+const aheadFrames = 4;
+export type LookaheadView = (dtSec: number, camera: THREE.PerspectiveCamera) => number[] | null;
+type Lookahead = { view: LookaheadView; frameSec: number; secLeft: number };
+const lookaheads = new WeakMap<THREE.Camera, Lookahead>();
+// 镜头组件每次渲染都调（不给 view 就撤掉登记），时间从这一层 Sequence 取
+export const useLookahead = (camera: THREE.Camera, view: LookaheadView | undefined) => {
+  const fps = useFrameRate();
+  const secLeft = useSecLeft();
+  if (view) lookaheads.set(camera, { view, frameSec: 1 / fps, secLeft });
+  else lookaheads.delete(camera);
+};
+const aheadCamera = new THREE.PerspectiveCamera();
 const _position = new THREE.Vector3();
 const _orientation = new THREE.Quaternion();
 const _scale = new THREE.Vector3();
@@ -272,6 +294,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
           if (!qs.length) break;
           // 还有预取没结束就等它：要的块多半就在里面，不重复建（建完进 `kept`，下一轮从那里拿）；
           // 也不让它和这里交错着问来源要区段（来源按「最近谁要过」丢缓存，交错会把这边正要用的丢掉）
+          // 按航线往后备的批也一起等（不只等管着这几块的）：下面一块块取体素块中间有 await，别的批在这时问来源要区段会把这边取好没用的挤掉
           if (prefetchInFlight.size) {
             await Promise.all(new Set(prefetchInFlight.values()));
             continue;
@@ -385,6 +408,26 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
     const { prevPrev, 上: prevPose, 本: current } = world;
     if (!allBuilt || !current || world.prefetchedPose === current || !getRemotionEnvironment().isRendering) return;
     world.prefetchedPose = current;
+    const look = lookaheads.get(camera);
+    if (look) {
+      setTimeout(() => {
+        if (voxelsPending.size) return;
+        let total = 0;
+        for (let k = 1; k <= aheadFrames && k * look.frameSec <= look.secLeft + 1e-9; k++) {
+          const center = look.view(k * look.frameSec, aheadCamera);
+          if (!center) break;
+          aheadCamera.updateMatrixWorld();
+          const toPrefetch = pickThisFrame(makeFrustumTest(aheadCamera), center, (aheadCamera.fov * Math.PI) / 180 / size.height).filter(
+            (q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !prefetchInFlight.has(keptKey(worldKey, q)),
+          );
+          if (total + toPrefetch.length > prefetchMaxSections) break;
+          total += toPrefetch.length;
+          // 一帧一批：近的先取齐先建好（工人按先后排），下一帧要的不用等后面几帧的
+          if (toPrefetch.length) prefetch(worldKey, source, toPrefetch, keptClock + k);
+        }
+      }, 0);
+      return;
+    }
     if (!prevPose || current.位.distanceTo(prevPose.位) > farM * prefetchMaxFarRatio || current.dirQuat.angleTo(prevPose.dirQuat) > prefetchMaxTurn || Math.abs(current.pixelAngle / prevPose.pixelAngle - 1) > prefetchMaxZoom) return;
     setTimeout(() => {
       // 有体素世界还在建（同一个来源可能两个世界共用）就不猜，理由同上
