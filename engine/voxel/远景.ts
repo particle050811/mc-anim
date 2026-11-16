@@ -72,7 +72,7 @@ const seaweedBlocks = (plantName: string, height: number): [string, string] =>
 
 // 地面修正：游戏坐标处要给离线的地面加多少米（交界的过渡，见 工具/导入/交界.ts、lib/体素/主世界地形.ts），要平滑（只在格子中心取一次）
 export type GroundCorrection = (gx: number, gz: number) => number;
-// 只生成 要[c] 为真的列（c = y·34 + x，含 apron；不给就全生成），结果是一块新的 体素块（不要的列整列空气）
+// 只生成 要[c] 为真的列（c = y·paddedSectionCols + x，含 apron；不给就全生成），结果是一块新的 体素块（不要的列整列空气）
 export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section: SectionId, wantCol?: (colIdx: number) => boolean, correction?: GroundCorrection): VoxelGrid => {
   const [ox, oy, oz] = origin;
   const cellM = 2 ** section.L;

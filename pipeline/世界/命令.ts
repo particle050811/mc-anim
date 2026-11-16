@@ -85,16 +85,16 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   transcode: {
-    usage: 'transcode <包…> [--from <版本>] [--no-register] [--threads <n>]',
+    usage: 'transcode <包…> [--from <版本>] [--no-register] [--to <目录>] [--threads <n>]',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { value: ['--from', '--threads'], toggles: ['--no-register'] });
+      const p = parseArgs(args, { value: ['--from', '--threads', '--to'], toggles: ['--no-register'] });
       if (!p.位置.length) throw new UsageError('要给包名（assets/地形版本.json 里的键）');
       if (p.value['--from'] && p.位置.length !== 1) throw new UsageError('--from 只能配一个包');
       const threads = p.value['--threads'] ? Number(p.value['--threads']) : defaultThreads();
       if (!(Number.isInteger(threads) && threads > 0)) throw new UsageError('--threads 要是正整数');
       await passGate(async () => {
         for (const pack of p.位置) {
-          const r = await transcodePack(pack, { 从: p.value['--from'], noRegister: p.toggles.has('--no-register'), threads, log: (s) => console.log(s) });
+          const r = await transcodePack(pack, { 从: p.value['--from'], noRegister: p.toggles.has('--no-register'), outRoot: p.value['--to'] ? path.resolve(p.value['--to']) : undefined, threads, log: (s) => console.log(s) });
           runRecord.artifacts.push(r.目录);
           runRecord.log('信息', `${pack} ${r.oldVersion} → ${r.version}，${r.sections} 个区段、${r.cell} 格逐格核对过`);
         }

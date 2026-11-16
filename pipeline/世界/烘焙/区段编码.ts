@@ -2,7 +2,12 @@
 import type { VoxelLib } from '../体素库.ts';
 import type { SectionModel } from '../../../engine/voxel/区段模型.ts';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
-const sectionSide = 34, columnCount = sectionSide * sectionSide;
+/** 区段每边几列：按 runCounts 的长度算（格式 4 是 66；转码读格式 3 时是 34，编码规则一样，只差列数） */
+export const sideOf = (d: Pick<SectionData, 'runCounts'>) => {
+  const side = Math.round(Math.sqrt(d.runCounts.length));
+  if (side * side !== d.runCounts.length) throw new Error(`区段的列数 ${d.runCounts.length} 不是平方数`);
+  return side;
+};
 // 模型表的布局（u16 下标）：p1、p2、p3 各 128 × 3 级，跳 64 × 3 级，整列 9 × 3 级
 export const tableLayout = { p1: 0, p2: 384, p3: 768, 跳: 1152, 列: 1344, grandTotal: 1371 } as const;
 export const levelOf = (L: number) => (L === 0 ? 0 : L <= 2 ? 1 : 2);
@@ -69,7 +74,7 @@ export class RangeEncoder implements BitSink {
 
 /** SectionData → 列优先的格子 cm[c·nz + k]，k 从下往上 */
 export const toColumnMajor = (d: Pick<SectionData, 'nz' | 'runCounts' | 'paletteIndex' | 'runLengths'>) => {
-  const nz = d.nz, cm = new Uint16Array(columnCount * nz);
+  const nz = d.nz, columnCount = d.runCounts.length, cm = new Uint16Array(columnCount * nz);
   let r = 0;
   for (let c = 0; c < columnCount; c++) {
     let z = nz;
@@ -82,9 +87,31 @@ export const toColumnMajor = (d: Pick<SectionData, 'nz' | 'runCounts' | 'palette
   return cm;
 };
 
+/** 列优先的格子 → SectionData：色板照 写区段.ts 按出现先后重排（列从小到大、列内从上往下），没用到的丢掉，空气固定第 0 项。
+ *  色板 是 (状态号, 群系号) 交替的数组；烘出来的区段本来就是这个顺序，所以没改的格子原样回来 */
+export const fromColumnMajor = (id: { L: number; i: number; j: number }, kBottom: number, nz: number, cm: Uint16Array, palette: ArrayLike<number>, columnCount: number): SectionData => {
+  const newIds = new Int32Array(palette.length / 2).fill(-1), out = [palette[0]!, palette[1]!];
+  newIds[0] = 0;
+  const runCounts = new Uint16Array(columnCount), runIds: number[] = [], runLengths: number[] = [];
+  for (let c = 0; c < columnCount; c++) {
+    const r0 = runIds.length;
+    for (let k = nz - 1; k >= 0; k--) {
+      const p = cm[c * nz + k]!;
+      let q = newIds[p]!;
+      if (q < 0) { q = newIds[p] = out.length / 2; out.push(palette[2 * p]!, palette[2 * p + 1]!); }
+      if (runIds.length > r0 && runIds[runIds.length - 1] === q) runLengths[runLengths.length - 1]!++;
+      else { runIds.push(q); runLengths.push(1); }
+    }
+    runCounts[c] = runIds.length - r0;
+  }
+  return { L: id.L, i: id.i, j: id.j, kBottom, nz, palette: Uint16Array.from(out), runCounts, paletteIndex: Uint16Array.from(runIds), runLengths: Uint16Array.from(runLengths) };
+};
+
 let runLengths = new Uint16Array(1 << 20);
 
-export const walkModel = (rc: BitSink, cm: Uint16Array, nz: number, paletteSize: number, L: number, codeTable: Uint16Array, palette: Uint16Array) => {
+/** 边：区段每边几列（解码器 wasm/区段解码.ts 写死 66，34 只给测试、转码核对旧格式用） */
+export const walkModel = (rc: BitSink, cm: Uint16Array, nz: number, paletteSize: number, L: number, codeTable: Uint16Array, palette: Uint16Array, sectionSide: number) => {
+  const columnCount = sectionSide * sectionSide;
   let bits = 1;
   while (1 << bits < paletteSize) bits++;
   const probTree = new Uint16Array(1 << bits).fill(1024), l = levelOf(L), ctxOffset = l * 128;
@@ -183,7 +210,7 @@ export const encodeSection = (d: SectionData, sectionModel: SectionModel, cm: Ui
     const lit = p !== ps;
     const idx = lit ? sectionModel.map[d.palette[2 * s]!]! * n + i : (i < 1344 ? sectionModel.map[s]! * 1371 : 0) + i;
     return rc.bit(lit ? tree : probs, idx, b, lit ? 4 : 5);
-  } }, cm, d.nz, P, d.L, ps, d.palette);
+  } }, cm, d.nz, P, d.L, ps, d.palette, sideOf(d));
   const encoded = rc.finish(), out = new Uint8Array(6 + d.palette.byteLength + encoded.length), dv = new DataView(out.buffer);
   dv.setUint16(0, d.nz, true); dv.setInt16(2, d.kBottom, true); dv.setUint16(4, P, true);
   out.set(new Uint8Array(d.palette.buffer, d.palette.byteOffset, d.palette.byteLength), 6);

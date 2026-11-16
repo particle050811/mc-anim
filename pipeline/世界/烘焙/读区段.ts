@@ -1,13 +1,12 @@
-// 转码、核对、训练读取格式 1、2、3；旧格式解码仅留在 pipeline，不进任何段的依赖闭包。
+// 块文件的读法。旧格式（1、2、3）的区段由 区段源.ts 拼成现行格式再给转码、训练；旧格式解码仅留在 pipeline，不进任何段的依赖闭包。
 import fs from 'node:fs';
-import { decodeSectionFormat2 as decodeFormat2Section } from './格式2解码.ts';
 import { readModel, modelFileName, type SectionModel } from '../../../engine/voxel/区段模型.ts';
 import path from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
 import type { VoxelLib } from '../体素库.ts';
 
-const columnCount = 34 * 34;
+const columnCount = 34 * 34; // 格式 1 只有 32×32 区段
 const sectionMagic = 0x4451434d; // "MCQD"
 const blockMagic = 0x4b51434d; // "MCQK"
 
@@ -76,13 +75,13 @@ export const readPackModel = (dir: string) => {
   return m;
 };
 
-/** 一个块文件的区段，按文件里的先后；取 才解 */
+/** 现行格式的一个块文件的区段，按文件里的先后；取 才解。旧格式的包用 区段源.ts */
 export function* sectionsInBlock(voxelLib: VoxelLib, file: string) {
   const buf = fs.readFileSync(file);
   const tileHeader = new Uint8Array(buf.buffer, buf.byteOffset, voxelLib.sectionPack.tileHeaderLen);
   const formatVersion = blockFormat(tileHeader);
-  if (formatVersion !== 1 && formatVersion !== 2 && formatVersion !== voxelLib.sectionPack.formatVersion) throw new Error(`${file} 是格式 ${formatVersion}，不认`);
-  const sectionModel = formatVersion === 3 ? readPackModel(path.dirname(file)) : null;
+  if (formatVersion !== voxelLib.sectionPack.formatVersion) throw new Error(`${file} 是格式 ${formatVersion}，这里只读现行的格式 ${voxelLib.sectionPack.formatVersion}（旧格式走 区段源.ts）`);
+  const sectionModel = readPackModel(path.dirname(file));
   const entryTable = readBlockIndex(voxelLib, tileHeader);
   const [ti, tj] = blockCoordsFromName(path.basename(file));
   const items: { slot: number; off: number; len: number }[] = [];
@@ -91,11 +90,11 @@ export function* sectionsInBlock(voxelLib: VoxelLib, file: string) {
   for (const { slot, off, len } of items) {
     const raw = new Uint8Array(buf.buffer, buf.byteOffset + off, len);
     const id = voxelLib.sectionPack.sectionAtIndex(ti, tj, slot);
-    yield { slot, id, bytes: raw, 取: (): SectionData => (formatVersion === 1 ? decodeFormat1Section(raw) : formatVersion === 2 ? decodeFormat2Section(raw, id) : voxelLib.sectionDecoder.decodeSection(raw, id, sectionModel!)) };
+    yield { slot, id, bytes: raw, 取: (): SectionData => voxelLib.sectionDecoder.decodeSection(raw, id, sectionModel) };
   }
 }
 
-/** 整个包的区段，按块文件名、文件里的先后 */
+/** 现行格式的整个包的区段，按块文件名、文件里的先后 */
 export function* walkSections(voxelLib: VoxelLib, dir: string) {
   for (const f of blockFiles(dir)) yield* sectionsInBlock(voxelLib, path.join(dir, f));
 }

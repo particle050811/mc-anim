@@ -7,15 +7,15 @@
 //   场景 X = 游戏 x − ox，场景 Y = oz − 游戏 z，场景 Z = 游戏 y − oy（连续坐标，和 lib/方块网格.tsx 的 fromGame [x, −z, y] 同一个朝向）；
 //   反过来 游戏 x = X + ox，游戏 z = oz − Y，游戏 y = Z + oy。
 //   一格方块按最小角记：游戏方块 (x, y, z) 是场景格 (x − ox, oz − 1 − z, y − oy)，场景格 (i, j, k) 是游戏方块 (i + ox, k + oy, oz − 1 − j)。
-// ox、oz 取 2048 的整数倍（最粗一级一个区段 2048 米）：每级格子边界都落在游戏坐标 2^L 的整数倍上，和 Voxy 一级级合并的格子对齐，合并时比的位序（游戏坐标 x·4 + y·2 + z，见 lib/体素/生成.ts）才对得上。
+// ox、oz 取 2048 的整数倍（格式 3 以前最粗一级一个区段 2048 米；格式 4 起是 4096 米，块不再和游戏坐标的 4096 对齐，不要紧）：每级格子边界都落在游戏坐标 2^L 的整数倍上，和 Voxy 一级级合并的格子对齐，合并时比的位序（游戏坐标 x·4 + y·2 + z，见 lib/体素/生成.ts）才对得上。
 // oy：暮色森林 0（twilight_noise_gen.json 的 sea_level 是 0），主世界 64（场景 z = 0 是 y = 64，海平面 y = 63 在 z = −1）。
 //
 // ---------- 包 ----------
 // 一个目录：
 //   包.json         包信息（下面的类型）：原点、方块状态表、群系表、粗高度图
 //   模型.bin       本包的概率模型（区段模型.ts），改模型改变包版本，不改变解码器代码
-//   <ti>.<tj>.块     块文件：2048 米一块（最粗一级的一个区段，烘焙也按这个分块做），块里各级的区段打成一个文件，格式见下面的 块文件
-// 区段的核心（32 × 32 列，不算相邻那圈）里一列数据都没有的不存。
+//   <ti>.<tj>.块     块文件：4096 米一块（最粗一级的一个区段，烘焙也按这个分块做），块里各级的区段打成一个文件，格式见下面的 块文件
+// 区段的核心（64 × 64 列，不算相邻那圈）里一列数据都没有的不存。
 //
 // 区段（块文件里的一段，小端；L、i、j 由它在索引里的位置定，不存）：
 //   偏移 0  u16 nz          存了几格高；再往上全是空气
@@ -23,7 +23,7 @@
 //        4  u16 P           色板项数，色板[0] 固定是空气
 //        6  色板 u16[2P]    每项 (状态号, 群系号)，下标进 包.json 的 状态、群系；群系号 65535 = 不染色的方块，不记群系
 //        接着区间编码流（逐格预测压缩，见 pipeline/世界/烘焙/区段编码.ts，不包 gzip）
-//   解出来是 SectionData：34 × 34 列 = 核心 32 × 32 列加四周各一列相邻区段的格（同一级），按 (y, x) 排、x 先变（和 体素块 的 vox 一样）。
+//   解出来是 SectionData：66 × 66 列 = 核心 64 × 64 列加四周各一列相邻区段的格（同一级），按 (y, x) 排、x 先变（和 体素块 的 vox 一样）。
 //   每列从上往下若干段，每段 号（色板下标）连续 长 格，一列的各段正好盖满 [k底, k底 + nz)；空气也成段，没有数据的列是一整段空气。
 //
 // 区段里只存地表附近：`kBottom` = ⌊(区段连同相邻那圈里最低的地表 − 4) / 2^L⌋（照 lib/体素/生成.ts 往地面下多留 4 米），地表 = 一列里最高的整格不透明方块的顶；
@@ -35,23 +35,24 @@
 // 第 1 级以上的格子是烘焙时照 Voxy Mipper 合并好的（比不透明度，要查方块表），所以方块表改了不透明度、补了缺的方块，要重新烘焙。
 import { sectionFormatVersion } from './区段模型.ts';
 import { voxelFromState, blockProps, buildTintTable, biomeIndex } from './真实方块表.ts';
-import { sectionCells, coarsestLevel, type SectionId } from './区段.ts';
+import { sectionCells, paddedSectionCols, coarsestLevel, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
 
-export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 34 列
-// 1：行程 gzip；2：全局初值逐格预测；3：每包模型（模型.bin）、32 类状态条件概率。旧格式只由转码工具读取。
+export { paddedSectionCols };
+// 1：行程 gzip；2：全局初值逐格预测；3：每包模型（模型.bin）、32 类状态条件概率；4：区段从 32×32 改成 64×64（66 列带邻圈）、块从 2048 米改成 4096 米，编码同 3。
+// 旧格式只由转码工具读取（pipeline/世界/烘焙/旧格式.ts）。
 export const formatVersion = sectionFormatVersion;
 export const noBiome = 65535;
 
 // ---------- 块文件 ----------
 // 一块一个文件，不一个区段一个：区段有十几万个，Remotion 列 public 目录只列前 1 万个、bundle 要一个个拷。
 // 文件（小端）：
-//   偏移 0  "MCQK" 魔数   4  u32 版本（formatVersion）   8  i32 ti、i32 tj（块号：块的场景范围 [ti·2048, ti·2048 + 2048) × [tj·2048, …)）
-//        16 索引：L = 0…6 依次，第 L 级 n² 项（n = 64 >> L，块里一边几个区段），按 (sj, si) 排、si 先变，区段 (i, j) = (ti·n + si, tj·n + sj)；
+//   偏移 0  "MCQK" 魔数   4  u32 版本（formatVersion）   8  i32 ti、i32 tj（块号：块的场景范围 [ti·4096, ti·4096 + 4096) × [tj·4096, …)）
+//        16 索引：L = 0…6 依次，第 L 级 n² 项（n = 64 >> L，块里一边几个区段；格式 3 以前也是这么多项），按 (sj, si) 排、si 先变，区段 (i, j) = (ti·n + si, tj·n + sj)；
 //           每项 u32 偏移、u32 长（字节，偏移从文件开头算），长 0 = 没有这个区段
 //        接着各区段的数据（上面的区段格式），按索引的顺序挨着放
 // 浏览器里先按 Range 取文件头（块头长 字节）拿到索引，再按 Range 取要的区段（lib/体素/导入地形.ts；Remotion 渲染和 Studio 的静态服务都支持单段 Range）。
-export const tileSizeM = sectionCells * 2 ** coarsestLevel; // 2048 米
+export const tileSizeM = sectionCells * 2 ** coarsestLevel; // 4096 米
 const tileMagic = 0x4b51434d; // "MCQK"
 const levelIndexStart = [0]; // 第 L 级的索引从第几项起
 for (let level = 0; level <= coarsestLevel; level++) levelIndexStart.push(levelIndexStart[level] + (tileSizeM / (sectionCells * 2 ** level)) ** 2);

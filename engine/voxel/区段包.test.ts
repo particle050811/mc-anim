@@ -82,7 +82,8 @@ describe('区段包', () => {
     expect(P.coarseHeightAt(coarseHeight, 10, 40)).toBe(-Infinity);
     expect(P.coarseHeightAt(coarseHeight, -40, 40)).toBe(9);
     expect(P.coarseHeightAt(coarseHeight, 100, 1)).toBe(-Infinity);
-    expect(P.hasSection(coarseHeight, { L: 0, i: -2, j: 0 })).toBe(true);
+    expect(P.hasSection(coarseHeight, { L: 0, i: -1, j: 0 })).toBe(true);
+    expect(P.hasSection(coarseHeight, { L: 0, i: -3, j: 0 })).toBe(false);
     expect(P.hasSection(coarseHeight, { L: 0, i: 5, j: 0 })).toBe(false);
   });
   it('块文件头的字节（金样）', async () => {

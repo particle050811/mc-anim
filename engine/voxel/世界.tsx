@@ -18,12 +18,12 @@ import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
 import type { V3 } from '../model/parts.tsx';
-import { pickDirs, backlitDirs, faceGroupMesh, releaseVoxelMeshes, voxelMaterial, type VoxelMesh, type MaterialClass } from './材质.ts';
+import { pickDirs, backlitDirs, faceGroupMesh, releaseVoxelMeshes, voxelMaterial, voxelClipMaterial, isVoxelWater, type VoxelMesh, type MaterialClass } from './材质.ts';
 import { buildBatchItem, releaseBatchItems, clearBatchState, ClassBatch, shadowMaterial, type BatchItem } from './批绘制.ts';
 import { clearBufferPool } from './容器池.ts';
 import { posScale, visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
-import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
+import { pickSections, sectionKey, sectionBounds, farDropMask, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 
 // 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）
@@ -61,12 +61,13 @@ const trimKept = () => {
   }
 };
 
-// items：水以外各类的面（交给代理物体画），类号是 materialClasses 里的下标；casters：其中投影的（花草不投影）；water：水类的网格（逐网格画）
-type Entry = { items: [number, BatchItem][]; casters: BatchItem[]; water: VoxelMesh | null; plants: BatchItem | null; box: number[]; faceCount: number; used: number; kept: Kept };
-// batches：各类的代理物体（下标同 materialClasses，水那一格空着）；shadowBatch：只进阴影图的
+// items：水以外各类的面（交给代理物体画），类号是 materialClasses 里的下标；casters：其中投影的（花草不投影），再加只进阴影图的挡光面（网格.ts 文件头）；
+// shadowOnly：挡光面那一项（不在 items 里，释放时另放）；water：水类的网格（逐网格画）
+type Entry = { items: [number, BatchItem][]; casters: BatchItem[]; shadowOnly: BatchItem | null; water: VoxelMesh | null; plants: BatchItem | null; box: number[]; faceCount: number; used: number; kept: Kept };
+// batches：各类的代理物体（下标同 materialClasses，水那一格空着）；clipBatches：跨过 farM 的区段用的远裁版（区段.ts `farDropMask`）；shadowBatch：只进阴影图的
 // 投、像素角：变焦的镜头（穿塔加速时视角一帧宽 1.4%）细分门槛跟着视角走，不一起外推就猜不中
 type CameraPose = { 位: THREE.Vector3; dirQuat: THREE.Quaternion; 心: number[]; projection: THREE.Matrix4; pixelAngle: number };
-type World = { prevPrev?: CameraPose; 上?: CameraPose; 本?: CameraPose; prefetchedPose?: CameraPose; cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number; batches: (ClassBatch | null)[]; shadowBatch: ClassBatch };
+type World = { prevPrev?: CameraPose; 上?: CameraPose; 本?: CameraPose; prefetchedPose?: CameraPose; cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number; batches: (ClassBatch | null)[]; clipBatches: (ClassBatch | null)[]; shadowBatch: ClassBatch };
 // 按渲染器分：three 网格的顶点在显存里，属于这个 WebGL 上下文（容器池.ts），换了上下文（拼段的下一截是新的 Canvas）要重建（区段网格还在 `kept` 里就从那里拿）
 const worlds = new WeakMap<THREE.WebGLRenderer, Map<string, World>>();
 // 还在后台建区段、这一帧画不全的体素世界：屏幕AO 看到不空就跳过这一次绘制（反正截图前建齐了还要再画一次），省掉一整遍画半截场景的 GPU 活
@@ -74,7 +75,7 @@ export const voxelsPending = new Set<object>();
 const probe = newSurface();
 
 // 区段直接用包里解出来的（没有这一块就是空的，见 体素来源.区段）
-const emptyEntry = (rec: Kept): Entry => ({ items: [], casters: [], water: null, plants: null, box: [], faceCount: 0, used: 0, kept: rec });
+const emptyEntry = (rec: Kept): Entry => ({ items: [], casters: [], shadowOnly: null, water: null, plants: null, box: [], faceCount: 0, used: 0, kept: rec });
 // 树叶：第 0 级照游戏「高品质」镂空，粗级照 Voxy 画成实心（区段出网格 的第二个参数 q.L >= 1）
 const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, 'origin' | 'cell' | 'nz'>, section: SectionId, rec: Kept): Entry => {
   const [x0, y0, sizeM] = sectionBounds(section);
@@ -95,7 +96,9 @@ const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxe
     if (materialClass === '花草') plants = item;
     else casters.push(item);
   });
-  return { items, casters, water, plants, box, faceCount: sectionMesh.faceCount, used: 0, kept: rec };
+  const shadowOnly = sectionMesh.shadowPlanes.n ? buildBatchItem(ctx, sectionMesh.shadowPlanes, false, voxels.origin, posScale / voxels.cell, box) : null;
+  if (shadowOnly) casters.push(shadowOnly);
+  return { items, casters, shadowOnly, water, plants, box, faceCount: sectionMesh.faceCount, used: 0, kept: rec };
 };
 
 // ---------- 预取下一帧（用户 11-15 定做）----------
@@ -191,7 +194,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
   let maybeWorld = glWorlds.get(worldKey);
   if (!maybeWorld) {
     const batches = materialClasses.map((materialClass) => (materialClass === '水' ? null : new ClassBatch(voxelMaterial(materialClass), false)));
-    glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0, batches, shadowBatch: new ClassBatch(shadowMaterial, true) }));
+    const clipBatches = materialClasses.map((materialClass) => (materialClass === '水' ? null : new ClassBatch(voxelClipMaterial(materialClass), false)));
+    glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0, batches, clipBatches, shadowBatch: new ClassBatch(shadowMaterial, true) }));
   }
   const world = maybeWorld;
   const { cache, group } = world;
@@ -319,9 +323,9 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
   for (const child of group.children) (child as { parent: THREE.Object3D | null }).parent = null;
   group.children.length = 0;
   // 代理物体放在镜头附近的整数格点上（批绘制.ts 文件头）
-  const { batches, shadowBatch } = world;
+  const { batches, clipBatches, shadowBatch } = world;
   const anchor = [Math.round(camPos[0]), Math.round(camPos[1]), Math.round(camPos[2])];
-  for (const batch of batches) batch?.reset(anchor);
+  for (const batch of [...batches, ...clipBatches]) batch?.reset(anchor);
   shadowBatch.reset(anchor);
   const frameClock = world.clock;
   const keptStamp = ++keptClock;
@@ -342,28 +346,29 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
     const facingDirs = visibleDirs(entry.box, camPos, skirts);
     const allWithSkirts = [...allDirs, ...skirts]; // 裙边全画时也照邻居挑
     const farPlants = entry.plants !== null && distToBox(entry.box, camPos) > plantFarM;
+    const farDrop = farDropMask(section, camPos, farM);
     for (const [classNo, item] of entry.items) {
       const dirs = item.面 > drawAllMaxFaces ? facingDirs : allWithSkirts;
-      batches[classNo]!.加(item, farPlants && item === entry.plants ? dirs.map((x, k) => x && k !== 6) : dirs);
+      (farDrop ? clipBatches : batches)[classNo]!.加(item, farPlants && item === entry.plants ? dirs.map((x, k) => x && k !== 6) : dirs, farDrop);
     }
     if (entry.water) {
+      // 换过别的材质的不动，标了 voxelWaterSwap 的（真下界的熔岩）除外（材质.ts `isVoxelWater`）
+      const waterMat = entry.water.material as THREE.Material[];
+      if (isVoxelWater(waterMat[0]) || waterMat[0]?.userData.voxelWaterSwap === true) waterMat[0] = farDrop ? voxelClipMaterial('水', farDrop) : voxelMaterial('水');
       pickDirs(entry.water, entry.water.geometry.drawRange.count / 6 > drawAllMaxFaces ? facingDirs : allWithSkirts);
       if (entry.water.visible) group.add(entry.water);
     }
     if (backlit) for (const item of entry.casters) shadowBatch.加(item, item.面 > drawAllMaxFaces ? backlit : allDirs);
   }
   // 这一帧没有哪一类的面，那一类的材质就不在场景里（屏幕AO 按场景里有哪些材质定怎么画）
-  for (const batch of batches) if (batch?.items.length) group.add(batch);
+  for (const batch of [...batches, ...clipBatches]) if (batch?.items.length) group.add(batch);
   if (shadowBatch.items.length) group.add(shadowBatch);
   // 这一帧用到的块不能被清掉
   if (world.faceCount > maxCachedFaces) {
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
     for (const [k, entry] of all) {
       if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
-      releaseBatchItems(
-        ctx,
-        entry.items.map((x) => x[1]),
-      );
+      releaseBatchItems(ctx, [...entry.items.map((x) => x[1]), ...(entry.shadowOnly ? [entry.shadowOnly] : [])]);
       if (entry.water) releaseVoxelMeshes(ctx, [entry.water]);
       world.faceCount -= entry.faceCount;
       cache.delete(k);

@@ -2,7 +2,7 @@
 // 材质、灯和导出网格（lib/方块网格.tsx）一样（用户 10-01：程序填充颜色必须和导出网格一致）：MeshStandardMaterial、粗糙度 0.95、贴图 × 染色 × 同一套灯，加自身颜色 × 自发光系数打底（见 lib/光照配比.ts）。
 //
 // 接口：
-//   `voxelMaterial`(类)：实心 / 镂空 / 实心树叶 / 水 / 花草 五种材质（共用一份）
+//   `voxelMaterial`(类)：实心 / 镂空 / 实心树叶 / 水 / 花草 五种材质（共用一份）；`voxelClipMaterial`(类, 水的丢法) 是跨过 farM 的区段用的远裁版
 //   `faceGroupMesh`(面组, 类, 原点, 格)：一组面 → three 网格（一格 格 米）；`挑朝向`(网格, 看得见) 每帧只画朝着镜头的几组朝向。只有水类还逐网格画，
 //   其余四类和阴影由 批绘制.ts 的代理物体一次画完（顶点着色器里的 `uSec` 是它给每个区段设的平移缩放，逐网格画时是 (0,0,0,1)）；`背光朝向`(光向) 是阴影要画的几组
 // 顶点里带：位置（以格为单位 × 64 的整数）、uv（× 16，以格为单位）、贴图号（+ 4096 × 乘染色 + 8192 × 随机转）和叠加贴图号、染色 rgb（sRGB 字节）。
@@ -33,6 +33,7 @@ import { selfLight } from '../light/光照配比.ts';
 import { orderInGroup } from '../core/稳定排序.ts';
 import { blockAtlas, blockAtlasGlsl } from './真实方块图集.ts';
 import { posScale, groupCount, skirtGroupStart, type FaceGroup } from './网格.ts';
+import { clipQuarterCells } from './区段.ts';
 import { uploadVertices, vertexAttribute, returnBuffer, type VertexArray } from './容器池.ts';
 import { sectionDisplacement, displacementDecl, displaceVertex, quadIndices } from './批绘制.ts';
 import { patchWaterShader } from './水面.ts';
@@ -105,12 +106,39 @@ const fragMap = (cutout: boolean, cell = blockAtlas().cell, top = Math.log2(cell
 
 export type MaterialClass = '实心' | '镂空' | '实心树叶' | '水' | '花草';
 const mats = new Map<MaterialClass, THREE.Material>();
-// 五类的绘制先后固定（engine/core/稳定排序.ts）：地标网格和导入的地形有深度一样的地方，谁盖谁不能随这一帧挑到的区段变
+// 五类的绘制先后固定（engine/core/稳定排序.ts）：地标网格和导入的地形有深度一样的地方，谁盖谁不能随这一帧挑到的区段变。远裁的那份排在各自的类后面
 const materialClasses = ['实心', '镂空', '实心树叶', '水', '花草'];
 const materialClassGroups = {};
 export const voxelMaterial = (materialClass: MaterialClass) => {
   let cached = mats.get(materialClass);
-  if (cached) return cached;
+  if (!cached) mats.set(materialClass, (cached = buildVoxelMaterial(materialClass, null)));
+  return cached;
+};
+
+// 远裁（区段.ts `farDropMask`）：跨过 farM 的区段换这一份，`uFarDrop` 那几位的四分之一块丢片元。
+// 批绘制的四类共用一个值（批绘制.ts 逐区段直接改显卡里的，画完改回 0）；水逐网格画，three 只在换材质时才传 uniform，所以每种丢法一份材质、各带各的值（程序还是同一个）
+export const farDropUniform = { value: 0 };
+const clipMats = new Map<string, THREE.Material>();
+export const voxelClipMaterial = (materialClass: MaterialClass, waterMask = 0) => {
+  const key = `${materialClass}|${waterMask}`;
+  let cached = clipMats.get(key);
+  if (!cached) clipMats.set(key, (cached = buildVoxelMaterial(materialClass, materialClass === '水' ? { value: waterMask } : farDropUniform)));
+  return cached;
+};
+/** 体素水的材质（远裁的也算）：真下界按它换熔岩 */
+export const isVoxelWater = (m: THREE.Material | undefined) => !!m && (m === mats.get('水') || m.userData.voxelWaterClip === true);
+// 别处把体素水换成自己的材质时（真下界换熔岩），换上去的标 userData.voxelWaterSwap = true：体素世界每帧照样先换回这一帧该用的那份水（远裁的丢法跟着镜头变），换的人再照它换
+// 着色器里认四分之一块：顶点的原始位置除回格（区段角上起 0～64），按面朝外的法线往里退半格认这一面归哪一格（落在两块交界上的侧面）
+const clipVert = `vLoc = transformed / ${posScale}.0;`;
+const clipFrag = `
+  {
+    vec3 ln = normalize(cross(dFdx(vLoc), dFdy(vLoc)));
+    vec2 owner = vLoc.xy - 0.5 * ln.xy;
+    float q = (owner.x < ${clipQuarterCells}.0 ? 0.0 : 1.0) + (owner.y < ${clipQuarterCells}.0 ? 0.0 : 2.0);
+    if (mod(floor(uFarDrop / exp2(q) + 0.001), 2.0) > 0.5) discard;
+  }`;
+
+const buildVoxelMaterial = (materialClass: MaterialClass, farDrop: { value: number } | null) => {
   const atlas = blockAtlas();
   const mat = new THREE.MeshStandardMaterial({
     roughness: materialClass === '水' ? 0.1 : 0.95,
@@ -126,12 +154,14 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     sh.uniforms.selfLight = selfLight;
     sh.uniforms.aoPass = aoPassUniform;
     sh.uniforms.uSec = sectionDisplacement;
+    if (farDrop) sh.uniforms.uFarDrop = farDrop;
     // vW：世界坐标里的格（随机转按格算）：缩放（一格 格 米）逐网格画时在 modelMatrix 里、批绘制时在 uSec.w 里，除回去
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${displaceVertex}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6);`);
+      .replace('#include <common>', `#include <common>\n${VERT_HEAD}${farDrop ? '\nvarying vec3 vLoc;' : ''}`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${farDrop ? clipVert : ''}${displaceVertex}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6);`);
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
+      .replace('#include <common>', `#include <common>\n${FRAG_HEAD}${farDrop ? '\nuniform float uFarDrop; varying vec3 vLoc;' : ''}`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>${farDrop ? clipFrag : ''}`)
       .replace('#include <map_fragment>', fragMap(materialClass === '镂空' || materialClass === '花草'))
       // 水的高光是倒影（粗糙度 0.1），不压
       .replace('#include <aomap_fragment>', materialClass === '水' ? '#include <aomap_fragment>' : '#include <aomap_fragment>\n  reflectedLight.directSpecular *= specMask;\n  reflectedLight.indirectSpecular *= specMask;')
@@ -143,15 +173,15 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     // 树叶逆光透出暖色，和导出网格的树叶同一段（lib/树叶透光.ts）；镂空里不染色的（玻璃之类）不算
     if (materialClass === '镂空' || materialClass === '实心树叶') patchLeafShader(sh, tintedLeafExpr('vCol'));
   };
-  mat.customProgramCacheKey = () => `体素-${materialClass}`;
+  mat.customProgramCacheKey = () => `体素-${materialClass}${farDrop ? '-远裁' : ''}`;
+  if (farDrop && materialClass === '水') mat.userData.voxelWaterClip = true;
   // 屏幕空间 AO（lib/体素/屏幕AO.tsx）：方块压暗（同 Voxy 只压 LOD 地形）；花草不挡也不压（游戏平滑光照里花草本来也不挡光）；水半透明，AO 之后再画
   if (materialClass === '花草') mat.userData.screenAo = '不挡';
   else if (materialClass !== '水') {
     mat.userData.screenAo = '压暗';
     mat.userData.aoByAlpha = true;
   } else mat.userData.waterLevel = true;
-  orderInGroup(mat, materialClassGroups, materialClasses.indexOf(materialClass), materialClasses.length);
-  mats.set(materialClass, mat);
+  orderInGroup(mat, materialClassGroups, materialClasses.indexOf(materialClass) * 2 + (farDrop ? 1 : 0), materialClasses.length * 2);
   return mat;
 };
 

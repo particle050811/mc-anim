@@ -83,11 +83,11 @@ const compareFaces = (oldMesh: SectionMesh, newMesh: SectionMesh, nz: number, to
 
 /** 四组裙边各盖住哪些格（墙面上每格被几个面盖着） */
 const skirtCover = (m: SectionMesh, nz: number) => {
-  const cover = new Uint8Array(4 * 32 * nz);
+  const sectionCells = windowEdge - 2, cover = new Uint8Array(4 * sectionCells * nz);
   for (const k of materials) for (let d = 0; d < 4; d++) for (let q = m[k].segment[7 + d]!; q < m[k].segment[8 + d]!; q++) {
     let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
     for (let v = 0; v < 4; v++) { const u = m[k].pos[q * 12 + v * 3 + (d < 2 ? 1 : 0)]! / 64, z = m[k].pos[q * 12 + v * 3 + 2]! / 64; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, z); v1 = Math.max(v1, z); }
-    for (let u = Math.floor(u0); u < Math.ceil(u1); u++) for (let z = Math.floor(v0); z < Math.ceil(v1); z++) cover[(d * 32 + u) * nz + z]!++;
+    for (let u = Math.floor(u0); u < Math.ceil(u1); u++) for (let z = Math.floor(v0); z < Math.ceil(v1); z++) cover[(d * sectionCells + u) * nz + z]!++;
   }
   return cover;
 };

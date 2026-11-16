@@ -19,7 +19,7 @@ import { LevelParams } from '@engine/core/渲染级别.ts';
 import { useSelfLight } from '@engine/light/光照配比.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
-import { voxelMaterial } from '@engine/voxel/材质.ts';
+import { isVoxelWater } from '@engine/voxel/材质.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
@@ -46,10 +46,15 @@ const toLinear = (v: number) => v ** 2.2;
 const noCuts: LandmarkCutout[] = [];
 
 const lavaGlow = { value: 1 };
-let lavaMaterial: THREE.Material | null = null;
+// 一份体素水的材质一份熔岩：不裁的一份，跨过雾尽头的区段的远裁水（engine/voxel/区段.ts `farDropMask`）每种丢法各一份，丢法跟着水的材质走
+const lavaMaterials = new Map<THREE.Material, THREE.Material>();
 const getLavaMaterial = (waterMaterial: THREE.Material) => {
-  if (lavaMaterial) return lavaMaterial;
+  const cached = lavaMaterials.get(waterMaterial);
+  if (cached) return cached;
+  const farClip = waterMaterial.userData.voxelWaterClip === true;
   const m = waterMaterial.clone() as THREE.MeshStandardMaterial;
+  delete m.userData.voxelWaterClip;
+  m.userData.voxelWaterSwap = true;
   m.roughness = 0.95;
   m.transparent = false;
   m.depthWrite = true;
@@ -63,8 +68,8 @@ const getLavaMaterial = (waterMaterial: THREE.Material) => {
     // engine 的水材质改了写法这里就对不上：宁可报错，不要悄悄画成反射天色的水
     if (!sh.fragmentShader.includes('diffuseColor.rgb * lavaGlow') || sh.fragmentShader.includes('waterReflMax)')) throw new Error('真下界：熔岩材质接不上 engine/voxel/材质.ts、水面.ts 的着色器（那边改了写法）');
   };
-  m.customProgramCacheKey = () => '体素-熔岩';
-  lavaMaterial = m;
+  m.customProgramCacheKey = () => `体素-熔岩${farClip ? '-远裁' : ''}`;
+  lavaMaterials.set(waterMaterial, m);
   return m;
 };
 
@@ -90,13 +95,12 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
     },
     [scene],
   );
-  // 这个世界的水类网格（全是熔岩）换材质：体素世界每次渲染把这一帧要画的网格挂进组里，画之前换
+  // 这个世界的水类网格（全是熔岩）换材质：体素世界每次渲染把这一帧要画的网格挂进组里、换上这一帧该用的水（远裁的也算），画之前照它换成熔岩。
+  // 远裁的水要换成同样远裁的熔岩：雾按纵深算，画面两边远过雾尽头的地方雾没满，不裁就比 32 × 32 格的区段多画出一圈熔岩（核对-真下界 第 1080 帧两边的地平线）
   useFrame(() => {
-    const waterMaterial = voxelMaterial('水');
-    const rockMat = getLavaMaterial(waterMaterial);
     groupRef.current?.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (Array.isArray(mesh.material) && mesh.material[0] === waterMaterial) mesh.material = [rockMat];
+      if (Array.isArray(mesh.material) && isVoxelWater(mesh.material[0])) mesh.material = [getLavaMaterial(mesh.material[0]!)];
     });
   });
   if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
