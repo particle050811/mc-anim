@@ -33,10 +33,10 @@ def missing_items(dir_path: str, model: str = '') -> list[str]:
 
 
 def align(dir_path: str, sentences: list[dict], model: str = '') -> dict[str, list]:
-    """句们：[{id, wav, 念, 语言}]（语言：台词.toml 的写法，中文、日语、英语、粤语）；返回 id → 字"""
+    """句们：[{id, wav, spoken, language}]（语言：台词.toml 的写法，中文、日语、英语、粤语）；返回 id → 字"""
     if not sentences:
         return {}
-    batch = {'模型': str(model or Path(dir_path) / 'Qwen3-ForcedAligner-0.6B'), '句': [{**s, '语言': language_names.get(s.get('语言') or '中文', 'Chinese')} for s in sentences]}
+    batch = {'模型': str(model or Path(dir_path) / 'Qwen3-ForcedAligner-0.6B'), '句': [{**s, 'language': language_names.get(s.get('language') or '中文', 'Chinese')} for s in sentences]}
     with tempfile.TemporaryDirectory() as t:
         f = Path(t) / '批.json'
         f.write_text(json.dumps(batch, ensure_ascii=False), encoding='utf-8')

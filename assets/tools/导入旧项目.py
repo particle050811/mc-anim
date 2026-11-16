@@ -46,18 +46,18 @@ def clone_file(src: Path, dst: Path) -> None:
 def read_asset_registry() -> list[dict]:
     entry_list = []
     for p in sorted((ASSETS / 'registry').glob('*.toml')):
-        for e in tomllib.loads(p.read_text(encoding='utf-8')).get('资产', []):
+        for e in tomllib.loads(p.read_text(encoding='utf-8')).get('asset', []):
             e['_表'] = p.name
             entry_list.append(e)
     errors = []
     seen_ids = {}
     for e in entry_list:
-        for f in ('id', '类别', '来源', '许可', '可见性'):
+        for f in ('id', 'category', 'source', 'license', 'visibility'):
             if not e.get(f):
                 errors.append(f'{e["_表"]} {e.get("id")}: 缺 {f}')
-        if e.get('可见性') not in VISIBILITY_VALUES:
-            errors.append(f'{e["_表"]} {e.get("id")}: 可见性 {e.get("可见性")} 不在 {VISIBILITY_VALUES}')
-        if not str(e.get('来源', '')).startswith(('提取:', '手工:', '派生:')):
+        if e.get('visibility') not in VISIBILITY_VALUES:
+            errors.append(f'{e["_表"]} {e.get("id")}: 可见性 {e.get("visibility")} 不在 {VISIBILITY_VALUES}')
+        if not str(e.get('source', '')).startswith(('提取:', '手工:', '派生:')):
             errors.append(f'{e["_表"]} {e.get("id")}: 来源要以 提取:/手工:/派生: 开头')
         if any(c in e['id'] for c in '<>:"|?*\\ '):
             errors.append(f'{e["_表"]} {e["id"]}: id 里有 Windows 不认的字符或空格')
@@ -79,39 +79,39 @@ def import_old_project(old_root: Path, data_root: Path, existing_lock: dict) -> 
     asset_lock = {}
     new_copies = 0
     for e in read_asset_registry():
-        if not e.get('旧路径'):
+        if not e.get('oldPath'):
             # 不是从旧项目来的（anim assets add 登记的），照现有锁保留，不重算
             if e['id'] not in existing_lock:
                 sys.exit(f'{e["id"]}: 没写旧路径，资产锁里也没有，先用 anim assets add 入库')
             asset_lock[e['id']] = existing_lock[e['id']]
             continue
-        src = old_root / e['旧路径']
+        src = old_root / e['oldPath']
         if not src.is_file():
             sys.exit(f'{e["id"]}: 旧文件不在 {src}')
         s = sha256(src)
-        library = '私有' if e['可见性'] == '私有' else 'store'
+        library = '私有' if e['visibility'] == '私有' else 'store'
         dst = library_dir(data_root, library, s)
         if not dst.exists():
             clone_file(src, dst)
             new_copies += 1
         elif dst.stat().st_size != src.stat().st_size:
             sys.exit(f'{dst} 已存在但大小不对，库里的对象被改过')
-        asset_lock[e['id']] = {'sha256': s, '大小': src.stat().st_size, '库': library, '后缀': src.suffix.lower()}
+        asset_lock[e['id']] = {'sha256': s, 'size': src.stat().st_size, 'lib': library, 'suffix': src.suffix.lower()}
     print(f'资产 {len(asset_lock)} 条，新拷进库 {new_copies} 个对象')
     return dict(sorted(asset_lock.items()))
 
 
 def copy_text_sources(old_root: Path) -> list[tuple[str, str]]:
-    table = tomllib.loads((ASSETS / 'src' / '来源.toml').read_text(encoding='utf-8')).get('源文件', [])
+    table = tomllib.loads((ASSETS / 'src' / '来源.toml').read_text(encoding='utf-8')).get('sourceFile', [])
     pairs = []
     for g in table:
-        src, dst = old_root / g['旧路径'], REPO / g['路径']
+        src, dst = old_root / g['oldPath'], REPO / g['path']
         if not dst.exists():
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(src, dst)
         if dst.read_bytes() != src.read_bytes():
-            sys.exit(f'{g["路径"]} 和旧文件 {g["旧路径"]} 不一致')
-        pairs.append((g['旧路径'], 'git:' + g['路径']))
+            sys.exit(f'{g["path"]} 和旧文件 {g["oldPath"]} 不一致')
+        pairs.append((g['oldPath'], 'git:' + g['path']))
     print(f'文字源 {len(table)} 个')
     return pairs
 
@@ -129,11 +129,11 @@ def import_terrain(old_root: Path, data_root: Path, check_only: bool) -> list[tu
     table_path = ASSETS / '地形版本.json'
     table = json.loads(table_path.read_text(encoding='utf-8'))
     pairs = []
-    for pack_name, v in table['包'].items():
-        if '旧路径' not in v:  # anim world bake、转码 出的版本，旧项目里没有
+    for pack_name, v in table['pack'].items():
+        if 'oldPath' not in v:  # anim world bake、转码 出的版本，旧项目里没有
             continue
-        dst = data_root / 'terrain' / pack_name / v['版本']
-        src = old_root / v['旧路径']
+        dst = data_root / 'terrain' / pack_name / v['version']
+        src = old_root / v['oldPath']
         if not dst.exists() and not check_only:
             dst.parent.mkdir(parents=True, exist_ok=True)
             if sys.platform == 'darwin' and subprocess.run(['cp', '-cR', str(src), str(dst)]).returncode == 0:
@@ -141,13 +141,13 @@ def import_terrain(old_root: Path, data_root: Path, check_only: bool) -> list[tu
             else:
                 shutil.copytree(src, dst)
         fingerprint, file_count, total_size = pack_manifest(dst)
-        if v.get('清单sha256') and v['清单sha256'] != fingerprint:
-            sys.exit(f'地形 {pack_name}/{v["版本"]} 和 地形版本.json 记的清单指纹不一致')
+        if v.get('manifestSha256') and v['manifestSha256'] != fingerprint:
+            sys.exit(f'地形 {pack_name}/{v["version"]} 和 地形版本.json 记的清单指纹不一致')
         if pack_manifest(src)[0] != fingerprint:
-            sys.exit(f'地形 {pack_name}/{v["版本"]} 和旧项目的不一致')
-        v.update({'文件数': file_count, '大小': total_size, '清单sha256': fingerprint})
-        pairs.append((v['旧路径'] + '/', f'terrain:{pack_name}/{v["版本"]}'))
-        print(f'地形 {pack_name}/{v["版本"]}：{file_count} 个文件，{total_size / 2**20:.0f} MB，核对一致')
+            sys.exit(f'地形 {pack_name}/{v["version"]} 和旧项目的不一致')
+        v.update({'fileCount': file_count, 'size': total_size, 'manifestSha256': fingerprint})
+        pairs.append((v['oldPath'] + '/', f'terrain:{pack_name}/{v["version"]}'))
+        print(f'地形 {pack_name}/{v["version"]}：{file_count} 个文件，{total_size / 2**20:.0f} MB，核对一致')
     if not check_only:
         table_path.write_text(json.dumps(table, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     return pairs
@@ -161,16 +161,16 @@ def read_back(asset_lock: dict, old_root: Path, data_root: Path) -> None:
     count_by_visibility: dict[str, list[int]] = {k: [0, 0] for k in VISIBILITY_VALUES}
     by_path = {}
     for id_, v in asset_lock.items():
-        p = library_dir(data_root, v['库'], v['sha256'])
+        p = library_dir(data_root, v['lib'], v['sha256'])
         if p not in by_path:
             by_path[p] = sha256(p)
-        if by_path[p] != v['sha256'] or p.stat().st_size != v['大小']:
+        if by_path[p] != v['sha256'] or p.stat().st_size != v['size']:
             sys.exit(f'{id_}: 库里的对象 {p} 和锁不一致')
-        if table[id_].get('旧路径') and sha256(old_root / table[id_]['旧路径']) != v['sha256']:
-            sys.exit(f'{id_}: 旧文件 {table[id_]["旧路径"]} 和锁不一致')
-        count_by_visibility[table[id_]['可见性']][0] += 1
-        count_by_visibility[table[id_]['可见性']][1] += v['大小']
-    total_size = sum(v['大小'] for v in asset_lock.values())
+        if table[id_].get('oldPath') and sha256(old_root / table[id_]['oldPath']) != v['sha256']:
+            sys.exit(f'{id_}: 旧文件 {table[id_]["oldPath"]} 和锁不一致')
+        count_by_visibility[table[id_]['visibility']][0] += 1
+        count_by_visibility[table[id_]['visibility']][1] += v['size']
+    total_size = sum(v['size'] for v in asset_lock.values())
     actual_bytes = sum(p.stat().st_size for p in by_path)
     print(f'回读核对通过：{len(asset_lock)} 条，合计 {total_size / 2**20:.1f} MB（去重后 {len(by_path)} 个对象、{actual_bytes / 2**20:.1f} MB）')
     for k, (n, b) in count_by_visibility.items():
@@ -184,28 +184,28 @@ def check_character_packs(entry_list: list[dict]) -> None:
     packs = sorted((ASSETS / 'kits').glob('*.toml'))
     for p in packs:
         k = tomllib.loads(p.read_text(encoding='utf-8'))
-        if k.get('角色') != p.stem:
+        if k.get('character') != p.stem:
             errors.append(f'{p.name}: 「角色」要和文件名一致')
-        for section in ('基准', '资产组'):
+        for section in ('baseline', 'assetGroups'):
             for g in k.get(section, []):
-                assets = g.get('资产', [])
+                assets = g.get('asset', [])
                 for i in [assets] if isinstance(assets, str) else assets:
                     if i not in ids:
-                        errors.append(f'{p.name} {section}「{g.get("用途")}」: 资产表里没有 {i}')
-                for pat in g.get('匹配', []):
+                        errors.append(f'{p.name} {section}「{g.get("purpose")}」: 资产表里没有 {i}')
+                for pat in g.get('match', []):
                     if not fnmatch.filter(ids, pat):
-                        errors.append(f'{p.name} {section}「{g.get("用途")}」: 匹配 {pat} 一个也没有')
-                for f in g.get('文字源', []):
+                        errors.append(f'{p.name} {section}「{g.get("purpose")}」: 匹配 {pat} 一个也没有')
+                for f in g.get('textSources', []):
                     if not (REPO / f).is_file():
-                        errors.append(f'{p.name} {section}「{g.get("用途")}」: 文字源 {f} 不在仓库里')
-        if '渲染代码' in k and not (REPO / k['渲染代码']).is_file():
-            errors.append(f'{p.name}: 渲染代码 {k["渲染代码"]} 不在仓库里')
-        for c in k.get('代码', []):
+                        errors.append(f'{p.name} {section}「{g.get("purpose")}」: 文字源 {f} 不在仓库里')
+        if 'renderCode' in k and not (REPO / k['renderCode']).is_file():
+            errors.append(f'{p.name}: 渲染代码 {k["renderCode"]} 不在仓库里')
+        for c in k.get('code', []):
             # 不写状态当未搬：还没开始搬的角色包不用逐条补
-            if c.get('状态', '未搬') not in ('已搬', '未搬'):
-                errors.append(f'{p.name} 代码「{c.get("旧位置")}」: 状态要写 已搬 或 未搬')
-            elif c.get('状态') == '已搬' and not (REPO / c['新位置']).exists():
-                errors.append(f'{p.name} 代码「{c.get("旧位置")}」: 写了已搬，新位置 {c["新位置"]} 不在仓库里')
+            if c.get('state', '未搬') not in ('已搬', '未搬'):
+                errors.append(f'{p.name} 代码「{c.get("oldLocation")}」: 状态要写 已搬 或 未搬')
+            elif c.get('state') == '已搬' and not (REPO / c['newLocation']).exists():
+                errors.append(f'{p.name} 代码「{c.get("oldLocation")}」: 写了已搬，新位置 {c["newLocation"]} 不在仓库里')
     if errors:
         sys.exit('角色包有错：\n' + '\n'.join(errors))
     print(f'角色包 {len(packs)} 个，引用都找得到')
@@ -229,7 +229,7 @@ def main() -> None:
         asset_lock = existing_lock
     else:
         asset_lock = import_old_project(a.旧项目, a.数据根, existing_lock)
-        pairs = [(e['旧路径'], e['id']) for e in read_asset_registry() if e.get('旧路径')] + copy_text_sources(a.旧项目)
+        pairs = [(e['oldPath'], e['id']) for e in read_asset_registry() if e.get('oldPath')] + copy_text_sources(a.旧项目)
     terrain_pairs = import_terrain(a.旧项目, a.数据根, a.只核对)
     if not a.只核对:
         for id_, v in asset_lock.items():

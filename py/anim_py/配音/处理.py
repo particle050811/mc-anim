@@ -78,7 +78,7 @@ def first_voiced_sec(p: Path) -> float:
 
 
 def export_finished(source_file: Path, finished_path: Path | None, no_trim: bool = False, target_loudness: float = target_loudness_db, peak_limit: float = peak_limit_db) -> dict:
-    """原件裁静音、拉响度写成品（成品 None 时只量不写）；返回 开口、有声长、时长、增益dB、原响度、原峰值"""
+    """原件裁静音、拉响度写成品（成品 None 时只量不写）；返回 mouthOpen（开口）、有声长、duration（时长）、gainDb（增益）、原响度、原峰值"""
     head, tail = (0.0, get_duration(source_file)) if no_trim else voiced_segment(source_file)
     trim_start = max(0.0, head - head_pad_sec)
     trim_end = min(get_duration(source_file), tail + tail_pad_sec)
@@ -91,4 +91,4 @@ def export_finished(source_file: Path, finished_path: Path | None, no_trim: bool
         if finished_path is not None:
             finished_path.parent.mkdir(parents=True, exist_ok=True)
             subprocess.run([_ffmpeg(), '-v', 'error', '-y', '-i', str(t), '-af', f'volume={gain_db:.2f}dB', '-ac', '1', '-ar', '48000', '-c:a', 'pcm_s16le', str(finished_path)], check=True)
-    return {'开口': round(head - trim_start, 3), '有声长': round(tail - head, 3), '时长': round(trim_end - trim_start, 3), '增益dB': round(gain_db, 2), '原响度': i, '原峰值': pk}
+    return {'mouthOpen': round(head - trim_start, 3), '有声长': round(tail - head, 3), 'duration': round(trim_end - trim_start, 3), 'gainDb': round(gain_db, 2), '原响度': i, '原峰值': pk}

@@ -29,9 +29,9 @@ class ReviewRequest:
 
     wav: str
     id: str = ''
-    念: str = ''
-    语言: str = '中文'
-    语气: str = ''
+    spoken: str = ''
+    language: str = '中文'
+    tone: str = ''
     参考音频: str = ''
 
 
@@ -121,7 +121,7 @@ class Dictation(ExternalReviewItem):
     key_files = ('~/.config/dashscope/api_key', '~/.config/grsai/api_key')
 
     def describe(self, requests: list[ReviewRequest]) -> dict:
-        return {'项': self.名, '发': [{'qwen3-asr-flash': f'<{q.wav}>', '然后 gemini-3.8-flash（对不上时）': f'<{q.wav}>', '比字': q.念} for q in requests]}
+        return {'项': self.名, '发': [{'qwen3-asr-flash': f'<{q.wav}>', '然后 gemini-3.8-flash（对不上时）': f'<{q.wav}>', '比字': q.spoken} for q in requests]}
 
 
 class Tone(ExternalReviewItem):
@@ -133,7 +133,7 @@ class Tone(ExternalReviewItem):
         by_sentence: dict[str, list[ReviewRequest]] = {}
         for q in requests:
             by_sentence.setdefault(q.id, []).append(q)
-        return {'项': self.名, '发': [{'gemini-3.8-flash': [f'<{q.wav}>' for q in qs], '台词': qs[0].念, '语气': qs[0].语气, '轮': 2} for qs in by_sentence.values()]}
+        return {'项': self.名, '发': [{'gemini-3.8-flash': [f'<{q.wav}>' for q in qs], '台词': qs[0].spoken, '语气': qs[0].tone, '轮': 2} for qs in by_sentence.values()]}
 
 
 def review_table() -> dict[str, type[ReviewItem]]:
@@ -220,5 +220,5 @@ def run_review(item_names: list[str], requests: list[ReviewRequest], describe_on
         elif missing:
             out[item_name] = {'缺': missing}
         else:
-            out[item_name] = {'结果': item.review(requests)}
+            out[item_name] = {'result': item.review(requests)}
     return out

@@ -20,14 +20,14 @@ def test_all_registered_default_runs_only_local_free():
 
 
 def test_paid_item_describe_only_sends_nothing(tmp_path):
-    qs = [ReviewRequest(wav=str(tmp_path / f'{i}.wav'), id='7-黄叛-受死', 念='怪物受死！', 语气='怒喝') for i in range(2)]
+    qs = [ReviewRequest(wav=str(tmp_path / f'{i}.wav'), id='7-黄叛-受死', spoken='怪物受死！', tone='怒喝') for i in range(2)]
     r = run_review(['听写', '语气'], qs, describe_only=True)
     assert any('还没接' in x for x in r['听写']['缺'])
     assert len(r['听写']['描述']['发']) == 2
     # 语气是同一句的候选放一起比：两个候选一组
     assert r['语气']['描述']['发'] == [{'gemini-3.8-flash': [f'<{q.wav}>' for q in qs], '台词': '怪物受死！', '语气': '怒喝', '轮': 2}]
     # 真跑：缺东西的项不跑，结果里只有 缺
-    assert '结果' not in run_review(['听写'], qs)['听写']
+    assert 'result' not in run_review(['听写'], qs)['听写']
 
 
 def test_compare_chars():
@@ -60,7 +60,7 @@ def test_pitch_flat_span_smaller_than_slide(tmp_path):
     flat_wav, glide = tmp_path / '平.wav', tmp_path / '滑.wav'
     _write_wav(flat_wav, [(1.0, 220, 0.3)])
     _write_wav(glide, [(0.25, 180, 0.1), (0.25, 220, 0.3), (0.25, 280, 0.6), (0.25, 360, 0.2)])
-    r = run_review(['起伏'], [ReviewRequest(wav=str(flat_wav)), ReviewRequest(wav=str(glide))])['起伏']['结果']
+    r = run_review(['起伏'], [ReviewRequest(wav=str(flat_wav)), ReviewRequest(wav=str(glide))])['起伏']['result']
     assert r[0]['音高跨度st'] < 0.5 < r[1]['音高跨度st']
     assert abs(r[0]['基频中位Hz'] - 220) < 3
     assert r[0]['响度跨度dB'] < r[1]['响度跨度dB']
