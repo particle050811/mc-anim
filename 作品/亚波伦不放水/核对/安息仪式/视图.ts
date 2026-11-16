@@ -24,7 +24,7 @@ const dirCam = (dx: number, dy: number): CameraRig => ({ 眼: [dx * 6.6, dy * 6.
 // 游戏实拍（取材客户端，对照报告 1110-1330）的近景机位：站在 (4.5, 103.8, 4.5)、偏航 135、俯 15.8 度、视野 65；祭坛那格是 (0, 102, 0)，地面 100
 const gameClose: CameraRig = { 眼: [4, -4, 3.8], 看: [0, 0, 2.2], fov: 65 };
 
-const { 短: short, length: lengthScheme } = summonPlans;
+const { 短: short, 长: lengthScheme } = summonPlans;
 const makeView = (name: string, rig: CameraRig, plan: SummonPlan, sec: number, note?: string): View => ({ name: `${plan.name}方案-${name}`, ...rig, pictureMode: { type: '演出', plan, sec: sec }, note: note });
 
 export const views: readonly View[] = [
