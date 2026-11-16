@@ -222,7 +222,7 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {cam.pos[2] < choreo.caveCeilingZ ? <GuchengLight /> : <Lights camPos={cam.pos} dome={!under} />}
           {/* 地形：坑和竖井那一圈在导入的地形里一直是挖开的（地形.ts），砸穿以前城的地面盖在上面 */}
-          {!under && <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />}
+          {!under && <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit?.holeRect} />
           </group>

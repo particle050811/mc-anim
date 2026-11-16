@@ -162,7 +162,8 @@ const _orientation = new THREE.Quaternion();
 const _scale = new THREE.Vector3();
 
 export type VoxelWorldProps = {
-  key: string; // 缓存用，不同的世界不能重名
+  // 缓存用，不同的世界不能重名；不能叫 key：React 不把 key 传进 props（11-16 盘键迁移改成 key 后全片共用一份缓存）
+  worldKey: string;
   source: VoxelSource;
   center: number[]; // 镜头位置（场景坐标）
   pixel: number; // 细一级的一格在画面上还有这么多像素（画面的 CSS 像素）就细分，见 lib/渲染级别.ts
@@ -183,7 +184,7 @@ const plantFarM = 256;
 const distToBox = (b: number[], p: number[]) =>
   Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[3]), Math.max(b[1] - p[1], 0, p[1] - b[4]), Math.max(b[2] - p[2], 0, p[2] - b[5]));
 
-export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: source, center: camPos, pixel: splitPixels, far: farM, heightRange: heightRange = [-30, 140], shadowLightDir }) => {
+export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center: camPos, pixel: splitPixels, far: farM, heightRange: heightRange = [-30, 140], shadowLightDir }) => {
   const camera = useThree((st) => st.camera) as THREE.PerspectiveCamera;
   const size = useThree((st) => st.size);
   const advance = useThree((st) => st.advance);

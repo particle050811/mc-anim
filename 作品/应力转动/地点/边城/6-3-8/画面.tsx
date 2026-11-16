@@ -66,7 +66,7 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 灯：同 6-3-下坠/画面.tsx 地面上那一套（天空穹顶跟着镜头） */}
           <FlightSky camPos={cam.pos} photon={!under} />
-          {!under && <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} />}
+          {!under && <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit.holeRect} />
             {!actors && t < choreo.cues.cutToPit && <VanillaParticles spawns={splashes()} sec={t} />}

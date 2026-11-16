@@ -62,7 +62,7 @@ const TerrainView: React.FC<TerrainProps & { terrain: { key: string; source: Vox
   shadowLightDir,
 }) => (
   <group>
-    <VoxelWorld key={terrain.key} source={terrain.source} center={cameraPos} pixel={splitPixels} far={farM} heightRange={terrain.heightRange} shadowLightDir={shadowLightDir} />
+    <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cameraPos} pixel={splitPixels} far={farM} heightRange={terrain.heightRange} shadowLightDir={shadowLightDir} />
     {landmarks.map((name) => (
       <LandmarkMesh key={name} name={name} t={t} clearPlants={clearPlants} />
     ))}

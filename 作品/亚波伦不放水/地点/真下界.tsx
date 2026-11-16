@@ -121,7 +121,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
       {/* 照亮周围的原型：只在试看 {"下界光": {...}} 时有（下界光照.tsx） */}
       {netherLightTrial() && <NetherLightTrial t={t} cameraPos={cameraPos} zTop={128 - realNetherOrigin[1]} groupRef={groupRef} />}
-      {t && <VoxelWorld key={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
+      {t && <VoxelWorld worldKey={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );
 };

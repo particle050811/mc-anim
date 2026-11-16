@@ -42,7 +42,7 @@ export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 天、灯、云（lib/主世界光照.tsx）；日光投影见 lib/飞行镜头.tsx 的 `OverworldSunLight` */}
           <FlightSky camPos={cam.pos} shadow={{ shadowFar: overworldShadowFar(choreo.visibility(globalSec)), aboveGround: cam.pos[2] - choreo.routeGround(cam.pos[0], cam.pos[1]) }} />
-          <VoxelWorld key={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={trialFarM(terrain.farM)} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />
+          <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={trialFarM(terrain.farM)} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />
           <group position={borderTownPos}>
             <BorderTown />
           </group>

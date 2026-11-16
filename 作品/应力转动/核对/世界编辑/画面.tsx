@@ -21,7 +21,7 @@ const Terrain: React.FC = () => {
   const t = useVersionedTerrain(pack, terrainVersion);
   if (!t) return null;
   if (t.origin.some((v, i) => v !== originPos[i])) throw new Error(`${pack}/${terrainVersion} 的原点是 ${t.origin}，画面按 ${originPos} 算的`);
-  return <VoxelWorld key={t.key} source={t.source} center={cameraRig.pos} pixel={LevelParams.视频.pixel} far={2000} heightRange={t.heightRange} />;
+  return <VoxelWorld worldKey={t.key} source={t.source} center={cameraRig.pos} pixel={LevelParams.视频.pixel} far={2000} heightRange={t.heightRange} />;
 };
 
 const picture: React.FC = () => {
