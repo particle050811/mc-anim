@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import mcai.Action;
 import mcai.ActionException;
 import mcai.Args;
+import mcai.Freeze;
 import mcai.Game;
 import mcai.record.Recorder;
 
@@ -19,6 +20,7 @@ import java.util.List;
  * 录制：从现在起录 ticks 个客户端刻，粒子（构造完的实例字段 + 每刻快照）、半径内的实体（每刻位姿 + 服务端存档 NBT）、声音、诡厄的施法事件，
  * 写成一份 JSON（格式见 docs/决策/0016-法术录制.md）。use=1 时第 pre 刻「按一下右键」（走游戏的 startUseItem），
  * 蓄力、引导的物品按住到不再使用或 hold 刻。施法者就是当前玩家：先 tp 好、hold 好法杖再录。
+ * 世界冻着（mcai game start 进存档默认冻结）就在录的这段里解冻，录完（成功、出错都算）冻回去。
  */
 public class RecordAction implements Action {
     private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
@@ -60,6 +62,22 @@ public class RecordAction implements Action {
         p.hold = (int) args.num("hold", -1);
         p.note = args.has("note") ? args.str("note") : null;
         if (Recorder.active()) throw new ActionException("已经在录了（上一次没停？）");
+        // 法术、投射物、粒子的服务端逻辑都在实体 tick 里，冻着录不到东西；在服务端线程上切，落在两个 tick 之间
+        boolean wasFrozen = Game.onServer(() -> {
+            boolean was = Freeze.frozen;
+            Freeze.frozen = false;
+            return was;
+        });
+        try {
+            JsonObject o = record(out, p, ticks, args);
+            o.addProperty("录时解冻", wasFrozen);
+            return o;
+        } finally {
+            if (wasFrozen) Game.onServer(() -> Freeze.frozen = true);
+        }
+    }
+
+    private JsonObject record(Path out, Recorder.Params p, int ticks, Args args) throws Exception {
         if (args.has("seed")) {
             long seed = (long) args.num("seed");
             Game.onServer(() -> {

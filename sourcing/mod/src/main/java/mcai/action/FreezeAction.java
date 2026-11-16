@@ -21,7 +21,7 @@ public class FreezeAction implements Action {
     }
 
     public String doc() {
-        return freeze ? "冻结世界：停掉实体、方块实体、随机刻、计划刻、时间天气、刷怪；玩家移动和区块加载照常" : "解冻";
+        return freeze ? "冻结世界：停掉实体、方块实体、随机刻、计划刻、时间、天气循环、刷怪；玩家移动、区块加载、天气命令照常。game start 进存档默认就冻着" : "解冻";
     }
 
     public List<Param> params() {
