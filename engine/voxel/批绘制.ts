@@ -10,7 +10,7 @@
 // - 视锥剔除、第一次碰到才传顶点，照原来 `uploadWhenHit` 的算法（包围球对六个面），挪到画的时候做：主画面的视锥照 three 每次 render 开头的算法从镜头重算，
 //   不存 three 挑物体时给的那个（挑物体和画之间隔着整个阴影遍，存下来的状态会被中间别的 render 盖掉）；阴影遍只认级联阴影的视锥，three 挑完紧接着就画，用它给的。
 // - 顶点数组对象（VAO）按「区段 × 属性位置的组合」留着（主画面和阴影深度两种程序的属性位置不同），区段释放时删。
-// - 画完把 `区段位移` 改回 (0,0,0,1)、VAO 绑回 three 的那个：three 记着它自己设过的值，不知道这里动过。
+// - 画完把 `区段位移` 改回 (0,0,0,1)、远裁的 `uFarDrop` 改回 0、VAO 绑回 three 的那个：three 记着它自己设过的值，不知道这里动过。
 import * as THREE from 'three';
 import { shadowFrustums } from '../light/级联阴影.ts';
 import { groupCount, skirtGroupStart, type FaceGroup } from './网格.ts';
@@ -102,7 +102,7 @@ const bindIndex = (gl: WebGL2RenderingContext, batchItem: BatchItem) => {
 
 // ---- 程序：`区段位移` 的位置和四个属性的位置。属性位置的组合编成布局号，VAO 按它分 ----
 type GlProgram = { program: WebGLProgram; getAttributes: () => Record<string, { location: number } | undefined> };
-type ProgramLocation = { displacement: WebGLUniformLocation | null; layoutId: number; 位置: number[] };
+type ProgramLocation = { displacement: WebGLUniformLocation | null; farDrop: WebGLUniformLocation | null; layoutId: number; 位置: number[] };
 const programLocations = new WeakMap<object, ProgramLocation>();
 const layoutIndex = new Map<string, number>();
 const attrNames = ['position', 'uv', 'tex', 'col'];
@@ -114,7 +114,7 @@ const getProgramLocation = (gl: WebGL2RenderingContext, program: GlProgram) => {
   const posKey = glPosList.join(',');
   let layoutId = layoutIndex.get(posKey);
   if (layoutId === undefined) layoutIndex.set(posKey, (layoutId = layoutIndex.size));
-  programLocations.set(program, (programLocs = { displacement: gl.getUniformLocation(program.program, 'uSec'), layoutId, 位置: glPosList }));
+  programLocations.set(program, (programLocs = { displacement: gl.getUniformLocation(program.program, 'uSec'), farDrop: gl.getUniformLocation(program.program, 'uFarDrop'), layoutId, 位置: glPosList }));
   return programLocs;
 };
 const buildVao = (gl: WebGL2RenderingContext, batchItem: BatchItem, programLocs: ProgramLocation) => {
@@ -159,6 +159,7 @@ export class ClassBatch extends THREE.Mesh {
   // 项 i 要画的段：段[段起[i]] 到 段[段起[i + 1]]，两个一对（起点、个数，单位是索引）
   drawRangeStarts: number[] = [0];
   segment: number[] = [];
+  farDrops: number[] = []; // 各项的远裁丢法（区段.ts `farDropMask`），只有远裁材质的程序认
   private 见 = new Int32Array(1024); // 这一遍在视锥里的项号
   private farDepths = new Float64Array(1024); // 排序用：各项离镜头的纵深
   private shadowFrustum: THREE.Frustum | null = null;
@@ -177,6 +178,7 @@ export class ClassBatch extends THREE.Mesh {
 
   reset(refPoint: number[]) {
     this.items.length = 0;
+    this.farDrops.length = 0;
     this.drawRangeStarts.length = 1;
     this.segment.length = 0;
     this.position.set(refPoint[0]!, refPoint[1]!, refPoint[2]!);
@@ -184,7 +186,7 @@ export class ClassBatch extends THREE.Mesh {
   }
 
   /** 只画看得见的几组朝向：连续几组并成一段。只给了前 7 组时，裙边四组跟着各自朝向走（和 材质.ts 的 pickDirs 同一个算法） */
-  加(batchItem: BatchItem, visibleFlags: boolean[]) {
+  加(batchItem: BatchItem, visibleFlags: boolean[], farDrop = 0) {
     const groupStart = batchItem.segment;
     const faceGroupStarts = this.segment;
     const origLength = faceGroupStarts.length;
@@ -199,6 +201,7 @@ export class ClassBatch extends THREE.Mesh {
     }
     if (faceGroupStarts.length === origLength) return;
     this.items.push(batchItem);
+    this.farDrops.push(farDrop);
     this.drawRangeStarts.push(faceGroupStarts.length);
   }
 
@@ -281,7 +284,7 @@ export class ClassBatch extends THREE.Mesh {
       warned = true;
       return;
     }
-    const { 见: visible, items: items, drawRangeStarts, segment: faceGroupStarts } = this;
+    const { 见: visible, items: items, drawRangeStarts, segment: faceGroupStarts, farDrops } = this;
     const R = this.position;
     const origVao = gl.getParameter(gl.VERTEX_ARRAY_BINDING) as WebGLVertexArrayObject | null;
     for (let i = 0; i < n; i++) {
@@ -289,11 +292,13 @@ export class ClassBatch extends THREE.Mesh {
       const batchItem = items[k]!;
       gl.bindVertexArray(batchItem.vao[programLocs.layoutId] ?? (batchItem.vao[programLocs.layoutId] = buildVao(gl, batchItem, programLocs)));
       gl.uniform4f(programLocs.displacement, batchItem.origin[0]! - R.x, batchItem.origin[1]! - R.y, batchItem.origin[2]! - R.z, batchItem.scale);
+      if (programLocs.farDrop) gl.uniform1f(programLocs.farDrop, farDrops[k]!);
       const indexType = batchItem.shortIndex ? gl.UNSIGNED_SHORT : gl.UNSIGNED_INT;
       const indexWidth = batchItem.shortIndex ? 2 : 4;
       for (let j = drawRangeStarts[k]!, endIndex = drawRangeStarts[k + 1]!; j < endIndex; j += 2) gl.drawElements(gl.TRIANGLES, faceGroupStarts[j + 1]!, indexType, faceGroupStarts[j]! * indexWidth);
     }
     gl.uniform4f(programLocs.displacement, 0, 0, 0, 1);
+    if (programLocs.farDrop) gl.uniform1f(programLocs.farDrop, 0);
     gl.bindVertexArray(origVao);
   }
 }

@@ -19,7 +19,7 @@ import { LevelParams } from '@engine/core/渲染级别.ts';
 import { useSelfLight } from '@engine/light/光照配比.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
-import { voxelMaterial } from '@engine/voxel/材质.ts';
+import { voxelMaterial, isVoxelWater } from '@engine/voxel/材质.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
@@ -90,13 +90,13 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
     },
     [scene],
   );
-  // 这个世界的水类网格（全是熔岩）换材质：体素世界每次渲染把这一帧要画的网格挂进组里，画之前换
+  // 这个世界的水类网格（全是熔岩）换材质：体素世界每次渲染把这一帧要画的网格挂进组里，画之前换。
+  // 跨过雾尽头的区段的远裁水（engine/voxel/区段.ts `farDropMask`）也换成不裁的熔岩：背景就是雾色，雾尽头外面画了也看不出
   useFrame(() => {
-    const waterMaterial = voxelMaterial('水');
-    const rockMat = getLavaMaterial(waterMaterial);
+    const rockMat = getLavaMaterial(voxelMaterial('水'));
     groupRef.current?.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (Array.isArray(mesh.material) && mesh.material[0] === waterMaterial) mesh.material = [rockMat];
+      if (Array.isArray(mesh.material) && isVoxelWater(mesh.material[0])) mesh.material = [rockMat];
     });
   });
   if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
