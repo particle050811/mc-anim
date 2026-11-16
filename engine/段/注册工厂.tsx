@@ -16,7 +16,7 @@ export type RegisterParams = {
   manifest: readonly { key: string }[];
   /** 段键 → 段目录（相对作品根，如 段/6-斩娜迦、核对/冒烟） */
   segDir: (segKey: string) => string;
-  /** 段目录的第一层（段、核对）→ 扫这一层的 webpackContext，键形如 ./<段名>/段.ts */
+  /** 段目录的第一层（段、核对）→ 扫这一层的 webpackContext，键形如 ./<段名>/段.ts。键是目录名，跟 segDir 返回的第一层对上，不是属性名 */
   modules: Readonly<Record<string, ModuleDir>>;
 };
 

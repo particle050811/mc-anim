@@ -7,7 +7,7 @@ export const registration = makeRegistry({
   manifest,
   segDir,
   modules: {
-    segment: import.meta.webpackContext('./段', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
-    verify: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
+    段: import.meta.webpackContext('./段', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
+    核对: import.meta.webpackContext('./核对', { recursive: true, regExp: /^\.\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/ }),
   },
 });
