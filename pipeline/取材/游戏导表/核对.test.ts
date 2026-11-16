@@ -71,7 +71,7 @@ describe('方块表核对', () => {
     expect(r.面.贴图不同).toBe(1); // dirt：手写写成了 stone
     expect(r.面.几何不同).toBe(1); // slab
     expect(r.只在手写的方块).toEqual(['minecraft:gone']);
-    expect(r.标志不同['type']).toEqual({ 数: 1, 组合: { 'cutout→translucent': 1 }, examples: ['minecraft:grass'] });
+    expect(r.标志不同['类']).toEqual({ 数: 1, 组合: { 'cutout→translucent': 1 }, examples: ['minecraft:grass'] });
     expect(r.染色不同.组合).toEqual({ 'grass→#123456': 1 });
     expect(r.多出的状态.数).toBe(2);
     expect(r.多出的状态.按命名空间).toEqual({ minecraft: 1, mymod: 1 });

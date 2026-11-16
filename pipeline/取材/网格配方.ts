@@ -97,17 +97,17 @@ const quote = (s: string) => JSON.stringify(s);
 export const meshRecipeText = (groupName: string, meshes: readonly PendingMesh[]) => {
   const work = meshes[0]?.work;
   const lines = [
-    '[["取材"]]',
-    `"名称" = ${quote(groupName)}`,
-    '"需要" = []',
-    '"要开游戏" = true',
-    ...(work ? [`"作品" = ${quote(work)}`] : []),
-    `"不重导" = ${quote(noReExtractReason)}`,
-    '"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」',
-    '"步骤" = [',
+    '[["sourcing"]]',
+    `"displayName" = ${quote(groupName)}`,
+    '"requires" = []',
+    '"needsGame" = true',
+    ...(work ? [`"work" = ${quote(work)}`] : []),
+    `"noReExtract" = ${quote(noReExtractReason)}`,
+    '"publicVersion" = "不提取"  # 网格走 Release、图集走「网格图集」',
+    '"steps" = [',
     ...meshes.flatMap((g) => meshSteps(g).map((s) => `  [${s.map((a) => quote(a as string)).join(', ')}],`)),
     ']',
-    '["取材"."产物"]',
+    '["sourcing"."artifacts"]',
     ...meshes.flatMap((g) => Object.entries(g.artifacts).map(([k, v]) => `${quote(k)} = ${quote(v)}`)),
   ];
   return lines.join('\n') + '\n';

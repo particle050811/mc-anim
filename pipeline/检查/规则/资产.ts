@@ -105,7 +105,7 @@ const checkRepoBundle = async (c: CheckContext, report: CheckReport, assetLock: 
   const repoListPath = c.workPath(repoTableName);
   const bytesDir = c.workPath(bytesDirName);
   if (!c.exists(repoListPath)) {
-    if (c.exists(bytesDir)) report.错(`有 ${bytesDir}/ 却没有 ${repoTableName}：随仓库发哪些段的字节要写在 ${repoListPath}（"段" = ["<段键或章>", …]）`, bytesDir);
+    if (c.exists(bytesDir)) report.错(`有 ${bytesDir}/ 却没有 ${repoTableName}：随仓库发哪些段的字节要写在 ${repoListPath}（"segment" = ["<段键或章>", …]）`, bytesDir);
     return;
   }
   let selectors: string[];
@@ -133,7 +133,7 @@ const checkRepoBundle = async (c: CheckContext, report: CheckReport, assetLock: 
   }
 };
 
-/** 材质包.toml：[段] 的段键要在清单里；作品的 "包" 和 [段] 另选的每一种，覆盖层锁都要建了、对得上（不然渲到那一段才报错） */
+/** 材质包.toml：[段] 的段键要在清单里；作品的 "pack" 和 [段] 另选的每一种，覆盖层锁都要建了、对得上（不然渲到那一段才报错） */
 const checkResourcePack = async (c: CheckContext, report: CheckReport, assetLock: AssetLock) => {
   const workRoot = c.absPath(c.workDir);
   const tablePath = c.workPath(path.basename(workResourcePackTablePath(workRoot)));
@@ -302,7 +302,7 @@ export const checkAssets = async (c: CheckContext, report: CheckReport) => {
     const roleName = path.posix.basename(p, '.toml');
     if (doc['character'] !== roleName) report.错(`角色 字段要和文件名一致（${roleName}）`, p);
     for (const b of (doc['baseline'] ?? []) as { asset?: string; purpose?: string }[]) if (typeof b.asset === 'string') findAsset(b.asset, `角色包 ${roleName} 的基准「${b.purpose}」`, p);
-    for (const g of (doc['资产组'] ?? []) as { asset?: string[]; match?: string[]; textSources?: string[]; purpose?: string }[]) {
+    for (const g of (doc['assetGroups'] ?? []) as { asset?: string[]; match?: string[]; textSources?: string[]; purpose?: string }[]) {
       for (const id of g.asset ?? []) findAsset(id, `角色包 ${roleName}「${g.purpose}」`, p);
       for (const m of g.match ?? []) if (!ids.some((id) => globToRegex(m).test(id))) report.错(`角色包 ${roleName}「${g.purpose}」的匹配 ${m} 一件也没对上`, p);
       for (const f of g.textSources ?? []) if (!c.exists(f)) report.错(`角色包 ${roleName}「${g.purpose}」的文字源 ${f} 不在仓库里`, p);

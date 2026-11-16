@@ -102,7 +102,8 @@ export const runSteps = async (q: SourcingManifest, e: SourcingEntry, dir: strin
     const pairs = [...existing, ...addArtifacts.filter(([id]) => !existing.some(([x]) => x === id))];
     for (const [, f] of pairs) fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
     fs.mkdirSync(path.dirname(v.产物清单!), { recursive: true });
-    fs.writeFileSync(v.产物清单!, JSON.stringify(pairs.map(([id, file]) => ({ id, file: file })), null, 1) + '\n');
+    // 键「文件」是 sourcing/extract/导出音效.py 读的，产物清单不在盘键表里，不改英文
+    fs.writeFileSync(v.产物清单!, JSON.stringify(pairs.map(([id, file]) => ({ id, 文件: file })), null, 1) + '\n');
     // 上回跑剩的产物来源不能留：这回的脚本不写，--register 就该退回按「需要」记
     fs.rmSync(v.产物来源!, { force: true });
   }

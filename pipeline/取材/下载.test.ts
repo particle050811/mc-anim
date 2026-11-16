@@ -19,18 +19,18 @@ const mappingContent = '# 映射文件头\nnet.minecraft.A -> a:\n';
 const sha = (algorithm: string, s: string) => crypto.createHash(algorithm).update(s).digest('hex');
 
 const jars = (sha256 = sha('sha256', mappingContent)) => `
-[["Mojang"."映射"]]
+[["Mojang"."mappings"]]
 "id" = "映射甲"
-"根" = "数据"
-"到" = "cache/映射/甲.txt"
-"也认" = ["游戏:缓存/甲.txt"]
-"下载" = "https://example.invalid/甲.txt"
+"root" = "数据"
+"dest" = "cache/映射/甲.txt"
+"alsoAccept" = ["游戏:缓存/甲.txt"]
+"download" = "https://example.invalid/甲.txt"
 "sha256" = "${sha256}"
 "sha1" = "${sha('sha1', mappingContent)}"
-[["模组"]]
+[["mods"]]
 "id" = "模组乙"
-"到" = "mods/乙.jar"
-"下载" = "https://example.invalid/乙.jar"
+"dest" = "mods/乙.jar"
+"download" = "https://example.invalid/乙.jar"
 "sha256" = "${'0'.repeat(64)}"
 `;
 
@@ -39,7 +39,7 @@ describe('jars.toml 的根和也认', () => {
     expect(splitPosition('游戏:缓存/a.txt')).toEqual(['游戏', '缓存/a.txt']);
     expect(splitPosition('缓存/a.txt')).toEqual(['游戏', '缓存/a.txt']);
     expect(() => splitPosition('别处:a.txt')).toThrow(/根只认/);
-    expect(() => parseManifest('', '[["模组"]]\n"id" = "x"\n"根" = "别处"\n"到" = "a"\n')).toThrow(/根只认/);
+    expect(() => parseManifest('', '[["mods"]]\n"id" = "x"\n"root" = "别处"\n"dest" = "a"\n')).toThrow(/根只认/);
   });
 
   it('「到」在就用它；不在找也认的位置；都没有返回「到」', () => {

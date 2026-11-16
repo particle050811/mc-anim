@@ -10,45 +10,45 @@ import { checkArtifacts } from './提取.ts';
 import { canRunDirectly, fillTemplate, expandArtifacts, expandSteps, parseManifest, readManifest, selectEntries, type ExpandEnv } from './清单.ts';
 
 const manifestText = `
-["程序"]
+["program"]
 "导出模型" = ["uv", "run", "{脚本}/导出模型.py"]
-["组"]
+["group"]
 "一组" = ["乙", "甲"]
-[["取材"]]
-"名称" = "甲"
-"需要" = ["a"]
-"公开版" = "提取"
-"步骤" = [["导出模型", "{jar:a,b}", "out.png", { "输出" = ["python", "x.py"] }]]
-["取材"."产物"]
+[["sourcing"]]
+"displayName" = "甲"
+"requires" = ["a"]
+"publicVersion" = "提取"
+"steps" = [["导出模型", "{jar:a,b}", "out.png", { "output" = ["python", "x.py"] }]]
+["sourcing"."artifacts"]
 "贴图/甲/*" = "src/甲.贴图/*.png"
 "模型/甲" = "src/甲.json"
-[["取材"]]
-"名称" = "乙"
-"前置" = ["甲"]
-"要开游戏" = true
-"公开版" = "不提取"
-"步骤" = [["mcai", "mesh", "out=src/乙.网格"]]
-[["取材"]]
-"名称" = "丙"
-"待迁移" = "还没搬"
-"公开版" = "不提取"
-"步骤" = [["ts", "x.ts"]]
-[["取材"]]
-"名称" = "丁"
-"作品" = "乙作"
-"公开版" = "提取"
-"步骤" = [["python", "{脚本}/x.py", "{作品根}/文案.txt"]]
+[["sourcing"]]
+"displayName" = "乙"
+"prerequisites" = ["甲"]
+"needsGame" = true
+"publicVersion" = "不提取"
+"steps" = [["mcai", "mesh", "out=src/乙.网格"]]
+[["sourcing"]]
+"displayName" = "丙"
+"pendingMigration" = "还没搬"
+"publicVersion" = "不提取"
+"steps" = [["ts", "x.ts"]]
+[["sourcing"]]
+"displayName" = "丁"
+"work" = "乙作"
+"publicVersion" = "提取"
+"steps" = [["python", "{脚本}/x.py", "{作品根}/文案.txt"]]
 `;
 const jarText = `
-[["Mojang"."客户端"]]
+[["Mojang"."client"]]
 "id" = "a"
-"到" = "缓存/a.jar"
-[["Mojang"."映射"]]
+"dest" = "缓存/a.jar"
+[["Mojang"."mappings"]]
 "id" = "a-mappings"
-"到" = "缓存/a.txt"
-[["模组"]]
+"dest" = "缓存/a.txt"
+[["mods"]]
 "id" = "b"
-"到" = "mods/b.jar"
+"dest" = "mods/b.jar"
 `;
 const v: ExpandEnv = { jarPath: (id) => `/游戏/${id}.jar`, prismData: '/prism', scriptDir: '/仓库/sourcing/extract', workRoot: '/仓库/作品/乙作', python: 'python3', mcai: ['python3', '/仓库/mcai.py'] };
 
@@ -64,13 +64,13 @@ describe('取材清单', () => {
   });
 
   it('另批的 extract.<名>.toml 并进同一张表：名称、组不能重，只认 [[取材]] 和 [组]', () => {
-    const extraFileText = `["组"]\n"录" = ["戊"]\n[["取材"]]\n"名称" = "戊"\n"要开游戏" = true\n"公开版" = "提取"\n"步骤" = [["python", "x.py"]]\n`;
+    const extraFileText = `["group"]\n"录" = ["戊"]\n[["sourcing"]]\n"displayName" = "戊"\n"needsGame" = true\n"publicVersion" = "提取"\n"steps" = [["python", "x.py"]]\n`;
     const q2 = parseManifest(manifestText, jarText, { 'extract.录制.toml': extraFileText });
     expect([...q2.entryMap.keys()]).toEqual(['甲', '乙', '丙', '丁', '戊']);
     expect(selectEntries(q2, ['录'], false).map((e) => e.displayName)).toEqual(['戊']);
-    expect(() => parseManifest(manifestText, jarText, { 'extract.x.toml': `[["取材"]]\n"名称" = "甲"\n` })).toThrow(/两条/);
-    expect(() => parseManifest(manifestText, jarText, { 'extract.x.toml': `["组"]\n"一组" = []\n` })).toThrow(/已经有了/);
-    expect(() => parseManifest(manifestText, jarText, { 'extract.x.toml': `["程序"]\n"a" = []\n` })).toThrow(/只认/);
+    expect(() => parseManifest(manifestText, jarText, { 'extract.x.toml': `[["sourcing"]]\n"displayName" = "甲"\n` })).toThrow(/两条/);
+    expect(() => parseManifest(manifestText, jarText, { 'extract.x.toml': `["group"]\n"一组" = []\n` })).toThrow(/已经有了/);
+    expect(() => parseManifest(manifestText, jarText, { 'extract.x.toml': `["program"]\n"a" = []\n` })).toThrow(/只认/);
   });
 
   it('--all 只选有步骤、不用开游戏、不待迁移的，写了别的作品的不选；组按组里的先后', () => {

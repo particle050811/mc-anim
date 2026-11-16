@@ -9,7 +9,7 @@ import { isSpdxValid, globToRegex } from './规则/资产.ts';
 import { packManifest } from '../世界/版本.ts';
 
 const makeAssetTable = (...rows: Record<string, string>[]) =>
-  rows.map((e) => ['[["资产"]]', ...Object.entries(e).map(([k, v]) => `${k === 'id' ? k : `"${k}"`} = "${v}"`)].join('\n')).join('\n\n');
+  rows.map((e) => ['[["asset"]]', ...Object.entries(e).map(([k, v]) => `${k === 'id' ? k : `"${k}"`} = "${v}"`)].join('\n')).join('\n\n');
 const assetRow = (id: string, visibility = '公开', license = 'MIT') => ({ id, category: id.split('/')[0]!, source: '手工:测试', license: license, visibility: visibility });
 const lockEntry = (sha: string, storage = 'store', byteSize = 3) => ({ sha256: sha, suffix: '.png', size: byteSize, lib: storage });
 const sha = (s: string | Buffer) => crypto.createHash('sha256').update(s).digest('hex');
@@ -58,16 +58,16 @@ describe('资产', () => {
       '作品/应力转动/段/7-甲/段.ts':
         "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sound: [{ sec: 0, asset: '配音/甲' }] });\n",
       'assets/kits/李樱.toml': [
-        '"角色" = "李樱"',
-        '[["基准"]]',
-        '"用途" = "脸"',
-        '"资产" = "贴图/李樱-脸"',
-        '[["资产组"]]',
-        '"用途" = "全部贴图"',
-        '"匹配" = ["贴图/李樱-*"]',
-        '"文字源" = ["作品/应力转动/旧名.tsv"]',
-        '[["代码"]]',
-        '"新位置" = "库/角色/李樱.tsx"',
+        '"character" = "李樱"',
+        '[["baseline"]]',
+        '"purpose" = "脸"',
+        '"asset" = "贴图/李樱-脸"',
+        '[["assetGroups"]]',
+        '"purpose" = "全部贴图"',
+        '"match" = ["贴图/李樱-*"]',
+        '"textSources" = ["作品/应力转动/旧名.tsv"]',
+        '[["code"]]',
+        '"newLocation" = "库/角色/李樱.tsx"',
       ].join('\n'),
     });
     const { violations, report } = await runRule('assets', root);
@@ -76,7 +76,7 @@ describe('资产', () => {
     expect(report.pendingMigration.map((q) => q.text)).toEqual(['角色包 李樱 的代码 库/角色/李樱.tsx 还没搬']);
   });
 
-  it('私有资产 import 块顶上标了「pendingMigration（私有资产）」的算待迁移，没标的、隔了别的行的照拦', async () => {
+  it('私有资产 import 块顶上标了「待迁移（私有资产）」的算待迁移，没标的、隔了别的行的照拦', async () => {
     const root = makeRepo(base(), {
       'assets/registry/贴图.toml': makeAssetTable(assetRow('贴图/甲'), assetRow('贴图/私', '私有'), assetRow('贴图/私二', '私有')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '贴图/私': lockEntry('d'.repeat(64), '私有'), '贴图/私二': lockEntry('e'.repeat(64), '私有') }),
@@ -102,7 +102,7 @@ describe('资产', () => {
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '贴图/私': lockEntry('d'.repeat(64)), '贴图/孤': lockEntry('e'.repeat(64)) }),
       '作品/应力转动/段/7-甲/画面.tsx': "import image from 'asset:贴图/甲';\nimport 私 from 'asset:贴图/私';\nimport 无 from 'asset:贴图/没登记';\nexport default () => <img src={image + 私 + 无} />;\n",
       '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: ['没登记的包'] });\n",
-      'assets/kits/九胡.toml': ['"角色" = "九胡"', '[["资产组"]]', '"用途" = "模型"', '"匹配" = ["模型/九胡-*"]', '"文字源" = ["docs/没有.md"]'].join('\n'),
+      'assets/kits/九胡.toml': ['"character" = "九胡"', '[["assetGroups"]]', '"purpose" = "模型"', '"match" = ["模型/九胡-*"]', '"textSources" = ["docs/没有.md"]'].join('\n'),
     });
     const v = (await runRule('assets', root)).violations.join('\n');
     expect(v).toMatch(/「贴图\/乙」的许可「MIT 或 GPL」不是 SPDX 表达式/);
@@ -188,20 +188,20 @@ describe('作品资产表', () => {
     };
     expect((await runRule('assets', makeRepo(base(), files), { work: '示例' })).violations).toEqual([]);
     // 查 应力转动 时不读 示例 的表和锁：示例 引的 配乐/曲 不归它管，示例 表里的毛病也不报
-    const badTable = { ...files, '作品/示例/资产表/配乐.toml': '[["资产"]]\nid = "配乐/曲"\n' };
+    const badTable = { ...files, '作品/示例/资产表/配乐.toml': '[["asset"]]\nid = "配乐/曲"\n' };
     expect((await runRule('assets', makeRepo(base(), badTable), { work: '应力转动' })).violations).toEqual([]);
   });
 
   it('两侧都登记、两份锁都有、锁写错一侧、作品锁里没登记的、作品表缺字段都拦，报在作品那份文件上', async () => {
     const root = makeRepo(base(), makeExample('贴图/甲'), {
-      '作品/示例/资产表/配乐.toml': [makeAssetTable(assetRow('贴图/甲'), assetRow('配乐/错侧'), assetRow('配乐/没入库')), '[["资产"]]\nid = "配乐/缺字段"'].join('\n\n'),
+      '作品/示例/资产表/配乐.toml': [makeAssetTable(assetRow('贴图/甲'), assetRow('配乐/错侧'), assetRow('配乐/没入库')), '[["asset"]]\nid = "配乐/缺字段"'].join('\n\n'),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '配乐/错侧': lockEntry('b'.repeat(64)) }),
       '作品/示例/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '配乐/孤': lockEntry('c'.repeat(64)) }),
     });
     const v = (await runRule('assets', root, { work: '示例' })).violations;
     expect(v).toEqual(
       expect.arrayContaining([
-        '作品/示例/资产表 配乐.toml 的「配乐/缺字段」：缺 类别',
+        '作品/示例/资产表 配乐.toml 的「配乐/缺字段」：缺 category',
         '作品/示例/资产表/配乐.toml 「贴图/甲」在 assets/registry/贴图.toml 和 作品/示例/资产表/配乐.toml 里都登记了（一个 id 只登记在一侧）',
         '作品/示例/资产锁 「贴图/甲」在 assets/资产锁 和 作品/示例/资产锁 里都有（一个 id 只写在登记它那一侧的锁里）',
         '作品/示例/资产表/配乐.toml 「配乐/没入库」登记了但不在资产锁里（入库：anim assets add 或导入工具）',
@@ -213,7 +213,7 @@ describe('作品资产表', () => {
     expect(v.filter((x) => x.includes('配乐/错侧'))).toHaveLength(1);
   });
 
-  it('私有作品（被 .gitignore 挡住）目录里 import 私有资产不报；engine/、lib/ 照拦；没挡的作品照拦', async () => {
+  it('私有作品（被 .gitignore 挡住）目录里 import 私有资产不报；engine/、库/ 照拦；没挡的作品照拦', async () => {
     const privateFiles = {
       ...makeExample('配乐/私曲', '配音/甲'),
       '作品/示例/资产表/配乐.toml': makeAssetTable(assetRow('配乐/私曲', '私有', 'LicenseRef-用户保留')),
@@ -228,7 +228,7 @@ describe('作品资产表', () => {
       return root;
     };
     const blocked = await runRule('assets', withGit('/作品/示例/\n'), { work: '示例' });
-    expect(blocked.violations).toEqual(['lib/界面/某.tsx 公开构建的闭包里不能有私有资产：lib/界面/某.tsx import 了 asset:voice/甲（私有的走 cue，缺了按规矩降级或报错，不打进包）']);
+    expect(blocked.violations).toEqual(['库/界面/某.tsx 公开构建的闭包里不能有私有资产：库/界面/某.tsx import 了 asset:配音/甲（私有的走 cue，缺了按规矩降级或报错，不打进包）']);
     expect(blocked.report.skipped.join()).toMatch(/作品\/示例 被 .gitignore 挡住、是私有作品/);
 
     const notBlocked = (await runRule('assets', withGit('/作品/别的/\n'), { work: '示例' })).violations.join('\n');
@@ -250,7 +250,7 @@ describe('随仓库发的字节', () => {
         'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry(sha(contentA)), '配乐/私曲': lockEntry(sha(privateBytes), '私有') }),
         '作品/应力转动/段/7-甲/段.ts':
           "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ scene: '7-场一', sec: 10, width: 4, height: 4, terrain: [], sound: [{ sec: 0, asset: '配乐/私曲', name: '歌', 长秒: 10 }] });\n",
-        '作品/应力转动/随仓库.toml': '"段" = ["7"]',
+        '作品/应力转动/随仓库.toml': '"segment" = ["7"]',
         [bytesPosPath(contentA)]: contentA,
       },
       ...fileLayers,
@@ -269,6 +269,6 @@ describe('随仓库发的字节', () => {
     expect(violationText).toMatch(/是私有资产「配乐\/私曲」的字节，不能随仓库发/);
     expect(violationText).toMatch(/多余：随仓库.toml 的段现在用不到/);
     expect((await runRule('assets', makeAssetRepo({ '作品/应力转动/随仓库.toml': null }))).violations.join()).toMatch(/有 作品\/应力转动\/字节\/ 却没有 随仓库.toml/);
-    expect((await runRule('assets', makeAssetRepo({ '作品/应力转动/随仓库.toml': '"段" = ["8"]' }))).violations.join()).toMatch(/「8」没对上清单里的段/);
+    expect((await runRule('assets', makeAssetRepo({ '作品/应力转动/随仓库.toml': '"segment" = ["8"]' }))).violations.join()).toMatch(/「8」没对上清单里的段/);
   });
 });
