@@ -19,7 +19,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { useSelfLight } from '@engine/light/光照配比.ts';
-import { useFarFog } from '@engine/light/高度雾.ts';
+import { trialFarM, useFarFog } from '@engine/light/高度雾.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { voxelMaterial } from '@engine/voxel/材质.ts';
@@ -42,6 +42,9 @@ export type NetherLight = {
 export const netherVanilla: NetherLight = { baseLight: [0.393, 0.323, 0.267], lavaBright: 1, fog: { 色: '#330808', near: 25.6, far: 96 } };
 /** 整体提亮、雾放远（用户 11-10 嫌黑、要看清背景）：底光提到原版方块光约 12 级的亮度，雾推到 32 区块外才满，雾色提亮 */
 export const netherBrighter: NetherLight = { baseLight: [0.86, 0.74, 0.64], lavaBright: 1.1, fog: { 色: '#5a1a12', near: 96, far: 640 } };
+
+/** 远雾的 D（格）= 雾远；试看 {"雾曲线": {"远": 格}} 盖掉，地形最远距离跟着换（用户 11-16 要比下界放大视距）。包只烘了 x 0～1535、z −1536～511 */
+export const netherFarM = (light: NetherLight) => trialFarM(light.fog.far);
 
 // 面明暗（下界 constantAmbientLight）：东西 0.6、南北 0.8、上下 0.9
 const faceShade = { eastWest: 0.6, northSouth: 0.8, upDown: 0.9 };
@@ -78,7 +81,8 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
   const scene = useThree((s) => s.scene);
   const groupRef = useRef<THREE.Group>(null);
   useSelfLight(0);
-  useFarFog({ far: netherLight.fog.far });
+  const farM = netherFarM(netherLight);
+  useFarFog({ far: farM });
   lavaGlow.value = netherLight.lavaBright;
   // 雾、底色挂在场景上（<fog attach> 在场景组里挂不到 scene）
   const fog = scene.fog instanceof THREE.Fog ? scene.fog : (scene.fog = new THREE.Fog(netherLight.fog.色, netherLight.fog.near, netherLight.fog.far));
@@ -116,7 +120,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      {t && <VoxelWorld key={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? netherLight.fog.far} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
+      {t && <VoxelWorld key={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );
 };
