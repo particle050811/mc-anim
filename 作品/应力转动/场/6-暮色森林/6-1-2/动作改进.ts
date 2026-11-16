@@ -155,11 +155,23 @@ export const official = { motionImproved: true, hitStopSec: nagaHitStopSec, newC
 export const officialLength = choreo.LENGTH + official.hitStopSec;
 // 落到刻上，同 娜迦参考模型.tsx 的 `nagaShotCam`
 export const officialStoryTime = (sec: number) => onTick(hitStopTimes(official.hitStopSec)(choreo.story(sec + 1 / 24)));
-// 剧情时间 → 正式版段内秒：这一剧情时间第一次出现的那一格（切镜的剧情时间换成段内秒，第 1 场段界用）
+// 剧情时间 → 正式版段内秒：剧情时间第一次到这一刻的段内秒（真值，不再落到 1/24 秒的格上，用户 11-16 定；切镜的剧情时间换成段内秒，第 1 场段界用）。
+// 每 1/240 秒往后找到第一个到了的点，再在前一步里二分
+const SEC_OF_SCAN_STEP = 1 / 240;
 export const officialSecOf = (storyTime: number) => {
-  let k = 0;
-  while (k / 24 < officialLength && officialStoryTime(k / 24) < storyTime) k++;
-  return k / 24;
+  const reached = (sec: number) => officialStoryTime(sec) >= storyTime;
+  if (reached(0)) return 0;
+  let k = 1;
+  while (k * SEC_OF_SCAN_STEP < officialLength && !reached(k * SEC_OF_SCAN_STEP)) k++;
+  if (k * SEC_OF_SCAN_STEP >= officialLength) return officialLength;
+  let lo = (k - 1) * SEC_OF_SCAN_STEP;
+  let hi = k * SEC_OF_SCAN_STEP;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (reached(mid)) hi = mid;
+    else lo = mid;
+  }
+  return onTick(hi);
 };
 // 台词开口（编排 的 `lineStoryTime`，滑停站稳）在打击停顿之后，段内秒跟着晚停顿那么久
 export const officialLineStart = choreo.segSec(choreo.lineStoryTime) + official.hitStopSec;

@@ -69,11 +69,24 @@ const nagaGap = (storyTime: number) => {
   const segGaps = segs.map((s) => gapToBox(eye, [s.loc[0], s.loc[1], s.loc[2] + GAME_NAGA.segmentSize / 2], GAME_NAGA.segmentSize / 2));
   return Math.min(gapToBox(eye, [head.loc[0], head.loc[1], head.loc[2] + headZ], GAME_NAGA.headSize / 2), ...segGaps);
 };
-// 斩中前娜迦还没开始按 nagaWarp 停，原版、正式版同一刻。按格（1/24 秒）往后找第一格够得着的；改按帧找会早 1/40 秒，超过允许挪的 1/120 秒
+// 斩中前娜迦还没开始按 nagaWarp 停，原版、正式版同一刻。取第一次够得着的那一刻（真值，不再落到 1/24 秒的格上，用户 11-16 定）：
+// 每 1/240 秒往后找到第一个够得着的点，再在前一步里二分
+const JADE_SCAN_STEP = 1 / 240;
 const jadeOnTime = (() => {
-  let k = 0;
-  while (choreo.S2 + k / 24 < choreo.CUT_TIME && nagaGap(choreo.S2 + k / 24) > jadeReach) k++;
-  return choreo.S2 + k / 24;
+  const reaches = (t: number) => nagaGap(t) <= jadeReach;
+  if (reaches(choreo.S2)) return choreo.S2;
+  let k = 1;
+  while (choreo.S2 + k * JADE_SCAN_STEP < choreo.CUT_TIME && !reaches(choreo.S2 + k * JADE_SCAN_STEP)) k++;
+  const end = choreo.S2 + k * JADE_SCAN_STEP;
+  if (end >= choreo.CUT_TIME) return choreo.CUT_TIME;
+  let lo = end - JADE_SCAN_STEP;
+  let hi = end;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (reaches(mid)) hi = mid;
+    else lo = mid;
+  }
+  return hi;
 })();
 const headGoneTimes = new Map<boolean, number>();
 const headGoneTime = (motionV2: boolean) => {

@@ -32,8 +32,8 @@ const JH_ARRIVE = Math.round((choreo612.MAZE_ARRIVE - T0) * 60) / 60;
 //   李樱：扫帚冒出来停稳就说「坐好了，看我速通暮色！」（用户 10-20：骑扫帚这一下要说明白是速通暮色），两人跳上扫帚时说，坐稳时说完，不动段长；
 //   坐稳 `seatedHold` 帧就往下一沉、起飞。
 // 长度读 src/配音/台词表.json 的 有声长（开口到说完）。两句都在九胡跑到前后说完，唤出是她停稳后喘 1 秒、抬头看他（`JH_ARRIVE` + 1 秒）。
-// 有声长还按 1/24 秒一格往上取：改按帧取会让唤出到起飞整串早 17～33 毫秒，超过允许挪的 1/120 秒
-const voicedSec = (id: string) => Math.ceil((lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长 * 24) / 24;
+// 有声长用真值，不再往上取到 1/24 秒的格（用户 11-16 定；唤出到起飞整串因此比旧版早几十毫秒）
+const voicedSec = (id: string) => (lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长;
 const seatedHold = 0.5;
 // 6-1-2 末帧（officialLength − 1/24）是本段第 0 秒
 const T612_LAST = officialLength - 1 / 24;
@@ -95,7 +95,9 @@ const levelFlightZ = (() => {
   const point = courtyard.toWorld([820 * forwardXY[0], 820 * forwardXY[1], 0]);
   return cruiseHeight(point[0], point[1]) - courtyard.原点[2];
 })();
-// 起飞后几秒放平：在 18～46 格（1/24 秒）里按格挑。改按帧挑会挑到早 1/60 秒的那一帧，航线跟着变，所以不动
+// 起飞后几秒放平：在 18～46 格（1/24 秒）里按格挑（挑出来是 26/24）。
+// 没改成解出来的真值（早 12 毫秒）：本段末帧的扫帚位置跟着挪 2.6 米，一镜到底整条航线重解，六个首领的穿刺在画面里都早 125 毫秒、离开配乐卡点。
+// 用户 11-16 定 1/24 格的取整一处不留，这一处牵动一镜到底的卡点，留给用户定
 const flipDelay = (() => {
   let best = 46;
   for (let candidate = 18; candidate <= 46; candidate++) if (Math.abs(climbHeight(candidate / 24) - levelFlightZ) < Math.abs(climbHeight(best / 24) - levelFlightZ)) best = candidate;

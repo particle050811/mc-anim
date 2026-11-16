@@ -37,8 +37,9 @@ const toScene = (p: number[]): V3 => [p[0] - sceneOrigin[0], p[1] - sceneOrigin[
 // ---------- 配乐和台词 ----------
 const song = ch6FlightMusic.song;
 // 6-1-9 和本段之间剪掉的画面：G0 前一小节（用户 10-18 嫌落地后空镜头太多），再早 `ONER_TRIM` 秒（用户 10-20：「这边画面可以再减掉一点」，剪掉俯冲扎向城垛的那截）。
-// 落地编排.ts 的 `G_CUT` = G0 − 这两截；一小节按 1/24 秒一格取整：G_CUT 是 6-1/段界.ts 的截点，得落在拼段的格上，`musicStartSec` 才对得上真切的那一刻
-export const BAR_CUT = Math.round(song.analysis.网格.每小节拍数 * song.analysis.网格.拍长 * 24) / 24;
+// 落地编排.ts 的 `G_CUT` = G0 − 这两截；一小节用真值（用户 11-16 定不再取到 1/24 秒的格上）。6-1/段界.ts 把 G_CUT 往上取到 1/120 秒的刻上切，
+// `musicStartSec` 照真值算：本段第 0 秒就是 G_CUT 那一刻
+export const BAR_CUT = song.analysis.网格.每小节拍数 * song.analysis.网格.拍长;
 export const ONER_TRIM = 16 / 24;
 // 只剪画面不剪配乐，配乐接着 6-1-9 一路放（用户 10-20：「这个音乐不要截一部分拼起来 你直接一次性放完不行吗？ 你不要硬凑时长一致好吧」）：
 // 本段第 t 秒 = 一镜到底在 `G_CUT` + t 那一刻的配乐（6-1-3 编排的 `songSec`(6-1-3 末帧 + 一镜到底的秒)）

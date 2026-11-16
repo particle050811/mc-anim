@@ -1,6 +1,6 @@
 // 第 1 场 6-1-1～6-1-4至9 各段的 Composition 组件：照 段界.ts 的截把原来那几个组件拼起来（lib/拼段.tsx）。
 // 6-1-2 的伤害数字层同样按截拼（只有 6-1-2 斩娜迦那一截有数字），和 6-1-2 段同帧。
-// 截表的数是各源组件的格（1/24 秒，段界.ts 的 `CUT_STEPS_PER_SEC`），拼段 按秒换算。声音照各段 段.ts 的 cue 放，源组件不挂声音（决策 0015）。
+// 截表的数是各源组件的刻（1/120 秒，段界.ts 的 `CUT_STEPS_PER_SEC`），拼段 按秒换算。声音照各段 段.ts 的 cue 放，源组件不挂声音（决策 0015）。
 import React from 'react';
 import { SegmentStitch, type Clip } from '@engine/core/拼段.tsx';
 import { EnterForest } from '../6-1-1/进入森林.tsx';
