@@ -183,7 +183,7 @@ export class ClassBatch extends THREE.Mesh {
     this.updateMatrix();
   }
 
-  /** 只画看得见的几组朝向：连续几组并成一段。只给了前 7 组时，裙边四组跟着各自朝向走（和 材质.ts 的 pickDirs 同一个算法） */
+  /** 只画看得见的几组朝向：连续几组并成一段。只给了前 8 组时，裙边四组跟着各自朝向走（和 材质.ts 的 pickDirs 同一个算法） */
   加(batchItem: BatchItem, visibleFlags: boolean[]) {
     const groupStart = batchItem.segment;
     const faceGroupStarts = this.segment;

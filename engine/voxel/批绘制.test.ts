@@ -4,7 +4,7 @@ import { buildBatchItem, ClassBatch, quadIndices, plantShortFaceLimit } from './
 import { faceGroupMesh, pickDirs } from './材质.ts';
 
 vi.mock('./真实方块图集.ts', () => ({ blockAtlas: () => ({}), blockAtlasGlsl: () => '' }));
-vi.mock('./网格.ts', () => ({ posScale: 64, groupCount: 11, skirtGroupStart: 7 }));
+vi.mock('./网格.ts', () => ({ posScale: 64, groupCount: 12, skirtGroupStart: 8 }));
 
 const ctx = { SHORT: 5122, UNSIGNED_SHORT: 5123, UNSIGNED_BYTE: 5121 } as WebGL2RenderingContext;
 const makeFaceGroup = (faceCount: number, faceGroupStarts = [0, faceCount]) => ({ n: faceCount, pos: new Int16Array(faceCount * 12), uv: new Int16Array(faceCount * 8), tex: new Uint16Array(faceCount * 16), col: new Uint8Array(faceCount * 16), segment: faceGroupStarts });
@@ -38,12 +38,13 @@ describe('批项', () => {
     expect(batchItem.scale).toBe(mesh.scale.x);
   });
   it('挑朝向并出来的段和 pickDirs 一样', () => {
-    const faceGroupStarts = [0, 3, 3, 10, 11, 20, 20, 26, 30, 30, 31, 40];
+    const faceGroupStarts = [0, 3, 3, 10, 11, 20, 20, 26, 28, 30, 30, 31, 40];
     const visible = [
-      [true, false, true, false, true, false, true],
-      [true, true, true, true, true, true, true, false, true, false, true],
-      [false, false, false, false, false, true, false],
-      [false, false, false, false, false, false, false],
+      [true, false, true, false, true, false, true, true],
+      [true, true, true, true, true, true, true, false, false, true, false, true],
+      [false, false, false, false, false, true, false, false],
+      [false, false, false, false, false, false, false, true],
+      [false, false, false, false, false, false, false, false],
     ];
     for (const visibleFlags of visible) {
       const batcher = new ClassBatch(new THREE.MeshBasicMaterial(), false);

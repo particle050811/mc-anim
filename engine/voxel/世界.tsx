@@ -21,7 +21,7 @@ import type { V3 } from '../model/parts.tsx';
 import { pickDirs, backlitDirs, faceGroupMesh, releaseVoxelMeshes, voxelMaterial, type VoxelMesh, type MaterialClass } from './材质.ts';
 import { buildBatchItem, releaseBatchItems, clearBatchState, ClassBatch, shadowMaterial, type BatchItem } from './批绘制.ts';
 import { clearBufferPool } from './容器池.ts';
-import { posScale, visibleDirs, type SectionMesh } from './网格.ts';
+import { posScale, crossGroup, visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
@@ -149,12 +149,12 @@ export type VoxelWorldProps = {
 };
 // 投影要多留的距离（米）：仰角 32° 时影长是高度的 1.6 倍，够 180 米高的东西
 const shadowMarginM = 300;
-// 小网格七组朝向全画、交给 GPU 背面剔除（一次 draw call，顶点多算一倍），大网格在 CPU 上挑朝着镜头 / 背着光的几组（多次 draw call）。
-// 体素材质都是单面，两种画法画面和阴影图逐像素一样；大网格全画会卡 GPU，所以面数超过 `drawAllMaxFaces` 的才挑朝向
+// 小网格八组朝向全画、交给 GPU 背面剔除（一次 draw call，顶点多算一倍），大网格在 CPU 上挑朝着镜头 / 背着光的几组（多次 draw call）。
+// 体素材质除花草都是单面；花草两面画，但单面的面在着色器里丢背面（材质.ts），两种画法画面和阴影图逐像素一样；大网格全画会卡 GPU，所以面数超过 `drawAllMaxFaces` 的才挑朝向
 const drawAllMaxFaces = 3000;
-const allDirs = [true, true, true, true, true, true, true];
+const allDirs = [true, true, true, true, true, true, true, true];
 // 远处的草不画（用户 10-11 定：花草约占一半，接受远处颜色和近处不一致）。
-// 只去掉花草这一类里十字模型的斜面（第 6 组，朝向不沿轴的面）：草、花、蕨、树苗、蜘蛛网；积雪层、栅栏、火把、地毯的面都沿轴，照画（整类按距离剔会把远处的雪一起剔掉）。
+// 只去掉花草这一类里十字模型的斜面（第 6 组，朝向不沿轴的面）：草、花、蕨、树苗、蜘蛛网；积雪层、栅栏、火把、地毯、海草的面都沿轴（海草这类两面画的在第 7 组），照画（整类按距离剔会把远处的雪一起剔掉）。
 // 区段离镜头（盒子最近点）超过 `plantFarM` 米就不画；256 米是用户 10-12 比过 64、128、256 后定的（平原上远处去了草，地面台阶纹路会露出来，有草没草有一条分界）。
 const plantFarM = 256;
 const distToBox = (b: number[], p: number[]) =>
@@ -347,7 +347,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
     const farPlants = entry.plants !== null && distToBox(entry.box, camPos) > plantFarM;
     for (const [classNo, item] of entry.items) {
       const dirs = item.面 > drawAllMaxFaces ? facingDirs : allWithSkirts;
-      batches[classNo]!.加(item, farPlants && item === entry.plants ? dirs.map((x, k) => x && k !== 6) : dirs);
+      batches[classNo]!.加(item, farPlants && item === entry.plants ? dirs.map((x, k) => x && k !== crossGroup) : dirs);
     }
     if (entry.water) {
       pickDirs(entry.water, entry.water.geometry.drawRange.count / 6 > drawAllMaxFaces ? facingDirs : allWithSkirts);

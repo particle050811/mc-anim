@@ -54,12 +54,17 @@ ${blockAtlasGlsl()}`;
 // 镂空：按第 0 级的透明度丢像素（Voxy quads.frag）；随机转：草方块、泥土这类方块的顶面按这一格在世界里的位置转 0/90/180/270°
 // 多级纹理级别按图集的格边长算（原版 16 → 0～4 级；材质包 32x 的高清图集 32 → 0～5 级），最粗一级是 1×1 的平均色。
 // 模板里「第 4 级」的说明是 16 时的：模板里的字会进着色器源码，改了默认画面的着色器就和以前不是同一份
-const fragMap = (cutout: boolean, cell = blockAtlas().cell, top = Math.log2(cell)) => `
+// 两面（只花草）：背面单面的丢掉（同原来剔背面），两面的按顶点里记的 S 把 u 翻回背面原来的贴图（网格.ts 的 两面）
+const fragMap = (cutout: boolean, twoSided: boolean, cell = blockAtlas().cell, top = Math.log2(cell)) => `
   {
     float fl = floor(vTex.x / 4096.0 + 0.001);
     float layer = vTex.x - fl * 4096.0;
     bool tinted = mod(fl, 2.0) > 0.5;
-    vec2 uv = vBUv;
+    vec2 uv = vBUv;${twoSided ? `
+    if (!gl_FrontFacing) {
+      if (vSide < 0.5) discard;
+      if (vSide > 1.5) uv.x = (vSide - 1.0) / 16.0 - uv.x;
+    }` : ''}
     vec2 tc = uv * ${cell}.0;
     float lod = clamp(log2(max(max(length(dFdx(tc)), length(dFdy(tc))), 1e-6)), 0.0, ${top}.0);
     // 台阶并色的远处系数（见文件头）：一格在画布上约 6 个像素以下开始、约 2 个像素混满；贴图往 1×1 的平均色取
@@ -119,6 +124,8 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     emissive: '#ffffff',
     transparent: materialClass === '水',
     depthWrite: materialClass !== '水',
+    // 花草两面画（网格.ts 文件头）：成对的正反面只出一张；平面着色的法线按屏幕导数算，背面不用翻
+    side: materialClass === '花草' ? THREE.DoubleSide : THREE.FrontSide,
   });
   const tex = materialClass === '实心树叶' ? atlas.solid : atlas.original;
   mat.onBeforeCompile = (sh) => {
@@ -130,9 +137,13 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${displaceVertex}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6);`);
+    if (materialClass === '花草') {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nflat varying float vSide;').replace('#include <begin_vertex>', '#include <begin_vertex>\n  vSide = tex.w;');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nflat varying float vSide;');
+    }
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
-      .replace('#include <map_fragment>', fragMap(materialClass === '镂空' || materialClass === '花草'))
+      .replace('#include <map_fragment>', fragMap(materialClass === '镂空' || materialClass === '花草', materialClass === '花草'))
       // 水的高光是倒影（粗糙度 0.1），不压
       .replace('#include <aomap_fragment>', materialClass === '水' ? '#include <aomap_fragment>' : '#include <aomap_fragment>\n  reflectedLight.directSpecular *= specMask;\n  reflectedLight.indirectSpecular *= specMask;')
       .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * selfLight;')
@@ -221,7 +232,7 @@ export const releaseVoxelMeshes = (ctx: WebGL2RenderingContext, meshes: VoxelMes
   }
 };
 
-// 只画看得见的几组朝向（看得见[g]：第 g 组朝着镜头）：连续几组并成一段一次绘制。只给了前 7 组（`背光朝向`）时，裙边四组跟着各自朝向走
+// 只画看得见的几组朝向（看得见[g]：第 g 组朝着镜头）：连续几组并成一段一次绘制。只给了前 8 组（`背光朝向`）时，裙边四组跟着各自朝向走
 export const pickDirs = (mesh: VoxelMesh, visible: boolean[]) => {
   const groupStarts = mesh.userData.segment;
   const geo = mesh.geometry;
@@ -242,5 +253,5 @@ export const pickDirs = (mesh: VoxelMesh, visible: boolean[]) => {
 // 阴影只画背光的几组朝向（three 阴影遍对正面材质画背面，背光面就是光看过去的「背面」，阴影图存出来那面的深度，受光面不会被自己的影子盖住），
 // 和画面挑的朝向不是一套，所以阴影单独一个代理物体、单独一份要画的段（批绘制.ts 的 `类批`，影 = true）：只有级联阴影的视锥才放行，主画面不画它。
 // 花草、水不投影；镂空树叶按实心投影（阴影图用 three 自带深度材质，远处看的是整团树冠的影子）。
-// 背光的朝向（+x -x +y -y +z -z 不沿轴，裙边跟着各自的朝向，见 挑朝向）：法线和光向（指向光源）点积小于 0 的那几组，不沿轴的面两面都可能背光，都画
-export const backlitDirs = (lightDir: V3) => [lightDir[0] < 0, lightDir[0] > 0, lightDir[1] < 0, lightDir[1] > 0, lightDir[2] < 0, lightDir[2] > 0, true];
+// 背光的朝向（+x -x +y -y +z -z 不沿轴 两面沿轴，裙边跟着各自的朝向，见 挑朝向）：法线和光向（指向光源）点积小于 0 的那几组，不沿轴的面两面都可能背光，都画（两面沿轴的只有花草，不投影）
+export const backlitDirs = (lightDir: V3) => [lightDir[0] < 0, lightDir[0] > 0, lightDir[1] < 0, lightDir[1] > 0, lightDir[2] < 0, lightDir[2] > 0, true, true];

@@ -19,10 +19,28 @@ const mockTable = vi.hoisted(() => {
     Object.entries(faceCorners).map(([d, c]) => [d, d === '+z' && z1 < 16 ? '' : d === '-z' && z0 > 0 ? '' : d, textureIndex, -1, 0, 1, ...c.flatMap(([x, y, z]) => [x, y, z === 16 ? z1 : z0]), 0, 0, 16, 0, 16, 16, 0, 16]);
   // 顶面贴图转 90° 的整格方块（横放原木 axis=x 和 axis=z 的顶面就差这一下）
   const turnedTopFaceGroup = (textureIndex: number) => blockFaceGroup(textureIndex).map((f) => (f[0] === '+z' ? [...f.slice(0, 18), 16, 0, 16, 16, 0, 16, 0, 0] : f));
+  // 花草（照 jar 导出的原样）：草的十字面两片 × 正反（背面 u 镜像）；海草沿轴的两片 × 正反（原版是四片，取两片）；向日葵那样正反两张贴图不同的一片
+  const quadUv = [0, 0, 16, 0, 16, 16, 0, 16];
+  const crossFaceGroup = (textureIndex: number) => [
+    [[15.2, 15.2, 16], [0.8, 0.8, 16], [0.8, 0.8, 0], [15.2, 15.2, 0]],
+    [[0.8, 0.8, 16], [15.2, 15.2, 16], [15.2, 15.2, 0], [0.8, 0.8, 0]],
+    [[0.8, 15.2, 16], [15.2, 0.8, 16], [15.2, 0.8, 0], [0.8, 15.2, 0]],
+    [[15.2, 0.8, 16], [0.8, 15.2, 16], [0.8, 15.2, 0], [15.2, 0.8, 0]],
+  ].map((c) => ['', '', textureIndex, -1, 1, 0, ...c.flat(), ...quadUv]);
+  const seagrassFaceGroup = (textureIndex: number) => [
+    ['+y', [[16, 12, 16], [0, 12, 16], [0, 12, 0], [16, 12, 0]]],
+    ['-y', [[0, 12, 16], [16, 12, 16], [16, 12, 0], [0, 12, 0]]],
+    ['-x', [[12, 16, 16], [12, 0, 16], [12, 0, 0], [12, 16, 0]]],
+    ['+x', [[12, 0, 16], [12, 16, 16], [12, 16, 0], [12, 0, 0]]],
+  ].map(([d, c]) => [d, '', textureIndex, -1, 0, 0, ...(c as number[][]).flat(), ...quadUv]);
+  const twoTextureFaceGroup = (a: number, b: number) => [
+    ['', '', a, -1, 0, 0, 15.2, 15.2, 16, 0.8, 0.8, 16, 0.8, 0.8, 0, 15.2, 15.2, 0, ...quadUv],
+    ['', '', b, -1, 0, 0, 0.8, 0.8, 16, 15.2, 15.2, 16, 15.2, 15.2, 0, 0.8, 0.8, 0, ...quadUv],
+  ];
   return {
     blockTable: {
-      贴图: ['test:block/stone', 'test:block/dirt', 'test:block/grass', 'test:block/leaves', 'test:block/water'],
-      面组: [blockFaceGroup(0), blockFaceGroup(1), blockFaceGroup(2, 1), blockFaceGroup(3, 1), blockFaceGroup(4, 1), slabFaceGroup(0, 0, 8), slabFaceGroup(0, 8, 16), turnedTopFaceGroup(1)],
+      贴图: ['test:block/stone', 'test:block/dirt', 'test:block/grass', 'test:block/leaves', 'test:block/water', 'test:block/short_grass', 'test:block/seagrass', 'test:block/sun_front', 'test:block/sun_back'],
+      面组: [blockFaceGroup(0), blockFaceGroup(1), blockFaceGroup(2, 1), blockFaceGroup(3, 1), blockFaceGroup(4, 1), slabFaceGroup(0, 0, 8), slabFaceGroup(0, 8, 16), turnedTopFaceGroup(1), crossFaceGroup(5), seagrassFaceGroup(6), twoTextureFaceGroup(7, 8)],
       // 标志：类（0 实心 1 镂空 3 液体）+ 4 满 + 8 遮 + 16 光
       方块: {
         'test:stone': [4 + 8 + 16, null, 0],
@@ -33,6 +51,9 @@ const mockTable = vi.hoisted(() => {
         'test:slab[type=bottom]': [16, null, 5],
         'test:slab[type=top]': [16, null, 6],
         'test:dirt_turned': [4 + 8 + 16, null, 7],
+        'test:short_grass': [1, 'grass', 8],
+        'test:seagrass': [1, null, 9],
+        'test:sunflower': [1, null, 10],
       },
     },
     biomeColor: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } },
@@ -41,7 +62,7 @@ const mockTable = vi.hoisted(() => {
 vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: mockTable.blockTable }));
 vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: mockTable.biomeColor }));
 
-const { buildSectionMesh, groupCount } = await import('./网格.ts');
+const { buildSectionMesh, groupCount, crossGroup, twoSidedGroup } = await import('./网格.ts');
 const { voxelFromState } = await import('./真实方块表.ts');
 type VoxelGrid = import('./生成.ts').VoxelGrid;
 
@@ -69,7 +90,7 @@ describe('区段网格', () => {
     const m = buildSectionMesh(makeSectionGrid(8, 2, (_x, _y, z) => (z === 0 ? 1 : 0)), false);
     expect(groupFaceCount(m.实心, 4)).toBe(1);
     for (const g of [0, 1, 2, 3]) expect(groupFaceCount(m.实心, g)).toBe(0);
-    for (const g of [7, 8, 9, 10]) expect(groupFaceCount(m.实心, g)).toBe(1);
+    for (const g of [8, 9, 10, 11]) expect(groupFaceCount(m.实心, g)).toBe(1);
     expect(m.实心.segment.length).toBe(groupCount + 1);
   });
   it('贴图、染色不同的面不合并；挨着的同种方块之间的面剔掉', () => {
@@ -111,6 +132,32 @@ describe('区段网格', () => {
     expect(fineMesh.镂空.n).toBeGreaterThan(0);
     expect(coarseMesh.实心树叶.n).toBeGreaterThan(0);
     expect(coarseMesh.实心树叶.n).toBeLessThan(fineMesh.镂空.n);
+  });
+  it('花草正反成对的面只出一张、两面画，背面贴图镜像的记 S + 1；配不上的照旧两张单面', () => {
+    const plantMesh = (state: string, cells: [number, number][]) => {
+      const grid = makeSectionGrid(4, 2, (x, y, z) => (z === 0 ? 1 : cells.some(([cx, cy]) => cx === x && cy === y) ? 6 : 0));
+      grid.palette.push({ v: voxelFromState(state)!, c: [145, 189, 89] });
+      return buildSectionMesh(grid, false).花草;
+    };
+    const sides = (g: { tex: Uint16Array; segment: number[] }, group: number) => {
+      const out: number[] = [];
+      for (let f = g.segment[group]!; f < g.segment[group + 1]!; f++) for (let c = 0; c < 4; c++) out.push(g.tex[(f * 4 + c) * 4 + 3]!);
+      return [...new Set(out)];
+    };
+    // 草：两片十字面，背面 u = 16 − u
+    const grass = plantMesh('test:short_grass', [[1, 1]]);
+    expect(grass.n).toBe(2);
+    expect(groupFaceCount(grass, crossGroup)).toBe(2);
+    expect(sides(grass, crossGroup)).toEqual([17]);
+    // 海草：沿轴的面进「两面沿轴」组；沿 x 挨着的两格，朝 ±y 那片并成一张，朝 ±x 的各一张
+    const seagrass = plantMesh('test:seagrass', [[1, 1], [2, 1]]);
+    for (let g = 0; g < 6; g++) expect(groupFaceCount(seagrass, g)).toBe(0);
+    expect(groupFaceCount(seagrass, twoSidedGroup)).toBe(1 + 2);
+    expect(sides(seagrass, twoSidedGroup)).toEqual([17]);
+    // 正反贴图不同：两张都出，单面
+    const sunflower = plantMesh('test:sunflower', [[1, 1]]);
+    expect(groupFaceCount(sunflower, crossGroup)).toBe(2);
+    expect(sides(sunflower, crossGroup)).toEqual([0]);
   });
   it('一个小区段的网格（金样）', async () => {
     const valueAt = (x: number, y: number, z: number) => {

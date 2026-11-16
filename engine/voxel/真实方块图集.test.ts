@@ -61,7 +61,9 @@ describe('方块图集', () => {
     expect(hash(...allLevels(a.original))).toMatchInlineSnapshot(`"ff919fc75bd3c4dda2ee65f59b4017ebe6a8ff0c046eeb8c391eebd3804f5abe"`);
     expect(hash(...allLevels(a.solid))).toMatchInlineSnapshot(`"b1ed730fe126b7192cc3237d81e9dadd2d9bd7e500cb0bd3b19fed2ef5856d1a"`);
     expect(hash(atlas.blockAtlasGlsl())).toMatchInlineSnapshot(`"d6dd78968605f7f960fbd919567955526c7be4add9effbd04c08233b6bc82034"`);
-    expect(hash(...(['实心', '镂空', '实心树叶', '水', '花草'] as const).map((k) => shaderSource(materialModule, k)))).toMatchInlineSnapshot(`"91e32f0635095eb03d724026260104f139e0f1cfb659f80c4f0e30b8ff199b17"`);
+    // 花草 11-16 改成两面画（网格.ts 文件头），着色器另记；别的四类和以前一样
+    expect(hash(...(['实心', '镂空', '实心树叶', '水'] as const).map((k) => shaderSource(materialModule, k)))).toMatchInlineSnapshot(`"cbb3e11b2a61a63ad17454363bc21b744e47c311629a41bf7d2c11a3949c86d3"`);
+    expect(hash(shaderSource(materialModule, '花草'))).toMatchInlineSnapshot(`"5fdcc0824647be88581cbc9d552f68ed450d1d1310da41ff2c1394f3018f5fab"`);
   });
   it('纯色方块：16 像素一格的压色和支持高清之前一样', async () => {
     const { flattenAtlasColors } = await import('./纯色方块.ts');
