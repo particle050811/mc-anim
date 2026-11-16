@@ -1,10 +1,9 @@
 // 环境核对的画面：一块草地上的小木屋、一棵橡树、李樱，四周一大片草色地面铺到天边（看雾和天边），机位朝西南偏西、略仰（看得到天、云和主世界的太阳）。
 // 偶数帧（0、2、4）用现有组件，下一帧用 <环境> 预设，其余一字不差（不叠字，好逐像素比）；画布按视图换（key），每帧新的 WebGL 上下文，共用 uniform 卸下时各自复位。
 // 仰望的视图同一个镜头位置、抬到仰角约 80°（午夜月亮在天顶）。
-import { ThreeCanvas } from '@remotion/three';
 import React, { useEffect, useMemo } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { canvasDpr } from '@engine/core/渲染级别.ts';
+import { CheckCanvas, ZUp } from '@engine/段/核对画面.tsx';
 import { useViewIndex } from '@engine/段/时间.tsx';
 import { TwilightLighting, twilightFogNear } from '@engine/light/暮色光照.tsx';
 import { Environment } from '@engine/light/环境组件.tsx';
@@ -103,17 +102,17 @@ const picture: React.FC = () => {
   const overworldExisting = v.usage === '现有' && v.lightSet !== '暮色';
   return (
     <AbsoluteFill>
-      <ThreeCanvas key={frame} width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
+      <CheckCanvas key={frame} width={width} height={height} shadows="percentage" gl={{ logarithmicDepthBuffer: true }}>
         <SkyLight frame={frame} />
         <FlightRig c={v.lightSet === '时刻' && v.lookUp ? lookUpRig : cameraRig} />
         <ScreenAo />
-        <group rotation={[-Math.PI / 2, 0, 0]}>
+        <ZUp>
           {overworldExisting && (
             <FlightSky camPos={cameraRig.pos} shadow={v.lightSet === '主世界投影' ? { shadowFar: overworldShadowFar(visibility), aboveGround: cameraRig.pos[2] } : undefined} />
           )}
           <Scene />
-        </group>
-      </ThreeCanvas>
+        </ZUp>
+      </CheckCanvas>
     </AbsoluteFill>
   );
 };
