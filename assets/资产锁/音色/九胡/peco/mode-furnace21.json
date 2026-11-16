@@ -1,9 +1,9 @@
 {
-  "sha256": "cfb2ee959f35e18e3480939fc39cd3cc1b1cb1735dbcbab15db9c722c9050345",
-  "suffix": ".wav",
-  "loudness": -29.2,
-  "size": 183684,
-  "peakDb": -11.6,
+  "duration": 2.868844,
   "lib": "私有",
-  "duration": 2.868844
+  "loudness": -29.2,
+  "peakDb": -11.6,
+  "sha256": "cfb2ee959f35e18e3480939fc39cd3cc1b1cb1735dbcbab15db9c722c9050345",
+  "size": 183684,
+  "suffix": ".wav"
 }

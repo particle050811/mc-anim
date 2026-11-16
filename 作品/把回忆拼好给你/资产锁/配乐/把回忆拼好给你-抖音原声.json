@@ -1,9 +1,9 @@
 {
-  "sha256": "cf59eff8cbfa99743db00fc882f3332a6b1d8a07b0f29357c1dda7aded79869e",
-  "suffix": ".m4a",
-  "loudness": -9.3,
-  "size": 452393,
-  "peakDb": 0.5,
+  "duration": 56.005011,
   "lib": "私有",
-  "duration": 56.005011
+  "loudness": -9.3,
+  "peakDb": 0.5,
+  "sha256": "cf59eff8cbfa99743db00fc882f3332a6b1d8a07b0f29357c1dda7aded79869e",
+  "size": 452393,
+  "suffix": ".m4a"
 }

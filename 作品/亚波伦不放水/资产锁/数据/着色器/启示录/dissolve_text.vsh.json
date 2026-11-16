@@ -1,6 +1,6 @@
 {
+  "lib": "私有",
   "sha256": "61e04678c7e48a5e5201f8a9e3168140e980ab8a482e539b25cd5f0141e79084",
-  "suffix": ".vsh",
   "size": 541,
-  "lib": "私有"
+  "suffix": ".vsh"
 }

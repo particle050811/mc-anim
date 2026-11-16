@@ -1,6 +1,6 @@
 {
+  "lib": "私有",
   "sha256": "1cfb54b35844fa277104ebcb7e15d5c5d3b79f7c6dc7bb87cc8877b8b160b13b",
-  "suffix": ".png",
   "size": 102576,
-  "lib": "私有"
+  "suffix": ".png"
 }

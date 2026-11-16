@@ -1,9 +1,9 @@
 {
-  "sha256": "b912029e0b0f46fdd900157e7ff539144204acae7dbcfb2162947698562a8614",
-  "suffix": ".ogg",
-  "loudness": -33.4,
-  "size": 58816,
-  "peakDb": -19.8,
+  "duration": 3.089833,
   "lib": "store",
-  "duration": 3.089833
+  "loudness": -33.4,
+  "peakDb": -19.8,
+  "sha256": "b912029e0b0f46fdd900157e7ff539144204acae7dbcfb2162947698562a8614",
+  "size": 58816,
+  "suffix": ".ogg"
 }

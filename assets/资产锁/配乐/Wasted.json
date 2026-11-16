@@ -1,9 +1,9 @@
 {
-  "sha256": "f779ec3814ab9728777ed7b0cfa7e1eb959a6c85968f28049f3962a3d8dab74d",
-  "suffix": ".m4a",
-  "loudness": -5.3,
-  "size": 3637121,
-  "peakDb": 1.8,
+  "duration": 180.238753,
   "lib": "store",
-  "duration": 180.238753
+  "loudness": -5.3,
+  "peakDb": 1.8,
+  "sha256": "f779ec3814ab9728777ed7b0cfa7e1eb959a6c85968f28049f3962a3d8dab74d",
+  "size": 3637121,
+  "suffix": ".m4a"
 }

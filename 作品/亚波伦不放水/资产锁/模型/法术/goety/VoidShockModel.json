@@ -1,6 +1,6 @@
 {
+  "lib": "store",
   "sha256": "b62922821805b7616a8c6dc9af6be9d59ca83d340d89ee37fb9a00960d64ac13",
-  "suffix": ".json",
   "size": 1130,
-  "lib": "store"
+  "suffix": ".json"
 }
