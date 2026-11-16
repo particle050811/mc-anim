@@ -20,7 +20,7 @@ export const segRenderEnv = (segKey: string, terrainFiles: Record<string, string
 /** still、bench 不算指纹、不出切片，当场读表；多读：试看要多读的包（`试看地形`） */
 export const segTerrainNow = (s: Pick<SegInfo, 'key' | 'segment'>, extraReads: readonly string[] = []): Record<string, string> => segTerrainVersion(s.key, [...new Set([...s.segment.terrain, ...extraReads])], readTerrainVersionTable());
 
-/** anim still 的试看参数（engine/core/试看.ts）：shell 里设了就原样转给页面；只 still 转，film 不认，切片不会混进试看的画面 */
+/** anim still、bench 的试看参数（engine/core/试看.ts）：shell 里设了就原样转给页面；film 不认，切片不会混进试看的画面（bench 转是为了比试看的耗时，用户 11-16 要比不同视距省多少） */
 export const trialEnv = (): Record<string, string> => (process.env[trialEnvName] ? { [trialEnvName]: process.env[trialEnvName]! } : {});
 /** 试看参数里「地形」列的包：still 按现登记的版本并进这一页的地形版本表 */
 export const trialTerrain = (): string[] => {

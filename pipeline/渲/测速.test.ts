@@ -22,7 +22,7 @@ vi.mock('./渲.ts', () => ({ bundleProject: async () => { fake.time += 1000; ret
 vi.mock('./段产物.ts', () => ({ segPictureParams: () => [{ inputProps: {}, gl: 'angle', scale: 1 }], segOutputWindow: () => ({ start: 0, frameCount: 2 }) }));
 vi.mock('./打包残留.ts', () => ({ removeBundles: () => { fake.packDeleted = true; } }));
 vi.mock('./设置.ts', () => ({ frameTimeoutMs: 30000 }));
-vi.mock('./地形注入.ts', () => ({ segRenderEnv: () => ({}), segTerrainNow: () => ({}) }));
+vi.mock('./地形注入.ts', () => ({ segRenderEnv: () => ({}), segTerrainNow: () => ({}), trialEnv: () => ({}), trialTerrain: () => [] }));
 vi.mock('./地形用量.ts', () => ({ collectTerrainUsage: () => {}, recordMeasuredFrames: async () => {}, waitTerrainUsageWrites: async () => {} }));
 vi.mock('../运行记录/渲染明细.ts', () => ({ DetailCollector: class {
   frameDone() {}
