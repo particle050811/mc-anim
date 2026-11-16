@@ -12,6 +12,6 @@ public class MinecraftMixin {
     /** 空闲限帧：runTick 末尾按这个数 limitDisplayFPS（小于 260 才限），所以改返回值就够，不碰设置 */
     @Inject(method = "getFramerateLimit", at = @At("RETURN"), cancellable = true)
     private void mcai$idleFps(CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue(Throttle.limit(cir.getReturnValueI()));
+        cir.setReturnValue(Throttle.limit((Minecraft) (Object) this, cir.getReturnValueI()));
     }
 }
