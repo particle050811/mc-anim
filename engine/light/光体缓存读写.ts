@@ -1,5 +1,5 @@
 // 光体缓存的读写（格式、为什么能缓存见 光体缓存.ts）。照求解缓存（engine/core/求解缓存.ts）的路子：
-// 读：public 目录的 光体/ 链到 <数据根>/cache/光体/（pipeline/渲/public目录.ts），按 <作品>/<键哈希>.gz 取；
+// 读：public 目录的 lightVolume/ 链到 <数据根>/cache/光体/（pipeline/渲/public目录.ts），按 <作品>/<键哈希>.gz 取；
 // 写：页面写不了盘，新算的压好挂在 window 上，渲染（film、still、bench）关页面前由 pipeline/渲/光体缓存收集.ts 收走写盘，读中的也报给它推修改时间（anim cache gc 按它算多久没用）。
 // 只在渲染入口传了 <作品>/<段键>（地形用量那个环境变量，pipeline/渲/地形注入.ts）、注入了代码层指纹时用；Studio、Node 工具照常现算。
 import { getRemotionEnvironment } from 'remotion';
@@ -51,7 +51,7 @@ const terrainId = (t: ImportedTerrain) => {
   return id;
 };
 
-/** 这一页能不能用光体缓存；能的话给出每层的键文本和文件名（相对 光体/） */
+/** 这一页能不能用光体缓存；能的话给出每层的键文本和文件名（相对 lightVolume/） */
 export const lightCacheSlots = (t: ImportedTerrain, layerKeys: readonly string[]): { key: string; file: string }[] | null => {
   const work = pageWork();
   const code = solverFingerprint('光体');
@@ -65,7 +65,7 @@ export const lightCacheSlots = (t: ImportedTerrain, layerKeys: readonly string[]
 /** 取一层；没有、坏了、键对不上都是 null */
 export const readLightCache = async (slot: { key: string; file: string }): Promise<LightLayerData | null> => {
   try {
-    const res = await fetch(dataUrl(`光体/${slot.file}`));
+    const res = await fetch(dataUrl(`lightVolume/${slot.file}`));
     if (!res.ok) return null;
     const d = decodeLayer(await gunzip(res.body!), slot.key);
     if (d) store().hits.add(slot.file);
