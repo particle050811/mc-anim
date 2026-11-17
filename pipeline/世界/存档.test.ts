@@ -111,21 +111,33 @@ describe('版本', () => {
   });
 });
 
+// 这些 engine 文件的闭包里 import 了哪些外部包、asset:
+const externalImportsOf = async (files: string[]) => {
+  const r = await build({
+    entryPoints: files.map((f) => path.join(import.meta.dirname, '..', '..', f)),
+    bundle: true,
+    write: false,
+    metafile: true,
+    outdir: 'out',
+    platform: 'node',
+    format: 'esm',
+    packages: 'external',
+    plugins: [{ name: '资产', setup: (b) => b.onResolve({ filter: /^asset:/ }, (a) => ({ path: a.path, external: true })) }],
+    logLevel: 'silent',
+  });
+  return Object.values(r.metafile.inputs).flatMap((i) => i.imports.filter((x) => x.external).map((x) => x.path));
+};
+
 describe('体素库', () => {
   it('Node 里执行的 engine/voxel 模块闭包里没有 react、three、remotion', async () => {
-    const r = await build({
-      entryPoints: VOXEL_MODULES.map((f) => path.join(import.meta.dirname, '..', '..', 'engine', 'voxel', f)),
-      bundle: true,
-      write: false,
-      metafile: true,
-      outdir: 'out',
-      platform: 'node',
-      format: 'esm',
-      packages: 'external',
-      plugins: [{ name: '资产', setup: (b) => b.onResolve({ filter: /^asset:/ }, (a) => ({ path: a.path, external: true })) }],
-      logLevel: 'silent',
-    });
-    const externalImports = Object.values(r.metafile.inputs).flatMap((i) => i.imports.filter((x) => x.external).map((x) => x.path));
+    const externalImports = await externalImportsOf(VOXEL_MODULES.map((f) => `engine/voxel/${f}`));
+    expect(externalImports.filter((p) => /^(react|three|remotion|@remotion\/)/.test(p))).toEqual([]);
+    expect(externalImports.filter((p) => p.startsWith('asset:')).sort()).toEqual(['asset:数据/场景/关键帧/方块表', 'asset:数据/场景/关键帧/群系色']);
+  });
+
+  // 数据源接口和经它读数据的纯函数：node数据源.ts、远景/打包.ts（动态 import 远景网格.ts）、Node 里算地形覆盖都执行它们
+  it('数据源接口、远景网格、交界修正、地形元数据、远景兜底采样的闭包里没有 react、three、remotion', async () => {
+    const externalImports = await externalImportsOf(['engine/core/数据读取.ts', 'engine/core/内存数据源.ts', 'engine/voxel/远景网格.ts', 'engine/voxel/交界修正.ts', 'engine/voxel/地形元数据.ts', 'engine/voxel/远景兜底采样.ts']);
     expect(externalImports.filter((p) => /^(react|three|remotion|@remotion\/)/.test(p))).toEqual([]);
     expect(externalImports.filter((p) => p.startsWith('asset:')).sort()).toEqual(['asset:数据/场景/关键帧/方块表', 'asset:数据/场景/关键帧/群系色']);
   });

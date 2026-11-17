@@ -5,17 +5,14 @@
 // Windows 用 junction（不要管理员权限）。anim film 和 remotion.config.ts（studio）共用。
 import fs from 'node:fs';
 import path from 'node:path';
-import { isWindows, publicDir, terrainRoot, dataRoot, solveCacheDir, lightCacheDir } from '../环境/配置.ts';
-import { privateMusicDir } from '../资产/私有配乐.ts';
-
-// 键是盘上的链接名（engine 按 terrain/、solveCache/、私有配乐/、lightVolume/ 取），不是属性名，改名时别动
-const linkTable = () => ({ terrain: terrainRoot(), solveCache: solveCacheDir(), 私有配乐: privateMusicDir(dataRoot()), lightVolume: lightCacheDir() });
+import { isWindows, publicDir } from '../环境/配置.ts';
+import { publicLinks } from '../资产/public链接.ts';
 
 /** 建好（或校正）public 目录里的链接，返回 public 目录的路径 */
 export const ensurePublicDir = (): string => {
   const dir = publicDir();
   fs.mkdirSync(dir, { recursive: true });
-  for (const [linkName, targetDir] of Object.entries(linkTable())) {
+  for (const [linkName, targetDir] of Object.entries(publicLinks())) {
     fs.mkdirSync(targetDir, { recursive: true });
     const linkPath = path.join(dir, linkName);
     const st = fs.lstatSync(linkPath, { throwIfNoEntry: false });
