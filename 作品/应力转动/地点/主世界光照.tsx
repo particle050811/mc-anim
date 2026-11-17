@@ -3,7 +3,7 @@
 // - 天、雾、云：Photon（lib/大气.ts、lib/大气/云.ts），`OverworldSky` 放进画布打开；`FlightSky` 自带，自己摆灯的镜头（6-3 下坠、7-4、6-1-1 海岛）单放。
 //   云画在 <ScreenAo /> 的中间一遍，画布要挂它。坐标都是主世界-116 的场景坐标（z = 游戏 y − 64）。
 import React from 'react';
-import { Atmosphere } from '@engine/light/大气.ts';
+import { Atmosphere } from '@engine/light/大气组件.tsx';
 import { PhotonClouds } from '@engine/light/大气/云.ts';
 import { borderTownPos } from './主世界116.ts';
 

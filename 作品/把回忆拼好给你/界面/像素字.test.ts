@@ -1,18 +1,12 @@
-// 本作品像素字：文案里的字都已取进字形表（改了文案忘了重取会在这里挂），几条颜文字和聊天行的宽照原版规则算出来对得上。数据根里没有这张表就跳过。
+// 本作品像素字：文案里的字都已取进字形表（改了文案忘了重取会在这里挂），几条颜文字和聊天行的宽照原版规则算出来对得上。字形表由 vitest 按资产锁读（pipeline/资产/vitest插件.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { makePixelFont } from '@库/界面/像素字表.ts';
-import { bytesPath, readWorkAssetLock } from '../../../pipeline/资产/资产锁.ts';
+import { pixelFont } from './像素字.ts';
 
 const workRoot = path.resolve(import.meta.dirname, '..');
-const entry = readWorkAssetLock(workRoot)['字体/把回忆拼好给你/像素字'];
-const hasTable = !!entry && fs.existsSync(bytesPath(entry));
 
-describe.skipIf(!hasTable)('本作品像素字', () => {
-  const fontTable = JSON.parse(fs.readFileSync(bytesPath(entry!), 'utf8')) as Record<string, unknown>;
-  const pixelFont = makePixelFont(fontTable, '字体/把回忆拼好给你/像素字');
-
+describe('本作品像素字', () => {
   it('像素字文案.txt 里的字都在表里', () => {
     const copyText = fs.readFileSync(path.join(workRoot, '界面', '像素字文案.txt'), 'utf8');
     const missing = new Set<string>();

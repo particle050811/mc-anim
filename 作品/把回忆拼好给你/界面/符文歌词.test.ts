@@ -1,12 +1,13 @@
 // 歌词艺术字的数据和排版：逐字时刻、拼音和 网格.ts 的词对得上，歌词字表收全了字，整句（照逐句排版表断行、分屏）排得进画面，进出场和拼字的时序，
 // 符文怎么分块、怎么飞（不出歌词那一条）、同时飞几枚，五个关键词的效果。
-// 字表和银河字母贴图在数据根里，没有就跳过那几条。时序那几条的帧号是 60 fps 的（写的是 24 fps 时那一刻 × 2.5）。
+// 字表和银河字母贴图由 vitest 按资产锁读（pipeline/资产/vitest插件.ts）。时序那几条的帧号是 60 fps 的（写的是 24 fps 时那一刻 × 2.5）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { png } from '@engine/model/贴图.ts';
 import type { GlyphTable } from '@库/界面/像素字表.ts';
-import { bytesPath, readWorkAssetLock } from '../../../pipeline/资产/资产锁.ts';
+import lyricFontRaw from 'asset:字体/把回忆拼好给你/歌词字';
+import sgaPng from 'asset:贴图/界面/银河字母';
 import { sentences } from '../配乐/网格.ts';
 import { perCharIssues } from '../配乐/逐字.ts';
 import { fps, legacyFrameSec, mainCutEvents } from '../分镜.ts';
@@ -19,13 +20,6 @@ import { splitBlocks, tileCount, glyphSeed, runeScale, flyBlocks, flyPos, flyPar
 import { makeGlyphSource, mergeStyle, charStates, glyphCell, layoutLine, runeLyricDefault, decodeTimeSpans, staggerDist, type TimeStyle } from './符文排版.ts';
 
 const workRoot = path.resolve(import.meta.dirname, '..');
-const assetLock = readWorkAssetLock(workRoot);
-const bytesOf = (id: string) => {
-  const entry = assetLock[id];
-  return entry && fs.existsSync(bytesPath(entry)) ? fs.readFileSync(bytesPath(entry)) : null;
-};
-const fontBytes = bytesOf('字体/把回忆拼好给你/歌词字');
-const galacticBytes = bytesOf('贴图/界面/银河字母');
 
 describe('歌词艺术字的数据', () => {
   it('逐字时刻：字数和词一样、递增、落在句里', () => {
@@ -89,9 +83,9 @@ describe('歌词艺术字的数据', () => {
   });
 });
 
-describe.skipIf(!fontBytes || !galacticBytes)('歌词艺术字的排版', () => {
-  const sga = png(`data:image/png;base64,${galacticBytes!.toString('base64')}`);
-  const glyphSource = makeGlyphSource(sga, JSON.parse(fontBytes!.toString('utf8')) as GlyphTable, '字体/把回忆拼好给你/歌词字');
+describe('歌词艺术字的排版', () => {
+  const sga = png(sgaPng);
+  const glyphSource = makeGlyphSource(sga, lyricFontRaw as unknown as GlyphTable, '字体/把回忆拼好给你/歌词字');
 
   it('银河字母的字宽照原版（ascii_sga.png 量的）', () => {
     const glyphWidths = Object.fromEntries([...'abcdefghijklmnopqrstuvwxyz'].map((c) => [c, glyphSource.rune(c).width]));
