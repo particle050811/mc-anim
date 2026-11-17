@@ -177,20 +177,34 @@ const aheadCamera = new THREE.PerspectiveCamera();
 // 远处一格不到半个像素，面数白花还起摩尔纹；设了以后切级都发生在「粗的一格 = 2 × 下限」像素上，面数有上限、和 T 多长无关。
 // 试看 `航线定级` 逐项盖掉镜头给的：{"秒": 往后看几秒 | "整段", "门槛": 输出像素, "留细": true|false, "下限": 输出像素, "格": 每秒几个格点（2 的幂）}；
 // 没登记航线的镜头只认「门槛」。试看 {"关": ["航线定级"]} 整个关掉，回到每帧按画质门槛现选。
-const routeTrial = trialParams<Record<string, unknown>>('航线定级');
-const routeLodOff = trialOff('航线定级');
-const routeTrialNumber = (key: string) => (typeof routeTrial?.[key] === 'number' ? (routeTrial[key] as number) : undefined);
+// 试看参数用到时才取，不在模块顶层读成常量：这样 Node、vitest 里直接 import 就能测，改环境变量不用重载模块。一页的环境变量开页就定了，同一页每次取都一样
+const routeTrial = () => trialParams<Record<string, unknown>>('航线定级');
 // 每秒几个格点：往后各时刻取在这些格点上。太稀会漏掉「只在两个格点之间才到门槛、马上又出画」的块（贴着画面下沿飞过去的近处），漏掉的到门槛那一帧才换，一格是门槛的两倍。
 // 门槛是画质门槛 2 倍时（飞越 1 km/s、穿塔）16 和 64 的换级面积、换级时一格的像素都一样，8 开始变差；门槛再粗（块到门槛时离得更近、待得更短）要更密：4 倍要 64。
 // 表是每个标签页、每截画布各算一次，从航线头算到这一帧，所以取够用里最稀的
 const defaultGridHz = 16;
+/** 这一帧航线定级实际用的参数：镜头登记的 `lod`，试看逐项盖。splitPixels 是镜头的画质门槛（页面像素）；
+ *  scale = 输出像素对页面像素的倍数，试看给了「门槛」「下限」才调（试看按输出像素给，换成页面像素） */
+export const resolveRouteLod = (registered: RouteLod | undefined, splitPixels: number, scale: () => number) => {
+  const trial = routeTrial();
+  const trialNumber = (key: string) => (typeof trial?.[key] === 'number' ? (trial[key] as number) : undefined);
+  const lod = trialOff('航线定级') ? undefined : registered;
+  const trialThreshold = trialNumber('门槛');
+  const trialFloor = trialNumber('下限');
+  return {
+    splitCssPixels: trialThreshold !== undefined ? trialThreshold / scale() : splitPixels * (lod?.thresholdScale ?? 1),
+    floorCssPixels: trialFloor !== undefined ? trialFloor / scale() : splitPixels * (lod?.floorScale ?? 0),
+    lookSec: trial?.['秒'] === '整段' ? Infinity : (trialNumber('秒') ?? lod?.lookSec ?? 0),
+    hold: typeof trial?.['留细'] === 'boolean' ? (trial['留细'] as boolean) : (lod?.hold ?? false),
+    gridHz: trialNumber('格') ?? defaultGridHz,
+  };
+};
 // 试看 `航线定级统计`：true = 每帧一行进浏览器日志（bench --verbose 的 .log）：区段数、面数、和上一帧比画面里换了级的区段；
 // {"扫帧": n} = 只算不画：从这一帧起按航线往后 n 帧逐帧挑区段、统计切级，汇总成一行 warn 打到终端（still 出一帧就量完一段）
-const routeStatsTrial = trialParams<boolean | Record<string, unknown>>('航线定级统计');
-const scanFrames = typeof routeStatsTrial === 'object' && typeof routeStatsTrial['扫帧'] === 'number' ? routeStatsTrial['扫帧'] : 0;
 // {"选级偏帧": n} = 这一帧照「航线上往后 n 帧（负数往前）那一刻」定的级画，视野还是这一帧的。同一帧出偏 0 和偏 −30 两张拿 anim diff 比，
 // 差的就是这半秒里切级改掉的像素（镜头没动，差里没有运动）
-const pickOffsetFrames = typeof routeStatsTrial === 'object' && typeof routeStatsTrial['选级偏帧'] === 'number' ? routeStatsTrial['选级偏帧'] : 0;
+const routeStatsTrial = () => trialParams<boolean | Record<string, unknown>>('航线定级统计');
+const routeStatsNumber = (stats: ReturnType<typeof routeStatsTrial>, key: '扫帧' | '选级偏帧') => (typeof stats === 'object' && typeof stats[key] === 'number' ? stats[key] : 0);
 // 输出像素对页面像素的倍数：渲染时是截图放大倍数（4K 成片 3），Studio 照 4K 算
 const outputScale = () => (getRemotionEnvironment().isRendering ? window.devicePixelRatio || 1 : 3);
 // 一格超过这么多输出像素算「比现状最粗的还粗」：现状门槛 2.25，细一级到 2.25 就换，所以画出来的一格最多 4.5
@@ -295,14 +309,10 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       test(Math.min(x0, x0 + sx) - 8, Math.min(y0, y0 + sy) - 8, heightRange[0], Math.max(x1, x1 + sx) + 8, Math.max(y1, y1 + sy) + 8, heightRange[1]);
   // 航线定级的参数：镜头登记航线时给的，试看逐项盖。试看的「门槛」「下限」按输出像素给，换成页面像素（pixelAngle 按页面高算；4K 上 2.25 ÷ 3 正好是画质门槛 0.75）
   const look = lookaheads.get(camera);
-  const lod = routeLodOff ? undefined : look?.route.lod;
-  const trialThreshold = routeTrialNumber('门槛');
-  const trialFloor = routeTrialNumber('下限');
-  const splitCssPixels = trialThreshold !== undefined ? trialThreshold / outputScale() : splitPixels * (lod?.thresholdScale ?? 1);
-  const floorCssPixels = trialFloor !== undefined ? trialFloor / outputScale() : splitPixels * (lod?.floorScale ?? 0);
-  const lookSec = routeTrial?.['秒'] === '整段' ? Infinity : (routeTrialNumber('秒') ?? lod?.lookSec ?? 0);
-  const hold = typeof routeTrial?.['留细'] === 'boolean' ? routeTrial['留细'] : (lod?.hold ?? false);
-  const gridHz = routeTrialNumber('格') ?? defaultGridHz;
+  const { splitCssPixels, floorCssPixels, lookSec, hold, gridHz } = resolveRouteLod(look?.route.lod, splitPixels, outputScale);
+  const statsTrial = routeStatsTrial();
+  const scanFrames = routeStatsNumber(statsTrial, '扫帧');
+  const pickOffsetFrames = routeStatsNumber(statsTrial, '选级偏帧');
   // force：航线定级说要提前细分的块（门槛没到也细分，细出来的一格不小于下限）
   const pickThisFrame = (test: ReturnType<typeof makeFrustumTest>, center: number[], angle = pixelAngle, force?: (level: number, i: number, j: number) => boolean): SectionId[] =>
     pickSections({
@@ -508,7 +518,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   }
   trimKept();
   // 试看 航线定级统计（只算、只打日志，不动画面）
-  if (routeStatsTrial && look) {
+  if (statsTrial && look) {
     const scale = outputScale();
     // 航线秒 sec 那一帧挑出来的区段和镜头（先问表、再摆统计用的相机：表取样用的是另一台相机）
     const statPickAt = (sec: number): FramePick | null => {
@@ -557,7 +567,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       // warn：still、film 只把浏览器的 warn、error 打到终端。面积是占整张画面的比例（1 = 整张）
       console.warn(
         `[航线定级扫] ${JSON.stringify({
-          trial: routeTrial ?? null,
+          trial: routeTrial() ?? null,
           // 实际用的参数（门槛、下限换回输出像素）
           params: { lookSec: Number.isFinite(lookSec) ? lookSec : '整段', hold, threshold: round(splitCssPixels * scale, 4), floor: round(floorCssPixels * scale, 4), gridHz },
           fromSec: round(look.route.sec, 4),
