@@ -37,6 +37,7 @@ import { collectTerrainUsage, recordMeasuredFrames, waitTerrainUsageWrites } fro
 import { segPictureParams, segOutputWindow } from './段产物.ts';
 import { filmProfile, renderParams, frameTimeoutMs, type RenderParamsTable } from './设置.ts';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
+import { preloadEnv } from '../../engine/段/预载.ts';
 
 export const renderLabel = (segKey: string, level: RenderLevel) => `render:${workName()}/${segKey}:${level}`;
 
@@ -78,8 +79,11 @@ export const bundleProject = async (runRecord?: RunRecord, label = `会话:${wor
 
 type RenderSession = { serveUrl: string; browser: HeadlessBrowser; params: RenderParamsTable; compositions: Awaited<ReturnType<typeof getCompositions>> };
 type Composition = RenderSession['compositions'][number];
-/** skipCompositions：不读 Composition 列表（compositions 是空的），调用方自己用 expectedComposition 算 */
-type SessionOpts = BundleOpts & { skipCompositions?: boolean };
+/**
+ * skipCompositions：不读 Composition 列表（compositions 是空的），调用方自己用 expectedComposition 算。
+ * preload：读列表那一页顺带求值这几段的画面模块（注册工厂.tsx 按段懒加载，不点名的一段也不求值），缺的求解在闸外算好
+ */
+type SessionOpts = BundleOpts & { skipCompositions?: boolean; preload?: readonly string[] };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承；会话期间不让电脑闲置睡眠 */
 export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, sessionOpts: SessionOpts = {}): Promise<T> => {
@@ -91,7 +95,7 @@ export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) 
   }
 };
 
-const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, { skipCompositions, ...bundleOpts }: SessionOpts = {}): Promise<T> => {
+const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, { skipCompositions, preload, ...bundleOpts }: SessionOpts = {}): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {
@@ -112,8 +116,8 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
     });
     browser = opened.browser;
     const watchdog = opened.watchdog;
-    // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读；
-    // 不读列表时由出帧的页面自己算、关页面时收走
+    // 读 Composition 列表的页面先把点名预载的段里、模块初始化时没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读；
+    // 不读列表、没点名的段由出帧的页面自己算、关页面时收走
     collectSolveCache(browser);
     collectTerrainUsage(browser);
     const b = browser;
@@ -123,6 +127,7 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
           watchdog.pack(() =>
             getCompositions(serveUrl, {
               inputProps: params.inputProps,
+              envVariables: preloadEnv(preload),
               puppeteerInstance: b,
               chromiumOptions: { gl: params.gl },
               timeoutInMilliseconds: frameTimeoutMs,

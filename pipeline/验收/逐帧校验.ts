@@ -292,7 +292,7 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: PerFrameOptio
         }
         addError([`${segKey}：${current.size} 帧里 ${mismatches.length} 帧不同（${frameNumText(mismatches.map((d) => d.frame))}）${toleranceNote}；${fingerprintNote}`, ...listLines(tolerance !== null ? over : mismatches)].join('\n    '));
       }
-    }, runRecord)).finally(() => scratchDir && fs.rmSync(scratchDir, { recursive: true, force: true }));
+    }, runRecord, { preload: group.map((x) => x.segment.key) })).finally(() => scratchDir && fs.rmSync(scratchDir, { recursive: true, force: true }));
   }
   if (diffed.length) {
     const worst = [...diffed].sort((a, b) => worseFirst(a.d, b.d)).slice(0, worstListed);

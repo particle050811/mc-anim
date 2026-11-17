@@ -104,6 +104,8 @@ describe('测速', () => {
     const writeSpy = vi.spyOn(fs, 'writeFileSync');
     const r = await bench({ segment: '核对-冒烟' });
     expect(getCompositions).toHaveBeenCalledOnce();
+    // 注册工厂按段懒加载画面模块：读组合那一页点名预载这一段，求解才在这一页算
+    expect(vi.mocked(getCompositions).mock.calls[0]![1]).toMatchObject({ envVariables: { ANIM_PRELOAD_SEGS: '["核对-冒烟"]' } });
     expect(writeSpy).not.toHaveBeenCalled();
     expect(r.求解缓存准备).toEqual({ 新写: 0, sec: 0 });
     expect(r.读组合秒).toBe(2.8);

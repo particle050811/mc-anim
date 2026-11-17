@@ -163,6 +163,6 @@ export const renderSegments = async (allSegments: readonly SegInfo[], selected: 
       await detail?.writeOut(opts.runRecord.stage, { fingerprint: r.pictureFingerprint.fingerprint.slice(0, 16) });
       opts.runRecord.artifacts.push(r.画面, r.sound);
     }
-  }, opts.runRecord));
+  }, opts.runRecord, { preload: group.map((r) => r.segment.key) }));
   return outputs;
 };
