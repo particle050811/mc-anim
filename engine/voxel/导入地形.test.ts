@@ -1,5 +1,6 @@
 // 裁过的包缺级（docs/世界.md「裁级」）：这一帧真要的区段包里没有、粗高度图又说有，报「缺级」并停下出片；同一块文件里别的区段照常取到；
 // 猜的预取要到没有的区段不报、不停，哪一帧真要到时重取、在那一路报。取包、Range、工人都换成假的，只走 导入地形.ts 自己的取法。
+// 地形覆盖页：只记不取，挑出 0 个也记下有体素世界从这个包挑（pipeline/渲/地形覆盖.ts 据此认量错）。
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cancelRender = vi.fn();
@@ -57,3 +58,32 @@ describe('裁过的包缺级', () => {
     expect(cancelRender).toHaveBeenCalledTimes(1);
   });
 });
+
+const env = await import('../段/地形环境.ts');
+describe('地形覆盖页', () => {
+  const g = globalThis as { terrainUsage?: Map<string, { version: string; sections: Set<string> }>; terrainCoverFirst?: Map<string, Map<string, number>>; terrainCoverWorlds?: Set<string> };
+  beforeEach(() => {
+    fetchSectionsInPool.mockClear();
+    process.env[env.terrainUsageSegEnv] = '作品/段';
+    process.env[env.terrainCoverEnv] = '段';
+    g.terrainUsage = new Map([['测试包', { version: 'v', sections: new Set() }]]); // packDir 换成假的了，不经它记包
+    return () => {
+      delete process.env[env.terrainUsageSegEnv];
+      delete process.env[env.terrainCoverEnv];
+      delete g.terrainUsage;
+      delete g.terrainCoverFirst;
+      delete g.terrainCoverWorlds;
+    };
+  });
+
+  it('只记不取：要的区段（包里有的）记下；挑出 0 个也记下「有体素世界从这个包挑」', async () => {
+    const t = await openImportedTerrain('测试包', [], []);
+    expect(t.source.prefetch!([])).toBeUndefined();
+    expect([...g.terrainCoverWorlds!]).toEqual(['测试包']);
+    expect(g.terrainCoverFirst!.get('测试包')!.size).toBe(0);
+    expect(t.source.prefetch!([here, { L: 0, i: 5, j: 0 }])).toBeUndefined();
+    expect([...g.terrainCoverFirst!.get('测试包')!.keys()]).toEqual(['0|0|0']);
+    expect(fetchSectionsInPool).not.toHaveBeenCalled();
+  });
+});
+
