@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { UsageError } from '../cli/参数.ts';
-import { runCmd } from '../环境/子进程.ts';
 import { prepareBrowser } from './浏览器.ts';
+import { openBrowser } from './渲染器.ts';
 import { checkTrialTable, trialShortName, type TrialTable } from './试看表.ts';
 import { shellTrialTable, trialEnvName, trialTerrain } from './地形注入.ts';
 
@@ -77,13 +77,20 @@ const pngSize = (file: string): [number, number] => {
 
 const htmlEscape = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
+type ShotPage = {
+  setViewport: (v: { width: number; height: number; deviceScaleFactor: number }) => Promise<void>;
+  goto: (o: { url: string; timeout: number }) => Promise<unknown>;
+  _client: () => { send: (method: string, params: object) => Promise<unknown> };
+};
+
 /**
- * 接触表：同一帧的几组拼一张 PNG，每格上面标组号和短名。用渲染用的那个 chrome-headless-shell 截一张本地 HTML（中文标签要字体，ffmpeg 没带 drawtext）。
- * 一格最宽 1920（4K 原图缩一半），两组并排、三组以上每行 3 格
+ * 接触表：同一帧的几组拼一张 PNG，每格上面标组号和短名。中文标签要字体（ffmpeg 没带 drawtext），所以拿渲染用的浏览器截一张本地 HTML：
+ * 经 Remotion 的 openBrowser 开页面、CDP 截图。chrome-headless-shell 自己的 --screenshot 在这台 Mac 上不退出或不出文件（11-17 试过）。
+ * 一格最宽 1920（4K 原图缩一半），排成近似方阵（2 组并排、4 组 2×2、5～9 组每行 3 格）
  */
 export const writeContactSheet = async (tiles: { file: string; label: string }[], out: string) => {
   const [w0, h0] = pngSize(tiles[0]!.file);
-  const cols = tiles.length <= 2 ? tiles.length : 3;
+  const cols = Math.ceil(Math.sqrt(tiles.length));
   const rows = Math.ceil(tiles.length / cols);
   const tileW = Math.min(1920, w0);
   const tileH = Math.round((tileW * h0) / w0);
@@ -100,13 +107,21 @@ export const writeContactSheet = async (tiles: { file: string; label: string }[]
 img{display:block;width:${tileW}px;height:${tileH}px}</style>${cells}`;
   const htmlFile = path.join(dir, `.接触表-${process.pid}.html`);
   fs.writeFileSync(htmlFile, html);
+  const browser = await openBrowser('chrome', { logLevel: 'error', browserExecutable: await prepareBrowser() });
   try {
-    const exe = await prepareBrowser();
-    await runCmd([exe, '--headless', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${width},${height}`, `--screenshot=${out}`, pathToFileURL(htmlFile).href], { quiet: true });
+    const page = (await browser.newPage({ context: () => null, logLevel: 'error', indent: false, pageIndex: 0, onBrowserLog: null, onLog: () => {} })) as unknown as ShotPage;
+    await page.setViewport({ width, height, deviceScaleFactor: 1 });
+    await page.goto({ url: pathToFileURL(htmlFile).href, timeout: 60_000 });
+    const cdp = page._client();
+    // load 事件之后图大多已解码，保险起见再等一遍 decode()
+    await cdp.send('Runtime.evaluate', { expression: 'Promise.all([...document.images].map((i) => i.decode()))', awaitPromise: true });
+    // Remotion 的 CDPSession.send 把结果包在 value 里（求解缓存收集.ts 同样这么取）
+    const r = (await cdp.send('Page.captureScreenshot', { format: 'png', clip: { x: 0, y: 0, width, height, scale: 1 }, captureBeyondViewport: true })) as { value?: { data: string }; data?: string };
+    fs.writeFileSync(out, Buffer.from((r.value ?? r).data!, 'base64'));
   } finally {
+    await browser.close({ silent: true });
     fs.rmSync(htmlFile, { force: true });
   }
-  if (!fs.existsSync(out)) throw new Error(`接触表没截出来：${out}`);
 };
 
 /** 预览夹里的 00-说明.md 底稿（已经有就不动）：每组一个小标题（组号 + 短名），下面是这组的 JSON 和图；末尾留「你的回复：」 */
