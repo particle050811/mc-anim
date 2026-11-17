@@ -102,7 +102,10 @@ export type PackageInfo = {
   // 粗高度图：格 米一格，覆盖 [x0, x0 + 格·nx) × [y0, y0 + 格·ny)（场景坐标）；高 是 base64 的 Int16（小端，按 (y, x) 排），
   // 每格是格里最高那块方块的顶（场景 z，含树冠、水面），−32768 = 这一格没有数据
   coarseHeight: { cell: number; x0: number; y0: number; nx: number; ny: number; height: string };
+  // 裁过的包才有（pipeline/世界/裁级/裁剪.ts，docs/世界.md「裁级」）：从哪个完整包版本裁的、留表（留下的区段）的 sha256、裁法。粗高度图、模型和完整包一样
+  trim?: TrimInfo;
 };
+export type TrimInfo = { from: string; keepSha256: string; method: string };
 
 // 一个区段的数据（编码前 / 解码后、换成体素块之前）；解码（engine/voxel/区段解码.ts）出来的四个数组同一块缓冲
 export type SectionData = {

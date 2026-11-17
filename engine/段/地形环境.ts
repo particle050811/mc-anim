@@ -5,3 +5,5 @@ export const terrainVersionEnv = 'REMOTION_ANIM_TERRAIN_PACKS';
 export const terrainUsageSegEnv = 'ANIM_TERRAIN_USAGE_SEG';
 /** 光体缓存目录 <数据根>/cache/光体/<作品>/ 里开页时已有的文件名（JSON 数组）：页面只取列着的，冷缓存不 fetch 出 404（engine/light/光体缓存读写.ts） */
 export const lightCacheFilesEnv = 'ANIM_LIGHT_CACHE_FILES';
+/** 地形覆盖（pipeline/渲/地形覆盖.ts）：给了就只挑区段、记下来，不取不建不画（engine/voxel/世界.tsx）；记的是哪一帧头一次用到哪个区段 */
+export const terrainCoverEnv = 'ANIM_TERRAIN_COVER';
