@@ -13,7 +13,11 @@ export const twilightFarLandmarkPack = '暮色放大-1752-远地标'; // 远处�
 export type TwilightFarView = { fogFar: number; heightFog: number };
 // 规矩 暮色超远景雾（作品/应力转动/规矩.toml）
 export const TWILIGHT_FAR_VIEW: TwilightFarView = { fogFar: 10000, heightFog: 0.35 };
-export const twilightDistantTrial = () => trialParams<TwilightFarView>('暮色远景');
+// 试看的 JSON 键是中文（照上面的用法写）：11-15 代码名改英文时这里跟着读成了 fogFar、heightFog，照注释写的参数一直没生效
+export const twilightDistantTrial = (): TwilightFarView | undefined => {
+  const t = trialParams<{ '雾远': number; '高度雾': number }>('暮色远景');
+  return t && { fogFar: t['雾远'], heightFog: t['高度雾'] };
+};
 // 这一镜实际用的：试看 > 镜头自己给的正式值 > 不开
 export const farViewOf = (official?: TwilightFarView) => twilightDistantTrial() ?? official;
 // 开着超远景时地形最远画到 16 km，远雾在这里拉满成天色（用户 11-16 比过 24/16/12/8 km 定：16 km 和 24 km 看不出差别，12 km 起远处的建筑、大树没了）。
