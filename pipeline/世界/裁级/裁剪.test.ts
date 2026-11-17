@@ -6,7 +6,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../engine/voxel/真实方块表.ts', () => ({ voxelFromState: () => 0, blockProps: {}, buildTintTable: () => ({}), biomeIndex: () => 0 }));
-vi.mock('../体素库.ts', () => ({ loadVoxelLib: async () => ({ sectionPack: await import('../../../engine/voxel/区段包.ts') }) }));
+vi.mock('../体素库.ts', () => ({ loadVoxelLib: async () => ({ sectionPack: await import('../../../engine/voxel/区段包.ts'), sections: await import('../../../engine/voxel/区段.ts') }) }));
 
 const sp = await import('../../../engine/voxel/区段包.ts');
 const { keepTable, keepTableText, writeTrimmed, compareTrimmed, packSections, keepFileName, fullRecordFileName, sha256 } = await import('./裁剪.ts');
@@ -59,17 +59,17 @@ describe('裁级', () => {
     const present = await packSections(makeFull());
     expect(present.size).toBe(fullSections.length + otherTile.length);
     // L0 (3,5) 的祖先：L1 (1,2)、L2 (0,1)、L3～L6 (0,0)；负的区段号也按向下取整算祖先
-    const t = keepTable(['0|3|5'], present).map(sectionKey);
+    const t = (await keepTable(['0|3|5'], present)).map(sectionKey);
     expect(t).toEqual(['0|3|5', '1|1|2', '2|0|1', '3|0|0', '4|0|0', '5|0|0', '6|-1|0', '6|0|0']);
-    expect(keepTable(['0|-1|0'], present).map(sectionKey)).toContain('0|-1|0');
+    expect((await keepTable(['0|-1|0'], present)).map(sectionKey)).toContain('0|-1|0');
     // 包里没有的区段（覆盖记到了、粗高度图却说没地）不进留表
-    expect(keepTable(['0|7|7'], present).map(sectionKey)).not.toContain('0|7|7');
+    expect((await keepTable(['0|7|7'], present)).map(sectionKey)).not.toContain('0|7|7');
   });
 
   it('裁出来的包逐段和完整包一样；改坏一个字节查得出', async () => {
     const full = makeFull();
     const present = await packSections(full);
-    const table = keepTable(['0|3|5'], present);
+    const table = await keepTable(['0|3|5'], present);
     const out = tmp();
     const keepSha = await writeTrimmed(full, record, table, out);
     expect(keepSha).toBe(sha256(keepTableText(table)));
@@ -95,7 +95,7 @@ describe('裁级', () => {
   it('裁过的包不能再当完整包裁', async () => {
     const full = makeFull();
     const out = tmp();
-    await writeTrimmed(full, record, keepTable([], await packSections(full)), out);
+    await writeTrimmed(full, record, await keepTable([], await packSections(full)), out);
     await expect(writeTrimmed(out, record, [], tmp())).rejects.toThrow('已经是裁过的包');
   });
 });

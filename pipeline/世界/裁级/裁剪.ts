@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { PackageInfo, TrimInfo } from '../../../engine/voxel/区段包.ts';
 import { loadVoxelLib } from '../体素库.ts';
-import { coarsestLevel, sectionKey, type SectionId } from '../../../engine/voxel/区段.ts';
+import type { SectionId } from '../../../engine/voxel/区段.ts';
 import { packManifest, release, newStaging, versionDir, readTerrainTable, terrainTablePath, type TerrainRecord, type TrimmedRecord } from '../版本.ts';
 
 /** 写进包.json 的裁法 */
@@ -25,8 +25,9 @@ type FullRecordFile = { pack: string; record: Omit<TerrainRecord, 'trimmed'> };
 
 const tileFiles = (dir: string) => fs.readdirSync(dir).filter((f) => f.endsWith('.块')).sort();
 const tileOf = (f: string) => f.slice(0, -2).split('.').map(Number) as [number, number];
-// 块头格式只有 engine/voxel/区段包.ts 那一份（它 import 了 asset:，经 体素库.ts 动态取）
+// 块头格式、区段键只有 engine/voxel/区段包.ts、区段.ts 那一份（它们 import 了 asset:，经 体素库.ts 动态取）
 const tileFormat = async () => (await loadVoxelLib()).sectionPack;
+const sectionKeyFn = async () => (await loadVoxelLib()).sections.sectionKey;
 const readHeader = (sp: Awaited<ReturnType<typeof tileFormat>>, file: string) => {
   const { tileHeaderLen, decodeTileHeader } = sp;
   const fd = fs.openSync(file, 'r');
@@ -43,6 +44,7 @@ const readHeader = (sp: Awaited<ReturnType<typeof tileFormat>>, file: string) =>
 export const packSections = async (dir: string): Promise<Set<string>> => {
   const sp = await tileFormat();
   const { tileEntryCount, sectionAtIndex } = sp;
+  const sectionKey = await sectionKeyFn();
   const out = new Set<string>();
   for (const f of tileFiles(dir)) {
     const [ti, tj] = tileOf(f);
@@ -58,7 +60,8 @@ const parseKey = (k: string): SectionId => {
 };
 
 /** 留表：用到的区段连同各级祖先，加上整包第 keepAllFromLevel 级以上的，只留包里有的。按 (L, i, j) 排好 */
-export const keepTable = (used: Iterable<string>, present: ReadonlySet<string>): SectionId[] => {
+export const keepTable = async (used: Iterable<string>, present: ReadonlySet<string>): Promise<SectionId[]> => {
+  const { sectionKey, coarsestLevel } = (await loadVoxelLib()).sections;
   const keep = new Set<string>();
   for (const k of used) {
     let q = parseKey(k);
@@ -77,6 +80,7 @@ export const sha256 = (s: string | Buffer) => crypto.createHash('sha256').update
 /** 照留表把完整包写到 to（空目录）：块文件只拷留下的段、重写索引；包.json 加 trim；模型和别的文件原样拷；另写留表。返回留表的 sha256 */
 export const writeTrimmed = async (fullDir: string, full: FullRecordFile, table: readonly SectionId[], to: string): Promise<string> => {
   const { tileHeaderLen, tileEntryCount, decodeTileHeader, encodeTileHeader, sectionAtIndex } = await tileFormat();
+  const sectionKey = await sectionKeyFn();
   const fullVersion = full.record.version;
   const text = keepTableText(table);
   const keepSha256 = sha256(text);
@@ -129,6 +133,7 @@ export const writeTrimmed = async (fullDir: string, full: FullRecordFile, table:
 /** 逐段核对裁过的包：留下的每一段和完整包同一段字节一样，没留的索引是 0，留表里的都在；包.json 除了 trim 一样，别的文件逐字节一样。返回不一致的说明（空 = 一致） */
 export const compareTrimmed = async (fullDir: string, trimDir: string): Promise<{ checked: number; problems: string[] }> => {
   const { tileEntryCount, decodeTileHeader, sectionAtIndex } = await tileFormat();
+  const sectionKey = await sectionKeyFn();
   const problems: string[] = [];
   const keepPath = path.join(trimDir, keepFileName);
   if (!fs.existsSync(keepPath)) return { checked: 0, problems: [`${trimDir} 没有 ${keepFileName}`] };
@@ -177,7 +182,7 @@ export const trimPack = async (pack: string, used: Iterable<string>, log: (s: st
   if (!fs.existsSync(path.join(fullDir, '包.json'))) throw new Error(`完整包 ${pack}/${entry.version} 不在本机（${fullDir}）：裁剪要在有完整包的机器上做（生成世界的笔记本，或 anim assets pull --full）`);
   const t0 = Date.now();
   const present = await packSections(fullDir);
-  const table = keepTable(used, present);
+  const table = await keepTable(used, present);
   const staging = newStaging(pack);
   try {
     const { trimmed: _old, ...record } = entry;
