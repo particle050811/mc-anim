@@ -19,6 +19,7 @@ import { withSegResourcePack } from '../资产/资产锁.ts';
 import { DetailCollector } from '../运行记录/渲染明细.ts';
 import { removeBundles } from './打包残留.ts';
 import { bundleProject, findComposition } from './渲.ts';
+import { preloadEnv } from '../../engine/段/预载.ts';
 import { segPictureParams, segOutputWindow } from './段产物.ts';
 import { shadingEnvName, type ShadingConfig } from './光影试看.ts';
 import { frameTimeoutMs } from './设置.ts';
@@ -74,13 +75,13 @@ export const bench = async (opts: { segment: string; frame?: [number, number]; l
     collectTerrainUsage(browser);
     const solveCache = collectSolveCache(browser);
     try {
-      const readCompositions = () => getCompositions(serveUrl, { inputProps: params.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: params.gl }, timeoutInMilliseconds: frameTimeoutMs, logLevel: earlyLogLevel });
+      const readCompositions = () => getCompositions(serveUrl, { inputProps: params.inputProps, envVariables: preloadEnv([s.key]), puppeteerInstance: browser, chromiumOptions: { gl: params.gl }, timeoutInMilliseconds: frameTimeoutMs, logLevel: earlyLogLevel });
       t = Date.now();
       let compositions = await readCompositions();
       let readCompositionsSec = (Date.now() - t) / 1000;
       await waitSolveCacheWrites();
       await waitTerrainUsageWrites();
-      // 缓存键由页面里的求解决定，先读一次才能知道是否缺失；只有补写时才把这次冷启动归入准备、重新计时，热缓存不多开页面。
+      // 读组合那一页预载这段的画面模块（注册工厂.tsx 按段懒加载），模块初始化里的求解在这里算。缓存键由页面里的求解决定，先读一次才能知道是否缺失；只有补写时才把这次冷启动归入准备、重新计时，热缓存不多开页面。
       const solveCachePrep = { 新写: solveCache.新写, sec: solveCache.新写 ? (Date.now() - t) / 1000 : 0 };
       if (solveCachePrep.新写) {
         console.error(`求解缓存准备：新写 ${solveCachePrep.新写} 份，${solveCachePrep.sec.toFixed(3)} 秒，不计入测速阶段`);
