@@ -21,7 +21,8 @@ export type DiffPlan = {
   onlyB: string[];
   notes: string[];
   /** 视频：两边文件和要比的帧 */
-  video?: { a: string; b: string; frames: number[]; width: number; height: number };
+  /** 视频：两边文件、B 要比的帧、A 对应的帧（--offset 时 A 的帧号 = B 的 + 偏移） */
+  video?: { a: string; b: string; frames: number[]; aFrames: number[]; width: number; height: number };
   /** 视频试看片的试看参数（manifest.json 的 trial），复查时要照设 */
   trialEnv?: { a?: Record<string, string>; b?: Record<string, string> };
 };
@@ -120,7 +121,8 @@ export const pickVideoFrames = (frameCount: number, fps: number, o: { frames?: n
   return frames;
 };
 
-export type PlanOptions = { frames?: number[]; every?: number; seg?: SegFrame | null };
+/** offset：A 的第 n+offset 帧对 B 的第 n 帧（两条视频起点差几帧时用） */
+export type PlanOptions = { frames?: number[]; every?: number; seg?: SegFrame | null; offset?: number };
 
 /** 看 A、B 是什么（两个目录、两张图、两个视频），排出要比的对 */
 export const planDiff = (a: string, b: string, o: PlanOptions = {}): DiffPlan => {
@@ -129,22 +131,24 @@ export const planDiff = (a: string, b: string, o: PlanOptions = {}): DiffPlan =>
   const kindOf = (p: string, st: fs.Stats) => (st.isDirectory() ? '目录' : videoExts.has(path.extname(p).toLowerCase()) ? '视频' : imageExts.has(path.extname(p).toLowerCase()) ? '图' : null);
   const [ka, kb] = [kindOf(a, sa), kindOf(b, sb)];
   if (!ka || !kb || ka !== kb) throw new Error(`A、B 要是两个目录、两张 PNG 或两个视频（mp4/mov/mkv/webm）：A 是${ka ?? '认不出的文件'}，B 是${kb ?? '认不出的文件'}`);
-  if ((o.frames || o.every) && ka !== '视频') throw new Error('--frames、--every 只给视频用：目录按文件配对');
+  if ((o.frames || o.every || o.offset) && ka !== '视频') throw new Error('--frames、--every、--offset 只给视频用：目录按文件配对');
   if (ka === '目录') return { kind: '图', ...pairDirs(a, b) };
   if (ka === '图') return { kind: '图', pairs: [pairOf(path.basename(b).replace(/\.png$/i, ''), a, b)], onlyA: [], onlyB: [], notes: [] };
   const [ia, ib] = [videoInfo(a), videoInfo(b)];
   if (ia.width !== ib.width || ia.height !== ib.height) throw new Error(`两个视频尺寸不同：A ${ia.width}×${ia.height}，B ${ib.width}×${ib.height}`);
   const notes: string[] = [];
-  const frameCount = Math.min(ia.frameCount, ib.frameCount);
-  if (ia.frameCount !== ib.frameCount) notes.push(`两边帧数不同（A ${ia.frameCount}，B ${ib.frameCount}），只比前 ${frameCount} 帧`);
-  const frames = pickVideoFrames(frameCount, probeFps(b), o);
-  if (!frames.length) throw new Error(`要比的帧都不在视频里（只有 ${frameCount} 帧）`);
+  const offset = o.offset ?? 0;
+  // B 的第 n 帧要 A 也有第 n+偏移 帧
+  const frameCount = Math.min(ia.frameCount - offset, ib.frameCount);
+  if (ia.frameCount !== ib.frameCount || offset) notes.push(`两边帧数${ia.frameCount === ib.frameCount ? '一样' : '不同'}（A ${ia.frameCount}，B ${ib.frameCount}）${offset ? `，A 的第 n${offset > 0 ? '+' : ''}${offset} 帧对 B 的第 n 帧（--offset）` : ''}，只比 B 的第 ${Math.max(0, -offset)}～${frameCount - 1} 帧`);
+  const frames = pickVideoFrames(frameCount, probeFps(b), o).filter((f) => f + offset >= 0);
+  if (!frames.length) throw new Error(`要比的帧都不在视频里（B 只能比到第 ${frameCount - 1} 帧）`);
   const [ma, mb] = [readFilmManifest(a), readFilmManifest(b)];
   const segOf = (f: number): SegFrame | null => (o.seg ? { segKey: o.seg.segKey, frame: o.seg.frame + f } : mb ? segFrameFromManifest(mb, f) : ma ? segFrameFromManifest(ma, f) : null);
   if (!o.seg && !ma && !mb) notes.push('两个视频旁边都没有 anim film 的 manifest.json，定不出是哪段第几帧：复查命令里的段、帧要自己填（或者 --seg <段键>[@<视频第 0 帧是段内第几帧>]）');
   const pad = String(frames.at(-1)!).length;
   const pairs = frames.map((f) => ({ label: `第${String(f).padStart(pad, '0')}帧`, aFile: a, bFile: b, frame: f, segFrame: segOf(f), variant: '' }));
-  return { kind: '视频', pairs, onlyA: [], onlyB: [], notes, video: { a, b, frames, width: ib.width, height: ib.height }, trialEnv: { a: ma?.trial, b: mb?.trial } };
+  return { kind: '视频', pairs, onlyA: [], onlyB: [], notes, video: { a, b, frames, aFrames: frames.map((f) => f + offset), width: ib.width, height: ib.height }, trialEnv: { a: ma?.trial, b: mb?.trial } };
 };
 
 export type DecodedPair = { pair: PairPlan; width: number; height: number; oldRgb: Buffer; newRgb: Buffer } | { pair: PairPlan; identical: { width: number; height: number } } | { pair: PairPlan; error: string };
@@ -170,7 +174,7 @@ export async function* readPairs(plan: DiffPlan): AsyncGenerator<DecodedPair> {
     return;
   }
   const v = plan.video!;
-  const sa = frameStream(v.a, v.frames, v.width, v.height, { 格式: 'yuv420p' });
+  const sa = frameStream(v.a, v.aFrames, v.width, v.height, { 格式: 'yuv420p' });
   const sb = frameStream(v.b, v.frames, v.width, v.height, { 格式: 'yuv420p' });
   try {
     for (const pair of plan.pairs) {

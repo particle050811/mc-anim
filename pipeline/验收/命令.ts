@@ -321,6 +321,13 @@ const positiveInt = (v: string | undefined, flag: string, min = 1) => {
   return Number(v);
 };
 
+/** --offset：整数，可以是负的 */
+const parseOffset = (v: string | undefined) => {
+  if (v === undefined) return undefined;
+  if (!/^[+-]?\d+$/.test(v)) throw new UsageError(`--offset 要是整数：${v}`);
+  return Number(v);
+};
+
 /** --seg <段键>[@<视频第 0 帧是段内第几帧>] */
 const parseSegArg = (v: string | undefined): SegFrame | null => {
   if (v === undefined) return null;
@@ -329,23 +336,23 @@ const parseSegArg = (v: string | undefined): SegFrame | null => {
 };
 
 export const diffNote =
-  '改前改后对比：A 是旧、B 是新，差 = B − A。A、B 是两个静帧目录（同名配对，名字不同的按「第N帧」或最后一串数字配）、两张 PNG，或两个视频（按帧号对齐抽帧：--frames a-b|帧,帧，--every n，默认每秒一帧含首尾；yuv420p 按 verify 的固定公式换 RGB）。' +
+  '改前改后对比：A 是旧、B 是新，差 = B − A。A、B 是两个静帧目录（同名配对，名字不同的按「第N帧」或最后一串数字配）、两张 PNG，或两个视频（按帧号对齐抽帧：--frames a-b|帧,帧，--every n，默认每秒一帧含首尾；两条起点差几帧用 --offset k，A 的第 n+k 帧对 B 的第 n 帧；yuv420p 按 verify 的固定公式换 RGB）。' +
   '每对出 旧｜新｜差 并排图（差图带符号：红亮了、蓝暗了、绿亮度差不多但颜色变了；--gain 放大倍数默认 8，--panel-width 每格宽默认 1920），只出最差的 --images 张（默认 24）；' +
   '算块平均差（和 verify、reuse 同一个 computeBlockDiff，门槛和分档读 verify/阈值.toml）、各档超门槛的块数、差像素占比、最大差；挑差得最多的 --windows 个窗口（默认 5）在图上框出，打印能直接复制的 anim still <段> <帧> --tele <x,y,宽> 原生复查（--zoom 望远倍数默认 8；视频旁有 anim film 的 manifest.json 就照它定段和帧，否则 --seg <段键>[@起帧]）。' +
   '汇总写进 00-说明.md、打到终端；出到 --to-preview <主题>（预览/，「工作-」开头进 run/草稿/）或 --out <新目录>，都不给是 run/草稿/<UTC>-工作-对比/。有一对判「变了」退出码 1。' +
   '和 verify frames --compare 的分工：那边比同一份代码走不同路径（预期逐字节一样），这里比两份代码或两组参数（预期有差，要知道差在哪、差多少）。省事写法：anim still <段> <帧…> --to-preview <主题> --vs <检出|分支|main>';
 
 const diffCmd: Command = {
-  usage: 'diff <A（旧）> <B（新）> [--to-preview <主题>|--out <目录>] [--frames <a-b|帧,帧>] [--every <n>] [--seg <段键>[@<起帧>]] [--windows <n>] [--zoom <倍>] [--images <n>] [--gain <n>] [--panel-width <像素>]',
+  usage: 'diff <A（旧）> <B（新）> [--to-preview <主题>|--out <目录>] [--frames <a-b|帧,帧>] [--every <n>] [--offset <±n>] [--seg <段键>[@<起帧>]] [--windows <n>] [--zoom <倍>] [--images <n>] [--gain <n>] [--panel-width <像素>]',
   note: diffNote,
   跑: async (args, runRecord) => {
-    const p = parseArgs(args, { value: ['--to-preview', '--out', '--frames', '--every', '--seg', '--windows', '--zoom', '--images', '--gain', '--panel-width'] });
+    const p = parseArgs(args, { value: ['--to-preview', '--out', '--frames', '--every', '--offset', '--seg', '--windows', '--zoom', '--images', '--gain', '--panel-width'] });
     if (p.位置.length !== 2) throw new UsageError('要给 A（旧）和 B（新）两个：目录、PNG 或视频');
     if (p.value['--to-preview'] && p.value['--out']) throw new UsageError('--to-preview 和 --out 只给一个');
     const [a, b] = p.位置.map((x) => path.resolve(x)) as [string, string];
     let plan;
     try {
-      plan = planDiff(a, b, { frames: p.value['--frames'] ? parseFrames(p.value['--frames']) : undefined, every: positiveInt(p.value['--every'], '--every'), seg: parseSegArg(p.value['--seg']) });
+      plan = planDiff(a, b, { frames: p.value['--frames'] ? parseFrames(p.value['--frames']) : undefined, every: positiveInt(p.value['--every'], '--every'), seg: parseSegArg(p.value['--seg']), offset: parseOffset(p.value['--offset']) });
     } catch (e) {
       if (e instanceof UsageError) throw e;
       throw new UsageError((e as Error).message);

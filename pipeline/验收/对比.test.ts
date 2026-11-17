@@ -1,4 +1,5 @@
 // anim diff：挑窗口、超门槛块数、差图配色、配对、视频帧号对到段内帧号、复查命令。
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -123,6 +124,23 @@ describe('配对', () => {
     expect(note).toMatch(/## 汇总/);
     expect(note.trimEnd().endsWith('你的回复：')).toBe(true);
     expect(logs.join('\n')).toMatch(/变了 1，一样 1/);
+  });
+
+  const hasFfmpeg = spawnSync('ffmpeg', ['-version']).status === 0 && spawnSync('ffprobe', ['-version']).status === 0;
+  it.skipIf(!hasFfmpeg)('视频按帧号对齐；--offset 让 A 的第 n+k 帧对 B 的第 n 帧', async () => {
+    const d = tmp();
+    // 无损 ffv1 存 yuv420p：B 是 A 去掉头一帧，偏移 1 帧就逐像素一样
+    const make = (file: string, filter: string) => expect(spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=64x36:rate=10:duration=2', '-vf', filter, '-c:v', 'ffv1', '-pix_fmt', 'yuv420p', path.join(d, file)]).status).toBe(0);
+    make('a.mkv', 'null');
+    make('b.mkv', 'select=gte(n\\,1),setpts=N/10/TB');
+    const verdicts = async (offset?: number) => {
+      const plan = planDiff(path.join(d, 'a.mkv'), path.join(d, 'b.mkv'), { every: 5, offset });
+      const r: [number, boolean][] = [];
+      for await (const x of readPairs(plan)) if ('oldRgb' in x) r.push([x.pair.frame!, x.oldRgb.equals(x.newRgb)]);
+      return r;
+    };
+    expect((await verdicts()).every(([, same]) => !same)).toBe(true);
+    expect(await verdicts(1)).toEqual([[0, true], [5, true], [10, true], [15, true], [18, true]]);
   });
 
   it('视频帧号对到段内帧号：试看片 --frames 的一截从 frames[0] 起', () => {
