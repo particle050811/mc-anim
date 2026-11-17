@@ -1,8 +1,8 @@
 // 三渲二光影层的 Photon 天（用户 11-04 定天、云、光照抽成可单独配置的组件）：做的事同 engine/light/大气.ts 的 <Atmosphere />（散射表、天色图、
 // 地平线和水面的天色、日光天光、云的噪声），写同一份共用状态（atmosphere、atmoUniforms），着色.ts 的水面、云、合成照旧读那里。
-// 大气.ts 应力转动在用、一行不改（用户 11-04 定应力转动的指纹不能变），这里抄它的式子。
+// 大气.ts 应力转动在用（用户 11-04 定应力转动的指纹不能变），这里抄它的式子。
 // 天色图两种展开（用户 11-04 定 B 类都做）：
-//   精确 = CPU 上同 大气.ts 的 buildSky 逐位相同（不做每像素的数组分配和闭包，运算和顺序不变）；
+//   精确 = 天色图.ts 的 skyColorMap（大气.ts 也用它），同 大气.ts 原来逐像素调 skyRadiance 逐位相同；
 //   GPU = 片元着色器里 float32 算，和精确的差在半精度的末位。太阳每帧在动的段（2-日落划船）每帧都要重展开，CPU 展开是这种段的大头。
 // Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 engine/light/大气/Photon-LICENSE.txt。
 import { useThree } from '@react-three/fiber';
@@ -11,6 +11,7 @@ import { cancelRender, continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
 import { useWriter, newWriteSlot } from '../../core/写入者.ts';
 import { ATMO_GAIN, atmoUniforms, atmosphere } from '../大气.ts';
+import { SKY_H, SKY_W, skyColorMap } from './天色图.ts';
 import scatteringBin from 'asset:数据/大气/散射';
 import noiseBin from 'asset:数据/大气/噪声';
 import worleyBubblyBin from 'asset:数据/大气/沃利-泡';
@@ -196,45 +197,8 @@ const ambientOf = (data: Float32Array, sunScene: number[]) => {
 };
 
 // ---------- 天色图 ----------
-const SKY_W = 2048;
-const SKY_H = 1024;
 const HOR_N = 16;
 const WATER_ELEV = [0, 0.05, 0.1, 0.15, 0.2, 0.28, 0.4, 1];
-const columnCos = new Float64Array(SKY_W);
-const columnSin = new Float64Array(SKY_W);
-for (let i = 0; i < SKY_W; i++) {
-  const az = ((i + 0.5) / SKY_W - 0.5) * 2 * Math.PI;
-  columnCos[i] = Math.cos(az);
-  columnSin[i] = Math.sin(az);
-}
-/** 精确：同 大气.ts 的 buildSky 逐位相同 */
-const exactSkyColorMap = (data: Float32Array, sun: number[]) => {
-  const px = new Uint16Array(SKY_W * SKY_H * 4);
-  const mus = sun[2]!;
-  const halfFloatOne = THREE.DataUtils.toHalfFloat(1);
-  for (let j = 0; j < SKY_H; j++) {
-    const s = (2 * (j + 0.5)) / SKY_H - 1;
-    const mu = Math.sign(s) * s * s;
-    const ch = Math.sqrt(1 - mu * mu);
-    for (let i = 0; i < SKY_W; i++) {
-      const nu = ch * (columnCos[i]! * sun[0]! + columnSin[i]! * sun[1]!) + mu * sun[2]!;
-      const c = skyRadiance(data, nu, mu, mus);
-      const o = (j * SKY_W + i) * 4;
-      px[o] = THREE.DataUtils.toHalfFloat(Math.max(0, c[0]!));
-      px[o + 1] = THREE.DataUtils.toHalfFloat(Math.max(0, c[1]!));
-      px[o + 2] = THREE.DataUtils.toHalfFloat(Math.max(0, c[2]!));
-      px[o + 3] = halfFloatOne;
-    }
-  }
-  const tex = new THREE.DataTexture(px, SKY_W, SKY_H, THREE.RGBAFormat, THREE.HalfFloatType);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.minFilter = tex.magFilter = THREE.LinearFilter;
-  tex.generateMipmaps = false;
-  tex.colorSpace = THREE.NoColorSpace;
-  tex.needsUpdate = true;
-  return tex;
-};
 
 // GPU：同一套式子写成 GLSL。两处相减会丢精度的（地心几千公里，float32 只有 7 位）改成不相减的等价式，常数在 JS 里用双精度先算好
 const toDoubleLiteral = (x: number) => x.toPrecision(17);
@@ -391,7 +355,7 @@ const applySky = (data: Float32Array, sunIn: readonly number[], far: number, alg
     } else {
       if (gpu && atmosphere.sky === (gpu.rt.texture as unknown as THREE.DataTexture)) atmosphere.sky = null;
       atmosphere.sky?.dispose();
-      atmosphere.sky = exactSkyColorMap(data, sun);
+      atmosphere.sky = skyColorMap(data, sun, ATMO_GAIN);
     }
     atmosphere.skyKey = key;
     atmosphere.sun = sun;
