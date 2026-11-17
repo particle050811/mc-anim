@@ -214,7 +214,7 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
     <AbsoluteFill style={{ backgroundColor: UNDER_BACKGROUND }}>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
         {under ? <UnderFog /> : <FlightFog visibility={timeline.start.visibility} />}
-        <FlightRig c={cam} near={0.02} ahead={(dt) => preLeapAt(globalSec + dt)?.cam ?? choreo.camPose(globalSec + dt)} />
+        <FlightRig c={cam} near={0.02} ahead={{ sec: globalSec, at: (sec) => preLeapAt(sec)?.cam ?? choreo.camPose(sec) }} />
         <ScreenAo atmosphereCamera={under ? atmosphereReference?.camera : undefined} />
         <OverworldSky active={!under} />
         {/* 入井后旧顺序画面的水面停在最后有天空的帧；显式接住这个时刻，不能随跳帧历史停在别处，也不能被天空卸载复位。 */}
