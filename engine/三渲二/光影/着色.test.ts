@@ -1,10 +1,7 @@
 import * as THREE from 'three';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { newRayUniforms } from './光线影子.ts';
 import { newShadingUniforms, patchLit, type RayMode } from './着色.ts';
-
-// 这里只检查受光着色器拼接，不加载离线大气资产；真实像素在 anim still 的对照里验证。
-vi.mock('../../light/大气.ts', () => ({ ATMO_FN_GLSL: '', ATMO_PARS_GLSL: '', atmoUniforms: {} }));
 
 const newShader = () => ({
   uniforms: {},

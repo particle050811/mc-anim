@@ -1,32 +1,17 @@
 // 自动翻译的姿态程序（资产 动作/角色/*，py/anim_py/动作翻译 从 1.20.1 客户端字节码翻的）和 库/生物 里照字节码手抄的版本在大量随机输入上对照。
 // 手抄版不改；两边对不上的地方逐条列在「已知差别」里，是手抄版省掉的（翻译版照字节码全做了）。
-// 数据根里没有这些资产（公开仓库、没跑 anim extract）时整组跳过。
-import { describe, expect, it, vi } from 'vitest';
+// 资产字节由 vitest 按资产锁读（pipeline/资产/vitest插件.ts），数据根里没有（公开仓库、没跑 anim extract）时导入就报缺哪个资产。
+import { describe, expect, it } from 'vitest';
 import type { EntityModelData } from '@engine/model/实体模型.tsx';
 import { poseEvaluator, type PoseProgram } from '@engine/anim/姿态程序.ts';
+import creeperProgramRaw from 'asset:动作/角色/苦力怕';
+import creeperModelRaw from 'asset:模型/角色/苦力怕';
+import zombieProgramRaw from 'asset:动作/角色/僵尸';
+import zombieModelRaw from 'asset:模型/角色/僵尸';
+import { creeperParts } from './苦力怕.tsx';
+import { zombieParts } from './僵尸.tsx';
 
-const assets = vi.hoisted(() => {
-  const pixelPng = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-  const read = async (id: string): Promise<unknown> => {
-    const fs = await import('node:fs');
-    const { readAssetLock, bytesPath } = await import('../../pipeline/资产/资产锁.ts');
-    const e = readAssetLock()[id];
-    if (!e || !fs.existsSync(bytesPath(e))) return undefined;
-    return JSON.parse(fs.readFileSync(bytesPath(e), 'utf8'));
-  };
-  return { pixelPng, 读: read };
-});
-// asset: 只在打包时有：模型从数据根读，贴图换成 1×1（这里只比姿态）
-vi.mock('asset:模型/角色/苦力怕', async () => ({ default: (await assets.读('模型/角色/苦力怕')) ?? { models: {} } }));
-vi.mock('asset:贴图/角色/苦力怕', () => ({ default: assets.pixelPng }));
-vi.mock('asset:模型/角色/僵尸', async () => ({ default: (await assets.读('模型/角色/僵尸')) ?? { models: {} } }));
-vi.mock('asset:贴图/角色/僵尸', () => ({ default: assets.pixelPng }));
-
-const { creeperParts } = await import('./苦力怕.tsx');
-const { zombieParts } = await import('./僵尸.tsx');
-
-const loadModel = async (id: string, modelName: string) => ((await assets.读(id)) as { models: Record<string, EntityModelData> } | undefined)?.models[modelName];
-const loadPoseProgram = async (id: string) => (await assets.读(id)) as PoseProgram | undefined;
+const loadModel = (raw: unknown, modelName: string) => (raw as { models: Record<string, EntityModelData> }).models[modelName]!;
 
 // mulberry32：固定种子，失败能复现
 const rng = (seed: number) => () => {
@@ -38,10 +23,10 @@ const rng = (seed: number) => () => {
 };
 const trials = 3000;
 
-const creeper = { program: await loadPoseProgram('动作/角色/苦力怕'), model: await loadModel('模型/角色/苦力怕', '苦力怕') };
-describe.skipIf(!creeper.program || !creeper.model)('苦力怕：翻译版 = 库/生物/苦力怕.tsx 手抄版', () => {
+const creeper = { program: creeperProgramRaw as unknown as PoseProgram, model: loadModel(creeperModelRaw, '苦力怕') };
+describe('苦力怕：翻译版 = 库/生物/苦力怕.tsx 手抄版', () => {
   it(`${trials} 组随机输入，头和四条腿的转角差不过 1e-3 弧度（手抄版用 double 和 Math.cos，原版是 float、查 Mth 的 65536 格表，limbSwing 大时差到 2e-4 上下）`, () => {
-    const solve = poseEvaluator(creeper.program!, creeper.model!.root);
+    const solve = poseEvaluator(creeper.program, creeper.model.root);
     const r = rng(1);
     let maxDiff = 0;
     for (let n = 0; n < trials; n++) {
@@ -62,8 +47,8 @@ describe.skipIf(!creeper.program || !creeper.model)('苦力怕：翻译版 = 库
   });
 });
 
-const zombie = { program: await loadPoseProgram('动作/角色/僵尸'), model: await loadModel('模型/角色/僵尸', '僵尸') };
-describe.skipIf(!zombie.program || !zombie.model)('僵尸：翻译版 = 库/生物/僵尸.tsx 手抄版（不骑乘、不蹲、不游泳、不鞘翅飞，右撇子主手出手）', () => {
+const zombie = { program: zombieProgramRaw as unknown as PoseProgram, model: loadModel(zombieModelRaw, '僵尸') };
+describe('僵尸：翻译版 = 库/生物/僵尸.tsx 手抄版（不骑乘、不蹲、不游泳、不鞘翅飞，右撇子主手出手）', () => {
   const makeInput = (p: { limbSwing: number; stride: number; headYaw: number; headPitch: number; aggressive: boolean; attackTime: number; sec: number }) => ({
     limbSwing: p.limbSwing,
     limbSwingAmount: p.stride,
@@ -87,7 +72,7 @@ describe.skipIf(!zombie.program || !zombie.model)('僵尸：翻译版 = 库/生�
   });
 
   it(`${trials} 组随机输入（一半在出手），手抄版写到的转角全对上（差不过 1e-3 弧度）`, () => {
-    const solve = poseEvaluator(zombie.program!, zombie.model!.root);
+    const solve = poseEvaluator(zombie.program, zombie.model.root);
     const r = rng(2);
     let maxDiff = 0;
     for (let n = 0; n < trials; n++) {
@@ -107,7 +92,7 @@ describe.skipIf(!zombie.program || !zombie.model)('僵尸：翻译版 = 库/生�
   });
 
   it('已知差别：手抄版省掉的部分（翻译版照 HumanoidModel 全做了）', () => {
-    const solve = poseEvaluator(zombie.program!, zombie.model!.root);
+    const solve = poseEvaluator(zombie.program, zombie.model.root);
     const noAttack = solve(makeInput({ limbSwing: 3, stride: 0.5, headYaw: 10, headPitch: 5, aggressive: true, attackTime: 0, sec: 7 })).partPoses;
     // 不蹲时 1.20.1 的 HumanoidModel 把腿放回 y=12、z=0（老版本是 z=0.1），和模型初始一样
     expect(noAttack.right_leg.offset).toEqual([-1.9, 12, 0]);
@@ -123,7 +108,7 @@ describe.skipIf(!zombie.program || !zombie.model)('僵尸：翻译版 = 库/生�
   });
 
   it('翻译版另有手抄版没有的输入：骑乘时两腿抬平', () => {
-    const solve = poseEvaluator(zombie.program!, zombie.model!.root);
+    const solve = poseEvaluator(zombie.program, zombie.model.root);
     const ride = solve({ ...makeInput({ limbSwing: 0, stride: 0, headYaw: 0, headPitch: 0, aggressive: false, attackTime: 0, sec: 0 }), 'model.riding': true }).partPoses;
     expect(ride.right_leg.rot[0]).toBeCloseTo(-1.4137167, 6);
     expect(ride.right_leg.rot[1]).toBeCloseTo(Math.PI / 10, 6);

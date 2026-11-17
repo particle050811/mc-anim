@@ -9,7 +9,7 @@
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SunLight } from 'three/examples/jsm/lights/SunLight.js';
-import { CloudOnlyAtmosphere } from './大气.ts';
+import { CloudOnlyAtmosphere } from './大气组件.tsx';
 import { PhotonClouds } from './大气/云.ts';
 import type { V3 } from '../model/parts.tsx';
 import { VIEW_DISTANCE, VIEW_FOG } from '../voxel/视距.ts';

@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AssetCue } from '@engine/段/段定义.ts';
 import shakeBellSegment from './段/2-摇铃/段.ts';
@@ -15,8 +13,7 @@ import { linePop, turnBackProgress, eyeContactFrameSec, hasLaughed, chatLineOpac
 import { liYing } from './场/2-隐世之境/参数.ts';
 import { lineBubble, pushShot, windScatterHeight } from './场/2-隐世之境/重逢参数.ts';
 import { makePerspectiveCamera, projectToPage, zUpToThree } from '@库/界面/投影.ts';
-import { makePixelFont } from '@库/界面/像素字表.ts';
-import { bytesPath, readWorkAssetLock } from '../../pipeline/资产/资产锁.ts';
+import { pixelFont } from './界面/像素字.ts';
 import { toFrameCues, frameCountOf, sceneWindowFrames } from './声音/回帧.ts';
 
 const events = mainCutEvents;
@@ -231,12 +228,8 @@ describe('隐世之境一镜到底：机位', () => {
   });
 });
 
-// 台词气泡的构图：像素字表在数据根里，没有就跳过（同 对视参数.test.ts）
-const fontLockEntry = readWorkAssetLock(path.resolve(import.meta.dirname))['字体/把回忆拼好给你/像素字'];
-const hasTable = !!fontLockEntry && fs.existsSync(bytesPath(fontLockEntry));
-
-describe.skipIf(!hasTable)('隐世之境一镜到底：台词气泡', () => {
-  const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(fontLockEntry!), 'utf8')), '字体/把回忆拼好给你/像素字');
+// 台词气泡的构图（像素字表由 vitest 按资产锁读）
+describe('隐世之境一镜到底：台词气泡', () => {
   // 气泡（库/界面/女仆气泡.tsx）：底边在锚点上，宽 = 字宽 + 10、高 19、尾巴往下 8；页面上一个气泡像素 = 缩放 / 2
   const boxAt = (frame: number) => {
     const c = reunionRig(toSec(frame));

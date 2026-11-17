@@ -1,7 +1,9 @@
 // 结构：分层方向（engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册.tsx）、作品不互引、段不互引、场只接上一场的 末态.ts、不许引 核对/、
 // pipeline 只 import 纯模块、渲染器取值只走统一入口、纯模块闭包无 react/three/remotion、getInputProps 只在 engine/段/设置.ts、渲染代码里不许有
 // Math.random、Date.now、相对路径引的资产、写死的路径或主机名；不许 import 地形版本表、不许读时刻的 依据。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
+// engine、库、作品下的测试不许引 pipeline（测试不在打包图里，单独解析源码查）。
 import os from 'node:os';
+import path from 'node:path';
 import { checkSectionModelReg } from '../区段模型登记.ts';
 import { readContent } from '../../源码/内容.ts';
 import { codeExtRegex, isRenderCode, isPureModule, isTestOrDecl, type CheckReport, type CheckContext } from '../../源码/上下文.ts';
@@ -238,10 +240,42 @@ export const checkRendererEntry = (file: string, sourceText: string): { 行: num
   return issues;
 };
 
+const renderTestRegex = /^(engine|库|作品)\/.*\.test\.[cm]?[jt]sx?$/;
+const testPipelineHint = '渲染层的测试不许 import pipeline/：资产走 vitest 的 asset: 插件（pipeline/资产/vitest插件.ts，直接 import 被测模块），要引管线就把测试放到 pipeline/ 下';
+const viModuleMethods = new Set(['mock', 'doMock', 'unmock', 'doUnmock', 'importActual', 'importMock']);
+
+/**
+ * engine/、库/、作品/ 下的测试不许引 pipeline/（用户 11-17 定：不加别名，用检查拦越层）。测试不在 esbuild 打包图里，edgeIssue 查不到，这里解析源码单查：
+ * import / export from、import()、require、import x = require、import('…') 类型、vi.mock 一类的模块路径都算，类型导入也算（同 edgeIssue 渲染层不许引 pipeline 的类型）。
+ */
+export const checkTestPipelineImport = (file: string, sourceText: string): { 行: number; text: string }[] => {
+  if (!renderTestRegex.test(file)) return [];
+  const issues: { 行: number; text: string }[] = [];
+  const sf = parseSource(file, sourceText);
+  const check = (n: ts.Node, spec: ts.Node | undefined) => {
+    if (!spec || !ts.isStringLiteralLike(spec)) return;
+    const target = spec.text.startsWith('.') ? path.posix.join(path.posix.dirname(file), spec.text) : spec.text;
+    if (target.startsWith('pipeline/')) issues.push({ 行: lineNo(sf, n), text: `${testPipelineHint}：${file} → ${target}` });
+  };
+  walk(sf, (n) => {
+    if (ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) check(n, n.moduleSpecifier);
+    else if (ts.isImportEqualsDeclaration(n) && ts.isExternalModuleReference(n.moduleReference)) check(n, n.moduleReference.expression);
+    else if (ts.isImportTypeNode(n) && ts.isLiteralTypeNode(n.argument)) check(n, n.argument.literal);
+    else if (ts.isCallExpression(n)) {
+      const callee = n.expression;
+      const isLoad = callee.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(callee) && callee.text === 'require') ||
+        (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && callee.expression.text === 'vi' && viModuleMethods.has(callee.name.text));
+      if (isLoad) check(n, n.arguments[0]);
+    }
+  });
+  return issues;
+};
+
 export const checkStructure = async (c: CheckContext, report: CheckReport) => {
   await checkLayers(c, report);
   checkCode(c, report);
   for (const p of c.file()) {
+    if (renderTestRegex.test(p)) for (const q of checkTestPipelineImport(p, c.读(p))) report.错(q.text, p, q.行);
     if (!p.startsWith('pipeline/') || !/\.[cm]?[jt]s$/.test(p)) continue;
     for (const q of checkRendererEntry(p, c.读(p))) report.错(q.text, p, q.行);
   }

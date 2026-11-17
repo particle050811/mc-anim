@@ -1,9 +1,12 @@
 // 网格（网格.ts 的 buildSectionMesh）金样测试：面剔除、贪心合并、按朝向分组、按材质分。
-// 方块表是数据根里的资产（asset:数据/场景/关键帧/方块表），测试不靠它：这里换成一张几种整格方块的小表（格式同 关键帧方块.py 导出的），
-// 合并结果不随真实方块表变。一个小区段的网格存在 金样/网格.json。
-import { describe, expect, it, vi } from 'vitest';
+// 不用数据根里的真方块表：按一张几种方块的小表（格式同 关键帧方块.py 导出的）建网格函数（sectionMesher），合并结果不随真实方块表变。一个小区段的网格存在 金样/网格.json。
+import { describe, expect, it } from 'vitest';
+import { buildBiomeColors } from './群系色.ts';
+import { buildBlockTable, type BlockTableData } from './真实方块表.ts';
+import { crossGroup, groupCount, sectionMesher, twoSidedGroup } from './网格.ts';
+import type { VoxelGrid } from './生成.ts';
 
-const mockTable = vi.hoisted(() => {
+const testTable = (() => {
   // 一个整格方块的六个面：[朝向, 剔除方向, 贴图, 叠加, 染, 明暗, 四个角 xyz（1/16 格，从外面看 左上 右上 右下 左下）, 四个角 uv]
   const faceCorners: Record<string, number[][]> = {
     '+x': [[16, 0, 16], [16, 16, 16], [16, 16, 0], [16, 0, 0]],
@@ -58,13 +61,10 @@ const mockTable = vi.hoisted(() => {
     },
     biomeColor: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } },
   };
-});
-vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: mockTable.blockTable }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: mockTable.biomeColor }));
-
-const { buildSectionMesh, groupCount, crossGroup, twoSidedGroup } = await import('./网格.ts');
-const { voxelFromState } = await import('./真实方块表.ts');
-type VoxelGrid = import('./生成.ts').VoxelGrid;
+})();
+const blockTable = buildBlockTable(testTable.blockTable as unknown as BlockTableData, buildBiomeColors(testTable.biomeColor));
+const buildSectionMesh = sectionMesher(blockTable);
+const { voxelFromState } = blockTable;
 
 const [stone, dirt, grassBlock, leaf, water] = ['test:stone', 'test:dirt', 'test:grass_block', 'test:oak_leaves', 'test:water'].map((s) => voxelFromState(s));
 /** 区段：核心 n×n、四周一圈 apron、nz 高；填 = (x, y, z) → 色板号（0 空气），x、y 是含 apron 的下标 */
