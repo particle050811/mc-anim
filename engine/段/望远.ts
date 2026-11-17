@@ -33,6 +33,8 @@ type CameraState = { projection: THREE.Matrix4; fullInverse: THREE.Matrix4; wrap
 const applyConfig = (config: TeleConfig) => {
   const zoom = 1 / config.widthRatio;
   const clipMatrix = cropMatrix(config);
+  // 试看 分级色调 的 真几何 读它（engine/voxel/调试.tsx）：挑区段时按望远后的视锥和像素算
+  (globalThis as { __animTele?: { crop: THREE.Matrix4; zoom: number } }).__animTele = { crop: clipMatrix, zoom };
   const camStates = new WeakMap<THREE.Camera, CameraState>();
   let inFrame = false;
 

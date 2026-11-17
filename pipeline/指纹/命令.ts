@@ -188,7 +188,7 @@ export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { re
           console.log(`✓ ${segKey}：${x.frame.length} 帧都在压缩噪声内（逐字节一样 ${sameCount} 帧），${x.新.fingerprint.slice(0, 16)} 沿用 ${x.oldVersion.fingerprint.slice(0, 16)} 的切片（${r.copyHow}）`);
           for (const b of glanceDiffs) console.log(`    第 ${b.frame} 帧在看一眼档里（不算不同）：${b.note}`);
         }
-      }, runRecord),
+      }, runRecord, { preload: group.map((x) => x.segment.key) }),
     );
   }
   if (o.viewOnly) console.log(`\n--dry-run：${plans.length} 段能比，没出帧、没登记${notAcceptedCount ? `；${notAcceptedCount} 段认不了` : ''}`);

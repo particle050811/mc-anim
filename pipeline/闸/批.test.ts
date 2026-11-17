@@ -32,3 +32,8 @@ it('game start 队首先判负载再拿锁，负载等待不冒充内存等待',
     expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(false);const q=fs.readdirSync(path.join(dir,'渲染.排队'))[0]!;const t=JSON.parse(fs.readFileSync(path.join(dir,'渲染.排队',q),'utf8'));expect(t.stuckOn).toBe('负载');expect(t.等内存起).toBeUndefined();load=0;
   }},{kind:'mcai game start',needsLoad:true});expect(msg.some(x=>x.includes('等负载'))).toBe(true);
 });
+it('测速的负载门槛更严：核数×0.6，负载 7/10 也要等',async()=>{
+  const {passRenderGate}=await import('./闸.ts');let load=7;const msg:string[]=[];
+  await passRenderGate(async()=>{expect(load).toBe(5);},x=>msg.push(x),{lockDir:dir,readMemory:()=>null,readPressure:()=>1,coreCount:()=>10,load1Min:()=>load,sleep:async()=>{load=5;}},{kind:'bench',needsLoad:true,loadLimit:0.6});
+  expect(msg.some(x=>x.includes('等负载')&&x.includes('×0.6'))).toBe(true);
+});

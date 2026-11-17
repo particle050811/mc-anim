@@ -67,6 +67,22 @@ export const runForeground = (cmd: readonly string[], opts: SpawnOptions = {}): 
     child.on('close', (code) => resolve(code ?? 1));
   });
 
+/** 异步跑；stdout 边转给终端边收一份（要从别的 anim 的输出里取它写到哪了），stderr 直接接终端；返回退出码和 stdout */
+export const runTee = (cmd: readonly string[], opts: SpawnOptions = {}): Promise<{ exitCode: number; stdout: string }> =>
+  new Promise((resolve, reject) => {
+    const child = spawn(cmd[0]!, cmd.slice(1), { ...opts, stdio: ['ignore', 'pipe', 'inherit'] });
+    const undo = registerCleanup(() => { child.kill('SIGTERM'); });
+    child.once('close', undo);
+    let stdout = '';
+    child.stdout?.setEncoding('utf8');
+    child.stdout?.on('data', (d: string) => {
+      stdout = (stdout + d).slice(-(1 << 20));
+      process.stdout.write(d);
+    });
+    child.on('error', reject);
+    child.on('close', (code) => resolve({ exitCode: code ?? 1, stdout }));
+  });
+
 // Windows：系统用了 Modern Standby 时，闲置关屏就进待机（11-14 笔记本接着电源、「睡眠」设成从不，关屏 30 分钟一到照样进 S0 待机），长渲染不能让它睡。
 // 同一天笔记本渲穿塔约第 2400 帧丢 WebGL 上下文，当时归到待机，后来查明是显存越攒越多（engine/voxel/容器池.ts），不是这里。
 const antiSleepScript = (pid: number) =>

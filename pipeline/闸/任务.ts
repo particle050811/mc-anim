@@ -29,6 +29,8 @@ export type TaskDecl = {
     /** anim --low-priority（ANIM_PRIORITY=low）：票排在所有普通票后面，多段批有普通票在等就在项间让开 */
     lowPriority?: boolean;
     needsLoad?: boolean;
+    /** needsLoad 时 1 分钟负载要低于 核数×它 才放行（默认 0.8）；测速要更空的机器，见 测速.ts */
+    loadLimit?: number;
 };
 export type { SchedulerEnv };
 export type TaskInfo = {

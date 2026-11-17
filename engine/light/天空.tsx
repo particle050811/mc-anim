@@ -16,6 +16,7 @@ import sunPng from 'asset:贴图/场景/天空/sun';
 import { useCurrentSec } from '../段/时间.tsx';
 import { pinDepthFar } from '../core/光栅深度.ts';
 import { mulberry32 } from '../core/数学.ts';
+import { trialOff } from '../core/试看.ts';
 
 export const SKY = {
   top: '#7ea2cc',
@@ -231,8 +232,9 @@ export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: bool
     if (on) atmoMat.uniforms.atmoSky.value = atmosphere.sky;
     dome.current.material = on ? atmoMat : mat;
   });
+  // 试看 {"关": ["天空"]}（anim trial list）：连星星、太阳一起藏，背景色照旧
   return (
-    <group>
+    <group visible={!trialOff('天空')}>
       <mesh ref={dome} material={mat} renderOrder={-2}>
         <sphereGeometry args={[R_SKY, 48, 24]} />
       </mesh>
@@ -316,7 +318,8 @@ export const Clouds: React.FC<{ height?: number; radius?: number; color?: string
     advance(performance.now());
     continueRender(handle);
   }, [mesh, handle, advance]);
-  return mesh ? <primitive object={mesh} /> : null;
+  // 试看 {"关": ["云"]}：贴图照取、照放行，只是不挂进场景
+  return mesh && !trialOff('云') ? <primitive object={mesh} /> : null;
 };
 
 // 直射光（带软阴影，阴影范围以 center 为中心、半径 extent）+ 天光，主世界的。暮色森林的灯是 lib/暮色光照.tsx 的 `TwilightSunLight`

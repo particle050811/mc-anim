@@ -17,6 +17,7 @@ vi.mock('../资产/资产锁.ts', () => ({ withSegResourcePack: <T>(workRoot: st
 vi.mock('../环境/路径.ts', () => ({ codeRoot: () => process.cwd() }));
 vi.mock('../清单/清单.ts', () => ({ selectSegs: async () => [{ key: '核对-冒烟', segment: { sec: 1 } }], loadAllSegments: async () => [{ key: '核对-冒烟', segment: { sec: 1 } }] }));
 vi.mock('../闸/闸.ts', () => ({ passRenderGate: async (fn: () => Promise<unknown>) => fn() }));
+vi.mock('../环境/资源.ts', () => ({ load1Min: () => 1, coreCount: () => 10 }));
 vi.mock('../运行记录/阶段.ts', () => ({ recordPhase: () => ({}) }));
 vi.mock('./渲.ts', () => ({ bundleProject: async () => { fake.time += 1000; return '测试打包'; }, findComposition: (h: { compositions: unknown[] }) => h.compositions[0] }));
 vi.mock('./段产物.ts', () => ({ segPictureParams: () => [{ inputProps: {}, gl: 'angle', scale: 1 }], segOutputWindow: () => ({ start: 0, frameCount: 2 }) }));
@@ -104,6 +105,8 @@ describe('测速', () => {
     const writeSpy = vi.spyOn(fs, 'writeFileSync');
     const r = await bench({ segment: '核对-冒烟' });
     expect(getCompositions).toHaveBeenCalledOnce();
+    // 注册工厂按段懒加载画面模块：读组合那一页点名预载这一段，求解才在这一页算
+    expect(vi.mocked(getCompositions).mock.calls[0]![1]).toMatchObject({ envVariables: { ANIM_PRELOAD_SEGS: '["核对-冒烟"]' } });
     expect(writeSpy).not.toHaveBeenCalled();
     expect(r.求解缓存准备).toEqual({ 新写: 0, sec: 0 });
     expect(r.读组合秒).toBe(2.8);

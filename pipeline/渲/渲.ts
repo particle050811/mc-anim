@@ -33,10 +33,12 @@ import { ensurePublicDir } from './public目录.ts';
 import { removeBundles, registerBundle } from './打包残留.ts';
 import { collectSolveCache, waitSolveCacheWrites } from './求解缓存收集.ts';
 import { segRenderEnv, segTerrainNow, trialTerrain, trialEnv } from './地形注入.ts';
+import { trialSuffix, type TrialGroup } from './试看组.ts';
 import { collectTerrainUsage, recordMeasuredFrames, waitTerrainUsageWrites } from './地形用量.ts';
 import { segPictureParams, segOutputWindow } from './段产物.ts';
 import { filmProfile, renderParams, frameTimeoutMs, type RenderParamsTable } from './设置.ts';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
+import { preloadEnv } from '../../engine/段/预载.ts';
 
 export const renderLabel = (segKey: string, level: RenderLevel) => `render:${workName()}/${segKey}:${level}`;
 
@@ -78,8 +80,11 @@ export const bundleProject = async (runRecord?: RunRecord, label = `会话:${wor
 
 type RenderSession = { serveUrl: string; browser: HeadlessBrowser; params: RenderParamsTable; compositions: Awaited<ReturnType<typeof getCompositions>> };
 type Composition = RenderSession['compositions'][number];
-/** skipCompositions：不读 Composition 列表（compositions 是空的），调用方自己用 expectedComposition 算 */
-type SessionOpts = BundleOpts & { skipCompositions?: boolean };
+/**
+ * skipCompositions：不读 Composition 列表（compositions 是空的），调用方自己用 expectedComposition 算。
+ * preload：读列表那一页顺带求值这几段的画面模块（注册工厂.tsx 按段懒加载，不点名的一段也不求值），缺的求解在闸外算好
+ */
+type SessionOpts = BundleOpts & { skipCompositions?: boolean; preload?: readonly string[] };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承；会话期间不让电脑闲置睡眠 */
 export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, sessionOpts: SessionOpts = {}): Promise<T> => {
@@ -91,7 +96,7 @@ export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) 
   }
 };
 
-const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, { skipCompositions, ...bundleOpts }: SessionOpts = {}): Promise<T> => {
+const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, { skipCompositions, preload, ...bundleOpts }: SessionOpts = {}): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {
@@ -112,8 +117,8 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
     });
     browser = opened.browser;
     const watchdog = opened.watchdog;
-    // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读；
-    // 不读列表时由出帧的页面自己算、关页面时收走
+    // 读 Composition 列表的页面先把点名预载的段里、模块初始化时没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读；
+    // 不读列表、没点名的段由出帧的页面自己算、关页面时收走
     collectSolveCache(browser);
     collectTerrainUsage(browser);
     const b = browser;
@@ -123,6 +128,7 @@ const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promis
           watchdog.pack(() =>
             getCompositions(serveUrl, {
               inputProps: params.inputProps,
+              envVariables: preloadEnv(preload),
               puppeteerInstance: b,
               chromiumOptions: { gl: params.gl },
               timeoutInMilliseconds: frameTimeoutMs,
@@ -286,16 +292,24 @@ export const batchHint = (segKey: string, frames: readonly number[], frameByFram
     ? `${segKey} 这 ${frames.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：核对-门口哈气，没进成片）。要和单帧或母版逐像素比，加 --per-frame；连出崩页（Page crashed）也改用 --per-frame`
     : null;
 
+/** 一组变体出完：后缀、这组的试看参数（--trial）、这几帧的文件、用了几秒（开页到出完） */
+export type StillVariantDone = { suffix: string; trial?: TrialGroup; channelSuffix: string; files: string[]; seconds: number };
+
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
 /** 光影：每份配置各出一遍这几帧，文件名带「-光影-<名>」（光影试看.ts）；望远：每块矩形各出一遍，文件名带「-望远-<名>」（望远.ts）。两样不同时给 */
-export const renderStillFrames = async (s: SegInfo, frames: number[], level: RenderLevel, outDir: string, runRecord?: RunRecord, o: { frameByFrame?: boolean; shading?: ShadingConfig[]; telescope?: TelescopeConfig[] } = {}) => {
+/** 试看：每组各出一遍（试看组.ts），文件名带「-试看<序号>-<短名>」，和光影、望远叉乘；同一会话，一组一页 */
+export const renderStillFrames = async (s: SegInfo, frames: number[], level: RenderLevel, outDir: string, runRecord?: RunRecord, o: { frameByFrame?: boolean; shading?: ShadingConfig[]; telescope?: TelescopeConfig[]; trial?: TrialGroup[]; onVariantDone?: (v: StillVariantDone) => void } = {}) => {
   const toEmit = [...new Set(frames)];
   const hint = batchHint(s.key, toEmit, o.frameByFrame);
   if (hint) runRecord?.log('警告', hint);
   if (o.shading && o.telescope) throw new Error('--shading 和 --tele 不能同时给');
   // 各出一遍的变体：页面环境变量和文件名后缀
-  const variants: { env: Record<string, string>; suffix: string }[] | undefined =
+  const channelVariants: { env: Record<string, string>; suffix: string }[] | undefined =
     o.shading?.map((c) => ({ env: { [shadingEnvName]: c.value }, suffix: `-光影-${c.name}` })) ?? o.telescope?.map((c) => ({ env: { [telescopeEnvName]: c.value }, suffix: `-望远-${c.name}` }));
+  const trialGroups: (TrialGroup | undefined)[] = o.trial ?? [undefined];
+  const variants = trialGroups.flatMap((g) =>
+    (channelVariants ?? [{ env: {}, suffix: '' }]).map((c) => ({ trial: g, channelEnv: c.env, channelSuffix: c.suffix, suffix: (g ? trialSuffix(g) : '') + c.suffix })),
+  );
   await withSegResourcePack(workRoot(), s.key, () => openSession(level, async (h) => {
     const allSegments = await loadAllSegments();
     verifySegResourcePacks(workRoot(), s.key);
@@ -312,21 +326,22 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
       const records = runRecord?.stage;
       const gateWait = recordPhase(records, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
       const detail = new DetailCollector(label);
-      const env = { ...segRenderEnv(s.key, segTerrainNow(s, trialTerrain())), ...trialEnv() };
-      if (!variants) await detail.pack(() => renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: env, completed: (emitted) => detail.frameDone(emitted) }));
-      else {
-        await detail.pack(async () => {
-          for (const [i, c] of variants.entries())
-            await renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: { ...env, ...c.env }, suffix: c.suffix, completed: (emitted) => detail.frameDone(i * toEmit.length + emitted) });
-        });
-      }
+      // 没给 --trial 时照 shell 里的试看参数；给了每组自己带整张表（已并上 shell 那份）和要多读的包
+      const envOf = (g: TrialGroup | undefined) => ({ ...segRenderEnv(s.key, segTerrainNow(s, g ? g.terrain : trialTerrain())), ...(g ? g.env : trialEnv()) });
+      await detail.pack(async () => {
+        for (const [i, v] of variants.entries()) {
+          const variantStartMs = Date.now();
+          await renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: { ...envOf(v.trial), ...v.channelEnv }, suffix: v.suffix, completed: (emitted) => detail.frameDone(i * toEmit.length + emitted) });
+          o.onVariantDone?.({ suffix: v.suffix, trial: v.trial, channelSuffix: v.channelSuffix, files: toEmit.map((f) => stillFile(outDir, s.key, f, v.suffix)), seconds: (Date.now() - variantStartMs) / 1000 });
+        }
+      });
       await recordMeasuredFrames(s.key, toEmit);
       const outputTime = recordPhase(records, label, '出帧', t0, (Date.now() - t0) / 1000);
       await detail.writeOut(records ?? []);
-      console.log(`${stageSummary([gateWait, outputTime])}（${toEmit.length} 帧）`);
-    }, undefined, {}, {kind:'still',work:workName(),segment:s.key,level: level,frameCount:toEmit.length,frame:toEmit.join(',').slice(0,60),purpose:process.env.ANIM_PURPOSE??'核对'});
+      console.log(`${stageSummary([gateWait, outputTime])}（${toEmit.length} 帧${variants.length > 1 ? ` × ${variants.length} 组` : ''}）`);
+    }, undefined, {}, {kind:'still',work:workName(),segment:s.key,level: level,frameCount:toEmit.length * variants.length,frame:toEmit.join(',').slice(0,60),purpose:process.env.ANIM_PURPOSE??'核对'});
     // 没有读列表那一页替它先算，缺的求解是出帧的页面自己算的，关页面时才收走写盘；连出（renderFrames）关页面不等，这里等写完再关浏览器
     await waitSolveCacheWrites();
   }, runRecord, { shading: !!o.shading, telescope: !!o.telescope, skipCompositions: true }));
-  return variants ? variants.flatMap((c) => toEmit.map((f) => stillFile(outDir, s.key, f, c.suffix))) : toEmit.map((f) => stillFile(outDir, s.key, f));
+  return variants.flatMap((v) => toEmit.map((f) => stillFile(outDir, s.key, f, v.suffix)));
 };

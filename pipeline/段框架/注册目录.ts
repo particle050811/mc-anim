@@ -3,9 +3,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-/** 注册.tsx 文本里 webpackContext 收的目录（相对作品根，不带 ./） */
-export const registeredDirs = (registryText: string): string[] =>
-  [...registryText.matchAll(/import\.meta\.webpackContext\(\s*['"]\.\/([^'"]+?)\/?['"]/g)].map((m) => m[1]!);
+/** 注册.tsx 文本里 webpackContext 收的目录（相对作品根，不带 ./；同一目录收两回的，段.ts 和画面分开收，只算一个） */
+export const registeredDirs = (registryText: string): string[] => [
+  ...new Set([...registryText.matchAll(/import\.meta\.webpackContext\(\s*['"]\.\/([^'"]+?)\/?['"]/g)].map((m) => m[1]!)),
+];
 
 /** 新作品 段/ 下的占位文件：注册.tsx 的正则只收 段/<段键>/ 下的 段.ts、画面.tsx、叠层*.tsx，它不会被当成段 */
 export const placeholderFileName = '说明.md';

@@ -43,7 +43,7 @@ export const SetOff: React.FC = () => {
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
         <FlightFog visibility={choreo.VISIBILITY} far={trialFarM(overworldWindowView.farM)} />
-        <FlightRig c={cam} near={0.02} ahead={(dt) => choreo.camera(t + dt)} />
+        <FlightRig c={cam} near={0.02} ahead={{ sec: t, at: choreo.camera }} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <FlightSky camPos={cam.pos} />

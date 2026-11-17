@@ -2,8 +2,8 @@
 // useCurrentSec() = Composition 帧 ÷ 帧率，带小数；嵌套 Sequence 的偏移照常算进去（里面拿到的是从那个 Sequence 起算的秒）。
 // Composition 按成片帧率跑，第 0 帧就是段起点（段长对齐到 1/60 秒，段界没有零头）。
 // 段、场、库代码不直接调 useCurrentFrame()（anim check 的「时间」规则）；非要一帧一个的（核对视图）用 useViewIndex。
-import React, { type ReactNode } from 'react';
-import { Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
+import React, { useContext, type ReactNode } from 'react';
+import { Internals, Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
 
 /**
  * 这一层（最近的 Sequence，不在 Sequence 里就是整段）当前这一帧之后还有几秒（最后一帧时为 0）。
@@ -12,6 +12,15 @@ import { Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
 export const useSecLeft = (): number => {
   const { durationInFrames, fps } = useVideoConfig();
   return Math.max(0, durationInFrames - 1 - useCurrentFrame()) / fps;
+};
+
+/**
+ * 这一层（最近的 Sequence）露出来的第一帧到当前这一帧过了几秒（第一帧时为 0；Sequence 带 trimBefore 时第一帧的帧号不是 0）。
+ * 只给按航线回看的东西用：体素世界的航线定级从这一截的头算起（engine/voxel/航线定级.ts）
+ */
+export const useSecSinceStart = (): number => {
+  const firstFrame = Math.max(0, -(useContext(Internals.SequenceContext)?.cumulatedNegativeFrom ?? 0));
+  return Math.max(0, useCurrentFrame() - firstFrame) / useVideoConfig().fps;
 };
 
 /** Composition 一秒几帧。只给时间工具自己和声音换算用，画面代码用秒 */

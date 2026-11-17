@@ -25,6 +25,9 @@ export const sheath = <WornSheath />;
 // 航线搬到真实地形以后飞行比原来按配乐排的长了约 4 秒，段的长度不再跟着小节走，配乐只是照常挂着。
 // 渐弱照原来的意思放在悬停那一刻起、三小节（原来是 46.1 悬停、渐弱到 49.1），(1 − x)² 曲线；第六章飞行.ts 里后一半的 淡出 还是按小节写的旧位置，比现在的悬停早 4 秒，没用。
 
+// 6-2-5、6-2-6 是同一条航线上接着的两截
+const flightSpan = [choreo.segmentTable['6-2-5'].start, choreo.segmentTable['6-2-6'].end] as const;
+
 // T：编排.ts 的全局秒
 export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
   const { width, height } = useVideoConfig();
@@ -37,7 +40,7 @@ export const FlightView: React.FC<{ T: number }> = ({ T: globalSec }) => {
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
         <FlightFog visibility={choreo.visibility(globalSec)} far={trialFarM(terrain.farM)} />
-        <FlightRig c={cam} near={0.02} ahead={(dt) => choreo.camera(globalSec + dt)} />
+        <FlightRig c={cam} near={0.02} ahead={{ sec: globalSec, at: choreo.camera, range: flightSpan }} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 天、灯、云（lib/主世界光照.tsx）；日光投影见 lib/飞行镜头.tsx 的 `OverworldSunLight` */}

@@ -20,11 +20,15 @@ anim sched [--json|--oneline] | sched watch | sched estimate <选择器> | sched
 anim --low-priority <命令>                      排在全部普通票后面，给静帧让路（合并后统一渲用）
 anim env | doctor | check [--fast|--deep] | studio        全局 --debug 打调用栈（或 ANIM_DEBUG=1）
 anim film <选择器…> [--rerender] [--level 视频|预览] [--share] [--name <名>]   唯一的出片路：缺的段当场渲成切片再接成片（docs/决策/0014-单一出片路.md）
+REMOTION_ANIM_TRIAL='{…}' anim film <段> [--frames a-b]   试看片：编码同切片、能和成片比，出到数据根 run/草稿/，不写切片、段签、交付（engine/core/试看.ts）
+anim trial list                                 试看名字、「关」能关的项、调试环境变量的登记表（engine/core/调试开关.ts，新名字先登记）
 anim still <段> <帧…> --to-preview <主题> [--per-frame] [--tele …]   多帧默认同页连出，逐像素比用 --per-frame；看远处细节用 --tele 原生渲，不要裁图放大（docs/望远.md）
+anim still <段> <帧…> --to-preview <主题> --trial '<JSON>' [--trial …] [--baseline] [--contact]   一次会话出几组试看参数，图名带短名，可拼接触表
 anim stale [<选择器>] [--strict]  |  anim bench <段> [--frames a-b]  |  anim timing [<段>] [--last n]
 anim reuse <选择器…> --reason "…" [--sample N] [--dry-run]   过期段抽帧和旧切片比，在压缩噪声内就沿用，不比声音（docs/决策/0013-认指纹.md）
 anim verify [<段>] [--render]  |  verify accept <段…> --reason …  |  verify backfill [<选择器>]
 anim verify frames <选择器…> [--frames a-b] --save <名> | --compare <名> [--keep-images <目录>]   不写切片，不碰段签和认可
+anim diff <A旧> <B新> [--to-preview <主题>] [--frames …|--every n] [--offset ±n]  |  anim still <段> <帧…> --to-preview <主题> --vs <检出|分支|main>   改前改后对比：出旧｜新｜差、块统计、最差几处的 --tele 复查命令
 anim assets add <id> <文件> | measure [--check] | vendor | seed | pack [--upload] | pull   （0005、0006）
 anim extract <配方|组…> | --all [--print-only|--check] [--register] | --licenses | --backfill-mesh | --download | --particle-frames […]
 anim preview new <主题> | preview clean [--apply]   anim cache gc [--apply]
@@ -45,7 +49,7 @@ Remotion 官方 skill `remotion-best-practices` 只当 API 参考：它说的 `n
 
 ## 工作纪律
 - 逐文件 `git add <文件>`，不用 `-A` 或 `.`；按逻辑拆提交。不 push，要推送先问用户。
-- 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`：不手动 `git worktree add`、不在 worktree 里自己装依赖、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。依赖用 pnpm（用户 11-06 定），只留 `pnpm-lock.yaml`，加减依赖用 `pnpm add`，不用 npm 装。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree，删前先清点被忽略的文件。不留没合并的分支。
+- 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`：不手动 `git worktree add`、不在 worktree 里自己装依赖、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。worktree 里不用 `git stash`：stash 列表各 worktree 共用，别人会 pop 走你的改动；要暂存就提交临时提交或拷到 scratchpad（用户 11-17 定）。依赖用 pnpm（用户 11-06 定），只留 `pnpm-lock.yaml`，加减依赖用 `pnpm add`，不用 npm 装。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree，删前先清点被忽略的文件。不留没合并的分支。
 - 子 Agent 在 worktree 里只出静帧看效果（看动作可 `anim still` 连出几帧），不渲整段、不做逐帧校验；这些由主 Agent 合并后用 `anim --low-priority …` 排（用户 11-06 定，依据见 `docs/决策/0012-调度.md`）。改渲染管线本身、必须真渲才验得了的活例外，派活时写明。
 - 合并前 `anim check` 必须过。说「改好了」之前在 main 上核对：用户这次定的每一条都要在代码里查到，或者出静帧确认。
 - 预期不改画面的改动（重构、搬代码、提速）用 `anim reuse` 验收，不要求逐字节不变（用户 11-11 定）；认不下的出改前改后并排静帧给用户定。`anim verify frames` 只用来查同一份代码走不同路径出的图是否一致。

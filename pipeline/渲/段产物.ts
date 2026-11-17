@@ -31,6 +31,9 @@ export type SegArtifact = {
   params: RenderParamsTable & { audioCodec: 'pcm-16' };
 };
 
+/** 接成片的一截（出片/拼成片.ts）：切片（带指纹）或试看片（出片/试看.ts，没有指纹） */
+export type FilmPiece = Pick<SegArtifact, 'segment' | '画面' | 'sound' | 'outputFrames' | 'outputStartFrame' | 'soundStartSec' | 'soundEndSec'> & Partial<Pick<SegArtifact, 'pictureFingerprint' | 'soundFingerprint'>>;
+
 /** 这段在输出帧上的窗：全片第几个输出帧起、占几帧（按 全部 的清单顺序算全片位置；核对段各自从 0 起），和注册工厂给 Composition 的帧数是同一个算法 */
 export const segOutputWindow = (allSegments: readonly SegInfo[], s: SegInfo): { start: number; frameCount: number } => {
   const fps = filmProfile().fps;

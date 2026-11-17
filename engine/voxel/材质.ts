@@ -17,6 +17,7 @@
 // 一格在画布上约 6 个像素以下开始、约 2 个混满（`fwidth(vW)`）：顶面侧面的颜色往「两面各一半」混、贴图往 1×1 平均色取；受光各按自己的朝向算。
 // 原先侧面法线也整个掰成朝上，朝太阳时背光的侧面按直射算，远山发白（望远真值对比，预览 1115-0912-远景发白-根因和修法），用户 11-15 定不再掰。
 // 屏幕 AO 按它减弱用户不要（「去 ao 不行 远处糊成一团」），只做 `farAo` 的按距离减弱；只把侧面混成顶面试过，积雪山变灰白，和近处对不上。
+// 4K 下重新比过（用户 11-17）：只关「贴图往 1×1」草顶出褐绿迷宫纹，两样全关 6-2-5 冰刺雪山摩尔纹很重，用户看整段视频后定保留（试看分支存标签 `实验/台阶并色分级`）。
 import * as THREE from 'three';
 // 屏幕 AO 第 1 遍时置 1（lib/体素/屏幕AO.tsx），所有体素材质共用
 export const aoPassUniform = { value: 0 };
@@ -38,6 +39,8 @@ import { sectionDisplacement, displacementDecl, displaceVertex, quadIndices } fr
 import { patchWaterShader } from './水面.ts';
 import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
 import { lightVolumeOn, lightVolumeKey, patchLightVolume, registerLightVolumeMaterial } from '../light/光体着色.ts';
+import { debugShaderOn, patchDebugShader } from './调试.tsx';
+import { gradeTrial } from './分级色调.ts';
 
 const VERT_HEAD = `
 ${displacementDecl}
@@ -70,7 +73,7 @@ const fragMap = (cutout: boolean, twoSided: boolean, cell = blockAtlas().cell, t
     vec2 tc = uv * ${cell}.0;
     float lod = clamp(log2(max(max(length(dFdx(tc)), length(dFdy(tc))), 1e-6)), 0.0, ${top}.0);
     // 台阶并色的远处系数（见文件头）：一格在画布上约 6 个像素以下开始、约 2 个像素混满；贴图往 1×1 的平均色取
-    farK = vTop < 65000.0 ? smoothstep(0.16, 0.5, length(fwidth(vW))) : 0.0;
+    farK = ${gradeTrial()['并色'] === false ? '0.0' : 'vTop < 65000.0 ? smoothstep(0.16, 0.5, length(fwidth(vW))) : 0.0'};
     lod = mix(lod, ${top}.0, farK);
     vec2 f = fract(uv);
     if (fl > 1.5) {
@@ -109,6 +112,14 @@ const fragMap = (cutout: boolean, twoSided: boolean, cell = blockAtlas().cell, t
     diffuseColor.rgb *= t.rgb;
     diffuseColor.a *= t.a;
   }`;
+
+// 屏幕 AO 第 1 遍的 alpha（AO 减掉的比例，见 远处AO）；试看 分级色调 的 AO：'关' 全减掉、'满' 不按距离减（分级色调.ts）
+const aoAlphaExpr = () => {
+  const ao = gradeTrial().AO;
+  if (ao === '关') return '1.0';
+  if (ao === '满') return '0.0';
+  return `smoothstep(${farAo.start.toFixed(1)}, ${farAo.full.toFixed(1)}, length(vViewPosition)) * ${(1 - farAo.keep).toFixed(3)}`;
+};
 
 export type MaterialClass = '实心' | '镂空' | '实心树叶' | '水' | '花草';
 const mats = new Map<MaterialClass, THREE.Material>();
@@ -152,13 +163,15 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
       // 发光方块：顶点色第 4 个字节是 255 − 贴图发光（网格.ts），乘发光倍数（光照配比.ts 的 blockGlow，默认 0），和全片的自发光取大的
       .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * max(selfLight, (1.0 - vCol.a) * blockGlow);')
       // 屏幕 AO 第 1 遍（aoPass = 1）：alpha 输出 AO 减掉的比例（见 远处AO），AO 按 1 − alpha 压（lib/体素/屏幕AO.tsx）
-      .replace('#include <opaque_fragment>', `#include <opaque_fragment>\n  if (aoPass > 0.5) gl_FragColor.a = smoothstep(${farAo.start.toFixed(1)}, ${farAo.full.toFixed(1)}, length(vViewPosition)) * ${(1 - farAo.keep).toFixed(3)};`);
+      .replace('#include <opaque_fragment>', `#include <opaque_fragment>\n  if (aoPass > 0.5) gl_FragColor.a = ${aoAlphaExpr()};`);
     // 水：波纹、菲涅尔、天光反射，和导出网格的水同一段（lib/水面.ts）
     if (materialClass === '水') patchWaterShader(sh);
     // 树叶逆光透出暖色，和导出网格的树叶同一段（lib/树叶透光.ts）；镂空里不染色的（玻璃之类）不算
     if (materialClass === '镂空' || materialClass === '实心树叶') patchLeafShader(sh, tintedLeafExpr('vCol'));
     // 光体（发光方块照亮周围，engine/light/光体着色.ts）：世界开了才编进去；发光的面（vCol.a 是 0）不加
     if (lightVolumeOn()) patchLightVolume(sh, 'vCol.a');
+    // 地形调试（试看 区域、区域遮罩、级别遮罩、材质遮罩、按级着色、世界网格，调试.tsx）：没开时不改源码
+    if (debugShaderOn()) patchDebugShader(sh, materialClass);
   };
   mat.customProgramCacheKey = () => `体素-${materialClass}${lightVolumeKey()}`;
   registerLightVolumeMaterial(mat);

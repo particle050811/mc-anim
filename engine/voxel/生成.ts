@@ -19,6 +19,7 @@ export type VoxelSource = {
   prefetch?: (qs: SectionId[], guessed?: boolean) => Promise<void> | undefined;
   // 转交：`区段` 每次返回新建的体素块、自己不留着，体素世界把它转交给网格工人（不拷贝，交完这边就用不了了）
   transferOwnership?: boolean;
+  toScene?: (gamePos: number[]) => number[]; // 游戏坐标 → 场景坐标：调试工具按游戏坐标标点、圈区域用（engine/voxel/调试.tsx）
 };
 // 色板：体素值 + 染色（sRGB 0～255，游戏在 sRGB 上乘染色；不染色的方块是白色）
 export type PaletteEntry = { v: number; c: RGB };
