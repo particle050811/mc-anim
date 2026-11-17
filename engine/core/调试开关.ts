@@ -58,6 +58,8 @@ const terrainDebug = <N extends string>(name: N, purpose: string, format: string
   pending: '分级色调',
   note: '地形调试，docs/地形调试.md（在那条分支上）',
 });
+// 开着远雾的镜头（公里级飞行，如 6-穿塔斩首领）远雾是替换不是叠加（高度雾.ts 的 fogPart），单关这几项画面逐字节不变
+const replacedByFarFog = '开着远雾的镜头被远雾整个替换，单关它画面不变，要连 远雾 一起关';
 const voxelNote = '等 分级色调 合并后接：分级色调、下界光体 两条分支正在改 engine/voxel/，现在动会冲突';
 
 export const debugSwitches = [
@@ -173,11 +175,11 @@ export const debugSwitches = [
   terrainDebug('加载视点', '挑区段、定级别改按这一点算，镜头不动', '{"位": [x,y,z], "远"?: 米}', ['位', '远']),
 
   // ---- 「关」能关的项（engine/voxel/ 以外的先做）----
-  off('高度雾', '暮色的解析高度雾（材质和屏幕 AO 共用的 uniform 浓度置 0）', ['engine/light/高度雾.ts']),
+  off('高度雾', '暮色的解析高度雾（材质和屏幕 AO 共用的 uniform 浓度置 0）', ['engine/light/高度雾.ts'], { note: replacedByFarFog }),
   off('远雾', '公里级镜头 D 附近拉满成天色的远雾；地形最远距离不变，露出地形的边', ['engine/light/高度雾.ts']),
-  off('方向雾', '暮色雾色往余晖色混的那一份', ['engine/light/高度雾.ts']),
-  off('天色雾', '暮色雾色往视线方向天色靠的那一份（远雾要的色带照旧登记）', ['engine/light/高度雾.ts']),
-  off('天空', '穹顶（暮色色带、Photon 天空）连星星、太阳；背景色照旧', ['engine/light/天空.tsx']),
+  off('方向雾', '暮色雾色往余晖色混的那一份', ['engine/light/高度雾.ts'], { note: replacedByFarFog }),
+  off('天色雾', '暮色雾色往视线方向天色靠的那一份（远雾要的色带照旧登记）', ['engine/light/高度雾.ts'], { note: replacedByFarFog }),
+  off('天空', '穹顶（暮色色带、Photon 天空）连星星、太阳；露出场景背景色（主世界是黑的），云照旧', ['engine/light/天空.tsx']),
   off('云', 'Photon 云那一遍和原版方块云', ['engine/light/大气/云.ts', 'engine/light/天空.tsx'], { note: '云投在地形上的影子还在（体素材质里，等 engine/voxel 那批）' }),
   off('粒子', 'ParticleQuads 画的实例化粒子面片（方块碎屑、粉尘、气流这类）', ['库/特效/粒子面片.tsx'], { note: '振动、尖啸声波这类自己建面片的特效不管' }),
   off('阴影', '地形投影', ['engine/voxel/'], { pending: voxelPending, note: voxelNote }),
