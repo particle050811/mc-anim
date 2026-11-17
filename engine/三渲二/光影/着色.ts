@@ -180,7 +180,7 @@ for ( int i = 0; i < ${MAX_FILL_LIGHTS}; i ++ ) {
   if ( gyFillSh[ i ] > 0.5 ) a *= 1.0 - gyLit * gyDir;
   gyFi += gyFillCol[ i ] * a * clamp( dot( flatN, d ) * 0.75 + 0.25, 0.0, 1.0 );
 }
-vec3 gyOut = gyGlow ? flatC * flatS * flatK * gyGlowK : flatC * mix( 1.0, flatS, gyFaceK ) * ( flatK * gyLight + gyLampCol * gyLb + gyFl + gyFi );
+vec3 gyOut = gyGlow ? flatC * flatS * flatK * gyGlowK : flatC * mix( 1.0, flatS, gyFaceK ) * ( flatK * gyLight + gyLampCol * gyLb + gyFl + gyFi + flatLamp );
 outgoingLight = sRGBTransferEOTF( vec4( gyOut, 1.0 ) ).rgb;
 `;
 
