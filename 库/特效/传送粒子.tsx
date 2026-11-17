@@ -11,7 +11,6 @@
 // 带上那一刻人的速度（vel），按每刻 0.8 的阻力很快慢下来——跟着人冲出去一小段，落在后面收拢、散掉。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { type V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { assetDir } from '../../engine/core/资产目录.ts';
 import criticalHitPng from 'asset:贴图/特效/粒子/critical_hit';
@@ -52,7 +51,10 @@ import splash0Png from 'asset:贴图/特效/粒子/splash_0';
 import splash1Png from 'asset:贴图/特效/粒子/splash_1';
 import splash2Png from 'asset:贴图/特效/粒子/splash_2';
 import splash3Png from 'asset:贴图/特效/粒子/splash_3';
-import { mulberry32 } from '../../engine/core/数学.ts';
+import { portalParticlesAt, spawnPortalParticles, type PortalEmitter } from './传送粒子轨迹.ts';
+
+// 出生和逐刻位置在纯模块 传送粒子轨迹.ts，这里只管贴图、材质；类型原样转出
+export type { PortalEmitter } from './传送粒子轨迹.ts';
 
 const particlePngs = pngDir(assetDir({ './critical_hit.png': criticalHitPng, './drip_hang.png': dripHangPng, './explosion_0.png': explosion0Png, './explosion_1.png': explosion1Png, './explosion_10.png': explosion10Png, './explosion_11.png': explosion11Png, './explosion_12.png': explosion12Png, './explosion_13.png': explosion13Png, './explosion_14.png': explosion14Png, './explosion_15.png': explosion15Png, './explosion_2.png': explosion2Png, './explosion_3.png': explosion3Png, './explosion_4.png': explosion4Png, './explosion_5.png': explosion5Png, './explosion_6.png': explosion6Png, './explosion_7.png': explosion7Png, './explosion_8.png': explosion8Png, './explosion_9.png': explosion9Png, './generic_0.png': generic0Png, './generic_1.png': generic1Png, './generic_2.png': generic2Png, './generic_3.png': generic3Png, './generic_4.png': generic4Png, './generic_5.png': generic5Png, './generic_6.png': generic6Png, './generic_7.png': generic7Png, './glitter_0.png': glitter0Png, './glitter_1.png': glitter1Png, './glitter_2.png': glitter2Png, './glitter_3.png': glitter3Png, './glitter_4.png': glitter4Png, './glitter_5.png': glitter5Png, './glitter_6.png': glitter6Png, './glitter_7.png': glitter7Png, './splash_0.png': splash0Png, './splash_1.png': splash1Png, './splash_2.png': splash2Png, './splash_3.png': splash3Png }));
 const matCache = new Map<string, THREE.SpriteMaterial>();
@@ -77,75 +79,14 @@ const spriteMat = (sprite: number, bright: number) => {
   return material;
 };
 
-type SpawnedParticle = { born: number; life: number; start: V3; off: V3; carry: V3; half: number; sprite: number; bright: number };
-const DRAG = 0.8;
-
-// 一个粒子源：kind 见文件开头；at 是脚底中心（body）或门顶面中心（portal）；w、h 是碰撞箱宽高（portal 时 w 是门的边长，h 不用）；
-// 在 t0～t1 秒之间每刻放 rate 个（可以是小数，按累计取整）；life 是寿命倍数（默认 1 = 原版的 2～2.5 秒，镜头短时调小，收拢得更快）；
-// size 是这个源的粒子大小倍数（再乘上组件的 size）；path、vel：粒子源跟着人动时，从 t0 起每一刻的脚底位置（代替 at）和速度（格/刻）
-export type PortalEmitter = {
-  kind: 'body' | 'portal'; at: V3; w: number; h?: number; t0: number; t1: number; rate: number; seed: number; life?: number; size?: number;
-  path?: number[][]; vel?: number[][];
-};
-
-const spawn = (emitter: PortalEmitter): SpawnedParticle[] => {
-  const rand = mulberry32(emitter.seed * 7907 + 3);
-  const out: SpawnedParticle[] = [];
-  const ticks = Math.max(0, Math.round((emitter.t1 - emitter.t0) * 20));
-  let acc = 0;
-  for (let k = 0; k <= ticks; k++) {
-    acc += emitter.rate;
-    while (acc >= 1) {
-      acc -= 1;
-      const [x, y, z] = emitter.path ? emitter.path[Math.min(k, emitter.path.length - 1)] : emitter.at;
-      const start: V3 =
-        emitter.kind === 'body'
-          ? [x + (rand() - 0.5) * emitter.w, y + (rand() - 0.5) * emitter.w, z + rand() * (emitter.h ?? 1.8) - 0.25]
-          : [x + (rand() - 0.5) * emitter.w, y + (rand() - 0.5) * emitter.w, z];
-      const off: V3 = emitter.kind === 'body' ? [(rand() - 0.5) * 2, (rand() - 0.5) * 2, -rand()] : [(rand() - 0.5) * 0.5, (rand() - 0.5) * 0.5, rand()];
-      out.push({
-        born: emitter.t0 * 20 + k + rand(),
-        life: (40 + Math.floor(rand() * 10)) * (emitter.life ?? 1),
-        start,
-        off,
-        carry: (emitter.vel ? emitter.vel[Math.min(k, emitter.vel.length - 1)] : [0, 0, 0]) as V3,
-        half: 0.1 * (rand() * 0.2 + 0.5) * (emitter.size ?? 1),
-        sprite: Math.floor(rand() * 8),
-        bright: rand() * 0.6 + 0.4,
-      });
-    }
-  }
-  return out;
-};
-
 // sec：当前时间（秒，和各粒子源的 t0、t1 同一个时钟）；size：大小倍数
 export const PortalParticles: React.FC<{ emitters: PortalEmitter[]; sec: number; size?: number }> = ({ emitters, sec, size = 1 }) => {
-  const parts = useMemo(() => emitters.flatMap(spawn), [JSON.stringify(emitters)]);
-  const tick = sec * 20;
+  const parts = useMemo(() => emitters.flatMap(spawnPortalParticles), [JSON.stringify(emitters)]);
   return (
     <>
-      {parts.map((particle, i) => {
-        const age = tick - particle.born;
-        if (age < 0 || age >= particle.life) return null;
-        const t = age / particle.life;
-        const k = 1 + t - 2 * t * t;
-        const grow = 1 - (1 - t) ** 2;
-        // 原版的大小随寿命是 1 − (1 − t)² 从 0 长到满；刚出生那几帧太小看不见，留一个底
-        const spriteSize = particle.half * 2 * size * Math.max(0.35, grow);
-        const carryDist = (1 - DRAG ** age) / (1 - DRAG); // 带着出生时的速度滑出去的距离（以刻计）
-        return (
-          <sprite
-            key={i}
-            position={[
-              particle.start[0] + particle.off[0] * k + particle.carry[0] * carryDist,
-              particle.start[1] + particle.off[1] * k + particle.carry[1] * carryDist,
-              particle.start[2] + particle.off[2] * k + (1 - t) + particle.carry[2] * carryDist,
-            ]}
-            scale={[spriteSize, spriteSize, 1]}
-            material={spriteMat(particle.sprite, particle.bright)}
-          />
-        );
-      })}
+      {portalParticlesAt(parts, sec * 20, size).map((q) => (
+        <sprite key={q.index} position={q.pos} scale={[q.size, q.size, 1]} material={spriteMat(q.sprite, q.bright)} />
+      ))}
     </>
   );
 };

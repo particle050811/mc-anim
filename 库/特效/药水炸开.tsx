@@ -2,10 +2,10 @@
 // - 8 个物品碎片粒子（`ItemParticle`：喷溅药水贴图里随机一块 1/4 见方的碎片），初速度 (高斯×0.15, 随机×0.2, 高斯×0.15) 格/刻，受重力；
 // - 100 个 instant_effect 粒子（`SpellParticle`，贴图 spell_7 → spell_0 逐帧变小），颜色 = 药水颜色 × (0.75～1)，从落点周围 0.4 格内、高 0.3 格处向四周散开（速度乘 0～4 的 power），每刻速度乘 0.96、慢慢上飘，寿命 8～40 刻。
 // 贴图照抄 client jar（npm run 取材 -- 药水）。和游戏不同的两处：粒子画大 1.4 倍（参考视频里游戏尺寸看不见）；颜色往白里掺一半（`lighten`，默认 0.5）：治疗药水是正红，一团红点糊在生物身上会被视频模型当成血（用户 09-30 定：不要血、不要红）。
-// 粒子是始终朝向镜头的贴片，不受光。sec = 砸中以后经过的秒数（< 0 不显示），1 秒 20 刻。
+// 粒子是始终朝向镜头的贴片，不受光。sec = 砸中以后经过的秒数（< 0 不显示），1 秒 20 刻。出生参数和逐刻位置在纯模块 药水炸开粒子.ts，这里只管贴图、材质。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { type V3 } from '../../engine/model/parts.tsx';
+import type { V3 } from '../../engine/core/坐标.ts';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { POTION_TEX } from '../物品/喷溅药水.tsx';
 import { assetDir } from '../../engine/core/资产目录.ts';
@@ -25,10 +25,9 @@ import spell4Png from 'asset:贴图/特效/药水粒子/spell_4';
 import spell5Png from 'asset:贴图/特效/药水粒子/spell_5';
 import spell6Png from 'asset:贴图/特效/药水粒子/spell_6';
 import spell7Png from 'asset:贴图/特效/药水粒子/spell_7';
-import { mulberry32 } from '../../engine/core/数学.ts';
+import { potionSplashAt, potionSplashSpawns } from './药水炸开粒子.ts';
 
 const spellPngs = pngDir(assetDir({ './effect_0.png': effect0Png, './effect_1.png': effect1Png, './effect_2.png': effect2Png, './effect_3.png': effect3Png, './effect_4.png': effect4Png, './effect_5.png': effect5Png, './effect_6.png': effect6Png, './effect_7.png': effect7Png, './spell_0.png': spell0Png, './spell_1.png': spell1Png, './spell_2.png': spell2Png, './spell_3.png': spell3Png, './spell_4.png': spell4Png, './spell_5.png': spell5Png, './spell_6.png': spell6Png, './spell_7.png': spell7Png }));
-const VISUAL_SCALE = 1.4;
 
 const flipRows = (px: Uint8Array, width: number, height: number) => {
   const out = new Uint8Array(px.length);
@@ -91,84 +90,21 @@ const chipMat = (uo: number, vo: number, color: string) => {
   return material;
 };
 
-const gauss = (rand: () => number) => {
-  const uniformSample = Math.max(1e-9, rand());
-  return Math.sqrt(-2 * Math.log(uniformSample)) * Math.cos(2 * Math.PI * rand());
-};
-
-type Spell = { p: V3; v: V3; life: number; half: number; color: THREE.Color };
-type Chip = { p: V3; v: V3; life: number; half: number; uo: number; vo: number };
-
 // at：砸中的位置（游戏里 `Vec3.atBottomCenterOf(pos)`，这里直接给落点）；color：药水颜色；up：场景里的"上"（默认 Z），粒子的上飘、重力沿它
 // count：效果粒子的个数（游戏里 100；几瓶砸在同一处时可以减少，免得糊住目标）
 export const PotionSplash: React.FC<{ at: V3; sec: number; seed: number; color: string; lighten?: number; count?: number }> = ({ at, sec, seed, color, lighten = 0.5, count = 100 }) => {
-  const { spells, chips } = useMemo(() => {
-    const rand = mulberry32(seed * 4099 + 11);
+  const spawns = useMemo(() => potionSplashSpawns(at, seed, count), [at[0], at[1], at[2], seed, count]);
+  const spellColors = useMemo(() => {
     const base = new THREE.Color(color).lerp(new THREE.Color('#ffffff'), lighten);
-    const chips: Chip[] = Array.from({ length: 8 }, () => {
-      // Particle 构造函数里的随机速度 ×0.1 再加上给定的速度
-      const rv = () => (rand() * 2 - 1) * 0.4 * 0.1;
-      return {
-        p: [...at] as V3,
-        v: [gauss(rand) * 0.15 + rv(), gauss(rand) * 0.15 + rv(), rand() * 0.2 + rv()] as V3,
-        life: Math.floor(4 / (rand() * 0.9 + 0.1)),
-        half: 0.1 * (rand() * 0.5 + 0.5) * 2 * 0.5,
-        uo: Math.floor(rand() * 4),
-        vo: Math.floor(rand() * 4),
-      };
-    });
-    const spells: Spell[] = Array.from({ length: count }, () => {
-      const power = rand() * 4;
-      const angle = rand() * Math.PI * 2;
-      const d2 = Math.cos(angle) * power;
-      const d4 = Math.sin(angle) * power;
-      const d3 = 0.01 + rand() * 0.5;
-      // `SpellParticle`：传给 Particle 的水平速度是 0.5 - 随机，竖直是 d3；Particle 再加随机、归一化到 (随机+随机+1)×0.15×0.4
-      let x = 0.5 - rand() + (rand() * 2 - 1) * 0.4;
-      let y = d3 + (rand() * 2 - 1) * 0.4;
-      let z = 0.5 - rand() + (rand() * 2 - 1) * 0.4;
-      const len = Math.hypot(x, y, z) || 1;
-      const speed = (rand() + rand() + 1) * 0.15 * 0.4;
-      x = (x / len) * speed;
-      y = (y / len) * speed + 0.1;
-      z = (z / len) * speed;
-      y *= 0.2;
-      x *= power;
-      y = (y - 0.1) * power + 0.1;
-      z *= power;
-      const f3 = 0.75 + rand() * 0.25;
-      // MC 坐标（y 朝上）→ 场景（z 朝上）：(x, z, y) 里南北随便取，这里 (x, -z, y)
-      return {
-        p: [at[0] + d2 * 0.1, at[1] - d4 * 0.1, at[2] + 0.3] as V3,
-        v: [x, -z, y] as V3,
-        life: Math.floor(8 / (rand() * 0.8 + 0.2)),
-        half: 0.1 * (rand() * 0.5 + 0.5) * 2 * 0.75,
-        color: base.clone().multiplyScalar(f3),
-      };
-    });
-    return { spells, chips };
-  }, [at[0], at[1], at[2], seed, color, lighten, count]);
+    return spawns.spells.map((spell) => base.clone().multiplyScalar(spell.shade));
+  }, [spawns, color, lighten]);
   if (sec < 0) return null;
-  const tick = sec * 20;
+  const { spells, chips } = potionSplashAt(spawns, sec * 20);
   const out: React.ReactNode[] = [];
-  spells.forEach((spell, i) => {
-    if (tick >= spell.life) return;
-    // 每刻：位置 += 速度；速度 ×0.96；竖直速度 += 0.004（gravity -0.1 × 0.04）
-    const k = (1 - 0.96 ** tick) / 0.04;
-    const rise = 0.004 * (tick - k) / 0.04; // Σ 0.004×(1-0.96^n)/0.04 的闭式近似
-    const pos: V3 = [spell.p[0] + spell.v[0] * k, spell.p[1] + spell.v[1] * k, spell.p[2] + spell.v[2] * k + rise];
-    const idx = 7 - Math.min(7, Math.floor((tick / spell.life) * 8));
-    const spriteSize = spell.half * 2 * VISUAL_SCALE;
-    out.push(<sprite key={`s${i}`} position={pos} scale={[spriteSize, spriteSize, 1]} material={spellMat(`spell_${idx}`, spell.color)} />);
-  });
-  chips.forEach((chip, i) => {
-    if (tick >= chip.life) return;
-    // 每刻：速度 ×0.98，竖直 -= 0.04（gravity 1.0）
-    const k = (1 - 0.98 ** tick) / 0.02;
-    const fall = 0.04 * (tick - k) / 0.02;
-    const pos: V3 = [chip.p[0] + chip.v[0] * k, chip.p[1] + chip.v[1] * k, chip.p[2] + chip.v[2] * k - fall];
-    const spriteSize = chip.half * 2 * VISUAL_SCALE;
-    out.push(<sprite key={`c${i}`} position={pos} scale={[spriteSize, spriteSize, 1]} material={chipMat(chip.uo, chip.vo, color)} />);
-  });
+  for (const spell of spells) out.push(<sprite key={`s${spell.index}`} position={spell.pos} scale={[spell.size, spell.size, 1]} material={spellMat(`spell_${spell.frame}`, spellColors[spell.index])} />);
+  for (const chip of chips) {
+    const { uo, vo } = spawns.chips[chip.index];
+    out.push(<sprite key={`c${chip.index}`} position={chip.pos} scale={[chip.size, chip.size, 1]} material={chipMat(uo, vo, color)} />);
+  }
   return <>{out}</>;
 };
