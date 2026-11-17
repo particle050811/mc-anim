@@ -20,6 +20,7 @@ anim sched [--json|--oneline] | sched watch | sched estimate <选择器> | sched
 anim --low-priority <命令>                      排在全部普通票后面，给静帧让路（合并后统一渲用）
 anim env | doctor | check [--fast|--deep] | studio        全局 --debug 打调用栈（或 ANIM_DEBUG=1）
 anim film <选择器…> [--rerender] [--level 视频|预览] [--share] [--name <名>]   唯一的出片路：缺的段当场渲成切片再接成片（docs/决策/0014-单一出片路.md）
+REMOTION_ANIM_TRIAL='{…}' anim film <段> [--frames a-b]   试看片：编码同切片、能和成片比，出到数据根 run/草稿/，不写切片、段签、交付（engine/core/试看.ts）
 anim still <段> <帧…> --to-preview <主题> [--per-frame] [--tele …]   多帧默认同页连出，逐像素比用 --per-frame；看远处细节用 --tele 原生渲，不要裁图放大（docs/望远.md）
 anim stale [<选择器>] [--strict]  |  anim bench <段> [--frames a-b]  |  anim timing [<段>] [--last n]
 anim reuse <选择器…> --reason "…" [--sample N] [--dry-run]   过期段抽帧和旧切片比，在压缩噪声内就沿用，不比声音（docs/决策/0013-认指纹.md）
