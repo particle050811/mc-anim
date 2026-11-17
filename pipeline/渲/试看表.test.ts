@@ -31,7 +31,7 @@ describe('试看表', () => {
     expect(t).toMatch(/== 试看参数/);
     expect(t).toMatch(/== 「关」能关的项/);
     expect(t).toMatch(/REMOTION_ANIM_TELE/);
-    expect(t).toMatch(/阴影 {2}\[占位：分级色调\]/);
+    expect(t).toMatch(/阴影 {2}\[占位：还没做\]/);
   });
 });
 
