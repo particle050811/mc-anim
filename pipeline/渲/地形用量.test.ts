@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HeadlessBrowser } from '@remotion/renderer';
 import { terrainUsageSegEnv } from '../../engine/段/地形环境.ts';
+import { resetConfigCache } from '../环境/配置.ts';
 import { encodeFrameRanges, mergeUsage, decodeFrameRanges, terrainUsageFile, readTerrainUsage, startWholeMeasure, collectTerrainUsage, recordMeasuredFrames, waitTerrainUsageWrites } from './地形用量.ts';
 
 describe('帧段串', () => {
@@ -39,11 +40,12 @@ describe('收地形用量', () => {
   beforeEach(() => {
     root = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-地形用量-'));
     process.env.ANIM_DATA = root;
-    vi.resetModules();
+    resetConfigCache();
   });
   afterEach(() => {
     if (savedAnimData === undefined) delete process.env.ANIM_DATA;
     else process.env.ANIM_DATA = savedAnimData;
+    resetConfigCache();
     fs.rmSync(root, { recursive: true, force: true });
   });
 

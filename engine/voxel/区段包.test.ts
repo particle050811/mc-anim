@@ -1,11 +1,8 @@
 // 区段包格式（区段包.ts）：块文件头编了再解回来一样，别的格式版本报清楚；块里各级区段的索引位置来回对得上；区段 → 体素块按列铺对；粗高度图查得对。
 // 块文件头的字节存在 金样/区段包.json：格式一变，已经烘焙好的地形包就读不对了。区段本身的编解码和金样在 pipeline/世界/烘焙/区段编码.test.ts（engine 不引 pipeline）。
-// 区段包.ts 引了方块表（数据根里的资产），这里换成空表：这些测试用不到方块。
 import crypto from 'node:crypto';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: { 贴图: [], 面组: [], 方块: {} } }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { 群系: {} } }));
 const P = await import('./区段包.ts');
 const { mulberry32 } = await import('../core/数学.ts');
 const { sectionCells, coarsestLevel } = await import('./区段.ts');

@@ -1,7 +1,10 @@
 // 贴图发光（真实方块表.ts 的 textureGlow）：模组方块借了熔岩贴图不能让熔岩不亮；原版不发光的方块共用的贴图（南瓜侧面）不亮。
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { buildBiomeColors } from './群系色.ts';
+import { buildBlockTable, type BlockTableData } from './真实方块表.ts';
 
-const mockTable = vi.hoisted(() => {
+// 几种方块的小表（buildBlockTable），不随数据根里的真方块表变
+const testTable = (() => {
   const face = (t: number) => [['+z', '+z', t, -1, 0, 1, 0, 16, 16, 16, 16, 16, 16, 0, 16, 0, 0, 16, 0, 0, 16, 0, 16, 16, 0, 16]];
   return {
     blockTable: {
@@ -17,11 +20,8 @@ const mockTable = vi.hoisted(() => {
     },
     biomeColor: { 群系: {} },
   };
-});
-vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: mockTable.blockTable }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: mockTable.biomeColor }));
-
-const { textureGlow, blockProps, voxelFromState } = await import('./真实方块表.ts');
+})();
+const { textureGlow, blockProps, voxelFromState } = buildBlockTable(testTable.blockTable as unknown as BlockTableData, buildBiomeColors(testTable.biomeColor));
 
 describe('贴图发光', () => {
   it('模组方块借熔岩贴图，熔岩照样亮', () => expect(textureGlow[0]).toBe(255));

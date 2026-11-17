@@ -1,12 +1,8 @@
 // 细做的下界魔杖：拿在手上握点、杖轴要和原版落在同一处（斜举这些手摆的姿势才不用跟着改）；网格要是能看的（没有坏数、法线朝外、不超出全长太多）
 import * as THREE from 'three';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { heldStaffMatrix } from './下界魔杖.tsx';
 import { heldRefinedStaffMatrix, staffPoints, refinedVariants, faceCount, lathe, type RefinedVariant } from './下界魔杖细做.tsx';
-
-// 这组只算位置，模型给空的、贴图给一张 1×1 透明 PNG
-vi.mock('asset:模型/物品/下界魔杖', () => ({ default: { textures: [], parts: {} } }));
-vi.mock('asset:贴图/物品/下界魔杖', () => ({ default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' }));
 
 const transformPoint = (m: THREE.Matrix4, p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m).toArray();
 const variants = Object.keys(refinedVariants) as RefinedVariant[];

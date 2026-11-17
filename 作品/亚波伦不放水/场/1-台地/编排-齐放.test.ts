@@ -1,29 +1,7 @@
 // 第 4 幕的打击停顿落到真编排上（用户 11-11 定照 Linker 打戏知识库来）：索命劈中那 16 帧她的姿势、杖尖和他的样子都定住、索命的电弧也定住，
-// 别的法术、盘照走。盘从第一帧就张着（第 2 幕末已张开）、连放的格一直亮着；他一直被结界钉着、死在幕末。只算位置和姿势，模型、贴图给空的。
-import { describe, expect, it, vi } from 'vitest';
+// 别的法术、盘照走。盘从第一帧就张着（第 2 幕末已张开）、连放的格一直亮着；他一直被结界钉着、死在幕末。
+import { describe, expect, it } from 'vitest';
 
-const emptyImage = { default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' };
-vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { 宽: { texW: 64, texH: 64, parts: [] } } } }));
-vi.mock('asset:贴图/角色/巨人/史蒂夫', () => emptyImage);
-// 杖挂在 RightHandLocator 上：给一根右臂、一个手的定位骨，杖尖位置只要停顿前后可比
-vi.mock('asset:模型/角色/娘化亚波伦', () => ({
-  default: { texW: 1, texH: 1, bones: [{ name: 'MAllBody', pivot: [0, 12, 0] }, { name: 'RightArm', parent: 'MAllBody', pivot: [-5, 22, 0] }, { name: 'RightForeArm', parent: 'RightArm', pivot: [-6, 17, 0] }, { name: 'RightHandLocator', parent: 'RightForeArm', pivot: [-6, 12, 0] }] },
-}));
-// 她的姿势要取动画：用到的几段给空的（只比停顿前后一样不一样，不看具体转角）
-vi.mock('asset:动画/角色/娘化亚波伦/main', () => ({
-  default: { animations: Object.fromEntries(['pre_parallel0', 'pre_parallel1', 'pre_parallel2', 'parallel0', 'parallel1', 'idle', 'fly'].map((animName) => [animName, { loop: true, bones: {} }])) },
-}));
-vi.mock('asset:动画/角色/娘化亚波伦/extra', () => ({ default: { animations: {} } }));
-vi.mock('asset:模型/物品/下界魔杖', () => ({ default: {} }));
-// 多圈轮盘一 import 就要上百张聚晶图标；这里只用它算盘的外半径
-vi.mock('../../界面/多圈轮盘.tsx', () => ({ wheelOuterRadius: () => 100 }));
-vi.mock('asset:贴图/角色/娘化亚波伦/default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/5default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/4default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/3default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/2default', () => emptyImage);
-vi.mock('asset:贴图/特效/晋升之环/halo', () => emptyImage);
-vi.mock('asset:贴图/物品/下界魔杖', () => emptyImage);
 
 const choreo = await import('./编排-齐放.ts');
 const beatModule = await import('./齐放拍.ts');

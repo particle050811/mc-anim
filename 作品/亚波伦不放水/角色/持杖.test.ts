@@ -1,40 +1,12 @@
 // 持杖的默认摆法「斜举」（用户 11-10 定）：不给姿势时杖在身体右侧、杖头朝斜上前方；显式给姿势的不受影响。
-// 坐标：pose 取原点、yaw 0，她面朝 +Y、右手边是 +X、上是 +Z（单位格）。字节在数据根 store，没有就整组跳过。
-import { describe, expect, it, vi } from 'vitest';
+// 坐标：pose 取原点、yaw 0，她面朝 +Y、右手边是 +X、上是 +Z（单位格）。字节在数据根 store，vitest 按资产锁读（pipeline/资产/vitest插件.ts）。
+import { describe, expect, it } from 'vitest';
 import { rightHandCenter, hover, holdWandPose, raisedPose, stand } from './娘化亚波伦.tsx';
-
-const { json, image: mockImage, hasBytes } = await vi.hoisted(async () => {
-  const fs = await import('node:fs');
-  const path = await import('node:path');
-  const { bytesPath, readAssetLock } = await import('../../../pipeline/资产/资产锁.ts');
-  const assetLock = readAssetLock(path.join(import.meta.dirname, '..', '资产锁'));
-  const readBytes = (id: string): Buffer | undefined => {
-    const e = assetLock[id];
-    const f = e && bytesPath(e);
-    return f && fs.existsSync(f) ? fs.readFileSync(f) : undefined;
-  };
-  const needIds = ['模型/角色/娘化亚波伦', '动画/角色/娘化亚波伦/main', '动画/角色/娘化亚波伦/extra'];
-  const json = (id: string, fallback: string) => ({ default: JSON.parse(readBytes(id)?.toString('utf8') ?? fallback) });
-  // 这组只算骨骼，贴图给一张 1×1 透明 PNG
-  const mockImage = () => ({ default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' });
-  return { json, image: mockImage, hasBytes: needIds.every((id) => readBytes(id)) };
-});
-vi.mock('asset:模型/角色/娘化亚波伦', () => json('模型/角色/娘化亚波伦', '{"texW":1,"texH":1,"bones":[]}'));
-vi.mock('asset:动画/角色/娘化亚波伦/main', () => json('动画/角色/娘化亚波伦/main', '{"animations":{}}'));
-vi.mock('asset:动画/角色/娘化亚波伦/extra', () => json('动画/角色/娘化亚波伦/extra', '{"animations":{}}'));
-vi.mock('asset:贴图/角色/娘化亚波伦/default', mockImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/2default', mockImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/3default', mockImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/4default', mockImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/5default', mockImage);
-vi.mock('asset:模型/物品/下界魔杖', () => ({ default: {} }));
-vi.mock('asset:贴图/物品/下界魔杖', mockImage);
-vi.mock('asset:贴图/特效/晋升之环/halo', mockImage);
 
 const originPose = { loc: [0, 0, 0], yaw: 0 };
 const tiltFromVertical = (axis: readonly number[]) => (Math.acos(axis[2]!) * 180) / Math.PI;
 
-describe.skipIf(!hasBytes)('持杖的默认摆法（斜举）', () => {
+describe('持杖的默认摆法（斜举）', () => {
   it('站立：不给姿势，杖头朝斜上、往外、往前，和竖直 30～45 度；杖头在头的右侧外面、不低于头，杖尾也在身体右侧', () => {
     for (const sec of [0, 0.5, 1.5, 2.6]) {
       const staff = holdWandPose({ pose: originPose, sec: sec, act: stand });

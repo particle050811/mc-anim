@@ -1,24 +1,11 @@
-// 光体的纯函数：方块格码、区段拼窗口、各层窗口的套法、发光格聚团、团分砖、各级的权重、方块网格反推格码。
-// 真实方块表要 `asset:` 方块表，vitest 里解析不了，换成几种方块的小表（体素值 = 下标 + 1）。
-import { describe, expect, it, vi } from 'vitest';
+// 光体的纯函数：方块格码、区段拼窗口、各层窗口的套法、发光格聚团、团分砖、各级的权重、方块网格反推格码。方块格码按数据根里的真方块表。
+import { describe, expect, it } from 'vitest';
+import { sectionCells } from '../voxel/区段.ts';
 import type { VoxelGrid } from '../voxel/生成.ts';
 import type { BlockMeshInfo } from '../voxel/方块网格信息.ts';
-
-vi.mock('../voxel/真实方块表.ts', () => {
-  const names = ['minecraft:fire[age=0]', 'minecraft:lava[level=0]', 'minecraft:netherrack', 'minecraft:oak_leaves', 'minecraft:shroomlight'];
-  return {
-    blockNames: names,
-    voxelCount: names.length + 1,
-    voxelFromState: (s: string) => names.findIndex((n) => n.startsWith(s)) + 1,
-    blockProps: { glow: Uint8Array.from([0, 255, 255, 0, 0, 255]), opaque: Uint8Array.from([0, 0, 1, 15, 15, 15]), leaf: Uint8Array.from([0, 0, 0, 0, 1, 0]) },
-  };
-});
-
-const { voxelFromState } = await import('../voxel/真实方块表.ts');
-const { sectionCells } = await import('../voxel/区段.ts');
-const { BRICK, buildLightSet, cascades, cellCode, CODE_AIR, CODE_OPAQUE, EMIT_OPAQUE, emitColors, fillWindow, KMAX, levelWeight, LIGHT_FLOATS, lightWindows, occupancy, sectionCodes, windowSections } = await import('./光体.ts');
-const { meshLightCodes } = await import('./光体网格.ts');
-type LightWindow = import('./光体.ts').LightWindow;
+import { voxelFromState } from '../voxel/真实方块表.ts';
+import { BRICK, buildLightSet, cascades, cellCode, CODE_AIR, CODE_OPAQUE, EMIT_OPAQUE, emitColors, fillWindow, KMAX, levelWeight, LIGHT_FLOATS, lightWindows, occupancy, sectionCodes, windowSections, type LightWindow } from './光体.ts';
+import { meshLightCodes } from './光体网格.ts';
 
 const fire = cellCode[voxelFromState('minecraft:fire')]!;
 const lava = cellCode[voxelFromState('minecraft:lava')]!;

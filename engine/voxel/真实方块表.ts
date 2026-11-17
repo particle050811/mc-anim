@@ -20,179 +20,188 @@
 //   群系名 / 群系号(名)、建染色表(水色?)：群系号 × 染色路 → sRGB 字节的表（不知道位置时用，群系色取 群系颜色()）；
 //     染色路 0 不染 1 草 2 树叶 3 林冠树叶 4 红树叶 5 水 6～ 定值（云杉叶 #619961、白桦叶 #80a755、睡莲 #208030……，规则见 关键帧方块.py）
 import raw from 'asset:数据/场景/关键帧/方块表';
-import { biomeIds, biomeColors, grassColor, foliageColor, waterColor } from './群系色.ts';
+import { defaultBiomeColors, type BiomeColors } from './群系色.ts';
 import { blockGlow } from './方块发光.ts';
 
 type FaceData = (string | number)[];
 // 一条方块：[标志, 染色路, 面组号...]，标志 = 类（0 实心 1 镂空 2 半透明 3 液体）+ 4 满 + 8 遮 + 16 光 + 32 转 + 64 偏（见 关键帧方块.py）
 type BlockData = [number, string | null, ...number[]];
-const DATA = raw as unknown as { 贴图: string[]; 面组: FaceData[][]; 方块: Record<string, BlockData> };
+/** 方块表.json 的形状（关键帧方块.py 导出） */
+export type BlockTableData = { 贴图: string[]; 面组: FaceData[][]; 方块: Record<string, BlockData> };
 
 export const tintPathNames = ['', 'grass', 'foliage', 'canopy', 'mangrove', 'water'];
-
-// ---------- 方块表 ----------
-export const blockNames = Object.keys(DATA.方块);
-const indexByState = new Map(blockNames.map((n, i) => [n, i]));
-// 同一个方块 id 导出的各个状态（按导出顺序，第一个是 jar 里 blockstates 写的第一个变体）
-const statesById = new Map<string, number[]>();
-blockNames.forEach((stateName, i) => {
-  const id = stateName.split('[')[0];
-  const stateList = statesById.get(id);
-  if (stateList) stateList.push(i);
-  else statesById.set(id, [i]);
-});
-// 1.20.3 以后改名的方块（jar 是 1.20.1）
-const legacyIds: Record<string, string> = { 'minecraft:short_grass': 'minecraft:grass' };
-const parseProps = (s: string): [string, string][] => (s.includes('[') ? s.slice(s.indexOf('[') + 1, -1).split(',').filter(Boolean).map((kv) => kv.split('=') as [string, string]) : []);
-const lookupCache = new Map<string, number>();
-export const voxelFromState = (state: string) => {
-  const k = indexByState.get(state);
-  if (k !== undefined) return k + 1;
-  let voxel = lookupCache.get(state);
-  if (voxel !== undefined) return voxel;
-  let id = state.split('[')[0];
-  id = legacyIds[id] ?? id;
-  const cand = statesById.get(id);
-  voxel = 0;
-  if (cand) {
-    const want = parseProps(state);
-    const hit = cand.find((i) => {
-      const have = new Map(parseProps(blockNames[i]));
-      return want.every(([propKey, propValue]) => !have.has(propKey) || have.get(propKey) === propValue);
-    });
-    voxel = (hit ?? cand[0]) + 1;
-  }
-  lookupCache.set(state, voxel);
-  return voxel;
-};
-
-const tableSize = blockNames.length + 1;
-const fixedColors: string[] = [];
-const tintPathIdx = (tintSpec: string | null): number => {
-  if (!tintSpec) return 0;
-  const k = tintPathNames.indexOf(tintSpec);
-  if (k > 0) return k;
-  let i = fixedColors.indexOf(tintSpec);
-  if (i < 0) i = fixedColors.push(tintSpec) - 1;
-  return 6 + i;
-};
-const FULL = new Uint8Array(tableSize);
-const OCC = new Uint8Array(tableSize);
-const LEAF = new Uint8Array(tableSize);
-const AO = new Uint8Array(tableSize);
-const CLS = new Uint8Array(tableSize);
-const TINT = new Uint8Array(tableSize);
-const SPIN = new Uint8Array(tableSize);
-const OFFS = new Uint8Array(tableSize);
-const PLANT = new Uint8Array(tableSize);
-const CROSS = new Uint8Array(tableSize);
-const OPAQ = new Uint8Array(tableSize);
 export const faceStride = 30;
-const FACES: Float32Array[] = [new Float32Array(0)];
-const dirIndex = (s: string) => Math.max(-1, ['+x', '-x', '+y', '-y', '+z', '-z'].indexOf(s));
-blockNames.forEach((stateName, i) => {
-  const [flags, tintSpec, ...groupIds] = DATA.方块[stateName];
-  const voxel = i + 1;
-  FULL[voxel] = flags & 4 ? 1 : 0;
-  OCC[voxel] = flags & 8 ? 1 : 0;
-  CLS[voxel] = flags & 3;
-  LEAF[voxel] = OCC[voxel] && !FULL[voxel] && CLS[voxel] === 1 && stateName.split('[')[0].endsWith('leaves') ? 1 : 0; // 玻璃这类整格镂空的不算树叶
-  AO[voxel] = flags & 16 ? 1 : 0;
-  TINT[voxel] = tintPathIdx(tintSpec);
-  SPIN[voxel] = flags & 32 ? 1 : 0;
-  OFFS[voxel] = flags & 64 ? 1 : 0;
-  PLANT[voxel] = !OCC[voxel] && CLS[voxel] !== 3 ? 1 : 0;
-  const faces = groupIds.flatMap((g) => DATA.面组[g]); // 多部件的方块一个部件一组，拼起来
-  CROSS[voxel] = faces.some((q) => !q[0]) ? 1 : 0;
-  OPAQ[voxel] = FULL[voxel] || LEAF[voxel] ? 15 : CLS[voxel] >= 2 ? 1 : 0;
-  const faceBuf = new Float32Array(faces.length * faceStride);
-  faces.forEach((face, k) => {
-    const base = k * faceStride;
-    const facingIdx = dirIndex(face[0] as string);
-    const cullIdx = dirIndex(face[1] as string);
-    faceBuf[base] = facingIdx < 0 ? 6 : facingIdx;
-    faceBuf[base + 1] = cullIdx < 0 ? 6 : cullIdx;
-    for (let t = 2; t < 6; t++) faceBuf[base + t] = face[t] as number;
-    for (let t = 6; t < 26; t++) faceBuf[base + t] = (face[t] as number) / 16; // 表里坐标、uv 以 1/16 格为单位
-    const ax = faceBuf[base + 9] - faceBuf[base + 6], ay = faceBuf[base + 10] - faceBuf[base + 7], az = faceBuf[base + 11] - faceBuf[base + 8];
-    const bx = faceBuf[base + 15] - faceBuf[base + 6], by = faceBuf[base + 16] - faceBuf[base + 7], bz = faceBuf[base + 17] - faceBuf[base + 8];
-    let nx = by * az - bz * ay, ny = bz * ax - bx * az, nz = bx * ay - by * ax;
-    const normalLen = Math.hypot(nx, ny, nz) || 1;
-    nx /= normalLen;
-    ny /= normalLen;
-    nz /= normalLen;
-    faceBuf[base + 26] = nx;
-    faceBuf[base + 27] = ny;
-    faceBuf[base + 28] = nz;
-    // 整格面：沿轴、在面内盖满整个格（能参加合并；贴在方块边界上的整格面，和水面这种在格子中间的都算）
-    let full = facingIdx >= 0 ? 1 : 0;
-    if (full) {
-      const ax2 = facingIdx >> 1; // 0 x 1 y 2 z
-      for (let q2 = 0; q2 < 4; q2++)
-        for (let coordAxis = 0; coordAxis < 3; coordAxis++) {
-          const coord = faceBuf[base + 6 + q2 * 3 + coordAxis];
-          if (coordAxis === ax2) { if (coord !== faceBuf[base + 6 + coordAxis]) full = 0; }
-          else if (coord !== 0 && coord !== 1) full = 0;
-        }
-    }
-    faceBuf[base + 29] = full;
-  });
-  FACES[voxel] = faceBuf;
-});
-// 自发光（方块发光.ts）：每种方块 0～255；按贴图再取一份（贴图发光）：用到这张贴图的发光方块里最亮的，但原版有不发光的方块也用它就算不亮
-// （南瓜灯的侧面和南瓜共用，不亮；只有刻脸那面亮）。模组方块借原版贴图的不算（匠魂的 ichor_slime 借了熔岩贴图，不能因此让熔岩不亮）。
-// 网格把贴图发光写进顶点（网格.ts），合并键里本来就有贴图号，同一张贴图发光一样，合并不用另加键
-const GLOW = new Uint8Array(tableSize);
-const textureGlowMax = new Uint8Array(DATA.贴图.length);
-const textureVanillaDark = new Uint8Array(DATA.贴图.length);
-blockNames.forEach((stateName, i) => {
-  const voxel = i + 1;
-  GLOW[voxel] = Math.round(blockGlow(stateName) * 255);
-  const vanilla = stateName.startsWith('minecraft:');
-  const faceBuf = FACES[voxel];
-  for (let base = 0; base < faceBuf.length; base += faceStride)
-    for (const t of [faceBuf[base + 2], faceBuf[base + 3]]) {
-      if (t < 0) continue;
-      if (GLOW[voxel]) textureGlowMax[t] = Math.max(textureGlowMax[t], GLOW[voxel]);
-      else if (vanilla) textureVanillaDark[t] = 1;
-    }
-});
-export const textureGlow = textureGlowMax.map((g, t) => (textureVanillaDark[t] ? 0 : g));
-export const blockProps = { full: FULL, occlusion: OCC, leaf: LEAF, 光: AO, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS, plant: PLANT, cross: CROSS, opaque: OPAQ, glow: GLOW };
-export const voxelCount = tableSize;
-export const faceTable: readonly Float32Array[] = FACES;
-export const textureNames: readonly string[] = DATA.贴图;
-export const isLeaves = (v: number) => LEAF[v] === 1;
-export const isFullCube = (v: number) => FULL[v] === 1;
-
-// ---------- 群系染色 ----------
-export const biomeNames = biomeIds;
-export const biomeIndex = (name: string) => Math.max(0, biomeNames.indexOf(name));
-const rgb = (c: number) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
-// 暮色森林 ColorHandler：(树叶色 & 0xFEFEFE + k) >> 1
-const avgColor = (c: number, k: number) => ((c & 0xfefefe) + k) >> 1;
-const fixedColorValues = fixedColors.map((s) => parseInt(s.slice(1), 16));
 export type TintTable = { t: Uint8Array; C: number };
-// 群系号 × 染色路 → sRGB 字节。水色可以按群系另给，不给就用群系表里的水色
-export const buildTintTable = (waterOverrides?: Record<string, string>): TintTable => {
-  const pathCount = 6 + fixedColors.length;
-  const t = new Uint8Array(biomeNames.length * pathCount * 3).fill(255);
-  biomeNames.forEach((biomeName, biomeIdx) => {
-    const palette = biomeColors(biomeName);
-    const water = waterOverrides?.[biomeName] ? parseInt(waterOverrides[biomeName].slice(1), 16) : palette.water;
-    const rows = [0xffffff, palette.grass, palette.foliage, avgColor(palette.foliage, 0x469a66), avgColor(palette.foliage, 0xc0e694), water, ...fixedColorValues];
-    rows.forEach((c, k) => t.set(rgb(c), (biomeIdx * pathCount + k) * 3));
+
+// 按一张方块表（和群系色）建全部查表（单测传小表）；模块导出的是数据根里那张表的默认实例，区段包、网格、光体都用它
+export const buildBlockTable = (DATA: BlockTableData, biomes: BiomeColors = defaultBiomeColors) => {
+  const { biomeIds, biomeColors, grassColor, foliageColor, waterColor } = biomes;
+
+
+  // ---------- 方块表 ----------
+  const blockNames = Object.keys(DATA.方块);
+  const indexByState = new Map(blockNames.map((n, i) => [n, i]));
+  // 同一个方块 id 导出的各个状态（按导出顺序，第一个是 jar 里 blockstates 写的第一个变体）
+  const statesById = new Map<string, number[]>();
+  blockNames.forEach((stateName, i) => {
+    const id = stateName.split('[')[0];
+    const stateList = statesById.get(id);
+    if (stateList) stateList.push(i);
+    else statesById.set(id, [i]);
   });
-  return { t, C: pathCount };
-};
-export const blockTint = (voxel: number, biome: string, x: number, z: number): number => {
-  const k = TINT[voxel];
-  if (k === 0) return 0xffffff;
-  if (k >= 6) return fixedColorValues[k - 6];
-  if (k === 1) return grassColor(biome, x, z);
-  if (k === 5) return waterColor(biome);
-  const leafColor = foliageColor(biome, x, z);
-  return k === 2 ? leafColor : avgColor(leafColor, k === 3 ? 0x469a66 : 0xc0e694);
-};
+  // 1.20.3 以后改名的方块（jar 是 1.20.1）
+  const legacyIds: Record<string, string> = { 'minecraft:short_grass': 'minecraft:grass' };
+  const parseProps = (s: string): [string, string][] => (s.includes('[') ? s.slice(s.indexOf('[') + 1, -1).split(',').filter(Boolean).map((kv) => kv.split('=') as [string, string]) : []);
+  const lookupCache = new Map<string, number>();
+  const voxelFromState = (state: string) => {
+    const k = indexByState.get(state);
+    if (k !== undefined) return k + 1;
+    let voxel = lookupCache.get(state);
+    if (voxel !== undefined) return voxel;
+    let id = state.split('[')[0];
+    id = legacyIds[id] ?? id;
+    const cand = statesById.get(id);
+    voxel = 0;
+    if (cand) {
+      const want = parseProps(state);
+      const hit = cand.find((i) => {
+        const have = new Map(parseProps(blockNames[i]));
+        return want.every(([propKey, propValue]) => !have.has(propKey) || have.get(propKey) === propValue);
+      });
+      voxel = (hit ?? cand[0]) + 1;
+    }
+    lookupCache.set(state, voxel);
+    return voxel;
+  };
 
+  const tableSize = blockNames.length + 1;
+  const fixedColors: string[] = [];
+  const tintPathIdx = (tintSpec: string | null): number => {
+    if (!tintSpec) return 0;
+    const k = tintPathNames.indexOf(tintSpec);
+    if (k > 0) return k;
+    let i = fixedColors.indexOf(tintSpec);
+    if (i < 0) i = fixedColors.push(tintSpec) - 1;
+    return 6 + i;
+  };
+  const FULL = new Uint8Array(tableSize);
+  const OCC = new Uint8Array(tableSize);
+  const LEAF = new Uint8Array(tableSize);
+  const AO = new Uint8Array(tableSize);
+  const CLS = new Uint8Array(tableSize);
+  const TINT = new Uint8Array(tableSize);
+  const SPIN = new Uint8Array(tableSize);
+  const OFFS = new Uint8Array(tableSize);
+  const PLANT = new Uint8Array(tableSize);
+  const CROSS = new Uint8Array(tableSize);
+  const OPAQ = new Uint8Array(tableSize);
+  const FACES: Float32Array[] = [new Float32Array(0)];
+  const dirIndex = (s: string) => Math.max(-1, ['+x', '-x', '+y', '-y', '+z', '-z'].indexOf(s));
+  blockNames.forEach((stateName, i) => {
+    const [flags, tintSpec, ...groupIds] = DATA.方块[stateName];
+    const voxel = i + 1;
+    FULL[voxel] = flags & 4 ? 1 : 0;
+    OCC[voxel] = flags & 8 ? 1 : 0;
+    CLS[voxel] = flags & 3;
+    LEAF[voxel] = OCC[voxel] && !FULL[voxel] && CLS[voxel] === 1 && stateName.split('[')[0].endsWith('leaves') ? 1 : 0; // 玻璃这类整格镂空的不算树叶
+    AO[voxel] = flags & 16 ? 1 : 0;
+    TINT[voxel] = tintPathIdx(tintSpec);
+    SPIN[voxel] = flags & 32 ? 1 : 0;
+    OFFS[voxel] = flags & 64 ? 1 : 0;
+    PLANT[voxel] = !OCC[voxel] && CLS[voxel] !== 3 ? 1 : 0;
+    const faces = groupIds.flatMap((g) => DATA.面组[g]); // 多部件的方块一个部件一组，拼起来
+    CROSS[voxel] = faces.some((q) => !q[0]) ? 1 : 0;
+    OPAQ[voxel] = FULL[voxel] || LEAF[voxel] ? 15 : CLS[voxel] >= 2 ? 1 : 0;
+    const faceBuf = new Float32Array(faces.length * faceStride);
+    faces.forEach((face, k) => {
+      const base = k * faceStride;
+      const facingIdx = dirIndex(face[0] as string);
+      const cullIdx = dirIndex(face[1] as string);
+      faceBuf[base] = facingIdx < 0 ? 6 : facingIdx;
+      faceBuf[base + 1] = cullIdx < 0 ? 6 : cullIdx;
+      for (let t = 2; t < 6; t++) faceBuf[base + t] = face[t] as number;
+      for (let t = 6; t < 26; t++) faceBuf[base + t] = (face[t] as number) / 16; // 表里坐标、uv 以 1/16 格为单位
+      const ax = faceBuf[base + 9] - faceBuf[base + 6], ay = faceBuf[base + 10] - faceBuf[base + 7], az = faceBuf[base + 11] - faceBuf[base + 8];
+      const bx = faceBuf[base + 15] - faceBuf[base + 6], by = faceBuf[base + 16] - faceBuf[base + 7], bz = faceBuf[base + 17] - faceBuf[base + 8];
+      let nx = by * az - bz * ay, ny = bz * ax - bx * az, nz = bx * ay - by * ax;
+      const normalLen = Math.hypot(nx, ny, nz) || 1;
+      nx /= normalLen;
+      ny /= normalLen;
+      nz /= normalLen;
+      faceBuf[base + 26] = nx;
+      faceBuf[base + 27] = ny;
+      faceBuf[base + 28] = nz;
+      // 整格面：沿轴、在面内盖满整个格（能参加合并；贴在方块边界上的整格面，和水面这种在格子中间的都算）
+      let full = facingIdx >= 0 ? 1 : 0;
+      if (full) {
+        const ax2 = facingIdx >> 1; // 0 x 1 y 2 z
+        for (let q2 = 0; q2 < 4; q2++)
+          for (let coordAxis = 0; coordAxis < 3; coordAxis++) {
+            const coord = faceBuf[base + 6 + q2 * 3 + coordAxis];
+            if (coordAxis === ax2) { if (coord !== faceBuf[base + 6 + coordAxis]) full = 0; }
+            else if (coord !== 0 && coord !== 1) full = 0;
+          }
+      }
+      faceBuf[base + 29] = full;
+    });
+    FACES[voxel] = faceBuf;
+  });
+  // 自发光（方块发光.ts）：每种方块 0～255；按贴图再取一份（贴图发光）：用到这张贴图的发光方块里最亮的，但原版有不发光的方块也用它就算不亮
+  // （南瓜灯的侧面和南瓜共用，不亮；只有刻脸那面亮）。模组方块借原版贴图的不算（匠魂的 ichor_slime 借了熔岩贴图，不能因此让熔岩不亮）。
+  // 网格把贴图发光写进顶点（网格.ts），合并键里本来就有贴图号，同一张贴图发光一样，合并不用另加键
+  const GLOW = new Uint8Array(tableSize);
+  const textureGlowMax = new Uint8Array(DATA.贴图.length);
+  const textureVanillaDark = new Uint8Array(DATA.贴图.length);
+  blockNames.forEach((stateName, i) => {
+    const voxel = i + 1;
+    GLOW[voxel] = Math.round(blockGlow(stateName) * 255);
+    const vanilla = stateName.startsWith('minecraft:');
+    const faceBuf = FACES[voxel];
+    for (let base = 0; base < faceBuf.length; base += faceStride)
+      for (const t of [faceBuf[base + 2], faceBuf[base + 3]]) {
+        if (t < 0) continue;
+        if (GLOW[voxel]) textureGlowMax[t] = Math.max(textureGlowMax[t], GLOW[voxel]);
+        else if (vanilla) textureVanillaDark[t] = 1;
+      }
+  });
+  const textureGlow = textureGlowMax.map((g, t) => (textureVanillaDark[t] ? 0 : g));
+  const blockProps = { full: FULL, occlusion: OCC, leaf: LEAF, 光: AO, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS, plant: PLANT, cross: CROSS, opaque: OPAQ, glow: GLOW };
+  const voxelCount = tableSize;
+  const faceTable: readonly Float32Array[] = FACES;
+  const textureNames: readonly string[] = DATA.贴图;
+  const isLeaves = (v: number) => LEAF[v] === 1;
+  const isFullCube = (v: number) => FULL[v] === 1;
 
+  // ---------- 群系染色 ----------
+  const biomeNames = biomeIds;
+  const biomeIndex = (name: string) => Math.max(0, biomeNames.indexOf(name));
+  const rgb = (c: number) => [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+  // 暮色森林 ColorHandler：(树叶色 & 0xFEFEFE + k) >> 1
+  const avgColor = (c: number, k: number) => ((c & 0xfefefe) + k) >> 1;
+  const fixedColorValues = fixedColors.map((s) => parseInt(s.slice(1), 16));
+  // 群系号 × 染色路 → sRGB 字节。水色可以按群系另给，不给就用群系表里的水色
+  const buildTintTable = (waterOverrides?: Record<string, string>): TintTable => {
+    const pathCount = 6 + fixedColors.length;
+    const t = new Uint8Array(biomeNames.length * pathCount * 3).fill(255);
+    biomeNames.forEach((biomeName, biomeIdx) => {
+      const palette = biomeColors(biomeName);
+      const water = waterOverrides?.[biomeName] ? parseInt(waterOverrides[biomeName].slice(1), 16) : palette.water;
+      const rows = [0xffffff, palette.grass, palette.foliage, avgColor(palette.foliage, 0x469a66), avgColor(palette.foliage, 0xc0e694), water, ...fixedColorValues];
+      rows.forEach((c, k) => t.set(rgb(c), (biomeIdx * pathCount + k) * 3));
+    });
+    return { t, C: pathCount };
+  };
+  const blockTint = (voxel: number, biome: string, x: number, z: number): number => {
+    const k = TINT[voxel];
+    if (k === 0) return 0xffffff;
+    if (k >= 6) return fixedColorValues[k - 6];
+    if (k === 1) return grassColor(biome, x, z);
+    if (k === 5) return waterColor(biome);
+    const leafColor = foliageColor(biome, x, z);
+    return k === 2 ? leafColor : avgColor(leafColor, k === 3 ? 0x469a66 : 0xc0e694);
+  };
+  return { blockNames, voxelFromState, textureGlow, blockProps, voxelCount, faceTable, textureNames, isLeaves, isFullCube, biomeNames, biomeIndex, buildTintTable, blockTint };
+};
+export type BlockTable = ReturnType<typeof buildBlockTable>;
+export const defaultBlockTable = buildBlockTable(raw as unknown as BlockTableData);
+export const { blockNames, voxelFromState, textureGlow, blockProps, voxelCount, faceTable, textureNames, isLeaves, isFullCube, biomeNames, biomeIndex, buildTintTable, blockTint } = defaultBlockTable;
