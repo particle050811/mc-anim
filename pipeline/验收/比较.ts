@@ -65,15 +65,14 @@ export const TileEdge = [8, 16, 64] as const;
 export type TileEdge = (typeof TileEdge)[number];
 export type BlockDiff = Record<TileEdge, { 差: number; x: number; y: number }>;
 
-/**
- * d = 新 − 旧（逐通道、带符号）；每个窗口里各通道 d 的平均取绝对值、三通道取最大，L_w 是全帧所有窗口里最大的那个（级，0–255）和它的左上角。
- * 先按 4×4 格求和、再用积分图，一帧一次算完所有窗口（参考实现：数据根 archive/verify比法-1102/脚本/库.py 的 指标()）。画面比窗口小就是 0
- */
-export const computeBlockDiff = (newPixels: Buffer, oldBuf: Buffer, width: number, height: number): BlockDiff => {
+/** 4×4 格差值和的积分图：(格高+1)×(格宽+1)×3，第 0 行、第 0 列是 0；和最大 255×像素数，double 精确 */
+export type DiffIntegral = { cellWidth: number; cellRows: number; rowLen: number; integral: Float64Array };
+
+/** d = 新 − 旧（逐通道、带符号）先按 4×4 格求和、再建积分图：任一窗口的通道和四次查表得出（computeBlockDiff、anim diff 的挑窗口共用） */
+export const diffIntegral = (newPixels: Buffer, oldBuf: Buffer, width: number, height: number): DiffIntegral => {
   if (newPixels.length !== oldBuf.length || newPixels.length !== width * height * 3) throw new Error('两帧大小不一样');
   const cellWidth = Math.floor(width / 4);
   const cellRows = Math.floor(height / 4);
-  // 积分图：(格高+1)×(格宽+1)×3，第 0 行、第 0 列是 0；和最大 255×像素数，double 精确
   const rowLen = (cellWidth + 1) * 3;
   const integral = new Float64Array((cellRows + 1) * rowLen);
   const cellDiffs = new Int32Array(cellWidth * 3);
@@ -102,6 +101,19 @@ export const computeBlockDiff = (newPixels: Buffer, oldBuf: Buffer, width: numbe
       integral[rowStart + j + 2] = integral[upRowBase + j + 2]! + b;
     }
   }
+  return { cellWidth, cellRows, rowLen, integral };
+};
+
+/** 左上角在第 i 行、第 j 列格、边长 k 格的窗口里通道 c 的差值和 */
+export const windowSum = ({ integral, rowLen }: DiffIntegral, i: number, j: number, k: number, c: number) =>
+  integral[(i + k) * rowLen + (j + k) * 3 + c]! - integral[i * rowLen + (j + k) * 3 + c]! - integral[(i + k) * rowLen + j * 3 + c]! + integral[i * rowLen + j * 3 + c]!;
+
+/**
+ * d = 新 − 旧（逐通道、带符号）；每个窗口里各通道 d 的平均取绝对值、三通道取最大，L_w 是全帧所有窗口里最大的那个（级，0–255）和它的左上角。
+ * 先按 4×4 格求和、再用积分图，一帧一次算完所有窗口（参考实现：数据根 archive/verify比法-1102/脚本/库.py 的 指标()）。画面比窗口小就是 0
+ */
+export const computeBlockDiff = (newPixels: Buffer, oldBuf: Buffer, width: number, height: number, integralImage = diffIntegral(newPixels, oldBuf, width, height)): BlockDiff => {
+  const { cellWidth, cellRows } = integralImage;
   const r = {} as BlockDiff;
   for (const w of TileEdge) {
     const k = w / 4;
@@ -109,8 +121,7 @@ export const computeBlockDiff = (newPixels: Buffer, oldBuf: Buffer, width: numbe
     for (let i = 0; i + k <= cellRows; i++) {
       for (let j = 0; j + k <= cellWidth; j++) {
         for (let c = 0; c < 3; c++) {
-          const s = integral[(i + k) * rowLen + (j + k) * 3 + c]! - integral[i * rowLen + (j + k) * 3 + c]! - integral[(i + k) * rowLen + j * 3 + c]! + integral[i * rowLen + j * 3 + c]!;
-          const m = Math.abs(s) / (w * w);
+          const m = Math.abs(windowSum(integralImage, i, j, k, c)) / (w * w);
           if (m > maxDiff) [maxDiff, maxX, maxY] = [m, j * 4, i * 4];
         }
       }
