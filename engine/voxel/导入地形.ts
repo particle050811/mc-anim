@@ -17,7 +17,7 @@ import type { V3 } from '../model/parts.tsx';
 import type { TerrainSampler } from './地表.ts';
 import { sectionKey, type SectionId } from './区段.ts';
 import { readModel, modelFileName } from './区段模型.ts';
-import { formatVersion, sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap } from './区段包.ts';
+import { formatVersion, sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, decodeSplittable, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap } from './区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
 import { recordSectionRead } from './地形用量.ts';
@@ -42,6 +42,7 @@ type TerrainPack = {
   tables: PackTable;
   coarseHeights: CoarseHeightMap;
   maxTop: number; // 粗高度图里最高的顶（场景 z）
+  canSplit: ReturnType<typeof decodeSplittable>; // 各处最细级不一样的包才有
   variesByPos: boolean[]; // 按包里的群系号
   index: Map<string, Promise<Uint32Array>>; // 块文件名 → 索引
   data: Map<string, CachedSection>; // 按最近用到的先后排（Map 按插入顺序，用到一次挪到最后）
@@ -62,7 +63,7 @@ const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
     checkFrozenCoarse(packName, coarseHeights);
     let maxTop = -Infinity;
     for (const height of coarseHeights.height) if (height !== -32768) maxTop = Math.max(maxTop, height);
-    return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
+    return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, canSplit: decodeSplittable(info), variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
   });
 
 const loadTileIndex = (pack: TerrainPack, fileName: string) => {
@@ -175,6 +176,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
       return importedSectionVoxels(pack.data.get(k)!.d, ctx);
     },
     transferOwnership: true,
+    ...(pack.canSplit ? { canSplit: pack.canSplit } : {}),
     prefetch: (qs, guessed) => {
       const round = ++pack.round;
       const waits = new Set<Promise<void>>();

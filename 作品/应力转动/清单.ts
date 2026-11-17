@@ -46,6 +46,7 @@ export const manifest: readonly ManifestEntry[] = [
   { key: '7-又一只', 章: 7, 集: 1 },
   { key: '7-回城报告', 章: 7, 集: 1 },
   { key: '7-起疑', 章: 7, 集: 1 },
+  { key: '核对-珠峰十马赫', 章: '核对' },
 ];
 
 /** 求解缓存的入口（名 → 相对本目录的模块）：打包时按它们的依赖闭包算代码层指纹（pipeline/指纹/求解指纹.ts、engine/core/求解缓存.ts） */

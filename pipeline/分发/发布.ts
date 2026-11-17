@@ -50,25 +50,32 @@ const streamSha256 = (f: string) =>
       .on('error', reject);
   });
 
-type TerrainRecord = { version: string; manifestSha256?: string; fileCount?: number; size?: number };
+type TerrainRecord = { version: string; manifestSha256?: string; fileCount?: number; size?: number; visibility?: string };
 const readTerrainTable = (): Record<string, TerrainRecord> =>
   (JSON.parse(fs.readFileSync(path.join(codeRoot(), 'assets', '地形版本.json'), 'utf8')) as { pack?: Record<string, TerrainRecord> }).pack ?? {};
 
 export type ExpectedRelease = { bytes: string[]; privateLibBytes: string[]; terrain: { pack: string; version: string }[]; 段数: number; privateFiles: string[]; issues: string[] };
 
-/** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节、私有/ 库里可见性不是私有的字节（可见性私有的不发），加段声明的地形包 */
-export const computeExpectedRelease = async (c: CheckContext, releaseTable: ReleaseManifest): Promise<ExpectedRelease> => {
-  const bundleSet = await computeRepoBundle(c, releaseTable.segment);
-  const terrainTable = readTerrainTable();
-  const issues = [...bundleSet.issues];
-  const terrainPacks = bundleSet.terrain.flatMap((pack) => {
+/** 段声明的地形包里要发的：可见性私有的不发（同字节；别人给的存档烘的包，用它的段带 本机地形.txt，别的机器没有包就跳过那段），没登记的记进 issues */
+export const terrainToRelease = (packs: string[], terrainTable: Record<string, TerrainRecord>) => {
+  const issues: string[] = [];
+  const terrain = packs.flatMap((pack) => {
     const v = terrainTable[pack];
     if (!v) {
       issues.push(`地形包 ${pack} 没在 assets/地形版本.json 登记`);
       return [];
     }
-    return [{ pack: pack, version: v.version }];
+    return v.visibility === '私有' ? [] : [{ pack: pack, version: v.version }];
   });
+  return { terrain, issues };
+};
+
+/** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节、私有/ 库里可见性不是私有的字节（可见性私有的不发），加段声明的地形包（terrainToRelease） */
+export const computeExpectedRelease = async (c: CheckContext, releaseTable: ReleaseManifest): Promise<ExpectedRelease> => {
+  const bundleSet = await computeRepoBundle(c, releaseTable.segment);
+  const picked = terrainToRelease(bundleSet.terrain, readTerrainTable());
+  const issues = [...bundleSet.issues, ...picked.issues];
+  const terrainPacks = picked.terrain;
   return { bytes: [...bundleSet.files.keys()].sort(), privateLibBytes: [...bundleSet.privateLibItems.keys()].sort(), terrain: terrainPacks, 段数: bundleSet.segKeys.length, privateFiles: bundleSet.privateFiles, issues };
 };
 

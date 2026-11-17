@@ -11,6 +11,7 @@ import { columnSegmentCacheDir, defaultThreads, loadEdits } from '../烘焙/流�
 import { EditApplier } from '../编辑/套用.ts';
 import { RegionSource } from '../区域源.ts';
 import { worldSeed } from '../存档.ts';
+import { saveFormat } from '../存档格式.ts';
 import { regionDir, saveDir, readDecl, type WorldDecl } from '../声明.ts';
 import { loadVoxelLib } from '../体素库.ts';
 import { versionDir, readTerrainTable } from '../版本.ts';
@@ -51,8 +52,9 @@ export const buildSource = async (w: WorldDecl, p: ParsedArgs): Promise<{ 源: B
   const dir = regionDir(w, p.value['--save-dir']);
   const seed = worldSeed(saveDir(w, p.value['--save-dir']));
   const editSet = p.toggles.has('--raw') ? null : await loadEdits(w);
-  const editApplier = editSet ? new EditApplier(editSet, new RegionSource(dir, seed, columnSegmentCacheDir())) : null;
-  const regionSource = new RegionSource(dir, seed, columnSegmentCacheDir(), editApplier ? (r) => editApplier.applyEdits(r) : null);
+  const format = saveFormat(w.saveFormat);
+  const editApplier = editSet ? new EditApplier(editSet, new RegionSource(dir, seed, columnSegmentCacheDir(), null, format)) : null;
+  const regionSource = new RegionSource(dir, seed, columnSegmentCacheDir(), editApplier ? (r) => editApplier.applyEdits(r) : null, format);
   const saveSource = new SaveBlockSource(regionSource, `存档 ${dir}${editSet ? `，套编辑 ${editSet.step.length} 条命令` : p.toggles.has('--raw') ? '，不套编辑' : ''}`);
   return { 源: saveSource, save: saveSource, region: regionSource, 标: editSet ? '编辑后' : '原样' };
 };
