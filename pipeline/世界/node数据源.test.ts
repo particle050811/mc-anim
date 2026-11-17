@@ -22,30 +22,18 @@ describe('nodeDataSource', () => {
   fs.mkdirSync(path.join(root, '包', 'v1'), { recursive: true });
   fs.writeFileSync(path.join(root, '包', 'v1', 'a.json'), '{"x":1}');
   fs.writeFileSync(path.join(root, '包', 'v1', 'b.bin.gz'), gzipSync(Buffer.from([1, 2, 3])));
-  fs.writeFileSync(path.join(root, '包', 'v1', 'c.bin'), Buffer.concat([Buffer.from([9, 9]), gzipSync(Buffer.from('段')), Buffer.from([7])]));
   const src = nodeDataSource({ terrain: root });
 
   it('第一段按链接表换成目录', async () => {
     expect(src.kind).toBe('node');
     expect(await src.json('terrain/包/v1/a.json')).toEqual({ x: 1 });
     expect(new Uint8Array(await src.gunzip('terrain/包/v1/b.bin.gz'))).toEqual(new Uint8Array([1, 2, 3]));
-    expect(src.textSync('terrain/包/v1/a.json')).toBe('{"x":1}');
-    expect(await src.bytes('terrain/包/v1/a.json')).toEqual(new Uint8Array(Buffer.from('{"x":1}')));
   });
 
   it('没有的：IfAny 给 null，别的报取不到和提示', async () => {
     expect(await src.jsonIfAny('terrain/包/v1/无.json')).toBeNull();
-    expect(await src.gunzipIfAny('terrain/包/v1/无.bin.gz')).toBeNull();
-    expect(src.textSync('terrain/包/v1/无.json')).toBeNull();
     await expect(src.json('terrain/包/v1/无.json', '先烘')).rejects.toThrow('取不到 terrain/包/v1/无.json（ENOENT），先烘');
     await expect(src.json('别处/包/a.json')).rejects.toThrow(/第一段不是 public 目录里的链接/);
-  });
-
-  it('range：按偏移取一段，gzip 的解开；超出文件尾报错', async () => {
-    const gzLen = gzipSync(Buffer.from('段')).length;
-    expect(Buffer.from(await src.range('terrain/包/v1/c.bin', 2, gzLen, true)).toString()).toBe('段');
-    expect(new Uint8Array(await src.range('terrain/包/v1/c.bin', 0, 2))).toEqual(new Uint8Array([9, 9]));
-    await expect(src.range('terrain/包/v1/c.bin', 2, 1000)).rejects.toThrow(/只读到/);
   });
 
   it('once 按实例隔离', async () => {

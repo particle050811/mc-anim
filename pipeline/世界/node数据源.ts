@@ -37,30 +37,6 @@ export const nodeDataSource = (links: Record<string, string> = publicLinks()): D
       return bytes ? JSON.parse(bytes.toString('utf8')) : null;
     },
     gunzip: async (rel, hint) => asArrayBuffer(gunzipSync(await must(rel, hint))),
-    gunzipIfAny: async (rel) => {
-      const bytes = await readIfAny(rel);
-      return bytes ? asArrayBuffer(gunzipSync(bytes)) : null;
-    },
-    bytes: async (rel, hint) => new Uint8Array(await must(rel, hint)),
-    range: async (rel, start, len, gzip = false) => {
-      const fd = await fs.promises.open(filePath(rel), 'r');
-      try {
-        const buf = Buffer.alloc(len);
-        const { bytesRead } = await fd.read(buf, 0, len, start);
-        if (bytesRead !== len) throw new Error(`按 Range 取 ${rel} 的 ${start}～${start + len} 字节，只读到 ${bytesRead} 字节`);
-        return asArrayBuffer(gzip ? gunzipSync(buf) : buf);
-      } finally {
-        await fd.close();
-      }
-    },
-    canReadSync: true,
-    textSync: (rel) => {
-      try {
-        return fs.readFileSync(filePath(rel), 'utf8');
-      } catch {
-        return null;
-      }
-    },
     once: onceTable(),
   };
 };

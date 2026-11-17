@@ -29,21 +29,6 @@ export const memoryDataSource = (files: Record<string, Uint8Array | string>): Me
       return bytes ? parse(bytes) : null;
     },
     gunzip: async (rel, hint) => ungzip(must(rel, hint)),
-    gunzipIfAny: async (rel) => {
-      const bytes = read(rel);
-      return bytes ? ungzip(bytes) : null;
-    },
-    bytes: async (rel, hint) => must(rel, hint).slice(),
-    range: async (rel, start, len, gzip = false) => {
-      const part = must(rel).slice(start, start + len);
-      if (part.length !== len) throw new Error(`按 Range 取 ${rel} 的 ${start}～${start + len} 字节，文件只有 ${start + part.length} 字节`);
-      return gzip ? ungzip(part) : part.buffer;
-    },
-    canReadSync: true,
-    textSync: (rel) => {
-      const bytes = read(rel);
-      return bytes ? new TextDecoder().decode(bytes) : null;
-    },
     once: onceTable(),
   };
 };
