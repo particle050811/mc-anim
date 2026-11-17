@@ -133,6 +133,25 @@ describe('航线定级', () => {
     expect(typeof force(3, 0, 0)).toBe('boolean');
   });
 
+  test('canSplit：不能细分的块停在那一级，照门槛挑和航线定级都不越过', () => {
+    // 只有 y ≥ 0 那一半能往下分到第 2 级，再细没有；y < 0 那一半只有第 4 级以上
+    const canSplit = (level: number, _i: number, j: number) => (j >= 0 ? level > 2 : level > 4);
+    const check = (list: SectionId[]) => {
+      expect(list.length).toBeGreaterThan(0);
+      for (const q of list) expect(q.L).toBeGreaterThanOrEqual(q.j >= 0 ? 2 : 4);
+    };
+    const sec = 3;
+    const limited = pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, canSplit });
+    check(limited);
+    // 不限的时候这两半都挑得到更细的，说明上面是 canSplit 拦下的
+    expect(plain(sec).some((q) => q.j >= 0 && q.L < 2)).toBe(true);
+    expect(plain(sec).some((q) => q.j < 0 && q.L < 4)).toBe(true);
+    // 没被拦到的地方和不限时一样
+    expect(keys(limited.filter((q) => q.j >= 0 && q.L > 2))).toBe(keys(plain(sec).filter((q) => q.j >= 0 && q.L > 2)));
+    const table = new RouteTable({ lookSec: 2, hold: true, gridHz: 64, splitPixels, farM, featureTop, canSplit, viewAt });
+    for (const at of [2, 3.5, 5]) check(pickSections({ ...viewAt(at), splitPixels, farM, featureTop, canSplit, decide: routeDecide(table.forFrame(at, cut[0], cut[1]), 0) }));
+  });
+
   test('diffPicks：变细、变粗按较粗那一块各记一次，进出视野不算', () => {
     const coarse: SectionId = { L: 2, i: -1, j: 3 };
     const children: SectionId[] = [
