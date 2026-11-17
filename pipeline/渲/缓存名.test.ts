@@ -96,7 +96,7 @@ describe('同一个持久缓存目录', () => {
     const [firstItem, unchangedModule, solverFirst] = value(firstBuild.artifacts);
     expect(firstItem).toEqual({ 值: 1 });
     expect(unchangedModule).toBe('不变的模块');
-    expect(Object.keys(solverFirst)).toEqual(['测试求解']);
+    expect(Object.keys(solverFirst)).toEqual(['测试求解', '光体']);
     expect(firstBuild.compiled.some((n) => n.includes('不变.js'))).toBe(true);
 
     writeSingleLock(bytesLockEntry('二.json', '{"值":2}'));

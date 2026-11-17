@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fingerprintHistory } from '../渲/母版.ts';
 import { sampleKey, approvalText, readApproval, type ApprovalRecord } from '../验收/认可.ts';
 import { addCurrentFingerprints } from './当前指纹.ts';
-import { runReclaim, cacheKnownNames, runKnownNames, reportOnlyDirs, type ReclaimPlan } from './计划.ts';
+import { runReclaim, cacheKnownNames, runKnownNames, reportOnlyDirs, planLightCache, type ReclaimPlan } from './计划.ts';
 import {
   KeepSet, addDelivery, addApprovals, deliveryRefs, scanMedia, scanWebpack, listDir, isTempName, planMedia, planTemp, planDrafts, planWebpack, readApprovedFingerprint, Subtotal, mainReason, unrecognizedEntries, scanStaging, planStaging,
 } from './回收.ts';
@@ -220,10 +220,10 @@ describe('保留集：母版', () => {
     const oldMaster = makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     const justModified = makeMaster('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     makeMaster('6-甲', 'cccccccccccccccc', '视频', 7);
-    const plan: ReclaimPlan = { media: planKeep(new KeepSet()), tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] };
+    const plan: ReclaimPlan = { media: planKeep(new KeepSet()), tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], lightCache: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] };
     expect(deletedFingerprints(plan.media)).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
     fs.utimesSync(justModified, new Date(), new Date());
-    const r = await runReclaim(plan, { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90 });
+    const r = await runReclaim(plan, { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90, lightDays: 14 });
     expect(r).toMatchObject({ deletedCount: 1, deletedSize: 100, failed: [] });
     expect(r.skipped).toHaveLength(1);
     expect(fs.existsSync(oldMaster)).toBe(false);
@@ -315,12 +315,29 @@ describe('列段', () => {
   it('超过天数没读过的才删，新近用过的留着（文件在 <sha 前 2>/ 下一层）', async () => {
     writeFile('cache/列段/ab/ab旧.列段', 'xx', now - 100 * dayMs);
     writeFile('cache/列段/ab/ab新.列段', 'x', now - 10 * dayMs);
-    const plan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: planDrafts(listDir(path.join(root, 'cache', '列段')).flatMap((d) => listDir(d.path)), { now, days: 90 }), webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] } as ReclaimPlan;
+    const plan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: planDrafts(listDir(path.join(root, 'cache', '列段')).flatMap((d) => listDir(d.path)), { now, days: 90 }), lightCache: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] } as ReclaimPlan;
     expect(plan.columnSegs.filter((f) => !f.reason.length).map((f) => f.name)).toEqual(['ab旧.列段']);
-    const r = await runReclaim(plan, { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90 }, now);
+    const r = await runReclaim(plan, { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90, lightDays: 14 }, now);
     expect(r.deletedCount).toBe(1);
     expect(fs.existsSync(path.join(root, 'cache/列段/ab/ab旧.列段'))).toBe(false);
     expect(fs.existsSync(path.join(root, 'cache/列段/ab/ab新.列段'))).toBe(true);
+  });
+});
+
+describe('光体', () => {
+  it('cache/光体/<作品>/ 下超过天数没读过的删；--work 只看那几部', async () => {
+    writeFile('cache/光体/作品甲/aaaaaaaaaaaaaaaa.gz', 'xx', now - 20 * dayMs);
+    writeFile('cache/光体/作品甲/bbbbbbbbbbbbbbbb.gz', 'x', now - 3 * dayMs);
+    writeFile('cache/光体/作品乙/cccccccccccccccc.gz', 'x', now - 20 * dayMs);
+    const planOf = (works: string[]) => planLightCache(path.join(root, 'cache', '光体'), { work: works, now, lightDays: 14 });
+    expect(planOf([]).filter((f) => !f.reason.length).map((f) => f.name).sort()).toEqual(['aaaaaaaaaaaaaaaa.gz', 'cccccccccccccccc.gz']);
+    const lightCache = planOf(['作品甲']);
+    expect(lightCache.filter((f) => !f.reason.length).map((f) => f.name)).toEqual(['aaaaaaaaaaaaaaaa.gz']);
+    const plan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], lightCache, webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] } as ReclaimPlan;
+    const r = await runReclaim(plan, { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90, lightDays: 14 }, now);
+    expect(r.deletedCount).toBe(1);
+    expect(fs.readdirSync(path.join(root, 'cache', '光体', '作品甲'))).toEqual(['bbbbbbbbbbbbbbbb.gz']);
+    expect(cacheKnownNames).toContain('光体');
   });
 });
 

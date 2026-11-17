@@ -49,6 +49,16 @@ const tiled = (shader: THREE.WebGLProgramParametersWithUniforms, emissive: boole
 
 // 取过的 .bin 留着：同一个场景在多个镜头、多帧里复用，块出了视野再进来也直接重建，不重复取
 const loaded = new Map<string, Uint8Array>();
+/** 取一份 .bin（文件地址，打包进来的，不在数据根，直接 fetch）：gzip 压过的（开头两个字节 1f 8b）解开，没压过的旧文件原样用。光体（engine/light/光体组件.tsx）也读 */
+export const loadBlockMeshBin = async (bin: string): Promise<Uint8Array> => {
+  const have = loaded.get(bin);
+  if (have) return have;
+  const buf = await (await fetch(bin)).arrayBuffer();
+  const head = new Uint8Array(buf, 0, 2);
+  const bytes = new Uint8Array(head[0] !== 0x1f || head[1] !== 0x8b ? buf : await gunzip(buf));
+  loaded.set(bin, bytes);
+  return bytes;
+};
 
 const mkTex = (atlas: Png) => {
   const t = new THREE.DataTexture(atlas.px, atlas.w, atlas.h, THREE.RGBAFormat);
@@ -339,19 +349,8 @@ export const BlockMesh: React.FC<{
   const [handle] = useState(() => (loaded.has(bin) ? null : delayRender(`取方块网格 ${bin}`)));
   useEffect(() => {
     if (handle === null) return;
-    // bin 是打包进来的文件地址（不在数据根），直接 fetch
-    fetch(bin)
-      .then((r) => r.arrayBuffer())
-      // .bin 是 gzip 压过的（开头两个字节 1f 8b）；没压过的旧文件原样用
-      .then((buf) => {
-        const head = new Uint8Array(buf, 0, 2);
-        return head[0] !== 0x1f || head[1] !== 0x8b ? buf : gunzip(buf);
-      })
-      .then((buf) => {
-        const bytes = new Uint8Array(buf);
-        loaded.set(bin, bytes);
-        setData(bytes);
-      })
+    loadBlockMeshBin(bin)
+      .then(setData)
       .catch((e) => cancelRender(e));
   }, [bin, handle]);
   const meshes = useMemo(

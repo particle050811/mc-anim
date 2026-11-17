@@ -86,9 +86,14 @@ const fragBody = (useFlatColor: boolean) =>
     '\tif ( i >= flatGlowCount ) break;',
     '\tif ( all( greaterThanEqual( flatL, flatGlowMin[ i ] ) ) && all( lessThanEqual( flatL, flatGlowMax[ i ] ) ) ) flatK = vec3( 1.0 );',
     '}',
+    // 光体（engine/light/光体着色.ts，场景开了才有）：灯照到的光和色调并列加上（不被色调压暗），开光影时光影层也照这样加（不乘太阳的明暗，见 光影/着色.ts 的 litBody）
+    'vec3 flatLamp = vec3( 0.0 );',
+    '#ifdef LIGHT_VOLUME',
+    '\tflatLamp = lightVolLit;',
+    '#endif',
     'vec3 flatC = sRGBTransferOETF( vec4( diffuseColor.rgb, 1.0 ) ).rgb;',
     ...(useFlatColor ? ['flatC *= vFlatColor;'] : []),
-    'outgoingLight = sRGBTransferEOTF( vec4( flatC * flatS * flatK, 1.0 ) ).rgb;',
+    'outgoingLight = sRGBTransferEOTF( vec4( flatC * flatS * ( flatK + flatLamp ), 1.0 ) ).rgb;',
   ].join('\n');
 
 const patchFlatShade = (shader: THREE.WebGLProgramParametersWithUniforms, u: UniformSet, useFlatColor: boolean) => {

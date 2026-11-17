@@ -148,7 +148,9 @@ export const dataPath = (...pathSegs: string[]) => path.join(dataRoot(), ...path
 
 export const terrainRoot = () => dataPath('terrain');
 export const solveCacheDir = () => dataPath('cache', '求解');
-/** Remotion 的 public 目录：里面只放指向 terrain/、cache/求解/ 的链接（见 pipeline/渲/public目录.ts） */
+/** 光体缓存：cache/光体/<作品>/<键哈希>.gz（engine/light/光体缓存.ts） */
+export const lightCacheDir = () => dataPath('cache', '光体');
+/** Remotion 的 public 目录：里面只放指向 terrain/、cache/求解/、cache/光体/ 等的链接（见 pipeline/渲/public目录.ts） */
 export const publicDir = () => dataPath('run', 'public');
 /** manifest 里数据根下的路径：相对数据根的、绝对的都认 */
 export const underDataRoot = (p: string) => (path.isAbsolute(p) ? p : path.join(dataRoot(), ...p.split('/')));

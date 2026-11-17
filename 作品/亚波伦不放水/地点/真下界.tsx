@@ -4,11 +4,12 @@
 //
 // 坐标：场景 X = 游戏 x − ox，场景 Y = oz − 游戏 z，场景 Z = 游戏 y（下界 oy = 0）；用 真下界场景(x, y, z) 换（真下界位置.ts，纯数据，段.ts 也能引）。
 //
-// 光：下界没有天光，引擎也没有逐格传播的方块光，这里只画「方块光 0 级」的底光，再让熔岩自己发亮：
+// 光：下界没有天光，这里画「方块光 0 级」的底光，发光方块自己发亮，再用光体照亮周围：
 // - 底光照原版光照图（LightTexture.updateLightTexture）在下界、方块光 0、天光 0、亮度滑块 50% 时算出的颜色，每个朝向再乘下界的面明暗
 //   （constantAmbientLight：上下 0.9、南北 0.8、东西 0.6）。原版在 sRGB 数值上乘，这里按 2.2 次幂折到线性光里：一盏环境光（东西面的亮度）加四盏平行光补出上下、南北面。
 // - 发光方块（熔岩、火、灵魂火、萤石、菌光体、岩浆块……，表在 engine/voxel/方块发光.ts）按 贴图原色 × 发光强度 × 发光倍 自己亮（engine 的 blockGlow，用户 11-16 要远处的火、熔岩也亮）；
-//   粗级里露在外面的发光方块合并时优先，远处不被合成地狱岩（世界声明 glowFirst）。照亮周围那一圈没有画：岸边、火旁的岩壁比游戏里暗（做法待用户挑）。
+//   粗级里露在外面的发光方块合并时优先，远处不被合成地狱岩（世界声明 glowFirst）。
+// - 照亮周围：光体（engine/light/光体.ts，用户 11-17 定「用光体更加真实」、光要圆的、按距离平方衰减），只在正片那套（netherBrighter）开，原版那套照游戏不开。地形、人物、模型都照到。
 // - 雾色、雾远照原版：原版下界（isFoggyAt 恒真）是线性雾，从 视距 × 0.05 起、到 min(视距, 192) × 0.5 = 96 格全满，雾色是群系的 fog_color（下界荒地 #330808）。
 //   雾的形状换成全片的远雾（engine/light/高度雾.ts 的 `useFarFog`，用户 11-16 定下界也用）：D = 雾远，0.9 D 以内没有雾、到 D 拉满成雾色（也是底色），
 //   线性雾的近端不起作用。地形越出 D 的部分全进雾，地平线上不再多出一圈熔岩和剪影（原来靠远裁）。
@@ -24,7 +25,8 @@ import { trialFarM, useFarFog } from '@engine/light/高度雾.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { voxelMaterial } from '@engine/voxel/材质.ts';
-import { NetherLightTrial, netherLightTrial } from './下界光照.tsx';
+import { LightVolume } from '@engine/light/光体组件.tsx';
+import type { LightVolumeParams } from '@engine/light/光体.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
@@ -38,13 +40,16 @@ export type NetherLight = {
   fog: { 色: string; near: number; far: number };
   /** 地形最远画到多远（格）；不给 = 雾.远 */
   renderFar?: number;
+  /** 光体（发光方块照亮周围）；不给 = 不开 */
+  lightVolume?: LightVolumeParams;
 };
 
 /** 照原版：亮度滑块 50%、视距 32 区块时的下界荒地 */
 export const netherVanilla: NetherLight = { baseLight: [0.393, 0.323, 0.267], lavaBright: 1, fog: { 色: '#330808', near: 25.6, far: 96 } };
 /** 整体提亮、雾放远（用户 11-10 嫌黑、要看清背景）：底光提到原版方块光约 12 级的亮度，雾推到 32 区块外才满，雾色提亮 */
 // 雾远（= 远雾的 D）1000：用户 11-16「地狱 我看 D1000 就够了」；包按镜头范围外扩 1000 烘（sourcing/worlds/下界-无结构-1110.toml）
-export const netherBrighter: NetherLight = { baseLight: [0.86, 0.74, 0.64], lavaBright: 1.1, fog: { 色: '#5a1a12', near: 96, far: 1000 } };
+// 光体的强、软封顶、最小光是 Agent 暂定（用户 11-17 定做法「圆形的光」，数还没看过）
+export const netherBrighter: NetherLight = { baseLight: [0.86, 0.74, 0.64], lavaBright: 1.1, fog: { 色: '#5a1a12', near: 96, far: 1000 }, lightVolume: { strength: 1.5, knee: 1.5, minLight: 0.004 } };
 
 /** 远雾的 D（格）= 雾远；试看 {"雾曲线": {"远": 格}} 盖掉，地形最远距离跟着换（用户 11-16 要比下界放大视距）。包烘了 x −512～2047、z −1536～1023 */
 export const netherFarM = (light: NetherLight) => trialFarM(light.fog.far);
@@ -119,8 +124,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      {/* 照亮周围的原型：只在试看 {"下界光": {...}} 时有（下界光照.tsx） */}
-      {netherLightTrial() && <NetherLightTrial t={t} cameraPos={cameraPos} zTop={128 - realNetherOrigin[1]} groupRef={groupRef} />}
+      <LightVolume t={t} center={cameraPos} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} params={netherLight.lightVolume} />
       {t && <VoxelWorld worldKey={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );

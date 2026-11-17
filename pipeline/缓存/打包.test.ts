@@ -17,8 +17,8 @@ const makeBundle = (dirName = 'remotion-webpack-bundle-旧') => {
   for (const p of [path.join(bundleDir, 'bundle.js'), path.join(bundleDir, 'public'), bundleDir]) fs.utimesSync(p, oldTime / 1000, oldTime / 1000);
   return bundleDir;
 };
-const makePlan = (bundleDirs: ReclaimPlan['打包']): ReclaimPlan => ({ media: [], tempFiles: [], staging: [], 打包: bundleDirs, drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] });
-const options = { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90 };
+const makePlan = (bundleDirs: ReclaimPlan['打包']): ReclaimPlan => ({ media: [], tempFiles: [], staging: [], 打包: bundleDirs, drafts: [], columnSegs: [], lightCache: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] });
+const options = { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90, lightDays: 14 };
 
 test('超过 24 小时且空闲的才列入可删；新包、链接和无关目录不删', () => {
   const oldBundle = makeBundle(), newBundle = makeBundle('remotion-webpack-bundle-新');

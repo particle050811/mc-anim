@@ -87,18 +87,6 @@ export const debugSwitches = [
     files: ['作品/应力转动/地点/暮色新世界/超远景.ts'],
   },
   {
-    name: '下界光',
-    kind: 'trial',
-    purpose: '下界发光方块照亮周围的原型（光体或点光）',
-    changesPicture: true,
-    inFingerprint: false,
-    readers: all,
-    format: '{"mode"?: "volume"|"points", "radius"?: 米, "decay"?: 0～1, "strength"?: 数, "count"?: 盏}',
-    keys: ['mode', 'radius', 'decay', 'strength', 'count'],
-    files: ['作品/亚波伦不放水/地点/下界光照.tsx'],
-    note: '分支 下界光体 删掉了这个原型（改成正式的光体），合并后删这一行',
-  },
-  {
     name: '地形',
     kind: 'trial',
     purpose: '这一页多读的地形包：按 assets/地形版本.json 现登记的版本并进地形版本表',

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { codeRoot, mainCheckout } from '../环境/路径.ts';
 import { listWorks } from '../环境/作品.ts';
 import { masterDir } from '../环境/作品数据.ts';
-import { config, dataRoot, dataPath, draftRoot, runDir } from '../环境/配置.ts';
+import { config, dataRoot, dataPath, draftRoot, lightCacheDir, runDir } from '../环境/配置.ts';
 import { runCapture } from '../环境/子进程.ts';
 import { scanBundles, bundleKeepReasons } from './打包.ts';
 import { 读进程 } from '../闸/孤儿.ts';
@@ -18,7 +18,7 @@ import {
   type WithReasons, type MediaFile, type PlainFile, type DirEntry, type WebpackEntry,
 } from './回收.ts';
 
-export const reclaimKinds = ['母版', '残留', '草稿', '列段', 'webpack', '去重'] as const;
+export const reclaimKinds = ['母版', '残留', '草稿', '列段', '光体', 'webpack', '去重'] as const;
 export type ReclaimClass = (typeof reclaimKinds)[number];
 
 export type ReclaimOptions = {
@@ -29,10 +29,11 @@ export type ReclaimOptions = {
   draftDays: number;
   webpackDays: number;
   columnSegDays: number;
+  lightDays: number;
   now: number;
 };
-// 列段重解存档要几分钟到几十分钟，留得比草稿久
-export const defaultDays = { recent: 2, draftDays: 14, webpack: 3, columnSeg: 90 };
+// 列段重解存档要几分钟到几十分钟，留得比草稿久；光体缓存一个窗口一层几秒就能重算
+export const defaultDays = { recent: 2, draftDays: 14, webpack: 3, columnSeg: 90, light: 14 };
 
 export type WebpackRootPlan = { root: string; currentVersion: string | null; entryList: WithReasons<WebpackEntry>[] };
 export type ReclaimPlan = {
@@ -40,6 +41,8 @@ export type ReclaimPlan = {
   tempFiles: WithReasons<PlainFile>[];
   drafts: WithReasons<DirEntry>[];
   columnSegs: WithReasons<DirEntry>[];
+  /** 光体缓存（cache/光体/<作品>/<键哈希>.gz），读中时推修改时间，按它算多久没用 */
+  lightCache: WithReasons<DirEntry>[];
   webpack: WebpackRootPlan[];
   /** 地形烘焙中断留下的暂存目录（run/暂存/terrain/<包>），归在「残留」一类 */
   staging: WithReasons<DirEntry>[];
@@ -68,7 +71,7 @@ export const reportOnlyDirs: Record<string, string> = {
 /** 数据根 run/、cache/ 下 anim 认得的条目（别的只报告） */
 export const runKnownNames = ['草稿', '运行记录', 'logs', 'locks', 'queue', 'public', 'extract', '暂存', '地形用量', '逐帧校验', '调度'];
 export const cacheKnownNames = [
-  '母版', '求解', '私有配乐', '剪映解密', '发布', '缺字节', '接缝.json', '去重账.json', 'sha缓存.json', '列段',
+  '母版', '求解', '私有配乐', '剪映解密', '发布', '缺字节', '接缝.json', '去重账.json', 'sha缓存.json', '列段', '光体',
   ...Object.keys(reportOnlyDirs).filter((k) => k.startsWith('cache/')).map((k) => k.slice('cache/'.length)),
 ];
 export const dedupLedgerFile = () => dataPath('cache', '去重账.json');
@@ -102,8 +105,15 @@ const pendingDeleteByInode = (plan: ReclaimPlan) => {
   return m;
 };
 
+/** 光体缓存（cache/光体/<作品>/<键哈希>.gz）：超过天数没读过的删；按作品分目录，给了 --work 只看那几部 */
+export const planLightCache = (dir: string, o: Pick<ReclaimOptions, 'work' | 'now' | 'lightDays'>) =>
+  planDrafts(
+    listDir(dir, 1, (w) => !o.work.length || o.work.includes(w)).flatMap((d) => listDir(d.path, 1, (f) => f.endsWith('.gz'))),
+    { now: o.now, days: o.lightDays },
+  );
+
 export const computeReclaimPlan = async (o: ReclaimOptions, onProgress: (s: string) => void = () => {}): Promise<ReclaimPlan> => {
-  const plan: ReclaimPlan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] };
+  const plan: ReclaimPlan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], lightCache: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, warnings: [] };
   const warn = (s: string) => plan.warnings.push(s);
   const isWanted = (c: ReclaimClass) => o.type.has(c);
 
@@ -142,6 +152,7 @@ export const computeReclaimPlan = async (o: ReclaimOptions, onProgress: (s: stri
   if (isWanted('草稿')) plan.drafts = planDrafts(listDir(draftRoot()), { now: o.now, days: o.draftDays });
   // 区域源 读时记用过；按区域 sha 寻址，一个文件一个文件算
   if (isWanted('列段')) plan.columnSegs = planDrafts(listDir(dataPath('cache', '列段')).flatMap((d) => listDir(d.path)), { now: o.now, days: o.columnSegDays });
+  if (isWanted('光体')) plan.lightCache = planLightCache(lightCacheDir(), o);
 
   if (isWanted('webpack')) {
     for (const checkout of allCheckouts()) {
@@ -179,7 +190,7 @@ export type ExecResult = { deletedCount: number; deletedSize: number; skipped: s
 const dayMs = 24 * 3600 * 1000;
 
 /** 照计划删、克隆。删之前再看一眼：文件这会儿又被改过（近期天数内）就跳过；去重在删完以后按现状重找一遍（sha 用账本里的，不重算） */
-export const runReclaim = async (plan: ReclaimPlan, o: Pick<ReclaimOptions, 'recentDays' | 'draftDays' | 'webpackDays' | 'columnSegDays'>, now = Date.now()): Promise<ExecResult> => {
+export const runReclaim = async (plan: ReclaimPlan, o: Pick<ReclaimOptions, 'recentDays' | 'draftDays' | 'webpackDays' | 'columnSegDays' | 'lightDays'>, now = Date.now()): Promise<ExecResult> => {
   const r: ExecResult = { deletedCount: 0, deletedSize: 0, skipped: [], failed: [], cloneCount: 0, cloneSavedBytes: 0 };
   const removeFile = (p: string, byteSize: number, isRecent: (modifiedAt: number) => boolean, recursive: boolean) => {
     try {
@@ -216,6 +227,7 @@ export const runReclaim = async (plan: ReclaimPlan, o: Pick<ReclaimOptions, 'rec
   for (const d of plan.staging) if (!d.reason.length) removeFile(d.path, d.size, (modifiedAt) => withinDays(1)(modifiedAt) || isLockHeld(`${d.path}.写入.lock`, config('主机')), true);
   for (const d of plan.drafts) if (!d.reason.length) removeFile(d.path, d.size, withinDays(o.draftDays), true);
   for (const d of plan.columnSegs) if (!d.reason.length) removeFile(d.path, d.size, withinDays(o.columnSegDays), false);
+  for (const d of plan.lightCache) if (!d.reason.length) removeFile(d.path, d.size, withinDays(o.lightDays), false);
   for (const w of plan.webpack) for (const e of w.entryList) if (!e.reason.length) removeFile(e.path, e.size, e.hash === null ? () => false : withinDays(o.webpackDays), true);
   if (plan.dedupePlan?.canDedupe && plan.dedupePlan.group.length) {
     const shaCache = new ShaCache(shaCacheFile(), dataRoot());
