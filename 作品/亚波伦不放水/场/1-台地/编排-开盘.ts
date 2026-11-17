@@ -13,7 +13,7 @@ import type { RightHandItem, SteveState } from '../../角色/史蒂夫反应.ts'
 import { defineWalk } from '../../角色/史蒂夫走位.ts';
 import { defaultOpenClose } from '../../界面/分圈.ts';
 import type { DiscPlacement } from '../../界面/杖尖盘位姿.ts';
-import { wheelOuterRadius, type MultiRingParams } from '../../界面/多圈轮盘.tsx';
+import { wheelOuterRadius, type MultiRingParams } from '../../界面/多圈轮盘参数.ts';
 import type { Teleport } from '../../特效/瞬移烟.tsx';
 import { realNetherScene } from '../../地点/真下界位置.ts';
 import { footHeight } from './布局.ts';

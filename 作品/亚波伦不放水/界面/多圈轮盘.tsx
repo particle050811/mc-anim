@@ -10,56 +10,12 @@ import { argbColor, iconTopLeft, radialWheelConst, cellRange } from '@库/界面
 import { WheelCanvas } from '@库/界面/径向轮盘.tsx';
 import { drawPixelImage, drawBackdrop, drawRingBands, type CanvasPos } from '@库/界面/径向轮盘画.ts';
 import focusWheelPng from 'asset:贴图/界面/聚晶轮盘';
-import type { SpellSchool } from '../法术/法术表.ts';
 import { focusIcons } from '../物品/聚晶图标.ts';
 import { ringRadius, RingState, ringRotation, retractRingState, openDoneTick, moveOutState, defaultRingShape, defaultOpenClose, type OpenClose } from './分圈.ts';
 import { arrangeWheel, type ArrangeOptions, type WheelItem } from './轮盘法术.ts';
+import { schoolColor, defaultCenter, type MultiRingParams } from './多圈轮盘参数.ts';
 
-/** 学派分色用的颜色：自己配的（原创），只在 学派分色 打开时用 */
-export const schoolColor: Record<SpellSchool, string> = {
-  魔法: '#c8c8d8',
-  死灵: '#38c9b0',
-  下界: '#ff5a2a',
-  灾厄: '#7d8fa3',
-  霜冻: '#8fdcff',
-  占卜: '#b08a52',
-  烈风: '#cfe8d0',
-  风暴: '#ffe14d',
-  深渊: '#2a6fd6',
-  荒野: '#5fbf3a',
-  虚空: '#9a3fd6',
-};
-
-/** 圆心默认画的聚晶：启示录的炼狱聚晶（goety_revelation:revelation_focus），用户 11-09 定 */
-export const defaultCenter = 'goety_revelation:revelation_focus';
-
-export type MultiRingParams = ArrangeOptions & {
-  /** 打开后第几刻（可带小数，1 刻 = 1/20 秒） */
-  刻: number;
-  /** 高亮的格（聚晶键，如 goety:fireball_focus；齐放时给一串），画成原版的悬停色；那一圈弹完才亮 */
-  selectedId?: string | readonly string[];
-  /** 圆心画哪个聚晶的图标（聚晶键）；不给 = 默认圆心（炼狱聚晶），null = 不画。最里一圈弹完才画，同原版 */
-  centerIcon?: string | null;
-  /** 圆心图标放大几倍，默认 1（原版 16 GUI 像素）。封面草稿里放大当「头顶的第二个光环」试过，正片不用 */
-  centerScale?: number;
-  /** 背景贴图：原大 = 和原版一圈时一样大（默认）；随外圈 = 按最外圈和原版外半径的比例放大；无 = 不画 */
-  backdropMode?: '原大' | '随外圈' | '无';
-  /** 带子按学派上色（原创，默认关） */
-  colorBySchool?: boolean;
-  /** 学派分色时带子颜色的不透明度，默认 0.4 */
-  schoolAlpha?: number;
-  /** 「全部」档里不进齐放的图标亮度，默认 0.35 */
-  dimLevel?: number;
-  /** 图标怎么出来：弹完（默认，同原版 isReady() 了一下全出来）；盘心移出（原创，第 2 幕张盘，用户 11-11）：一开盘全缩成一小团叠在圆心，
-   *  边往外走边放大，那一圈弹完正好落到格上（分圈.ts 的 移出态），圆心图标也从小长到原大。收盘（收刻）不管它 */
-  exitIcon?: '弹完' | '盘心移出';
-  /** 弹开节奏和转速，没给的项用 默认开合 */
-  openClose?: Partial<OpenClose>;
-  /** 收盘：开始收后第几刻（原创，第 5 幕；分圈.ts 的 收圈态）。不给 = 不收 */
-  closeTick?: number;
-  /** 一闪（原创，第 4 幕出手时那一格的法术离手）：聚晶键 → 0～1，带子往暖白提、图标提亮；那一圈弹完才闪 */
-  flash?: Readonly<Record<string, number>>;
-};
+export { schoolColor, defaultCenter, wheelOuterRadius, type MultiRingParams } from './多圈轮盘参数.ts';
 
 /** 闪的那一格：带子的颜色、图标亮度（亮度按 0.1 取整，小画布按亮度缓存） */
 const flashColor = (k: number) => `rgba(255,232,180,${(0.35 + 0.6 * k).toFixed(3)})`;
@@ -74,9 +30,6 @@ const itemImage = (focusKey: string): Png | null => {
 export const missingIcons = (options: ArrangeOptions = {}): string[] => arrangeWheel(options).items.flatMap((item) => (itemImage(item.key) ? [] : [item.key]));
 
 const withAlpha = (color: string, opacity: number) => `rgba(${parseInt(color.slice(1, 3), 16)},${parseInt(color.slice(3, 5), 16)},${parseInt(color.slice(5, 7), 16)},${opacity})`;
-
-/** 最外圈张开后的外半径（GUI 像素）：摆位置、定缩放用 */
-export const wheelOuterRadius = (options: ArrangeOptions = {}) => ringRadius(arrangeWheel(options).cellsPerRing.length - 1, options.ringShape ?? defaultRingShape).outerRadius;
 
 export const drawMultiRingWheel = (canvasPos: CanvasPos, ringParams: MultiRingParams) => {
   if (ringParams.刻 < 0) return;
