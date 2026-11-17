@@ -88,7 +88,9 @@ export const release = (pack: string, dir: string, root = terrainRoot()) => {
   return { version: fingerprint, 目录: dest, existed };
 };
 
-export type TerrainRecord = { version: string; oldPath?: string; source: string; license: string; visibility: string; note?: string; fileCount: number; size: number; manifestSha256: string };
+/** 裁过的包（世界/裁级/裁剪.ts，docs/世界.md「裁级」）：从完整包 from 按留表裁的，正式出片读它 */
+export type TrimmedRecord = { version: string; from: string; keepSha256: string; method: string; fileCount: number; size: number; manifestSha256: string };
+export type TerrainRecord = { version: string; oldPath?: string; source: string; license: string; visibility: string; note?: string; fileCount: number; size: number; manifestSha256: string; trimmed?: TrimmedRecord };
 export const terrainTablePath = () => path.join(codeRoot(), 'assets', '地形版本.json');
 export const readTerrainTable = () => JSON.parse(fs.readFileSync(terrainTablePath(), 'utf8')) as { note: string; pack: Record<string, TerrainRecord> };
 
