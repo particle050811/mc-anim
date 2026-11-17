@@ -14,6 +14,7 @@ import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoLightAt, atmoUniforms, atmosphere, ph
 import { registerMidPass, type MidPassContext } from '../../voxel/中间步骤.ts';
 import { farFogUniforms } from '../高度雾.ts';
 import { clamp01, linearstep, smoothstep, lerp } from '../../core/数学.ts';
+import { trialOff } from '../../core/试看.ts';
 
 // 云高（用户 10-14：世界放大了，云高改合理）：Photon 默认 10 是按原版地形定的，云底离海只有 120 格。我们的史诗地形最高峰 y 435～444，
 // 取 3：积云一团团云底在 y 363～1163（见 cumulusHeightMap），下坠和 6-2-5 俯冲都穿过；高积云 y 1130～1290；
@@ -940,7 +941,8 @@ export const PhotonClouds: React.FC<{
       order: 10,
       afterWater: () => true,
       draw: (ctx) => {
-        if (photonCloudsOn()) drawPhotonClouds(ctx);
+        // 试看 {"关": ["云"]}（anim trial list）：不画这一遍；云投到地形上的影子不归这里
+        if (photonCloudsOn() && !trialOff('云')) drawPhotonClouds(ctx);
       },
     });
     // Remotion 的画布只在换帧时重画：登记以后手动再画一次，画完才放行截图
