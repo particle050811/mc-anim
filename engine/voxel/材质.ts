@@ -37,6 +37,7 @@ import { uploadVertices, vertexAttribute, returnBuffer, type VertexArray } from 
 import { sectionDisplacement, displacementDecl, displaceVertex, quadIndices } from './批绘制.ts';
 import { patchWaterShader } from './水面.ts';
 import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
+import { lightVolumeOn, lightVolumeKey, patchLightVolume, registerLightVolumeMaterial } from '../light/光体着色.ts';
 
 const VERT_HEAD = `
 ${displacementDecl}
@@ -156,8 +157,11 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     if (materialClass === '水') patchWaterShader(sh);
     // 树叶逆光透出暖色，和导出网格的树叶同一段（lib/树叶透光.ts）；镂空里不染色的（玻璃之类）不算
     if (materialClass === '镂空' || materialClass === '实心树叶') patchLeafShader(sh, tintedLeafExpr('vCol'));
+    // 光体（发光方块照亮周围，engine/light/光体着色.ts）：世界开了才编进去；发光的面（vCol.a 是 0）不加
+    if (lightVolumeOn()) patchLightVolume(sh, 'vCol.a');
   };
-  mat.customProgramCacheKey = () => `体素-${materialClass}`;
+  mat.customProgramCacheKey = () => `体素-${materialClass}${lightVolumeKey()}`;
+  registerLightVolumeMaterial(mat);
   // 屏幕空间 AO（lib/体素/屏幕AO.tsx）：方块压暗（同 Voxy 只压 LOD 地形）；花草不挡也不压（游戏平滑光照里花草本来也不挡光）；水半透明，AO 之后再画
   if (materialClass === '花草') mat.userData.screenAo = '不挡';
   else if (materialClass !== '水') {
