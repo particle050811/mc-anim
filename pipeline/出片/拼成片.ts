@@ -4,16 +4,20 @@
 //   声音：各段的 wav（和画面同一遍出，长度就是段长）按样本截、接，整片一个固定增益拉到 −16 LUFS + 限幅，压 AAC 量真峰值，超了压低限幅重做（照旧 成片.ts）；
 //   出到 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、字幕表、SRT、全片-未拉响度.flac、manifest.json；
 //   --share 另从成片压一份 B 站 1080P60 AV1 档的（参数、文件名照旧 成片.ts，用户 11-05 定），只在要时加。
+// 试看（设了 REMOTION_ANIM_TRIAL，出片/试看.ts）：各段当场渲进草稿夹、不进切片缓存，接法同上，出到 <数据根>/run/草稿/<UTC 月日-时分>-工作-试看-<名>/，不进 交付/。
 import fs from 'node:fs';
 import path from 'node:path';
 import { deliveryRoot } from '../环境/作品数据.ts';
-import { config } from '../环境/配置.ts';
+import { config, draftRoot } from '../环境/配置.ts';
 import { commitStatus, relativeToCodeRoot } from '../环境/路径.ts';
 import { workName } from '../环境/作品.ts';
 import { lowPriority, runCmd, runCapture } from '../环境/子进程.ts';
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { atomicWrite } from '../渲/母版.ts';
 import { renderSegments } from './渲段.ts';
+import type { FilmPiece } from '../渲/段产物.ts';
+import { renderTrialSegments } from './试看.ts';
+import { trialEnv } from '../渲/地形注入.ts';
 import { filmProfile } from '../渲/设置.ts';
 import { probeDurationSec, videoInfo } from '../渲/探测.ts';
 import { utcTime, utcMonthDayTime, type RunRecord } from '../运行记录/记录.ts';
@@ -28,11 +32,25 @@ const targetLoudness = -16;
 const truePeakLimit = -1;
 const sampleRate = 48000;
 
-export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLevel; name: string; bounds: string[]; rerender?: boolean; shareVersion?: boolean; runRecord: RunRecord }) => {
+/** 试看片的草稿夹：Agent 自己看、也拿来给用户比的中间稿，不进 交付/（CLAUDE.md：工作- 开头写到 run/草稿/） */
+export const trialFilmDir = (startMs: number, name: string) => path.join(draftRoot(), `${utcMonthDayTime(startMs)}-工作-试看-${name}`);
+
+/** trial：试看出片（出片/试看.ts），frames 是段内输出帧号的闭区间、只配一段 */
+export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLevel; name: string; bounds: string[]; rerender?: boolean; shareVersion?: boolean; trial?: { frames?: [number, number] }; runRecord: RunRecord }) => {
   const startMs = Date.now();
   const allSegments = await loadAllSegments();
-  const timer = stageTiming(opts.runRecord.stage, `film:${workName()}/${opts.name}:${opts.level}`);
-  const outputs = await renderSegments(allSegments, segments, opts.level, { rerender: opts.rerender, runRecord: opts.runRecord });
+  const trial = opts.trial;
+  const timer = stageTiming(opts.runRecord.stage, `${trial ? 'film试看' : 'film'}:${workName()}/${opts.name}:${opts.level}`);
+  let outputs: FilmPiece[];
+  let dir: string;
+  if (trial) {
+    dir = trialFilmDir(startMs, opts.name);
+    if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --name）`);
+    outputs = await renderTrialSegments(allSegments, segments, opts.level, { frames: trial.frames, workDir: path.join(dir, '_工作'), runRecord: opts.runRecord });
+  } else {
+    outputs = await renderSegments(allSegments, segments, opts.level, { rerender: opts.rerender, runRecord: opts.runRecord });
+    dir = path.join(deliveryRoot(), `${utcMonthDayTime(startMs)}-${opts.name}`);
+  }
   timer('渲段');
   const skipped = segments.filter((s) => !outputs.some((r) => r.segment === s));
   if (skipped.length) throw new Error(`${skipped.map((s) => s.key).join('、')} 没渲（本机没有区段包），接不成成片；别的段已渲好`);
@@ -42,8 +60,7 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
     if (a.outputStartFrame + a.outputFrames !== b.outputStartFrame) throw new Error(`${a.segment.key} 和 ${b.segment.key} 在清单里不挨着，接不成一条（各段已渲好；要成片的话范围要是清单里连续的一串段，或者一段一段出）`);
   }
   const filmTier = filmProfile();
-  const dir = path.join(deliveryRoot(), `${utcMonthDayTime(startMs)}-${opts.name}`);
-  if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --name）`);
+  if (!trial && fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --name）`);
   const workDir = path.join(dir, '_工作');
   fs.mkdirSync(workDir, { recursive: true });
   const ffmpeg = config('ffmpeg');
@@ -98,9 +115,10 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
   }
 
   // 表：拼接表、字幕表和 SRT（都是输出帧，换成本片从 0 起）
-  atomicWrite(path.join(dir, '拼接表.tsv'), '编号\t段\t画面指纹\t声音指纹\t帧数\t全片起帧\n' + outputs.map((r) => `${r.segment.serial ?? ''}\t${r.segment.key}\t${r.pictureFingerprint.fingerprint.slice(0, 16)}\t${r.soundFingerprint.fingerprint.slice(0, 16)}\t${r.outputFrames}\t${r.outputStartFrame - outputs[0]!.outputStartFrame}\n`).join(''));
+  atomicWrite(path.join(dir, '拼接表.tsv'), '编号\t段\t画面指纹\t声音指纹\t帧数\t全片起帧\n' + outputs.map((r) => `${r.segment.serial ?? ''}\t${r.segment.key}\t${r.pictureFingerprint?.fingerprint.slice(0, 16) ?? '试看'}\t${r.soundFingerprint?.fingerprint.slice(0, 16) ?? '试看'}\t${r.outputFrames}\t${r.outputStartFrame - outputs[0]!.outputStartFrame}\n`).join(''));
   const subtitles = placeFilmSubtitles(allSegments, filmTier.fps);
-  const filmStart = subtitles.起帧.get(segments[0]!.key)!;
+  // 试看只出一截时，片子从这段的第 frames[0] 帧起
+  const filmStart = subtitles.起帧.get(segments[0]!.key)! + (trial?.frames?.[0] ?? 0);
   const filmEnd = filmStart + totalFrames;
   const screens = subtitles.屏们.filter((p) => p.止帧 > filmStart && p.起帧 < filmEnd).map((p) => ({ ...p, 起帧: Math.max(0, p.起帧 - filmStart), 止帧: Math.min(filmEnd, p.止帧) - filmStart }));
   const files: Record<string, string> = { film: path.basename(filmPath), concatTable: '拼接表.tsv', unnormalizedAudio: unnormalizedFile };
@@ -115,6 +133,7 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
     work: workName(),
     name: opts.name,
     bounds: opts.bounds,
+    ...(trial ? { trial: trialEnv(), frames: trial.frames ?? null } : {}),
     level: opts.level,
     startedAt: utcTime(startMs),
     completed: utcTime(),
@@ -125,7 +144,7 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
     totalFrameCount: totalFrames,
     durationSec: probeDurationSec(filmPath),
     loudness: { sourceLufs: loudness.lufs, gainDb: Number(gain.toFixed(2)), limitDbfs: Number((truePeakLimit - margin).toFixed(2)), filmLufs: finalSound.lufs, truePeakDbtp: finalSound.truePeak },
-    segment: outputs.map((r) => ({ serial: r.segment.serial, key: r.segment.key, segmentFile: relativeToCodeRoot(r.segment.segmentFile), pictureFingerprint: r.pictureFingerprint.fingerprint, soundFingerprint: r.soundFingerprint.fingerprint, frameCount: r.outputFrames, filmStartFrame: r.outputStartFrame - outputs[0]!.outputStartFrame })),
+    segment: outputs.map((r) => ({ serial: r.segment.serial, key: r.segment.key, segmentFile: relativeToCodeRoot(r.segment.segmentFile), pictureFingerprint: r.pictureFingerprint?.fingerprint ?? null, soundFingerprint: r.soundFingerprint?.fingerprint ?? null, frameCount: r.outputFrames, filmStartFrame: r.outputStartFrame - outputs[0]!.outputStartFrame })),
     subtitles: { screenCount: screens.length },
     shareVersion: shareInfo && { videoKbps: shareInfo.kbps, audioKbps: shareAudioKbps, MB: Number(shareInfo.MB.toFixed(2)), limitDbfs: Number(shareInfo.limitDbfs.toFixed(2)), truePeakDbtp: shareInfo.truePeak },
     file: files,
@@ -135,5 +154,6 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
   timer('写表');
   opts.runRecord.artifacts.push(filmPath);
   console.log(`成片 ${filmPath}：${manifest.durationSec.toFixed(2)} 秒，${totalFrames} 帧，${finalSound.lufs.toFixed(1)} LUFS`);
+  if (trial) console.log(`试看片（草稿，没进切片缓存、交付）在 ${dir}`);
   return { dir, film: filmPath, manifest };
 };
