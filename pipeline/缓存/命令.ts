@@ -1,5 +1,5 @@
-// anim cache gc [--apply] [--only <类>…] [--recent-days N] [--draft-days N] [--webpack-days N] [--list-days N] [--verbose]：缓存回收，默认只打印要删什么、能省多少。
-// --work 只限定母版、去重（cache/ 按作品分）；草稿、webpack 缓存不分作品。规则见 回收.ts。
+// anim cache gc [--apply] [--only <类>…] [--recent-days N] [--draft-days N] [--webpack-days N] [--list-days N] [--light-days N] [--verbose]：缓存回收，默认只打印要删什么、能省多少。
+// --work 只限定母版、光体、去重（cache/ 按作品分）；草稿、webpack 缓存不分作品。规则见 回收.ts。
 // --apply 过渲染闸（拿着渲染锁算计划、删）：film 渲段写切片在闸里，不会和它同时；film 接片时只读切片不拿锁，靠「每段每级别最近一份」和近 2 小时的 .用过 留着它要的。只看不删不过闸。
 import type { Command } from '../cli/命令.ts';
 import { UsageError, parseArgs } from '../cli/参数.ts';
@@ -36,6 +36,7 @@ const printReport = (plan: ReclaimPlan, verbose: boolean) => {
   if (plan.staging.length) total += printSubtotal('地形暂存', plan.staging, '个目录');
   if (plan.drafts.length) total += printSubtotal('草稿', plan.drafts, '个目录');
   if (plan.columnSegs.length) total += printSubtotal('列段', plan.columnSegs, '个');
+  if (plan.lightCache.length) total += printSubtotal('光体', plan.lightCache, '个');
   for (const w of plan.webpack) {
     console.log(`webpack  ${w.root}（装的 Remotion ${w.currentVersion ?? '不知道'}）`);
     total += printSubtotal('', w.entryList, '个');
@@ -77,6 +78,7 @@ const printReport = (plan: ReclaimPlan, verbose: boolean) => {
     colReport('地形暂存', plan.staging);
     colReport('草稿', plan.drafts);
     colReport('列段', plan.columnSegs);
+    colReport('光体', plan.lightCache);
     for (const w of plan.webpack) colReport('webpack', w.entryList);
     for (const g of plan.dedupePlan?.group ?? []) for (const p of g.toClone) console.log(`  克隆 ${p} ← ${g.源} ${sizeText(g.size)}`);
   }
@@ -84,14 +86,14 @@ const printReport = (plan: ReclaimPlan, verbose: boolean) => {
 
 export const cacheCommands: Record<string, Command> = {
   cache: {
-    usage: `cache gc [--apply] [--only <类>[,<类>…]] [--recent-days ${defaultDays.recent}] [--draft-days ${defaultDays.draftDays}] [--webpack-days ${defaultDays.webpack}] [--list-days ${defaultDays.columnSeg}] [--verbose]（类：${reclaimKinds.join('、')}）`,
+    usage: `cache gc [--apply] [--only <类>[,<类>…]] [--recent-days ${defaultDays.recent}] [--draft-days ${defaultDays.draftDays}] [--webpack-days ${defaultDays.webpack}] [--list-days ${defaultDays.columnSeg}] [--light-days ${defaultDays.light}] [--verbose]（类：${reclaimKinds.join('、')}）`,
     note:
       '缓存回收，默认只打印要删什么、能省多少，--apply 才删。母版（切片 mp4、声音 wav）只删旧指纹的媒体文件（.指纹.json 留着），当前指纹不删；留还没有认可参考的认可那版、还没自足的交付引用的、每段每级别画面声音各最近一份、近期渲的、近 2 小时用过的、别的还在的检出用过的；' +
       'CRF1 时代的 .mkv、.x264.mkv 不认，只当不认识报告；' +
-      '留下的内容相同的克隆成共享块（Mac，sha 按路径、大小、修改时间缓存在 cache/sha缓存.json）；草稿超过天数的删；地形烘焙中断留下的暂存删；系统临时打包超过 24 小时且能确认无进程使用才删（归残留）；webpack 缓存旧 Remotion 版本的整个删、超过天数没用的删；列段缓存超过天数没读过的删；' +
-      '音频数等只报大小，run/、cache/ 下不认识的只报告。--apply 过渲染闸。--work 只限定母版、去重。',
+      '留下的内容相同的克隆成共享块（Mac，sha 按路径、大小、修改时间缓存在 cache/sha缓存.json）；草稿超过天数的删；地形烘焙中断留下的暂存删；系统临时打包超过 24 小时且能确认无进程使用才删（归残留）；webpack 缓存旧 Remotion 版本的整个删、超过天数没用的删；列段缓存超过天数没读过的删；光体缓存（cache/光体/<作品>/）超过天数没读过的删；' +
+      '音频数等只报大小，run/、cache/ 下不认识的只报告。--apply 过渲染闸。--work 只限定母版、光体、去重。',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { toggles: ['--apply', '--verbose'], value: ['--recent-days', '--draft-days', '--webpack-days', '--list-days'], multiValue: ['--only'] });
+      const p = parseArgs(args, { toggles: ['--apply', '--verbose'], value: ['--recent-days', '--draft-days', '--webpack-days', '--list-days', '--light-days'], multiValue: ['--only'] });
       if (p.位置[0] !== 'gc' || p.位置.length !== 1) {
         const looksLikeKinds = p.位置.slice(1).some((x) => (reclaimKinds as readonly string[]).includes(x));
         throw new UsageError(looksLikeKinds ? '--only 的几类用逗号分开（--only 母版,草稿），或者重复写 --only' : '要 anim cache gc [--apply] …');
@@ -106,6 +108,7 @@ export const cacheCommands: Record<string, Command> = {
         draftDays: parseDays(p.value['--draft-days'], defaultDays.draftDays, '--draft-days'),
         webpackDays: parseDays(p.value['--webpack-days'], defaultDays.webpack, '--webpack-days'),
         columnSegDays: parseDays(p.value['--list-days'], defaultDays.columnSeg, '--list-days'),
+        lightDays: parseDays(p.value['--light-days'], defaultDays.light, '--light-days'),
         now: Date.now(),
       };
       const execute = p.toggles.has('--apply');
