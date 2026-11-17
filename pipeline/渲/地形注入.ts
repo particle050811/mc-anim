@@ -2,8 +2,10 @@
 // anim film、still、bench、verify --render 走这一处。用环境变量不用 inputProps：inputProps 整份进指纹、规范化设置 拒收不认识的键、每段 getCompositions 也得跟着传，
 // 而版本已经单独进指纹的地形项。读 Composition 列表的页面不传：列表阶段不该读任何包，读了就报错。
 import { terrainVersionEnv, terrainUsageSegEnv } from '../../engine/段/地形环境.ts';
-// 和 engine/core/试看.ts 的 试看环境名 同一个名字（pipeline 不 import 渲染代码）
-const trialEnvName = 'REMOTION_ANIM_TRIAL';
+import { trialKey } from '../../engine/core/调试开关.ts';
+import { parseTrialJson, type TrialTable } from './试看表.ts';
+// 和 engine/core/试看.ts 的 trialEnvName 同一个名字（pipeline 不 import 渲染代码）
+export const trialEnvName = 'REMOTION_ANIM_TRIAL';
 import { workName } from '../环境/作品.ts';
 import { segTerrainVersion, readTerrainVersionTable } from '../指纹/指纹.ts';
 import type { SegInfo } from '../清单/清单.ts';
@@ -26,15 +28,24 @@ export const trialActive = (): boolean => Boolean(process.env[trialEnvName]);
  * anim still、bench、试看的 film 把试看参数原样转给页面（bench 转是为了比试看的耗时，用户 11-16 要比不同视距省多少）。
  * 正式出片的路（出片/渲段.ts）不调它：切片、段签都不能混进试看的画面
  */
-export const trialEnv = (): Record<string, string> => (process.env[trialEnvName] ? { [trialEnvName]: process.env[trialEnvName]! } : {});
-/** 试看参数里「地形」列的包：按现登记的版本并进这一页的地形版本表。键是中文「地形」，和页面认的试看名（暮色远景、雾曲线）一样是人写的 JSON，不是盘上文件的键 */
-export const trialTerrain = (): string[] => {
+export const trialEnv = (): Record<string, string> => {
   const raw = process.env[trialEnvName];
-  if (!raw) return [];
-  const table = JSON.parse(raw) as Record<string, unknown>;
+  if (!raw) return {};
+  parseTrialJson(raw, trialEnvName);
+  return { [trialEnvName]: raw };
+};
+/** shell 里设的试看表（核对过）；没设是空表 */
+export const shellTrialTable = (): TrialTable => (process.env[trialEnvName] ? parseTrialJson(process.env[trialEnvName]!, trialEnvName) : {});
+/** 试看参数里「地形」列的包：按现登记的版本并进这一页的地形版本表。键是中文「地形」，和页面认的试看名（暮色远景、雾曲线）一样是人写的 JSON，不是盘上文件的键 */
+export const trialTerrain = (table: TrialTable | undefined = undefined): string[] => {
+  if (!table) {
+    const raw = process.env[trialEnvName];
+    if (!raw) return [];
+    table = JSON.parse(raw) as TrialTable;
+  }
   // 盘上文件的键都是英文，容易照着写成 terrain：报错，不让多读的包悄悄不生效
   if ('terrain' in table) throw new Error(`${trialEnvName} 里要多读的地形包写在「地形」下，不是 terrain`);
-  const terrainNames = table['地形'];
+  const terrainNames = table[trialKey('地形')];
   if (terrainNames !== undefined && !(Array.isArray(terrainNames) && terrainNames.every((x) => typeof x === 'string'))) throw new Error(`${trialEnvName} 的 地形 要是包名数组`);
   return (terrainNames as string[] | undefined) ?? [];
 };
