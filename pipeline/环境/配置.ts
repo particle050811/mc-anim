@@ -136,6 +136,10 @@ export const readConfig = (env: NodeJS.ProcessEnv = process.env, localFile: stri
 };
 
 const cachedAllConfig = () => (configCache ??= readConfig());
+/** 丢掉读过的配置，下次 config() 重读环境变量和 anim.local.toml。单测改了 ANIM_* 以后调（不用 vi.resetModules，那样静态导入的模块拿的还是旧实例） */
+export const resetConfigCache = () => {
+  configCache = undefined;
+};
 
 export const config = (configKey: ConfigKey): string => cachedAllConfig().value[configKey]!.value;
 export const allConfig = () => cachedAllConfig();
