@@ -13,7 +13,7 @@ import type { RunRecord } from '../运行记录/记录.ts';
 import { frameEncodeTiming, recordPhase, stageSummary, type StageRecord } from '../运行记录/阶段.ts';
 import { DetailCollector } from '../运行记录/渲染明细.ts';
 import { waitSolveCacheWrites } from './求解缓存收集.ts';
-import { segRenderEnv, segTerrainNow, trialTerrain, trialEnv } from './地形注入.ts';
+import { segRenderEnv, segTerrainNow, trialTerrain, trialEnv, trialReadsFullTerrain, shellTrialTable } from './地形注入.ts';
 import { trialSuffix, type TrialGroup } from './试看组.ts';
 import { recordMeasuredFrames } from './地形用量.ts';
 import { segPictureParams, segOutputWindow } from './段产物.ts';
@@ -182,11 +182,12 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
   if (hint) runRecord?.log('警告', hint);
   if (o.shading && o.telescope) throw new Error('--shading 和 --tele 不能同时给');
   // 各出一遍的变体：页面环境变量和文件名后缀
-  const channelVariants: { env: Record<string, string>; suffix: string }[] | undefined =
-    o.shading?.map((c) => ({ env: { [shadingEnvName]: c.value }, suffix: `-光影-${c.name}` })) ?? o.telescope?.map((c) => ({ env: { [telescopeEnvName]: c.value }, suffix: `-望远-${c.name}` }));
+  // 望远的细一级、真值会挑到正式画面不用的级：那一份读完整地形包（地形注入.ts）
+  const channelVariants: { env: Record<string, string>; suffix: string; fullTerrain?: boolean }[] | undefined =
+    o.shading?.map((c) => ({ env: { [shadingEnvName]: c.value }, suffix: `-光影-${c.name}` })) ?? o.telescope?.map((c) => ({ env: { [telescopeEnvName]: c.value }, suffix: `-望远-${c.name}`, fullTerrain: c.fineLevel || c.真值 }));
   const trialGroups: (TrialGroup | undefined)[] = o.trial ?? [undefined];
   const variants = trialGroups.flatMap((g) =>
-    (channelVariants ?? [{ env: {}, suffix: '' }]).map((c) => ({ trial: g, channelEnv: c.env, channelSuffix: c.suffix, suffix: (g ? trialSuffix(g) : '') + c.suffix })),
+    (channelVariants ?? [{ env: {}, suffix: '' }]).map((c) => ({ trial: g, channelEnv: c.env, channelSuffix: c.suffix, suffix: (g ? trialSuffix(g) : '') + c.suffix, fullTerrain: 'fullTerrain' in c && !!c.fullTerrain })),
   );
   await backend.withSegResourcePack(workRoot(), s.key, () => backend.openSession(level, async (h) => {
     const allSegments = await loadAllSegments();
@@ -205,13 +206,17 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
       const gateWait = recordPhase(records, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
       const detail = new DetailCollector(label);
       // 没给 --trial 时照 shell 里的试看参数；给了每组自己带整张表（已并上 shell 那份）和要多读的包
-      const envOf = (g: TrialGroup | undefined) => ({ ...segRenderEnv(s.key, segTerrainNow(s, g ? g.terrain : trialTerrain())), ...(g ? g.env : trialEnv()) });
+      // 读哪一版地形包：试看里会挑到别的区段的项、望远的细一级和真值读完整包，别的照正式出片读裁过的（地形注入.ts）
+      const envOf = (g: TrialGroup | undefined, fullTerrain: boolean) => {
+        const mode = fullTerrain || trialReadsFullTerrain(g ? g.table : shellTrialTable()) ? '完整' : '正式';
+        return { ...segRenderEnv(s.key, segTerrainNow(s, g ? g.terrain : trialTerrain()), mode), ...(g ? g.env : trialEnv()) };
+      };
       await detail.pack(async () => {
         for (const [i, v] of variants.entries()) {
           // 上一组的页面新算的光体缓存先写完，这一组开页时列得到（地形注入.ts 的 segRenderEnv）
           if (i) await waitSolveCacheWrites();
           const variantStartMs = Date.now();
-          await renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: { ...envOf(v.trial), ...v.channelEnv }, suffix: v.suffix, completed: (emitted) => detail.frameDone(i * toEmit.length + emitted) }, backend);
+          await renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: { ...envOf(v.trial, v.fullTerrain), ...v.channelEnv }, suffix: v.suffix, completed: (emitted) => detail.frameDone(i * toEmit.length + emitted) }, backend);
           o.onVariantDone?.({ suffix: v.suffix, trial: v.trial, channelSuffix: v.channelSuffix, files: toEmit.map((f) => stillFile(outDir, s.key, f, v.suffix)), seconds: (Date.now() - variantStartMs) / 1000 });
         }
       });

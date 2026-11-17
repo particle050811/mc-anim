@@ -15,7 +15,7 @@ vi.mock('../环境/作品.ts', () => ({ workName: () => '测试作品', workRoot
 vi.mock('../清单/清单.ts', () => ({ selectSegs: async () => [seg], loadAllSegments: async () => [seg] }));
 vi.mock('../环境/资源.ts', () => ({ load1Min: () => fake.load, coreCount: () => 10 }));
 vi.mock('./段产物.ts', () => ({ segPictureParams: () => [{ inputProps: {}, gl: 'angle', scale: 1 }], segOutputWindow: () => ({ start: 0, frameCount: 2 }) }));
-vi.mock('./地形注入.ts', () => ({ segRenderEnv: () => ({}), segTerrainNow: () => ({}), trialEnv: () => ({}), trialTerrain: () => [] }));
+vi.mock('./地形注入.ts', () => ({ segRenderEnv: () => ({}), segTerrainNow: () => ({}), trialEnv: () => ({}), trialTerrain: () => [], shellTrialMode: () => '正式' }));
 vi.mock('../运行记录/渲染明细.ts', () => ({ DetailCollector: class {
   frameDone() {}
   async pack<T>(fn: () => Promise<T>) { return fn(); }

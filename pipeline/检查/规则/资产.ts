@@ -194,7 +194,8 @@ const checkReleaseBundle = async (c: CheckContext, report: CheckReport) => {
   }
 };
 
-type TerrainTable = { pack?: Record<string, { version: string; manifestSha256?: string; fileCount?: number; size?: number; license?: string; visibility?: string }> };
+type PackRecord = { version: string; manifestSha256?: string; fileCount?: number; size?: number };
+type TerrainTable = { pack?: Record<string, PackRecord & { license?: string; visibility?: string; trimmed?: PackRecord }> };
 
 export const checkAssets = async (c: CheckContext, report: CheckReport) => {
   const tableDir: Record<AssetSide, string> = { 共用: 'assets/registry', 作品: c.workPath('资产表') };
@@ -339,10 +340,13 @@ export const checkAssets = async (c: CheckContext, report: CheckReport) => {
     else if (actualSha !== l.sha256) report.错(`「${id}」库里的字节 sha256 是 ${actualSha!.slice(0, 12)}，资产锁记的是 ${l.sha256.slice(0, 12)}`);
     else if (fs.statSync(f).size !== l.size) report.错(`「${id}」库里的字节大小和资产锁不一致`);
   }
-  for (const [packName, v] of Object.entries(terrainTable.pack ?? {})) {
+  // 裁过了的包：正式出片读裁过的，它必须在；完整包只往细里看时读，不在只提示（笔记本生成的世界只传裁过的回来，docs/世界.md「裁级」）
+  const terrainDirs = Object.entries(terrainTable.pack ?? {}).flatMap(([packName, v]) => [{ packName, v, backup: !!v.trimmed }, ...(v.trimmed ? [{ packName, v: v.trimmed, backup: false }] : [])]);
+  for (const { packName, v, backup } of terrainDirs) {
     const dir = path.join(dataRoot, 'terrain', packName, v.version);
     if (!fs.existsSync(dir)) {
-      report.错(`地形包 ${packName}/${v.version} 不在 ${dir}`);
+      if (backup) report.notice(`完整地形包 ${packName}/${v.version} 不在本机，往细里看（still --tele 的细一级、真值，定级类试看）读不了：anim assets pull --full`);
+      else report.错(`地形包 ${packName}/${v.version} 不在 ${dir}`);
       continue;
     }
     // 远景高度网格没有 .块，不属于区段格式；区段包必须带本包模型，不能靠机器上残留的全局表。
@@ -364,5 +368,5 @@ export const checkAssets = async (c: CheckContext, report: CheckReport) => {
       report.错(`地形包 ${packName}/${v.version} 和 assets/地形版本.json 记的不一致（清单指纹 ${actual.manifestSha256.slice(0, 12)}、${actual.fileCount} 个文件、${actual.size} 字节）`);
     }
   }
-  report.infoLines.push(`深查：${checked.size} 个库对象、${Object.keys(terrainTable.pack ?? {}).length} 个地形包逐字节核过`);
+  report.infoLines.push(`深查：${checked.size} 个库对象、${terrainDirs.length} 个地形包版本逐字节核过`);
 };

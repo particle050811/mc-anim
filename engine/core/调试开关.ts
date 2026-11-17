@@ -15,6 +15,8 @@ export type DebugSwitch = {
   /** 管什么 */
   readonly purpose: string;
   readonly changesPicture: boolean;
+  /** 会挑到正式画面不用的区段（更细的级、更远、别的视点）：开了它的页面读完整地形包，不读裁过的（pipeline/渲/地形注入.ts，docs/世界.md「裁级」） */
+  readonly fullTerrain?: true;
   /** 试看、调试通道一律不进指纹，留这一列是让表上看得见 */
   readonly inFingerprint: false;
   readonly readers: readonly SwitchReader[];
@@ -32,7 +34,7 @@ export type DebugSwitch = {
 const all: readonly SwitchReader[] = ['still', 'film', 'bench'];
 type Named<K extends SwitchKind, N extends string> = Omit<DebugSwitch, 'name' | 'kind'> & { readonly name: N; readonly kind: K };
 // 两个帮手都留住名字的字面量类型：TrialName、OffName 要从表里推出来
-const off = <N extends string>(name: N, purpose: string, files: string[], extra: Pick<DebugSwitch, 'pending' | 'note'> = {}): Named<'off', N> => ({
+const off = <N extends string>(name: N, purpose: string, files: string[], extra: Pick<DebugSwitch, 'pending' | 'note' | 'fullTerrain'> = {}): Named<'off', N> => ({
   name,
   kind: 'off',
   purpose,
@@ -45,7 +47,7 @@ const off = <N extends string>(name: N, purpose: string, files: string[], extra:
 });
 const voxelPending = '还没做';
 // 地形调试的几项（engine/voxel/调试.tsx）
-const terrainDebug = <N extends string>(name: N, purpose: string, format: string, keys?: string[]): Named<'trial', N> => ({
+const terrainDebug = <N extends string>(name: N, purpose: string, format: string, keys?: string[], fullTerrain?: true): Named<'trial', N> => ({
   name,
   kind: 'trial',
   purpose,
@@ -54,6 +56,7 @@ const terrainDebug = <N extends string>(name: N, purpose: string, format: string
   readers: all,
   format,
   ...(keys ? { keys } : {}),
+  ...(fullTerrain ? { fullTerrain } : {}),
   files: ['engine/voxel/调试.tsx'],
   note: '地形调试，docs/地形调试.md',
 });
@@ -70,6 +73,7 @@ export const debugSwitches = [
     changesPicture: true,
     inFingerprint: false,
     readers: all,
+    fullTerrain: true,
     format: '{"起"?: 0～1, "远"?: 米}',
     keys: ['起', '远'],
     files: ['engine/light/高度雾.ts'],
@@ -82,6 +86,7 @@ export const debugSwitches = [
     changesPicture: true,
     inFingerprint: false,
     readers: all,
+    fullTerrain: true,
     format: '{"雾远": 米, "高度雾": 倍数}（两项都要给）',
     keys: ['雾远', '高度雾'],
     files: ['作品/应力转动/地点/暮色新世界/超远景.ts'],
@@ -105,7 +110,8 @@ export const debugSwitches = [
     inFingerprint: false,
     readers: all,
     format: '["<项>", …]，如 ["高度雾", "云"]',
-    files: ['engine/core/试看.ts'],
+    // 地形注入.ts 看「关」里有没有标了 fullTerrain 的项，决定读完整地形包（docs/世界.md「裁级」）
+    files: ['engine/core/试看.ts', 'pipeline/渲/地形注入.ts'],
   },
   {
     name: '细分门槛',
@@ -114,6 +120,7 @@ export const debugSwitches = [
     changesPicture: true,
     inFingerprint: false,
     readers: all,
+    fullTerrain: true,
     format: '数，如 1.5',
     files: ['engine/core/渲染级别.ts'],
     pending: '细分门槛',
@@ -148,6 +155,7 @@ export const debugSwitches = [
     changesPicture: true,
     inFingerprint: false,
     readers: all,
+    fullTerrain: true,
     format: '{"定级"?: 级, "定级框"?: [[[x,z],[x,z]], …], "场景"?: true, "真几何"?: true, "阴影"?: false, "AO"?: "关"|"满", "并色"?: false}',
     keys: ['定级', '定级框', '场景', '真几何', '阴影', 'AO', '并色'],
     files: ['engine/voxel/分级色调.ts'],
@@ -160,6 +168,7 @@ export const debugSwitches = [
     changesPicture: true,
     inFingerprint: false,
     readers: all,
+    fullTerrain: true,
     format: '{"秒"?: 往后看几秒 | "整段", "门槛"?: 输出像素（画质门槛 2.25）, "留细"?: true|false, "下限"?: 提前细分出来的一格至少几个输出像素, "格"?: 每秒几个格点（2 的幂，默认 16）}',
     keys: ['秒', '门槛', '留细', '下限', '格'],
     files: ['engine/voxel/世界.tsx'],
@@ -172,6 +181,7 @@ export const debugSwitches = [
     changesPicture: true,
     inFingerprint: false,
     readers: all,
+    fullTerrain: true,
     format: 'true 或 {"扫帧": n} 或 {"选级偏帧": ±n}',
     keys: ['扫帧', '选级偏帧'],
     files: ['engine/voxel/世界.tsx'],
@@ -184,6 +194,7 @@ export const debugSwitches = [
     changesPicture: true,
     inFingerprint: false,
     readers: all,
+    fullTerrain: true,
     format: '{"强"?: 数, "软封顶"?: 数（不封顶写 1e6）}，没给的照地点自己那套；古城没有自己那套，照下界正片（强 1.5、软封顶 1.5）',
     keys: ['强', '软封顶'],
     files: ['engine/light/光体试看.ts', '作品/应力转动/地点/古城4x/光体试看.tsx', '作品/亚波伦不放水/地点/真下界.tsx', '作品/把回忆拼好给你/地点/隐世之境一楼.tsx'],
@@ -197,7 +208,7 @@ export const debugSwitches = [
   terrainDebug('按级着色', '每个区段按级别叠一种颜色', 'true 或 0～1 的不透明度'),
   terrainDebug('世界网格', '地形上按游戏坐标每隔这么多米画线', '间距（米）'),
   terrainDebug('调试镜头', '只挪画面用的镜头，挑区段、定级别照原镜头', '{"位": [x,y,z], "看": [x,y,z]}', ['位', '看']),
-  terrainDebug('加载视点', '挑区段、定级别改按这一点算，镜头不动', '{"位": [x,y,z], "远"?: 米}', ['位', '远']),
+  terrainDebug('加载视点', '挑区段、定级别改按这一点算，镜头不动', '{"位": [x,y,z], "远"?: 米}', ['位', '远'], true),
   { ...terrainDebug('切级日志', '每帧一行进终端：镜头离地、各级交界离镜头多远和俯角、和上一帧比换了级的区段（按游戏坐标）', 'true'), changesPicture: false },
   { name: '阴影日志', kind: 'trial', purpose: '级联阴影的切分、各级半径、一像素几米、中心有变就打一行进终端：查影子一帧一跳是不是哪一级跳了档', changesPicture: false, inFingerprint: false, readers: all, format: 'true', files: ['engine/light/级联阴影.ts'], note: '地形调试，docs/地形调试.md' },
   {
@@ -232,7 +243,7 @@ export const debugSwitches = [
   off('天色雾', '暮色雾色往视线方向天色靠的那一份（远雾要的色带照旧登记）', ['engine/light/高度雾.ts'], { note: replacedByFarFog }),
   off('天空', '穹顶（暮色色带、Photon 天空）连星星、太阳；露出场景背景色（主世界是黑的），云照旧', ['engine/light/天空.tsx']),
   off('云', 'Photon 云那一遍和原版方块云', ['engine/light/大气/云.ts', 'engine/light/天空.tsx'], { note: '云投在地形上的影子还在（体素材质里，等 engine/voxel 那批）' }),
-  off('航线定级', '登记了航线的飞行镜头不按航线定级，回到每帧按画质门槛现选（用户 11-17 定航线定级之前的做法）', ['engine/voxel/世界.tsx']),
+  off('航线定级', '登记了航线的飞行镜头不按航线定级，回到每帧按画质门槛现选（用户 11-17 定航线定级之前的做法）', ['engine/voxel/世界.tsx'], { fullTerrain: true }),
   off('粒子', 'ParticleQuads 画的实例化粒子面片（方块碎屑、粉尘、气流这类）', ['库/特效/粒子面片.tsx'], { note: '振动、尖啸声波这类自己建面片的特效不管' }),
   off('阴影', '地形投影', ['engine/voxel/'], { pending: voxelPending, note: voxelNote }),
   off('AO', '屏幕 AO', ['engine/voxel/屏幕AO.tsx'], { pending: voxelPending, note: voxelNote }),

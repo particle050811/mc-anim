@@ -10,8 +10,7 @@ import type { SegInfo } from '../清单/清单.ts';
 import { recordTiming, type RunRecord } from '../运行记录/记录.ts';
 import { recordPhase, measureStage } from '../运行记录/阶段.ts';
 import type { DetailCollector } from '../运行记录/渲染明细.ts';
-import { terrainVersionEnv } from '../../engine/段/地形环境.ts';
-import { segTerrainNow, trialEnv, trialTerrain } from '../渲/地形注入.ts';
+import { segTerrainNow, trialEnv, trialTerrain, terrainOnlyEnv, shellTrialMode } from '../渲/地形注入.ts';
 import { waitSolveCacheWrites } from '../渲/求解缓存收集.ts';
 import { realBackend, type RenderBackend } from '../渲/后端.ts';
 import { findComposition, missingLocalTerrain, measureRender } from '../渲/渲.ts';
@@ -51,7 +50,7 @@ export const renderTrialSegments = async (allSegments: readonly SegInfo[], selec
       const composition = findComposition(h, s, allSegments);
       const label = trialLabel(s.key, level);
       await measureStage(opts.runRecord.stage, label, '等求解缓存', waitSolveCacheWrites);
-      const env = { [terrainVersionEnv]: JSON.stringify(segTerrainNow(s, trialTerrain())), ...trialEnv() };
+      const env = { ...terrainOnlyEnv(segTerrainNow(s, trialTerrain()), shellTrialMode()), ...trialEnv() };
       const queueStartMs = Date.now();
       const detail = await backend.passRenderGate(async () => {
         const t0 = Date.now();
