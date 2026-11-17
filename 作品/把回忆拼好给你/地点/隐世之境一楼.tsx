@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { useSelfLight } from '@engine/light/光照配比.ts';
 import { BlockMeshLightVolume } from '@engine/light/光体组件.tsx';
 import type { LightVolumeParams } from '@engine/light/光体.ts';
+import { trialLightVolume } from '@engine/light/光体试看.ts';
 import type { MeshGlow } from '@engine/light/光体网格.ts';
 import { blockGlow } from '@engine/voxel/方块发光.ts';
 import { BlockMesh, fromGame, type BlockMeshInfo } from '@engine/voxel/方块网格.tsx';
@@ -52,9 +53,11 @@ export const HiddenWorldFloor: React.FC<{ hide?: number[][] }> = ({ hide }) => <
 export const firstFloorLightVolume: { mode: '关' | '叠' | '换'; params: LightVolumeParams } = { mode: '关', params: { strength: 0.4, knee: 2, minLight: 0.002 } };
 // 蜡烛原版每根 3 级，三根一组 9 级（方块发光表只收 10 级以上的自发光，这里另给）；没点着的那组不发光
 const firstFloorGlow: MeshGlow = (id, m) => (id === 'minecraft:candle' ? (unlitSpots.some((n) => samePoint(m as number[], n)) ? 0 : 9 / 15) : blockGlow(id));
-/** 一楼的光体：放进和 隐世之境一楼 同一个 Z 朝上的 group；关着时什么都不放 */
-export const FirstFloorLightVolume: React.FC = () =>
-  firstFloorLightVolume.mode === '关' ? null : <BlockMeshLightVolume info={houseInfo} bin={houseBin} params={firstFloorLightVolume.params} glow={firstFloorGlow} />;
+/** 一楼的光体：放进和 隐世之境一楼 同一个 Z 朝上的 group；关着时什么都不放。试看「光体」开着时按 '叠' 开（点光照旧） */
+export const FirstFloorLightVolume: React.FC = () => {
+  const params = trialLightVolume(firstFloorLightVolume.params) ?? (firstFloorLightVolume.mode === '关' ? undefined : firstFloorLightVolume.params);
+  return params ? <BlockMeshLightVolume info={houseInfo} bin={houseBin} params={params} glow={firstFloorGlow} /> : null;
+};
 
 // 一楼的灯：数都是 Agent 暂定的，用户没定过；节点给用户看时列出来，用户改了只改这里。照 一楼机位 游戏截图调到亮度、色温差不多，不追逐像素。
 // 游戏里屋里差不多是均匀的天光加方块光（顶面最亮、南北面 0.8、东西面 0.6），整体偏暖，灯笼旁边并不更亮，所以主光是天光，灯只添一点暖色。
