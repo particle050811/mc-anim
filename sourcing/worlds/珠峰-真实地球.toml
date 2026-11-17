@@ -20,9 +20,9 @@
 [["bake"."pack"]]
 "name" = "珠峰-真实地球"
 "source" = "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 cubes/*.mcr3d，生成完的全部 cube，anim world bake 烘焙"
-# 存档作者和 Better Cubic Chunks、cubicearth 都没写许可；字节不分发，要用的人自己下存档照这份声明烘
+# 存档作者和 Better Cubic Chunks、cubicearth 都没写许可：可见性写私有，不进发布附件（pipeline/分发/发布.ts）；要用的人自己下存档照这份声明烘
 "license" = "LicenseRef-Origin-Unverified"
-"visibility" = "提取"
+"visibility" = "私有"
 
 # 从存档里 Distant Horizons 的 LOD 库烘的包（anim world bake-dh，docs/世界.md「DH 的 LOD 库」）：cube 只有 13 km²，飞行测试用的大范围地形只有这里有。
 # 库里 1 米一列的有 19.7 km²，往外 2、4、8、16、32、64 米一列的分别到 57、168、420、832、1598、3758 km²，128 米一列的 13422 km²，256 米一列的铺到 ±1048 km。
@@ -34,4 +34,4 @@
 "yRange" = [-64, 8959]
 "source" = "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 data/DistantHorizons.sqlite，anim world bake-dh 烘焙"
 "license" = "LicenseRef-Origin-Unverified"
-"visibility" = "提取"
+"visibility" = "私有"
