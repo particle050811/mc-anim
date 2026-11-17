@@ -8,6 +8,7 @@ import { readEdits, type EditSet } from '../编辑/编辑文件.ts';
 import { EditApplier } from '../编辑/套用.ts';
 import { RegionSource } from '../区域源.ts';
 import { worldSeed } from '../存档.ts';
+import { saveFormat } from '../存档格式.ts';
 import { regionDir, saveDir, pickPack, editFile, type PackDecl, type WorldDecl } from '../声明.ts';
 import { loadVoxelLib } from '../体素库.ts';
 import { release, newStaging, registerTerrain, registerTerrainEntry, readTerrainTable, type TerrainRecord } from '../版本.ts';
@@ -40,8 +41,9 @@ export const bakeWorld = async (w: WorldDecl, o: BakeOptions): Promise<PackResul
   for (const b of pickPack(w, o.pack)) {
     const editSet = edits && b.applyEdits ? edits : null;
     // 编辑里 clone、摆结构要读别处的方块：读原样的区域（不套编辑），套用时按步骤先后自己算
-    const editApplier = editSet ? new EditApplier(editSet, new RegionSource(regionDir(w, o.save), seed, columnSegmentCacheDir())) : null;
-    const regionSource = new RegionSource(regionDir(w, o.save), seed, columnSegmentCacheDir(), editApplier ? (r) => editApplier.applyEdits(r) : null);
+    const format = saveFormat(w.saveFormat);
+    const editApplier = editSet ? new EditApplier(editSet, new RegionSource(regionDir(w, o.save), seed, columnSegmentCacheDir(), null, format)) : null;
+    const regionSource = new RegionSource(regionDir(w, o.save), seed, columnSegmentCacheDir(), editApplier ? (r) => editApplier.applyEdits(r) : null, format);
     const regionFiles = packRegions(regionSource, b);
     if (!regionFiles.length) throw new Error(`包 ${b.name}：${regionSource.regionDir} 里没有范围内的区域文件`);
     const regions = await regionSource.preRead(regionFiles, o.threads ?? defaultThreads(), o.log);
@@ -62,7 +64,7 @@ export const bakeWorld = async (w: WorldDecl, o: BakeOptions): Promise<PackResul
     }
     const existing = readTerrainTable().pack[b.name];
     const source = `${b.source ?? `${w.server} ${w.save} 存档，anim world bake ${w.displayName} 烘焙`}${editSet ? `，套编辑 ${path.relative(codeRoot(), editSet.file).split(path.sep).join('/')}（${editSet.step.length} 条命令，sha256 ${editSet.sha256.slice(0, 12)}）` : ''}`;
-    const entry = await registerTerrainEntry(b.name, version, { source: source, license: 'LicenseRef-Minecraft-Derived', visibility: '发布' });
+    const entry = await registerTerrainEntry(b.name, version, { source: source, license: b.license ?? 'LicenseRef-Minecraft-Derived', visibility: b.visibility ?? '发布' });
     const same = existing?.version === version;
     const shouldRegister = !same && !o.noRegister && b.entries;
     if (shouldRegister) registerTerrain(b.name, entry);

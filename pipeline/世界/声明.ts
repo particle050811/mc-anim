@@ -6,6 +6,7 @@ import { parse } from 'smol-toml';
 import { config } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { dimensionRegionDir } from './存档.ts';
+import type { SaveFormatSpec } from './存档格式.ts';
 
 export type RegionRange = { RX: [number, number]; RZ: [number, number] };
 export type PackDecl = {
@@ -19,6 +20,9 @@ export type PackDecl = {
   applyEdits: boolean;
   /** false = 烘了也不登记进 assets/地形版本.json（演示、试验用的包） */
   entries: boolean;
+  /** 第一次登记时写进 assets/地形版本.json 的许可、可见性（docs/决策/0002-资产标准.md）；不写 = 自己游戏里生成的世界那一套（LicenseRef-Minecraft-Derived、发布）。别人给的存档要写 */
+  license?: string;
+  visibility?: string;
 };
 /** 矩形写 两角，或 中心 加 半边；走廊写 折线、半宽，可选 去掉（已在别的矩形块里的区块不重复生成）；区块表写 文件（相对 sourcing/worlds/ 的 JSON，{"区块": [[cx, cz], …]}，
  *  程序算出来的散点区块，例：anim world far landmarks 排的远处地标小块）。怎么算区块见 预生成/范围.ts */
@@ -39,6 +43,8 @@ export type WorldDecl = {
   file: string;
   server: string;
   save: string;
+  /** 存档格式（存档格式.ts）：不写 = 原版 .mca；saveFormat = "mcr3d" 是 Better Cubic Chunks 的立方区块存档，要同时写 yRange = [底, 顶]（烘哪一段高度，游戏 y，两端都含、对齐 16） */
+  saveFormat: SaveFormatSpec;
   dimension: string;
   /** 包.json 的 维度：主世界 / 暮色 / 下界 … */
   packDimension: string;
@@ -110,6 +116,13 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
     if (typeof dimension !== 'string' || !dimension.includes(':')) throw fileError('维度 要写成 命名空间:名字');
     if (typeof d.server !== 'string') throw fileError('要写 服务端（游戏环境 ANIM_GAME 下的服务端目录名）');
     const knownDim = knownDims[dimension];
+    let saveFormat: SaveFormatSpec = { kind: 'mca' };
+    if (d.saveFormat === 'mcr3d') {
+      const yRange = toPair(d.yRange, 'yRange');
+      if (yRange[0] & 15 || (yRange[1] + 1) & 15 || yRange[0] > yRange[1] || yRange[0] < -32768 || yRange[1] > 32767) throw fileError(`yRange 要对齐 cube（底是 16 的倍数、顶是 16 的倍数减 1）、在 −32768～32767 里，给的是 ${yRange.join('～')}`);
+      saveFormat = { kind: 'mcr3d', yRange };
+    } else if (d.saveFormat !== undefined && d.saveFormat !== 'mca') throw fileError(`saveFormat 只认 mca、mcr3d，给的是 ${String(d.saveFormat)}`);
+    else if (d.yRange !== undefined) throw fileError('yRange 只有 saveFormat = "mcr3d" 才用（.mca 的高度范围在存档里）');
     const bake = (d.bake ?? {}) as Record<string, unknown>;
     const packDimension = typeof bake.包维度 === 'string' ? bake.包维度 : knownDim?.packDimension;
     if (!packDimension) throw fileError(`维度 ${dimension} 不认识，要在 [烘焙] 写 包维度（包.json 的 维度）`);
@@ -136,7 +149,9 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       const origin = parseOrigin(b.origin, `包 ${b.name} 的 原点`) ?? defaultOrigin;
       if (!origin) throw fileError(`包 ${b.name} 没有原点（写在 [烘焙] 原点 或包里）`);
       if (knownDim && origin[1] !== knownDim.oy) throw fileError(`包 ${b.name} 的 oy 是 ${origin[1]}，${dimension} 一律 ${knownDim.oy}（engine 按这个换竖直坐标）`);
-      return { name: b.name, region: parseRegion(b.region, `包 ${b.name} 的 区域`), origin: origin, source: typeof b.source === 'string' ? b.source : undefined, applyEdits: b.套编辑 !== false, entries: b.entries !== false };
+      if (b.visibility !== undefined && !['公开', '发布', '提取', '私有'].includes(b.visibility as string)) throw fileError(`包 ${b.name} 的 visibility 只能是 公开、发布、提取、私有`);
+      if (b.license !== undefined && typeof b.license !== 'string') throw fileError(`包 ${b.name} 的 license 要写 SPDX 表达式`);
+      return { name: b.name, region: parseRegion(b.region, `包 ${b.name} 的 区域`), origin: origin, source: typeof b.source === 'string' ? b.source : undefined, applyEdits: b.套编辑 !== false, entries: b.entries !== false, license: b.license as string | undefined, visibility: b.visibility as string | undefined };
     });
     const dupNames = packs.map((b) => b.name).filter((n, i, a) => a.indexOf(n) !== i);
     if (dupNames.length) throw fileError(`包重名：${dupNames.join('、')}`);
@@ -183,6 +198,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       file: fileName,
       server: d.server,
       save: typeof d.save === 'string' ? d.save : worldName,
+      saveFormat,
       dimension: dimension,
       packDimension,
       fullHeight,
@@ -213,7 +229,12 @@ export const readDecl = (worldName: string): WorldDecl => {
 
 /** 存档的世界目录：--save-dir 给了就用它，否则 <ANIM_GAME>/<服务端>/<存档> */
 export const saveDir = (w: WorldDecl, overrideDir?: string) => (overrideDir ? path.resolve(overrideDir) : path.isAbsolute(w.save) ? w.save : path.join(config('游戏'), w.server, w.save));
-export const regionDir = (w: WorldDecl, overrideDir?: string) => path.join(saveDir(w, overrideDir), dimensionRegionDir(w.dimension));
+export const regionDir = (w: WorldDecl, overrideDir?: string) => {
+  if (w.saveFormat.kind === 'mca') return path.join(saveDir(w, overrideDir), dimensionRegionDir(w.dimension));
+  // 立方存档只见过主世界的（<存档>/cubes/），别的维度放哪没核过
+  if (w.dimension !== 'minecraft:overworld') throw new Error(`${w.file}：立方存档（mcr3d）只认主世界，${w.dimension} 的 cube 放在哪还没核过`);
+  return path.join(saveDir(w, overrideDir), 'cubes');
+};
 
 /** 哪个世界声明烘这个包（转码按它取可见变换的设置）；没有返回 null */
 export const packWorld = (packName: string): WorldDecl | null => {
