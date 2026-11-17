@@ -7,7 +7,7 @@
 import React from 'react';
 import { AbsoluteFill, Composition, Img, cancelRender, continueRender, delayRender } from 'remotion';
 import '../core/稳定排序.ts';
-import '../core/覆盖不画.ts';
+import '../voxel/覆盖不画.ts';
 import { segFrameCount, segFps, type SegmentDef } from './段定义.ts';
 import { SettingsProvider, useSettings, readSettings } from './设置.ts';
 import { useOutputFrame } from './时间.tsx';

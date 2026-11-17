@@ -62,7 +62,7 @@ export const measureCovers = async (segments: readonly SegInfo[], runRecord?: Ru
   const allSegments = await loadAllSegments();
   const keys = new Map((await coverKeys(allSegments, segments)).map((k, i) => [segments[i]!.key, k]));
   const out: SegCover[] = [];
-  // 不画（engine/core/覆盖不画.ts），只吃 CPU 和页面内存：过放行闸（等负载、内存），不拿渲染独占锁挡别人的静帧；整批一张票，不一段等一次放行间隔
+  // 不画（engine/voxel/覆盖不画.ts），只吃 CPU 和页面内存：过放行闸（等负载、内存），不拿渲染独占锁挡别人的静帧；整批一张票，不一段等一次放行间隔
   await backend.passGate(() => backend.perResourcePackGroup(workRoot(), segments, (s) => s.key, (group) =>
     backend.openSession(
       coverLevel,
