@@ -8,6 +8,10 @@ import { useThree } from '@react-three/fiber';
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { useSelfLight } from '@engine/light/光照配比.ts';
+import { BlockMeshLightVolume } from '@engine/light/光体组件.tsx';
+import type { LightVolumeParams } from '@engine/light/光体.ts';
+import type { MeshGlow } from '@engine/light/光体网格.ts';
+import { blockGlow } from '@engine/voxel/方块发光.ts';
 import { BlockMesh, fromGame, type BlockMeshInfo } from '@engine/voxel/方块网格.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import houseRaw from 'asset:网格/隐世之境一楼/头';
@@ -41,6 +45,16 @@ export const hallLamps: readonly LampPos[] = [...fetchLamps('minecraft:lantern',
 
 // hide 之类的数组要各帧同一个（换了会重建网格），由调用的地方放在模块级
 export const HiddenWorldFloor: React.FC<{ hide?: number[][] }> = ({ hide }) => <BlockMesh info={houseInfo} bin={houseBin} atlas={houseAtlas} hide={hide} />;
+
+// 光体（engine/light/光体组件.tsx，灯笼、蜡烛照亮屋里：圆的、按距离平方衰减、墙挡得住）：用户 11-17 要这里也比一比，没定开不开。
+// '关' 照现在（用户看过的）；'叠' 现有的灯不动、再加光体；'换' 光体替掉灯笼、蜡烛的点光，开光影的段里光影层那份灯光（发光区四周一格降一级）也不再要。
+// 强、软封顶是 Agent 暂定。开了的话 '换' 还要在 作品默认值 里把这些段光影的灯光关掉（光影/预设.ts 的 lampLight），现在没有接
+export const firstFloorLightVolume: { mode: '关' | '叠' | '换'; params: LightVolumeParams } = { mode: '关', params: { strength: 0.4, knee: 2, minLight: 0.002 } };
+// 蜡烛原版每根 3 级，三根一组 9 级（方块发光表只收 10 级以上的自发光，这里另给）；没点着的那组不发光
+const firstFloorGlow: MeshGlow = (id, m) => (id === 'minecraft:candle' ? (unlitSpots.some((n) => samePoint(m as number[], n)) ? 0 : 9 / 15) : blockGlow(id));
+/** 一楼的光体：放进和 隐世之境一楼 同一个 Z 朝上的 group；关着时什么都不放 */
+export const FirstFloorLightVolume: React.FC = () =>
+  firstFloorLightVolume.mode === '关' ? null : <BlockMeshLightVolume info={houseInfo} bin={houseBin} params={firstFloorLightVolume.params} glow={firstFloorGlow} />;
 
 // 一楼的灯：数都是 Agent 暂定的，用户没定过；节点给用户看时列出来，用户改了只改这里。照 一楼机位 游戏截图调到亮度、色温差不多，不追逐像素。
 // 游戏里屋里差不多是均匀的天光加方块光（顶面最亮、南北面 0.8、东西面 0.6），整体偏暖，灯笼旁边并不更亮，所以主光是天光，灯只添一点暖色。
@@ -105,8 +119,9 @@ export const FirstFloorLighting: React.FC = () => {
       <hemisphereLight args={[skylight.天, skylight.ground, skylight.strength]} position={[0, 0, 1]} />
       <ambientLight color={ambient.色} intensity={ambient.strength} />
       {/* 照 7-4-3 的室内灯：颜色 #ffb565、distance 9、decay 1.6 */}
+      <FirstFloorLightVolume />
       {hallLamps
-        .filter((l) => l.lit)
+        .filter((l) => l.lit && firstFloorLightVolume.mode !== '换')
         .map((l, i) => (
           <pointLight
             key={i}

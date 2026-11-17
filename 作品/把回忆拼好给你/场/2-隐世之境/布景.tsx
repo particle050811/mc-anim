@@ -7,7 +7,7 @@ import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { eyePos } from '../../地点/机位.tsx';
 import { lampBox } from '../../地点/灯盒.ts';
-import { FirstFloorLighting, hallLamps } from '../../地点/隐世之境一楼.tsx';
+import { FirstFloorLighting, FirstFloorLightVolume, hallLamps } from '../../地点/隐世之境一楼.tsx';
 import { mainHall, mainHallDoors, openDoorOpening, HiddenWorldDoors } from '../../地点/隐世之境主厅门.tsx';
 import { lightDir, DoorLight, type DoorLightParams as DoorLightParams } from '../../特效/门光.tsx';
 import { headTurnRange, liYing, doorOpen, cameraRig, hiddenLandPalette, doorLightParams } from './参数.ts';
@@ -49,7 +49,13 @@ export const HiddenLandReunionBackdrop: React.FC<{
   const opening = useMemo(() => openDoorOpening(entranceDoor, openAmount, lightDir(lightParams.azimuthDeg, lightParams.elevationDeg)), [openAmount, lightParams]);
   return (
     <>
-      {lighting === undefined ? <FirstFloorLighting /> : lighting || null}
+      {/* 光体跟着一楼的灯走（一楼灯光 里也放了）；不放现成的灯（三渲二平涂）时单放 */}
+      {lighting === undefined ? <FirstFloorLighting /> : (
+        <>
+          {lighting || null}
+          <FirstFloorLightVolume />
+        </>
+      )}
       <HiddenWorldDoors 开={{ westDoor: openAmount }} />
       {outsideView && <OutsideCherryGrove />}
       {hasDoorLight && openAmount > 0 && opening && (
