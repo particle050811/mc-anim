@@ -363,6 +363,7 @@ const diffCmd: Command = {
       outDir, threshold: readThresholds(), aName: path.basename(a), bName: path.basename(b),
       hotspots: positiveInt(p.value['--windows'], '--windows', 0), zoom: positiveInt(p.value['--zoom'], '--zoom'), maxImages: positiveInt(p.value['--images'], '--images', 0),
       gain: positiveInt(p.value['--gain'], '--gain'), panelWidth: positiveInt(p.value['--panel-width'], '--panel-width', 16),
+      probeOffset: p.value['--offset'] === undefined,
     });
     runRecord.artifacts.push(outDir);
     return code;

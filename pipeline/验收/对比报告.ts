@@ -6,8 +6,10 @@ import path from 'node:path';
 import { listWorks } from '../环境/作品.ts';
 import { lazyPassGate } from '../闸/闸.ts';
 import { masterSize } from '../渲/设置.ts';
-import { type BlockVerdict, type Threshold } from './比较.ts';
-import { ratioText, worseFirst } from './帧差.ts';
+import { yuvToRgb, type BlockVerdict, type Threshold } from './比较.ts';
+import { ratioText, rgbFrameDiff, worseFirst } from './帧差.ts';
+import { frameStream } from './帧流.ts';
+import { videoInfo } from '../渲/探测.ts';
 import { analyzePair, identicalAnalysis, boxColors, diffPanel, edgeThreshold, encodePng, hotspotDirection, panelScale, type Hotspot, type PairAnalysis } from './对比.ts';
 import { readPairs, type DiffPlan, type PairPlan } from './对比配对.ts';
 
@@ -26,6 +28,8 @@ export type DiffOptions = {
   vsTarget?: string;
   /** 复查命令出到的预览主题 */
   recheckTopic?: string;
+  /** 视频没给 --offset 时先查两条是不是错开了几帧（probeVideoOffset） */
+  probeOffset?: boolean;
   log?: (s: string) => void;
 };
 
@@ -69,6 +73,35 @@ export const workOfSeg = (segKey: string): string | null => {
 const hotspotLine = (h: Hotspot, n: number, t: Threshold) =>
   `${n}（${boxColors[(n - 1) % boxColors.length]!.name}框）${h.edge}×${h.edge} 块 (${h.x}, ${h.y}) 差 ${fmt(h.diff)}（门槛 ${edgeThreshold(t, h.edge)}，${h.ratio >= 1 ? `超 ${h.ratio.toFixed(2)} 倍` : `到门槛的 ${Math.round(h.ratio * 100)}%`}），${hotspotDirection(h)}：新−旧 RGB ${h.meanRgb.map(signed).join('/')}；望远 ${teleArg(h)}（${h.tele.width}×${Math.round(h.tele.height)}）`;
 
+// 错帧自查：11-17 给用户来回切着看的两条视频错开了一帧，没人发现，逐帧比每帧都判「变了」。
+// 只提醒不自动对齐：错帧本身可能就是要查的 bug（出片路径差一帧），自动对齐会把它藏掉。
+// 在中段抽两帧，A 错开 −最多～+最多 帧各比一次 16×16 块差；最好的错开量比不错开小一半以上才报。
+export const probeVideoOffset = async (plan: DiffPlan, threshold: Threshold, maxShift = 2): Promise<string | null> => {
+  const v = plan.video!;
+  const base = v.aFrames[0]! - v.frames[0]!;
+  const count = Math.min(...[v.a, v.b].map((f) => videoInfo(f).frameCount));
+  const probes = [0.4, 0.6].map((t) => Math.round(count * t)).filter((f) => f - maxShift + base >= 0 && f + maxShift + base < count);
+  if (!probes.length) return null;
+  const aFrames = [...new Set(probes.flatMap((f) => Array.from({ length: maxShift * 2 + 1 }, (_, i) => f + base + i - maxShift)))].sort((x, y) => x - y);
+  const aRgb = new Map<number, Buffer>();
+  for await (const y of frameStream(v.a, aFrames, v.width, v.height, { 格式: 'yuv420p' })) aRgb.set(aFrames[aRgb.size]!, yuvToRgb(y, v.width, v.height));
+  const score = new Map<number, number>();
+  let i = 0;
+  for await (const y of frameStream(v.b, probes, v.width, v.height, { 格式: 'yuv420p' })) {
+    const bRgb = yuvToRgb(y, v.width, v.height);
+    for (let k = -maxShift; k <= maxShift; k++) {
+      const d = rgbFrameDiff(bRgb, aRgb.get(probes[i]! + base + k)!, v.width, v.height, threshold).block[16].差;
+      score.set(k, (score.get(k) ?? 0) + d);
+    }
+    i++;
+  }
+  const [bestK, bestS] = [...score].reduce((m, x) => (x[1] < m[1] ? x : m));
+  const zero = score.get(0)!;
+  if (bestK === 0 || bestS * 2 >= zero) return null;
+  const n = probes.length;
+  return `两条视频像是错开了 ${Math.abs(bestK)} 帧：在 B 的第 ${probes.join('、')} 帧上，A 再${bestK > 0 ? '往后' : '往前'}挪 ${Math.abs(bestK)} 帧时 16×16 块差 ${fmt(zero / n)} → ${fmt(bestS / n)}。确是起点不同就加 --offset ${base + bestK}；本该对齐的，先查出片是不是差了一帧`;
+};
+
 const verdictOf = (a: PairAnalysis): PairVerdict => (a.frame.over[0] === 0 ? '一样' : a.frame.verdict);
 
 const imageName = (r: PairResult, width: number) => `${String(r.index).padStart(width, '0')}-${r.pair.label.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/（.*）$/, '')}-${r.verdict}.png`;
@@ -81,6 +114,13 @@ export const runDiff = async (plan: DiffPlan, o: DiffOptions): Promise<{ code: n
   // 留着待写的并排图（缩小后的 rgb），只留最差的 图数 张
   const kept: { r: PairResult; panel: ReturnType<typeof diffPanel> }[] = [];
   if (plan.kind === '视频') await lazyPassGate()();
+  if (plan.kind === '视频' && o.probeOffset) {
+    const hint = await probeVideoOffset(plan, o.threshold);
+    if (hint) {
+      plan.notes.unshift(hint);
+      log(`!! ${hint}`);
+    }
+  }
   let index = 0;
   let scale = 1;
   for await (const d of readPairs(plan)) {
