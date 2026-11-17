@@ -1,5 +1,5 @@
 // 台词轨：配音副本（开头静音裁到 0.03 秒、整句拉到 -18 LUFS）按台词表放进段里。台词表和各句的 wav 是作品的资产，由作品传进 做台词轨
-// （作品的 配音/台词轨.tsx 绑好后导出 LineTrack 等），本文件不 import 任何资产。
+// （作品的 配音/台词轨.tsx 绑好后导出 LineTrack 等），本文件不 import 任何资产。台词表的形状和解析在 台词表.ts（只排时刻的引它就够）。
 // 用法：<LineTrack 句们={[{ id: '6-3-1-李樱-又回到这里', 帧: 24 }]} />，帧 = 这句开口（第一个有声的时刻）落在这段的第几格（一格 1/每秒 秒，默认 1/24），
 // 文件开头那 0.03 秒静音会往前让出来，开口正好在这一刻。帧可以是负的（上一段就开口了，这段只放剩下的）。
 // 正片的段不用这个，台词写成 段.ts 的声音 cue（engine/段/放法.ts）；这里只给 核对-台词句轨 用。
@@ -9,13 +9,14 @@ import React from 'react';
 import { Sequence } from 'remotion';
 import { lineVolume } from './混音.ts';
 import { useFrameRate } from '../段/时间.tsx';
+import { parseLineTable } from './台词表.ts';
 
-export type LineEntry = { 字: string; 角色: string; 段: string; 文件: string | null; 时长: number; 开口: number; 有声长: number };
+export type { LineEntry } from './台词表.ts';
 export type LineCue = { id: string; frame: number; 音量?: number };
 
 /** 台词表：资产 数据/配音/台词表 的内容；wav们：台词表里的 文件 名 → 打包后的地址 */
 export const makeLineTrack = (rawLineTable: unknown, wavs: Readonly<Record<string, string>>) => {
-  const lineTable = rawLineTable as Record<string, LineEntry>;
+  const lineTable = parseLineTable(rawLineTable);
   const LineTrack: React.FC<{ lines: LineCue[]; perSec?: number }> = ({ lines: lines, perSec: perSec = 24 }) => {
     const fps = useFrameRate();
     return (
