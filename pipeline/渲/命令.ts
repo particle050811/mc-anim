@@ -12,6 +12,7 @@ import { renderStillFrames } from './渲.ts';
 import { bench } from './测速.ts';
 import { parseShading } from './光影试看.ts';
 import { parseTelescope } from './望远.ts';
+import { finishTrialStills, trialStillFlags, trialStillNote, trialStillPlan, trialStillUsage } from './试看静帧.ts';
 import { detailOverview, detailReport, readDetailList } from '../运行记录/渲染明细.ts';
 import { checkSelectedSegCues, runCuesBeforeRender } from '../段框架/自动.ts';
 import { segFrameCount } from '../../engine/段/段定义.ts';
@@ -45,10 +46,10 @@ const parseLevel = (v: string | undefined): RenderLevel => {
 
 export const renderCommands: Record<string, Command> = {
   still: {
-    usage: 'still <段> <帧…（空格、逗号或起-止）> --to-preview <主题> [--level 视频|预览] [--per-frame] [--shading <配置>[;<配置>…]] [--tele <x,y,宽 | 心x,心y,倍x>[;…] [--finer] [--truth]] [--vs <检出|分支|main>]',
-    note: '渲几帧静帧（PNG）进预览。多帧默认在同一页面连出，快；--per-frame 每帧开新页面，慢但每帧都和单独出一帧相同，逐像素比或连出崩页时用它。--shading 把三渲二画布换成带光影层的试看画布，每份配置（预设名或 JSON）各出一遍，文件名带 -光影-<名>（pipeline/渲/光影试看.ts）。--tele 照原镜头只把原帧里的一块矩形用整张图原生渲出来（看远处细节，不是渲完再放大）：x,y,宽 是矩形左上角和宽（原帧像素，视频级 3840×2160），或 心x,心y,8x 给中心和倍数；2D 叠层和字幕不画，文件名带 -望远-x…-y…-宽…；默认出来的是原帧那块的放大（分级、阴影、台阶并色、贴图级别都照原帧算）；加 --finer 远处强制用更细的一级，加 --truth 着色器里按像素大小做的远处简化（台阶并色、贴图取粗一级）照望远后的像素算、等于看原帧每个像素里本来有什么（文件名再带 -细一级、-真值，都不再是原帧那块的放大）。做法和偏差见 docs/望远.md。--vs <检出|分支|main>：同一批帧（连同上面这些参数）先在对方检出用它自己的 anim 出一遍、再在这边出一遍（各过各的资源闸，原图进 run/草稿/工作-<主题>-<分支>/），然后 anim diff 两边，旧｜新｜差 并排图、块差汇总和 --tele 复查命令出到 --to-preview 的主题；对方 = git worktree list 里的分支名、目录名或检出路径。比同一份代码走不同路径用 anim verify frames，不用这个',
+    usage: `still <段> <帧…（空格、逗号或起-止）> --to-preview <主题> [--level 视频|预览] [--per-frame] [--shading <配置>[;<配置>…]] [--tele <x,y,宽 | 心x,心y,倍x>[;…] [--finer] [--truth]] [--vs <检出|分支|main>] ${trialStillUsage}`,
+    note: '渲几帧静帧（PNG）进预览。多帧默认在同一页面连出，快；--per-frame 每帧开新页面，慢但每帧都和单独出一帧相同，逐像素比或连出崩页时用它。--shading 把三渲二画布换成带光影层的试看画布，每份配置（预设名或 JSON）各出一遍，文件名带 -光影-<名>（pipeline/渲/光影试看.ts）。--tele 照原镜头只把原帧里的一块矩形用整张图原生渲出来（看远处细节，不是渲完再放大）：x,y,宽 是矩形左上角和宽（原帧像素，视频级 3840×2160），或 心x,心y,8x 给中心和倍数；2D 叠层和字幕不画，文件名带 -望远-x…-y…-宽…；默认出来的是原帧那块的放大（分级、阴影、台阶并色、贴图级别都照原帧算）；加 --finer 远处强制用更细的一级，加 --truth 着色器里按像素大小做的远处简化（台阶并色、贴图取粗一级）照望远后的像素算、等于看原帧每个像素里本来有什么（文件名再带 -细一级、-真值，都不再是原帧那块的放大）。做法和偏差见 docs/望远.md。--vs <检出|分支|main>：同一批帧（连同上面这些参数）先在对方检出用它自己的 anim 出一遍、再在这边出一遍（各过各的资源闸，原图进 run/草稿/工作-<主题>-<分支>/），然后 anim diff 两边，旧｜新｜差 并排图、块差汇总和 --tele 复查命令出到 --to-preview 的主题；对方 = git worktree list 里的分支名、目录名或检出路径。比同一份代码走不同路径用 anim verify frames，不用这个。' + trialStillNote,
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { value: ['--level', '--to-preview', '--shading', '--tele', '--vs'], toggles: ['--per-frame', '--finer', '--truth'] });
+      const p = parseArgs(args, { value: ['--level', '--to-preview', '--shading', '--tele', '--vs'], toggles: ['--per-frame', '--finer', '--truth', ...trialStillFlags.toggles], multiValue: trialStillFlags.multiValue });
       const [selector, ...frameArgs] = p.位置;
       if (!selector || !frameArgs.length || !p.value['--to-preview']) throw new UsageError('要 anim still <段> <帧…> --to-preview <主题>');
       const cues = await runCuesBeforeRender();
@@ -69,6 +70,8 @@ export const renderCommands: Record<string, Command> = {
       }
       const vs = p.value['--vs'];
       if (vs) {
+        // --trial 多组和 --vs 两边各出一遍没接到一起：要比试看参数用 --trial … --baseline
+        if (trialStillPlan(p)) throw new UsageError('--vs 和 --trial 不能一起用：比试看参数用 --trial … --baseline，比两份代码用 --vs');
         // 对方先出：它用自己的代码查参数、过闸；参数原样转过去（帧号、段照用户写的，两边各自解析）
         const other = resolveCheckout(vs);
         const self = selfLabel();
@@ -85,9 +88,11 @@ export const renderCommands: Record<string, Command> = {
         console.log(`原图：${other.label} 的在 ${otherDir}，${self} 的在 ${selfDir}`);
         return code;
       }
+      const trial = trialStillPlan(p);
       const dir = newPreviewDir(p.value['--to-preview']);
-      const products = await renderStillFrames(segments[0]!, frames, level, dir, runRecord, { frameByFrame: p.toggles.has('--per-frame'), shading: p.value['--shading'] ? parseShading(p.value['--shading']) : undefined, telescope });
+      const products = await renderStillFrames(segments[0]!, frames, level, dir, runRecord, { frameByFrame: p.toggles.has('--per-frame'), shading: p.value['--shading'] ? parseShading(p.value['--shading']) : undefined, telescope, trial: trial?.groups, onVariantDone: trial && ((v) => trial.done.push(v)) });
       runRecord.artifacts.push(...products);
+      if (trial) runRecord.artifacts.push(...(await finishTrialStills(trial, { dir, segKey: seg.key, frames })));
       console.log(`静帧在 ${dir}`);
     },
   },

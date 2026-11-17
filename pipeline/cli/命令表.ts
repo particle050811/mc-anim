@@ -7,6 +7,7 @@ import type { Command } from './命令.ts';
 import { envCommands, worktreeCommands } from '../环境/命令.ts';
 import { assetCommands } from '../资产/命令.ts';
 import { renderCommands } from '../渲/命令.ts';
+import { trialCommands } from '../渲/试看命令.ts';
 import { fingerprintCommands } from '../指纹/命令.ts';
 import { composeCommands } from '../合成/命令.ts';
 import { previewCommands } from '../预览/命令.ts';
@@ -20,4 +21,4 @@ import { voiceCommands } from '../配音/命令.ts';
 import { cacheCommands } from '../缓存/命令.ts';
 import { segFrameCommands } from '../段框架/命令.ts';
 
-export const commandTable: Record<string, Command> = { ...batchCommands, ...schedulerCommands, ...envCommands, ...worktreeCommands, ...assetCommands, ...renderCommands, ...fingerprintCommands, ...composeCommands, ...previewCommands, ...checkCommands, ...verifyCommands, ...sourcingCommands, ...gameExportCommands, ...worldCommand, ...platformCommands, ...voiceCommands, ...cacheCommands, ...segFrameCommands };
+export const commandTable: Record<string, Command> = { ...batchCommands, ...schedulerCommands, ...envCommands, ...worktreeCommands, ...assetCommands, ...renderCommands, ...trialCommands, ...fingerprintCommands, ...composeCommands, ...previewCommands, ...checkCommands, ...verifyCommands, ...sourcingCommands, ...gameExportCommands, ...worldCommand, ...platformCommands, ...voiceCommands, ...cacheCommands, ...segFrameCommands };

@@ -13,7 +13,7 @@ import { esbuildAliasPlugin, nonCodeLoaders } from '../资产/esbuild插件.ts';
 import { readAssetLock, type AssetLock } from '../资产/资产锁.ts';
 import { WorkSelectError } from '../环境/作品.ts';
 
-export const ruleNames = ['types', 'structure', 'layers', 'manifest', 'load', 'lines', 'assets', 'rules', 'platform', 'dupes', 'time', 'idents'] as const;
+export const ruleNames = ['types', 'structure', 'layers', 'manifest', 'load', 'lines', 'assets', 'rules', 'platform', 'dupes', 'time', 'idents', 'debug'] as const;
 export type RuleKind = (typeof ruleNames)[number];
 
 export type Issue = { file?: string; 行?: number; text: string };
@@ -50,9 +50,10 @@ export const isRenderCode = (p: string) => renderLayerPrefixes.some((x) => p.sta
  * 段、场、核对目录下的 环境.ts（<环境> 的声明）也是：check 执行它、查声明。
  * 地形环境 只有两个环境变量名：页面和 pipeline/渲/地形注入.ts 共用。
  * 预载 是读组合时点名预载哪几段的环境变量：注册工厂.tsx 和 pipeline/渲/渲.ts、测速.ts 共用。
+ * engine/core/调试开关.ts 是试看、调试开关的登记表：页面的 trialParams 和 pipeline 的 anim trial list、核对、check 共用。
  */
 // 区段模型只做 TypedArray 与字节转换，编码、检查和浏览器共用同一份格式定义。
-const enginePureModules = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '预载', '出帧', '按时取值', '核对段'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
+const enginePureModules = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '预载', '出帧', '按时取值', '核对段'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts', 'engine/core/调试开关.ts');
 export const isPureModule = (p: string) =>
   enginePureModules.includes(p) ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||

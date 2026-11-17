@@ -7,6 +7,7 @@
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
+import { trialOff } from '../../engine/core/试看.ts';
 
 export type Particle = {
   p: V3; // 方片中心（场景坐标）
@@ -112,7 +113,8 @@ export const ParticleQuads: React.FC<{ tex: THREE.Texture; items: Particle[]; tr
   });
   for (const attr of [centerAttr, halfAttr, uvAttr, col]) attr.needsUpdate = true;
   geo.instanceCount = count;
-  return count > 0 ? <primitive object={mesh} /> : null;
+  // 试看 {"关": ["粒子"]}（anim trial list）
+  return count > 0 && !trialOff('粒子') ? <primitive object={mesh} /> : null;
 };
 
 // 贴图：像素 → three 贴图（不翻转，V 从第一行算起），最近邻采样

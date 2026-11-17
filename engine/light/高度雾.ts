@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import { useWriter, newWriteSlot } from '../core/写入者.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL } from './大气.ts';
-import { trialParams } from '../core/试看.ts';
+import { trialOff, trialParams } from '../core/试看.ts';
 
 export type HeightFogParams = { start: number; halfLife: number; density: number };
 
@@ -51,7 +51,8 @@ export const useDirFog = (opts: { sunDir: number[]; color: string; strength: num
     // 场景 (x, y, z) → 世界 (x, z, −y)
     glowDir.x = opts.sunDir[0] / horizLen;
     glowDir.z = -opts.sunDir[1] / horizLen;
-    glowDir.w = opts.strength;
+    // 试看 {"关": ["方向雾"]}（anim trial list）：强度置 0，材质和屏幕 AO 共用这份 uniform，着色器源码不变
+    glowDir.w = trialOff('方向雾') ? 0 : opts.strength;
     const rgbInt = parseInt(opts.color.slice(1), 16);
     glowColor.x = ((rgbInt >> 16) & 255) / 255;
     glowColor.y = ((rgbInt >> 8) & 255) / 255;
@@ -107,7 +108,7 @@ export const useSkyFog = (opts: { k: number; bands: [number, string][]; glow: st
   Object.assign(skyFogGlow, { x: c.r, y: c.g, z: c.b });
   const l = Math.hypot(opts.sunDir[0], opts.sunDir[1], opts.sunDir[2]) || 1;
   Object.assign(skyFogSun, { x: opts.sunDir[0] / l, y: opts.sunDir[1] / l, z: opts.sunDir[2] / l });
-  skyFogVec.x = Math.min(1, Math.max(0, opts.k));
+  skyFogVec.x = trialOff('天色雾') ? 0 : Math.min(1, Math.max(0, opts.k));
   skyFogVec.y = opts.glow ? opts.glowK : 0;
   skyFogVec.z = 1;
 };
@@ -180,7 +181,7 @@ const disableFarFog = () => {
 export type FarFog = { far: number; ramp?: number };
 export const useFarFog = (o: FarFog | null) => {
   useWriter(farFogSlot, disableFarFog);
-  if (!o || !(o.far > 0) || (o.ramp ?? 1) <= 0) {
+  if (!o || !(o.far > 0) || (o.ramp ?? 1) <= 0 || trialOff('远雾')) {
     farFogVec.y = 0;
     return;
   }
@@ -231,7 +232,7 @@ export const useHeightFog = (params: HeightFogParams) => {
   useWriter(heightFogSlot, disableHeightFog);
   heightFogVec.x = params.start;
   heightFogVec.y = params.halfLife;
-  heightFogVec.z = params.density;
+  heightFogVec.z = trialOff('高度雾') ? 0 : params.density;
 };
 
 // 视线从 o 到 e（世界坐标）的空气量（米 × 相对密度）：∫ 2^(−(h − 起点) / 半衰) dt = L × (两端的相对密度之差) / (ln2 × Δh / 半衰)。
