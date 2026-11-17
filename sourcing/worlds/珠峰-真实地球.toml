@@ -1,0 +1,25 @@
+# 世界声明：珠峰-真实地球。别人做的 1.21.1 Fabric 存档（用户 11-17 给的 real world.zip，1.6 GB，sha256 aba2de33737b…，解在数据根 game/外来存档/珠峰-真实地球/），
+# 不是我们生成的：生成器 cubicearth:earth（真实地球高程，原点北纬 27.9881、东经 86.925 = 珠峰顶，比例 1:1，海平面 y 63），
+# 立方区块模组 Better Cubic Chunks 存成 cubes/*.mcr3d（格式和取舍规则见 docs/世界.md「立方区块存档」）。从头生成不了，[预生成]、模组都不写。
+# 存档里玩家实际走到、生成完的只有约 13 km²：绒布河谷一条约 10 km 的走廊、峰顶一小块、南面一小块；更远的只在 data/DistantHorizons.sqlite 的 LOD 里（见 docs/世界.md）。
+# 用途：高山、高速飞行的测试段（作品/应力转动/段/核对-珠峰十马赫），不进成片。
+
+"displayName" = "珠峰-真实地球"
+"server" = "外来存档"
+"save" = "珠峰-真实地球/real world"
+"dimension" = "minecraft:overworld"
+"seed" = "-1494971525184191150"
+"saveFormat" = "mcr3d"
+# 烘哪一段高度：生成完的 cube 里有方块的最低在 y 4096 那一档（谷底地表 4276），最高非空气 y 8812（峰顶）；再往下只有没生成完的半成品，不收
+"yRange" = [4096, 8959]
+
+# 原点取在峰顶（游戏 x、z = 0）：走廊最远到 z −20480，离原点 20 km，float32 误差 2 毫米
+["bake"]
+"origin" = [0, 64, 0]
+
+[["bake"."pack"]]
+"name" = "珠峰-真实地球"
+"source" = "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 cubes/*.mcr3d，生成完的全部 cube，anim world bake 烘焙"
+# 存档作者和 Better Cubic Chunks、cubicearth 都没写许可；字节不分发，要用的人自己下存档照这份声明烘
+"license" = "LicenseRef-Origin-Unverified"
+"visibility" = "提取"

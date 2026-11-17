@@ -75,6 +75,15 @@
       "fileCount": 7,
       "size": 16982202,
       "manifestSha256": "0e1a81cdab96437fde6c79af99db3ddbf2070505cc32729e8b08e98b0f9ae001"
+    },
+    "珠峰-真实地球": {
+      "version": "ad0112abd115",
+      "source": "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 cubes/*.mcr3d，生成完的全部 cube，anim world bake 烘焙",
+      "license": "LicenseRef-Origin-Unverified",
+      "visibility": "提取",
+      "fileCount": 17,
+      "size": 12934763,
+      "manifestSha256": "318c94895f1b9dad5054952bcfe9be8a028bac2f721d2e28dffa44cfd88b6ea6"
     }
   }
 }
