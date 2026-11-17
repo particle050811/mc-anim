@@ -68,6 +68,8 @@ export class RouteTable {
   private readonly poses = new Map<number, number[]>(); // 格点 → 算它时的镜头位置和张角（核对航线是不是航线秒的函数）
   /** 算过几个格点（统计用） */
   sampleCount = 0;
+  /** 算表花的毫秒：格点取样、留细递推、核对机位（统计用；每帧查表的那一份不在里面） */
+  spentMs = 0;
 
   constructor(o: RouteTableOptions) {
     if (!(Number.isInteger(Math.log2(o.gridHz)) && o.gridHz >= 1)) throw new Error(`航线定级：每秒格点数要是 2 的幂，拿到 ${o.gridHz}`);
@@ -182,6 +184,7 @@ export class RouteTable {
    * cutStartSec、cutEndSec：这一截第一帧、最后一帧的航线秒（往后不看过截尾，留细从截头递推）
    */
   forFrame(sec: number, cutStartSec: number, cutEndSec: number): (level: number, i: number, j: number) => boolean {
+    const startedAt = performance.now();
     const g = this.o.gridHz;
     const cutLo = Math.ceil((cutStartSec + cutEdgeSec) * g);
     const cutHi = Math.floor((cutEndSec - cutEdgeSec) * g);
@@ -201,6 +204,7 @@ export class RouteTable {
       this.ensure(cutLo, Math.max(hi, Math.min(Math.max(heldAt, cutLo) + this.lookCount, cutHi)));
       if (heldAt >= cutLo) this.advanceHeld(heldAt);
     } else this.ensure(lo, hi);
+    this.spentMs += performance.now() - startedAt;
     const { splitRuns, heldRuns } = this;
     const useHeld = this.o.hold && heldAt >= cutLo;
     return (level, i, j) => {
