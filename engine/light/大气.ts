@@ -10,6 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
 import { useWriter, newWriteSlot } from '../core/写入者.ts';
+import { skyColorMap } from './天/天色图.ts';
 import scatteringBin from 'asset:数据/大气/散射';
 import noiseBin from 'asset:数据/大气/噪声';
 import worleyBubblyBin from 'asset:数据/大气/沃利-泡';
@@ -227,35 +228,9 @@ const disableAtmosphere = () => {
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;
 };
-// 天色图 2048×1024：太阳附近光晕的亮度在一两度里变化很快，512×256 时线性插值露出一格一格的纹
-const SKY_W = 2048;
-const SKY_H = 1024;
 const WATER_ELEV = [0, 0.05, 0.1, 0.15, 0.2, 0.28, 0.4, 1];
-const buildSky = (data: Float32Array, sun: number[]) => {
-  const px = new Uint16Array(SKY_W * SKY_H * 4);
-  const mus = sun[2];
-  for (let j = 0; j < SKY_H; j++) {
-    const s = (2 * (j + 0.5)) / SKY_H - 1;
-    const mu = Math.sign(s) * s * s;
-    const ch = Math.sqrt(1 - mu * mu);
-    for (let i = 0; i < SKY_W; i++) {
-      const az = ((i + 0.5) / SKY_W - 0.5) * 2 * Math.PI;
-      const nu = ch * (Math.cos(az) * sun[0] + Math.sin(az) * sun[1]) + mu * sun[2];
-      const c = skyRadiance(data, nu, mu, mus);
-      const o = (j * SKY_W + i) * 4;
-      for (let k = 0; k < 3; k++) px[o + k] = THREE.DataUtils.toHalfFloat(Math.max(0, c[k]));
-      px[o + 3] = THREE.DataUtils.toHalfFloat(1);
-    }
-  }
-  const tex = new THREE.DataTexture(px, SKY_W, SKY_H, THREE.RGBAFormat, THREE.HalfFloatType);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.minFilter = tex.magFilter = THREE.LinearFilter;
-  tex.generateMipmaps = false;
-  tex.colorSpace = THREE.NoColorSpace;
-  tex.needsUpdate = true;
-  return tex;
-};
+// 天色图 2048×1024（太阳附近光晕的亮度在一两度里变化很快，512×256 时线性插值露出一格一格的纹）：天/天色图.ts，和这里 skyRadiance 逐像素算逐位相同
+const buildSky = (data: Float32Array, sun: number[]) => skyColorMap(data, sun, ATMO_GAIN);
 const apply = (data: Float32Array, sunIn: [number, number, number], far: number) => {
   const l = Math.hypot(...sunIn);
   const sun = sunIn.map((x) => x / l);
