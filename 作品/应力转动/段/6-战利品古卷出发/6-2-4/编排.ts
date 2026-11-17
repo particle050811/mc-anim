@@ -17,7 +17,7 @@ import { sample } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { handPosition, standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import type { RideJiuhu, RideLiYing } from '@库/角色/骑扫帚.tsx';
-import { BROOM } from '@库/物品/扫帚.tsx';
+import { BROOM } from '@库/物品/扫帚尺寸.ts';
 import * as THREE from 'three';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { jiuhuStandBones } from '@库/角色/九胡.tsx';

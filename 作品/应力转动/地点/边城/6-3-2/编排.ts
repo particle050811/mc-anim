@@ -19,7 +19,7 @@ import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { ponderScreen } from '@库/界面/思索界面.tsx';
-import { MACE } from '@库/物品/重锤.tsx';
+import { MACE } from '@库/物品/重锤尺寸.ts';
 import * as LY from '../6-3-下坠/编排/李樱.ts';
 import { goldGlow } from '../6-3-下坠/编排/金光.ts';
 import { broomState } from '../6-3-下坠/编排/扫帚.ts';

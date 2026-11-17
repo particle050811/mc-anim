@@ -2,7 +2,7 @@
 import { type Key, sample } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { WIDE_LENS, triangleSmooth } from '@engine/flight/飞行路径.ts';
-import { BROOM } from '@库/物品/扫帚.tsx';
+import { BROOM } from '@库/物品/扫帚尺寸.ts';
 import { norm } from './工具.ts';
 import { townCenter } from './航线.ts';
 import { beats } from './时间线.ts';

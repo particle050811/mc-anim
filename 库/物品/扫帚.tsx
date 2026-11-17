@@ -15,24 +15,13 @@ import { png } from '../../engine/model/贴图.ts';
 import broomRawAsset from 'asset:模型/物品/扫帚';
 import tex from 'asset:贴图/物品/扫帚';
 import { mulberry32 } from '../../engine/core/数学.ts';
+import { BROOM } from './扫帚尺寸.ts';
+
+export { BROOM } from './扫帚尺寸.ts';
 
 const raw = broomRawAsset as unknown as object;
 
 export const BROOM_MODEL = { ...raw, texture: png(tex) } as unknown as BedrockModel;
-
-// 尺寸（格，扫帚本地坐标），由模型 cube 数值算出来，摆座位、算挂点用
-export const BROOM = {
-  length: 2.8, // 杆头（+Y 端）到草束末端
-  headY: 1.39, // 杆头最前端
-  tailY: -1.41, // 草束最后端
-  stickZ: 0.16, // 两个座位处杆的中心高度（实体原点往上）
-  stickTop: 0.27, // 座位处杆的顶面（前座 0.27～0.29，后座 0.22～0.25）
-  bristle: { y0: -0.42, y1: -1.41, width: 0.78, z: 0.17 }, // 模组草束：从哪到哪、最宽多少（x ±0.39）、中心高度（z 0.03～0.31）
-  // 车万女仆的座次（`EntityBroom.positionRider`）：两人时第一个乘客在实体前方 0.35 格，第二个（女仆）在后方 0.35 格；
-  // 乘客脚底高度 = 实体高度 + 乘客自己的骑乘偏移（玩家 -0.35）
-  seatFront: 0.35,
-  seatBack: -0.35,
-};
 
 // 草丝的颜色：模组草束后半截贴图（uv [66,15]、[0,67]、[31,66]）里的五种稻草色；前半截是深紫色绑带，草丝从绑带里穿出
 const STRAW = ['#7c4840', '#906547', '#a97d5e', '#87533c', '#b48d63'];
