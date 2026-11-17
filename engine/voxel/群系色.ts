@@ -22,17 +22,9 @@
 import biomeData from 'asset:数据/场景/关键帧/群系色';
 
 type BiomeEntry = { 草: string; 叶: string; 水: string; 草修饰?: string; 叶修饰?: string };
-const biomeTable = (biomeData as unknown as { 群系: Record<string, BiomeEntry> }).群系;
+/** 群系色.json 的形状（关键帧方块.py 导出） */
+export type BiomeColorData = { 群系: Record<string, BiomeEntry> };
 const hex = (s: string) => parseInt(s.slice(1), 16);
-const colorTable = new Map(Object.entries(biomeTable).map(([k, entry]) => [k, { grass: hex(entry.草), foliage: hex(entry.叶), water: hex(entry.水), grassModifier: entry.草修饰, leafModifier: entry.叶修饰 }]));
-
-export const biomeIds: readonly string[] = Object.keys(biomeTable);
-
-const lookupBiome = (biome: string) => {
-  const colors = colorTable.get(biome);
-  if (!colors) throw new Error(`群系色：表里没有 ${biome}，重跑 工具/游戏取材/关键帧方块.py（新模组的群系要把 jar 加进 JARS）`);
-  return colors;
-};
 
 // ---------- 原版的两张噪声 ----------
 // `Biome.TEMPERATURE_NOISE`（种子 1234）、`BIOME_INFO_NOISE`（种子 2345）：new PerlinSimplexNoise(new WorldgenRandom(new LegacyRandomSource(种子)), [0])，
@@ -139,52 +131,67 @@ const enchantedBlue = (x: number, z: number) => {
   return 255 - ring;
 };
 
-export const grassColor = (biome: string, x: number, z: number): number => {
-  const colors = lookupBiome(biome);
-  switch (colors.grassModifier) {
-    case undefined:
-      return colors.grass;
-    case 'minecraft:swamp': // 沼泽、红树林沼泽：两种色按噪声分块
-      return biomeInfoAt(x, z) < -0.1 ? 0x4c763c : 0x6a7039;
-    case 'twilightforest:enchanted_forest':
-      return (colors.grass & 0xffff00) + enchantedBlue(x, z);
-    case 'twilightforest:dark_forest_center':
-      return temperatureAt(x, z) < -0.2 ? 0x667540 : 0x554114;
-    case 'twilightforest:spooky_forest': {
-      const noise01 = (temperatureAt(x, z) + 1) / 2;
-      return blendColors(0xc43323, 0x5bc423, noise01 > 0.6 ? noise01 * 0.1 : noise01);
+// 按一张群系表建查色函数（单测传小表）；模块导出的是数据根里那张表的默认实例。噪声、群系格和表无关，在模块顶层
+export const buildBiomeColors = (data: BiomeColorData) => {
+  const colorTable = new Map(Object.entries(data.群系).map(([k, entry]) => [k, { grass: hex(entry.草), foliage: hex(entry.叶), water: hex(entry.水), grassModifier: entry.草修饰, leafModifier: entry.叶修饰 }]));
+  const biomeIds: readonly string[] = Object.keys(data.群系);
+  const lookupBiome = (biome: string) => {
+    const colors = colorTable.get(biome);
+    if (!colors) throw new Error(`群系色：表里没有 ${biome}，重跑 工具/游戏取材/关键帧方块.py（新模组的群系要把 jar 加进 JARS）`);
+    return colors;
+  };
+
+  const grassColor = (biome: string, x: number, z: number): number => {
+    const colors = lookupBiome(biome);
+    switch (colors.grassModifier) {
+      case undefined:
+        return colors.grass;
+      case 'minecraft:swamp': // 沼泽、红树林沼泽：两种色按噪声分块
+        return biomeInfoAt(x, z) < -0.1 ? 0x4c763c : 0x6a7039;
+      case 'twilightforest:enchanted_forest':
+        return (colors.grass & 0xffff00) + enchantedBlue(x, z);
+      case 'twilightforest:dark_forest_center':
+        return temperatureAt(x, z) < -0.2 ? 0x667540 : 0x554114;
+      case 'twilightforest:spooky_forest': {
+        const noise01 = (temperatureAt(x, z) + 1) / 2;
+        return blendColors(0xc43323, 0x5bc423, noise01 > 0.6 ? noise01 * 0.1 : noise01);
+      }
+      default:
+        throw new Error(`群系色：草修饰 ${colors.grassModifier} 没有复刻`);
     }
-    default:
-      throw new Error(`群系色：草修饰 ${colors.grassModifier} 没有复刻`);
-  }
+  };
+
+  const foliageColor = (biome: string, x: number, z: number): number => {
+    const colors = lookupBiome(biome);
+    switch (colors.leafModifier) {
+      case undefined:
+        return colors.foliage;
+      case 'twilightforest:enchanted_forest':
+        return (colors.foliage & 0xffff00) + enchantedBlue(x, z);
+      case 'twilightforest:dark_forest_center': {
+        // 暮色的写法：噪声折到 0～1 以后再比 -0.1，前一种色永远取不到，黑暗森林中心的树叶总是 0xE94E14（导出网格里也是）
+        const noise01 = (temperatureAt(x, z) + 1) / 2;
+        return noise01 < -0.1 ? 0xf9821e : 0xe94e14;
+      }
+      case 'twilightforest:spooky_forest': {
+        const noise01 = (temperatureAt(x, z) + 1) / 2;
+        return blendColors(0xff0101, 0x4a0001, noise01 > 0.6 ? noise01 * 0.2 : noise01);
+      }
+      default:
+        throw new Error(`群系色：叶修饰 ${colors.leafModifier} 没有复刻`);
+    }
+  };
+
+  const waterColor = (biome: string): number => lookupBiome(biome).water;
+
+  const biomeColors = (biome: string): { grass: number; foliage: number; water: number } => ({ grass: grassColor(biome, 0, 0), foliage: foliageColor(biome, 0, 0), water: waterColor(biome) });
+  // 草色或树叶色随位置变（有修饰）的群系：区段包按群系取的固定色对它们不对，导入地形（lib/体素/导入地形.ts）按格子坐标重算
+  const variesByPos = (biome: string) => lookupBiome(biome).grassModifier !== undefined || lookupBiome(biome).leafModifier !== undefined;
+  return { biomeIds, grassColor, foliageColor, waterColor, biomeColors, variesByPos };
 };
-
-export const foliageColor = (biome: string, x: number, z: number): number => {
-  const colors = lookupBiome(biome);
-  switch (colors.leafModifier) {
-    case undefined:
-      return colors.foliage;
-    case 'twilightforest:enchanted_forest':
-      return (colors.foliage & 0xffff00) + enchantedBlue(x, z);
-    case 'twilightforest:dark_forest_center': {
-      // 暮色的写法：噪声折到 0～1 以后再比 -0.1，前一种色永远取不到，黑暗森林中心的树叶总是 0xE94E14（导出网格里也是）
-      const noise01 = (temperatureAt(x, z) + 1) / 2;
-      return noise01 < -0.1 ? 0xf9821e : 0xe94e14;
-    }
-    case 'twilightforest:spooky_forest': {
-      const noise01 = (temperatureAt(x, z) + 1) / 2;
-      return blendColors(0xff0101, 0x4a0001, noise01 > 0.6 ? noise01 * 0.2 : noise01);
-    }
-    default:
-      throw new Error(`群系色：叶修饰 ${colors.leafModifier} 没有复刻`);
-  }
-};
-
-export const waterColor = (biome: string): number => lookupBiome(biome).water;
-
-export const biomeColors = (biome: string): { grass: number; foliage: number; water: number } => ({ grass: grassColor(biome, 0, 0), foliage: foliageColor(biome, 0, 0), water: waterColor(biome) });
-// 草色或树叶色随位置变（有修饰）的群系：区段包按群系取的固定色对它们不对，导入地形（lib/体素/导入地形.ts）按格子坐标重算
-export const variesByPos = (biome: string) => lookupBiome(biome).grassModifier !== undefined || lookupBiome(biome).leafModifier !== undefined;
+export type BiomeColors = ReturnType<typeof buildBiomeColors>;
+export const defaultBiomeColors = buildBiomeColors(biomeData as unknown as BiomeColorData);
+export const { biomeIds, grassColor, foliageColor, waterColor, biomeColors, variesByPos } = defaultBiomeColors;
 
 // ---------- 方块在哪个群系格（BiomeManager.getBiome）----------
 // 64 位整数用高低两个 32 位无符号数算（每个方块要算几十次，BigInt 太慢）。已和游戏逐个对过。

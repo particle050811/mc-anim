@@ -1,23 +1,30 @@
 // 导入区段：区段工人和主线程跑同一份 importedSectionVoxels，工人拿到的是结构化克隆过的来源（RegExp、Uint8Array 的罩）和另一份区段数据（解码出来的，这里克隆一份代替），
 // 结果要逐字节一样；主线程没拿到工人换好的体素块时从留着的区段数据重换，所以区段数据不能被改。
-// 真实方块表要 `asset:` 方块表，vitest 里解析不了，换成几种方块的小表。
-import { describe, expect, it, vi } from 'vitest';
+// 用几种方块的小表（buildBlockTable）：体素值 石头 1、草方块 2、泥土 3；只有草方块染色，草色把游戏坐标编进颜色（x 低 8 位、z 低 8 位、0x40），看得出按哪一格染的。
+import { describe, expect, it } from 'vitest';
+import type { BiomeColors } from './群系色.ts';
+import { buildBlockTable, type BlockTableData } from './真实方块表.ts';
+import { importedSectionVoxels as importWithTable, globRegex, type SectionContext } from './导入区段.ts';
+import { buildPackTables as packTablesWithTable, noBiome, paddedSectionCols, type SectionData } from './区段包.ts';
 
-vi.mock('./真实方块表.ts', () => {
-  const ids: Record<string, number> = { 'minecraft:air': 0, 'minecraft:stone': 1, 'minecraft:grass_block': 2, 'minecraft:dirt': 3 };
-  return {
-    voxelFromState: (s: string) => ids[s] ?? 0,
-    blockProps: { tint: Uint8Array.from([0, 0, 1, 0]) }, // 只有草方块染色
-    blockTint: (_v: number, _b: string, x: number, z: number) => ((x & 255) << 16) | ((z & 255) << 8) | 0x40,
-    buildTintTable: () => ({ t: new Uint8Array(6 * 3).fill(200), C: 6 }),
-    biomeIndex: () => 0,
-  };
-});
-
-const { importedSectionVoxels, globRegex } = await import('./导入区段.ts');
-const { buildPackTables, noBiome, paddedSectionCols } = await import('./区段包.ts');
-type SectionContext = import('./导入区段.ts').SectionContext;
-type SectionData = import('./区段包.ts').SectionData;
+const solidBlock = 4 + 8 + 16; // 标志：实心 + 满 + 遮 + 光（见 真实方块表.ts）
+const smallTable: BlockTableData = {
+  贴图: ['test:block/a'],
+  面组: [[]],
+  方块: { 'minecraft:stone': [solidBlock, null, 0], 'minecraft:grass_block': [solidBlock, 'grass', 0], 'minecraft:dirt': [solidBlock, null, 0] },
+};
+const positionGrass = (_b: string, x: number, z: number) => ((x & 255) << 16) | ((z & 255) << 8) | 0x40;
+const testBiomes: BiomeColors = {
+  biomeIds: ['minecraft:plains'],
+  grassColor: positionGrass,
+  foliageColor: () => 0xffffff,
+  waterColor: () => 0xffffff,
+  biomeColors: () => ({ grass: 0xc8c8c8, foliage: 0xc8c8c8, water: 0xc8c8c8 }),
+  variesByPos: () => true,
+};
+const table = buildBlockTable(smallTable, testBiomes);
+const importedSectionVoxels = (data: SectionData, ctx: SectionContext) => importWithTable(data, ctx, table);
+const buildPackTables = (info: Parameters<typeof packTablesWithTable>[0]) => packTablesWithTable(info, table);
 
 // 每列从上往下：1 格空气、1 格草方块、2 格石头（nz 4）
 const section = (): SectionData => {
