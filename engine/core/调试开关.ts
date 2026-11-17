@@ -110,7 +110,8 @@ export const debugSwitches = [
     inFingerprint: false,
     readers: all,
     format: '["<项>", …]，如 ["高度雾", "云"]',
-    files: ['engine/core/试看.ts'],
+    // 地形注入.ts 看「关」里有没有标了 fullTerrain 的项，决定读完整地形包（docs/世界.md「裁级」）
+    files: ['engine/core/试看.ts', 'pipeline/渲/地形注入.ts'],
   },
   {
     name: '细分门槛',

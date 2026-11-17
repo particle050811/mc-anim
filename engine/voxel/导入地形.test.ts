@@ -4,11 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cancelRender = vi.fn();
 vi.mock('remotion', () => ({ cancelRender, continueRender: () => {}, delayRender: () => 0 }));
-vi.mock('./真实方块表.ts', () => ({ voxelFromState: () => 0, blockProps: { tint: new Uint8Array(1) }, buildTintTable: () => ({ t: new Uint8Array(3), C: 1 }), biomeIndex: () => 0 }));
 vi.mock('./区段模型.ts', async (orig) => ({ ...(await orig<typeof import('./区段模型.ts')>()), readModel: () => {} }));
 vi.mock('./冻结粗高度.ts', () => ({ checkFrozenCoarse: () => {} }));
-vi.mock('./群系色.ts', () => ({ variesByPos: () => false }));
-const fakeData = { 假: true, palette: new Uint16Array(1), runCounts: new Uint16Array(1), paletteIndex: new Uint16Array(1), runLengths: new Uint16Array(1) };
+const fakeData = { fake: true, palette: new Uint16Array(1), runCounts: new Uint16Array(1), paletteIndex: new Uint16Array(1), runLengths: new Uint16Array(1) };
 const fetchSectionsInPool = vi.fn(async (_url: string, _start: number, _len: number, parts: { id: unknown }[]) => parts.map(() => ({ data: fakeData, voxels: null })));
 vi.mock('./区段工人池.ts', () => ({ fetchSectionsInPool, registerSource: () => 1, registerModel: () => {} }));
 
