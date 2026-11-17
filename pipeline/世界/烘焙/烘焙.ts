@@ -289,17 +289,23 @@ export const bake = async (p: BakeParams): Promise<BakeResult> => {
     biome: biomeList,
     coarseHeight: { cell: coarseCellMeters, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, height: Buffer.from(coarseHeights.buffer).toString('base64') },
   };
-  writeFileSync(path.join(p.output, '包.json'), JSON.stringify(packInfo));
+  return finishPack({ staged: p.output, outDir, pack: packInfo, entryTable, writer, lib: voxelLib, visible: p.visible, log: p.log });
+};
+
+/** 定稿（各种烘法共用）：暂存目录里的块文件配上 包.json、缺失.tsv，学模型、做可见变换转成成品写进 outDir，暂存目录删掉 */
+export const finishPack = async (o: { staged: string; outDir: string; pack: PackageInfo; entryTable: EntryTable; writer: SectionWriter; lib: VoxelLib; visible?: VisibleSettings | null; log?: (s: string) => void }): Promise<BakeResult> => {
+  const { missingStates, missingBiomes } = o.entryTable;
+  writeFileSync(path.join(o.staged, '包.json'), JSON.stringify(o.pack));
   const missingRows = [
     ...[...missingStates].sort((a, b) => b[1] - a[1]).map(([k, count]) => `状态\t${k}\t${count}`),
     ...[...missingBiomes].sort((a, b) => b[1] - a[1]).map(([k, count]) => `群系\t${k}\t${count}`),
   ];
-  writeFileSync(path.join(p.output, '缺失.tsv'), ['类\t名\t第0级格数', ...missingRows].join('\n') + '\n');
-  const training = await transcodeDir(p.output, outDir, 1, undefined, p.visible);
-  for (const st of writer.levelStats) st.bytes = 0;
-  for (const s of walkSections(voxelLib, outDir)) writer.levelStats[s.id.L]!.bytes += s.bytes.length;
-  rmSync(p.output, { recursive: true });
-  if (p.visible) { const v = training.transformCounts; p.log?.(`可见变换：改了 ${v.changedSectionCount} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.filledCount}、埋格换 ${v.buriedCount}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格，填充 ${p.visible.fillBlock}`); }
-  p.log?.(`模型 ${training.modelClassCount} 类、${training.modelBytesCount} 字节，训练 ${training.样本数} 区段；定稿完成`);
-  return { pack: packInfo, missingStates: missingStates, missingBiomes: missingBiomes, 级: writer.levelStats, blockFileCount: writer.tileFileCount, entryCount: entryState.length };
+  writeFileSync(path.join(o.staged, '缺失.tsv'), ['类\t名\t第0级格数', ...missingRows].join('\n') + '\n');
+  const training = await transcodeDir(o.staged, o.outDir, 1, undefined, o.visible);
+  for (const st of o.writer.levelStats) st.bytes = 0;
+  for (const s of walkSections(o.lib, o.outDir)) o.writer.levelStats[s.id.L]!.bytes += s.bytes.length;
+  rmSync(o.staged, { recursive: true });
+  if (o.visible) { const v = training.transformCounts; o.log?.(`可见变换：改了 ${v.changedSectionCount} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.filledCount}、埋格换 ${v.buriedCount}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格，填充 ${o.visible.fillBlock}`); }
+  o.log?.(`模型 ${training.modelClassCount} 类、${training.modelBytesCount} 字节，训练 ${training.样本数} 区段；定稿完成`);
+  return { pack: o.pack, missingStates, missingBiomes, 级: o.writer.levelStats, blockFileCount: o.writer.tileFileCount, entryCount: o.entryTable.entryState.length };
 };
