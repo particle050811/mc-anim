@@ -155,6 +155,7 @@ describe('配对', () => {
     expect(pickVideoFrames(130, 60, {})).toEqual([0, 60, 120, 129]);
     expect(pickVideoFrames(100, 60, { frames: [90, 95, 99, 100, 105] })).toEqual([90, 95, 99]);
     expect(pickVideoFrames(1000, 60, { frames: Array.from({ length: 11 }, (_, i) => 10 + i), every: 5 })).toEqual([10, 15, 20]);
+    expect(pickVideoFrames(130, 60, { start: 1 })).toEqual([1, 61, 121, 129]);
   });
 });
 

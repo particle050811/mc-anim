@@ -114,9 +114,11 @@ export const segFrameFromManifest = (m: FilmManifest, filmFrame: number): SegFra
 };
 
 /** 视频要比的帧：--frames 给范围或列表，--every 给间隔；都没给是每秒一帧（含首尾） */
-export const pickVideoFrames = (frameCount: number, fps: number, o: { frames?: number[]; every?: number }): number[] => {
+export const pickVideoFrames = (frameCount: number, fps: number, o: { frames?: number[]; every?: number; start?: number }): number[] => {
   const every = o.every ?? Math.max(1, Math.round(fps));
-  let frames = o.frames ? o.frames.filter((f) => f < frameCount) : sampleFrames(frameCount, every);
+  const start = o.start ?? 0;
+  if (frameCount <= start) return [];
+  let frames = o.frames ? o.frames.filter((f) => f >= start && f < frameCount) : sampleFrames(frameCount - start, every).map((f) => f + start);
   if (o.frames && o.every) frames = frames.filter((f) => (f - frames[0]!) % o.every! === 0);
   return frames;
 };
@@ -141,7 +143,7 @@ export const planDiff = (a: string, b: string, o: PlanOptions = {}): DiffPlan =>
   // B 的第 n 帧要 A 也有第 n+偏移 帧
   const frameCount = Math.min(ia.frameCount - offset, ib.frameCount);
   if (ia.frameCount !== ib.frameCount || offset) notes.push(`两边帧数${ia.frameCount === ib.frameCount ? '一样' : '不同'}（A ${ia.frameCount}，B ${ib.frameCount}）${offset ? `，A 的第 n${offset > 0 ? '+' : ''}${offset} 帧对 B 的第 n 帧（--offset）` : ''}，只比 B 的第 ${Math.max(0, -offset)}～${frameCount - 1} 帧`);
-  const frames = pickVideoFrames(frameCount, probeFps(b), o).filter((f) => f + offset >= 0);
+  const frames = pickVideoFrames(frameCount, probeFps(b), { ...o, start: Math.max(0, -offset) });
   if (!frames.length) throw new Error(`要比的帧都不在视频里（B 只能比到第 ${frameCount - 1} 帧）`);
   const [ma, mb] = [readFilmManifest(a), readFilmManifest(b)];
   const segOf = (f: number): SegFrame | null => (o.seg ? { segKey: o.seg.segKey, frame: o.seg.frame + f } : mb ? segFrameFromManifest(mb, f) : ma ? segFrameFromManifest(ma, f) : null);

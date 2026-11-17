@@ -1,6 +1,6 @@
 // anim diff 的比法和出图（用户 11-17 同意做）：两份代码、两组参数出的同一帧差多少。数和 verify、reuse 同一套（比较.ts 的块平均差，verify/阈值.toml 的门槛），不另起门槛。
 // 差多少一律给数，不靠眼判：有一次 Agent 判「看不出」，那 7 个色阶正是用户指的那条线。
-// 挑窗口：三档窗口的块差各除以自己那档的门槛，最大的先挑；挑中的那块望远框里的窗口不再挑，每块给一条 anim still --tele 原生复查（裁图放大不能当证据）。
+// 挑窗口：三档窗口的块差各除以自己那档的门槛，最大的先挑；望远框会和已挑的重叠的不再挑，每块给一条 anim still --tele 原生复查（裁图放大不能当证据）。
 // 并排图 旧｜新｜差：每格缩到不超过 格宽；差图带符号，红是亮了、蓝是暗了、绿是亮度差不多但颜色变了；缩小时每格取差最大的那个像素，零星的差不会被平均掉。
 import { encode } from 'fast-png';
 import { TileEdge, diffIntegral, judgeBlockDiff, windowSum, type Threshold } from './比较.ts';
@@ -70,11 +70,12 @@ export const analyzePair = (newRgb: Buffer, oldRgb: Buffer, width: number, heigh
     const meanRgb = [0, 1, 2].map((c) => windowSum(integral, i, j, m.k, c) / (m.edge * m.edge)) as [number, number, number];
     const tele = teleRect(x + m.edge / 2, y + m.edge / 2, width, height, zoom);
     hotspots.push({ edge: m.edge, x, y, diff: ratio * edgeThreshold(threshold, m.edge), ratio, meanRgb, tele });
-    // 中心落在这个望远框里的窗口都不再挑：每条复查命令看的是不同的地方
+    // 以它为中心的望远框会和这个框重叠的窗口都不再挑（中心离得不到一个框宽、框高）：每条复查命令看的是不同的地方
+    const [cx, cy] = [tele.x + tele.width / 2, tele.y + tele.height / 2];
     for (const s of maps) {
       const half = s.edge / 2;
-      const j0 = Math.max(0, Math.ceil((tele.x - half) / 4)), j1 = Math.min(s.cols - 1, Math.floor((tele.x + tele.width - half) / 4));
-      const i0 = Math.max(0, Math.ceil((tele.y - half) / 4)), i1 = Math.min(s.rows - 1, Math.floor((tele.y + tele.height - half) / 4));
+      const j0 = Math.max(0, Math.ceil((cx - tele.width - half) / 4)), j1 = Math.min(s.cols - 1, Math.floor((cx + tele.width - half) / 4));
+      const i0 = Math.max(0, Math.ceil((cy - tele.height - half) / 4)), i1 = Math.min(s.rows - 1, Math.floor((cy + tele.height - half) / 4));
       for (let a = i0; a <= i1; a++) s.score.fill(0, a * s.cols + j0, a * s.cols + j1 + 1);
     }
   }
