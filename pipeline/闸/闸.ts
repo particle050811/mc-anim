@@ -333,7 +333,8 @@ const takeRenderGate = async (hint: (s: string) => void, env: Partial<GateEnv>, 
                 return true;
             const m = e.readMemory(), pressure = e.readPressure(), grant = getPassGrant(e, t.content!.task), load = taskDecl.needsLoad ? e.load1Min() : null;
             const memPass = (pressure !== 4 || grant?.strength) && (grant || !m || enoughMemory(m, e.memFloor));
-            const loadPass = grant || load === null || load < e.coreCount() * 0.8;
+            const loadRatio = taskDecl.loadLimit ?? 0.8;
+            const loadPass = grant || load === null || load < e.coreCount() * loadRatio;
             const blockReason = !memPass ? '内存' : !loadPass ? '负载' : '';
             if (blockReason !== stuckOn) {
                 stopStuck(t);
@@ -345,7 +346,7 @@ const takeRenderGate = async (hint: (s: string) => void, env: Partial<GateEnv>, 
                         openTask(e, taskDecl).logEvent('等内存起', { ticket: t.name, lock: '渲染', reading: m, pressure: pressure, threshold: e.memFloor, machine: machineReading(e) });
                     }
                     else {
-                        hint(`渲染等负载（${load}，上限 ${e.coreCount()}×0.8）`);
+                        hint(`渲染等负载（${load}，上限 ${e.coreCount()}×${loadRatio}）`);
                         openTask(e, taskDecl).logEvent('等负载起', { ticket: t.name, lock: '渲染', load: load, machine: machineReading(e) });
                     }
                 }

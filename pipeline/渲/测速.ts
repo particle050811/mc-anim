@@ -15,6 +15,7 @@ import { workName, workRoot } from '../环境/作品.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { loadAllSegments, selectSegs } from '../清单/清单.ts';
 import { passRenderGate } from '../闸/闸.ts';
+import { coreCount, load1Min } from '../环境/资源.ts';
 import { withSegResourcePack } from '../资产/资产锁.ts';
 import { DetailCollector } from '../运行记录/渲染明细.ts';
 import { removeBundles } from './打包残留.ts';
@@ -28,6 +29,11 @@ import { collectTerrainUsage, recordMeasuredFrames, waitTerrainUsageWrites } fro
 import { collectSolveCache, waitSolveCacheWrites } from './求解缓存收集.ts';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
 
+// 测速只在机器空的时候跑、排在所有票后面、默认只测一遍（--runs 1）：用户 11-17 定。测两遍和机器忙时测都白费——
+// 同一组合在别的 Agent 并行时能差一倍，ABBA 两遍又让票堆起来。门槛 核数×0.6 是 Agent 选的（空机器带 VS Code 和几个会话约 5～6/10）。
+// 放行时负载已过门槛（只有主 Agent 给了放行才会）就标 incomparable；跑完的负载含自己的渲染，只记不判。
+const benchLoadLimit = 0.6;
+
 export type BenchResult = {
   remotion: string;
   browser: string;
@@ -39,7 +45,7 @@ export type BenchResult = {
   开浏览器秒: number;
   读组合秒: number;
   求解缓存准备: { 新写: number; sec: number };
-  轮: { sharedMemory: boolean; totalSec: number; 首帧秒: number; 出帧秒: number; 收尾秒: number; 每帧中位毫秒: number; 每帧P90毫秒: number; 每帧P99毫秒: number; slowestFrames: { frame: number; ms: number }[]; 最多的等待: { label: string; totalMs: number; count: number }[]; detail: string | null; output: string | null }[];
+  轮: { sharedMemory: boolean; totalSec: number; 首帧秒: number; 出帧秒: number; 收尾秒: number; 每帧中位毫秒: number; 每帧P90毫秒: number; 每帧P99毫秒: number; slowestFrames: { frame: number; ms: number }[]; 最多的等待: { label: string; totalMs: number; count: number }[]; detail: string | null; output: string | null; load: { start: number | null; end: number | null; incomparable: boolean } }[];
 };
 
 const browserVersionOf = (exePath: string | undefined) => {
@@ -100,6 +106,7 @@ export const bench = async (opts: { segment: string; frame?: [number, number]; l
         const queueStartMs=Date.now();
         await passRenderGate(async () => {
           const t0 = Date.now();
+          const loadAtStart = load1Min();
           const gateWait=recordPhase(undefined,label,'等闸',queueStartMs,(t0-queueStartMs)/1000);
           let firstFrameMs = 0, lastFrameAt = 0, lastFrameCount = 0;
           let sharedMemory = false;
@@ -133,6 +140,7 @@ export const bench = async (opts: { segment: string; frame?: [number, number]; l
           }
           await recordMeasuredFrames(s.key, Array.from({ length: frameRange[1] - frameRange[0] + 1 }, (_, k) => frameRange[0] + k));
           const end = Date.now();
+          const loadEnd = load1Min();
           const { file: file, detail: d } = await detail.writeOut([gateWait], { remotion, browser: browserVersionOf(opts.browser), logLevel: renderLogLevel, sharedMemory: String(sharedMemory), roundNo: String(i + 1) });
           rounds.push({
             sharedMemory: sharedMemory,
@@ -147,8 +155,9 @@ export const bench = async (opts: { segment: string; frame?: [number, number]; l
             最多的等待: d.waiting.slice(0, 6).map((w) => ({ label: w.label, totalMs: w.totalMs, count: w.count })),
             detail: file,
             output: opts.keepOutput ? out : null,
+            load: { start: loadAtStart, end: loadEnd, incomparable: loadAtStart !== null && loadAtStart >= coreCount() * benchLoadLimit },
           });
-        }, (m) => console.error(`== 资源闸：${m}`),{}, {kind:'bench',work:workName(),segment:s.key,frameCount:frameRange[1]-frameRange[0]+1,frame:`${frameRange[0]}-${frameRange[1]}`,level: level,purpose:process.env.ANIM_PURPOSE??'实验'});
+        }, (m) => console.error(`== 资源闸：${m}`),{}, {kind:'bench',lowPriority:true,needsLoad:true,loadLimit:benchLoadLimit,work:workName(),segment:s.key,frameCount:frameRange[1]-frameRange[0]+1,frame:`${frameRange[0]}-${frameRange[1]}`,level: level,purpose:process.env.ANIM_PURPOSE??'实验'});
       }
       return { remotion, browser: browserVersionOf(opts.browser), sharedMemory: rounds.every((r) => r.sharedMemory), logLevel: renderLogLevel, segment: `${workName()}/${s.key}`, frame: frameRange, 打包秒: bundleSec, 开浏览器秒: openBrowserSec, 读组合秒: readCompositionsSec, 求解缓存准备: solveCachePrep, 轮: rounds };
     } finally {
