@@ -1,6 +1,6 @@
 // 本作品的台词轨：台词表和 32 句配音副本（工具/配音/生成台词.py 出的）在这里 import，交给 engine/audio/台词轨.tsx 的 做台词轨 绑好。
-// 只要台词表的纯函数文件也可以从这里取 lineTable；只要口型的用 ./口型.ts（不连带这些 wav）。
-import lineTableJson from 'asset:数据/配音/台词表';
+// 只要台词表的纯函数文件从 ./台词表.ts 取 lineTable，只要口型的用 ./口型.ts（都不连带这些 wav）。
+import { lineTable } from './台词表.ts';
 import { makeLineTrack } from '@engine/audio/台词轨.tsx';
 import { assetDir } from '@engine/core/资产目录.ts';
 // 待迁移（私有资产）：九胡的配音私有，M5 台词改走段.ts 的声音 cue 后不再打进包
@@ -44,4 +44,5 @@ for (const k of ctx.keys()) {
   wavUrls[k.replace(/^\.\//, '')] = typeof wavModule === 'string' ? wavModule : wavModule.default;
 }
 
-export const { lineTable } = makeLineTrack(lineTableJson, wavUrls);
+export const { LineTrack } = makeLineTrack(lineTable, wavUrls);
+export { lineTable };

@@ -12,7 +12,7 @@
 // - 不加特效：金光原来就有（随锤头轨迹）。
 import { sampleLag, type Interp, type Key } from '@engine/anim/anim.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { tick } from '../6-3-下坠/时间线.ts';
+import { tick } from '../6-3-下坠/基准.ts';
 
 type PoseField = 'pitch' | 'headPitch' | 'legR' | 'legL' | 'kneeR' | 'kneeL' | 'legRRoll' | 'legLRoll' | 'armR' | 'armL' | 'armRRoll' | 'armLRoll' | 'elbowR' | 'elbowL';
 // 关键值：数 = 绝对值；'起' = 原姿势在 刻.抡出（接得上前面）；'跃' = 原姿势在 刻.跃出（髋高不变）；'终' = 原来的末姿势（接得上 6-3-4）
