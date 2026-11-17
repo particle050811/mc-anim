@@ -72,6 +72,10 @@ describe('挂 Release 发字节', () => {
       expect(missingAttachmentCount(terrainAttach, dataRoot)).toBe(1);
       fs.mkdirSync(path.join(dataRoot, 'terrain', '主世界', 'abc123'), { recursive: true });
       expect(missingAttachmentCount(terrainAttach, dataRoot)).toBe(0);
+      // 裁过了的包的完整包只当备份：不给 full 不算缺（pull 默认不下）
+      const backup = { ...terrainAttach, terrain: { pack: '主世界', version: 'full99', backup: true as const } };
+      expect(missingAttachmentCount(backup, dataRoot)).toBe(0);
+      expect(missingAttachmentCount(backup, dataRoot, { full: true })).toBe(1);
     } finally {
       fs.rmSync(dataRoot, { recursive: true, force: true });
     }

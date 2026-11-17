@@ -14,8 +14,8 @@ export type Attachment = {
   bytes?: string[];
   /** 同一个 tar 里 私有/ 库的字节（可见性已公开、库没搬的，docs/决策/0017-全部公开.md）：sha256 */
   privateLibBytes?: string[];
-  /** 一个地形包：解开是 terrain/<包>/<版本>/ 下的文件 */
-  terrain?: { pack: string; version: string };
+  /** 一个地形包：解开是 terrain/<包>/<版本>/ 下的文件。backup：裁过了的包的完整包，只当备份，anim assets pull 默认不下（--full 才下，docs/世界.md「裁级」） */
+  terrain?: { pack: string; version: string; backup?: true };
 };
 export type ReleaseLock = { repo: string; label: string; attachments: Attachment[] };
 
@@ -31,9 +31,9 @@ export const writeReleaseLock = (releaseLock: ReleaseLock, workRoot: string) => 
 
 export const terrainDir = (dataRoot: string, pack: string, version: string) => path.join(dataRoot, 'terrain', pack, version);
 
-/** 这个附件的东西数据根里还缺：字节缺几件，地形包整个目录不在 */
-export const missingAttachmentCount = (a: Attachment, dataRoot: string): number => {
-  if (a.terrain) return fs.existsSync(terrainDir(dataRoot, a.terrain.pack, a.terrain.version)) ? 0 : 1;
+/** 这个附件的东西数据根里还缺：字节缺几件，地形包整个目录不在；完整包的备份不给 full 不算缺 */
+export const missingAttachmentCount = (a: Attachment, dataRoot: string, o: { full?: boolean } = {}): number => {
+  if (a.terrain) return (a.terrain.backup && !o.full) || fs.existsSync(terrainDir(dataRoot, a.terrain.pack, a.terrain.version)) ? 0 : 1;
   const missingIn = (storage: string, shas: string[] = []) => shas.filter((sha) => !fs.existsSync(path.join(dataRoot, storage, sha.slice(0, 2), sha))).length;
   return missingIn('store', a.bytes) + missingIn('私有', a.privateLibBytes);
 };

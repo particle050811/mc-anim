@@ -50,13 +50,20 @@ const streamSha256 = (f: string) =>
       .on('error', reject);
   });
 
-type TerrainRecord = { version: string; manifestSha256?: string; fileCount?: number; size?: number };
+type PackRecord = { version: string; manifestSha256?: string; fileCount?: number; size?: number };
+type TerrainRecord = PackRecord & { trimmed?: PackRecord };
 const readTerrainTable = (): Record<string, TerrainRecord> =>
   (JSON.parse(fs.readFileSync(path.join(codeRoot(), 'assets', '地形版本.json'), 'utf8')) as { pack?: Record<string, TerrainRecord> }).pack ?? {};
+/** 登记表里这个版本的那一项：完整包或它裁过的包 */
+const recordOf = (table: Record<string, TerrainRecord>, pack: string, version: string): PackRecord | undefined => {
+  const v = table[pack];
+  return v?.version === version ? v : v?.trimmed?.version === version ? v.trimmed : undefined;
+};
 
-export type ExpectedRelease = { bytes: string[]; privateLibBytes: string[]; terrain: { pack: string; version: string }[]; 段数: number; privateFiles: string[]; issues: string[] };
+export type ExpectedRelease = { bytes: string[]; privateLibBytes: string[]; terrain: { pack: string; version: string; backup?: true }[]; 段数: number; privateFiles: string[]; issues: string[] };
 
-/** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节、私有/ 库里可见性不是私有的字节（可见性私有的不发），加段声明的地形包 */
+/** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节、私有/ 库里可见性不是私有的字节（可见性私有的不发），加段声明的地形包。
+ *  裁过了的包发裁过的（别人 pull 只下它），完整包也挂上当备份（用户 11-17 定，pull --full 才下） */
 export const computeExpectedRelease = async (c: CheckContext, releaseTable: ReleaseManifest): Promise<ExpectedRelease> => {
   const bundleSet = await computeRepoBundle(c, releaseTable.segment);
   const terrainTable = readTerrainTable();
@@ -67,7 +74,7 @@ export const computeExpectedRelease = async (c: CheckContext, releaseTable: Rele
       issues.push(`地形包 ${pack} 没在 assets/地形版本.json 登记`);
       return [];
     }
-    return [{ pack: pack, version: v.version }];
+    return v.trimmed ? [{ pack, version: v.trimmed.version }, { pack, version: v.version, backup: true as const }] : [{ pack: pack, version: v.version }];
   });
   return { bytes: [...bundleSet.files.keys()].sort(), privateLibBytes: [...bundleSet.privateLibItems.keys()].sort(), terrain: terrainPacks, 段数: bundleSet.segKeys.length, privateFiles: bundleSet.privateFiles, issues };
 };
@@ -138,22 +145,24 @@ export const packRelease = async (c: CheckContext, releaseTable: ReleaseManifest
   }
 
   const terrainTable = readTerrainTable();
-  for (const { pack: pack, version: version } of expected.terrain) {
+  for (const { pack: pack, version: version, backup } of expected.terrain) {
     const terrainAttachName = terrainAttachmentName(version);
     const oldTerrain = oldAttachments.get(terrainAttachName);
     if (oldTerrain) {
-      attachments.push(oldTerrain);
+      // 同一个 tar；原来是正式发的、现在裁过了成了备份（或反过来），只改锁里的标记
+      const { backup: _b, ...rest } = oldTerrain.terrain ?? { pack, version };
+      attachments.push({ ...oldTerrain, terrain: { ...rest, ...(backup ? { backup } : {}) } });
       continue;
     }
     const sourceDir = terrainDir(dataRoot, pack, version);
     if (!fs.existsSync(sourceDir)) throw new Error(`数据根没有地形包 ${pack}/${version}，这台机器打不了`);
     const actual = await packManifest(sourceDir);
-    const v = terrainTable[pack]!;
+    const v = recordOf(terrainTable, pack, version)!;
     if (actual.manifestSha256 !== v.manifestSha256) throw new Error(`地形包 ${pack}/${version} 和 assets/地形版本.json 记的清单指纹不一致，先 anim check --deep`);
     const tarPath = path.join(dir, terrainAttachName);
     console.log(`打 ${terrainAttachName}：地形包 ${pack}，${actual.fileCount} 个文件 ${(actual.size / 1e9).toFixed(2)} GB`);
     const fileNames = fs.readdirSync(sourceDir).sort();
-    attachments.push({ name: terrainAttachName, ...(await packTar(tarPath, sourceDir, fileNames)), terrain: { pack: pack, version: version } });
+    attachments.push({ name: terrainAttachName, ...(await packTar(tarPath, sourceDir, fileNames)), terrain: { pack: pack, version: version, ...(backup ? { backup } : {}) } });
     newPacks.push(tarPath);
   }
   return { releaseLock: { repo: releaseTable.repo, label: releaseTable.label, attachments: attachments } satisfies ReleaseLock, newPacks, expected };
@@ -210,9 +219,12 @@ const attachmentNotUploaded = (url: string) =>
     execFile('curl', ['-sIL', '-o', os.devNull, '-w', '%{http_code}', '--connect-timeout', '20', '--max-time', '60', url], (err, stdout) => resolve(String(stdout).trim().endsWith('404')));
   });
 
-/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 默认取 ANIM_GITHUB_MIRROR（github.com 或加速站前缀），测试换成本地服务 */
-export const pullRelease = async (releaseLock: ReleaseLock, dataRoot: string, downloadRoot = config('github下载根').replace(/\/+$/, '')) => {
-  const missing = releaseLock.attachments.filter((a) => missingAttachmentCount(a, dataRoot) > 0);
+/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 默认取 ANIM_GITHUB_MIRROR（github.com 或加速站前缀），测试换成本地服务。
+ *  完整包的备份默认不下（出片只读裁过的），full 才下（往细里看要它） */
+export const pullRelease = async (releaseLock: ReleaseLock, dataRoot: string, downloadRoot = config('github下载根').replace(/\/+$/, ''), o: { full?: boolean } = {}) => {
+  const missing = releaseLock.attachments.filter((a) => missingAttachmentCount(a, dataRoot, o) > 0);
+  const skipped = o.full ? [] : releaseLock.attachments.filter((a) => a.terrain?.backup && !fs.existsSync(terrainDir(dataRoot, a.terrain.pack, a.terrain.version)));
+  if (skipped.length) console.log(`完整地形包的备份没下（${skipped.map((a) => `${a.terrain!.pack} ${(a.size / 1e6).toFixed(0)} MB`).join('、')}）：出片只读裁过的；要往细里看（still --tele 的细一级、真值，定级类试看，Studio）加 --full`);
   if (!missing.length) {
     console.log(`${releaseLock.attachments.length} 个附件的东西数据根里都有`);
     return;
@@ -253,7 +265,7 @@ export const pullRelease = async (releaseLock: ReleaseLock, dataRoot: string, do
       await runCmd(['tar', '-xf', f, '-C', unpackDir], { quiet: true });
       if (a.terrain) {
         const { pack: pack, version: version } = a.terrain;
-        const v = terrainTable[pack];
+        const v = recordOf(terrainTable, pack, version);
         const actual = await packManifest(unpackDir);
         if (!v || actual.manifestSha256 !== v.manifestSha256 || actual.fileCount !== v.fileCount || actual.size !== v.size) throw new Error(`${a.name} 解开的地形包 ${pack}/${version} 和 assets/地形版本.json 记的不一致`);
         const targetTerrainDir = terrainDir(dataRoot, pack, version);
