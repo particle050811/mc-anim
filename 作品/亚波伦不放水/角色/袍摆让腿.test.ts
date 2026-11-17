@@ -1,21 +1,16 @@
 // 袍摆让腿：算式和 engine 的骨骼正解对得上；站着不动时不改袍摆；忘情牛肉面每 1/60 秒腿都不穿出袍子。
-// 模型字节在数据根 store（作品资产锁）；没有就整组跳过。
-import fs from 'node:fs';
-import path from 'node:path';
+// 模型字节在数据根 store（作品资产锁），vitest 按资产锁读（pipeline/资产/vitest插件.ts）。
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { skeletonMatrix } from '@engine/model/基岩正解.ts';
 import type { BedrockBone } from '@engine/model/基岩模型.tsx';
-import { bytesPath, readAssetLock } from '../../../pipeline/资产/资产锁.ts';
+import modelRaw from 'asset:模型/角色/娘化亚波伦';
 import { onePassSec, noodleDancePose } from './动作/忘情牛肉面.ts';
 import { relativeMatrix, hemPierceDetails, hemYieldLeg } from './袍摆让腿.ts';
 
-const assetLock = readAssetLock(path.join(import.meta.dirname, '..', '资产锁'));
-const file = assetLock['模型/角色/娘化亚波伦'] && bytesPath(assetLock['模型/角色/娘化亚波伦']!);
-const boneModel = file && fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf8')) as { bones: BedrockBone[] }) : undefined;
+const g = modelRaw as unknown as { bones: BedrockBone[] };
 
-describe.skipIf(!boneModel)('袍摆让腿', () => {
-  const g = boneModel!;
+describe('袍摆让腿', () => {
 
   it('自己的骨骼算式和 engine 的 骨骼矩阵 一样（带转角、平移、横向缩放）', () => {
     const t = { ...noodleDancePose(7.8), FrontSkirt: { rot: [-20, 0, 0] }, bone27: { scale: [1.4, 1, 1], pos: [0.6, 0, 0] } };

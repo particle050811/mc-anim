@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { AssetCue } from '@engine/段/段定义.ts';
 import { heartStateAt, tamingHearts } from '@库/特效/爱心粒子.tsx';
 import seg from './段/2-祭坛召唤/段.ts';
@@ -8,11 +8,6 @@ import { events, frameToTick, youEyePos, keyRigs, CharArrange, HandItem, wavePro
 import { groundHeight } from './场/2-祭坛/地形.ts';
 import { liYingFinal, endRig, finalDist, finalSpeed, eyeBall } from './场/2-祭坛/末态.ts';
 import { toFrameCues, frameCountOf, sceneWindowFrames } from './声音/回帧.ts';
-
-// 爱心粒子.tsx 顶上就解码贴图（打包时才有 asset:），这里只要它的出生和运动，换成一张 1×1 的 RGBA
-vi.mock('asset:贴图/特效/爱心粒子', () => ({
-  default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-}));
 
 type Vec3 = [number, number, number];
 const distance = (a: readonly number[], b: readonly number[]) => Math.hypot(a[0]! - b[0]!, a[1]! - b[1]!, a[2]! - b[2]!);

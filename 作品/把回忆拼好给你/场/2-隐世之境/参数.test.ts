@@ -1,9 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { makePixelFont } from '@库/界面/像素字表.ts';
 import { makePerspectiveCamera, projectToPage, zUpToThree } from '@库/界面/投影.ts';
-import { bytesPath, readWorkAssetLock } from '../../../../pipeline/资产/资产锁.ts';
+import { pixelFont } from '../../界面/像素字.ts';
 import { coverBoxFits, coverPointFits, coverChatBox } from './封面.ts';
 import { liYing, headTurnRange, cameraRig, bubbleText } from './参数.ts';
 
@@ -33,13 +30,8 @@ describe('第 15 句重逢的站位', () => {
   });
 });
 
-// 封面构图：脸、气泡、封面聊天行都在 4:3 里、躲开底边 20% 和右下角。像素字表在数据根里，没有就跳过
-const workRoot = path.resolve(import.meta.dirname, '../..');
-const fontLockEntry = readWorkAssetLock(workRoot)['字体/把回忆拼好给你/像素字'];
-const hasTable = !!fontLockEntry && fs.existsSync(bytesPath(fontLockEntry));
-
-describe.skipIf(!hasTable)('封面构图', () => {
-  const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(fontLockEntry!), 'utf8')), '字体/把回忆拼好给你/像素字');
+// 封面构图：脸、气泡、封面聊天行都在 4:3 里、躲开底边 20% 和右下角（像素字表由 vitest 按资产锁读）
+describe('封面构图', () => {
   const [W, H] = [1280, 720];
   const cam = makePerspectiveCamera({ 眼: zUpToThree([cameraRig.feet[0], cameraRig.feet[1], cameraRig.feet[2] + 1.62]), 看: zUpToThree(cameraRig.看), fov: cameraRig.fov, width: W, height: H });
   const projectAt = (z: number) => projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], z]), W, H);

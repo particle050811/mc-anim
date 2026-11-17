@@ -1,12 +1,9 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AssetCue } from '@engine/段/段定义.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { makeRigCamera } from '@engine/三渲二/机位.tsx';
 import { projectToPage, zUpToThree } from '@库/界面/投影.ts';
-import { makePixelFont } from '@库/界面/像素字表.ts';
-import { bytesPath, readWorkAssetLock } from '../../../../pipeline/资产/资产锁.ts';
+import { pixelFont } from '../../界面/像素字.ts';
 import groupPhotoSeg from '../../段/2-合照/段.ts';
 import reassembleSeg from '../../段/2-拼回/段.ts';
 import { fps, segMainCutEventFrames, SegmentWindow, aspect, mainCutEvents } from '../../分镜.ts';
@@ -122,13 +119,8 @@ describe('15 尾：接过来的台词气泡（用户 10-25 要「您的手艺，
   });
 });
 
-// 气泡框：像素字表在数据根里，没有就跳过（同 对视参数.test.ts）
-const workRoot = path.resolve(import.meta.dirname, '../..');
-const fontLockEntry = readWorkAssetLock(workRoot)['字体/把回忆拼好给你/像素字'];
-const hasTable = !!fontLockEntry && fs.existsSync(bytesPath(fontLockEntry));
-
-describe.skipIf(!hasTable)('15 尾：接过来的台词气泡的落点', () => {
-  const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(fontLockEntry!), 'utf8')), '字体/把回忆拼好给你/像素字');
+// 气泡框（像素字表由 vitest 按资产锁读）
+describe('15 尾：接过来的台词气泡的落点', () => {
   it('整个在画里（离上沿至少 14、左右至少 16），尾巴尖在底部歌词（页面 y 623 起）上面', () => {
     const cam = makeRigCamera(shoulderRig, aspect.width, aspect.height, canvasDpr(1));
     // 锚点同 合照.tsx 的 靠肩气泡锚：脚底 + 女仆气泡锚高()（= 2，库/界面/女仆气泡.tsx 带贴图，这里不引）

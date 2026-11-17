@@ -1,39 +1,11 @@
-// 娘化亚波伦的声明：层、环境、眨眼、头发弹簧、贴图变体。字节在数据根 store（作品资产锁，anim extract 娘化亚波伦模型、娘化亚波伦动画 入的库）；没有就整组跳过。
-import { describe, expect, it, vi } from 'vitest';
+// 娘化亚波伦的声明：层、环境、眨眼、头发弹簧、贴图变体。字节在数据根 store（作品资产锁，anim extract 娘化亚波伦模型、娘化亚波伦动画 入的库），vitest 按资产锁读（pipeline/资产/vitest插件.ts）。
+import { describe, expect, it } from 'vitest';
 import { animationPose } from '@engine/model/基岩实体.tsx';
 import type { BedrockBone } from '@engine/model/基岩模型.tsx';
+import modelRaw from 'asset:模型/角色/娘化亚波伦';
 import { defineAct, GirlYaBoLunCreature, outlineFace, stand, staticEnv, type YaBoLunAct } from './娘化亚波伦.tsx';
 
-// 娘化亚波伦.tsx 顶上的 asset: import 打包时由 webpack 内联，测试里换成 store 里的字节
-const { json, image: mockImage, hasBytes } = await vi.hoisted(async () => {
-  const fs = await import('node:fs');
-  const path = await import('node:path');
-  const { bytesPath, readAssetLock } = await import('../../../pipeline/资产/资产锁.ts');
-  const assetLock = readAssetLock(path.join(import.meta.dirname, '..', '资产锁'));
-  const readBytes = (id: string): Buffer | undefined => {
-    const e = assetLock[id];
-    const f = e && bytesPath(e);
-    return f && fs.existsSync(f) ? fs.readFileSync(f) : undefined;
-  };
-  const needIds = ['模型/角色/娘化亚波伦', '动画/角色/娘化亚波伦/main', '动画/角色/娘化亚波伦/extra', ...['default', '2default', '3default', '4default', '5default'].map((n) => `贴图/角色/娘化亚波伦/${n}`)];
-  const json = (id: string, fallback: string) => ({ default: JSON.parse(readBytes(id)?.toString('utf8') ?? fallback) });
-  // 没有字节时给一张 1×1 透明 PNG，模块能加载就行
-  const emptyImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==';
-  const mockImage = (id: string) => ({ default: `data:image/png;base64,${readBytes(id)?.toString('base64') ?? emptyImage}` });
-  return { json, image: mockImage, hasBytes: needIds.every((id) => readBytes(id)) };
-});
-vi.mock('asset:模型/角色/娘化亚波伦', () => json('模型/角色/娘化亚波伦', '{"texW":1,"texH":1,"bones":[]}'));
-vi.mock('asset:动画/角色/娘化亚波伦/main', () => json('动画/角色/娘化亚波伦/main', '{"animations":{}}'));
-vi.mock('asset:动画/角色/娘化亚波伦/extra', () => json('动画/角色/娘化亚波伦/extra', '{"animations":{}}'));
-vi.mock('asset:贴图/角色/娘化亚波伦/default', () => mockImage('贴图/角色/娘化亚波伦/default'));
-vi.mock('asset:贴图/角色/娘化亚波伦/2default', () => mockImage('贴图/角色/娘化亚波伦/2default'));
-vi.mock('asset:贴图/角色/娘化亚波伦/3default', () => mockImage('贴图/角色/娘化亚波伦/3default'));
-vi.mock('asset:贴图/角色/娘化亚波伦/4default', () => mockImage('贴图/角色/娘化亚波伦/4default'));
-vi.mock('asset:贴图/角色/娘化亚波伦/5default', () => mockImage('贴图/角色/娘化亚波伦/5default'));
-// 持杖挂的物品组件也带 asset: import，这组测试不看杖
-vi.mock('../物品/下界魔杖.tsx', () => ({ HeldNetherWand: () => null }));
-// 头后的晋升之环也带 asset: import，这组测试不看环
-vi.mock('../特效/晋升之环.tsx', () => ({ yaBoLunHeadRing: () => null }));
+const modelBones = (modelRaw as unknown as { bones: BedrockBone[] }).bones;
 
 const poseAt = (act: YaBoLunAct, sec: number, unresolved?: Set<string>) => {
   const e = act.env(sec);
@@ -50,7 +22,7 @@ const poseAt = (act: YaBoLunAct, sec: number, unresolved?: Set<string>) => {
 // 第 1 秒起水平速度从 0 跳到 20
 const forwardFlySetup = { 主: () => [{ name: 'fly' }], env: (sec: number) => ({ query: { ground_speed: sec >= 1 ? 20 : 0 } }) };
 
-describe.skipIf(!hasBytes)('娘化亚波伦', () => {
+describe('娘化亚波伦', () => {
   it('动画文件：main 50 段加 extra 8 段', () => {
     const animNames = Object.keys(GirlYaBoLunCreature.animationFiles!);
     expect(animNames.length).toBe(58);
@@ -112,7 +84,7 @@ describe.skipIf(!hasBytes)('娘化亚波伦', () => {
   });
   it('浮块（用户 11-10 定不留）：ysmGlowbone54～61 一个方盒都不剩，骨骼还在；蜘蛛腿、头后大光环的方盒数和包里一样', () => {
     const model = GirlYaBoLunCreature.getModel({});
-    const originalBones = json('模型/角色/娘化亚波伦', '{}').default.bones as BedrockBone[];
+    const originalBones = modelBones;
     const currentBone = (boneName: string) => model.bones.find((b) => b.name === boneName)!;
     for (let n = 54; n <= 61; n++) {
       expect(originalBones.find((b) => b.name === `ysmGlowbone${n}`)!.cubes!.length).toBe(7);
@@ -127,7 +99,7 @@ describe.skipIf(!hasBytes)('娘化亚波伦', () => {
 
   it('描边片（all_cutout 的面剔除）：缺口环的零厚度片从模型里拿掉，另画的每一面都朝着芯，白边', () => {
     const model = GirlYaBoLunCreature.getModel({});
-    const originalBones = (json('模型/角色/娘化亚波伦', '{}').default.bones as BedrockBone[]).filter((b) => /^ysmGlowbone17[2-9]$/.test(b.name));
+    const originalBones = modelBones.filter((b) => /^ysmGlowbone17[2-9]$/.test(b.name));
     expect(originalBones.length).toBe(8);
     for (const bone of originalBones) {
       const cubes = model.bones.find((b) => b.name === bone.name)!.cubes!;

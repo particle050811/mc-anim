@@ -1,25 +1,8 @@
 // 第 1、2 幕编排的硬约束：第 2 幕末的状态（第 4 幕的起点）不变、断曜流光冲刺照游戏、两次冲都没碰着她（第一次她瞬移走、第二次从她脚底下过去）、
 // 两人站着不动的时间不超过两幕的 20%（用户 11-10 嫌「大部分时间都是在站着不动」）、快的那几下峰值不低于 20 格/秒（用户 11-11「起码得有个 20~30m/s」，慢放那段按世界秒算）、
 // 他不穿基座和灵魂火、她不钻进地里。
-// 只算位置和时刻，模型、贴图给空的。
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-const emptyImage = { default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' };
-vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { 宽: { texW: 64, texH: 64, parts: [] } } } }));
-vi.mock('asset:贴图/角色/巨人/史蒂夫', () => emptyImage);
-vi.mock('asset:模型/角色/娘化亚波伦', () => ({ default: { texW: 1, texH: 1, bones: [] } }));
-vi.mock('asset:动画/角色/娘化亚波伦/main', () => ({ default: { animations: {} } }));
-vi.mock('asset:动画/角色/娘化亚波伦/extra', () => ({ default: { animations: {} } }));
-vi.mock('asset:模型/物品/下界魔杖', () => ({ default: {} }));
-// 多圈轮盘一 import 就要上百张聚晶图标；这里只用它算盘的外半径
-vi.mock('../../界面/多圈轮盘.tsx', () => ({ wheelOuterRadius: () => 100 }));
-vi.mock('asset:贴图/角色/娘化亚波伦/default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/5default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/4default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/3default', () => emptyImage);
-vi.mock('asset:贴图/角色/娘化亚波伦/2default', () => emptyImage);
-vi.mock('asset:贴图/特效/晋升之环/halo', () => emptyImage);
-vi.mock('asset:贴图/物品/下界魔杖', () => emptyImage);
 
 const { teleportTick, stevePos, yaBoLunPos, altarPoint, hoverHeight, afterAppear, steveRightHand, stillCheck, trappedLocal, openingTimeline, actionTable, localGroundHeight, actStart, actEnd, act2End, steveEye } = await import('./编排-开盘.ts');
 const openingTimes = await import('./开盘时刻.ts');

@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { CREEPER } from '@库/生物/苦力怕.tsx';
 import type { AssetCue } from '@engine/段/段定义.ts';
 import seg from './段/2-收集快乐/段.ts';
 import { LiYingState, framing, wallPhotoCount, bubbleState, photoState, creeperPose, gradeAt, clearingProgress } from './段/2-收集快乐/编排.ts';
@@ -26,18 +27,6 @@ import { line8Photos } from './特效/照片画.ts';
 import { orthoTop } from './画风.ts';
 import { palette } from './色板.ts';
 import { toFrameCues, frameCountOf, sceneWindowFrames } from './声音/回帧.ts';
-
-// asset: 资产打包时才有，照片四张在测试里换成 1×1 的图。编排.ts 引的 vanillaWalk、CREEPER、门口.站排y 在 史蒂夫.tsx、苦力怕.tsx、门口小木屋.tsx 里，
-// 那几个顶层就读模型、贴图（一路引到方块图集），换成桩：腿怎么摆这里不测；逃的速度照抄 CREEPER.speed.flee（groundSpeed(1.2)），站排y 照抄
-const pixelPng = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
-const vanillaFleeSpeed = vi.hoisted(() => ((0.3 ** 2 * 0.98) / (1 - 0.6 * 0.91)) * 20);
-vi.mock('@库/角色/史蒂夫.tsx', () => ({ vanillaWalk: () => ({ limbSwing: 0, stride: 0 }) }));
-vi.mock('@库/生物/苦力怕.tsx', () => ({ CREEPER: { speed: { flee: vanillaFleeSpeed } } }));
-vi.mock('./地点/门口小木屋.tsx', () => ({ entrance: { standRowY: 0.5 } }));
-vi.mock('asset:贴图/照片/第3句递蛋糕-三版', () => ({ default: pixelPng }));
-vi.mock('asset:贴图/照片/第4句日落划船-二版', () => ({ default: pixelPng }));
-vi.mock('asset:贴图/照片/第5句扑龙蛋-二版', () => ({ default: pixelPng }));
-vi.mock('asset:贴图/照片/第7句光柱破云-三版', () => ({ default: pixelPng }));
 
 const events = segMainCutEventFrames('2-收集快乐');
 const halfWidthCells = 1280 / line8Shot.framing.pxPerCell;
@@ -146,7 +135,7 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     const chaseSpeed = (((1 * 0.25) ** 2 * 0.98) / (1 - 0.6 * 0.91)) * 20;
     expect(creeperWalkSpeed / chaseSpeed).toBeGreaterThan(1);
     expect(creeperWalkSpeed / chaseSpeed).toBeLessThan(1.5);
-    const fleeSpeed = vanillaFleeSpeed * creeperFleeMult;
+    const fleeSpeed = CREEPER.speed.flee * creeperFleeMult;
     const exitFrame = events.creeperTurnsAway + (creeperTurnSec + (hissStandPos.苦力怕 - (leftEdge - creeperFront)) / fleeSpeed) * fps;
     expect(exitFrame).toBeLessThan(frameCountOf(seg) - 1);
     expect(creeperPose(frameCountOf(seg) - 1).loc[0] + creeperFront).toBeLessThan(leftEdge);
