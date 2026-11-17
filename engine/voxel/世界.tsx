@@ -26,7 +26,7 @@ import { posScale, crossGroup, visibleDirs, type SectionMesh } from './网格.ts
 import { buildMeshInPool } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
-import { trialParams } from '../core/试看.ts';
+import { trialOff, trialParams } from '../core/试看.ts';
 import { RouteTable, routeDecide, type RouteView } from './航线定级.ts';
 import { coarsenessStats, switchStats, type FramePick } from './航线定级统计.ts';
 
@@ -144,7 +144,7 @@ const predictCamera = new THREE.PerspectiveCamera();
 // ---------- 按航线提前备区段（用户 11-16 定做）----------
 // 航线和镜头都是查表算的（各段的 编排.ts），往后几帧要哪些区段事先就算得出来。镜头组件（如 飞行镜头.tsx 的 FlightRig）用 `useLookahead` 登记
 // 航线：这一帧的航线秒 `sec`，和按航线秒摆机位的 `at`（把那一刻的机位摆进给的相机、返回那时的镜头位置（同 `center`），算不出返回 null）。
-// `at` 只许看航线秒：航线定级（试看，航线定级.ts）按固定的航线秒记着算过的结果，哪一帧来问都得是同一个机位。登记了的画布不再按前几帧外推（上面「预取下一帧」），
+// `at` 只许看航线秒：航线定级（航线定级.ts）按固定的航线秒记着算过的结果，哪一帧来问都得是同一个机位。登记了的画布不再按前几帧外推（上面「预取下一帧」），
 // 放行一帧后按航线算往后 1～`aheadFrames` 帧，把那几帧要新建的区段先取、先建好网格放进 `kept`；不越过这一截的末尾（切到下一截是新的画布、新的航线）。
 // 和预取下一帧一样只动 `kept`：每帧画出来的只取决于这一帧自己。
 // 往后看几帧：一帧新进视野的区段取、解、建网格要 100～500 ms（飞越俯冲、穿塔加速），和一帧的出图时间差不多，提前两三帧就够把等的藏进前几帧的出图里；
@@ -153,7 +153,10 @@ const predictCamera = new THREE.PerspectiveCamera();
 const aheadFrames = 4;
 // `range`：这条航线从哪一秒到哪一秒是连着飞的。一条航线拆成几截拼（飞越 6-2-5、6-2-6）时给：航线定级往后看、留细按它算，不在截与截的接缝处断
 // （不给就按这一层 Sequence 的头尾）。按航线提前备区段不看它，照旧不越过这一截。
-export type Route = { sec: number; at: (sec: number, camera: THREE.PerspectiveCamera) => number[] | null; range?: readonly [number, number] };
+// `lod`：这个镜头的地形按航线定级（下面「航线定级」），不给就每帧按画质门槛现选。
+export type Route = { sec: number; at: (sec: number, camera: THREE.PerspectiveCamera) => number[] | null; range?: readonly [number, number]; lod?: RouteLod };
+/** 航线定级的参数：往后看几秒、留不留细；门槛、提前细分的下限是这个镜头画质门槛（VoxelWorld 的 pixel）的几倍 */
+export type RouteLod = { lookSec: number; hold: boolean; thresholdScale: number; floorScale: number };
 type Lookahead = { route: Route; frameSec: number; secLeft: number; secSinceStart: number };
 const lookaheads = new WeakMap<THREE.Camera, Lookahead>();
 // 镜头组件每次渲染都调（不给 route 就撤掉登记），时间从这一层 Sequence 取
@@ -166,19 +169,19 @@ export const useLookahead = (camera: THREE.Camera, route: Route | undefined) => 
 };
 const aheadCamera = new THREE.PerspectiveCamera();
 
-// ---------- 航线定级（试看 `航线定级`，默认关；做法见 航线定级.ts）----------
-// {"秒": 往后看几秒 | "整段", "门槛": 细分门槛（输出像素，盖掉这个镜头的）, "留细": true, "下限": 输出像素, "格": 每秒几个格点（2 的幂，默认 64）}。
-// 下限：提前细分只做到「细一级的一格这一帧还有这么多输出像素」为止。不设时往后看 T 秒会把 0 级一路铺到 v·T 远（巡航 1 km/s），
+// ---------- 航线定级（做法见 航线定级.ts）----------
+// 登记航线的镜头给了 `lod` 就按航线定级：往后 T 秒里会按门槛细分的块现在就细分（换级挪到远处、一格还小的时候），细分过的在视野里不变粗。
+// 下限：提前细分只做到「细一级的一格这一帧还有这么多像素」为止。不设时往后看 T 秒会把 0 级一路铺到 v·T 远（巡航 1 km/s），
 // 远处一格不到半个像素，面数白花还起摩尔纹；设了以后切级都发生在「粗的一格 = 2 × 下限」像素上，面数有上限、和 T 多长无关。
-// 只有登记了航线的镜头（useLookahead）往后看、留细；没登记的只认「门槛」。
+// 试看 `航线定级` 逐项盖掉镜头给的：{"秒": 往后看几秒 | "整段", "门槛": 输出像素, "留细": true|false, "下限": 输出像素, "格": 每秒几个格点（2 的幂）}；
+// 没登记航线的镜头只认「门槛」。试看 {"关": ["航线定级"]} 整个关掉，回到每帧按画质门槛现选。
 const routeTrial = trialParams<Record<string, unknown>>('航线定级');
-const routeOptions = routeTrial && {
-  lookSec: routeTrial['秒'] === '整段' ? Infinity : typeof routeTrial['秒'] === 'number' ? routeTrial['秒'] : 0,
-  threshold: typeof routeTrial['门槛'] === 'number' ? routeTrial['门槛'] : undefined,
-  hold: routeTrial['留细'] === true,
-  floor: typeof routeTrial['下限'] === 'number' ? routeTrial['下限'] : 0,
-  gridHz: typeof routeTrial['格'] === 'number' ? routeTrial['格'] : 64,
-};
+const routeLodOff = trialOff('航线定级');
+const routeTrialNumber = (key: string) => (typeof routeTrial?.[key] === 'number' ? (routeTrial[key] as number) : undefined);
+// 每秒几个格点：往后各时刻取在这些格点上。太稀会漏掉「只在两个格点之间才到门槛、马上又出画」的块（贴着画面下沿飞过去的近处），漏掉的到门槛那一帧才换，一格是门槛的两倍。
+// 门槛是画质门槛 2 倍时（飞越 1 km/s、穿塔）16 和 64 的换级面积、换级时一格的像素都一样，8 开始变差；门槛再粗（块到门槛时离得更近、待得更短）要更密：4 倍要 64。
+// 表是每个标签页、每截画布各算一次，从航线头算到这一帧，所以取够用里最稀的
+const defaultGridHz = 16;
 // 试看 `航线定级统计`：true = 每帧一行进浏览器日志（bench --verbose 的 .log）：区段数、面数、和上一帧比画面里换了级的区段；
 // {"扫帧": n} = 只算不画：从这一帧起按航线往后 n 帧逐帧挑区段、统计切级，汇总成一行 warn 打到终端（still 出一帧就量完一段）
 const routeStatsTrial = trialParams<boolean | Record<string, unknown>>('航线定级统计');
@@ -284,9 +287,16 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     (test: ReturnType<typeof makeFrustumTest>) =>
     (x0: number, y0: number, x1: number, y1: number) =>
       test(Math.min(x0, x0 + sx) - 8, Math.min(y0, y0 + sy) - 8, heightRange[0], Math.max(x1, x1 + sx) + 8, Math.max(y1, y1 + sy) + 8, heightRange[1]);
-  // 试看 航线定级 的「门槛」按输出像素给，换成页面像素（pixelAngle 按页面高算）；4K 上 2.25 ÷ 3 正好是现在的 0.75
-  const splitCssPixels = routeOptions?.threshold !== undefined ? routeOptions.threshold / outputScale() : splitPixels;
-  const floorCssPixels = (routeOptions?.floor ?? 0) / outputScale();
+  // 航线定级的参数：镜头登记航线时给的，试看逐项盖。试看的「门槛」「下限」按输出像素给，换成页面像素（pixelAngle 按页面高算；4K 上 2.25 ÷ 3 正好是画质门槛 0.75）
+  const look = lookaheads.get(camera);
+  const lod = routeLodOff ? undefined : look?.route.lod;
+  const trialThreshold = routeTrialNumber('门槛');
+  const trialFloor = routeTrialNumber('下限');
+  const splitCssPixels = trialThreshold !== undefined ? trialThreshold / outputScale() : splitPixels * (lod?.thresholdScale ?? 1);
+  const floorCssPixels = trialFloor !== undefined ? trialFloor / outputScale() : splitPixels * (lod?.floorScale ?? 0);
+  const lookSec = routeTrial?.['秒'] === '整段' ? Infinity : (routeTrialNumber('秒') ?? lod?.lookSec ?? 0);
+  const hold = typeof routeTrial?.['留细'] === 'boolean' ? routeTrial['留细'] : (lod?.hold ?? false);
+  const gridHz = routeTrialNumber('格') ?? defaultGridHz;
   // force：航线定级说要提前细分的块（门槛没到也细分，细出来的一格不小于下限）
   const pickThisFrame = (test: ReturnType<typeof makeFrustumTest>, center: number[], angle = pixelAngle, force?: (level: number, i: number, j: number) => boolean): SectionId[] =>
     pickSections({
@@ -298,11 +308,10 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       featureTop,
       ...(force ? { decide: routeDecide(force, floorCssPixels) } : {}),
     });
-  // 航线定级：这个镜头登记了航线、试看又开了往后看或留细，才有 forceAt（航线秒 → 那一帧要提前细分的块）
-  const look = lookaheads.get(camera);
+  // 航线定级：这个镜头登记了航线、又要往后看或留细，才有 forceAt（航线秒 → 那一帧要提前细分的块）
   const routeSpan = look && (look.route.range ?? ([look.route.sec - look.secSinceStart, look.route.sec + look.secLeft] as const));
   let forceAt: ((sec: number) => (level: number, i: number, j: number) => boolean) | undefined;
-  if (routeOptions && look && (routeOptions.lookSec > 0 || routeOptions.hold)) {
+  if (look && (lookSec > 0 || hold)) {
     const viewAt = (sec: number): RouteView | null => {
       const center = look.route.at(sec, routeCamera);
       if (!center) return null;
@@ -310,10 +319,10 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       return { camPos: center, pixelAngle: (routeCamera.fov * Math.PI) / 180 / size.height, inView: inViewOf(ownFrustumTest(routeCamera)) };
     };
     // 表按影响「格点上要细分哪些块」的参数分：换了就重建（航线本身不进键：一个画布一条航线）
-    const routeKey = [size.width, size.height, splitCssPixels, farM, heightRange[0], heightRange[1], sx, sy].join('|');
+    const routeKey = [size.width, size.height, splitCssPixels, farM, heightRange[0], heightRange[1], sx, sy, lookSec, hold, gridHz].join('|');
     if (world.route?.key !== routeKey) {
       const state: RouteState = { key: routeKey, viewAt, table: undefined as unknown as RouteTable };
-      state.table = new RouteTable({ lookSec: routeOptions.lookSec, hold: routeOptions.hold, gridHz: routeOptions.gridHz, splitPixels: splitCssPixels, farM, featureTop, viewAt: (sec) => state.viewAt(sec) });
+      state.table = new RouteTable({ lookSec, hold, gridHz, splitPixels: splitCssPixels, farM, featureTop, viewAt: (sec) => state.viewAt(sec) });
       world.route = state;
     }
     const routeState = world.route;
@@ -534,11 +543,14 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       console.warn(
         `[航线定级扫] ${JSON.stringify({
           trial: routeTrial ?? null,
+          // 实际用的参数（门槛、下限换回输出像素）
+          params: { lookSec: Number.isFinite(lookSec) ? lookSec : '整段', hold, threshold: round(splitCssPixels * scale, 4), floor: round(floorCssPixels * scale, 4), gridHz },
           fromSec: round(look.route.sec, 4),
           span: [round(routeSpan[0], 3), round(routeSpan[1], 3)],
           frames: counted,
           fps: round(1 / look.frameSec),
           samples: world.route?.table.sampleCount ?? 0,
+          routeMs: round(world.route?.table.spentMs ?? 0, 0),
           ms: round(performance.now() - t0, 0),
           perSec: [...buckets].map(([sec, b]) => [sec, ...b.map((v, at) => (at >= 5 && at <= 9 ? round(v, 5) : v))]),
         })}`,
@@ -568,6 +580,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
           overShare: coarse.overShare,
           ...(sw ? { refine: sw.refine, coarsen: sw.coarsen, share: sw.share, bigShare: sw.bigShare, pixelShare: sw.pixelShare } : {}),
           samples: world.route?.table.sampleCount ?? 0,
+          routeMs: Math.round(world.route?.table.spentMs ?? 0),
         })}`,
       );
     }

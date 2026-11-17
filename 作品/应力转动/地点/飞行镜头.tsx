@@ -15,6 +15,7 @@ import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
 import { useFarFog } from '@engine/light/高度雾.ts';
 import { useLookahead } from '@engine/voxel/世界.tsx';
+import { FLIGHT_ROUTE_LOD } from '../默认.ts';
 export type CamPose = { pos: number[]; tgt: number[]; lens: number; roll?: number };
 // 把机位摆进相机（FlightRig 自己的相机、按航线往后看的相机共用）
 const placeCamera = (cam: THREE.PerspectiveCamera, camPose: CamPose, aspect: number, near: number, far: number) => {
@@ -29,7 +30,7 @@ const placeCamera = (cam: THREE.PerspectiveCamera, camPose: CamPose, aspect: num
   cam.updateMatrixWorld();
 };
 // ahead：航线。sec = 这一帧的航线秒，at = 按航线秒取机位（各段 编排.ts 查表算的，同 c 的来处；只许看航线秒），
-// 给了体素世界就按航线提前备区段（engine/voxel/世界.tsx 的 `useLookahead`），不改画面；试看 航线定级 也靠它。
+// 给了体素世界就按航线提前备区段、地形按航线定级（engine/voxel/世界.tsx 的 `useLookahead`；定级参数是全片默认 FLIGHT_ROUTE_LOD，各镜头不另给）。
 // range = 这条航线连着飞的起止秒，一条航线拆成几截拼时给（见 世界.tsx 的 `Route`）
 export type FlightRoute = { sec: number; at: (sec: number) => CamPose; range?: readonly [number, number] };
 export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahead?: FlightRoute }> = ({ c: camPose, near = 0.05, far = 150000, ahead }) => {
@@ -43,6 +44,7 @@ export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahea
     ahead && {
       sec: ahead.sec,
       range: ahead.range,
+      lod: FLIGHT_ROUTE_LOD,
       at: (sec, target) => {
         const pose = ahead.at(sec);
         target.aspect = size.width / size.height; // R3F 只替它自己的相机设
