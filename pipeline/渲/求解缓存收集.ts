@@ -11,12 +11,19 @@ import { collectLightCachePage } from './光体缓存收集.ts';
 
 type PageLike = { _client: () => { send: (method: string, params: object) => Promise<unknown> }; close: (...a: unknown[]) => Promise<unknown> };
 
-/** 接到浏览器上：之后每个页面关掉前跑一次 收（拿 求值 在页面里取字符串）。页面崩了、已经跳走了就收不到，算了；在收的任务放进 在收，给调用方等 */
-export const beforeClose = (browser: HeadlessBrowser, inFlight: Set<Promise<void>>, collect: (evaluate: (expression: string) => Promise<string>) => Promise<void>) => {
+/**
+ * 接到浏览器上：之后每个页面关掉前跑一次 收（拿 求值 在页面里取字符串）。页面崩了、已经跳走了就收不到，算了；在收的任务放进 在收，给调用方等。
+ * onOpen：每开一页报一个「这页收完了」的 Promise（收出错也算收完）。renderFrames 返回时 Remotion 还没关页（它在 finally 里关、不等），
+ * 只等 在收 会扑空；非收到不可的（地形覆盖.ts）等这个
+ */
+export const beforeClose = (browser: HeadlessBrowser, inFlight: Set<Promise<void>>, collect: (evaluate: (expression: string) => Promise<string>) => Promise<void>, onOpen?: (collected: Promise<void>) => void) => {
   const b = browser as unknown as { newPage: (...a: unknown[]) => Promise<PageLike> };
   const origNewPage = b.newPage.bind(b);
   b.newPage = async (...a) => {
     const page = await origNewPage(...a);
+    let markCollected!: () => void;
+    const collected = new Promise<void>((resolve) => (markCollected = resolve));
+    onOpen?.(collected);
     const origClose = page.close.bind(page);
     const evaluate = async (expression: string) => {
       const r = (await page._client().send('Runtime.evaluate', { expression: expression, returnByValue: true })) as { value?: { result: { value: string } }; result?: { value: string } };
@@ -27,6 +34,7 @@ export const beforeClose = (browser: HeadlessBrowser, inFlight: Set<Promise<void
       inFlight.add(task);
       await task;
       inFlight.delete(task);
+      markCollected();
       return origClose(...c);
     };
     return page;

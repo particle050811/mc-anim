@@ -24,8 +24,24 @@ import type { RunRecord } from '../运行记录/记录.ts';
 /** 正式出片的级别：覆盖要和切片挑的一样 */
 const coverLevel: RenderLevel = '视频';
 
-/** 一段的覆盖：包 → 完整包版本、区段键 → 头一次用到的帧（段内帧号） */
-export type SegCover = { work: string; segment: string; coverKey: string; frameCount: number; pack: Record<string, { version: string; sections: Record<string, number> }>; measuredAt: string };
+/** 覆盖文件的格式：2 起带 worldPacks、量完核过。旧格式一律当旧了重量（11-17 之前的页面记录全丢了，存的都是空的） */
+export const coverFormat = 2;
+
+/** 一段的覆盖：包 → 完整包版本、区段键 → 头一次用到的帧（段内帧号）；worldPacks：画面里有体素世界从它挑区段的包 */
+export type SegCover = { format: number; work: string; segment: string; coverKey: string; frameCount: number; pack: Record<string, { version: string; sections: Record<string, number> }>; worldPacks: string[]; measuredAt: string };
+
+/** 一页交回的记录（collectExpr） */
+export type CoverPageRecord = { cover: string | null; first: Record<string, Record<string, number>>; worlds: string[] };
+
+/**
+ * 量出来的覆盖能不能拿去裁：段声明了这个包、画面里又有体素世界从它挑（页面报的 worldPacks），却一个区段都没记下，就是量错了（11-17 夜：页面记录全没收到，
+ * 13 段都是 0 个区段，裁出只剩 L3 以上的包）。只声明不挑的不算：7-起疑声明了 主世界-116 但画面里没有体素世界（书房室内），覆盖就该是空的；
+ * 远景包（如 主世界-116-远景）只经远景网格读、不挑区段，也不进 worldPacks。返回违规说明，空 = 能用
+ */
+export const coverProblems = (cover: Pick<SegCover, 'segment' | 'pack' | 'worldPacks'>, declared: readonly string[]): string[] =>
+  cover.worldPacks
+    .filter((pack) => declared.includes(pack) && !Object.keys(cover.pack[pack]?.sections ?? {}).length)
+    .map((pack) => `${cover.segment}：画面里有体素世界从 ${pack} 挑区段，覆盖却记下 0 个区段，量错了`);
 
 export const coverFile = (work: string, segKey: string) => dataPath('cache', '地形覆盖', work, `${segKey}.json`);
 export const readCover = (work: string, segKey: string): SegCover | null => {
@@ -47,11 +63,26 @@ export const coverStatus = async (allSegments: readonly SegInfo[], segments: rea
   const keys = await coverKeys(allSegments, segments);
   return segments.map((s, i) => {
     const cover = readCover(workName(), s.key);
-    return { segment: s, coverKey: keys[i]!, cover, stale: cover?.coverKey !== keys[i] };
+    return { segment: s, coverKey: keys[i]!, cover, stale: cover?.coverKey !== keys[i] || cover.format !== coverFormat };
   });
 };
 
-const collectExpr = `JSON.stringify({ cover: window.process?.env?.[${JSON.stringify(terrainCoverEnv)}] ?? null, first: Object.fromEntries([...(window.terrainCoverFirst ?? new Map())].map(([pack, m]) => [pack, Object.fromEntries(m)])) })`;
+const collectExpr = `JSON.stringify({ cover: window.process?.env?.[${JSON.stringify(terrainCoverEnv)}] ?? null, first: Object.fromEntries([...(window.terrainCoverFirst ?? new Map())].map(([pack, m]) => [pack, Object.fromEntries(m)])), worlds: [...(window.terrainCoverWorlds ?? [])] })`;
+
+/** Remotion 出完一段在 finally 里关页，通常紧接着就关；等这么久还没收完就当页面没交回记录 */
+const pageCollectTimeoutMs = 60_000;
+
+const levelOf = (k: string) => Number(k.slice(0, k.indexOf('|')));
+/** 各包用到几个区段、按级分；画面里没有体素世界的说一声（覆盖本来就该空） */
+export const describeCover = (cover: Pick<SegCover, 'pack' | 'worldPacks'>) => {
+  const parts = Object.entries(cover.pack).map(([p, v]) => {
+    const perLevel = new Map<number, number>();
+    for (const k of Object.keys(v.sections)) perLevel.set(levelOf(k), (perLevel.get(levelOf(k)) ?? 0) + 1);
+    const levels = [...perLevel].sort((a, b) => a[0] - b[0]).map(([l, n]) => `L${l} ${n}`).join(' ');
+    return `${p} ${Object.keys(v.sections).length} 个区段${levels ? `（${levels}）` : ''}`;
+  });
+  return parts.join('、') || (cover.worldPacks.length ? '没记下区段' : '画面里没有体素世界挑区段');
+};
 
 /**
  * 量这几段的覆盖：按材质包分组一组一个会话，一页按帧号升序把整段过一遍（imageFormat none：不截图、不编码）。
@@ -67,25 +98,32 @@ export const measureCovers = async (segments: readonly SegInfo[], runRecord?: Ru
     backend.openSession(
       coverLevel,
       async (h) => {
-        // 页面关掉前收走它记的区段（Remotion 出完这段才关页）；同一段几页的按最早的帧并
-        const pending = new Map<string, Record<string, Record<string, number>>>();
+        // 页面关掉前收走它记的区段。renderFrames 返回时 Remotion 还没关页（finally 里关、不等），所以按页等收完（beforeClose 的 onOpen），
+        // 不能只等 在收：那样整段的记录在写完覆盖文件之后才到，存下的全是空的（11-17 夜的事故）。
+        // 收不到（页面崩了、求值出错）就报错，不拿缺页的记录当覆盖；同一段几页的按最早的帧并
+        let records: CoverPageRecord[] = [];
+        let failures: string[] = [];
+        let pagesOfSeg: Promise<void>[] = [];
         const inFlight = new Set<Promise<void>>();
-        beforeClose(h.browser, inFlight, async (evaluate) => {
-          const r = JSON.parse(await evaluate(collectExpr)) as { cover: string | null; first: Record<string, Record<string, number>> };
-          if (!r.cover) return;
-          const acc = pending.get(r.cover) ?? {};
-          for (const [pack, m] of Object.entries(r.first)) {
-            const into = (acc[pack] ??= {});
-            for (const [k, f] of Object.entries(m)) if (!(into[k]! <= f)) into[k] = f;
-          }
-          pending.set(r.cover, acc);
-        });
+        beforeClose(
+          h.browser,
+          inFlight,
+          async (evaluate) => {
+            try {
+              records.push(JSON.parse(await evaluate(collectExpr)) as CoverPageRecord);
+            } catch (err) {
+              failures.push(err instanceof Error ? err.message : String(err));
+            }
+          },
+          (collected) => pagesOfSeg.push(collected),
+        );
         for (const s of group) {
           verifySegResourcePacks(workRoot(), s.key);
           const params = segPictureParams(allSegments, [s], coverLevel)[0]!;
           const composition = expectedComposition(s, allSegments, params.inputProps);
           const versions = terrainReadVersions(s.key, s.segment.terrain);
           const t0 = Date.now();
+          [records, failures, pagesOfSeg] = [[], [], []];
           await backend.renderFrames({
                 serveUrl: h.serveUrl,
                 composition,
@@ -104,19 +142,35 @@ export const measureCovers = async (segments: readonly SegInfo[], runRecord?: Ru
                 onStart: () => {},
                 onFrameUpdate: () => {},
               });
-          await Promise.all(inFlight);
-          const first = pending.get(s.key) ?? {};
+          let timer: NodeJS.Timeout | undefined;
+          const allCollected = Promise.all(pagesOfSeg).then(() => true);
+          const inTime = await Promise.race([allCollected, new Promise<false>((resolve) => (timer = setTimeout(() => resolve(false), pageCollectTimeoutMs)))]);
+          clearTimeout(timer);
+          if (!pagesOfSeg.length || !inTime) throw new Error(`地形覆盖 ${s.key}：${pagesOfSeg.length ? `出完 ${pageCollectTimeoutMs / 1000} 秒页面还没关` : '没开页面'}，收不到记录，不存覆盖`);
+          if (failures.length) throw new Error(`地形覆盖 ${s.key}：${failures.length} 个页面没交回记录（${failures[0]}），不存覆盖`);
+          const mine = records.filter((r) => r.cover === s.key);
+          if (mine.length !== records.length || !mine.length) throw new Error(`地形覆盖 ${s.key}：收到的页面记录是别的段的（${records.map((r) => r.cover).join('、') || '一个也没有'}），不存覆盖`);
+          const first: Record<string, Record<string, number>> = {};
+          for (const r of mine)
+            for (const [pack, m] of Object.entries(r.first)) {
+              const into = (first[pack] ??= {});
+              for (const [k, f] of Object.entries(m)) if (!(into[k]! <= f)) into[k] = f;
+            }
           const cover: SegCover = {
+            format: coverFormat,
             work: workName(),
             segment: s.key,
             coverKey: keys.get(s.key)!,
             frameCount: composition.durationInFrames,
             pack: Object.fromEntries(Object.entries(first).map(([pack, m]) => [pack, { version: versions[pack] ?? '', sections: Object.fromEntries(Object.entries(m).sort(([a], [b]) => (a < b ? -1 : 1))) }])),
+            worldPacks: [...new Set(mine.flatMap((r) => r.worlds))].sort(),
             measuredAt: new Date().toISOString(),
           };
+          const problems = coverProblems(cover, s.segment.terrain);
+          if (problems.length) throw new Error(`地形覆盖：${problems.join('；')}，不存覆盖、不能拿去裁`);
           atomicWrite(coverFile(cover.work, s.key), `${JSON.stringify(cover)}\n`);
           runRecord?.artifacts.push(coverFile(cover.work, s.key));
-          log(`  ${s.key}：${composition.durationInFrames} 帧 ${((Date.now() - t0) / 1000).toFixed(0)} 秒，${Object.entries(cover.pack).map(([p, v]) => `${p} ${Object.keys(v.sections).length} 个区段`).join('、') || '没读区段包'}`);
+          log(`  ${s.key}：${composition.durationInFrames} 帧 ${((Date.now() - t0) / 1000).toFixed(0)} 秒，${describeCover(cover)}`);
           out.push(cover);
         }
       },
@@ -157,6 +211,9 @@ export const packCover = async (pack: string, o: { measure: boolean; runRecord?:
       } else stale.push(...toMeasure.map((s) => `${work}/${s.key}`));
       for (const s of segs) {
         const cover = readCover(work, s.key);
+        // 存着的也再核一遍：量的时候已经核过，这里挡手改、拷来的文件
+        const problems = cover ? coverProblems(cover, s.segment.terrain) : [];
+        if (problems.length) throw new Error(`地形覆盖：${problems.join('；')}：anim world cover ${s.key} 重量`);
         for (const [k, frame] of Object.entries(cover?.pack[pack]?.sections ?? {})) if (!used.has(k)) used.set(k, { work, segment: s.key, frame });
       }
     });
