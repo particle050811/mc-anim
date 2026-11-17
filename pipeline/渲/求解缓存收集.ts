@@ -57,8 +57,10 @@ export const waitSolveCacheWrites = () => Promise.all([...inFlight]);
 export const collectSolveCache = (browser: HeadlessBrowser) => {
   const dir = solveCacheDir();
   const stats = { 新写: 0 };
-  beforeClose(browser, inFlight, async (evaluate) => { stats.新写 += await collectPage(evaluate, dir); });
-  // 另挂一个：哪个出错都不耽误另一个
-  beforeClose(browser, inFlight, async (evaluate) => { await collectLightCachePage(evaluate); });
+  // 两样在同一个钩子里收：再包一层 close 的话，外层收完、里层还没登记进 在收 时，等写完() 就已经放行了。哪个出错都不耽误另一个
+  beforeClose(browser, inFlight, async (evaluate) => {
+    await collectLightCachePage(evaluate).catch(() => {});
+    stats.新写 += await collectPage(evaluate, dir);
+  });
   return stats;
 };
