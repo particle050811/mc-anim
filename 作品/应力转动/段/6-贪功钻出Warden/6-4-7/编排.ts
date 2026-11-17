@@ -15,7 +15,7 @@ import { handoffs } from '../../../地点/古城4x/布局.ts';
 import { lookToward } from '../../../场/6-古城/6-4-6/走位.ts';
 import { τ647, durationSec647, huangPanPose, liuXinzhongPose, liuStompJump, huangFollowJump, fourthShriek, startSec647 } from '../../../场/6-古城/6-4-6/追兵.ts';
 import * as K648 from '../../../地点/古城4x/6-4-8/编排.ts';
-import { lineTable } from '../../../配音/台词轨.tsx';
+import { lineTable } from '../../../配音/台词表.ts';
 import type { Cam } from '@engine/core/机位.ts';
 import type { LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 

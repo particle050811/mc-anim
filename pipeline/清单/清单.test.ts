@@ -39,7 +39,10 @@ describe('选择器', () => {
     expect(allSegments.slice(0, 2).map((s) => s.key)).toEqual(['核对-冒烟', '核对-角色包']);
     expect(allSegments[0]!.segment).toMatchObject({ sec: 2, width: 1280, height: 720 });
     expect(segmentCode('核对-冒烟')).toBeNull();
-    expect((await selectSegs(['核对'])).map((s) => s.key)).toEqual(['核对-冒烟', '核对-角色包', '核对-环境', '核对-台词句轨', '核对-世界编辑']);
+    // 选择器「核对」选中清单里全部核对段；不写死名单，加核对段不用回来改这里
+    const checkKeys = manifest.map((x) => x.key).filter((k) => k.startsWith('核对-'));
+    expect(checkKeys.length).toBeGreaterThan(1);
+    expect((await selectSegs(['核对'])).map((s) => s.key)).toEqual(checkKeys);
     await expect(selectSegs(['没有这段'])).rejects.toThrow(/没对上任何段：没有这段/);
   });
 });

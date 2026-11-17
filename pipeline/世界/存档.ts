@@ -78,7 +78,8 @@ export const stateString = (blockId: string, properties?: Record<string, string>
 };
 
 // ---------- 一个区域 ----------
-type ChunkSegment = { runCounts: Uint16Array; runStarts: Uint32Array; states: Uint16Array; bottoms: Int16Array; biomes: Uint8Array };
+/** 一个区块（16 × 16 列）的段：列号 z·16 + x，第 c 列的段是 runStarts[c]～runStarts[c+1]，从上往下 */
+export type ChunkSegment = { runCounts: Uint16Array; runStarts: Uint32Array; states: Uint16Array; bottoms: Int16Array; biomes: Uint8Array };
 export type ReadRegionResult = { chunks: (readonly [number, number])[]; columnSeg: ColumnSegmentRegion };
 
 /** 读一个区域文件成列段；一个生成完的区块都没有返回 null。只要：只解这些区块（下标 cz·32 + cx，查询小范围用） */
@@ -171,7 +172,11 @@ export const readRegion = (file: string, rx: number, rz: number, seed: string, w
     chunks.set(lcz * 32 + lcx, { runCounts, runStarts, states: runStates.slice(0, runTotal), bottoms: runBottoms.slice(0, runTotal), biomes: runBiomes.slice(0, runTotal) });
   }
   if (!chunks.size) return null;
+  return assembleColumnSegments(chunks, { rx, rz, yBottom, yTop: yBottom + height - 1, stateTable: stateList, biomeTable: biomeList, seed });
+};
 
+/** 各区块的段（键 = 区域里的 cz·32 + cx）按区域的列号排成一份列段；立方存档.ts 也用 */
+export const assembleColumnSegments = (chunks: ReadonlyMap<number, ChunkSegment>, head: Pick<ColumnSegmentRegion, 'rx' | 'rz' | 'yBottom' | 'yTop' | 'stateTable' | 'biomeTable' | 'seed'>): ReadRegionResult => {
   let regionRunTotal = 0;
   for (const c of chunks.values()) regionRunTotal += c.states.length;
   const runCounts = new Uint16Array(REGION_COLUMN_COUNT);
@@ -192,7 +197,7 @@ export const readRegion = (file: string, rx: number, rz: number, seed: string, w
       offset += runEnd - runStart;
     }
   return {
-    chunks: [...chunks.keys()].map((k) => [rx * 32 + (k & 31), rz * 32 + (k >> 5)] as const),
-    columnSeg: { rx, rz, yBottom: yBottom, yTop: yBottom + height - 1, stateTable: stateList, biomeTable: biomeList, seed: seed, 段数: runCounts, state: states, bottom: bottoms, biome: biomes },
+    chunks: [...chunks.keys()].map((k) => [head.rx * 32 + (k & 31), head.rz * 32 + (k >> 5)] as const),
+    columnSeg: { ...head, 段数: runCounts, state: states, bottom: bottoms, biome: biomes },
   };
 };

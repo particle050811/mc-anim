@@ -85,3 +85,70 @@ export const makeWorld = (dir: string, seed: bigint, chunks: [number, number, (x
   }
   for (const [k, m] of byRegion) fs.writeFileSync(path.join(dir, 'region', `r.${k}.mca`), makeRegionFile(m));
 };
+
+// ---------- 立方区块存档（立方存档.ts） ----------
+/** LZ4 原始块，只发一组字面量（不压缩） */
+const lz4Literal = (raw: Buffer): Buffer => {
+  const head = [Math.min(raw.length, 15) << 4];
+  if (raw.length >= 15) {
+    let rest = raw.length - 15;
+    for (; rest >= 255; rest -= 255) head.push(255);
+    head.push(rest);
+  }
+  return Buffer.concat([Buffer.from(head), raw]);
+};
+
+/** 一个 cube 的 NBT：blockAt 给 cube 内 x、z 和世界 y；全是空气就不写 block_states（存档里就是这样） */
+export const makeCube = (cy: number, blockAt: (x: number, y: number, z: number) => string, o: { biome?: string; status?: number } = {}): Buffer => {
+  const pal: string[] = [];
+  const idx = new Array<number>(4096);
+  for (let y = 0; y < 16; y++)
+    for (let z = 0; z < 16; z++)
+      for (let x = 0; x < 16; x++) {
+        const st = blockAt(x, cy * 16 + y, z);
+        let k = pal.indexOf(st);
+        if (k < 0) k = pal.push(st) - 1;
+        idx[y * 256 + z * 16 + x] = k;
+      }
+  const root: Record<string, NbtLabel> = { status: { t: 'int', v: o.status ?? 5 }, biomes: { t: 'compound', v: { palette: { t: 'list', elementType: 'string', v: [stringTag(o.biome ?? 'minecraft:plains')] } } } };
+  if (pal.length > 1 || pal[0] !== 'minecraft:air') {
+    const bs: Record<string, NbtLabel> = { palette: { t: 'list', elementType: 'compound', v: pal.map(stateTag) } };
+    if (pal.length > 1) bs.data = { t: 'longArray', v: packCompact(idx, Math.max(4, Math.ceil(Math.log2(pal.length)))) };
+    root.block_states = { t: 'compound', v: bs };
+  }
+  return writeNbt(root);
+};
+
+/** .mcr3d：cube NBT 按项号 (y << 8) | (z << 4) | x 放，压缩方式 3 */
+export const makeCubicRegionFile = (cubes: Map<number, Buffer>): Buffer => {
+  const head = Buffer.alloc(8 * 4096);
+  const bodies: Buffer[] = [];
+  let sector = 8;
+  for (const [i, nbt] of [...cubes].sort((a, b) => a[0] - b[0])) {
+    const packed = lz4Literal(nbt);
+    const lead = Buffer.alloc(9);
+    lead.writeUInt32BE(packed.length + 5);
+    lead[4] = 3;
+    lead.writeUInt32BE(nbt.length, 5);
+    const n = Math.ceil((packed.length + 9) / 4096);
+    const body = Buffer.alloc(n * 4096);
+    Buffer.concat([lead, packed]).copy(body);
+    bodies.push(body);
+    head.writeUInt32BE((sector << 8) | n, 4 * i);
+    sector += n;
+  }
+  return Buffer.concat([head, ...bodies]);
+};
+
+/** 立方存档目录：level.dat + cubes/；cubes = [cube x, cube y, cube z, 方块函数（世界坐标）, 状态?] */
+export const makeCubicWorld = (dir: string, seed: bigint, cubes: [number, number, number, (x: number, y: number, z: number) => string, number?][]) => {
+  fs.mkdirSync(path.join(dir, 'cubes'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'level.dat'), gzipSync(writeNbt({ Data: { t: 'compound', v: { WorldGenSettings: { t: 'compound', v: { seed: { t: 'long', v: seed } } } } } })));
+  const byFile = new Map<string, Map<number, Buffer>>();
+  for (const [cx, cy, cz, f, status] of cubes) {
+    const k = `${cx >> 4}.${cy >> 4}.${cz >> 4}`;
+    if (!byFile.has(k)) byFile.set(k, new Map());
+    byFile.get(k)!.set(((cy & 15) << 8) | ((cz & 15) << 4) | (cx & 15), makeCube(cy, (x, y, z) => f(cx * 16 + x, y, cz * 16 + z), { status }));
+  }
+  for (const [k, m] of byFile) fs.writeFileSync(path.join(dir, 'cubes', `r.${k}.mcr3d`), makeCubicRegionFile(m));
+};

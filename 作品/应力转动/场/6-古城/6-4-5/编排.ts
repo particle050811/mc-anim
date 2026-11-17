@@ -20,7 +20,7 @@ import { PLACE_BEFORE, airPose, groundPose, landPoseSec, mixPose, nearYaw, pivot
 import * as choreo643 from '../6-4-3/编排.ts';
 import * as timeline643 from '../6-4-3/时间线.ts';
 import { allWool, elite, eliteLeap, feetOnWool, withHang, woolBlockAt, wool645, woolLeapApex, liYingDeflectFeet, huangPanArcheryFeet, archery, woolOrder, type WoolName, type Jump } from '../../../地点/古城4x/布局.ts';
-import { lineTable } from '../../../配音/台词轨.tsx';
+import { lineTable } from '../../../配音/台词表.ts';
 import type * as THREE from 'three';
 import { sheathConstraint as sheathConstraint, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
 import { lerp } from '@engine/core/数学.ts';

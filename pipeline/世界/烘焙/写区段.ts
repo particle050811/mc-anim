@@ -31,7 +31,8 @@ export class SectionWriter {
     this.levelStats = Array.from({ length: voxelLib.sections.coarsestLevel + 1 }, () => ({ count: 0, bytes: 0, rawBytes: 0, runCount: 0, cellCount: 0 }));
   }
 
-  writeLevel(level: Level, ti: number, tj: number) {
+  /** wanted：只写这些区段（块里第 si 列、第 sj 行）；不给 = 核心里有数据的都写 */
+  writeLevel(level: Level, ti: number, tj: number, wanted?: (si: number, sj: number) => boolean) {
     const { sectionCells } = this.lib.sections;
     const { paddedSectionCols, sectionInTile } = this.lib.sectionPack;
     const { entryState, entryBiome } = this.表;
@@ -44,6 +45,7 @@ export class SectionWriter {
     let runLengths = new Uint16Array(1 << 16);
     for (let sj = 0; sj < sectionsPerSide; sj++)
       for (let si = 0; si < sectionsPerSide; si++) {
+        if (wanted && !wanted(si, sj)) continue;
         const gx0 = padAtLevel + si * sectionCells - 1;
         const gy0 = padAtLevel + sj * sectionCells - 1;
         let hasData = false;

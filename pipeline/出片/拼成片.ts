@@ -17,6 +17,7 @@ import { atomicWrite } from '../渲/母版.ts';
 import { renderSegments } from './渲段.ts';
 import type { FilmPiece } from '../渲/段产物.ts';
 import { renderTrialSegments } from './试看.ts';
+import type { RenderBackend } from '../渲/后端.ts';
 import { trialEnv } from '../渲/地形注入.ts';
 import { filmProfile } from '../渲/设置.ts';
 import { probeDurationSec, videoInfo } from '../渲/探测.ts';
@@ -35,8 +36,8 @@ const sampleRate = 48000;
 /** 试看片的草稿夹：Agent 自己看、也拿来给用户比的中间稿，不进 交付/（CLAUDE.md：工作- 开头写到 run/草稿/） */
 export const trialFilmDir = (startMs: number, name: string) => path.join(draftRoot(), `${utcMonthDayTime(startMs)}-工作-试看-${name}`);
 
-/** trial：试看出片（出片/试看.ts），frames 是段内输出帧号的闭区间、只配一段 */
-export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLevel; name: string; bounds: string[]; rerender?: boolean; shareVersion?: boolean; trial?: { frames?: [number, number] }; runRecord: RunRecord }) => {
+/** trial：试看出片（出片/试看.ts），frames 是段内输出帧号的闭区间、只配一段；backend 默认真的（渲/后端.ts），测试传假的 */
+export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLevel; name: string; bounds: string[]; rerender?: boolean; shareVersion?: boolean; trial?: { frames?: [number, number] }; runRecord: RunRecord; backend?: RenderBackend }) => {
   const startMs = Date.now();
   const allSegments = await loadAllSegments();
   const trial = opts.trial;
@@ -46,9 +47,9 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
   if (trial) {
     dir = trialFilmDir(startMs, opts.name);
     if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --name）`);
-    outputs = await renderTrialSegments(allSegments, segments, opts.level, { frames: trial.frames, workDir: path.join(dir, '_工作'), runRecord: opts.runRecord });
+    outputs = await renderTrialSegments(allSegments, segments, opts.level, { frames: trial.frames, workDir: path.join(dir, '_工作'), runRecord: opts.runRecord, backend: opts.backend });
   } else {
-    outputs = await renderSegments(allSegments, segments, opts.level, { rerender: opts.rerender, runRecord: opts.runRecord });
+    outputs = await renderSegments(allSegments, segments, opts.level, { rerender: opts.rerender, runRecord: opts.runRecord, backend: opts.backend });
     dir = path.join(deliveryRoot(), `${utcMonthDayTime(startMs)}-${opts.name}`);
   }
   timer('渲段');
