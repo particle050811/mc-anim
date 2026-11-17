@@ -27,6 +27,7 @@ import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地
 import { voxelMaterial } from '@engine/voxel/材质.ts';
 import { LightVolume } from '@engine/light/光体组件.tsx';
 import type { LightVolumeParams } from '@engine/light/光体.ts';
+import { trialLightVolume } from '@engine/light/光体试看.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
@@ -124,7 +125,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      <LightVolume t={t} center={cameraPos} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} params={netherLight.lightVolume} />
+      <LightVolume t={t} center={cameraPos} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} params={trialLightVolume(netherLight.lightVolume) ?? netherLight.lightVolume} />
       {t && <VoxelWorld worldKey={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );
