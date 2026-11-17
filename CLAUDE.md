@@ -45,7 +45,7 @@ Remotion 官方 skill `remotion-best-practices` 只当 API 参考：它说的 `n
 
 ## 工作纪律
 - 逐文件 `git add <文件>`，不用 `-A` 或 `.`；按逻辑拆提交。不 push，要推送先问用户。
-- 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`：不手动 `git worktree add`、不在 worktree 里自己装依赖、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。依赖用 pnpm（用户 11-06 定），只留 `pnpm-lock.yaml`，加减依赖用 `pnpm add`，不用 npm 装。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree，删前先清点被忽略的文件。不留没合并的分支。
+- 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`：不手动 `git worktree add`、不在 worktree 里自己装依赖、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。worktree 里不用 `git stash`：stash 列表各 worktree 共用，别人会 pop 走你的改动；要暂存就提交临时提交或拷到 scratchpad（用户 11-17 定）。依赖用 pnpm（用户 11-06 定），只留 `pnpm-lock.yaml`，加减依赖用 `pnpm add`，不用 npm 装。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree，删前先清点被忽略的文件。不留没合并的分支。
 - 子 Agent 在 worktree 里只出静帧看效果（看动作可 `anim still` 连出几帧），不渲整段、不做逐帧校验；这些由主 Agent 合并后用 `anim --low-priority …` 排（用户 11-06 定，依据见 `docs/决策/0012-调度.md`）。改渲染管线本身、必须真渲才验得了的活例外，派活时写明。
 - 合并前 `anim check` 必须过。说「改好了」之前在 main 上核对：用户这次定的每一条都要在代码里查到，或者出静帧确认。
 - 预期不改画面的改动（重构、搬代码、提速）用 `anim reuse` 验收，不要求逐字节不变（用户 11-11 定）；认不下的出改前改后并排静帧给用户定。`anim verify frames` 只用来查同一份代码走不同路径出的图是否一致。
