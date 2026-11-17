@@ -1,11 +1,11 @@
-// 光体缓存的收集：按清单分块取回写盘，已有的不重写，名字不对的不写，读中的超过 1 天才推修改时间。
+// 光体缓存的收集：按清单分块取回写盘，已有的不重写，名字不对的不写，读中的超过 1 天才推修改时间；开页时列出已有的文件。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 vi.mock('../环境/配置.ts', () => ({ lightCacheDir: () => '' }));
-import { collectLightCachePage } from './光体缓存收集.ts';
+import { collectLightCachePage, lightCacheFiles } from './光体缓存收集.ts';
 
 let dir = '';
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-光体缓存测试-')); });
@@ -40,4 +40,11 @@ it('写新的、跳过已有的和名字不对的；读中的旧文件推修改�
 it('页面没用光体缓存：什么都不写', async () => {
   expect(await collectLightCachePage(async () => '', dir)).toBe(0);
   expect(fs.readdirSync(dir)).toEqual([]);
+});
+
+it('开页清单：只列这部作品目录里名字对的文件，没有目录是空表', () => {
+  expect(lightCacheFiles('作品甲', dir)).toBe('[]');
+  fs.mkdirSync(path.join(dir, '作品甲'));
+  for (const n of ['fedcba9876543210.gz', '0123456789abcdef.gz', '0123456789abcdef.gz.123.tmp', '说明.txt']) fs.writeFileSync(path.join(dir, '作品甲', n), 'x');
+  expect(JSON.parse(lightCacheFiles('作品甲', dir))).toEqual(['0123456789abcdef.gz', 'fedcba9876543210.gz']);
 });

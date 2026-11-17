@@ -1,6 +1,7 @@
 // 光体缓存（engine/light/光体缓存读写.ts）的写盘：页面里新算、压好的层挂在 window 上，关页面前收走写进 <数据根>/cache/光体/<作品>/<键哈希>.gz；
 // 这一页读中的文件推一下修改时间（超过 1 天才推，同 列段缓存），anim cache gc 按它删久没用的。
 // 和求解缓存走同一个关页钩子（求解缓存收集.ts 的 收求解缓存 顺手接上），等写完也是同一个 等求解缓存写完()。
+// 开页时把这部作品已有的文件名列给页面（lightCacheFiles，地形注入.ts 的 segRenderEnv 带上）：页面只取列着的，冷缓存不出 404。
 import fs from 'node:fs';
 import path from 'node:path';
 import { lightCacheDir } from '../环境/配置.ts';
@@ -9,6 +10,17 @@ import { lightCacheDir } from '../环境/配置.ts';
 const chunkBytes = 8 * 1024 * 1024;
 const fileOk = (f: string) => /^[^/\\.][^/\\]*\/[0-9a-f]{16}\.gz$/.test(f);
 const dayMs = 24 * 3600 * 1000;
+
+/** 这部作品光体缓存目录里现有的文件名（JSON 数组）。开页前算：之前的页面新写的要先 等求解缓存写完()，不然这一页看不到 */
+export const lightCacheFiles = (work: string, dir = lightCacheDir()): string => {
+  let names: string[] = [];
+  try {
+    names = fs.readdirSync(path.join(dir, work)).filter((n) => /^[0-9a-f]{16}\.gz$/.test(n));
+  } catch {
+    // 还没有这部作品的目录：空表
+  }
+  return JSON.stringify(names.sort());
+};
 
 export const collectLightCachePage = async (evaluate: (expression: string) => Promise<string>, dir = lightCacheDir()) => {
   const listText = await evaluate('window.__lightVolumeCacheList ? window.__lightVolumeCacheList() : ""');

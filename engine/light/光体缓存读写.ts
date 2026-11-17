@@ -2,10 +2,11 @@
 // 读：public 目录的 lightVolume/ 链到 <数据根>/cache/光体/（pipeline/渲/public目录.ts），按 <作品>/<键哈希>.gz 取；
 // 写：页面写不了盘，新算的压好挂在 window 上，渲染（film、still、bench）关页面前由 pipeline/渲/光体缓存收集.ts 收走写盘，读中的也报给它推修改时间（anim cache gc 按它算多久没用）。
 // 只在渲染入口传了 <作品>/<段键>（地形用量那个环境变量，pipeline/渲/地形注入.ts）、注入了代码层指纹时用；Studio、Node 工具照常现算。
+// 读之前先查开页时注入的文件清单（同一个文件，lightCacheFilesEnv）：盘上没有的不 fetch。冷缓存时每层一个 404，Remotion 会把浏览器的 Failed to load resource 一行行打到终端。
 import { getRemotionEnvironment } from 'remotion';
 import { dataUrl, gunzip } from '../core/数据源.ts';
 import { hash64, solverFingerprint } from '../core/求解缓存.ts';
-import { terrainUsageSegEnv } from '../段/地形环境.ts';
+import { lightCacheFilesEnv, terrainUsageSegEnv } from '../段/地形环境.ts';
 import type { ImportedTerrain } from '../voxel/导入地形.ts';
 import { decodeLayer } from './光体缓存.ts';
 import type { LightLayerData } from './光体.ts';
@@ -16,9 +17,10 @@ const maxPendingBytes = 512 * 1024 * 1024;
 type Store = { pending: Map<string, Uint8Array>; pendingBytes: number; hits: Set<string> };
 type CacheWindow = { __lightVolumeCache?: Store; __lightVolumeCacheList?: () => string; __lightVolumeCacheChunk?: (file: string, start: number, len: number) => string };
 
+const pageEnv = () => (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
 const pageWork = (): string | null => {
   if (typeof window === 'undefined' || getRemotionEnvironment().isStudio) return null;
-  const seg = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.[terrainUsageSegEnv];
+  const seg = pageEnv()?.[terrainUsageSegEnv];
   const work = seg?.slice(0, seg.indexOf('/'));
   return work && !/[\\/]/.test(work) && !work.startsWith('.') ? work : null;
 };
@@ -62,8 +64,20 @@ export const lightCacheSlots = (t: ImportedTerrain, layerKeys: readonly string[]
   });
 };
 
+// 开页时盘上有的文件名（不带作品目录）；没注入是 null，照旧去取
+let onDisk: Set<string> | null | undefined;
+const filesOnDisk = () => {
+  if (onDisk === undefined) {
+    const raw = pageEnv()?.[lightCacheFilesEnv];
+    onDisk = raw ? new Set(JSON.parse(raw) as string[]) : null;
+  }
+  return onDisk;
+};
+
 /** 取一层；没有、坏了、键对不上都是 null */
 export const readLightCache = async (slot: { key: string; file: string }): Promise<LightLayerData | null> => {
+  const listed = filesOnDisk();
+  if (listed && !listed.has(slot.file.slice(slot.file.indexOf('/') + 1))) return null;
   try {
     const res = await fetch(dataUrl(`lightVolume/${slot.file}`));
     if (!res.ok) return null;

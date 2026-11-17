@@ -1,12 +1,13 @@
 // 把本段声明的地形包和版本传给页面（engine/voxel/区段包位置.ts 的唯一来源）：renderMedia、renderStill、renderFrames 都传 envVariables: 段渲染环境(键, 地形)。
 // anim film、still、bench、verify --render 走这一处。用环境变量不用 inputProps：inputProps 整份进指纹、规范化设置 拒收不认识的键、每段 getCompositions 也得跟着传，
 // 而版本已经单独进指纹的地形项。读 Composition 列表的页面不传：列表阶段不该读任何包，读了就报错。
-import { terrainVersionEnv, terrainUsageSegEnv } from '../../engine/段/地形环境.ts';
+import { terrainVersionEnv, terrainUsageSegEnv, lightCacheFilesEnv } from '../../engine/段/地形环境.ts';
 import { trialKey } from '../../engine/core/调试开关.ts';
 import { parseTrialJson, type TrialTable } from './试看表.ts';
 // 和 engine/core/试看.ts 的 trialEnvName 同一个名字（pipeline 不 import 渲染代码）
 export const trialEnvName = 'REMOTION_ANIM_TRIAL';
 import { workName } from '../环境/作品.ts';
+import { lightCacheFiles } from './光体缓存收集.ts';
 import { segTerrainVersion, readTerrainVersionTable } from '../指纹/指纹.ts';
 import type { SegInfo } from '../清单/清单.ts';
 
@@ -17,6 +18,7 @@ import type { SegInfo } from '../清单/清单.ts';
 export const segRenderEnv = (segKey: string, terrainFiles: Record<string, string>): Record<string, string> => ({
   [terrainVersionEnv]: JSON.stringify(terrainFiles),
   [terrainUsageSegEnv]: `${workName()}/${segKey}`,
+  [lightCacheFilesEnv]: lightCacheFiles(workName()),
 });
 
 /** still、bench 不算指纹、不出切片，当场读表；多读：试看要多读的包（`试看地形`） */

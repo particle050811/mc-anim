@@ -15,6 +15,7 @@ import { WoolBlocks } from '@库/物品/羊毛.tsx';
 import { GuchengLight } from '../../古城.tsx';
 import { FOG_4X, Gucheng4x, partAt, tilesInView, VIEW_DISTANCE_4X } from '../../古城4x.tsx';
 import { SlamGround, slamHideBlocks } from '../../边城/6-3-6/震地.tsx';
+import { AncientCityLightTrial } from '../光体试看.tsx';
 import chestTable4x from 'asset:数据/场景/古城4x箱子';
 import { allWool, woolBlockAt, woolOrder, openedBefore, checkChestEvent, type BlockPos, type WoolName, type AncientCitySegment } from '../布局.ts';
 import { rad } from '@engine/core/数学.ts';
@@ -141,6 +142,7 @@ export const AncientCity4xCanvas: React.FC<{
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <GuchengLight />
         <Gucheng4x parts={drawParts} hide={hideBoxes} hideBlocks={hideBlockBoxes} />
+        <AncientCityLightTrial camPos={cam.pos} />
         {slamShown && <SlamGround />}
         {chests4x
           .filter((c) => drawnSet.has(c.tile))

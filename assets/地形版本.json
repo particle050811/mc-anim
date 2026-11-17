@@ -75,6 +75,15 @@
       "fileCount": 7,
       "size": 16982202,
       "manifestSha256": "0e1a81cdab96437fde6c79af99db3ddbf2070505cc32729e8b08e98b0f9ae001"
+    },
+    "古城放大幽匿-20260930": {
+      "version": "e999b9049c82",
+      "source": "取材服务端 古城放大幽匿-20260930 存档的主世界 RX -3～-1、RZ -1～1，anim world bake 烘焙（全高），只给光体试看用",
+      "license": "LicenseRef-Minecraft-Derived",
+      "visibility": "发布",
+      "fileCount": 5,
+      "size": 6136676,
+      "manifestSha256": "7d670c3076f6630124a6a359fb4abc5602300e5a293acb709a4eab5f650f64bb"
     }
   }
 }

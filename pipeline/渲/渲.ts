@@ -330,6 +330,8 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
       const envOf = (g: TrialGroup | undefined) => ({ ...segRenderEnv(s.key, segTerrainNow(s, g ? g.terrain : trialTerrain())), ...(g ? g.env : trialEnv()) });
       await detail.pack(async () => {
         for (const [i, v] of variants.entries()) {
+          // 上一组的页面新算的光体缓存先写完，这一组开页时列得到（地形注入.ts 的 segRenderEnv）
+          if (i) await waitSolveCacheWrites();
           const variantStartMs = Date.now();
           await renderStills(subtitled, composition, s.key, toEmit, outDir, { frameByFrame: o.frameByFrame, env: { ...envOf(v.trial), ...v.channelEnv }, suffix: v.suffix, completed: (emitted) => detail.frameDone(i * toEmit.length + emitted) });
           o.onVariantDone?.({ suffix: v.suffix, trial: v.trial, channelSuffix: v.channelSuffix, files: toEmit.map((f) => stillFile(outDir, s.key, f, v.suffix)), seconds: (Date.now() - variantStartMs) / 1000 });
