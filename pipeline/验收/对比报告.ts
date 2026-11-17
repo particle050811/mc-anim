@@ -3,6 +3,7 @@
 // 退出码照 diff(1)：有一对按门槛判「变了」是 1，都没变 0。
 import fs from 'node:fs';
 import path from 'node:path';
+import { listWorks } from '../环境/作品.ts';
 import { lazyPassGate } from '../闸/闸.ts';
 import { masterSize } from '../渲/设置.ts';
 import { type BlockVerdict, type Threshold } from './比较.ts';
@@ -40,7 +41,7 @@ const signed = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}`;
 export const teleArg = (h: Hotspot) => `${h.tele.x},${h.tele.y},${h.tele.width}`;
 
 /** 复查这一对的 anim still --tele 命令；定不出段、帧或不是原帧尺寸的返回 null 和原因 */
-export const recheckCommand = (r: Pick<PairResult, 'pair' | 'width' | 'analysis'>, o: { topic: string; vsTarget?: string; trialEnv?: Record<string, string> }): { command: string | null; note?: string } => {
+export const recheckCommand = (r: Pick<PairResult, 'pair' | 'width' | 'analysis'>, o: { topic: string; vsTarget?: string; trialEnv?: Record<string, string>; work?: string | null }): { command: string | null; note?: string } => {
   const hs = r.analysis?.hotspots ?? [];
   if (!hs.length) return { command: null };
   if (r.pair.variant) return { command: null, note: `这张是${r.pair.variant.includes('望远') ? '望远' : r.pair.variant.includes('光影') ? '光影试看' : '变体'}出的图（${r.pair.variant}），坐标不是原帧的，没有复查命令` };
@@ -51,8 +52,18 @@ export const recheckCommand = (r: Pick<PairResult, 'pair' | 'width' | 'analysis'
   const seg = r.pair.segFrame?.segKey ?? '<段>';
   const frame = r.pair.segFrame ? String(r.pair.segFrame.frame) : '<帧>';
   const env = Object.entries(o.trialEnv ?? {}).map(([k, v]) => `${k}=${shellQuote(v)} `).join('');
-  const cmd = ['anim', 'still', r.pair.segFrame ? shellQuote(seg) : seg, frame, '--to-preview', shellQuote(o.topic), ...level, '--tele', shellQuote(hs.map(teleArg).join(';')), ...(o.vsTarget ? ['--vs', shellQuote(o.vsTarget)] : [])].join(' ');
+  const cmd = ['anim', ...(o.work ? ['--work', shellQuote(o.work)] : []), 'still', r.pair.segFrame ? shellQuote(seg) : seg, frame, '--to-preview', shellQuote(o.topic), ...level, '--tele', shellQuote(hs.map(teleArg).join(';')), ...(o.vsTarget ? ['--vs', shellQuote(o.vsTarget)] : [])].join(' ');
   return { command: env + cmd, note: r.pair.segFrame ? undefined : `段、帧定不出来，要自己填${r.pair.frame !== null ? `（这是 B 的第 ${r.pair.frame} 帧）` : ''}` };
+};
+
+/** 这段在哪部作品（段/<段键>/，核对段在 核对/<去掉「核对-」的名>/）：只有一部有才算，复查命令带上 --work，换了当前作品也能直接跑 */
+export const workOfSeg = (segKey: string): string | null => {
+  try {
+    const hits = [...listWorks()].filter(([, root]) => fs.existsSync(path.join(root, '段', segKey)) || (segKey.startsWith('核对-') && fs.existsSync(path.join(root, '核对', segKey.slice(3)))));
+    return hits.length === 1 ? hits[0]![0] : null;
+  } catch {
+    return null;
+  }
 };
 
 const hotspotLine = (h: Hotspot, n: number, t: Threshold) =>
@@ -105,9 +116,12 @@ export const runDiff = async (plan: DiffPlan, o: DiffOptions): Promise<{ code: n
     fs.writeFileSync(path.join(o.outDir, r.image), encodePng(panel.rgb, panel.width, panel.height));
   }
   const topic = o.recheckTopic ?? '工作-复查';
+  const works = new Map<string, string | null>();
   for (const r of results) {
     if (!r.analysis) continue;
-    const c = recheckCommand(r, { topic, vsTarget: o.vsTarget, trialEnv: plan.trialEnv?.b });
+    const segKey = r.pair.segFrame?.segKey;
+    if (segKey && !works.has(segKey)) works.set(segKey, workOfSeg(segKey));
+    const c = recheckCommand(r, { topic, vsTarget: o.vsTarget, trialEnv: plan.trialEnv?.b, work: segKey ? works.get(segKey) : null });
     r.recheck = c.command;
     r.recheckNote = c.note;
   }

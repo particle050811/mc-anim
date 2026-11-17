@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import { computeBlockDiff } from './比较.ts';
 import { analyzePair, diffPanel, hotspotDirection, identicalAnalysis, teleRect } from './对比.ts';
 import { frameKey, pairDirs, parseStillName, pickVideoFrames, planDiff, readPairs, segFrameFromManifest } from './对比配对.ts';
-import { recheckCommand, runDiff } from './对比报告.ts';
+import { recheckCommand, runDiff, workOfSeg } from './对比报告.ts';
 
 const threshold = { block8Threshold: 24, block16Threshold: 10, block64Threshold: 4, glanceThreshold: 6, blockMeanTol: 1, loudnessTolLu: 0.5, onsetTolFrames: 1 };
 
@@ -167,6 +167,14 @@ describe('复查命令', () => {
   it('几块望远拼成一条，试看参数照设，--vs 带上', () => {
     const c = recheckCommand({ pair, width: 3840, analysis }, { topic: '工作-复查', vsTarget: 'main', trialEnv: { REMOTION_ANIM_TRIAL: '{"台阶并色":{"off":true}}' } });
     expect(c.command).toBe(`REMOTION_ANIM_TRIAL='{"台阶并色":{"off":true}}' anim still 6-飞越 7 --to-preview 工作-复查 --tele '0,0,480;480,270,480' --vs main`);
+  });
+
+  it('段在哪部作品就带 --work', () => {
+    expect(workOfSeg('4-齐放')).toBe('亚波伦不放水');
+    expect(workOfSeg('6-飞越主世界俯冲边城')).toBe('应力转动');
+    expect(workOfSeg('核对-史蒂夫关节')).toBe('亚波伦不放水');
+    expect(workOfSeg('没有这段')).toBeNull();
+    expect(recheckCommand({ pair, width: 3840, analysis }, { topic: 't', work: '亚波伦不放水' }).command).toMatch(/^anim --work 亚波伦不放水 still 6-飞越 7 /);
   });
 
   it('预览级加 --level 预览；望远出的图、尺寸认不出的不给命令', () => {
