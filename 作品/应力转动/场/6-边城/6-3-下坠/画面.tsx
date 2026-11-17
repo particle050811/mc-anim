@@ -15,7 +15,7 @@ import { png } from '@engine/model/贴图.ts';
 import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
-import { FlightFog, FlightRig, overworldShadowOn, overworldShadowFar, OverworldSunLight } from '../../../地点/飞行镜头.tsx';
+import { FlightFog, FlightRig, overworldShadowEnabled, overworldShadowFar, OverworldSunLight } from '../../../地点/飞行镜头.tsx';
 import { JIUHU, jiuhuMouthAttach } from '@库/角色/九胡.tsx';
 import jiuHuModelData from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
@@ -84,7 +84,7 @@ const Lights: React.FC<{ camPos: number[]; dome: boolean }> = ({ camPos: camPos,
           <SkyDome sun={SUN_OW} />
         </group>
       )}
-      {dome && overworldShadowOn ? (
+      {dome && overworldShadowEnabled() ? (
         <OverworldSunLight shadowFar={overworldShadowFar(timeline.start.visibility)} aboveGround={camPos[2] - choreo.groundZ} />
       ) : (
         <>

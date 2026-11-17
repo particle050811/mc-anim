@@ -58,8 +58,9 @@ const _centers = Array.from({ length: cascadeCount }, () => new THREE.Vector3())
 const _radii = new Array<number>(cascadeCount).fill(0);
 const _minZ = new Array<number>(cascadeCount).fill(0);
 
-// 试看 `阴影日志`：级联的切分、各级半径、一像素几米、中心有变就打一行进终端（查影子一帧一跳是不是哪一级跳了档、挪了像素格）；不改画面
-const shadowLogOn = trialParams<boolean>('阴影日志') === true;
+// 试看 `阴影日志`：级联的切分、各级半径、一像素几米、中心有变就打一行进终端（查影子一帧一跳是不是哪一级跳了档、挪了像素格）；不改画面。
+// 用到时才取（不在模块顶层读成常量），Node 里 import 本模块不用先备好页面的环境变量
+const shadowLogOn = () => trialParams<boolean>('阴影日志') === true;
 let lastShadowLog = '';
 
 export class CascadedShadow extends SunLightShadow {
@@ -182,7 +183,7 @@ export class CascadedShadow extends SunLightShadow {
       cascadeCam.updateMatrixWorld();
       internals._updateMatrix(cascadeCam, internals._matrices[i], internals._frustums[i], internals._viewports[i]);
     }
-    if (shadowLogOn) {
+    if (shadowLogOn()) {
       const r1 = (x: number) => Math.round(x * 10) / 10;
       const line = JSON.stringify({
         '切分': r1(this.splitDist),
