@@ -174,6 +174,7 @@ export const debugSwitches = [
   terrainDebug('调试镜头', '只挪画面用的镜头，挑区段、定级别照原镜头', '{"位": [x,y,z], "看": [x,y,z]}', ['位', '看']),
   terrainDebug('加载视点', '挑区段、定级别改按这一点算，镜头不动', '{"位": [x,y,z], "远"?: 米}', ['位', '远']),
   { ...terrainDebug('切级日志', '每帧一行进终端：镜头离地、各级交界离镜头多远和俯角、和上一帧比换了级的区段（按游戏坐标）', 'true'), changesPicture: false },
+  { name: '阴影日志', kind: 'trial', purpose: '级联阴影的切分、各级半径、一像素几米、中心有变就打一行进终端：查影子一帧一跳是不是哪一级跳了档', changesPicture: false, inFingerprint: false, readers: all, format: 'true', files: ['engine/light/级联阴影.ts'], note: '地形调试，docs/地形调试.md' },
 
   // ---- 「关」能关的项（engine/voxel/ 以外的先做）----
   off('高度雾', '暮色的解析高度雾（材质和屏幕 AO 共用的 uniform 浓度置 0）', ['engine/light/高度雾.ts'], { note: replacedByFarFog }),
