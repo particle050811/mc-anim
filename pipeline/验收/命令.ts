@@ -33,6 +33,8 @@ import { matchesMaster, readSegStamp, segStampComplete, type SegStamp } from './
 import { isValidTopic } from '../预览/预览.ts';
 import { checkSelectedSegCues, runCuesBeforeRender } from '../段框架/自动.ts';
 import { parseFrames, runPerFrame } from './逐帧校验.ts';
+import { planDiff, type SegFrame } from './对比配对.ts';
+import { runDiff } from './对比报告.ts';
 
 const level = '视频' as const;
 
@@ -77,7 +79,7 @@ const writePreviewNote = (previewDir: string, items: { key: string; comparedWith
   fs.writeFileSync(path.join(previewDir, '00-说明.md'), lines.join('\n'), 'utf8');
 };
 
-const perFrameNote = '--save 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --frames 是整段，不覆盖已有的），PNG 留在旁边的 <段键>/（--no-images 不留，比的时候就报不了差多少）；--compare 再渲一次、列出不同的帧，每帧报差像素占比（任一通道差 >0、>8、>32）、最大差、块平均差（和 anim reuse 同一套），结尾列最差的几帧；有不同退出码 1，--tolerance <级> 把最大差不超过它的帧算过（默认不给，逐字节）。照基准存的帧连着渲，给了 --frames 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--keep-images 给空目录，在 --save 时 PNG 留在那里，在 --compare 时只留不同的帧。不写母版，不碰段签和认可';
+const perFrameNote = '只用来查同一份代码走不同路径（单帧、跳帧、连出、重渲）出的图是否一致，预期差是 0；比两份代码、两组参数出的图用 anim diff。--save 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --frames 是整段，不覆盖已有的），PNG 留在旁边的 <段键>/（--no-images 不留，比的时候就报不了差多少）；--compare 再渲一次、列出不同的帧，每帧报差像素占比（任一通道差 >0、>8、>32）、最大差、块平均差（和 anim reuse 同一套），结尾列最差的几帧；有不同退出码 1，--tolerance <级> 把最大差不超过它的帧算过（默认不给，逐字节）。照基准存的帧连着渲，给了 --frames 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--keep-images 给空目录，在 --save 时 PNG 留在那里，在 --compare 时只留不同的帧。不写母版，不碰段签和认可';
 
 const verifyCmd: Command = {
   usage: 'verify [<选择器…>] [--render] [--to-preview <主题>]；verify accept <段…> --reason <…> [--render]；verify backfill [<选择器…>]；verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名> [--no-images]|--compare <名> [--tolerance <级>] [--keep-images <目录>]',
@@ -312,4 +314,61 @@ const perFrameCmd: Command = {
   },
 };
 
-export const verifyCommands: Record<string, Command> = { verify: verifyCmd };
+/** 正整数参数；没给返回 undefined */
+const positiveInt = (v: string | undefined, flag: string, min = 1) => {
+  if (v === undefined) return undefined;
+  if (!/^\d+$/.test(v) || Number(v) < min) throw new UsageError(`${flag} 要是不小于 ${min} 的整数：${v}`);
+  return Number(v);
+};
+
+/** --seg <段键>[@<视频第 0 帧是段内第几帧>] */
+const parseSegArg = (v: string | undefined): SegFrame | null => {
+  if (v === undefined) return null;
+  const m = /^(.+?)(?:@(\d+))?$/.exec(v)!;
+  return { segKey: m[1]!, frame: Number(m[2] ?? 0) };
+};
+
+export const diffNote =
+  '改前改后对比：A 是旧、B 是新，差 = B − A。A、B 是两个静帧目录（同名配对，名字不同的按「第N帧」或最后一串数字配）、两张 PNG，或两个视频（按帧号对齐抽帧：--frames a-b|帧,帧，--every n，默认每秒一帧含首尾；yuv420p 按 verify 的固定公式换 RGB）。' +
+  '每对出 旧｜新｜差 并排图（差图带符号：红亮了、蓝暗了、绿亮度差不多但颜色变了；--gain 放大倍数默认 8，--panel-width 每格宽默认 1920），只出最差的 --images 张（默认 24）；' +
+  '算块平均差（和 verify、reuse 同一个 computeBlockDiff，门槛和分档读 verify/阈值.toml）、各档超门槛的块数、差像素占比、最大差；挑差得最多的 --windows 个窗口（默认 5）在图上框出，打印能直接复制的 anim still <段> <帧> --tele <x,y,宽> 原生复查（--zoom 望远倍数默认 8；视频旁有 anim film 的 manifest.json 就照它定段和帧，否则 --seg <段键>[@起帧]）。' +
+  '汇总写进 00-说明.md、打到终端；出到 --to-preview <主题>（预览/，「工作-」开头进 run/草稿/）或 --out <新目录>，都不给是 run/草稿/<UTC>-工作-对比/。有一对判「变了」退出码 1。' +
+  '和 verify frames --compare 的分工：那边比同一份代码走不同路径（预期逐字节一样），这里比两份代码或两组参数（预期有差，要知道差在哪、差多少）。省事写法：anim still <段> <帧…> --to-preview <主题> --vs <检出|分支|main>';
+
+const diffCmd: Command = {
+  usage: 'diff <A（旧）> <B（新）> [--to-preview <主题>|--out <目录>] [--frames <a-b|帧,帧>] [--every <n>] [--seg <段键>[@<起帧>]] [--windows <n>] [--zoom <倍>] [--images <n>] [--gain <n>] [--panel-width <像素>]',
+  note: diffNote,
+  跑: async (args, runRecord) => {
+    const p = parseArgs(args, { value: ['--to-preview', '--out', '--frames', '--every', '--seg', '--windows', '--zoom', '--images', '--gain', '--panel-width'] });
+    if (p.位置.length !== 2) throw new UsageError('要给 A（旧）和 B（新）两个：目录、PNG 或视频');
+    if (p.value['--to-preview'] && p.value['--out']) throw new UsageError('--to-preview 和 --out 只给一个');
+    const [a, b] = p.位置.map((x) => path.resolve(x)) as [string, string];
+    let plan;
+    try {
+      plan = planDiff(a, b, { frames: p.value['--frames'] ? parseFrames(p.value['--frames']) : undefined, every: positiveInt(p.value['--every'], '--every'), seg: parseSegArg(p.value['--seg']) });
+    } catch (e) {
+      if (e instanceof UsageError) throw e;
+      throw new UsageError((e as Error).message);
+    }
+    if (!plan.pairs.length) throw new Error(`A、B 里没有配得上的图（只在 A ${plan.onlyA.length} 个，只在 B ${plan.onlyB.length} 个）`);
+    const outDir = resolveDiffOut(p.value['--to-preview'], p.value['--out']);
+    const { code } = await runDiff(plan, {
+      outDir, threshold: readThresholds(), aName: path.basename(a), bName: path.basename(b),
+      hotspots: positiveInt(p.value['--windows'], '--windows', 0), zoom: positiveInt(p.value['--zoom'], '--zoom'), maxImages: positiveInt(p.value['--images'], '--images', 0),
+      gain: positiveInt(p.value['--gain'], '--gain'), panelWidth: positiveInt(p.value['--panel-width'], '--panel-width', 16),
+    });
+    runRecord.artifacts.push(outDir);
+    return code;
+  },
+};
+
+/** --out 要是新目录或空目录（不覆盖旧的）；都没给出到草稿 */
+export const resolveDiffOut = (topic: string | undefined, out: string | undefined) => {
+  if (!out) return newPreviewDir(topic ?? '工作-对比');
+  const dir = path.resolve(out);
+  if (fs.existsSync(dir) && fs.readdirSync(dir).length) throw new UsageError(`--out ${dir} 已经有东西了，换一个新目录（不覆盖旧的）`);
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+};
+
+export const verifyCommands: Record<string, Command> = { verify: verifyCmd, diff: diffCmd };
