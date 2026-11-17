@@ -1,6 +1,6 @@
 // 7-1 幽灵马（召出、跳上北墙头站住），刘心忠和黄叛的脚底位置（一串跳；刘心忠上马后随马）。
 import type { V3 } from '@engine/model/parts.tsx';
-import { steedRear } from '@库/生物/幽灵马.tsx';
+import { steedRear } from '@库/生物/幽灵马骑乘.ts';
 import { leapFeetAt, type Jump } from '../../布局.ts';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
@@ -9,7 +9,7 @@ export const horseSpawnPos = geom.horseSpawnPos;
 
 export const horseLeap: Jump = leapAtSec(horseSpawnPos, geom.spots.wallEntry, geom.horseLeapApex, timeline.horseJumpT);
 export const wallLandT = landT(horseLeap);
-// 马每一跃离地的时刻（人立从这一刻起，幽灵马.tsx 的 `steedStand`；第 3 场接着用）
+// 马每一跃离地的时刻（人立从这一刻起，幽灵马骑乘.ts 的 `steedStand`；第 3 场接着用）
 export const horseTakeoffs = [takeoffT(horseLeap)];
 export const sceneEndT = timeline.segmentEndT('7-1-7');
 export const horseState = (t: number) => {

@@ -10,8 +10,8 @@
 // 和第 1 场的接口：只用 7-1/戏.ts 里跟坐标无关的（游戏秒、马腿相位、箭相对它的位置）；位置全按契约。
 import type { V3 } from '@engine/model/parts.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
-import { drawBowPose, ridePose } from '../../../角色/追兵.tsx';
-import { STEED, horseGait, riderFeet, steedRear } from '@库/生物/幽灵马.tsx';
+import { drawBowPose, ridePose } from '../../../角色/追兵姿势.ts';
+import { STEED, horseGait, riderFeet, steedRear } from '@库/生物/幽灵马骑乘.ts';
 import { shieldPos } from '@库/特效/护盾术.tsx';
 import { mortarTrajectory } from '@库/特效/苦力怕迫击炮.tsx';
 import { WARDEN, pinToWardenBody, wardenBodyHit, wardenBodyPinAt, wardenBodyPoint, type BodyPin, type WardenFrame } from '@库/生物/监守者.tsx';
@@ -124,7 +124,7 @@ const horseLegPhase = phaseTable((t) => {
   return Math.max(Math.min(1.8 * m.v, horseLegMaxRate), turning(t) ? 6 : 0);
 });
 const horsePhase0 = X71.horseState(X71.sceneEndT)?.walkCycle.legPhase ?? 0;
-// 起跳人立（幽灵马.tsx 的 `steedStand`）：连上第 1 场跳墙那一跃（换到本场时刻是负的），三跃
+// 起跳人立（幽灵马骑乘.ts 的 `steedStand`）：连上第 1 场跳墙那一跃（换到本场时刻是负的），三跃
 const horseTakeoffs = [...X71.horseTakeoffs.map((t) => t - X71.sceneEndT), timeline.leap1T, timeline.leap2T, timeline.leap3T];
 // 打中那一下：马往旁边一晃（衰减）
 const sway = (T: number) => (T < timeline.hitT ? 0 : Math.sin((T - timeline.hitT) * 22) * decay(T - timeline.hitT, 0.25));

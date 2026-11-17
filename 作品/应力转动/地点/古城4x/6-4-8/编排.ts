@@ -14,7 +14,7 @@
 import { type Key, sample, sampleV, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { WARDEN } from '@库/生物/监守者.tsx';
-import { walkPose } from '../../../角色/追兵.tsx';
+import { walkPose } from '../../../角色/追兵姿势.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { bowTextureFor } from '@库/物品/弓.tsx';
 import { blockCenter, nearYaw, yawTo } from '../6-4-1/古城戏.ts';

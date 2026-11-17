@@ -17,7 +17,7 @@
 // - 每刻 50 格的箭在游戏里一刻跨过整个 4.5 格范围，判定那一刻落在范围里才挡得到；这里取刀刃扫过箭路的那一点（见 `弹开`）。
 import type { V3 } from '@engine/model/parts.tsx';
 import { HITBOX } from '@库/特效/碰撞箱线框.tsx';
-import { drawBowPose } from '../../../角色/追兵.tsx';
+import { drawBowPose } from '../../../角色/追兵姿势.ts';
 import { handPosition } from '@库/角色/骨架.tsx';
 import { bowPointWorld, BOW_ARROW_TIP } from '@库/物品/弓.tsx';
 import { ARROW } from '@库/物品/箭.tsx';

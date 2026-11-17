@@ -8,8 +8,8 @@
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
-import { drawBowPose, ridePose } from '../../../角色/追兵.tsx';
-import { horseGait, riderFeet, steedRear, steedStand } from '@库/生物/幽灵马.tsx';
+import { drawBowPose, ridePose } from '../../../角色/追兵姿势.ts';
+import { horseGait, riderFeet, steedRear, steedStand } from '@库/生物/幽灵马骑乘.ts';
 import { mortarTrajectory } from '@库/特效/苦力怕迫击炮.tsx';
 import { vanillaToppleAngle } from '@库/特效/原版死亡.tsx';
 import { WARDEN, pinToWardenBody, wardenBodyHit, wardenBodyPinAt, wardenBodyPoint, type BodyPin, type WardenFrame } from '@库/生物/监守者.tsx';
@@ -41,7 +41,7 @@ const draft = chase.simulate();
 const horseAtS = (s: number) => g2s(geom.horseGame(s));
 const wardenAtS = (s: number) => g2s(geom.wardenGame(s));
 const liveWarden = (T: number) => wardenAtS(chase.wardenS(T));
-// 马每一跃离地的时刻（起跳人立，幽灵马.tsx 的 `steedStand`）：每圈两跳的起点；勒马停住以后没跑到的不算
+// 马每一跃离地的时刻（起跳人立，幽灵马骑乘.ts 的 `steedStand`）：每圈两跳的起点；勒马停住以后没跑到的不算
 const takeoffsOf = (c: chase.Chase, lastT: number): number[] => {
   const out: number[] = [];
   const reach = c.horseS(lastT);

@@ -11,7 +11,7 @@ import { horseStart, towerTop, wallTopEast, avenue } from './几何.ts';
 import { leapApex, leapFrom, towerBrakeSec, knockSlide, wardenRouteToHold, wardenRouteToTower, wardenStairTopS, horseChaseSpeed, horseAccel } from './追逐.ts';
 import { G4 } from '../../古城4x.tsx';
 import { sceneFrames } from '../7-1/段界.ts';
-import { STEED } from '@库/生物/幽灵马.tsx';
+import { STEED } from '@库/生物/幽灵马骑乘.ts';
 import { scene73 } from '../布局.ts';
 
 // ---------- 马（场时刻 T，秒） ----------

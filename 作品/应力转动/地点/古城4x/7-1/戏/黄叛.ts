@@ -1,7 +1,7 @@
 // 7-1 黄叛和箭：照亮的火把箭、风矢（7-1-5、7-1-7 打在监守者身上的三支）的放、中时刻和路线，插在监守者身上的箭，弓前鼓风机虚影，黄叛的姿势。
 // 黄叛每一箭都开鼓风机（用户 10-19 定：「怎么可能不开鼓风机就射箭？」），画法同 6-4-3a 风矢：弓前 0.3 格的鼓风机虚影 + 散花风道（../弓前风扇.tsx）。
 import type { V3 } from '@engine/model/parts.tsx';
-import { drawBowPose } from '../../../../角色/追兵.tsx';
+import { drawBowPose } from '../../../../角色/追兵姿势.ts';
 import { pinToWardenBody, wardenBodyPinAt, type BodyPin, type WardenFrame } from '@库/生物/监守者.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { bowPointWorld, BOW_ARROW_TIP, bowTextureFor, type BowTexture } from '@库/物品/弓.tsx';
