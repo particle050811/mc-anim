@@ -24,7 +24,7 @@ import { preloadEnv } from '../../engine/段/预载.ts';
 import { segPictureParams, segOutputWindow } from './段产物.ts';
 import { shadingEnvName, type ShadingConfig } from './光影试看.ts';
 import { frameTimeoutMs } from './设置.ts';
-import { segRenderEnv, segTerrainNow, trialEnv, trialTerrain } from './地形注入.ts';
+import { segRenderEnv, segTerrainNow, trialEnv, trialTerrain, shellTrialMode } from './地形注入.ts';
 import { collectTerrainUsage, recordMeasuredFrames, waitTerrainUsageWrites } from './地形用量.ts';
 import { collectSolveCache, waitSolveCacheWrites } from './求解缓存收集.ts';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
@@ -112,7 +112,7 @@ export const bench = async (opts: { segment: string; frame?: [number, number]; l
           let sharedMemory = false;
           const detail = new DetailCollector(label, frameRange[0]);
           const run = () => renderMedia({
-              serveUrl, composition, outputLocation: out, inputProps: params.inputProps, envVariables: { ...segRenderEnv(s.key, segTerrainNow(s, trialTerrain())), ...trialEnv(), ...(opts.shading ? { [shadingEnvName]: opts.shading.value } : {}) }, puppeteerInstance: browser, chromiumOptions: { gl: params.gl },
+              serveUrl, composition, outputLocation: out, inputProps: params.inputProps, envVariables: { ...segRenderEnv(s.key, segTerrainNow(s, trialTerrain()), shellTrialMode()), ...trialEnv(), ...(opts.shading ? { [shadingEnvName]: opts.shading.value } : {}) }, puppeteerInstance: browser, chromiumOptions: { gl: params.gl },
               codec: params.codec, muted: params.muted, crf: params.crf, x264Preset: params.x264Preset,
               encodingMaxRate: params.encodingMaxRate, encodingBufferSize: params.encodingBufferSize, colorSpace: params.colorSpace, pixelFormat: params.pixelFormat,
               imageFormat: params.imageFormat, jpegQuality: params.jpegQuality, scale: params.scale, concurrency: params.concurrency,

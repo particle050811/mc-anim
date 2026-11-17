@@ -58,12 +58,14 @@ export const stableJson = (x: unknown): string => {
   return JSON.stringify(x);
 };
 
-export const readTerrainVersionTable = (): Record<string, string> => {
+/** 登记表里每个包的完整包版本，和裁过的版本（有的话，docs/世界.md「裁级」） */
+export const readTerrainEntries = (): Record<string, { version: string; trimmed?: { version: string } }> => {
   const file = path.join(codeRoot(), 'assets', '地形版本.json');
   if (!fs.existsSync(file)) return {};
-  const packs = (JSON.parse(fs.readFileSync(file, 'utf8')).pack ?? {}) as Record<string, { version: string }>;
-  return Object.fromEntries(Object.entries(packs).map(([k, v]) => [k, v.version]));
+  return (JSON.parse(fs.readFileSync(file, 'utf8')).pack ?? {}) as Record<string, { version: string; trimmed?: { version: string } }>;
 };
+/** 包 → 完整包的版本。指纹的地形项记它（裁过的包从它派生，重裁不让段过期，一致由 anim check 的 地形覆盖 保证） */
+export const readTerrainVersionTable = (): Record<string, string> => Object.fromEntries(Object.entries(readTerrainEntries()).map(([k, v]) => [k, v.version]));
 
 /** 段声明的包 → 登记的版本，键排好。指纹的地形项用它；切片的页面直接拿算好的这份，不重读表（渲/地形注入.ts） */
 export const segTerrainVersion = (segKey: string, decls: readonly string[], versionTable: Record<string, string>): Record<string, string> =>
