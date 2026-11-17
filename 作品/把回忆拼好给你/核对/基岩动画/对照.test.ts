@@ -1,30 +1,17 @@
 // 对照：TLM 1.5.3 jar 里原样的 winefox_magical.main.animation.json 跑 engine/anim/基岩动画.ts（TLM 口径），
 // 和库里照它手抄的魔法酒狐动作逐骨骼比（容差 1e-6，尾巴 1e-3 度：TLM 的 Molang 是 float）：坐姿、坐船、隐藏、法杖和环、摘帽耳朵、眨眼、表情、尾巴（弹簧稳态）。
-// 动画、模型字节在数据根 store（资产 动画/角色/魔法酒狐、模型/角色/魔法酒狐，anim extract 魔法酒狐动画 导出）；没有就整组跳过。
-import fs from 'node:fs';
-import { describe, expect, it, vi } from 'vitest';
-import { bytesPath, readAssetLock } from '../../../../pipeline/资产/资产锁.ts';
+// 动画、模型字节在数据根 store（资产 动画/角色/魔法酒狐、模型/角色/魔法酒狐，anim extract 魔法酒狐动画 导出），vitest 按资产锁读（pipeline/资产/vitest插件.ts）。
+import { describe, expect, it } from 'vitest';
+import animRaw from 'asset:动画/角色/魔法酒狐';
+import modelRaw from 'asset:模型/角色/魔法酒狐';
 import { sampleAnim, sampleSkeleton, playTo, advance, initialPlayState, blendLayers, parseAnimationFile, type SkeletonPose, type SkeletonTable, type PlayState } from '@engine/anim/基岩动画.ts';
 import { magicalWineFoxBlink, magicalWineFoxBlinkBones, magicalWineFoxFace, magicalWineFoxTail } from '@库/角色/魔法酒狐动作.ts';
 import { magicalWineFoxBoatBones } from '@库/角色/魔法酒狐坐船.ts';
 import { magicalWineFoxBreath } from '@库/角色/魔法酒狐新动作.ts';
+import { magicalWineFoxSitBones, magicalWineFoxHidden, magicalWineFoxStaffBones, magicalWineFoxHatOffBones } from '@库/角色/魔法酒狐.tsx';
 import { fps } from '../../分镜.ts';
 import { tailSteadyVars } from './尾巴稳态.ts';
 
-// 魔法酒狐.tsx 顶上 import 了模型和贴图资产（打包时由 webpack 内联），测试里换成 store 里的字节
-const readBytes = (id: string): Buffer | undefined => {
-  const e = readAssetLock()[id];
-  const f = e && bytesPath(e);
-  return f && fs.existsSync(f) ? fs.readFileSync(f) : undefined;
-};
-vi.mock('asset:模型/角色/魔法酒狐', () => ({ default: JSON.parse(readBytes('模型/角色/魔法酒狐')?.toString('utf8') ?? '{"texW":1,"texH":1,"bones":[]}') }));
-vi.mock('asset:贴图/角色/魔法酒狐/百花', () => ({
-  // 没有字节时给一张 1×1 透明 PNG，模块能加载就行（这组测试会跳过）
-  default: `data:image/png;base64,${(readBytes('贴图/角色/魔法酒狐/百花') ?? Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==', 'base64')).toString('base64')}`,
-}));
-
-const animBytes = readBytes('动画/角色/魔法酒狐');
-const modelBytes = readBytes('模型/角色/魔法酒狐');
 const DEFAULT_TOLERANCE = 1e-6;
 // 尾巴的 Molang 连算很多步、中间有几千度的角，TLM 口径按 mocha 的 float 算（engine/anim/Molang.ts），和手抄版（double）差到 1e-4 度量级
 const tailTolerance = 1e-3;
@@ -52,12 +39,11 @@ const isRestPose = (p: SkeletonPose) =>
 // 采样时间：本作品每帧（分镜.ts 的 fps）30 秒，加一组不和关键帧对齐的
 const times = [...Array.from({ length: fps * 30 + 1 }, (_, i) => i / fps), ...Array.from({ length: 400 }, (_, i) => i * 0.0731 + 0.003)];
 
-describe.skipIf(!animBytes || !modelBytes)('魔法酒狐：播放器 × 手抄版', async () => {
-  const animations = parseAnimationFile(JSON.parse(animBytes!.toString('utf8')), 'TLM');
-  const modelSkeleton = new Set((JSON.parse(modelBytes!.toString('utf8')) as { bones: { name: string }[] }).bones.map((b) => b.name));
+describe('魔法酒狐：播放器 × 手抄版', () => {
+  const animations = parseAnimationFile(animRaw, 'TLM');
+  const modelSkeleton = new Set((modelRaw as unknown as { bones: { name: string }[] }).bones.map((b) => b.name));
   const frameAt = (animName: string, sec: number, external: Record<string, number> = {}, variables: Record<string, number | string> = {}) =>
     sampleAnim(animations[animName]!, sec, { env: { external, 变量: variables }, 口径: 'TLM' }).skeleton;
-  const { magicalWineFoxSitBones, magicalWineFoxHidden, magicalWineFoxStaffBones, magicalWineFoxHatOffBones } = await import('@库/角色/魔法酒狐.tsx');
 
   /** 常量姿势表：手抄的每根骨骼逐通道相等；播放器多出来的只能是模型里没有的骨骼，或原位值（转 0、移 0、缩放 1） */
   const compareTable = (name: string, manual: Readonly<SkeletonTable>, played: SkeletonTable) => {

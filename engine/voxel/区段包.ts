@@ -34,7 +34,7 @@
 // 群系只给染色的方块记（草、树叶、水……），颜色解的时候按群系取固定色、不做混合（用户 10-04 定，和 mcai mesh 导出的网格一致）。
 // 第 1 级以上的格子是烘焙时照 Voxy Mipper 合并好的（比不透明度，要查方块表），所以方块表改了不透明度、补了缺的方块，要重新烘焙。
 import { sectionFormatVersion } from './区段模型.ts';
-import { voxelFromState, blockProps, buildTintTable, biomeIndex } from './真实方块表.ts';
+import { defaultBlockTable, type BlockTable } from './真实方块表.ts';
 import { sectionCells, paddedSectionCols, coarsestLevel, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
 import { base64Bytes } from '../core/base64.ts';
@@ -125,9 +125,10 @@ export type SectionData = {
   runLengths: Uint16Array;
 };
 
-// 包里的状态号、群系号 → 体素值、染色（每个包建一次）
+// 包里的状态号、群系号 → 体素值、染色（每个包建一次）；table 是方块表，单测传小表
 export type PackTable = { value: Uint16Array; 色: (stateIdx: number, biomeIdx: number) => PaletteEntry['c'] };
-export const buildPackTables = (info: Pick<PackageInfo, 'state' | 'biome'>): PackTable => {
+export const buildPackTables = (info: Pick<PackageInfo, 'state' | 'biome'>, table: BlockTable = defaultBlockTable): PackTable => {
+  const { voxelFromState, blockProps, buildTintTable, biomeIndex } = table;
   const voxelByState = Uint16Array.from(info.state, (s) => voxelFromState(s));
   const { t, C: tintRoutes } = buildTintTable();
   const globalBiome = info.biome.map(biomeIndex);

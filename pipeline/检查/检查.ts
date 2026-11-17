@@ -19,7 +19,7 @@ import { checkTerrainCover } from './规则/地形覆盖.ts';
 
 export const ruleTable: Record<RuleKind, { note: string; 跑: (c: CheckContext, report: CheckReport) => Promise<void> | void }> = {
   types: { note: 'tsc strict；Python 的 ruff、pyright；改到 mod 时编译 mod、跑暮色网格核对和游戏导表出表核对（test/twilight-grid-test.sh、game-data-test.sh）', 跑: typeCheck },
-  structure: { note: '分层、作品不互引、段不互引、不引核对、纯模块闭包、getInputProps、渲染代码的确定性、pipeline 渲染器统一入口与测试 mock', 跑: checkStructure },
+  structure: { note: '分层、作品不互引、段不互引、不引核对、纯模块闭包、getInputProps、渲染代码的确定性、pipeline 渲染器统一入口与测试 mock、engine 库 作品的测试不引 pipeline', 跑: checkStructure },
   layers: { note: 'pipeline 内部分层方向（含 import type）、engine/core 不引别的 engine 子目录、任何循环引用（engine、库、pipeline、作品，含只有类型的）、只有类型的引用也守渲染分层', 跑: checkLayering },
   manifest: { note: '段目录和清单一一对应、段键段名合规唯一、不撞旧名、连续段接帧', 跑: checkManifest },
   load: { note: '在 Node 里执行全部纯模块，断言都跑到；环境.ts 的声明（时刻、天气、档位、画法、关键帧）合法；作品的地形改动落在世界声明的保真范围里', 跑: checkLoad },

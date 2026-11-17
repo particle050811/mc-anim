@@ -1,6 +1,7 @@
+// 包内模型文件：烘焙这边 learnModel 训练出的表写成字节，engine 那边 readModel 读回来要一样（两边一致，所以放在 pipeline 下：engine 的测试不引 pipeline）。
 import { describe, expect, it } from 'vitest';
-import { defaultModel, modelBytes, readModel } from './区段模型.ts';
-import { learnModel } from '../../pipeline/世界/烘焙/模型.ts';
+import { defaultModel, modelBytes, readModel } from '../../../engine/voxel/区段模型.ts';
+import { learnModel } from './模型.ts';
 
 describe('包内模型文件', () => {
   it('16 字节中性表；训练表小端往返、不要求输入对齐', () => {

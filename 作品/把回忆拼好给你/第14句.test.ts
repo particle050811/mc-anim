@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { AssetCue } from '@engine/段/段定义.ts';
 import { filmScale } from '@engine/三渲二/像素.ts';
 import retreatSegment from './段/2-归隐/段.ts';
@@ -51,13 +51,6 @@ import { mapPixels, mapPalette, whiteBorder } from './特效/地图画.ts';
 import { line8Photos } from './特效/照片画.ts';
 import { paperWindows, building, downstairsCount } from './现实/楼下布局.ts';
 import { toFrameCues, frameCountOf, sceneWindowFrames } from './声音/回帧.ts';
-
-// 特效/照片画.ts 顶上就解码四张照片（真帧资产，打包时才有 asset:），这里换成一张 1×1 的 RGBA（同 祭坛召唤.test.ts）
-const pixelPng = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
-vi.mock('asset:贴图/照片/第3句递蛋糕-三版', () => ({ default: pixelPng }));
-vi.mock('asset:贴图/照片/第4句日落划船-二版', () => ({ default: pixelPng }));
-vi.mock('asset:贴图/照片/第5句扑龙蛋-二版', () => ({ default: pixelPng }));
-vi.mock('asset:贴图/照片/第7句光柱破云-三版', () => ({ default: pixelPng }));
 
 const events = mainCutEvents;
 const toSec = (songFrame: number) => songFrame / fps;

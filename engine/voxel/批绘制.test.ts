@@ -1,10 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { buildBatchItem, ClassBatch, quadIndices, plantShortFaceLimit } from './批绘制.ts';
 import { faceGroupMesh, pickDirs } from './材质.ts';
 
-vi.mock('./真实方块图集.ts', () => ({ blockAtlas: () => ({}), blockAtlasGlsl: () => '' }));
-vi.mock('./网格.ts', () => ({ posScale: 64, groupCount: 12, skirtGroupStart: 8 }));
 
 const ctx = { SHORT: 5122, UNSIGNED_SHORT: 5123, UNSIGNED_BYTE: 5121 } as WebGL2RenderingContext;
 const makeFaceGroup = (faceCount: number, faceGroupStarts = [0, faceCount]) => ({ n: faceCount, pos: new Int16Array(faceCount * 12), uv: new Int16Array(faceCount * 8), tex: new Uint16Array(faceCount * 16), col: new Uint8Array(faceCount * 16), segment: faceGroupStarts });

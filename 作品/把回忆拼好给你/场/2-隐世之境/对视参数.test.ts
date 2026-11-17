@@ -1,9 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { makePixelFont } from '@库/界面/像素字表.ts';
 import { makePerspectiveCamera, projectToPage, zUpToThree } from '@库/界面/投影.ts';
-import { bytesPath, readWorkAssetLock } from '../../../../pipeline/资产/资产锁.ts';
+import { pixelFont } from '../../界面/像素字.ts';
 import { mainHallDoors } from '../../地点/隐世之境主厅门数据.ts';
 import { coverBoxFits, coverPointFits, coverChatBox } from './封面.ts';
 import { liYing, headTurnRange, bubbleText } from './参数.ts';
@@ -73,13 +70,8 @@ describe('49.96 对视的站位', () => {
   });
 });
 
-// 构图：气泡、脸、封面大字的落点。像素字表在数据根里，没有就跳过
-const workRoot = path.resolve(import.meta.dirname, '../..');
-const fontLockEntry = readWorkAssetLock(workRoot)['字体/把回忆拼好给你/像素字'];
-const hasTable = !!fontLockEntry && fs.existsSync(bytesPath(fontLockEntry));
-
-describe.skipIf(!hasTable)('49.96 对视的构图', () => {
-  const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(fontLockEntry!), 'utf8')), '字体/把回忆拼好给你/像素字');
+// 构图：气泡、脸、封面大字的落点（像素字表由 vitest 按资产锁读）
+describe('49.96 对视的构图', () => {
   const project = (edition: EyeContactVersion, z: number) => {
     const { width: width, height: height, 看: lookAt } = eyeContactFraming[edition];
     const cam = makePerspectiveCamera({ 眼: zUpToThree(eye), 看: zUpToThree(lookAt), fov: eyeContactFov, width: width, height: height });

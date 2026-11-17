@@ -1,6 +1,6 @@
 // 导入区段：区段包里解出来的一个区段（SectionData）→ 体素块，连同挖地标、整平、随位置变的群系色（规则见 导入地形.ts 文件头）。
 // 纯函数，主线程和区段工人（区段工人.ts）跑的是同一份，结果逐字节一样；所以这里不碰 remotion、DOM。
-import { voxelFromState, blockTint, blockProps } from './真实方块表.ts';
+import { defaultBlockTable, type BlockTable } from './真实方块表.ts';
 import { sectionToVoxels, noBiome, type PackageInfo, type PackTable, type SectionData } from './区段包.ts';
 import type { VoxelGrid } from './生成.ts';
 
@@ -65,7 +65,7 @@ const filledColumns = (voxels: VoxelGrid) => {
   return filled;
 };
 
-const flatten = (voxels: VoxelGrid, info: SectionPackInfo, areas: FlattenArea[]): VoxelGrid => {
+const flatten = (voxels: VoxelGrid, info: SectionPackInfo, areas: FlattenArea[], { voxelFromState }: BlockTable): VoxelGrid => {
   const [ox, oy, oz] = info.origin;
   const cellM = voxels.cell;
   const { nx, ny } = voxels;
@@ -118,7 +118,7 @@ const flatten = (voxels: VoxelGrid, info: SectionPackInfo, areas: FlattenArea[])
 };
 
 // 随位置变的群系里染色的格子，按格子最小角那一块（游戏坐标）重算颜色，色板跟着加项
-const tintByPosition = (voxels: VoxelGrid, data: SectionData, info: SectionPackInfo, variesByPos: boolean[]) => {
+const tintByPosition = (voxels: VoxelGrid, data: SectionData, info: SectionPackInfo, variesByPos: boolean[], { blockProps, blockTint }: BlockTable) => {
   const { tint: TINT } = blockProps;
   const entryCount = data.palette.length / 2;
   const biomeToRetint: (string | null)[] = []; // 色板号 → 要重算时是群系 id
@@ -158,9 +158,10 @@ const tintByPosition = (voxels: VoxelGrid, data: SectionData, info: SectionPackI
 };
 
 // 一个区段 → 体素块：先整平、再挖（竖井那一块在城里，整平垫的地基也要一起挖开），最后按位置重算群系色
-export const importedSectionVoxels = (data: SectionData, ctx: SectionContext): VoxelGrid => {
+// table：方块表，单测传小表；ctx 要能整份传给工人（structuredClone），所以表不放进 ctx
+export const importedSectionVoxels = (data: SectionData, ctx: SectionContext, table: BlockTable = defaultBlockTable): VoxelGrid => {
   const { info, tables, cutBoxes, flattenAreas } = ctx;
-  const voxels = flattenAreas.length ? flatten(sectionToVoxels(data, tables), info, flattenAreas) : sectionToVoxels(data, tables);
+  const voxels = flattenAreas.length ? flatten(sectionToVoxels(data, tables), info, flattenAreas, table) : sectionToVoxels(data, tables);
   // 记下整列挖空的列（`体素块` 的 `挖空`）：主世界地形把整列空气当成「区块没生成」拿远景补上，不记的话地标网格里会长出远景的草地和树
   const filledBefore = cutBoxes.length ? filledColumns(voxels) : null;
   carveOut(voxels, data, info, cutBoxes);
@@ -169,6 +170,6 @@ export const importedSectionVoxels = (data: SectionData, ctx: SectionContext): V
     const carvedCols = filledBefore.map((v, c) => (v && !filledAfter[c] ? 1 : 0));
     if (carvedCols.includes(1)) voxels.carveMask = carvedCols;
   }
-  tintByPosition(voxels, data, info, ctx.variesByPos);
+  tintByPosition(voxels, data, info, ctx.variesByPos, table);
   return voxels;
 };

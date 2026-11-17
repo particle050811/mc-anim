@@ -18,9 +18,6 @@ vi.mock('react', async (importOriginal) => {
 });
 vi.mock('@react-three/fiber', () => ({ useFrame() {}, useThree() {} }));
 vi.mock('remotion', () => ({ useCurrentFrame: () => sequence.frame, useVideoConfig: () => ({ fps: 30 }) }));
-vi.mock('asset:贴图/场景/天空/clouds', () => ({ default: '' }));
-vi.mock('asset:贴图/场景/天空/sun', () => ({ default: '' }));
-vi.mock('./大气.ts', () => ({ atmoOn: () => false, atmosphere: { waterBands: [] }, atmoUniforms: {}, ATMO_FN_GLSL: '', ATMO_PARS_GLSL: '' }));
 
 const { SkyDome, OverworldWaterSky } = await import('./天空.tsx');
 const { waterSky, resetWaterSky } = await import('../voxel/水面.ts');

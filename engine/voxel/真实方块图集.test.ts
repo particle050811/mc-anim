@@ -30,10 +30,7 @@ const upscale = (t: { w: number; h: number; px: Uint8Array }, factor: number) =>
 };
 const toDataUri = (t: { w: number; h: number; px: Uint8Array }) => `data:image/png;base64,${Buffer.from(encode({ width: t.w, height: t.h, data: t.px, channels: 4, depth: 8 })).toString('base64')}`;
 
-// 材质.ts 经 网格.ts 引到方块表、群系色：给最小的表
-vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: { 贴图: ['test:block/stone'], 面组: [], 方块: {} } }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } } }));
-
+// 图集竖条按格边长换（真实方块图集.ts 和 材质.ts 在模块里只建一次图集，所以每种格边长重载模块）
 const load = async (t: { w: number; h: number; px: Uint8Array }) => {
   vi.resetModules();
   vi.doMock('asset:贴图/场景/关键帧/方块表', () => ({ default: toDataUri(t) }));

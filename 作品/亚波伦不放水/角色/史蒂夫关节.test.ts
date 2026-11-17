@@ -1,11 +1,7 @@
 // 史蒂夫的关节：膝是 0 时根矩阵和库里原版那套一模一样；蹲腿角让脚底在髋正下方；髋跟着膝弯往下沉；盔甲块怎么跟关节。
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { stevePose, steveRootMatrix } from '@库/角色/史蒂夫.tsx';
 import { joints, jointRootMatrix, meshSection, legExtend, squatLegAngle, hipHeight } from './史蒂夫关节.ts';
-
-// 库里的史蒂夫一 import 就要模型和皮肤的字节；这里只算姿势，给个空模型和 1×1 的图
-vi.mock('asset:模型/角色/巨人', () => ({ default: { models: { 宽: { texW: 64, texH: 64, parts: [] } } } }));
-vi.mock('asset:贴图/角色/巨人/史蒂夫', () => ({ default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' }));
 
 describe('史蒂夫关节', () => {
   it('膝是 0 时根矩阵同 steveRootMatrix（腿怎么摆、前倾、贴不贴地都一样）', () => {
