@@ -3,6 +3,7 @@
 // 跟着镜头走：各层窗口按镜头位置取整（光体.ts 的 lightWindows），取整后的窗口变了才重建，没变的层不重算；窗口只取决于这一帧的镜头，
 // 所以跳着渲、单出静帧和连着渲画出来一样。要重建的那一帧用 delayRender 拦住截图，建好挂上重画一次再放行。
 // 区段数据经地形的旁路读（导入地形.ts 的 sectionData，记进地形用量），工人那边按区段留着格码，主线程记着它有哪些，超了上限让它丢最久没用的。
+// 体素地形各层的工人结果先查光体缓存（光体缓存读写.ts），读到的层不再让工人算；工人新算的顺手存。
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
@@ -15,6 +16,7 @@ import { cascades, lightWindows, windowKey, windowSections, cellOf, type LightVo
 import { meshLightCodes, type MeshGlow } from './光体网格.ts';
 import { gatherProbes, occupancyTexture, probeTarget } from './光体探针.ts';
 import { lightVolumeUniforms, useLightVolumeOn, wrapLightVolume, LIGHT_LAYERS } from './光体着色.ts';
+import { lightCacheSlots, putLightCache, readLightCache } from './光体缓存读写.ts';
 import type { LightLayerData, LightWorkerMessage, LightWorkerReply } from './光体工人.ts';
 
 // 着色器按三层写死（各层取光时沿法线挪的半格：2、1、0.5 米）
@@ -45,7 +47,7 @@ const ask = async (msg: Extract<LightWorkerMessage, { id: number }>) => {
     openWorker().postMessage(msg);
   });
   if (reply.err) throw new Error(`光体工人：${reply.err}`);
-  return reply.layers;
+  return reply;
 };
 // 来源（地形对象）→ 工人里的号
 const contexts = new WeakMap<ImportedTerrain, number>();
@@ -63,7 +65,25 @@ const held = new Map<string, { bytes: number; used: number }>();
 let heldBytes = 0;
 let clock = 0;
 
-const terrainLayers = async (t: ImportedTerrain, windows: LightWindow[], need: boolean[], minLight: number) => {
+const terrainLayers = async (t: ImportedTerrain, allWindows: LightWindow[], keys: string[], need: boolean[], minLight: number) => {
+  const out: (LightLayerData | null)[] = allWindows.map(() => null);
+  const slots = lightCacheSlots(t, keys);
+  const toBuild = [...need];
+  if (slots) {
+    const got = await Promise.all(need.map((n, i) => (n ? readLightCache(slots[i]!) : null)));
+    got.forEach((d, i) => {
+      if (!d) return;
+      out[i] = d;
+      toBuild[i] = false;
+    });
+    // 一层的结果用到它和比它粗的各层的区段
+    const lastHit = got.findLastIndex((d) => d !== null);
+    if (lastHit >= 0) t.noteSections(allWindows.slice(0, lastHit + 1).flatMap((w) => windowSections(w)));
+  }
+  // 工人只要算到最后一个没读到的层（细层的团表要比它粗的各层，粗层读到了也照样拼它的格码）
+  const last = toBuild.lastIndexOf(true);
+  if (last < 0) return out;
+  const windows = allWindows.slice(0, last + 1);
   const ctx = contextOf(t);
   const stamp = ++clock;
   const ids = windows.flatMap((w) => windowSections(w));
@@ -90,7 +110,15 @@ const terrainLayers = async (t: ImportedTerrain, windows: LightWindow[], need: b
       heldBytes -= h.bytes;
       drop.push(k);
     }
-  return ask({ type: '建', id: nextId++, ctx, minLight, windows, need, sections, drop });
+  const cacheKeys = windows.map((_, i) => (slots && toBuild[i] ? slots[i]!.key : null));
+  const reply = await ask({ type: '建', id: nextId++, ctx, minLight, windows, need: toBuild.slice(0, last + 1), sections, drop, cacheKeys });
+  reply.layers.forEach((d, i) => {
+    if (d) out[i] = d;
+  });
+  reply.cache?.forEach((gz, i) => {
+    if (gz && slots) putLightCache(slots[i]!.file, gz);
+  });
+  return out;
 };
 
 // 一层挂着的：键、窗口、占用格、探针图
@@ -215,7 +243,7 @@ export const LightVolume: React.FC<{ t: ImportedTerrain | null; center: readonly
     let chain = `${params.minLight}`;
     want = { windows, keys: windows.map((w) => (chain += `|${windowKey(w)}`)) };
   }
-  const anchor = useLightVolume(params, want, (w, need) => terrainLayers(t!, w.windows, need, params!.minLight));
+  const anchor = useLightVolume(params, want, (w, need) => terrainLayers(t!, w.windows, w.keys, need, params!.minLight));
   return <group ref={anchor} />;
 };
 
@@ -226,7 +254,7 @@ export const BlockMeshLightVolume: React.FC<{ info: BlockMeshInfo; bin: string; 
   const anchor = useLightVolume(params, want, async (w) => {
     const layer = meshLightCodes(info, await loadBlockMeshBin(bin), glow);
     w.windows[0] = layer.w;
-    return ask({ type: '网格', id: nextId++, layer, minLight: params!.minLight });
+    return (await ask({ type: '网格', id: nextId++, layer, minLight: params!.minLight })).layers;
   });
   return <group ref={anchor} />;
 };

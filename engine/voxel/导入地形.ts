@@ -139,6 +139,8 @@ export type ImportedTerrain = {
   // 旁路读者（光体，engine/light/光体组件.tsx）：取齐这几个区段解好的数据（包里没有的给 null），记进地形用量；不换体素块、不动体素世界的 `ready` 和预取的轮次。
   // 体素块由读者自己的工人按 `voxelContext` 换（同 区段工人.ts，同一份纯函数）
   sectionData: (qs: SectionId[]) => Promise<(SectionData | null)[]>;
+  // 旁路读者用了这几个区段算出的缓存结果（光体缓存）、没真去取：照样记进地形用量（结果依赖它们，地形用量要收窄段的依赖）
+  noteSections: (qs: SectionId[]) => void;
   voxelContext: { info: SectionPackInfo; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] };
 };
 
@@ -241,6 +243,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   };
   return {
     sectionData,
+    noteSections: (qs) => recordSectionRead(pack.name, qs.filter((q) => hasSection(pack.coarseHeights, q)).map(sectionKey)),
     voxelContext: { info: { origin: pack.info.origin, state: pack.info.state, biome: pack.info.biome }, cutBoxes, flattenAreas },
     key: `导入:${pack.dir}`,
     source: source,

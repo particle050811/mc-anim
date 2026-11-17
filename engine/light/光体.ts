@@ -196,6 +196,8 @@ export const LIGHT_FLOATS = 16;
 
 /** 一层探针要的团表：lights 团表，bricks 每砖 [起, 数, 0, 0]（砖按 (bz·BH + by)·BW + bx 排），index 团号 */
 export type LightSet = { lights: Float32Array; bricks: Float32Array; index: Float32Array; count: number };
+/** 一层要的：占用格、团表（光体工人出，光体缓存存） */
+export type LightLayerData = { occ: Uint8Array; set: LightSet };
 
 /**
  * 探针层 receiver 的团表。sources 从粗到细，最后一个是探针这一层自己；每一层只取不在更细一层窗口里的格（每处的光只算一次）。
