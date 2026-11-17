@@ -3,7 +3,7 @@
 // 用户 10-18 嫌二人「完全站着看着监守者出来 一点反应都没有」：反应快、急退拉开、摆开架势，站着时也一直在喘、在挪重心，不定格。
 import type { V3 } from '@engine/model/parts.tsx';
 import { drawBowPose } from '../../../角色/追兵.tsx';
-import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
+import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { nearYaw, yawTo } from '../6-4-1/古城戏.ts';
 import { G4 } from '../../古城4x.tsx';
 import { huangPanSpot, liuXinzhongSpot, wardenEmerge } from '../布局.ts';

@@ -9,8 +9,7 @@
 // - 够不着目标（马在塔顶）时原版 MoveToTargetSink 隔 0～40 刻才重新找路：它挨完这一下在塔脚站着，7-3-3 收尾时还没动（下墙绕去城心不演）。
 // 和第 1 场的接口：只用 7-1/戏.ts 里跟坐标无关的（游戏秒、马腿相位、箭相对它的位置）；位置全按契约。
 import type { V3 } from '@engine/model/parts.tsx';
-import type { FigurePose } from '@库/角色/骨架.tsx';
-import { standPose } from '@库/角色/骨架.tsx';
+import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { drawBowPose, ridePose } from '../../../角色/追兵.tsx';
 import { STEED, horseGait, riderFeet, steedRear } from '@库/生物/幽灵马.tsx';
 import { shieldPos } from '@库/特效/护盾术.tsx';

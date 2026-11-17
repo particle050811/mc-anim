@@ -1,7 +1,7 @@
 // 7-1 刘心忠每一刻的姿势：施法、闪避、喘气张望、甩护盾、召马上马。
 import type { V3 } from '@engine/model/parts.tsx';
 import { ridePose } from '../../../../角色/追兵.tsx';
-import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
+import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { nearYaw } from '../../6-4-1/古城戏.ts';
 import { leapFeetAt, type Jump } from '../../布局.ts';
 import * as timeline from '../时间线.ts';

@@ -3,7 +3,7 @@
 //   比原版疾跑慢时步长不变、步频跟着速度降（原版 limbSwing 跟着路程走）。快了以后靠步子迈得大。
 // 前倾：0.6°/(米/秒)，最多 25°（30 米/秒 18°）。
 import type { V3 } from '../../engine/model/parts.tsx';
-import { standPose, type FigurePose } from './骨架.tsx';
+import { standPose, type FigurePose } from './骨架姿势.ts';
 
 // 起步加到全速、刹车停下默认 0.3 秒，人、马、监守者一样（用户 10-18 对古城定的）；例外（6-3-8 卫兵走道起步、7-3 塔顶刹车）在各段写明原因
 export const RAMP_SEC = 0.3;

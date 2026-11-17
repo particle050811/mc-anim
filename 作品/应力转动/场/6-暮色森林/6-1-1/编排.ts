@@ -7,7 +7,7 @@
 // D2（f160–169）九胡飞到最高点时切到 6-1-2 第 1 帧机位（门西边高处往东看），最后一帧接 6-1-2。
 import { type Key, type VKey, sample, sampleV, track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { type FigurePose, standPose } from '@库/角色/骨架.tsx';
+import { type FigurePose, standPose } from '@库/角色/骨架姿势.ts';
 import { PORTAL_ISLAND } from '../../../地点/传送门海岛.tsx';
 import { NAGA_COURTYARD } from '../../../地点/娜迦庭院.tsx';
 import * as choreo612 from '../6-1-2/编排.ts';

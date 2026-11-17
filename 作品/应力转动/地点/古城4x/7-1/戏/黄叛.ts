@@ -3,7 +3,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { drawBowPose } from '../../../../角色/追兵.tsx';
 import { pinToWardenBody, wardenBodyPinAt, type BodyPin, type WardenFrame } from '@库/生物/监守者.tsx';
-import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
+import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { bowPointWorld, BOW_ARROW_TIP, bowTextureFor, type BowTexture } from '@库/物品/弓.tsx';
 import { ARROW } from '@库/物品/箭.tsx';
 import { nearYaw, yawTo } from '../../6-4-1/古城戏.ts';

@@ -11,7 +11,7 @@ import { type Key, sample } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { WARDEN } from '@库/生物/监守者.tsx';
 import { ridePose } from '../../角色/追兵.tsx';
-import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
+import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import type { ChestOpening } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { toScene, yawTo } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import { RAMP_SEC, runCadence, runPoseAt } from '@库/角色/跑步.ts';

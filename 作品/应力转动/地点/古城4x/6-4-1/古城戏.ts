@@ -12,7 +12,7 @@
 //   6-4-1：缺口南口 → A1 → B（开箱）→ A3 → A4（半空出画）。6-4-2：A4 → 翻回廊落 D → 小跳上 C（A4→C 直线会撞 C 南墙，见 6-4-2/编排.ts）；6-4-3 他站在 C 开箱。
 //   6-4-6～6-4-8：二人回田里，A1 在二人脚边；刘心忠踩响田西尖啸体 (-695,-51,259)，监守者在其北 4.5 格钻出（尖啸体召唤监守者，落点在周围水平 ±5 格内）。
 import type { V3 } from '@engine/model/parts.tsx';
-import { type FigurePose, standPose } from '@库/角色/骨架.tsx';
+import { type FigurePose, standPose } from '@库/角色/骨架姿势.ts';
 import { flightWarp } from '../布局/强者.ts';
 import { rad, smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
 
