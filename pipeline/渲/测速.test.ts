@@ -17,6 +17,7 @@ vi.mock('../资产/资产锁.ts', () => ({ withSegResourcePack: <T>(workRoot: st
 vi.mock('../环境/路径.ts', () => ({ codeRoot: () => process.cwd() }));
 vi.mock('../清单/清单.ts', () => ({ selectSegs: async () => [{ key: '核对-冒烟', segment: { sec: 1 } }], loadAllSegments: async () => [{ key: '核对-冒烟', segment: { sec: 1 } }] }));
 vi.mock('../闸/闸.ts', () => ({ passRenderGate: async (fn: () => Promise<unknown>) => fn() }));
+vi.mock('../环境/资源.ts', () => ({ load1Min: () => 1, coreCount: () => 10 }));
 vi.mock('../运行记录/阶段.ts', () => ({ recordPhase: () => ({}) }));
 vi.mock('./渲.ts', () => ({ bundleProject: async () => { fake.time += 1000; return '测试打包'; }, findComposition: (h: { compositions: unknown[] }) => h.compositions[0] }));
 vi.mock('./段产物.ts', () => ({ segPictureParams: () => [{ inputProps: {}, gl: 'angle', scale: 1 }], segOutputWindow: () => ({ start: 0, frameCount: 2 }) }));
