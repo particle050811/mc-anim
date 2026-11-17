@@ -22,6 +22,8 @@ export type PickSectionsParams = {
   farM: number; // 最远画到多远（雾的尽头，米）
   inView: (x0: number, y0: number, x1: number, y1: number) => boolean; // 区段（水平范围）在不在视野里
   featureTop: (x: number, y: number) => number; // 这一带地物（地面、树冠）顶大概多高，算镜头到区段的距离用
+  // 航线定级（试看，engine/voxel/航线定级.ts）：改判这一块细不细分。wantsSplit = 按门槛的结论，finerPixels = 细一级的一格在画面上几个像素；不给就照门槛
+  decide?: (level: number, i: number, j: number, wantsSplit: boolean, finerPixels: number) => boolean;
 };
 
 export const pickSections = (params: PickSectionsParams): SectionId[] => {
@@ -36,9 +38,13 @@ export const pickSections = (params: PickSectionsParams): SectionId[] => {
     if (dxy > params.farM) return;
     const top = params.featureTop(x0 + sizeM / 2, y0 + sizeM / 2);
     const dist = Math.max(1, Math.hypot(dxy, Math.max(0, cz - top)));
-    if (level > 0 && 2 ** (level - 1) / (dist * params.pixelAngle) >= params.splitPixels) {
-      for (let subJ = 0; subJ < 2; subJ++) for (let subI = 0; subI < 2; subI++) visit(level - 1, i * 2 + subI, j * 2 + subJ);
-      return;
+    if (level > 0) {
+      const finerPixels = 2 ** (level - 1) / (dist * params.pixelAngle);
+      const wantsSplit = finerPixels >= params.splitPixels;
+      if (params.decide ? params.decide(level, i, j, wantsSplit, finerPixels) : wantsSplit) {
+        for (let subJ = 0; subJ < 2; subJ++) for (let subI = 0; subI < 2; subI++) visit(level - 1, i * 2 + subI, j * 2 + subJ);
+        return;
+      }
     }
     out.push({ L: level, i, j });
   };
