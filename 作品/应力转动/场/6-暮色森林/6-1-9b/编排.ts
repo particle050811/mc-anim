@@ -15,7 +15,7 @@ import { track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { posToSec as songSec } from '@engine/audio/曲目.ts';
 import { ch6FlightMusic } from '../../../配乐/第六章飞行.ts';
-import { lineTable } from '../../../配音/台词轨.tsx';
+import { lineTable } from '../../../配音/台词表.ts';
 import * as P613 from '../6-1-3/编排.ts';
 import * as choreo619 from '../6-1-9/编排.ts';
 import { cameraAt as oneShotCamera, type Cam } from '../一镜到底/镜头.ts';

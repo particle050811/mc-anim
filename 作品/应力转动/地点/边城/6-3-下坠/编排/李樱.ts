@@ -7,7 +7,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { tick, impactTime, impactSegSec, segTable, liYingFall } from '../时间线.ts';
 import { sample, type Key } from '@engine/anim/anim.ts';
-import { lineTable } from '../../../../配音/台词轨.tsx';
+import { lineTable } from '../../../../配音/台词表.ts';
 import lipTable from 'asset:数据/配音/口型';
 import { landingPose, flipAngle as landingFlipAngle, flipHipHeight, touchdownSec } from '../../6-3-6/落地.ts';
 import { releasePose } from '../../6-3-3/下落攻击.ts';
