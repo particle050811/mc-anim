@@ -11,15 +11,17 @@
 // 重算顺序（导入包或修整包换了）：npm run 远景:主世界-116（只在修整包或种子变了时）→ 远景:中层 → 远景:细带（导入范围变了也要）→ 远景:交界（导入包每次重新烘焙后）→ 远景:海底（导入包换了、群系多了时）。
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
-import { fetchGunzip, fetchJsonIfAny, loadOnce } from '../core/数据源.ts';
+import { pageDataSource } from '../core/页面数据源.ts';
 import type { V3 } from '../model/parts.tsx';
 import { blockNames, blockProps, blockTint, voxelFromState } from './真实方块表.ts';
 import { useImportedTerrain, type LandmarkCutout, type ImportedTerrain, type FlattenArea } from './导入地形.ts';
 import { sectionCells } from './区段.ts';
-import { coarseHeightAt, coarseHeightFingerprint, type CoarseHeightMap } from './区段包.ts';
+import { coarseHeightAt, type CoarseHeightMap } from './区段包.ts';
 import { packDir } from './区段包位置.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
-import { waterFreezes, distantSection, distantBiome, distantTop, loadDistantGrid, type GroundCorrection, type DistantGrid } from './远景.ts';
+import { waterFreezes, distantSection, distantBiome, distantTop, readDistantGrid, type DistantGrid } from './远景.ts';
+import { readSeam, seamBasisMatches, seamCorrection, type Seam } from './交界修正.ts';
+import { fallbackHeightRange, fallbackSampler } from './远景兜底采样.ts';
 import { coarseSeaPlant } from './远景海底.ts';
 import { coarseGroundPlant } from './远景地面草.ts';
 
@@ -193,55 +195,20 @@ const mergeColumns = (gridA: VoxelGrid, gridB: VoxelGrid, pickB: Uint8Array): Vo
   return { nx: gridA.nx, ny: gridA.ny, nz, cell: cellM, origin: [gridA.origin[0], gridA.origin[1], k0 * cellM], vox, palette: palette, waterLevel: gridA.waterLevel };
 };
 
-// 交界修正（工具/导入/交界.ts 写）：16 米一格的 Int16（分米），场景坐标（导入包原点）；双线性取，格外是 0。依据：导入包粗高度图的指纹、远景各加密层块数
-type Seam = { x0: number; y0: number; cellSize: number; nx: number; ny: number; deltas: Int16Array; basis?: { coarseHeightFingerprint: string; farLayers: string[] } };
-// distantDir：远景包的版本目录（packDir）
-const loadSeam = (distantDir: string, packName: string) =>
-  loadOnce(`${distantDir}/交界.${packName}`, async (): Promise<Seam | null> => {
-    const meta = await fetchJsonIfAny<{ x0: number; y0: number; cell: number; nx: number; ny: number; basis?: Seam['basis'] }>(`${distantDir}/交界.${packName}.json`);
-    if (!meta) {
-      console.warn(`主世界地形：${distantDir} 里没有 交界.${packName}.json，交界不修（跑 工具/导入/交界.ts）`);
-      return null;
-    }
-    const deltas = new Int16Array(await fetchGunzip(`${distantDir}/交界.${packName}.bin.gz`));
-    return { x0: meta.x0, y0: meta.y0, cellSize: meta.cell, nx: meta.nx, ny: meta.ny, deltas: deltas, basis: meta.basis };
-  });
-const seamCorrection = (J: Seam, origin: number[]): GroundCorrection => (gx, gz) => {
-  const gridU = (gx - origin[0] - J.x0) / J.cellSize - 0.5;
-  const gridV = (origin[2] - gz - J.y0) / J.cellSize - 0.5;
-  const i = Math.floor(gridU), j = Math.floor(gridV);
-  if (i < -1 || j < -1 || i >= J.nx || j >= J.ny) return 0;
-  const at = (a: number, b: number) => (a < 0 || b < 0 || a >= J.nx || b >= J.ny ? 0 : J.deltas[b * J.nx + a] / 10);
-  const fu = gridU - i, fv = gridV - j;
-  const d00 = at(i, j), d10 = at(i + 1, j), d01 = at(i, j + 1), d11 = at(i + 1, j + 1);
-  return d00 + (d10 - d00) * fu + (d01 - d00) * fv + (d00 - d10 - d01 + d11) * fu * fv;
-};
-
 // 补粗级：导入的粗级补水面、水草、地面草花（照主世界导入量的表，见上）；暮色不补，导入那片和只画导入地形时一样。树高：竖直范围在远景最高的地面上再留多少米给树
 // 补充：导入范围外另一个导入包（同一个原点烘的，暮色远处地标的小块），主导入包没有的区段先取它、它也没有的列再用远景
 export type FarFallbackOptions = { fillCoarse: boolean; treeHeight: number; supplement?: ImportedTerrain };
 const overworldOptions: FarFallbackOptions = { fillCoarse: true, treeHeight: 26 };
 export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, seam: Seam | null, options: FarFallbackOptions = overworldOptions): Omit<OverworldTerrain, 'key' | 'farM'> => {
   // 交界修正是不是对着手上这版导入包、远景包算的：导入范围或加密层变了，旧修正修不到新交界
-  if (seam) {
-    const fingerprint = coarseHeightFingerprint(imported.coarse), layerSig = grid.layers.map((F) => `${F.name}:${F.tile.size}`).join(',');
-    if (seam.basis?.coarseHeightFingerprint !== fingerprint || seam.basis?.farLayers.join(',') !== layerSig)
-      console.warn(`主世界地形：交界修正（${grid.packName}/交界.*）不是按现在的导入包、远景包算的，交界会有台阶，重跑 npm run 远景:交界`);
-  }
+  if (seam && !seamBasisMatches(seam, imported.coarse, grid))
+    console.warn(`主世界地形：交界修正（${grid.packName}/交界.*）不是按现在的导入包、远景包算的，交界会有台阶，重跑 npm run 远景:交界`);
   const origin = imported.origin;
-  const [ox, oy, oz] = origin;
+  const oy = origin[1];
   const correction = seam ? seamCorrection(seam, origin) : undefined;
   const coarseHeights = imported.coarse;
   const baseSource = imported.source;
-  // 远景这一处的地物顶（场景 z）：地面、水面，不算树（只给 选区段 估距离、给 地形跟随 当地面用，树冠差几米不要紧）
-  const distantGround = (x: number, y: number) => {
-    const groundY = distantTop(grid, x + ox, oz - y) + (correction ? correction(x + ox, oz - y) : 0);
-    return Math.max(Math.round(groundY) + 1 - oy, grid.seaLevel - oy);
-  };
-  const groundAt = (x: number, y: number) => {
-    const coarseTop = coarseHeightAt(coarseHeights, x, y);
-    return coarseTop === -Infinity ? distantGround(x, y) : coarseTop;
-  };
+  const groundAt = fallbackSampler(coarseHeights, grid, seam, origin);
   const source: VoxelSource = {
     采样: (x, y, out) => {
       out.z = groundAt(x, y);
@@ -282,12 +249,9 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
     toScene: baseSource.toScene,
     transferOwnership: true, // 导入的体素块（来源 转交）就地改完交出去，远景、并列都是新建的
   };
-  // 竖直范围：导入的（维度下界 ～ 最高的方块顶）和远景网格最高处 + 最高的树
-  let maxHeight = -Infinity;
-  for (const height of grid.height) if (height > maxHeight) maxHeight = height;
   return {
     source: source,
-    heightRange: [imported.heightRange[0], Math.max(imported.heightRange[1], options.supplement?.heightRange[1] ?? -Infinity, maxHeight + 1 - oy + options.treeHeight)],
+    heightRange: fallbackHeightRange(imported.heightRange, grid, origin, options.treeHeight, options.supplement?.heightRange[1]),
     位置: imported.位置,
     ground: groundAt,
     imported: imported,
@@ -313,7 +277,7 @@ export const useDistantFallbackTerrain = (packName: string, distantPack: string,
   const [handle] = useState(() => delayRender(`${keyPrefix}地形：取 ${distantDir}`));
   const released = useRef(false);
   useEffect(() => {
-    Promise.all([loadDistantGrid(distantDir, distantPack), withSeam ? loadSeam(distantDir, packName) : null])
+    Promise.all([readDistantGrid(pageDataSource(), distantDir, distantPack), withSeam ? readSeam(pageDataSource(), distantDir, packName) : null])
       .then(setGridAndSeam)
       .catch((e) => cancelRender(e));
   }, [distantDir, distantPack, packName, withSeam]);

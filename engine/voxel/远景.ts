@@ -21,7 +21,7 @@ import type { VoxelGrid, PaletteEntry } from './生成.ts';
 import { distantAreaTop, distantBiome, distantPoint, distantTop, type DistantGrid } from './远景网格.ts';
 import { biomeSetups, biomeTemperature, defaultBiome, grassBlock, gravel, oceanBiomes, sand, snowyGrass, steepSlope, stone, twilightBiomeSetups, twilightDarkCanopy, waterFreezes, snowCoverAt, type BiomeSetup, type TreeKind } from './远景群系.ts';
 
-export { distantAreaTop, distantBiome, distantTop, loadDistantGrid, type DistantGrid } from './远景网格.ts';
+export { distantAreaTop, distantBiome, distantTop, readDistantGrid, type DistantGrid } from './远景网格.ts';
 export { biomeTemperature, waterFreezes } from './远景群系.ts';
 
 // 群系的设定：主世界、暮色各一张表，群系 id 带命名空间，不会撞

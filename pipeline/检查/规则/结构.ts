@@ -151,7 +151,7 @@ const isAssetDirKey = (n: ts.Node) => {
 };
 
 /** 交界.json 自己的 依据 字段（粗高度指纹，真的要读），不是时刻的说明 */
-const basisReadable = new Set(['engine/voxel/主世界地形.ts']);
+const basisReadable = new Set(['engine/voxel/交界修正.ts']);
 /** 依据: x.依据、依据: x.依据 ?? ''：resolveEvents、arrangeSegs 一路往下传，不算读 */
 const isPassThroughBasis = (n: ts.Node) => {
   const outerNode = ts.isBinaryExpression(n.parent) && n.parent.left === n ? n.parent.parent : n.parent;

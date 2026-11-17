@@ -4,7 +4,7 @@
 //   加密的两层（工具/选种/远景加密.mjs）：中层（远景.中.*）导入范围 15 km 内的陆地按 16 米一格，细带（远景.细.*）导入范围外 1 km 内按 8 米一格，交界两边的起伏接得上；
 //   每层存和下面各层的差，这里按层加上去。交界高差核对用 工具/导入/交界.ts。
 // 群系按最近的网格点取，取之前把坐标扭一下，边不是 32 米的直角台阶（`distantBiome`）。网格外面当深海（海底 y 30）：远景包已经比镜头看得到的范围大一圈。
-import { fetchGunzip, fetchJson, fetchJsonIfAny, loadOnce } from '../core/数据源.ts';
+import type { DataSource } from '../core/数据读取.ts';
 import { hash2, simplex2 } from '../core/噪声.ts';
 
 export type DistantGrid = {
@@ -31,23 +31,24 @@ export type DistantGrid = {
 export type DetailLayer = { name: string; step: number; tileEdge: number; n: number; tile: Map<number, number>; 差: Int16Array };
 
 const buildHint = '先跑 npm run 远景:主世界-116（工具/选种/远景包.mjs）';
-// dir：远景包的版本目录（lib/体素/区段包位置.ts 的 packDir），各文件都从这一版取
-export const loadDistantGrid = (dir: string, packName: string): Promise<DistantGrid> =>
-  loadOnce(`${dir}/远景`, async () => {
-    const meta = await fetchJson<{ x0: number; z0: number; step: number; nx: number; nz: number; seaLevel: number; biomeNames: string[]; biomeTemps: number[]; surfaceNames?: string[] }>(`${dir}/远景.json`, buildHint);
-    const [heightBuf, biomeBuf] = await Promise.all([fetchGunzip(`${dir}/远景.高.bin.gz`, buildHint), fetchGunzip(`${dir}/远景.群.bin.gz`, buildHint)]);
+// src：数据源（页面钩子传 pageDataSource()，Node 传 nodeDataSource()）；dir：远景包的版本目录（engine/voxel/区段包位置.ts 的 packDir），各文件都从这一版取。
+// await 的先后（先 远景.json，再高、群并取，再地表三张，再逐层加密层）和请求数不要动：页面上微任务的先后跟着变
+export const readDistantGrid = (src: DataSource, dir: string, packName: string): Promise<DistantGrid> =>
+  src.once(`${dir}/远景`, async () => {
+    const meta = await src.json<{ x0: number; z0: number; step: number; nx: number; nz: number; seaLevel: number; biomeNames: string[]; biomeTemps: number[]; surfaceNames?: string[] }>(`${dir}/远景.json`, buildHint);
+    const [heightBuf, biomeBuf] = await Promise.all([src.gunzip(`${dir}/远景.高.bin.gz`, buildHint), src.gunzip(`${dir}/远景.群.bin.gz`, buildHint)]);
     // 暮色远景包多的几张（远景.json 写了 地表名 才有，主世界包不取）
     const extra = meta.surfaceNames
-      ? await Promise.all([fetchGunzip(`${dir}/远景.地表.bin.gz`), fetchGunzip(`${dir}/远景.冠顶.bin.gz`), fetchGunzip(`${dir}/远景.冠底.bin.gz`)])
+      ? await Promise.all([src.gunzip(`${dir}/远景.地表.bin.gz`), src.gunzip(`${dir}/远景.冠顶.bin.gz`), src.gunzip(`${dir}/远景.冠底.bin.gz`)])
       : null;
     const layers: DetailLayer[] = [];
     for (const layerName of ['中', '细']) {
-      const layerMeta = await fetchJsonIfAny<Parameters<typeof buildDetailLayer>[1]>(`${dir}/远景.${layerName}.json`);
+      const layerMeta = await src.jsonIfAny<Parameters<typeof buildDetailLayer>[1]>(`${dir}/远景.${layerName}.json`);
       if (!layerMeta) {
         console.warn(`远景：${packName} 没有${layerName === '中' ? '中层' : '细带'}（远景.${layerName}.json），跑 npm run 远景:${layerName === '中' ? '中层' : '细带'}`);
         continue;
       }
-      const deltas = new Int16Array(await fetchGunzip(`${dir}/远景.${layerName}.bin.gz`, buildHint));
+      const deltas = new Int16Array(await src.gunzip(`${dir}/远景.${layerName}.bin.gz`, buildHint));
       layers.push(buildDetailLayer(layerName, layerMeta, deltas));
     }
     const grid: DistantGrid = { packName, x0: meta.x0, z0: meta.z0, step: meta.step, nx: meta.nx, nz: meta.nz, seaLevel: meta.seaLevel, height: new Int16Array(heightBuf), biomeIndex: new Uint8Array(biomeBuf), biomeNames: meta.biomeNames, biomeTemperature: meta.biomeTemps, layers: layers };
