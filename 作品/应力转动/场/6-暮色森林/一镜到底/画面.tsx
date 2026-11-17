@@ -180,17 +180,17 @@ const isNear = (landmark: TwilightLandmarkName, camPos: number[], maxDist = 1600
   return Math.hypot(origin[0] - camPos[0], origin[1] - camPos[1]) < maxDist;
 };
 
-// 一帧（画面时间 `g` 秒，0 = 6-1-3 末帧）。机位：给了就用它（核对用的静帧），不给就按 镜头.ts。`ahead`：往后 dt 秒的机位（体素世界按航线提前备区段用），不给时没给机位就按 镜头.ts、给了机位就不往后看
+// 一帧（画面时间 `g` 秒，0 = 6-1-3 末帧）。机位：给了就用它（核对用的静帧），不给就按 镜头.ts。`ahead`：航线（这一帧的航线秒和按航线秒取机位，体素世界按航线提前备区段用，飞行镜头.tsx 的 `FlightRoute`），不给时没给机位就按 镜头.ts、给了机位就不往后看
 // 级别：见 lib/渲染级别.ts。`像素`、`远`、`dpr`（画布超采样倍数）不给就用这一级的（关键帧级超采样 1，配 --scale=4 出 5120×2880）。
 // 屏幕AO：体素地形的屏幕空间环境光遮蔽（lib/体素/屏幕AO.tsx），默认开
 // `tweakRiders`：在这一帧的骑手姿势上再改（6-1-9b 落地后接着一镜到底末帧往下演），不给就照 `ridersAt` 原样
 // `extra`：另外画进场景的东西（场景坐标 Z 朝上）；`loot={false}` 不画战利品箱和掉落物（封面.tsx）
 // `farView`：超远景（暮色新世界/超远景.ts），不给不开；6-穿塔斩首领（`OnerSegment`）给，6-落地后、封面不给（用户 11-07 只定了两个飞行段）
 export type Riders = ReturnType<typeof ridersAt>;
-export const OnerFrame: React.FC<{ g: number; cam?: Cam; ahead?: (dtSec: number) => Cam; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: TwilightFarView } & Partial<LevelParams>> = ({
+export const OnerFrame: React.FC<{ g: number; cam?: Cam; ahead?: { sec: number; at: (sec: number) => Cam }; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: TwilightFarView } & Partial<LevelParams>> = ({
   g,
   cam: camOverride,
-  ahead = camOverride ? undefined : (dt: number) => cameraAt(g + dt),
+  ahead = camOverride ? undefined : { sec: g, at: cameraAt },
   level: level = '视频',
   screenAo: AO = true,
   tweakRiders,

@@ -28,8 +28,11 @@ const placeCamera = (cam: THREE.PerspectiveCamera, camPose: CamPose, aspect: num
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
 };
-// ahead：往后 dt 秒的机位（各段 编排.ts 查表算的，同 c 的来处），给了体素世界就按航线提前备区段（engine/voxel/世界.tsx 的 `useLookahead`），不改画面
-export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahead?: (dtSec: number) => CamPose }> = ({ c: camPose, near = 0.05, far = 150000, ahead }) => {
+// ahead：航线。sec = 这一帧的航线秒，at = 按航线秒取机位（各段 编排.ts 查表算的，同 c 的来处；只许看航线秒），
+// 给了体素世界就按航线提前备区段（engine/voxel/世界.tsx 的 `useLookahead`），不改画面；试看 航线定级 也靠它。
+// range = 这条航线连着飞的起止秒，一条航线拆成几截拼时给（见 世界.tsx 的 `Route`）
+export type FlightRoute = { sec: number; at: (sec: number) => CamPose; range?: readonly [number, number] };
+export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahead?: FlightRoute }> = ({ c: camPose, near = 0.05, far = 150000, ahead }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
@@ -37,13 +40,16 @@ export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahea
   placeCamera(cam, camPose, size.width / size.height, near, far);
   useLookahead(
     camera,
-    ahead &&
-      ((dtSec, target) => {
-        const pose = ahead(dtSec);
+    ahead && {
+      sec: ahead.sec,
+      range: ahead.range,
+      at: (sec, target) => {
+        const pose = ahead.at(sec);
         target.aspect = size.width / size.height; // R3F 只替它自己的相机设
         placeCamera(target, pose, size.width / size.height, near, far);
         return pose.pos;
-      }),
+      },
+    },
   );
   return null;
 };
