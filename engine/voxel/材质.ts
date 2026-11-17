@@ -38,6 +38,7 @@ import { uploadVertices, vertexAttribute, returnBuffer, type VertexArray } from 
 import { sectionDisplacement, displacementDecl, displaceVertex, quadIndices } from './批绘制.ts';
 import { patchWaterShader } from './水面.ts';
 import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
+import { debugShaderOn, patchDebugShader } from './调试.tsx';
 
 const VERT_HEAD = `
 ${displacementDecl}
@@ -157,6 +158,8 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     if (materialClass === '水') patchWaterShader(sh);
     // 树叶逆光透出暖色，和导出网格的树叶同一段（lib/树叶透光.ts）；镂空里不染色的（玻璃之类）不算
     if (materialClass === '镂空' || materialClass === '实心树叶') patchLeafShader(sh, tintedLeafExpr('vCol'));
+    // 地形调试（试看 区域、区域遮罩、级别遮罩、材质遮罩、按级着色、世界网格，调试.tsx）：没开时不改源码
+    if (debugShaderOn()) patchDebugShader(sh, materialClass);
   };
   mat.customProgramCacheKey = () => `体素-${materialClass}`;
   // 屏幕空间 AO（lib/体素/屏幕AO.tsx）：方块压暗（同 Voxy 只压 LOD 地形）；花草不挡也不压（游戏平滑光照里花草本来也不挡光）；水半透明，AO 之后再画
