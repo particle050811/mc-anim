@@ -18,7 +18,7 @@
 // （走跑收小腿、起跳蓄力、空中收腿、落地缓冲、剑招、挣扎、挨打腿软）；原版的拍子（摆腿相位、空手挥手 6 刻、受伤 10 刻、死亡 20 刻）不动。
 import type { PartPose } from '@engine/model/实体模型.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { steveLookAt, stevePose, steveSize, STEVE } from '@库/角色/史蒂夫.tsx';
+import { steveLookAt, stevePose, steveSize, STEVE } from '@库/角色/史蒂夫姿势.ts';
 import { waveProgress, waveParts } from '@库/角色/史蒂夫挥手.ts';
 import { vanillaToppleAngle } from '@库/特效/原版死亡.tsx';
 import type { MoveName } from './剑招.ts';

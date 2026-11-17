@@ -10,7 +10,7 @@ import { definePerformance, type TiltSettings, type PerformanceBar } from '../..
 import { leanBackEnvelope, type SteveState } from '../../角色/史蒂夫反应.ts';
 import { defaultOpenClose } from '../../界面/分圈.ts';
 import type { MultiRingParams } from '../../界面/多圈轮盘.tsx';
-import { STEVE, steveSize } from '@库/角色/史蒂夫.tsx';
+import { STEVE, steveSize } from '@库/角色/史蒂夫姿势.ts';
 import { cagePerformanceDefaults, type CagePerformanceSetting } from '../../特效/炼狱结界演出状态.ts';
 import { fireKey, type Launch, type SceneCtx } from './出手表.ts';
 import { act2EndSteveSec } from './开盘拍.ts';

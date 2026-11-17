@@ -5,7 +5,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
-import { vanillaWalk } from '@库/角色/史蒂夫.tsx';
+import { vanillaWalk } from '@库/角色/史蒂夫姿势.ts';
 import type { MagicalWineFoxAllExpression, MagicalWineFoxExPose } from '@库/角色/魔法酒狐新动作.ts';
 import { CREEPER, type CreeperPose } from '@库/生物/苦力怕.tsx';
 import { fps, oneFrameSec, legacyFrameSec } from '../../分镜/时间.ts';
