@@ -1,7 +1,7 @@
 // 下落物理.ts 的 solveFall 是纯函数：不靠哪个模块先调 setter 填状态，单独 import 就能求出撞击时刻。
 // 基准是 11-17 拆之前的旧流程（时间线.ts 的 setTakeoff → setImpact → 两轮 setAim、setImpact，原来由 编排/李樱.ts 在模块顶层调）用同一组输入算的，要逐位相同。
 // 输入取真的起跳髋、打击深度、地面、落点；锤头用「髋 + 固定偏移」代替骨架算的（真骨架要模型资产）。
-// 时间线.ts 本身单独 import 的隔离测试等 vitest 认得 asset: 以后补（它的闭包里有模型、贴图）。
+// 时间线.ts 和只引它的模块单独 import 算得对，见 时间线.test.ts。
 import { describe, expect, it } from 'vitest';
 import { solveFall, at, type FallInput } from './下落物理.ts';
 
