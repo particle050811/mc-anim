@@ -22,9 +22,10 @@ import type { V3 } from '../model/parts.tsx';
 import { pickDirs, backlitDirs, faceGroupMesh, releaseVoxelMeshes, voxelMaterial, type VoxelMesh, type MaterialClass } from './材质.ts';
 import { buildBatchItem, releaseBatchItems, clearBatchState, ClassBatch, shadowMaterial, type BatchItem } from './批绘制.ts';
 import { clearBufferPool } from './容器池.ts';
+import { useTerrainDebug, TerrainMarkers } from './调试.tsx';
 import { posScale, crossGroup, visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
-import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
+import { sectionKey, sectionBounds, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 
 // 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）
@@ -224,7 +225,10 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   const { cache, group } = world;
   // 有的镜头组件摆完没更新世界矩阵，不更新就要等下一次画图，挑区段会用上一帧的视野：硬切或隔帧出静帧时缺地形（用户 10-31 定修）
   camera.updateMatrixWorld();
-  const inView = makeFrustumTest(camera);
+  // 地形调试（试看参数，调试.tsx）：下面挑区段调的 pickSections 是它包过一层的；一项没开时就是 区段.ts 的原函数，别的几项也都是空的
+  const debug = useTerrainDebug(source, camera);
+  const pickSections = debug.pickSections;
+  const inView = debug.inView ?? makeFrustumTest(camera);
   // 区段往背着光的方向扫 投影余量 米以后还碰得到视野，它的影子就可能落进画面
   const lh = shadowLightDir ? Math.hypot(shadowLightDir[0], shadowLightDir[1]) : 0;
   const sx = lh ? (-shadowLightDir![0] / lh) * shadowMarginM : 0;
@@ -251,6 +255,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     world.上 = world.本;
     world.本 = { 位: _position.clone(), dirQuat: _orientation.clone(), 心: [...camPos], projection: camera.projectionMatrix.clone(), pixelAngle: pixelAngle };
   }
+  debug.logPick(list);
   const putEntry = (section: SectionId, entry: Entry) => {
     const k = sectionKey(section);
     if (cache.has(k)) return;
@@ -367,7 +372,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     entry.used = ++world.clock;
     entry.kept.used = keptStamp;
     const skirts = skirtFlags(section);
-    const facingDirs = visibleDirs(entry.box, camPos, skirts);
+    const facingDirs = debug.allFacing ? [...allDirs, ...skirts] : visibleDirs(entry.box, camPos, skirts);
     const allWithSkirts = [...allDirs, ...skirts]; // 裙边全画时也照邻居挑
     const farPlants = entry.plants !== null && distToBox(entry.box, camPos) > plantFarM;
     for (const [classNo, item] of entry.items) {
@@ -382,7 +387,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   }
   // 这一帧没有哪一类的面，那一类的材质就不在场景里（屏幕AO 按场景里有哪些材质定怎么画）
   for (const batch of batches) if (batch?.items.length) group.add(batch);
-  if (shadowBatch.items.length) group.add(shadowBatch);
+  if (shadowBatch.items.length && !debug.noShadow) group.add(shadowBatch);
   // 这一帧用到的块不能被清掉
   if (world.faceCount > maxCachedFaces) {
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
@@ -453,5 +458,12 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       if (toPrefetch.length && toPrefetch.length <= prefetchMaxSections) prefetch(worldKey, source, toPrefetch);
     }, 0);
   });
-  return <primitive object={group} />;
+  return debug.markers.length ? (
+    <>
+      <primitive object={group} />
+      <TerrainMarkers markers={debug.markers} />
+    </>
+  ) : (
+    <primitive object={group} />
+  );
 };

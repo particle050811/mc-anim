@@ -17,6 +17,7 @@
 import * as THREE from 'three';
 import { SunLightShadow } from 'three/examples/jsm/lights/SunLightShadow.js';
 import { smoothstep } from '../core/数学.ts';
+import { trialParams } from '../core/试看.ts';
 
 const cascadeCount = 3; // 级数：three 的 SunLightShadow 建了两级、着色器写死 SUN_LIGHT_CASCADES 2，这里补第三级、改着色器的定义（见构造和文件末）
 const overlapFrac = 0.1; // 每级末尾和下一级重叠混合的比例（同原版）
@@ -56,6 +57,10 @@ const _corner = [0, 1, 2, 3, 4, 5, 6, 7].map(() => new THREE.Vector3());
 const _centers = Array.from({ length: cascadeCount }, () => new THREE.Vector3());
 const _radii = new Array<number>(cascadeCount).fill(0);
 const _minZ = new Array<number>(cascadeCount).fill(0);
+
+// 试看 `阴影日志`：级联的切分、各级半径、一像素几米、中心有变就打一行进终端（查影子一帧一跳是不是哪一级跳了档、挪了像素格）；不改画面
+const shadowLogOn = trialParams<boolean>('阴影日志') === true;
+let lastShadowLog = '';
 
 export class CascadedShadow extends SunLightShadow {
   splitDist = 300; // 米，没取整的（取整在这里做）
@@ -176,6 +181,22 @@ export class CascadedShadow extends SunLightShadow {
       cascadeCam.updateProjectionMatrix();
       cascadeCam.updateMatrixWorld();
       internals._updateMatrix(cascadeCam, internals._matrices[i], internals._frustums[i], internals._viewports[i]);
+    }
+    if (shadowLogOn) {
+      const r1 = (x: number) => Math.round(x * 10) / 10;
+      const line = JSON.stringify({
+        '切分': r1(this.splitDist),
+        '远': r1(far),
+        '各级到': [splits[1], splits[2], splits[3]].map(r1),
+        '着色交界': r1(internals._cascadeData[cascadeCount - 2]!.y),
+        '半径': _radii.map(r1),
+        '像素米': _radii.map((r) => Math.round(((2 * r) / resX) * 1000) / 1000),
+        '中心': internals._cameras.map((c) => [r1(c.position.x), r1(c.position.y), r1(c.position.z)]),
+        '远级半影': r1(internals._cascadeData[cascadeCount - 1]!.w),
+      });
+      // 用 warn：still、film 只把浏览器的 warn、error 打到终端
+      if (line !== lastShadowLog) console.warn(`[阴影] ${line}`);
+      lastShadowLog = line;
     }
   }
 }

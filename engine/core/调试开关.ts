@@ -24,7 +24,7 @@ export type DebugSwitch = {
   readonly keys?: readonly string[];
   /** 落点：读它、实现它的文件 */
   readonly files: readonly string[];
-  /** 还没合进 main：在哪条分支或标签上 */
+  /** 还没合进 main：在哪条分支或标签上；没人做过的写「还没做」 */
   readonly pending?: string;
   readonly note?: string;
 };
@@ -43,8 +43,8 @@ const off = <N extends string>(name: N, purpose: string, files: string[], extra:
   files,
   ...extra,
 });
-const voxelPending = '分级色调';
-// 地形调试的几项（分支 分级色调 的 engine/voxel/调试.tsx）
+const voxelPending = '还没做';
+// 地形调试的几项（engine/voxel/调试.tsx）
 const terrainDebug = <N extends string>(name: N, purpose: string, format: string, keys?: string[]): Named<'trial', N> => ({
   name,
   kind: 'trial',
@@ -55,12 +55,11 @@ const terrainDebug = <N extends string>(name: N, purpose: string, format: string
   format,
   ...(keys ? { keys } : {}),
   files: ['engine/voxel/调试.tsx'],
-  pending: '分级色调',
-  note: '地形调试，docs/地形调试.md（在那条分支上）',
+  note: '地形调试，docs/地形调试.md',
 });
 // 开着远雾的镜头（公里级飞行，如 6-穿塔斩首领）远雾是替换不是叠加（高度雾.ts 的 fogPart），单关这几项画面逐字节不变
 const replacedByFarFog = '开着远雾的镜头被远雾整个替换，单关它画面不变，要连 远雾 一起关';
-const voxelNote = '等 分级色调 合并后接：分级色调、下界光体 两条分支正在改 engine/voxel/，现在动会冲突';
+const voxelNote = '等 航线定级、下界光体 合并后做：两条分支正在改 engine/voxel/，现在动会冲突。地形的阴影、AO、台阶并色现在用试看 分级色调 关';
 
 export const debugSwitches = [
   // ---- 试看参数（REMOTION_ANIM_TRIAL 的键）----
@@ -157,22 +156,50 @@ export const debugSwitches = [
   {
     name: '分级色调',
     kind: 'trial',
-    purpose: '查体素地形各级色调差：定级、真几何、关阴影、AO、台阶并色',
+    purpose: '查体素地形各级色调差：一小块地定成某一级（定级，只在定级框里）、真几何、关阴影、AO、台阶并色',
     changesPicture: true,
     inFingerprint: false,
     readers: all,
-    format: '{"定级"?: 级, "真几何"?: true, "阴影"?: false, "AO"?: "关"|"满", "并色"?: false}',
-    keys: ['定级', '真几何', '阴影', 'AO', '并色'],
+    format: '{"定级"?: 级, "定级框"?: [[[x,z],[x,z]], …], "场景"?: true, "真几何"?: true, "阴影"?: false, "AO"?: "关"|"满", "并色"?: false}',
+    keys: ['定级', '定级框', '场景', '真几何', '阴影', 'AO', '并色'],
     files: ['engine/voxel/分级色调.ts'],
-    pending: '分级色调',
+    note: '地形调试，docs/地形调试.md。树叶按占比、树叶洞 两个键是修法，没进主线，在标签 实验/切级跳变 上',
   },
   terrainDebug('标记', '画面上按世界坐标标点、名字和距离', '[{"名", "位": [x,y,z]|[x,z], "色"?, "光柱"?, "场景"?}]'),
-  terrainDebug('区域', '世界里的多边形：地形上描边、淡淡染色', '[{"名", "点": [[x,z], …], "色"?}]'),
+  terrainDebug('区域', '世界里的多边形：地形上描边、淡淡染色；分级色调 的 定级 没给 定级框 时拿它的外接框', '[{"名", "点": [[x,z], …], "色"?}]'),
   terrainDebug('区域遮罩', '出遮罩图：区域里写区域色、区域外纯黑', 'true'),
+  terrainDebug('级别遮罩', '出级别遮罩图：每个地形像素写成它那一级的颜色', 'true'),
+  terrainDebug('材质遮罩', '出材质遮罩图：树叶绿、实心棕、花草黄、水蓝', 'true'),
   terrainDebug('按级着色', '每个区段按级别叠一种颜色', 'true 或 0～1 的不透明度'),
   terrainDebug('世界网格', '地形上按游戏坐标每隔这么多米画线', '间距（米）'),
   terrainDebug('调试镜头', '只挪画面用的镜头，挑区段、定级别照原镜头', '{"位": [x,y,z], "看": [x,y,z]}', ['位', '看']),
   terrainDebug('加载视点', '挑区段、定级别改按这一点算，镜头不动', '{"位": [x,y,z], "远"?: 米}', ['位', '远']),
+  { ...terrainDebug('切级日志', '每帧一行进终端：镜头离地、各级交界离镜头多远和俯角、和上一帧比换了级的区段（按游戏坐标）', 'true'), changesPicture: false },
+  { name: '阴影日志', kind: 'trial', purpose: '级联阴影的切分、各级半径、一像素几米、中心有变就打一行进终端：查影子一帧一跳是不是哪一级跳了档', changesPicture: false, inFingerprint: false, readers: all, format: 'true', files: ['engine/light/级联阴影.ts'], note: '地形调试，docs/地形调试.md' },
+  {
+    name: '过渡带',
+    kind: 'trial',
+    purpose: '地形切级不整块跳：每一级交界前留一条带（离镜头 界 × 比例 到 界），带里粗一级叠在细一级上按距离渐变着混',
+    changesPicture: true,
+    inFingerprint: false,
+    readers: all,
+    format: 'true（比例 0.75）或 0～1 的比例',
+    files: ['engine/voxel/过渡带.ts'],
+    pending: '标签 实验/切级跳变',
+    note: '修法，没进主线（用户 11-17 定飞行镜头用航线定级）；结论和什么时候值得捡回来见 docs/地形调试.md「切级跳变调查」',
+  },
+  {
+    name: '阴影切分平滑',
+    kind: 'trial',
+    purpose: '级联阴影的切分换成前后一段时间的加权平均，中、远两级的交界跟没取整的切分走：离地高在档口来回跨时影子不整圈跳',
+    changesPicture: true,
+    inFingerprint: false,
+    readers: all,
+    format: 'true（前后各 0.5 秒）或 秒数',
+    files: ['engine/light/级联阴影.ts', '作品/应力转动/地点/边城/6-2-5/飞越主世界.tsx'],
+    pending: '标签 实验/切级跳变',
+    note: '修法，没进主线（用户 11-17 定飞行镜头用航线定级）；结论和什么时候值得捡回来见 docs/地形调试.md「切级跳变调查」。标签上只有 6-2-5 飞越主世界 接了；和地形定级无关，可以单独捡',
+  },
 
   // ---- 「关」能关的项（engine/voxel/ 以外的先做）----
   off('高度雾', '暮色的解析高度雾（材质和屏幕 AO 共用的 uniform 浓度置 0）', ['engine/light/高度雾.ts'], { note: replacedByFarFog }),

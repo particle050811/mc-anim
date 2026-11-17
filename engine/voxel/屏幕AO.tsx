@@ -38,6 +38,7 @@ import { DIR_FOG_GLSL, FAR_FOG_ATMO_GLSL, FAR_FOG_GLSL, HEIGHT_FOG_GLSL, SKY_FOG
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms } from '../light/大气.ts';
 import { PHOTON_CLOUD_COMMON_GLSL, PHOTON_CLOUD_SHADOW_GLSL, cloudUniforms, updateCloudUniforms } from '../light/大气/云.ts';
 import { aoPassUniform } from './材质.ts';
+import { aoSkippedForMask } from './调试.tsx';
 import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, sceneDepthNeeded, type MidPassContext } from './中间步骤.ts';
 import { renderInput } from '../core/渲染设置.ts';
@@ -166,7 +167,15 @@ void main() {
   vec2 uv = gl_FragCoord.xy * px;
   vec4 col = texture2D(tColor, uv);
   float d = depthAt(uv);
-  float cover = 1.0 - col.a;
+  float cover = 1.0 - col.a;${aoSkippedForMask() ? `
+  // 地形调试的遮罩图（区域遮罩、级别遮罩、材质遮罩，调试.tsx）：遮罩色原样留着，不压 AO、不动雾和云影
+#ifdef AO_BLEND
+  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+#else
+  gl_FragColor = vec4(col.rgb, 1.0);
+  gl_FragDepth = d;
+#endif
+  return;` : ''}
 #ifdef AO_BLEND
   vec3 add = vec3(0.0);
   float keepK = 1.0;

@@ -157,6 +157,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   const unrecorded = new Set<string>();
   const source: VoxelSource = {
     采样: sample,
+    toScene: (g) => [g[0]! - ox, oz - g[2]!, g[1]! - oy],
     sections: (section) => {
       if (!hasSection(pack.coarseHeights, section)) return null;
       const k = sectionKey(section);
