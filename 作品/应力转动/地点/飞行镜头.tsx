@@ -59,8 +59,8 @@ export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahea
 // 主世界日光投影：照暮色主光（lib/暮色光照.tsx）的做法，three 的 `SunLight` + 三级级联软阴影（lib/级联阴影.ts）。
 // 远端取能见度的 1.5 倍、不超过 3 公里，按四分之一个八度取整（级联大小不每帧变，影子边不游动），最后 40% 淡掉；切分在 max(300, 2 × 离地) 米。
 // 体素地形要投影得在 `VoxelWorld` 上给同一个 `shadowLightDir`（见 lib/体素/材质.ts），画布要开 shadows。
-// 对比：--props='{"overworldShadow":false}' 换回不投影的日光
-export const overworldShadowOn = (renderInput() as { overworldShadow?: boolean }).overworldShadow !== false;
+// 对比：--props='{"overworldShadow":false}' 换回不投影的日光。用到时才读渲染输入（不在模块顶层读成常量），Node 里 import 不用先设好渲染输入
+export const overworldShadowEnabled = () => (renderInput() as { overworldShadow?: boolean }).overworldShadow !== false;
 export const overworldShadowFar = (visibility: number) => quarterOctaveCeil(Math.min(visibility * 1.5, 3000));
 export const OverworldSunLight: React.FC<{ sun?: [number, number, number]; shadowFar: number; aboveGround: number; intensity?: number }> = ({ sun = SUN_OW, shadowFar: shadowFar, aboveGround: heightAgl, intensity: intensity = overworldMix.direct }) => {
   const light = useMemo(() => {
@@ -102,7 +102,7 @@ export const FlightSky: React.FC<{ camPos: number[]; sun?: [number, number, numb
       <group position={camPos as [number, number, number]}>
         <SkyDome sun={sun} />
       </group>
-      {shadow && overworldShadowOn ? (
+      {shadow && overworldShadowEnabled() ? (
         <OverworldSunLight sun={sun} shadowFar={shadow.shadowFar} aboveGround={shadow.aboveGround} />
       ) : (
         <>
