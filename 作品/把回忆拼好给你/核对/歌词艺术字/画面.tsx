@@ -4,6 +4,7 @@
 // 分屏、归隐：第 13、14 句那两段的场画这一帧，歌词叠在场自己的后期里面（同 2-时差、2-归隐 的画面）。
 // 前四种底是定住的一帧，只有歌词按视图的帧走。
 import type React from 'react';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 import { FilmPost } from '@engine/三渲二/整片后期.tsx';
 import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
 import { PuffCharacter, PuffBubble } from '../../场/2-门口/哈气.tsx';
@@ -18,7 +19,6 @@ import { palette } from '../../色板.ts';
 import { RuneLyric, runeLyricDefault, type RuneLyricStyle } from '../../界面/符文歌词.tsx';
 import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
 import { views, type BottomBackdrop } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1));
 
@@ -39,7 +39,7 @@ const fixedBottoms: Record<Exclude<BottomBackdrop, '分屏' | '归隐'>, { tone:
 const lyricsLayer = (frame: number, outlineColor: string) => <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor } satisfies RuneLyricStyle} frame={frame} />;
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   if (v.bottomBackdrop === '分屏') {
     // 同 2-时差：描边色取服务器那半的调子
     const splitState = SplitState(v.frame);

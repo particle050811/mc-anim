@@ -1,15 +1,14 @@
 // 魔杖细做核对的画面：原版下界魔杖和细做的三个候选。灰底看形和料，暗红底（下界的雾色，光照 核对/封面草稿 的配法）看在成片背景上认不认得出。视图表在 视图.ts。
-// 场景内容放在 rotation [−π/2, 0, 0] 的 group 里（场景 Z 朝上 → three Y 朝上）；杖空间 Y 朝上，立在场景里再绕 X 转 +90 度。
+// 杖空间 Y 朝上，立在场景里再绕 X 转 +90 度。
 import { useThree } from '@react-three/fiber';
-import { ThreeCanvas } from '@remotion/three';
 import React, { useMemo } from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
+import { CheckCanvas, CheckGround, NeutralLights, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import type { Cam } from '@engine/core/机位.ts';
 import { placeCamera } from '@engine/core/three换算.ts';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { definePicture } from '@engine/段/段画面.tsx';
-import { useViewIndex } from '@engine/段/时间.tsx';
 import { GirlYaBoLun, stand } from '../../角色/娘化亚波伦.tsx';
 import { NetherWand } from '../../物品/下界魔杖.tsx';
 import { refinedStaffVariant, refinedVariants, RefinedWand } from '../../物品/下界魔杖细做.tsx';
@@ -30,10 +29,7 @@ const PlaceRig: React.FC<{ cameraRig: Cam }> = ({ cameraRig }) => {
 
 const Lamp: React.FC<{ bottomBackground: View['bottomBackground'] }> = ({ bottomBackground }) =>
   bottomBackground === '灰' ? (
-    <>
-      <ambientLight intensity={0.55 * Math.PI} />
-      <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
-    </>
+    <NeutralLights />
   ) : (
     <>
       <ambientLight color="#ffffff" intensity={0.3 * Math.PI} />
@@ -87,7 +83,7 @@ const Scene: React.FC<{ v: View }> = ({ v }) => {
     <>
       <color attach="background" args={[baseColors[bottomBackground]]} />
       <PlaceRig cameraRig={cameraRig} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         <Lamp bottomBackground={bottomBackground} />
         {pictureMode.type === '并排' &&
           variants.map((k, i) => (
@@ -103,15 +99,12 @@ const Scene: React.FC<{ v: View }> = ({ v }) => {
         )}
         {pictureMode.type === '持杖' && (
           <>
-            <mesh position={[0, 0, -0.05]}>
-              <boxGeometry args={[12, 12, 0.1]} />
-              <meshStandardMaterial color="#8a8f98" />
-            </mesh>
+            <CheckGround size={12} />
             <YaBoLun variant={pictureMode.variant} 位={[0, 0, 0]} yaw={180} />
           </>
         )}
         {pictureMode.type === '中景' && <YaBoLun variant={pictureMode.variant} 位={midShot.位} yaw={midShot.yaw} bonePose={pointDownRight} />}
-      </group>
+      </ZUp>
     </>
   );
 };
@@ -125,12 +118,12 @@ const Caption: React.FC<{ v: View }> = ({ v }) => (
 );
 
 export default definePicture(seg, soundUrl, () => {
-  const v = views[Math.min(views.length - 1, useViewIndex())]!;
+  const v = useCheckView(views);
   return (
     <AbsoluteFill style={{ background: baseColors[v.bottomBackground] }}>
-      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
+      <CheckCanvas width={aspect.width} height={aspect.height}>
         <Scene v={v} />
-      </ThreeCanvas>
+      </CheckCanvas>
       <Caption v={v} />
     </AbsoluteFill>
   );

@@ -3,6 +3,7 @@
 // 不写视图名：静帧就是成片的样子。
 // 时刻取歌曲帧 正片事件.哈气.帧（片子里真有的那一帧），颗粒的种子取它（同成片）。这一拍三个角色都定住，不按时间取样。
 import React from 'react';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 import { FilmPost } from '@engine/三渲二/整片后期.tsx';
 import { events as mainCutEvents } from '../../分镜/正片第8句.ts';
 import { photoWallCells } from '../../地点/照片墙.tsx';
@@ -13,13 +14,12 @@ import { line8Tone, line8Shot } from '../../场/2-门口/第8句.ts';
 import { line8Cloud } from '../../场/2-门口/第8句云.ts';
 import { line8Photos } from '../../特效/照片画.ts';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 
 const frame = mainCutEvents.hiss.frame;
 const photoWall = photoWallCells(line8Photos);
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   // N = 6 不是 4 的倍数：地图画按 32 格画（特效/地图画.ts），天、太阳用 门口画布 的默认
   const shot = v.N6 ? { framing: n6Framing, photoWallEdge: 32 as const } : { ...line8Shot, photoWallEdge: 64 as const, arc: null };
   return (

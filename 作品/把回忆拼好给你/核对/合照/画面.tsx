@@ -5,7 +5,7 @@ import { GroupPhotoPolaroid, GroupPhotoPrint, LeanPicture } from '../../场/2-�
 import { eyeContactRig } from '../../场/2-隐世之境/对视.tsx';
 import { ReunionPicture } from '../../场/2-隐世之境/重逢.tsx';
 import { views, type View } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 
 const SingleFrame: React.FC<{ v: View }> = ({ v }) => {
   const frame = v.frame ?? 0;
@@ -22,7 +22,7 @@ const SingleFrame: React.FC<{ v: View }> = ({ v }) => {
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
       <SingleFrame v={v} />

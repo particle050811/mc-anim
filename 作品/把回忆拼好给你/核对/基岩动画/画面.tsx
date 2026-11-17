@@ -2,7 +2,6 @@
 // 不放在同一张画布里左右排开：透视下两边看到的侧面不一样，法杖、尾巴这种在身后的东西会错开，看着像动作不同。
 // 播放器版的尾巴：单帧拿不到前面帧积分出来的弹簧，变量表用稳态解填（尾巴稳态.ts），和手抄版同一个做法。
 // 标了 控制器 的视图左右换成两种控制器（控制器示例.ts）。
-import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
@@ -13,31 +12,29 @@ import { geckoLibSitToStand, bedrockSitToStand, controllerLayers } from './控�
 import { tailSteadyVars } from './尾巴稳态.ts';
 import { views, type View } from './视图.ts';
 import { MagicalWineFoxPlayer } from './魔法酒狐播放器版.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { CheckCanvas, CheckLabel, checkGrey, NeutralLights, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 
 const pose = { ...standPose([0, 0, 0]), yaw: 180 };
 
 const HalfPanel: React.FC<{ v: View; title: string; children: React.ReactNode }> = ({ v, title: title, children }) => (
   <div style={{ position: 'relative', width: aspect.width / 2, height: aspect.height }}>
-    <ThreeCanvas width={aspect.width / 2} height={aspect.height} gl={{ antialias: true }}>
-      <color attach="background" args={['#5a5e66']} />
+    <CheckCanvas width={aspect.width / 2} height={aspect.height} background={checkGrey.background}>
       <FirstPersonRig 眼={v.眼} 看={v.看} fov={v.fov} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
-        <ambientLight intensity={0.55 * Math.PI} />
-        <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
+      <ZUp>
+        <NeutralLights />
         <mesh position={[0, 0, -0.05]}>
           <boxGeometry args={[9, 9, 0.1]} />
           <meshStandardMaterial color="#b8945f" />
         </mesh>
         {children}
-      </group>
-    </ThreeCanvas>
+      </ZUp>
+    </CheckCanvas>
     <div style={{ position: 'absolute', left: 16, bottom: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 18, textShadow: '0 1px 3px #000' }}>{title}</div>
   </div>
 );
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const variables = tailSteadyVars(MagicalWineFoxPlayer.animationFiles!, v.sec);
   return (
     <AbsoluteFill style={{ background: '#5a5e66', flexDirection: 'row' }}>
@@ -60,10 +57,7 @@ const picture: React.FC = () => {
           </HalfPanel>
         </>
       )}
-      <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.name}</div>
-        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
-      </div>
+      <CheckLabel title={v.name} note={v.note} />
     </AbsoluteFill>
   );
 };

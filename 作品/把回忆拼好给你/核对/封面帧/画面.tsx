@@ -6,7 +6,7 @@ import { EyeContactPicture } from '../../场/2-隐世之境/对视.tsx';
 import { eyeContactFraming } from '../../场/2-隐世之境/对视参数.ts';
 import { coverSafeArea } from '../../场/2-隐世之境/封面.ts';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 
 const SafeAreaLayer: React.FC<{ width: number; height: number }> = ({ width: W, height: H }) => {
   const { fourThreeRect, bottomEdge, bottomRight } = coverSafeArea(W, H);
@@ -24,7 +24,7 @@ const SafeAreaLayer: React.FC<{ width: number; height: number }> = ({ width: W, 
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const { width: width, height: height } = eyeContactFraming[v.版];
   return (
     <AbsoluteFill style={{ background: '#000000' }}>

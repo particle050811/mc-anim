@@ -2,6 +2,7 @@
 // 灯的方向按 段/1-一如既往 占位机位的朝向（站在她南边 2.25 格、看她 0.7 格高处），亮度先用 1。
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { FirstPersonCanvas, FirstPersonHand, HAND_FOV, type HandScript, handTimeline, viewAngles } from '@库/角色/第一人称.tsx';
@@ -9,7 +10,6 @@ import { LiYingFirstPersonArm } from '@库/角色/李樱第一人称.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { eyePos } from '../../地点/机位.tsx';
 import { views, type Scenario } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 
 const scripts: Record<Scenario, HandScript> = {
   驯服: { start: '蛋糕', swings: [0], changes: [{ tick: 1, to: null }] },
@@ -20,7 +20,7 @@ const scripts: Record<Scenario, HandScript> = {
 const viewFacing = viewAngles(eyePos([0, -2.25, 0]), [0, 0, 0.7]);
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const { width, height } = useVideoConfig();
   const handState = handTimeline(v.刻, scripts[v.scenario]);
   const fov = v.fov ?? HAND_FOV;

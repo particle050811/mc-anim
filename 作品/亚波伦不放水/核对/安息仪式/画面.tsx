@@ -1,32 +1,11 @@
 // 安息仪式核对的画面：暗红底（下界的雾色）、一块下界岩色的地，结构摆在原点。视图表在 视图.ts。
-// 机位：坐标照场景约定（Z 朝上），进 three 换成 Y 朝上，场景内容放在 rotation [−π/2, 0, 0] 的 group 里。
-import { ThreeCanvas } from '@remotion/three';
-import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import * as THREE from 'three';
-import { sceneToThree } from '@engine/core/three换算.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { RestRitualPerformance, RestRitualStructure, Offering } from '../../特效/安息仪式.tsx';
 import { summonStateAt, appearPos, offerings, offeringPos, transitionProgressTick } from '../../特效/安息仪式时序.ts';
 import { aspect, views, type View } from './视图.ts';
-
-const CameraRig: React.FC<{ v: View }> = ({ v }) => {
-  const { camera, gl } = useThree();
-  gl.toneMapping = THREE.NeutralToneMapping;
-  gl.toneMappingExposure = 1.0;
-  const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = v.fov;
-  cam.near = 0.05;
-  cam.far = 256;
-  cam.position.copy(sceneToThree(v.眼));
-  cam.up.set(0, 1, 0);
-  cam.lookAt(sceneToThree(v.看));
-  cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
-  return null;
-};
+import { CheckCamera, CheckCanvas, CheckLabel, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 
 const background = '#3a0a07';
 const Ground: React.FC = () => (
@@ -75,28 +54,25 @@ const Content: React.FC<{ v: View }> = ({ v }) => {
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const s = v.pictureMode.type === '演出' ? summonStateAt(v.pictureMode.sec, v.pictureMode.plan) : undefined;
   return (
     <AbsoluteFill style={{ background: background }}>
-      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: false }}>
-        <color attach="background" args={[background]} />
-        <CameraRig v={v} />
-        <group rotation={[-Math.PI / 2, 0, 0]}>
+      <CheckCanvas width={aspect.width} height={aspect.height} background={background} antialias={false}>
+        <CheckCamera eye={v.眼} target={v.看} fov={v.fov} />
+        <ZUp>
           <ambientLight intensity={0.6 * Math.PI} />
           <directionalLight position={[3, -4, 6]} intensity={0.5 * Math.PI} />
           <Content v={v} />
-        </group>
-      </ThreeCanvas>
-      <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
-        <div>{v.name}</div>
-        {v.note && <div style={{ fontSize: 16 }}>{v.note}</div>}
+        </ZUp>
+      </CheckCanvas>
+      <CheckLabel title={v.name} note={v.note}>
         {s && v.pictureMode.type === '演出' && (
           <div style={{ fontSize: 16 }}>
             第 {v.pictureMode.sec.toFixed(2)} 秒（共 {v.pictureMode.plan.totalSec} 秒）　阶段 {s.stage}　祭品 {s.offeringAlpha.toFixed(2)}　相当于游戏过渡第 {transitionProgressTick(v.pictureMode.sec, v.pictureMode.plan).toFixed(0)} 刻　法阵半边 {s.circleHalf.toFixed(2)}
           </div>
         )}
-      </div>
+      </CheckLabel>
     </AbsoluteFill>
   );
 };

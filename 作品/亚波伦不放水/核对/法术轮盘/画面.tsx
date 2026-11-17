@@ -2,15 +2,14 @@
 // GUI 缩放按最外圈放得下取（上下各留 24 像素），并让 4K 出片时一个 GUI 像素是整数个输出像素（缩放取 1/3 的整数倍，上限 8/3 = 4K 下 8 倍）：
 // 三圈以内 8/3，四圈 2。8/3 是这里取的值，游戏里 4K 屏的自动界面尺寸会更大，成片用几倍没定。
 import { useThree } from '@react-three/fiber';
-import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import type * as THREE from 'three';
+import { CheckCanvas, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import type { Cam } from '@engine/core/机位.ts';
 import { sceneToThree, placeCamera } from '@engine/core/three换算.ts';
 import { png } from '@engine/model/贴图.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
-import { useViewIndex } from '@engine/段/时间.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { RadialWheel } from '@库/界面/径向轮盘.tsx';
 import { WheelWorldPlane } from '@库/界面/径向轮盘世界.tsx';
@@ -50,21 +49,21 @@ const WorldDiagram: React.FC<{ params: MultiRingParams }> = ({ params }) => {
   const cellsPerPixel = 0.02;
   const radius = Math.max(128, wheelOuterRadius(params) + 4);
   return (
-    <ThreeCanvas flat width={width} height={height} gl={{ antialias: false }}>
+    <CheckCanvas flat width={width} height={height} antialias={false}>
       <PlaceRig />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         <Steve pose={stevePose([0, 0, 1], 0)} mcLight={1} />
-      </group>
+      </ZUp>
       <group position={sceneToThree([0, -0.9, 2.3])} rotation={[0, Math.PI, 0]}>
         <WheelWorldPlane draw={(canvasPos) => drawMultiRingWheel(canvasPos, params)} radius={radius} cellsPerPixel={cellsPerPixel} deps={[JSON.stringify(params)]} />
       </group>
-    </ThreeCanvas>
+    </CheckCanvas>
   );
 };
 
 export default definePicture(seg, soundUrl, () => {
   const { width, height } = useVideoConfig();
-  const view = views[Math.min(views.length - 1, useViewIndex())]!;
+  const view = useCheckView(views);
   let note = '';
   let missing: string[] = [];
   let content: React.ReactNode;

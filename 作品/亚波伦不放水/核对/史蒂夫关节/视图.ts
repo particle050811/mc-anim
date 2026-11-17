@@ -1,6 +1,7 @@
 // 史蒂夫关节核对的视图表（纯数据，段.ts 也读）。坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格），人都面朝南（yaw 180），右手（拿剑的）在西边（−x）。
 // 视图一个接一个排在时间上，各占 1 秒，都是静的（取哪一帧都一样）：前一半摆角度看绑骨，后一半「连拍」看动作——
 // 一个动作按时间切成几格，从左到右排成一排（人往右走、往右跳），不用渲整段也能看出顺不顺。
+import { sequenceViews } from '@engine/段/核对段.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { SteveEquip } from '../../角色/史蒂夫装备.tsx';
 import type { SteveState } from '../../角色/史蒂夫反应.ts';
@@ -121,14 +122,6 @@ export const views: readonly View[] = [
   ...twoVersions('连拍-站着-右前斜', burstDiag, 3, (i) => ({ rightHand: (['剑', '空', '弓'] as const)[i], leftHand: i === 2 ? '图腾' : '空' }), '拿剑、空手、拿弓和图腾'),
 ];
 
-/** 第 秒 秒落在哪个视图、是它的第几秒 */
-export const viewAt = (sec: number): { v: View; τ: number } => {
-  let startSec = 0;
-  for (const v of views) {
-    if (sec < startSec + v.length - 1e-9) return { v, τ: Math.max(0, sec - startSec) };
-    startSec += v.length;
-  }
-  const lastView = views[views.length - 1]!;
-  return { v: lastView, τ: lastView.length };
-};
-export const totalSec = views.reduce((sum, v) => sum + v.length, 0);
+const sequence = sequenceViews(views);
+export const viewAt = sequence.at;
+export const totalSec = sequence.totalSec;

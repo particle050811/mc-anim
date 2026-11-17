@@ -9,7 +9,7 @@ import { chatColors } from '@库/界面/基础.tsx';
 import { aspect } from '../../分镜/时间.ts';
 import { pixelFont } from '../../界面/像素字.ts';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 
 const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 
@@ -22,7 +22,7 @@ const chatLines = (startTicks: number[]): ChatLine[] => [
 ];
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   return (
     <AbsoluteFill style={{ background: '#808080' }}>
       {v.bubbles.map((b, i) => (

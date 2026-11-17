@@ -1,5 +1,6 @@
 // anim new work / new seg 的模板：两部作品逐字相同的 清单.ts 尾部、注册.tsx、index.ts 不再手抄，新作品照这里生成（旧的两份不动）。
-// 新段一律是段框架的窗口段：段.ts 不写段键（段键只在目录名和清单里），画面.tsx 用 definePicture / useSeg，声音照 cue 自动放。
+// 正片新段一律是段框架的窗口段：段.ts 不写段键（段键只在目录名和清单里），画面.tsx 用 definePicture / useSeg，声音照 cue 自动放。
+// 核对段（核对-<名>）是一秒一个视图的模板，用 engine/段/核对段.ts、核对画面.tsx 的共用件，没有声音。
 // 生成的两份声音文件先写成「没有 cue」的样子（和 anim cues 对空 cue 段生成的一字不差），新段立刻能加载、能渲。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -69,6 +70,54 @@ export default definePicture(seg, soundUrl, () => {
 });
 `;
 
+const checkViewsTemplate = `// 视图表（纯数据，段.ts 也读）：一秒一个视图。坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格），fov 是竖直视角（度）。
+import type { CheckShot } from '@engine/段/核对段.ts';
+
+export type View = CheckShot & { name: string; note?: string };
+
+export const views: readonly View[] = [
+  { name: '正面', eye: [0, -6, 1.5], target: [0, 0, 1], fov: 30 },
+  { name: '右前斜', eye: [-4, -4.5, 2.2], target: [0, 0, 1], fov: 30, note: '从右前上方看' },
+];
+`;
+
+const checkSegTemplate = `// 核对段：一秒一个视图（视图.ts）。没有声音；要声音的照 核对/段框架示范 写成窗口段。纯模块。
+import { checkSeg } from '@engine/段/核对段.ts';
+import { views } from './视图.ts';
+
+export default checkSeg({ sec: views.length });
+`;
+
+const checkPictureTemplate = `// 核对段的画面：中性灰底、一块地面、中性灯，左上角写视图名（engine/段/核对画面.tsx）。场景内容放进 <ZUp>。
+import React from 'react';
+import { AbsoluteFill } from 'remotion';
+import { checkAspect } from '@engine/段/核对段.ts';
+import { CheckCamera, CheckCanvas, CheckGround, CheckLabel, checkGrey, NeutralLights, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
+import { views } from './视图.ts';
+
+const picture: React.FC = () => {
+  const v = useCheckView(views);
+  return (
+    <AbsoluteFill style={{ background: checkGrey.background }}>
+      <CheckCanvas width={checkAspect.width} height={checkAspect.height} background={checkGrey.background}>
+        <CheckCamera {...v} />
+        <ZUp>
+          <NeutralLights />
+          <CheckGround size={12} />
+          <mesh position={[0, 0, 1]}>
+            <boxGeometry args={[1, 1, 2]} />
+            <meshStandardMaterial color="#c0c4cc" />
+          </mesh>
+        </ZUp>
+      </CheckCanvas>
+      <CheckLabel title={v.name} note={v.note} />
+    </AbsoluteFill>
+  );
+};
+
+export default picture;
+`;
+
 /** 起一部新作品：作品/<名>/ 下的 清单.ts、注册.tsx、index.ts、一个能渲的 核对-起步 段，和撑住 段/ 目录的 段/说明.md（注册目录.ts） */
 export const newWork = (codeRoot: string, workName: string): string[] => {
   if (!isWorkNameValid(workName)) throw new Error(`作品名「${workName}」只能用汉字、字母、数字`);
@@ -131,7 +180,8 @@ ${legacySegs.map((x) => `    { key: '${x.key}', sec: ${x.sec}${x.startSec !== un
 };
 
 /**
- * 在作品里加一个窗口段：段目录、段.ts、画面.tsx、空声音文件，排进清单末尾。场时间线没有就建一条：
+ * 在作品里加一段，排进清单末尾。核对段：视图.ts、段.ts、画面.tsx（一秒一个视图，没有声音）。
+ * 正片段是窗口段：段目录、段.ts、画面.tsx、空声音文件；场时间线没有就建一条：
  * 本场没有老段时两个事件、先给 3 秒；有老段（老段，命令里照清单找出来）时用 continueOldSeg 把它们摆上去，新段接在后面。
  */
 export const newSegment = (workRoot: string, segKey: string, o: { scene?: string; start?: string; end?: string; legacySegs?: readonly SceneLegacySeg[] }): string[] => {
@@ -145,19 +195,24 @@ export const newSegment = (workRoot: string, segKey: string, o: { scene?: string
   const written: string[] = [];
   const segDir = path.join(workRoot, ...(verifyMatch ? ['核对', segmentName] : ['段', segKey]));
   if (fs.existsSync(segDir)) throw new Error(`${segDir} 已经有了`);
-  let timelineImport: string;
+  const manifestPath = path.join(workRoot, '清单.ts');
   if (verifyMatch) {
-    timelineImport = `import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';\nimport soundTable from './声音表.生成.ts';\n\nconst timeline = defineSceneTimeline({ scene: '核对', events: { ${startEvent}: { 在: { sec: 0 } }, ${endMark}: { 在: { sec: 3 } } } });\n`;
-  } else {
-    const scene = o.scene;
-    if (!scene) throw new Error('正片的段要给 --scene <场键>（同一场的段共用 场/<场键>/时间线.ts）');
-    if (!new RegExp(`^\\d+-${nameChar}+$`).test(scene)) throw new Error(`场键要是 <章>-<场名>：${scene}`);
-    const timelineFile = path.join(workRoot, '场', scene, '时间线.ts');
-    if (!fs.existsSync(timelineFile) && o.legacySegs?.length) writeNewFile(timelineFile, legacySceneTimelineTemplate(scene, o.legacySegs, startEvent, endMark), written);
-    else if (!fs.existsSync(timelineFile)) {
-      writeNewFile(
-        timelineFile,
-        `// ${scene} 的场时间线：本场的事件（秒，或接在别的事件后面），本场各段按 [起事件, 止事件) 取窗口（engine/段/窗口段.ts）。纯模块。
+    writeNewFile(path.join(segDir, '视图.ts'), checkViewsTemplate, written);
+    writeNewFile(path.join(segDir, '段.ts'), checkSegTemplate, written);
+    writeNewFile(path.join(segDir, '画面.tsx'), checkPictureTemplate, written);
+    fs.writeFileSync(manifestPath, addSegToManifest(fs.readFileSync(manifestPath, 'utf8'), segKey, '核对'), 'utf8');
+    written.push(manifestPath);
+    return written;
+  }
+  const scene = o.scene;
+  if (!scene) throw new Error('正片的段要给 --scene <场键>（同一场的段共用 场/<场键>/时间线.ts）');
+  if (!new RegExp(`^\\d+-${nameChar}+$`).test(scene)) throw new Error(`场键要是 <章>-<场名>：${scene}`);
+  const timelineFile = path.join(workRoot, '场', scene, '时间线.ts');
+  if (!fs.existsSync(timelineFile) && o.legacySegs?.length) writeNewFile(timelineFile, legacySceneTimelineTemplate(scene, o.legacySegs, startEvent, endMark), written);
+  else if (!fs.existsSync(timelineFile)) {
+    writeNewFile(
+      timelineFile,
+      `// ${scene} 的场时间线：本场的事件（秒，或接在别的事件后面），本场各段按 [起事件, 止事件) 取窗口（engine/段/窗口段.ts）。纯模块。
 import { defineSceneTimeline } from '@engine/段/窗口段.ts';
 
 export default defineSceneTimeline({
@@ -168,13 +223,12 @@ export default defineSceneTimeline({
   },
 });
 `,
-        written,
-      );
-    } else if (!/export default (defineSceneTimeline|continueOldSeg)\(/.test(fs.readFileSync(timelineFile, 'utf8'))) {
-      throw new Error(`${timelineFile} 不是 defineSceneTimeline 或 continueOldSeg 做的（老写法的时间线），新段接不上；先给这场写一条 export default defineSceneTimeline(…)（老段要接上的用 continueOldSeg，见 docs/新段.md）`);
-    }
-    timelineImport = `import { windowSeg } from '@engine/段/窗口段.ts';\nimport timeline from '../../场/${scene}/时间线.ts';\nimport soundTable from './声音表.生成.ts';\n`;
+      written,
+    );
+  } else if (!/export default (defineSceneTimeline|continueOldSeg)\(/.test(fs.readFileSync(timelineFile, 'utf8'))) {
+    throw new Error(`${timelineFile} 不是 defineSceneTimeline 或 continueOldSeg 做的（老写法的时间线），新段接不上；先给这场写一条 export default defineSceneTimeline(…)（老段要接上的用 continueOldSeg，见 docs/新段.md）`);
   }
+  const timelineImport = `import { windowSeg } from '@engine/段/窗口段.ts';\nimport timeline from '../../场/${scene}/时间线.ts';\nimport soundTable from './声音表.生成.ts';\n`;
   writeNewFile(
     path.join(segDir, '段.ts'),
     `// 段的窗口、声音 cue（放 音效和配乐、说 台词，每条只写一次；时长、峰值由 anim cues 生成进 声音表）。纯模块。
@@ -190,8 +244,7 @@ export default windowSeg(timeline, {
   );
   writeNewFile(path.join(segDir, '画面.tsx'), pictureTemplate('段的画面：useSeg() 取当前秒和事件的段内秒；声音由 definePicture 照 段.ts 的 cue 自动放'), written);
   writeEmptySoundTable(segDir, written);
-  const manifestPath = path.join(workRoot, '清单.ts');
-  fs.writeFileSync(manifestPath, addSegToManifest(fs.readFileSync(manifestPath, 'utf8'), segKey, verifyMatch ? '核对' : Number(mainCut![1])), 'utf8');
+  fs.writeFileSync(manifestPath, addSegToManifest(fs.readFileSync(manifestPath, 'utf8'), segKey, Number(mainCut![1])), 'utf8');
   written.push(manifestPath);
   return written;
 };

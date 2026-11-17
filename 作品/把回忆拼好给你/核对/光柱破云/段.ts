@@ -1,5 +1,5 @@
 // 光柱破云照片核对：第 8 句第四张照片「光柱破云」的底片，第 7 句 照片-光柱破云 那一帧的干净画面（场/2-雷雨/画面.tsx 的 光柱破云画面），一帧。
-import { defineSeg } from '@engine/段/段定义.ts';
+import { checkSeg } from '@engine/段/核对段.ts';
 import { aspect } from '../../分镜/时间.ts';
 
-export default defineSeg({ scene: '核对', sec: 1, width: aspect.width, height: aspect.height, terrain: [] });
+export default checkSeg({ sec: 1, aspect });

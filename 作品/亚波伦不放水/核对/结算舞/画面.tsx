@@ -1,11 +1,7 @@
 // 结算舞核对的画面：前半灰底加一块地面（同 核对-娘化亚波伦 的灯），后半粉色教堂跳舞位；机位见 视图.ts。
-// 机位：坐标照场景约定（Z 朝上），进 three 换成 Y 朝上，场景内容放在 rotation [−π/2, 0, 0] 的 group 里。
-import { ThreeCanvas } from '@remotion/three';
-import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import * as THREE from 'three';
-import { sceneToThree } from '@engine/core/three换算.ts';
+import { CheckCamera, CheckCanvas, CheckGround, NeutralLights, ZUp } from '@engine/段/核对画面.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { church, ChurchLighting, PinkChurch } from '../../地点/粉色教堂.tsx';
@@ -20,21 +16,7 @@ const baseColor = '#5a5e66';
 const skyColor = '#b4cfff';
 const addVec = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 
-const CameraRig: React.FC<{ 眼: V3; 看: V3; fov: number }> = ({ 眼: eye, 看: lookAt, fov }) => {
-  const { camera, gl } = useThree();
-  gl.toneMapping = THREE.NeutralToneMapping;
-  gl.toneMappingExposure = 1.0;
-  const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = fov;
-  cam.near = 0.05;
-  cam.far = 512;
-  cam.position.copy(sceneToThree(eye));
-  cam.up.set(0, 1, 0);
-  cam.lookAt(sceneToThree(lookAt));
-  cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
-  return null;
-};
+const CameraRig: React.FC<{ 眼: V3; 看: V3; fov: number }> = ({ 眼: eye, 看: lookAt, fov }) => <CheckCamera eye={eye} target={lookAt} fov={fov} far={512} />;
 
 const picture: React.FC = () => {
   const segSec = useCurrentSec();
@@ -44,14 +26,13 @@ const picture: React.FC = () => {
   const bgColor = inChapel ? skyColor : baseColor;
   return (
     <AbsoluteFill style={{ background: bgColor }}>
-      <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }}>
-        <color attach="background" args={[bgColor]} />
+      <CheckCanvas width={aspect.width} height={aspect.height} background={bgColor}>
         {inChapel ? (
           <CameraRig 眼={addVec(church.dancePos, chapelRig.eyeOffset)} 看={addVec(church.dancePos, chapelRig.lookOffset)} fov={chapelRig.fov} />
         ) : (
           <CameraRig {...front} />
         )}
-        <group rotation={[-Math.PI / 2, 0, 0]}>
+        <ZUp>
           {inChapel ? (
             <>
               <ChurchLighting />
@@ -59,17 +40,13 @@ const picture: React.FC = () => {
             </>
           ) : (
             <>
-              <ambientLight intensity={0.55 * Math.PI} />
-              <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
-              <mesh position={[0, 0, -0.05]}>
-                <boxGeometry args={[12, 12, 0.1]} />
-                <meshStandardMaterial color="#8a8f98" />
-              </mesh>
+              <NeutralLights />
+              <CheckGround size={12} />
             </>
           )}
           <GirlYaBoLun pose={{ loc: inChapel ? church.dancePos : [0, 0, 0], yaw: 180 }} sec={sec} act={dance} bonePose={bonePose} />
-        </group>
-      </ThreeCanvas>
+        </ZUp>
+      </CheckCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 26, textShadow: '0 1px 3px #000' }}>
         忘情牛肉面 {sec.toFixed(2)} 秒{inChapel ? '（教堂跳舞位）' : ''}
       </div>

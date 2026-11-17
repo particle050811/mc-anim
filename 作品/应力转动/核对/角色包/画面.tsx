@@ -1,11 +1,11 @@
 // 角色包核对的画面：四个场景各照旧项目一个核对 Composition 原样抄（机位、灯光、姿势、背景一字不改），只是角色换成 库/ 里的。
 //   照李樱对照 ← 旧 模型/角色/李樱对照.tsx；照持刀对照 ← 旧 模型/物品/拔刀剑持刀对照.tsx；照口型预览、照口型演示 ← 旧 模型/角色/口型预览.tsx。
 // 旧的在这几个文件里用 useVideoConfig 的宽高、useCurrentFrame 的帧，这里改成视图表给的尺寸和旧帧号；画布放在页面左上角。
-import { ThreeCanvas } from '@remotion/three';
 import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import * as THREE from 'three';
+import { CheckCanvas, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import { type BedrockModel, BedrockModelView, type BonePose } from '@engine/model/基岩模型.tsx';
 import { png } from '@engine/model/贴图.ts';
 import { Jiuhu, JIUHU, JIUHU_MOUTHS, JIUHU_TALK_BONES, jiuhuMouthAttach } from '@库/角色/九胡.tsx';
@@ -16,7 +16,6 @@ import { DrawnKatana, Sheath } from '@库/物品/拔刀剑.tsx';
 import jiuhuRaw from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 import { rad } from '@engine/core/数学.ts';
 
 // ---------- 照李樱对照（旧 李樱对照.tsx 的 VIEWS 第 3、6 个，第 3～5 帧是平行投影） ----------
@@ -57,10 +56,9 @@ const LiYingCompareShot: React.FC<{ frame: number; width: number; height: number
   const k = rad(view.az + 25);
   const key: [number, number, number] = [Math.sin(k) * 3.3, Math.cos(k) * 3.3, 2.3];
   return (
-    <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true }}>
-      <color attach="background" args={['#ffffff']} />
+    <CheckCanvas width={width} height={height} shadows="percentage" background="#ffffff">
       <CompareRig view={view} ortho={frame >= 3 && frame <= 5} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         <ambientLight intensity={0.55 * Math.PI} />
         <directionalLight
           position={key}
@@ -77,8 +75,8 @@ const LiYingCompareShot: React.FC<{ frame: number; width: number; height: number
           shadow-camera-far={10}
         />
         <LiYing pose={view.pose} />
-      </group>
-    </ThreeCanvas>
+      </ZUp>
+    </CheckCanvas>
   );
 };
 
@@ -113,10 +111,9 @@ const SwordCompareShot: React.FC<{ width: number; height: number }> = ({ width, 
   const key: [number, number, number] = [Math.sin(k) * 3.3, Math.cos(k) * 3.3, 2.3];
   const pose = view.pose;
   return (
-    <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true }}>
-      <color attach="background" args={['#ffffff']} />
+    <CheckCanvas width={width} height={height} shadows="percentage" background="#ffffff">
       <SwordHoldRig view={view} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         <ambientLight intensity={0.55 * Math.PI} />
         <directionalLight
           position={key}
@@ -147,8 +144,8 @@ const SwordCompareShot: React.FC<{ width: number; height: number }> = ({ width, 
             )
           }
         />
-      </group>
-    </ThreeCanvas>
+      </ZUp>
+    </CheckCanvas>
   );
 };
 
@@ -182,10 +179,9 @@ const LipPreviewShot: React.FC<{ frame: number; width: number; height: number }>
   const view = MOUTH_PREVIEW_VIEWS[frame]!;
   const span = view.items.length * GAP;
   return (
-    <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
-      <color attach="background" args={['#c9d6e3']} />
+    <CheckCanvas width={width} height={height} background="#c9d6e3">
       <LipRig width={span} z={view.headZ} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         <ambientLight intensity={0.55 * Math.PI} />
         <directionalLight position={[-1.5, 3, 2.5]} intensity={0.6 * Math.PI} />
         {view.items.map((item, i) => {
@@ -198,8 +194,8 @@ const LipPreviewShot: React.FC<{ frame: number; width: number; height: number }>
             </group>
           );
         })}
-      </group>
-    </ThreeCanvas>
+      </ZUp>
+    </CheckCanvas>
   );
 };
 
@@ -215,21 +211,20 @@ const OLD_COMPOSITION_FPS = 24;
 const LipDemoShot: React.FC<{ frame: number; width: number; height: number }> = ({ frame: oldFrame, width, height }) => {
   const sec = oldFrame / OLD_COMPOSITION_FPS;
   return (
-    <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
-      <color attach="background" args={['#c9d6e3']} />
+    <CheckCanvas width={width} height={height} background="#c9d6e3">
       <LipRig width={2.5 * GAP} z={1.55} />
-      <group rotation={[-Math.PI / 2, 0, 0]}>
+      <ZUp>
         <ambientLight intensity={0.55 * Math.PI} />
         <directionalLight position={[-1.5, 3, 2.5]} intensity={0.6 * Math.PI} />
         <LiYing pose={standPose([GAP / 2, 0, -0.05])} mouth={mouthAt(lines631, '李樱', sec, 1)} />
         <Jiuhu pose={standPose([-GAP / 2, 0, 0.05])} tail={sec * 2} mouth={mouthAt(lines631, '九胡', sec, 1)} />
-      </group>
-    </ThreeCanvas>
+      </ZUp>
+    </CheckCanvas>
   );
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const size = { width: v.width, height: v.height };
   return (
     <AbsoluteFill style={{ background: '#000000' }}>

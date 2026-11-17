@@ -3,10 +3,10 @@
 // 成片灯的视图换成 地点 的 一楼灯光，和 一楼机位-游戏截图 比亮度、色温。
 // 待迁移（私有资产）：对照用的游戏截图私有（核对段，不进成片），公开构建缺了怎么降级还没定
 import { useThree } from '@react-three/fiber';
-import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, Img } from 'remotion';
 import * as THREE from 'three';
+import { CheckCanvas, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { useSelfLight } from '@engine/light/光照配比.ts';
 import { standPose } from '@库/角色/骨架.tsx';
@@ -16,7 +16,6 @@ import shot from 'asset:截图/隐世之境/一楼机位';
 import { FirstPersonRig } from '../../地点/机位.tsx';
 import { firstFloor, FirstFloorLighting, hallLamps, HiddenWorldFloor, type LampPos } from '../../地点/隐世之境一楼.tsx';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
 
 const liftTopBox = [[-1, -27, 5.97, 22, 1, 10]];
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
@@ -54,7 +53,7 @@ const FlatLight: React.FC = () => {
 };
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   const size = { width: v.width, height: v.height };
   const lanternCount = hallLamps.filter((l) => l.kind === 'lantern').length;
   const candleCount = hallLamps.length - lanternCount;
@@ -62,18 +61,17 @@ const picture: React.FC = () => {
     <AbsoluteFill style={{ background: '#1b1d22' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, ...size }}>
         {v.screenshot !== 1 && (
-          <ThreeCanvas {...size} gl={{ antialias: true }}>
-            <color attach="background" args={['#9fc4ff']} />
+          <CheckCanvas {...size} background="#9fc4ff">
             <FirstPersonRig 眼={v.cameraRig.眼} 看={v.cameraRig.看} fov={v.cameraRig.fov} />
             {v.keepTone && <KeepTone />}
-            <group rotation={[-Math.PI / 2, 0, 0]}>
+            <ZUp>
               {v.filmLamp ? <FirstFloorLighting /> : <FlatLight />}
               <HiddenWorldFloor hide={v.liftTop ? liftTopBox : undefined} />
               {v.figure && <StandFigure kind={v.figure} 眼={v.cameraRig.眼} />}
               {v.showLamps && hallLamps.map((l, i) => <BlockFrame key={i} 位={l.位} 色={frameColor(l)} />)}
               {v.showLamps && <BlockFrame 位={firstFloor.maid} 色="#ff4fd8" />}
-            </group>
-          </ThreeCanvas>
+            </ZUp>
+          </CheckCanvas>
         )}
         {v.screenshot ? <Img src={shot} style={{ position: 'absolute', left: 0, top: 0, ...size, opacity: v.screenshot }} /> : null}
         <div style={{ position: 'absolute', left: 16, top: 12, fontFamily: uiFontFamily, fontSize: 22, color: '#ffffff', textShadow: '0 1px 3px #000' }}>

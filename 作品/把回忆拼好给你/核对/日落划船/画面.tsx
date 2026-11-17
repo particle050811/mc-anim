@@ -6,13 +6,13 @@ import { eyeCameraRig } from '../../场/2-海上/编排.ts';
 import { SunsetRowingPicture } from '../../场/2-海上/海上.tsx';
 import { AltarPicture } from '../../场/2-祭坛/祭坛.tsx';
 import { views } from './视图.ts';
-import { useViewIndex } from '@engine/段/时间.tsx';
+import { useCheckView } from '@engine/段/核对画面.tsx';
 
 /** 眼睛特写同段里（第 3 句祭坛那一镜接着推） */
 const eyeView = (g: number) => <AltarPicture g={g} machine={eyeCameraRig(g)} />;
 
 const picture: React.FC = () => {
-  const v = views[useViewIndex()]!;
+  const v = useCheckView(views);
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
       <SunsetRowingPicture songFrame={v.frame} eyeView={eyeView} waveOn={v.waveOn ?? true} withPost={v.withPost ?? true} crossfadeStyle={crossfadeStyle} waveStyle={waveStyle} />
