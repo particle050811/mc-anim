@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { base, runRule, makeRepo, type FileTable } from './测试夹具.ts';
-import { hardcodedProblem, layerOf, checkRendererEntry } from './规则/结构.ts';
+import { hardcodedProblem, layerOf, checkRendererEntry, checkTestPipelineImport } from './规则/结构.ts';
 
 const twoScenes = {
   '作品/应力转动/清单.ts': [
@@ -287,5 +287,28 @@ describe('pipeline 渲染器统一入口', () => {
       'pipeline/合法.test.ts': `vi.mock('./渲/渲染器.ts');`,
     };
     expect((await runRule('structure', makeRepo(base(), validFiles))).violations).toEqual([]);
+  });
+
+  it('engine、库、作品下的测试不许引 pipeline（各种引法都拦，引 engine、库、asset: 和别处的测试放行）', async () => {
+    const bad: FileTable = {
+      'engine/甲.test.ts': "import { x } from '../pipeline/资产/资产锁.ts';\nexport { y } from '../pipeline/乙.ts';",
+      '库/角色/乙.test.ts': "const m = await import('../../pipeline/甲.ts');\nvi.mock('../../pipeline/丙.ts');\ntype T = import('../../pipeline/丁.ts').T;",
+      '作品/应力转动/段/7-甲/丙.test.tsx': "import type { T } from '../../../../pipeline/甲.ts';\nimport x = require('../../../../pipeline/乙.ts');",
+    };
+    expect(checkTestPipelineImport('engine/甲.test.ts', String(bad['engine/甲.test.ts']))).toEqual([
+      { 行: 1, text: expect.stringContaining('engine/甲.test.ts → pipeline/资产/资产锁.ts') },
+      { 行: 2, text: expect.stringContaining('要引管线就把测试放到 pipeline/ 下') },
+    ]);
+    expect(checkTestPipelineImport('库/角色/乙.test.ts', String(bad['库/角色/乙.test.ts'])).map((q) => q.行)).toEqual([1, 2, 3]);
+    expect(checkTestPipelineImport('作品/应力转动/段/7-甲/丙.test.tsx', String(bad['作品/应力转动/段/7-甲/丙.test.tsx'])).map((q) => q.行)).toEqual([1, 2]);
+    const violations = (await runRule('structure', makeRepo(base(), twoScenes, bad))).violations;
+    expect(violations.filter((v) => v.includes('不许 import pipeline/'))).toHaveLength(7);
+
+    const fine: FileTable = {
+      'engine/乙.test.ts': "// 字节在 pipeline/资产/vitest插件.ts\nimport raw from 'asset:模型/甲';\nimport { a } from './甲.ts';\nimport { b } from '@库/乙.ts';\nconst s = '../pipeline/甲.ts';",
+      'pipeline/甲.test.ts': "import { x } from '../engine/甲.ts';\nimport { y } from './乙.ts';",
+      '库/丙.ts': "export const s = 'pipeline/甲.ts';",
+    };
+    for (const [p, sourceText] of Object.entries(fine)) expect(checkTestPipelineImport(p, String(sourceText)), p).toEqual([]);
   });
 });
