@@ -26,6 +26,7 @@ anim stale [<选择器>] [--strict]  |  anim bench <段> [--frames a-b]  |  anim
 anim reuse <选择器…> --reason "…" [--sample N] [--dry-run]   过期段抽帧和旧切片比，在压缩噪声内就沿用，不比声音（docs/决策/0013-认指纹.md）
 anim verify [<段>] [--render]  |  verify accept <段…> --reason …  |  verify backfill [<选择器>]
 anim verify frames <选择器…> [--frames a-b] --save <名> | --compare <名> [--keep-images <目录>]   不写切片，不碰段签和认可
+anim diff <A旧> <B新> [--to-preview <主题>] [--frames …|--every n] [--offset ±n]  |  anim still <段> <帧…> --to-preview <主题> --vs <检出|分支|main>   改前改后对比：出旧｜新｜差、块统计、最差几处的 --tele 复查命令
 anim assets add <id> <文件> | measure [--check] | vendor | seed | pack [--upload] | pull   （0005、0006）
 anim extract <配方|组…> | --all [--print-only|--check] [--register] | --licenses | --backfill-mesh | --download | --particle-frames […]
 anim preview new <主题> | preview clean [--apply]   anim cache gc [--apply]
