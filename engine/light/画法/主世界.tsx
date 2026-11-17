@@ -1,8 +1,8 @@
 // 主世界画法：同 作品/应力转动/地点/飞行镜头.tsx 的 FlightSky + FlightFog（Photon 大气 + Photon 云 + 穹顶和方形太阳 + 日光 + 天光、环境光 + 指数平方雾），
 // 按时刻算太阳时再加原版的月亮和星星（星月.tsx）。美术光向（描述写 太阳）不画星月：那个方向不一定在原版轨道上，预设 主世界环境 也要和 FlightSky 逐像素一样。
-// 按时刻变天时，每换一个太阳方向 Photon 大气要在 CPU 上重展开一张 2048×1024 的天色图（大气.ts 的 apply），逐帧变的段每帧多花这一下。
+// 按时刻变天时，每换一个太阳方向 Photon 大气要在 CPU 上重展开一张 2048×1024 的天色图（大气.ts 的 applyAtmosphere），逐帧变的段每帧多花这一下。
 import React from 'react';
-import { Atmosphere } from '../大气.ts';
+import { Atmosphere } from '../大气组件.tsx';
 import { PhotonClouds } from '../大气/云.ts';
 import { shadowFarFor } from '../暮色光照.tsx';
 import { SKY, SkyDome, TWILIGHT } from '../天空.tsx';

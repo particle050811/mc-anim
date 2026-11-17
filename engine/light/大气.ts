@@ -3,60 +3,17 @@
 // Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 engine/light/大气/Photon-LICENSE.txt。
 // - 天色：Photon 预积分的散射表（大气/散射.bin = Photon 的 scattering.dat），按太阳方向在 CPU 上展开成一张等距柱状天色图（线性 Rec.709），穹顶、云、水共用。
 // - 空气雾：三通道瑞利 + 米氏、按高度指数衰减的解析积分；边界雾：地形边上（远端 = 地形远，约 40 公里）融进这个方向的天色。
+// 本文件只放纯计算、共用状态和 GLSL（单测能直接导入）；组件 <Atmosphere />、<CloudOnlyAtmosphere /> 和散射表、噪声的载入在 大气组件.tsx。
 // 接入：<Atmosphere /> 放进画布打开；带雾的材质（lib/高度雾.ts 的 fog_* 着色块）、屏幕AO 第 2 遍、云（大气/云.ts）、穹顶读这里的共用 uniform。
 // 坐标：GLSL 里是 three 的世界坐标（Y 朝上），JS 接口和天色图按场景坐标（Z 朝上）。高度起点 = 海平面 = 世界 y 0。
-import { useThree } from '@react-three/fiber';
-import React, { useEffect, useState } from 'react';
-import { cancelRender, continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
-import { useWriter, newWriteSlot } from '../core/写入者.ts';
 import { skyColorMap } from './天/天色图.ts';
-import scatteringBin from 'asset:数据/大气/散射';
-import noiseBin from 'asset:数据/大气/噪声';
-import worleyBubblyBin from 'asset:数据/大气/沃利-泡';
-import worleySwirleyBin from 'asset:数据/大气/沃利-卷';
 
 // 画面增益：Photon 的天色在它自己的曝光下出色，我们是 three 的 NeutralToneMapping、曝光 1，按天顶、天边的画面值对到参考视频
 export const ATMO_GAIN = 1.55;
 
-// ---------- 散射表（32 μs × 64 μ × 32 ν × RGB，半精度；Photon 的 Rec.2020 工作色彩空间） ----------
-let lut: Float32Array | null = null;
-let lutLoading: Promise<Float32Array> | null = null;
-const loadLut = () =>
-  (lutLoading ??= fetch(scatteringBin)
-    .then((r) => r.arrayBuffer())
-    .then((buf) => {
-      const h = new Uint16Array(buf);
-      const f = new Float32Array(h.length);
-      for (let i = 0; i < h.length; i++) f[i] = THREE.DataUtils.fromHalfFloat(h[i]);
-      lut = f;
-      return f;
-    }));
-
-// 云的噪声（Photon image/ 下的原件）：noise.png 512² RGBA（转成了不带预乘的原始字节）、worley_bubbly / worley_swirley 64³ 单通道；Photon 的 .mcmeta 是线性过滤、平铺
-type CloudTextures = { noise: THREE.DataTexture; worleyBubbly: THREE.Data3DTexture; worleySwirley: THREE.Data3DTexture };
-let cloudTexLoading: Promise<CloudTextures> | null = null;
-const fetchBytes = (url: string) => fetch(url).then((r) => r.arrayBuffer()).then((b) => new Uint8Array(b));
-const loadCloudTextures = () =>
-  (cloudTexLoading ??= Promise.all([fetchBytes(noiseBin), fetchBytes(worleyBubblyBin), fetchBytes(worleySwirleyBin)]).then(([n, wb, ws]) => {
-    const noise = new THREE.DataTexture(n, 512, 512, THREE.RGBAFormat, THREE.UnsignedByteType);
-    const worley = (d: Uint8Array) => {
-      const t = new THREE.Data3DTexture(d, 64, 64, 64);
-      t.format = THREE.RedFormat;
-      t.wrapR = THREE.RepeatWrapping;
-      return t;
-    };
-    const out = { noise: noise, worleyBubbly: worley(wb), worleySwirley: worley(ws) };
-    for (const t of [out.noise, out.worleyBubbly, out.worleySwirley]) {
-      t.wrapS = t.wrapT = THREE.RepeatWrapping;
-      t.minFilter = t.magFilter = THREE.LinearFilter;
-      t.generateMipmaps = false;
-      t.unpackAlignment = 1;
-      t.colorSpace = THREE.NoColorSpace;
-      t.needsUpdate = true;
-    }
-    return out;
-  }));
+// 云的噪声贴图（载入在 大气组件.tsx）
+export type CloudTextures = { noise: THREE.DataTexture; worleyBubbly: THREE.Data3DTexture; worleySwirley: THREE.Data3DTexture };
 
 const R = 6371e3;
 const Ri = R - 1e3;
@@ -221,9 +178,8 @@ export const atmosphere: AtmoState = { sky: null, sun: [0, 0, 1], skyKey: '', wa
 export const atmoLightAt = (h: number) => atmosphere.cloudLight ?? sunlightAt(atmosphere.sun, h);
 // 要不要画 Photon 的云：大气打开，或只开云
 export const photonCloudsOn = () => atmoOn() || atmosphere.cloudsOnly;
-// 全开（Atmosphere）和只开云（CloudOnlyAtmosphere）共用一个槽，切点两边可以是不同的一种：接手的组件自己把另一种的开关关掉，不等旧画布卸载
-const atmosphereSlot = newWriteSlot();
-const disableAtmosphere = () => {
+// 关掉大气和只开云（大气组件.tsx 的写入槽卸载时复位用）
+export const disableAtmosphere = () => {
   atmoPVec.x = 0;
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;
@@ -231,7 +187,8 @@ const disableAtmosphere = () => {
 const WATER_ELEV = [0, 0.05, 0.1, 0.15, 0.2, 0.28, 0.4, 1];
 // 天色图 2048×1024（太阳附近光晕的亮度在一两度里变化很快，512×256 时线性插值露出一格一格的纹）：天/天色图.ts，和这里 skyRadiance 逐像素算逐位相同
 const buildSky = (data: Float32Array, sun: number[]) => skyColorMap(data, sun, ATMO_GAIN);
-const apply = (data: Float32Array, sunIn: [number, number, number], far: number) => {
+// 全开：按太阳方向展开天色图等（同一方向只展开一次）、写共用 uniform，打开开关。data = 散射表
+export const applyAtmosphere = (data: Float32Array, sunIn: [number, number, number], far: number) => {
   const l = Math.hypot(...sunIn);
   const sun = sunIn.map((x) => x / l);
   const key = sun.join(',');
@@ -266,58 +223,8 @@ const apply = (data: Float32Array, sunIn: [number, number, number], far: number)
   atmoPVec.x = 1;
 };
 
-// 放进画布里打开：sun = 场景坐标指向太阳；far = 地形远端（米，边界雾在这里融进天色）。卸载时关
-export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number; enabled?: boolean }> = ({ sun, far, enabled = true }) => {
-  useWriter(atmosphereSlot, disableAtmosphere);
-  atmosphere.cloudsOnly = false;
-  atmosphere.cloudLight = null;
-  const advance = useThree((s) => s.advance);
-  const [data, setData] = useState(atmosphere.clouds && lut);
-  const [release] = useState(() => {
-    if (atmosphere.clouds && lut) return () => {};
-    const handle = delayRender('大气散射表和云的噪声');
-    let done = false;
-    return () => {
-      if (!done) continueRender(handle);
-      done = true;
-    };
-  });
-  useEffect(() => {
-    if (!data)
-      Promise.all([loadLut(), loadCloudTextures()]).then(([l, c]) => {
-        atmosphere.clouds = c;
-        setData(l);
-      }, (e) => cancelRender(e));
-  }, [data]);
-  if (data) apply(data, sun, far);
-  // 地下保留已经认可的大气后期时仍需准备散射表，但场景本身继续用地下雾。
-  if (!enabled) atmoPVec.x = 0;
-  useEffect(() => {
-    if (!data) return;
-    advance(performance.now());
-    release();
-  }, [data, advance, release]);
-  return null;
-};
-
-// 只开 Photon 的云（暮色森林，用户 10-15 定「Photon 云 + 暮色光照」）：天、雾、灯都还是那个世界自己的（atmoP 不开，材质的雾、穹顶不换），
-// 云远处融进的天色图按 skyAt（场景坐标的方向 → 线性颜色）展开，日光 light、天光 ambient 是线性颜色。key：天色、光变了就换一个（同一个 key 只展开一次）
-export const CloudOnlyAtmosphere: React.FC<{ sun: [number, number, number]; skyAt: (d: number[]) => number[]; light: number[]; ambient: number[]; skyKey: string }> = ({ sun, skyAt, light, ambient, skyKey }) => {
-  useWriter(atmosphereSlot, disableAtmosphere);
-  const advance = useThree((s) => s.advance);
-  const [ready, setReady] = useState(atmosphere.clouds !== null);
-  const [release] = useState(() => {
-    if (atmosphere.clouds) return () => {};
-    const handle = delayRender('云的噪声');
-    let done = false;
-    return () => {
-      if (!done) continueRender(handle);
-      done = true;
-    };
-  });
-  useEffect(() => {
-    if (!ready) loadCloudTextures().then((c) => ((atmosphere.clouds = c), setReady(true)), (e) => cancelRender(e));
-  }, [ready]);
+// 只开云：云远处融进的天色图按 skyAt 展开（同一个 skyKey 只展开一次），写天光、太阳方向、云光，大气开关关着
+export const applyCloudOnly = ({ sun, skyAt, light, ambient, skyKey }: { sun: [number, number, number]; skyAt: (d: number[]) => number[]; light: number[]; ambient: number[]; skyKey: string }) => {
   const key = 'only:' + skyKey;
   if (atmosphere.skyKey !== key) {
     const l = Math.hypot(...sun);
@@ -352,12 +259,10 @@ export const CloudOnlyAtmosphere: React.FC<{ sun: [number, number, number]; skyA
   atmosphere.cloudsOnly = true;
   // 每次渲染都写，不放进上面按 skyKey 的那块：跨截时天色不变、那块不走，云光要是只在那里写，旧画布一复位就一直走回退公式（白灰，本意是这里的橙粉，用户 11-01 定修成本意）
   atmosphere.cloudLight = light;
-  useEffect(() => {
-    if (!ready) return;
-    advance(performance.now());
-    release();
-  }, [ready, advance, release]);
-  return null;
+};
+// 大气开关关上（地下保留大气后期时用，见 大气组件.tsx）
+export const atmoSwitchOff = () => {
+  atmoPVec.x = 0;
 };
 
 // ---------- GLSL（世界坐标） ----------
