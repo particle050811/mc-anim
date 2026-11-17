@@ -17,7 +17,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { shriekToDarknessSec, darknessParams } from '@库/特效/黑暗效果.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import type { ChestOpening } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as jumpBuild from '../../../场/6-古城/6-4-1/跳搭.ts';
 import { lootPose, mixPose, nearYaw, pivotStep, standAt, yawTo, type LineAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';

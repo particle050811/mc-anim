@@ -2,7 +2,7 @@
 // 戏：监守者扑向刘心忠，二人蹬地分开：刘心忠半空里举杖召出恼鬼、落上东南土丘顶，恼鬼马上冲向监守者；黄叛半空里射第一支火把箭、落上黄台再射。
 // 镜 1 北墙内侧高处大全景（二人分开、监守者扑空）；镜 2 黄叛南边跟他半空放箭，后面是监守者和冲过来的恼鬼；镜 3 黄叛身后越肩，落台再射、恼鬼扑到监守者跟前。
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../地点/古城4x.tsx';
+import { G4 } from '../../地点/古城4x坐标.ts';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import { camPoses, localSecAt, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';

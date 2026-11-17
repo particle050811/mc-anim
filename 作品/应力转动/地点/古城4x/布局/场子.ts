@@ -1,5 +1,5 @@
 // 古城4x 6-4-6～6-4-8：场子的范围和墙，追兵两路强者跳，第三、四次尖啸，二人站位，监守者钻出点。
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import type { BlockPos } from './换算.ts';
 import { archery } from './射箭.ts';
 export const arena = {

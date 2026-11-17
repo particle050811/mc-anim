@@ -18,7 +18,7 @@ import { WARDEN, pinToWardenBody, wardenBodyHit, wardenBodyPinAt, wardenBodyPoin
 import { airPose, landPoseSec, nearYaw, takeoffPose, yawTo } from '../6-4-1/古城戏.ts';
 import { bowPointWorld, BOW_ARROW_TIP, bowTextureFor } from '@库/物品/弓.tsx';
 import { arena, eliteLeap, leapFeetAt, type Jump } from '../布局.ts';
-import { G4, toGame4 } from '../../古城4x.tsx';
+import { G4, toGame4 } from '../../古城4x坐标.ts';
 import * as X71 from '../7-1/戏.ts';
 import { breathe } from '../7-1/戏/跳.ts';
 import type { BowWindFan } from '../7-1/弓前风扇.tsx';

@@ -1,6 +1,6 @@
 // 古城4x 李樱一路垫的羊毛（6-4-1、6-4-2、6-4-5、7-2-1），开的箱子，6-4-2 末帧状态。
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import { feetOnWool, type BlockPos } from './换算.ts';
 import { archery } from './射箭.ts';
 export const wool641 = {

@@ -7,7 +7,7 @@
 //     这一跳 19.7 米、落差 8 格（强者跳：最高点比 V 高 3 格，再高头会碰到洞顶；1.26 秒，核过身子不撞）。
 //   - 振动：#240 周围 8 格内三个感测体都收得到（X 不在连线上，核过），再传给尖啸体；离监守者 80 米（> 24 格），尖啸体照叫。
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { cellCenter, blockBottomCenter, chest722, wideShotCenter as layoutWideCenter, lookoutFeet, feetOnWool, wool722, sensors722, shriekers722, type BlockPos } from '../../../地点/古城4x/布局.ts';
 

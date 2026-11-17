@@ -5,7 +5,7 @@
 //   镜 2 土丘顶上往东北（监守者后背斜对着）：风矢钉上（定 1 帧），墙脊上刘心忠蹬地扑回来、从它头顶上越过去，
 //   离得近框不进两人，所以站远到丘顶。
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-1/时间线.ts';
 import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';

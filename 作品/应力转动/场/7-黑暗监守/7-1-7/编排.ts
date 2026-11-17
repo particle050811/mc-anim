@@ -7,7 +7,7 @@
 // - 刘心忠身后越肩往东：落地召马，监守者在盾前拍第一下；护盾南边低处：第二拍和黄叛第一箭同一刻，马在刘心忠身边冒出来；
 // - 第三拍拍碎：监守者身后越肩，刘心忠上马，第二箭钉上，碎的那一下马正好起跳；马一跃上墙：墙头落点旁边往下看，它追到墙脚。
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-1/时间线.ts';
 import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';

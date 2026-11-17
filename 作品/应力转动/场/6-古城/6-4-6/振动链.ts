@@ -10,7 +10,7 @@
 // - 落地发 hit_ground、走一步发 step；站在羊毛上的不发（这两人不垫羊毛）。起跳本身不发振动。
 // 时钟：秒，从 6-4-5 第 0 帧起（追兵钟，见 走位.ts）。
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { vanilla, type BlockPos } from '../../../地点/古城4x/布局.ts';
 import blockDataJson from 'asset:碎块/镜头/6-4-6/振动方块';
 const blockData = blockDataJson as unknown as { 感测体: number[][]; 尖啸体: number[][]; 羊毛: number[][] };

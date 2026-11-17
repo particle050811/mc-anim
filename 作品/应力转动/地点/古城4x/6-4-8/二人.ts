@@ -5,7 +5,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { drawBowPose } from '../../../角色/追兵姿势.ts';
 import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { nearYaw, yawTo } from '../6-4-1/古城戏.ts';
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import { huangPanSpot, liuXinzhongSpot, wardenEmerge } from '../布局.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 export const rampIn = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));

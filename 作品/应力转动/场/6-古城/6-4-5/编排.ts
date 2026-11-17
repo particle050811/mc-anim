@@ -15,7 +15,7 @@
 import { type Key, sample, sampleV, track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { PLACE_BEFORE, airPose, groundPose, landPoseSec, mixPose, nearYaw, pivotStep, standAt, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import * as choreo643 from '../6-4-3/编排.ts';
 import * as timeline643 from '../6-4-3/时间线.ts';

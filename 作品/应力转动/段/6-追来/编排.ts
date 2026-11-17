@@ -12,7 +12,7 @@
 import { type Key, type VKey, sample, sampleV, track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { G4 } from '../../地点/古城4x.tsx';
+import { G4 } from '../../地点/古城4x坐标.ts';
 import { shrieks } from '../../地点/古城4x/布局.ts';
 import * as K645 from '../../场/6-古城/6-4-5/编排.ts';
 import { τ646, durationSec646, headTrim646, huangPanPose, liuXinzhongPose, huangRoute, liuRoute, thirdShriekSec, chain } from '../../场/6-古城/6-4-6/追兵.ts';

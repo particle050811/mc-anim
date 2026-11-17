@@ -9,7 +9,7 @@
 import { type Key, type VKey, sample, sampleV, track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { mixPose } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { handoffs } from '../../../地点/古城4x/布局.ts';
 import { lookToward } from '../../../场/6-古城/6-4-6/走位.ts';

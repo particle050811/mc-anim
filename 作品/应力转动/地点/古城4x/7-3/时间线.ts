@@ -9,7 +9,7 @@
 //     马被冲得在塔顶横滑，他稳住、拨马一跃下到墙外大道往东冲（硬切 7-4-1）。音爆前后慢到 1/4（用户 10-19 定：保留音波慢放特写，变速在 7-3-3/编排.ts）。
 import { horseStart, towerTop, wallTopEast, avenue } from './几何.ts';
 import { leapApex, leapFrom, towerBrakeSec, knockSlide, wardenRouteToHold, wardenRouteToTower, wardenStairTopS, horseChaseSpeed, horseAccel } from './追逐.ts';
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import { sceneFrames } from '../7-1/段界.ts';
 import { STEED } from '@库/生物/幽灵马骑乘.ts';
 import { scene73 } from '../布局.ts';

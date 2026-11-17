@@ -23,7 +23,7 @@ import { bowPointWorld, BOW_ARROW_TIP } from '@库/物品/弓.tsx';
 import { ARROW } from '@库/物品/箭.tsx';
 import { ductLength } from '@库/特效/气流.tsx';
 import { yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { archery, liYingDeflectFeet, huangPanArcheryFeet, liuXinzhongArcheryFeet } from '../../../地点/古城4x/布局.ts';
 import flingPierceJson from 'asset:碎块/镜头/6-4-3/挑飞击穿';
 const gameToScene = G4;
