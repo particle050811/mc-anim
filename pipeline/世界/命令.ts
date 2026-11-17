@@ -6,6 +6,7 @@ import { UsageError, parseArgs } from '../cli/参数.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { passGate } from '../闸/闸.ts';
 import { defaultThreads, bakeWorld, loadEdits } from './烘焙/流程.ts';
+import { bakeDhWorld } from './dh/流程.ts';
 import { transcodePack } from './烘焙/转码.ts';
 import { buildDecoder } from './区段解码器.ts';
 import { buildReplay, buildReplayScript } from './编辑/重放.ts';
@@ -83,6 +84,17 @@ const subCommands: Record<string, SubCommand> = {
         runRecord.artifacts.push(r.目录);
         runRecord.log('信息', `${r.pack} 版本 ${r.version}${r.registered ? '' : '（没登记）'}`);
       }
+    },
+  },
+  'bake-dh': {
+    usage: 'bake-dh <世界> [--save-dir <世界目录>] [--no-register]',
+    跑: async (args, runRecord) => {
+      const p = parseArgs(args, { value: ['--save-dir'], toggles: ['--no-register'] });
+      if (p.位置.length !== 1) throw new UsageError('要给一个世界名（声明里写了 [dh] 的）');
+      const w = readDecl(p.位置[0]!);
+      const r = await passGate(() => bakeDhWorld(w, { save: p.value['--save-dir'], noRegister: p.toggles.has('--no-register'), log: (s) => console.log(s) }));
+      runRecord.artifacts.push(r.目录);
+      runRecord.log('信息', `${r.pack} 版本 ${r.version}${r.registered ? '' : '（没登记）'}`);
     },
   },
   transcode: {
@@ -364,7 +376,7 @@ export const worldCommand: Record<string, Command> = {
     usage: `world ${Object.values(subCommands)
       .map((c) => c.usage.split(' ')[0])
       .join('|')} …`,
-    note: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；transcode 把旧格式的包转成逐格预测压缩、没做可见变换的做上（只写新版本目录，逐格、逐网格核对）；decoder 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度；trim 按全片用到的级裁地形包（--import 登记别的机器裁好的）、cover 量段的地形覆盖。anim world help 看各子命令',
+    note: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；bake-dh 从存档里 Distant Horizons 的 LOD 库烘各处细度不一的区段包（声明的 [dh]，过资源闸）；transcode 把旧格式的包转成逐格预测压缩、没做可见变换的做上（只写新版本目录，逐格、逐网格核对）；decoder 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度；trim 按全片用到的级裁地形包（--import 登记别的机器裁好的）、cover 量段的地形覆盖。anim world help 看各子命令',
     跑: async (args, runRecord) => {
       const [subcommand, ...rest] = args;
       if (!subcommand || subcommand === 'help' || subcommand === '--help') {

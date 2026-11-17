@@ -1,14 +1,13 @@
-// 存档的区域按需读成列段：内存里留最近用的几十个，磁盘上按「区域文件 sha256 + 种子」缓存在 <数据根>/cache/列段/（内容寻址，换存档、重生成都自动失效）。
+// 存档的区域按需读成列段：内存里留最近用的几十个，磁盘上按「区域文件 sha256 + 种子 + 读法」缓存在 <数据根>/cache/列段/（内容寻址，换存档、重生成都自动失效）。
+// 区域由哪些文件组成、怎么读，看存档格式（存档格式.ts）：原版 .mca 一个文件，立方存档一组 .mcr3d。
 // 套编辑（编辑/套用.ts）在这一层做：烘焙、查询拿到的都是套完编辑的列段，原始存档不动。
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { decodeColumnSegments, encodeColumnSegments, type UnpackedColumnSegmentRegion } from './列段.ts';
-import { regionFileName, parseRegionFileName, readRegion } from './存档.ts';
-
-/** 列段缓存的键随它变：读存档的写法（状态串、并段规则）改了就换一版 */
-const READ_METHOD = 'mca-列段v2';
+import { regionFileName } from './存档.ts';
+import { mcaFormat, type SaveFormat } from './存档格式.ts';
 
 /** 读缓存时把修改时间推到现在（超过 1 天才动，省系统调用）：anim cache gc 按它算多久没用过 */
 const markUsed = (f: string, now = Date.now()) => {
@@ -32,39 +31,45 @@ export class RegionSource {
   readonly seed: string;
   private cacheDir: string | null;
   private transform: RegionTransform | null;
+  private format: SaveFormat;
 
-  constructor(regionDir: string, seed: string, cacheDir: string | null, transform: RegionTransform | null = null) {
+  constructor(regionDir: string, seed: string, cacheDir: string | null, transform: RegionTransform | null = null, format: SaveFormat = mcaFormat) {
     this.regionDir = regionDir;
     this.seed = seed;
     this.cacheDir = cacheDir;
     this.transform = transform;
+    this.format = format;
   }
 
-  /** 存档里有的区域文件 [rx, rz]，按文件名排好 */
+  /** 存档里有的区域 [rx, rz]，按文件名排好 */
   regionFiles(): [number, number][] {
     if (!fs.existsSync(this.regionDir)) throw new Error(`没有区域目录 ${this.regionDir}`);
-    return fs
-      .readdirSync(this.regionDir)
-      .sort()
-      .map(parseRegionFileName)
-      .filter((x): x is readonly [number, number] => !!x)
-      .map(([a, b]) => [a, b]);
+    return this.format.listRegions(this.regionDir);
   }
 
-  file(rx: number, rz: number) {
-    return path.join(this.regionDir, regionFileName(rx, rz));
+  /** 组成这个区域的文件里存在的；空 = 存档里没有这个区域 */
+  private files(rx: number, rz: number) {
+    return this.format.files(this.regionDir, rx, rz).filter((f) => fs.existsSync(f));
+  }
+
+  /** 存档里有这个区域 */
+  has(rx: number, rz: number) {
+    return this.files(rx, rz).length > 0;
   }
 
   private get keySuffix() {
-    return `\0${this.seed}\0${READ_METHOD}`;
+    return `\0${this.seed}\0${this.format.readMethod}`;
   }
 
-  /** 区域文件的戳；文件不在返回 null */
+  /** 区域各文件的戳；存档里没有返回 null */
   private stamp(rx: number, rz: number) {
-    const f = this.file(rx, rz);
-    if (!fs.existsSync(f)) return null;
-    const st = fs.statSync(f);
-    return { f, stamp: `${f}\0${st.size}\0${st.mtimeMs}\0${this.seed}` };
+    const files = this.files(rx, rz);
+    if (!files.length) return null;
+    const stamps = files.map((f) => {
+      const st = fs.statSync(f);
+      return `${f}\0${st.size}\0${st.mtimeMs}`;
+    });
+    return { files, stamp: `${stamps.join('\0')}${this.keySuffix}` };
   }
 
   private cacheFile(rx: number, rz: number) {
@@ -72,23 +77,30 @@ export class RegionSource {
     const s = this.stamp(rx, rz);
     if (!s) return null;
     let h = keyTable.get(s.stamp);
-    if (!h) keyTable.set(s.stamp, (h = createHash('sha256').update(fs.readFileSync(s.f)).update(this.keySuffix).digest('hex')));
+    if (!h) {
+      const hash = createHash('sha256');
+      for (const f of s.files) {
+        if (this.format.namesInKey) hash.update(`${path.basename(f)}\0`);
+        hash.update(fs.readFileSync(f));
+      }
+      keyTable.set(s.stamp, (h = hash.update(this.keySuffix).digest('hex')));
+    }
     return path.join(this.cacheDir, h.slice(0, 2), h);
   }
 
   /** 在工作线程里先把这些区域的缓存键算好（之后 缓存文件 直接查表）；没缓存目录、文件不在的跳过 */
   async computeKeys(regions: readonly [number, number][], threadCount: number) {
     if (!this.cacheDir) return;
-    const pending = regions.map(([rx, rz]) => this.stamp(rx, rz)).filter((s): s is { f: string; stamp: string } => !!s && !keyTable.has(s.stamp));
+    const pending = regions.map(([rx, rz]) => this.stamp(rx, rz)).filter((s): s is { files: string[]; stamp: string } => !!s && !keyTable.has(s.stamp));
     if (pending.length <= 2) return; // 一两个文件起线程不划算，留给 缓存文件 当场算
     let nextIndex = 0;
     const runThread = () =>
       new Promise<void>((resolve, reject) => {
         const w = new Worker(new URL('./算键工人.ts', import.meta.url));
-        let current: { f: string; stamp: string } | undefined;
+        let current: { files: string[]; stamp: string } | undefined;
         const dispatch = () => {
           current = pending[nextIndex++];
-          if (current) w.postMessage({ file: current.f, suffix: this.keySuffix });
+          if (current) w.postMessage({ files: current.files, namesInKey: this.format.namesInKey, suffix: this.keySuffix });
           else void w.terminate().then(() => resolve());
         };
         w.on('message', (h: string) => {
@@ -109,8 +121,8 @@ export class RegionSource {
 
   /** 读一个区域（不套编辑）：先看缓存，没有就解存档并写缓存 */
   原样(rx: number, rz: number): UnpackedColumnSegmentRegion | null {
-    const f = this.file(rx, rz);
-    if (!fs.existsSync(f)) return null;
+    const files = this.files(rx, rz);
+    if (!files.length) return null;
     const c = this.cacheFile(rx, rz);
     if (c && fs.existsSync(`${c}.列段`)) {
       markUsed(`${c}.列段`);
@@ -120,7 +132,7 @@ export class RegionSource {
       markUsed(`${c}.空`);
       return null;
     }
-    const r = readRegion(f, rx, rz, this.seed);
+    const r = this.format.read(files, rx, rz, this.seed);
     if (c) writeCache(c, r ? encodeColumnSegments(r.columnSeg) : null);
     return r ? decodeColumnSegments(encodeColumnSegments(r.columnSeg)) : null;
   }
@@ -147,9 +159,9 @@ export class RegionSource {
     if (this.cache.has(k)) return this.region(rx, rz);
     const c = this.cacheFile(rx, rz);
     if (c && (fs.existsSync(`${c}.列段`) || fs.existsSync(`${c}.空`))) return this.region(rx, rz);
-    const f = this.file(rx, rz);
-    if (!fs.existsSync(f)) return null;
-    const r = readRegion(f, rx, rz, this.seed, chunkSet);
+    const files = this.files(rx, rz);
+    if (!files.length) return null;
+    const r = this.format.read(files, rx, rz, this.seed, chunkSet);
     if (!r) return null;
     const d = decodeColumnSegments(encodeColumnSegments(r.columnSeg));
     return this.transform ? this.transform(d) : d;
@@ -159,13 +171,13 @@ export class RegionSource {
   async preRead(regions: [number, number][], threadCount: number, log?: (s: string) => void): Promise<[number, number][]> {
     if (!this.cacheDir) throw new Error('预读要有缓存目录');
     await this.computeKeys(regions, threadCount);
-    const pending: { rx: number; rz: number; cachePath: string }[] = [];
+    const pending: { files: string[]; rx: number; rz: number; cachePath: string }[] = [];
     const hasData: [number, number][] = [];
     for (const [rx, rz] of regions) {
       const c = this.cacheFile(rx, rz);
       if (!c) continue;
       if (fs.existsSync(`${c}.列段`)) hasData.push([rx, rz]);
-      else if (!fs.existsSync(`${c}.空`)) pending.push({ rx, rz, cachePath: c });
+      else if (!fs.existsSync(`${c}.空`)) pending.push({ files: this.files(rx, rz), rx, rz, cachePath: c });
     }
     if (pending.length) {
       log?.(`读存档：${pending.length} 个区域没缓存，${Math.min(threadCount, pending.length)} 个线程读`);
@@ -173,10 +185,10 @@ export class RegionSource {
       let nextIndex = 0;
       const runThread = () =>
         new Promise<void>((resolve, reject) => {
-          const w = new Worker(new URL('./读区域工人.ts', import.meta.url), { workerData: { seed: this.seed } });
+          const w = new Worker(new URL('./读区域工人.ts', import.meta.url), { workerData: { seed: this.seed, format: this.format.spec } });
           const dispatch = () => {
             const j = pending[nextIndex++];
-            if (j) w.postMessage({ file: this.file(j.rx, j.rz), rx: j.rx, rz: j.rz, cachePath: j.cachePath });
+            if (j) w.postMessage(j);
             else void w.terminate().then(() => resolve());
           };
           w.on('message', (m: { rx: number; rz: number; chunkCount: number; bytes: number }) => {

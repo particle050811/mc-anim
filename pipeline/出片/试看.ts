@@ -1,21 +1,19 @@
 // 试看出片：设了 REMOTION_ANIM_TRIAL 的 anim film（用户 11-17 定：试看对比视频走正规的边渲边编，不再 still 落几千张 PNG 再另编一遍）。
 // 和切片同一套参数（段产物.ts 的 segPictureParams：4K60、同样的压法、带字幕，声音同一遍出），出来的能直接和成片对比；
 // 但正式产物一样不碰：不算指纹、不写切片缓存、不派生段签、不删旧切片、不碰认可，也不记这段的地形用量（试看可能多读包），片子由 拼成片.ts 写到 run/草稿/。
-// 地形照 still：当场读登记表，并上试看参数「地形」列的包（地形注入.ts）。
+// 地形照 still：当场读登记表，并上试看参数「地形」列的包（地形注入.ts）。打包、浏览器、Remotion、闸经 opts.backend（渲/后端.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
 import { workName, workRoot } from '../环境/作品.ts';
 import type { SegInfo } from '../清单/清单.ts';
-import { perGroupWithResourcePacks } from '../资产/资产锁.ts';
-import { passRenderGate } from '../闸/闸.ts';
 import { recordTiming, type RunRecord } from '../运行记录/记录.ts';
 import { recordPhase, measureStage } from '../运行记录/阶段.ts';
 import type { DetailCollector } from '../运行记录/渲染明细.ts';
 import { segTerrainNow, trialEnv, trialTerrain, terrainOnlyEnv, shellTrialMode } from '../渲/地形注入.ts';
 import { waitSolveCacheWrites } from '../渲/求解缓存收集.ts';
-import { renderMedia } from '../渲/渲染器.ts';
-import { openSession, findComposition, missingLocalTerrain, measureRender } from '../渲/渲.ts';
+import { realBackend, type RenderBackend } from '../渲/后端.ts';
+import { findComposition, missingLocalTerrain, measureRender } from '../渲/渲.ts';
 import { segOutputWindow, segPictureParams, type FilmPiece } from '../渲/段产物.ts';
 import { filmProfile, frameTimeoutMs } from '../渲/设置.ts';
 import { videoInfo } from '../渲/探测.ts';
@@ -27,7 +25,8 @@ export const trialLabel = (segKey: string, level: RenderLevel) => `试看:${work
  * 各段出到 工作目录/<段键>.mp4、.wav，返回接成片要的样子（没有指纹）。frames：段内输出帧号的闭区间，只给一段时用。
  * 页面只拿 地形版本表 和试看参数：不给地形用量的段名，页面就不记用量
  */
-export const renderTrialSegments = async (allSegments: readonly SegInfo[], selected: readonly SegInfo[], level: RenderLevel, opts: { frames?: [number, number]; workDir: string; runRecord: RunRecord }): Promise<FilmPiece[]> => {
+export const renderTrialSegments = async (allSegments: readonly SegInfo[], selected: readonly SegInfo[], level: RenderLevel, opts: { frames?: [number, number]; workDir: string; runRecord: RunRecord; backend?: RenderBackend }): Promise<FilmPiece[]> => {
+  const backend = opts.backend ?? realBackend;
   if (opts.frames && selected.length !== 1) throw new Error('试看的 --frames 只能配一段');
   for (const s of selected) {
     const pack = missingLocalTerrain(s);
@@ -45,7 +44,7 @@ export const renderTrialSegments = async (allSegments: readonly SegInfo[], selec
     return { piece, params: params[i]!, frameRange: [a, b] as [number, number], whole: !opts.frames };
   });
   fs.mkdirSync(opts.workDir, { recursive: true });
-  await perGroupWithResourcePacks(workRoot(), pieces, (x) => x.piece.segment.key, (group) => openSession(level, async (h) => {
+  await backend.perResourcePackGroup(workRoot(), pieces, (x) => x.piece.segment.key, (group) => backend.openSession(level, async (h) => {
     for (const { piece, params: p, frameRange, whole } of group) {
       const s = piece.segment;
       const composition = findComposition(h, s, allSegments);
@@ -53,14 +52,14 @@ export const renderTrialSegments = async (allSegments: readonly SegInfo[], selec
       await measureStage(opts.runRecord.stage, label, '等求解缓存', waitSolveCacheWrites);
       const env = { ...terrainOnlyEnv(segTerrainNow(s, trialTerrain()), shellTrialMode()), ...trialEnv() };
       const queueStartMs = Date.now();
-      const detail = await passRenderGate(async () => {
+      const detail = await backend.passRenderGate(async () => {
         const t0 = Date.now();
         recordPhase(opts.runRecord.stage, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
         let code = 1;
         const holder: { detail?: DetailCollector } = {};
         try {
           console.log(`== 试看 ${s.key} 第 ${frameRange[0]}-${frameRange[1]} 帧（${piece.outputFrames} 帧）画面、声音`);
-          holder.detail = await measureRender(label, opts.runRecord.stage, t0, (hooks) => renderMedia({
+          holder.detail = await measureRender(label, opts.runRecord.stage, t0, (hooks) => backend.renderMedia({
             separateAudioTo: piece.sound,
             audioCodec: p.audioCodec,
             serveUrl: h.serveUrl,

@@ -24,6 +24,8 @@ export const TRIM_COMMANDS: Record<string, SubCommand> = {
       if (p.value['--keep'] && p.位置.length !== 1) throw new UsageError('--keep 一次只裁一个包');
       const table = readTerrainTable().pack;
       for (const pack of p.位置) if (!table[pack]) throw new UsageError(`assets/地形版本.json 没登记包 ${pack}`);
+      // 裁级是为了发布（pull 只下裁过的）和笔记本回传；可见性私有的包不进发布（分发/发布.ts），不裁
+      for (const pack of p.位置) if (table[pack]!.visibility === '私有') throw new UsageError(`${pack} 可见性私有，不进发布，不用裁`);
       for (const pack of p.位置) {
         let used: Iterable<string>;
         if (p.value['--keep']) {

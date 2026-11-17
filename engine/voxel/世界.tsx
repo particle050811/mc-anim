@@ -313,6 +313,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       inView: inViewOf(test),
       featureTop,
       ...(force ? { decide: routeDecide(force, floorCssPixels) } : {}),
+      ...(source.canSplit ? { canSplit: source.canSplit } : {}),
     });
   // 航线定级：这个镜头登记了航线、又要往后看或留细，才有 forceAt（航线秒 → 那一帧要提前细分的块）
   const routeSpan = look && (look.route.range ?? ([look.route.sec - look.secSinceStart, look.route.sec + look.secLeft] as const));
@@ -328,7 +329,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     const routeKey = [size.width, size.height, splitCssPixels, farM, heightRange[0], heightRange[1], sx, sy, lookSec, hold, gridHz].join('|');
     if (world.route?.key !== routeKey) {
       const state: RouteState = { key: routeKey, viewAt, table: undefined as unknown as RouteTable };
-      state.table = new RouteTable({ lookSec, hold, gridHz, splitPixels: splitCssPixels, farM, featureTop, viewAt: (sec) => state.viewAt(sec) });
+      state.table = new RouteTable({ lookSec, hold, gridHz, splitPixels: splitCssPixels, farM, featureTop, canSplit: source.canSplit, viewAt: (sec) => state.viewAt(sec) });
       world.route = state;
     }
     const routeState = world.route;

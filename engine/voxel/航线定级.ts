@@ -20,6 +20,7 @@ export type RouteTableOptions = {
   splitPixels: number;
   farM: number;
   featureTop: PickSectionsParams['featureTop'];
+  canSplit?: PickSectionsParams['canSplit'];
   /** 航线秒 → 那一刻的视野；航线算不出返回 null */
   viewAt: (sec: number) => RouteView | null;
 };
@@ -101,6 +102,7 @@ export class RouteTable {
         farM: this.o.farM,
         inView: view.inView,
         featureTop: this.o.featureTop,
+        canSplit: this.o.canSplit,
         decide: (level, i, j, wantsSplit) => {
           if (wantsSplit) splits.push(nodeKey(level, i, j));
           return wantsSplit;

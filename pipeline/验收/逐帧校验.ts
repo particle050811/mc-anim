@@ -14,14 +14,13 @@ import { commitStatus } from '../环境/路径.ts';
 import { frameCheckDir } from '../环境/作品数据.ts';
 import { dataRoot } from '../环境/配置.ts';
 import type { SegInfo } from '../清单/清单.ts';
-import { passGate, passRenderGate } from '../闸/闸.ts';
 import { fillBytesAndReport } from '../分发/随仓库.ts';
-import { perGroupWithResourcePacks } from '../资产/资产锁.ts';
 import { estimateTiming, type RunRecord } from '../运行记录/记录.ts';
 import { recordPhase } from '../运行记录/阶段.ts';
 import { DetailCollector } from '../运行记录/渲染明细.ts';
 import { waitSolveCacheWrites } from '../渲/求解缓存收集.ts';
-import { renderFramesSamePage, openSession, findComposition, renderLabel, missingLocalTerrain, stillFile } from '../渲/渲.ts';
+import { renderFramesSamePage, findComposition, renderLabel, missingLocalTerrain, stillFile } from '../渲/渲.ts';
+import { realBackend, type RenderBackend } from '../渲/后端.ts';
 import { segRenderEnv } from '../渲/地形注入.ts';
 import { recordMeasuredFrames } from '../渲/地形用量.ts';
 import { segmentProducts } from '../渲/段产物.ts';
@@ -129,10 +128,11 @@ const commitText = () => {
 /** writeDir：这次写 PNG 的目录（存：基准图，全写；比：--keep-images，只写不同的）；baselineImages：比的时候基准图在哪，没留或不在了是 null */
 type SegPlan = { segment: SegInfo; frame: number[]; baseline: CheckRecord | null; baselineImages: string | null; writeDir: string | null; fingerprint: string; terrain: Record<string, string>; frameCount: number; params: RenderParamsTable };
 
-export type PerFrameOptions = { checkMode: '存' | '比'; name: string; frame: readonly number[] | null; keepDir: string | null; noImages?: boolean; tolerance?: number | null; runRecord: RunRecord };
+export type PerFrameOptions = { checkMode: '存' | '比'; name: string; frame: readonly number[] | null; keepDir: string | null; noImages?: boolean; tolerance?: number | null; runRecord: RunRecord; backend?: RenderBackend };
 
 export const runPerFrame = async (segments: readonly SegInfo[], o: PerFrameOptions): Promise<number> => {
   const { checkMode, name: checkName, runRecord } = o;
+  const backend = o.backend ?? realBackend;
   const tolerance = o.tolerance ?? null;
   let failed = 0;
   let kept = 0;
@@ -206,7 +206,7 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: PerFrameOptio
     });
     const knownEstimates = estimates.filter((x): x is number => x !== null);
     console.log(`== 逐帧${checkMode} ${plans.length} 段、${plans.reduce((a, x) => a + x.frame.length, 0)} 帧${knownEstimates.length ? `；按耗时表预计约 ${Math.round(knownEstimates.reduce((a, b) => a + b, 0))} 秒${knownEstimates.length < plans.length ? `（另 ${plans.length - knownEstimates.length} 段没有记录）` : ''}` : ''}`);
-    await perGroupWithResourcePacks(workRoot(), plans, (x) => x.segment.key, (group) => openSession(level, async (h) => {
+    await backend.perResourcePackGroup(workRoot(), plans, (x) => x.segment.key, (group) => backend.openSession(level, async (h) => {
       for (const x of group) {
         const segKey = x.segment.key;
         const composition = findComposition(h, x.segment, allSegments);
@@ -214,7 +214,7 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: PerFrameOptio
         await waitSolveCacheWrites();
         const queueStartMs = Date.now();
         const current = new Map<number, FrameCheck>();
-        await passRenderGate(async () => {
+        await backend.passRenderGate(async () => {
           const t0 = Date.now();
           recordPhase(runRecord.stage, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
           const detail = new DetailCollector(label);
@@ -236,7 +236,7 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: PerFrameOptio
                 detail.frameDone(current.size);
                 if (current.size % 100 === 0) console.error(`   ${segKey}：${current.size}/${x.frame.length} 帧`);
               },
-            }),
+            }, backend),
           );
           await recordMeasuredFrames(segKey, x.frame);
           recordPhase(runRecord.stage, label, '出帧', t0, (Date.now() - t0) / 1000);
@@ -262,7 +262,7 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: PerFrameOptio
         if (x.baselineImages) {
           const newDir = x.writeDir ?? scratch();
           const threshold = readThresholds();
-          await passGate(async () => {
+          await backend.passGate(async () => {
             for (const m of mismatches) {
               try {
                 const d = frameDiff(fs.readFileSync(stillFile(newDir, segKey, m.frame)), fs.readFileSync(stillFile(x.baselineImages!, segKey, m.frame)), threshold);

@@ -1,18 +1,18 @@
 // anim batch：复用准备好的包；任务一行 <包键> <段> <帧串> <名> [留=全|帧,帧]。
 // 每项新浏览器是为了核对加载历史；显式 --keep-browser 才跨项复用。PKGS 是包键到本地包目录的 JSON。
+// 包是预先打好的，所以不开会话，只经 backend（后端.ts）开浏览器、读组合、出帧、过闸；批.test.ts 换假的。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { prepareBrowser } from './浏览器.ts';
-import { getCompositions, openBrowser, renderFrames } from './渲染器.ts';
-import { openGateBatch, gateHeartbeat } from '../闸/闸.ts';
+import type { HeadlessBrowser } from './渲染器.ts';
+import { realBackend, type RenderBackend } from './后端.ts';
 import { parseArgs, UsageError } from '../cli/参数.ts';
 import type { Command } from '../cli/命令.ts';
 import { renderParams, frameTimeoutMs } from './设置.ts';
 import { selectSegs } from '../清单/清单.ts';
 import { segRenderEnv, segTerrainNow } from './地形注入.ts';
-export const runBatch = async (args: string[]) => {
+export const runBatch = async (args: string[], backend: RenderBackend = realBackend) => {
     const p = parseArgs(args, { toggles: ['--keep-browser'], value: ['--coherent'] });
     const [taskFile, outPath] = p.位置;
     if (!taskFile || !outPath || !process.env.PKGS)
@@ -35,10 +35,10 @@ export const runBatch = async (args: string[]) => {
         os.setPriority(0, 10);
     }
     catch { }
-    const compositionCache = new Map<string, Awaited<ReturnType<typeof getCompositions>>>();
-    let browser: Awaited<ReturnType<typeof openBrowser>> | undefined;
+    const compositionCache = new Map<string, Awaited<ReturnType<RenderBackend['readCompositions']>>>();
+    let browser: HeadlessBrowser | undefined;
     let failCount = 0;
-    const gate = openGateBatch({ kind: '批', itemCount: tasks.length, purpose: process.env.ANIM_PURPOSE ?? '实验', ...(p.value['--coherent'] ? { 连贯: { why: p.value['--coherent'] } } : {}) });
+    const gate = backend.openGateBatch({ kind: '批', itemCount: tasks.length, purpose: process.env.ANIM_PURPOSE ?? '实验', ...(p.value['--coherent'] ? { 连贯: { why: p.value['--coherent'] } } : {}) });
     try {
         for (const t of tasks) {
             const frames = parseFrames(t.frameRange);
@@ -46,7 +46,7 @@ export const runBatch = async (args: string[]) => {
             const outDir = path.join(outPath!, t.name);
             fs.mkdirSync(outDir, { recursive: true });
             await gate.runTask({ segment: t.segment, frameCount: frames.length, frame: t.frameRange.slice(0, 60) }, async () => {
-                browser ??= await openBrowser('chrome', { chromiumOptions: { gl: params.gl }, forceDeviceScaleFactor: params.scale, logLevel: 'error', browserExecutable: await prepareBrowser() });
+                browser ??= await backend.launchBrowser({ gl: params.gl, scale: params.scale });
                 const logStream = fs.createWriteStream(path.join(outDir, '日志.txt'));
                 const lines: string[] = [];
                 const loadBefore = os.loadavg()[0].toFixed(1);
@@ -54,10 +54,10 @@ export const runBatch = async (args: string[]) => {
                 try {
                     const serveUrl = packPaths[t.pack]!;
                     if (!compositionCache.has(serveUrl))
-                        compositionCache.set(serveUrl, await getCompositions(serveUrl, { inputProps: params.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: params.gl }, timeoutInMilliseconds: frameTimeoutMs, logLevel: 'error' }));
+                        compositionCache.set(serveUrl, await backend.readCompositions(serveUrl, { inputProps: params.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: params.gl }, timeoutInMilliseconds: frameTimeoutMs, logLevel: 'error' }));
                     const composition = compositionCache.get(serveUrl)!.find((c) => c.id === t.segment)!;
                     const t1 = Date.now();
-                    await renderFrames({
+                    await backend.renderFrames({
                         serveUrl, composition, outputDir: null, frames: frames, inputProps: params.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: params.gl },
                         envVariables: segRenderEnv(t.segment, segTerrainNow((await selectSegs([t.segment]))[0]!)),
                         imageFormat: 'png', scale: params.scale, concurrency: 1, timeoutInMilliseconds: frameTimeoutMs, logLevel: 'error',
@@ -65,7 +65,7 @@ export const runBatch = async (args: string[]) => {
                         onBrowserLog: (l) => { if (l.text.startsWith('@'))
                             logStream.write(l.text + '\n'); },
                         onFrameBuffer: (buf, f) => {
-                            gateHeartbeat(lines.length + 1);
+                            backend.gateHeartbeat(lines.length + 1);
                             lines.push(`${f}=${crypto.createHash('sha256').update(buf).digest('hex').slice(0, 12)}`);
                             if (keepFrames.has(f))
                                 fs.writeFileSync(path.join(outDir, `${String(f).padStart(4, '0')}.png`), buf);
@@ -96,4 +96,4 @@ export const runBatch = async (args: string[]) => {
     console.log(`批完成，失败 ${failCount} 项`);
     return failCount ? 1 : 0;
 };
-export const batchCommands: Record<string, Command> = { batch: { usage: 'batch <任务文件> <输出目录> [--keep-browser] [--coherent <为什么>]', note: '预打包任务批；默认新浏览器，按累计持锁时间或指令让路；PKGS 给包表', 跑: runBatch } };
+export const batchCommands: Record<string, Command> = { batch: { usage: 'batch <任务文件> <输出目录> [--keep-browser] [--coherent <为什么>]', note: '预打包任务批；默认新浏览器，按累计持锁时间或指令让路；PKGS 给包表', 跑: (args) => runBatch(args) } };

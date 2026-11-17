@@ -17,7 +17,7 @@ import { shrieks } from '../../地点/古城4x/布局.ts';
 import * as K645 from '../../场/6-古城/6-4-5/编排.ts';
 import { τ646, durationSec646, headTrim646, huangPanPose, liuXinzhongPose, huangRoute, liuRoute, thirdShriekSec, chain } from '../../场/6-古城/6-4-6/追兵.ts';
 import { lookToward } from '../../场/6-古城/6-4-6/走位.ts';
-import { lineTable } from '../../配音/台词轨.tsx';
+import { lineTable } from '../../配音/台词表.ts';
 import type { Cam } from '@engine/core/机位.ts';
 import type { LineAt } from '../../地点/古城4x/6-4-1/古城戏.ts';
 

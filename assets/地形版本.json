@@ -84,6 +84,24 @@
       "fileCount": 5,
       "size": 6136676,
       "manifestSha256": "7d670c3076f6630124a6a359fb4abc5602300e5a293acb709a4eab5f650f64bb"
+    },
+    "珠峰-真实地球": {
+      "version": "ad0112abd115",
+      "source": "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 cubes/*.mcr3d，生成完的全部 cube，anim world bake 烘焙",
+      "license": "LicenseRef-Origin-Unverified",
+      "visibility": "私有",
+      "fileCount": 17,
+      "size": 12934763,
+      "manifestSha256": "318c94895f1b9dad5054952bcfe9be8a028bac2f721d2e28dffa44cfd88b6ea6"
+    },
+    "珠峰-真实地球-DH": {
+      "version": "9789420f0cbe",
+      "source": "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 data/DistantHorizons.sqlite，anim world bake-dh 烘焙",
+      "license": "LicenseRef-Origin-Unverified",
+      "visibility": "私有",
+      "fileCount": 1443,
+      "size": 101525581,
+      "manifestSha256": "de7a5ccc5b18420bf5ae2cb9021f6fbefe8d4cd8fbafa10b91ad08367fa3f1c8"
     }
   }
 }

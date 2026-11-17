@@ -1,5 +1,5 @@
 // 试看出片（试看.ts + 拼成片.ts 的试看分支）：设了 REMOTION_ANIM_TRIAL 的 anim film 不写切片缓存、不派生不改段签、不删旧切片、不出到 交付/，
-// 片子进 run/草稿/<UTC>-工作-试看-<名>/；参数原样转给页面、不给地形用量的段名；--frames 只出一截。Remotion 那步 mock 成 ffmpeg 现造。
+// 片子进 run/草稿/<UTC>-工作-试看-<名>/；参数原样转给页面、不给地形用量的段名；--frames 只出一截。渲染后端换假的（渲/假后端.ts），出片那步用 ffmpeg 现造。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -25,31 +25,18 @@ vi.mock('../验收/段签.ts', () => ({ deriveSegStamp: guard.deriveSegStamp }))
 vi.mock('../缓存/钉.ts', () => ({ deleteOld: guard.deleteOld, hasOldToDelete: () => false }));
 vi.mock('../渲/母版.ts', async (actual) => ({ ...(await actual<object>()), writeFingerprint: guard.writeFingerprint, markUsed: guard.markUsed }));
 vi.mock('../渲/地形用量.ts', async (actual) => ({ ...(await actual<object>()), startWholeMeasure: guard.startWholeMeasure }));
-// 渲染：不开浏览器，renderMedia 照给的帧范围用 ffmpeg 造画面和声音
-vi.mock('../渲/渲.ts', () => ({
-  openSession: async (_level: unknown, fn: (h: unknown) => Promise<unknown>) => fn({ serveUrl: '包', browser: {}, params: {}, compositions: [] }),
-  findComposition: (_h: unknown, s: SegInfo) => ({ id: s.key, durationInFrames: Math.round(s.segment.sec * 60), fps: 60 }),
-  missingLocalTerrain: () => null,
-  measureRender: async (_label: unknown, _records: unknown, _t0: unknown, fn: (hooks: object) => Promise<unknown>) => {
-    await fn({ logLevel: 'verbose', onProgress: () => {} });
-    return { stopTimer: () => {}, writeOut: async () => ({}) };
-  },
-}));
-vi.mock('../渲/渲染器.ts', () => ({
-  renderMedia: async (o: { outputLocation: string; separateAudioTo: string; frameRange: [number, number] | null; composition: { durationInFrames: number } }) => {
-    fake.renderCalls.push(o);
-    const n = o.frameRange ? o.frameRange[1] - o.frameRange[0] + 1 : o.composition.durationInFrames;
-    runFfmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=320x180:rate=60', '-frames:v', String(n), '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', o.outputLocation]);
-    runFfmpeg(['-f', 'lavfi', '-t', String(n / 60), '-i', 'sine=frequency=440:sample_rate=48000', '-ac', '2', '-c:a', 'pcm_s16le', o.separateAudioTo]);
-  },
-}));
 vi.mock('../渲/段产物.ts', async (actual) => ({ ...(await actual<object>()), segPictureParams: (_all: unknown, segs: unknown[]) => segs.map(() => ({ inputProps: {}, audioCodec: 'pcm-16' })) }));
-vi.mock('../闸/闸.ts', () => ({ passRenderGate: async (fn: () => Promise<unknown>) => fn(), registerTempFile: () => () => {} }));
-vi.mock('../资产/资产锁.ts', () => ({ perGroupWithResourcePacks: async <T,>(_root: string, items: T[], _key: unknown, fn: (g: T[]) => Promise<unknown>) => [await fn(items)] }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<object>()), loadAllSegments: async () => fake.segments }));
+// 渲染明细的系统采样不读芯片温度（会在数据根建缓存）
+vi.mock('../环境/温度.ts', () => {
+  const noTempReading = () => ({ chipMaxTemp: null, thermalLevel: null });
+  return { readTemperature: noTempReading, readTempParallel: async () => noTempReading(), noTempReading };
+});
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<object>()), workName: () => '测试' }));
 
-const { assembleFilm } = await import('./拼成片.ts');
+const { assembleFilm: assemble } = await import('./拼成片.ts');
+const { expectedComposition } = await import('../渲/渲.ts');
+const { fakeBackend } = await import('../渲/假后端.ts');
 const { composeCommands } = await import('../合成/命令.ts');
 const { videoInfo } = await import('../渲/探测.ts');
 const { codeRoot } = await import('../环境/路径.ts');
@@ -69,6 +56,20 @@ const makeSeg = (segKey: string, durSec: number): SegInfo =>
   }) as unknown as SegInfo;
 
 const makeRunRecord = () => ({ log: vi.fn(), artifacts: [] as string[], stage: [] }) as unknown as RunRecord;
+
+// 不开浏览器：会话里的 Composition 照 still 不开页面算的给；renderMedia 照给的帧范围用 ffmpeg 造画面和声音
+type MediaOpts = { outputLocation: string; separateAudioTo: string; frameRange: [number, number] | null; composition: { durationInFrames: number } };
+const backend = () =>
+  fakeBackend({
+    session: { compositions: (fake.segments as SegInfo[]).map((s) => expectedComposition(s, fake.segments as SegInfo[], {})) },
+    renderMedia: (async (o: MediaOpts) => {
+      fake.renderCalls.push(o as unknown as Record<string, unknown>);
+      const n = o.frameRange ? o.frameRange[1] - o.frameRange[0] + 1 : o.composition.durationInFrames;
+      runFfmpeg(['-f', 'lavfi', '-i', 'testsrc2=size=320x180:rate=60', '-frames:v', String(n), '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', o.outputLocation]);
+      runFfmpeg(['-f', 'lavfi', '-t', String(n / 60), '-i', 'sine=frequency=440:sample_rate=48000', '-ac', '2', '-c:a', 'pcm_s16le', o.separateAudioTo]);
+    }) as never,
+  }).backend;
+const assembleFilm = (segs: SegInfo[], o: Omit<Parameters<typeof assemble>[1], 'backend'>) => assemble(segs, { ...o, backend: backend() });
 
 /** 数据根里除了 run/草稿、run/logs（耗时表）以外的全部文件 */
 const filesOutsideDrafts = () =>

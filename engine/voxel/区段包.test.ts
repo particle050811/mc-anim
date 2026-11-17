@@ -86,6 +86,19 @@ describe('区段包', () => {
     expect(P.hasSection(coarseHeight, { L: 0, i: -3, j: 0 })).toBe(false);
     expect(P.hasSection(coarseHeight, { L: 0, i: 5, j: 0 })).toBe(false);
   });
+  it('能不能细分的位图（splittable）：范围里按位查，范围外、没列的级都不能；包里没有这一项 = 不限', () => {
+    expect(P.decodeSplittable({})).toBeUndefined();
+    // 第 2 级 3 × 2 个区段（i −1～1、j 4～5），能分的是 (−1, 4)、(1, 4)、(0, 5)：位 0、2、4
+    const canSplit = P.decodeSplittable({ splittable: [null, null, { i0: -1, j0: 4, ni: 3, nj: 2, bits: Buffer.from([0b10101]).toString('base64') }] })!;
+    const yes = [[-1, 4], [1, 4], [0, 5]], no = [[0, 4], [-1, 5], [1, 5], [-2, 4], [2, 4], [0, 3], [0, 6]];
+    for (const [i, j] of yes) expect(canSplit(2, i!, j!)).toBe(true);
+    for (const [i, j] of no) expect(canSplit(2, i!, j!)).toBe(false);
+    expect(canSplit(1, 0, 5)).toBe(false);
+    expect(canSplit(3, 0, 5)).toBe(false);
+    // 位图跨字节：第 9 位
+    const wide = P.decodeSplittable({ splittable: [null, { i0: 0, j0: 0, ni: 16, nj: 1, bits: Buffer.from([0, 0b10]).toString('base64') }] })!;
+    expect(Array.from({ length: 16 }, (_, i) => wide(1, i, 0))).toEqual(Array.from({ length: 16 }, (_, i) => i === 9));
+  });
   it('块文件头的字节（金样）', async () => {
     const json = JSON.stringify({
       chunkHeaderSha256: crypto.createHash('sha256').update(P.encodeTileHeader(1, -1, Uint32Array.from({ length: 2 * P.tileEntryCount }, (_, k) => k))).digest('hex'),

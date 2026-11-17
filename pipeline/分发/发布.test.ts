@@ -5,7 +5,7 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { bytesAttachmentName, terrainAttachmentName, pullRelease, compareReleaseLock, readReleaseManifest, missingRemoteAttachments, type ExpectedRelease } from './发布.ts';
+import { bytesAttachmentName, terrainAttachmentName, terrainToRelease, pullRelease, compareReleaseLock, readReleaseManifest, missingRemoteAttachments, type ExpectedRelease } from './发布.ts';
 import { missingAttachmentCount, type ReleaseLock } from './发布锁.ts';
 
 const releaseTable = { repo: 'a/b', label: 'assets-v1', segment: ['6'] };
@@ -37,6 +37,11 @@ describe('挂 Release 发字节', () => {
     // 没有 私有/ 库字节时名字和以前一样，旧发布锁照用
     expect(bytesAttachmentName([s1, s2], [])).toBe(bytesAttachmentName([s1, s2]));
     expect(bytesAttachmentName([s1], [s2])).not.toBe(bytesAttachmentName([s1, s2]));
+  });
+
+  it('段声明的地形包：可见性私有的不发，没登记的报出来', () => {
+    const table = { '主世界': { version: 'abc123', visibility: '发布' }, '外来': { version: 'def456', visibility: '私有' }, '老包': { version: '777777' } };
+    expect(terrainToRelease(['主世界', '外来', '老包', '没有的'], table)).toEqual({ terrain: [{ pack: '主世界', version: 'abc123' }, { pack: '老包', version: '777777' }], issues: ['地形包 没有的 没在 assets/地形版本.json 登记'] });
   });
 
   it('发布锁和现算的一致就没问题；少字节、换了地形版本、换了标签都报', () => {

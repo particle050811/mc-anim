@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { worldDir, listWorlds, parseDecl } from './声明.ts';
+import { worldDir, listWorlds, parseDecl, regionDir } from './声明.ts';
 import { pregenPlans } from './预生成/计划.ts';
 
 const baseDecl = `"displayName" = "甲"\n"server" = "服"\n"dimension" = "minecraft:overworld"\n`;
@@ -26,6 +26,33 @@ describe('世界声明', () => {
     expect(parseDecl(`${baseDecl}["bake"]\n"origin" = [0, 64, 0]`, '甲').fullHeight).toBe(false);
     expect(parseDecl(`${baseDecl}["bake"]\n"origin" = [0, 64, 0]\n"全高" = true`, '甲').fullHeight).toBe(true);
     expect(() => parseDecl(`${baseDecl}["bake"]\n"全高" = 1`, '甲')).toThrow(/全高/);
+  });
+
+  it('立方存档：saveFormat = mcr3d 要写对齐 cube 的 yRange，区域目录是 cubes；包可以写许可、可见性', () => {
+    const tomlText = `${baseDecl}"saveFormat" = "mcr3d"\n"yRange" = [4096, 8959]\n["bake"]\n"origin" = [0, 64, 0]\n[["bake"."pack"]]\n"name" = "a"\n"license" = "LicenseRef-Origin-Unverified"\n"visibility" = "提取"\n`;
+    const w = parseDecl(tomlText, '甲');
+    expect(w.saveFormat).toEqual({ kind: 'mcr3d', yRange: [4096, 8959] });
+    expect(regionDir(w, '/存档')).toBe(path.join('/存档', 'cubes'));
+    expect([w.pack[0]!.license, w.pack[0]!.visibility]).toEqual(['LicenseRef-Origin-Unverified', '提取']);
+    expect(parseDecl(baseDecl, '甲').saveFormat).toEqual({ kind: 'mca' });
+    expect(() => parseDecl(tomlText.replace('[4096, 8959]', '[4100, 8959]'), '甲')).toThrow(/yRange/);
+    expect(() => parseDecl(tomlText.replace('"saveFormat" = "mcr3d"\n', ''), '甲')).toThrow(/yRange/);
+    expect(() => parseDecl(tomlText.replace('mcr3d', 'anvil'), '甲')).toThrow(/saveFormat/);
+    expect(() => parseDecl(tomlText.replace('提取', '半公开'), '甲')).toThrow(/visibility/);
+  });
+
+  it('[dh]：从 DH 的 LOD 库烘的包，范围和原点对齐 4096、高度对齐 64；原点不写用 [bake] 的', () => {
+    const tomlText = `${baseDecl}["bake"]\n"origin" = [0, 64, 0]\n["dh"]\n"db" = "data/DistantHorizons.sqlite"\n"pack" = "甲-DH"\n"extent" = [-8192, -4096, 4096, 8192]\n"yRange" = [-64, 8959]\n"license" = "LicenseRef-Origin-Unverified"\n"visibility" = "提取"\n`;
+    const w = parseDecl(tomlText, '甲');
+    expect(w.dh).toEqual({ db: 'data/DistantHorizons.sqlite', pack: '甲-DH', origin: [0, 64, 0], extent: [-8192, -4096, 4096, 8192], yRange: [-64, 8959], source: undefined, license: 'LicenseRef-Origin-Unverified', visibility: '提取' });
+    expect(parseDecl(baseDecl, '甲').dh).toBeUndefined();
+    expect(parseDecl(tomlText.replace('"pack" = "甲-DH"', '"pack" = "甲-DH"\n"origin" = [4096, 64, -4096]'), '甲').dh!.origin).toEqual([4096, 64, -4096]);
+    expect(() => parseDecl(tomlText.replace('[-8192, -4096, 4096, 8192]', '[-8192, -4096, 4096, 8000]'), '甲')).toThrow(/extent/);
+    expect(() => parseDecl(tomlText.replace('[-8192, -4096, 4096, 8192]', '[4096, -4096, -8192, 8192]'), '甲')).toThrow(/extent/);
+    expect(() => parseDecl(tomlText.replace('[0, 64, 0]', '[2048, 64, 0]'), '甲')).toThrow(/4096/);
+    expect(() => parseDecl(tomlText.replace('[-64, 8959]', '[-60, 8959]'), '甲')).toThrow(/yRange/);
+    expect(() => parseDecl(tomlText.replace('"pack" = "甲-DH"\n', ''), '甲')).toThrow(/pack/);
+    expect(() => parseDecl(tomlText.replace('提取', '半公开'), '甲')).toThrow(/visibility/);
   });
 
   it('原点不是 2048 的倍数、oy 不对、名称和文件名不一致都报错', () => {

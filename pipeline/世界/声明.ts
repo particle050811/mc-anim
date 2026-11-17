@@ -6,6 +6,7 @@ import { parse } from 'smol-toml';
 import { config } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { dimensionRegionDir } from './存档.ts';
+import type { SaveFormatSpec } from './存档格式.ts';
 
 export type RegionRange = { RX: [number, number]; RZ: [number, number] };
 export type PackDecl = {
@@ -19,6 +20,9 @@ export type PackDecl = {
   applyEdits: boolean;
   /** false = 烘了也不登记进 assets/地形版本.json（演示、试验用的包） */
   entries: boolean;
+  /** 第一次登记时写进 assets/地形版本.json 的许可、可见性（docs/决策/0002-资产标准.md）；不写 = 自己游戏里生成的世界那一套（LicenseRef-Minecraft-Derived、发布）。别人给的存档要写 */
+  license?: string;
+  visibility?: string;
 };
 /** 矩形写 两角，或 中心 加 半边；走廊写 折线、半宽，可选 去掉（已在别的矩形块里的区块不重复生成）；区块表写 文件（相对 sourcing/worlds/ 的 JSON，{"区块": [[cx, cz], …]}，
  *  程序算出来的散点区块，例：anim world far landmarks 排的远处地标小块）。怎么算区块见 预生成/范围.ts */
@@ -39,6 +43,8 @@ export type WorldDecl = {
   file: string;
   server: string;
   save: string;
+  /** 存档格式（存档格式.ts）：不写 = 原版 .mca；saveFormat = "mcr3d" 是 Better Cubic Chunks 的立方区块存档，要同时写 yRange = [底, 顶]（烘哪一段高度，游戏 y，两端都含、对齐 16） */
+  saveFormat: SaveFormatSpec;
   dimension: string;
   /** 包.json 的 维度：主世界 / 暮色 / 下界 … */
   packDimension: string;
@@ -59,6 +65,8 @@ export type WorldDecl = {
   pack: PackDecl[];
   /** 远景包（pipeline/世界/远景/）：导入范围（预生成的矩形块）外扩多远、中层（16 米）和细带（8 米）在交界外多宽，米 */
   farView?: { pack: string; outset: number; midWidth: number; fineWidth: number };
+  /** 从存档里 Distant Horizons 的 LOD 库烘的包（dh/，anim world bake-dh）：db 是库文件（相对存档目录），extent 是游戏坐标 [x0, z0, x1, z1)，yRange 是高度范围（游戏 y，两端都含） */
+  dh?: { db: string; pack: string; origin: [number, number, number]; extent: [number, number, number, number]; yRange: [number, number]; source?: string; license?: string; visibility?: string };
   /** 烘焙、转码时的可见变换（烘焙/可见.ts）：埋住的格换成 填充；保真 盒碰到的区段原样保留（作品的挖框、整平要落在里面，anim check 核） */
   visible: { fillBlock: string; faithful: { name: string; boxes: [number, number, number, number]; provenance?: string }[] };
 };
@@ -110,6 +118,13 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
     if (typeof dimension !== 'string' || !dimension.includes(':')) throw fileError('维度 要写成 命名空间:名字');
     if (typeof d.server !== 'string') throw fileError('要写 服务端（游戏环境 ANIM_GAME 下的服务端目录名）');
     const knownDim = knownDims[dimension];
+    let saveFormat: SaveFormatSpec = { kind: 'mca' };
+    if (d.saveFormat === 'mcr3d') {
+      const yRange = toPair(d.yRange, 'yRange');
+      if (yRange[0] & 15 || (yRange[1] + 1) & 15 || yRange[0] > yRange[1] || yRange[0] < -32768 || yRange[1] > 32767) throw fileError(`yRange 要对齐 cube（底是 16 的倍数、顶是 16 的倍数减 1）、在 −32768～32767 里，给的是 ${yRange.join('～')}`);
+      saveFormat = { kind: 'mcr3d', yRange };
+    } else if (d.saveFormat !== undefined && d.saveFormat !== 'mca') throw fileError(`saveFormat 只认 mca、mcr3d，给的是 ${String(d.saveFormat)}`);
+    else if (d.yRange !== undefined) throw fileError('yRange 只有 saveFormat = "mcr3d" 才用（.mca 的高度范围在存档里）');
     const bake = (d.bake ?? {}) as Record<string, unknown>;
     const packDimension = typeof bake.包维度 === 'string' ? bake.包维度 : knownDim?.packDimension;
     if (!packDimension) throw fileError(`维度 ${dimension} 不认识，要在 [烘焙] 写 包维度（包.json 的 维度）`);
@@ -136,7 +151,9 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       const origin = parseOrigin(b.origin, `包 ${b.name} 的 原点`) ?? defaultOrigin;
       if (!origin) throw fileError(`包 ${b.name} 没有原点（写在 [烘焙] 原点 或包里）`);
       if (knownDim && origin[1] !== knownDim.oy) throw fileError(`包 ${b.name} 的 oy 是 ${origin[1]}，${dimension} 一律 ${knownDim.oy}（engine 按这个换竖直坐标）`);
-      return { name: b.name, region: parseRegion(b.region, `包 ${b.name} 的 区域`), origin: origin, source: typeof b.source === 'string' ? b.source : undefined, applyEdits: b.套编辑 !== false, entries: b.entries !== false };
+      if (b.visibility !== undefined && !['公开', '发布', '提取', '私有'].includes(b.visibility as string)) throw fileError(`包 ${b.name} 的 visibility 只能是 公开、发布、提取、私有`);
+      if (b.license !== undefined && typeof b.license !== 'string') throw fileError(`包 ${b.name} 的 license 要写 SPDX 表达式`);
+      return { name: b.name, region: parseRegion(b.region, `包 ${b.name} 的 区域`), origin: origin, source: typeof b.source === 'string' ? b.source : undefined, applyEdits: b.套编辑 !== false, entries: b.entries !== false, license: b.license as string | undefined, visibility: b.visibility as string | undefined };
     });
     const dupNames = packs.map((b) => b.name).filter((n, i, a) => a.indexOf(n) !== i);
     if (dupNames.length) throw fileError(`包重名：${dupNames.join('、')}`);
@@ -178,11 +195,26 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       };
       farTerrain = { pack: farView.pack, outset: toMeters('outset'), midWidth: toMeters('midWidth'), fineWidth: toMeters('fineWidth') };
     }
+    let dh: WorldDecl['dh'];
+    if (d.dh !== undefined) {
+      const t = d.dh as Record<string, unknown>;
+      if (typeof t.db !== 'string' || typeof t.pack !== 'string' || !t.pack) throw fileError('dh 要写 db（库文件，相对存档目录）和 pack（包名）');
+      const extent = t.extent as number[];
+      if (!Array.isArray(extent) || extent.length !== 4 || !extent.every((v) => Number.isInteger(v) && v % 4096 === 0) || extent[0]! >= extent[2]! || extent[1]! >= extent[3]!) throw fileError('dh.extent 要写游戏坐标 [x0, z0, x1, z1]，都是 4096 的整数倍、小的在前');
+      const origin = parseOrigin(t.origin, 'dh.origin') ?? defaultOrigin;
+      if (!origin || origin[0] % 4096 || origin[2] % 4096) throw fileError('dh 的原点（dh.origin 或 [bake] origin）ox、oz 要是 4096 的整数倍');
+      if (knownDim && origin[1] !== knownDim.oy) throw fileError(`dh 的 oy 是 ${origin[1]}，${dimension} 一律 ${knownDim.oy}`);
+      const dhRange = toPair(t.yRange, 'dh.yRange');
+      if ((dhRange[0] - origin[1]) % 64 || (dhRange[1] + 1 - origin[1]) % 64 || dhRange[0] > dhRange[1]) throw fileError(`dh.yRange 减 oy 要对齐 64（底是 64 的倍数、顶是 64 的倍数减 1），给的是 ${dhRange.join('～')}`);
+      if (t.visibility !== undefined && !['公开', '发布', '提取', '私有'].includes(t.visibility as string)) throw fileError('dh.visibility 只能是 公开、发布、提取、私有');
+      dh = { db: t.db, pack: t.pack, origin, extent: extent as [number, number, number, number], yRange: dhRange, source: typeof t.source === 'string' ? t.source : undefined, license: typeof t.license === 'string' ? t.license : undefined, visibility: t.visibility as string | undefined };
+    }
     return {
       displayName: worldName,
       file: fileName,
       server: d.server,
       save: typeof d.save === 'string' ? d.save : worldName,
+      saveFormat,
       dimension: dimension,
       packDimension,
       fullHeight,
@@ -197,6 +229,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       pregen: { regionFileRange: parseRegion(pregen.regionFileRange, '预生成.区域文件范围'), chunkCount: typeof pregen.chunkCount === 'number' ? pregen.chunkCount : undefined, tile: chunks },
       pack: packs,
       farView: farTerrain,
+      dh,
       visible: { fillBlock: typeof bake.fill === 'string' ? bake.fill : 'minecraft:stone', faithful: preserve },
     };
   } catch (e) {
@@ -213,13 +246,18 @@ export const readDecl = (worldName: string): WorldDecl => {
 
 /** 存档的世界目录：--save-dir 给了就用它，否则 <ANIM_GAME>/<服务端>/<存档> */
 export const saveDir = (w: WorldDecl, overrideDir?: string) => (overrideDir ? path.resolve(overrideDir) : path.isAbsolute(w.save) ? w.save : path.join(config('游戏'), w.server, w.save));
-export const regionDir = (w: WorldDecl, overrideDir?: string) => path.join(saveDir(w, overrideDir), dimensionRegionDir(w.dimension));
+export const regionDir = (w: WorldDecl, overrideDir?: string) => {
+  if (w.saveFormat.kind === 'mca') return path.join(saveDir(w, overrideDir), dimensionRegionDir(w.dimension));
+  // 立方存档只见过主世界的（<存档>/cubes/），别的维度放哪没核过
+  if (w.dimension !== 'minecraft:overworld') throw new Error(`${w.file}：立方存档（mcr3d）只认主世界，${w.dimension} 的 cube 放在哪还没核过`);
+  return path.join(saveDir(w, overrideDir), 'cubes');
+};
 
 /** 哪个世界声明烘这个包（转码按它取可见变换的设置）；没有返回 null */
 export const packWorld = (packName: string): WorldDecl | null => {
   for (const worldName of listWorlds()) {
     const w = readDecl(worldName);
-    if (w.pack.some((b) => b.name === packName)) return w;
+    if (w.pack.some((b) => b.name === packName) || w.dh?.pack === packName) return w;
   }
   return null;
 };

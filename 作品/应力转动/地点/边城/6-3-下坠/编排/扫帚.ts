@@ -4,7 +4,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { broomMatrix, jiuhuRideBones, RIDE } from '@库/角色/骑扫帚.tsx';
 import { JIUHU } from '@库/角色/九胡.tsx';
-import { tick, start, thinkPullUp, yawVec } from '../时间线.ts';
+import { tick, start, thinkPullUp, yawVec } from '../基准.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 const JH_PX = JIUHU.scale; // 九胡：一像素多少格（YSM 0.7/16）

@@ -12,14 +12,13 @@ import { workName, workRoot, listWorks, getSpecifiedWork, setSpecifiedWork } fro
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { stableJson } from '../指纹/指纹.ts';
 import { segmentProducts, segPictureParams } from './段产物.ts';
-import { openSession, expectedComposition } from './渲.ts';
-import { renderFrames } from './渲染器.ts';
+import { expectedComposition } from './渲.ts';
+import { realBackend, type RenderBackend } from './后端.ts';
 import { segRenderEnv, terrainReadVersions } from './地形注入.ts';
 import { frameTimeoutMs } from './设置.ts';
 import { beforeClose } from './求解缓存收集.ts';
 import { atomicWrite } from './母版.ts';
-import { passGate } from '../闸/闸.ts';
-import { perGroupWithResourcePacks, verifySegResourcePacks } from '../资产/资产锁.ts';
+import { verifySegResourcePacks } from '../资产/资产锁.ts';
 import type { RunRecord } from '../运行记录/记录.ts';
 
 /** 正式出片的级别：覆盖要和切片挑的一样 */
@@ -58,14 +57,14 @@ const collectExpr = `JSON.stringify({ cover: window.process?.env?.[${JSON.string
  * 量这几段的覆盖：按材质包分组一组一个会话，一页按帧号升序把整段过一遍（imageFormat none：不截图、不编码）。
  * 页面读完整包（本机没有就读裁过的）：覆盖本身不取区段，只要包.json 的粗高度图，两边一样；光体冷缓存时要取区段，读完整包才不被旧留表卡住。
  */
-export const measureCovers = async (segments: readonly SegInfo[], runRecord?: RunRecord, log: (s: string) => void = console.log): Promise<SegCover[]> => {
+export const measureCovers = async (segments: readonly SegInfo[], runRecord?: RunRecord, log: (s: string) => void = console.log, backend: RenderBackend = realBackend): Promise<SegCover[]> => {
   if (!segments.length) return [];
   const allSegments = await loadAllSegments();
   const keys = new Map((await coverKeys(allSegments, segments)).map((k, i) => [segments[i]!.key, k]));
   const out: SegCover[] = [];
   // 不画（engine/core/覆盖不画.ts），只吃 CPU 和页面内存：过放行闸（等负载、内存），不拿渲染独占锁挡别人的静帧；整批一张票，不一段等一次放行间隔
-  await passGate(() => perGroupWithResourcePacks(workRoot(), segments, (s) => s.key, (group) =>
-    openSession(
+  await backend.passGate(() => backend.perResourcePackGroup(workRoot(), segments, (s) => s.key, (group) =>
+    backend.openSession(
       coverLevel,
       async (h) => {
         // 页面关掉前收走它记的区段（Remotion 出完这段才关页）；同一段几页的按最早的帧并
@@ -87,7 +86,7 @@ export const measureCovers = async (segments: readonly SegInfo[], runRecord?: Ru
           const composition = expectedComposition(s, allSegments, params.inputProps);
           const versions = terrainReadVersions(s.key, s.segment.terrain);
           const t0 = Date.now();
-          await renderFrames({
+          await backend.renderFrames({
                 serveUrl: h.serveUrl,
                 composition,
                 outputDir: null,

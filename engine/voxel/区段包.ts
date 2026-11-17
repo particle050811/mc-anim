@@ -102,9 +102,14 @@ export type PackageInfo = {
   // 粗高度图：格 米一格，覆盖 [x0, x0 + 格·nx) × [y0, y0 + 格·ny)（场景坐标）；高 是 base64 的 Int16（小端，按 (y, x) 排），
   // 每格是格里最高那块方块的顶（场景 z，含树冠、水面），−32768 = 这一格没有数据
   coarseHeight: { cell: number; x0: number; y0: number; nx: number; ny: number; height: string };
+  // 各处最细能到哪一级不一样的包才有（从 DH 的 LOD 库烘的，pipeline/世界/dh/烘焙.ts）：下标 = 级（第 0 项 null），那一级哪些区段能再细分成四块。
+  // 不能细分的地方包里没有更细的区段，挑区段时停在这一级。没有这一项 = 各级铺满（从存档烘的包）
+  splittable?: (SplittableLevel | null)[];
   // 裁过的包才有（pipeline/世界/裁级/裁剪.ts，docs/世界.md「裁级」）：从哪个完整包版本裁的、留表（留下的区段）的 sha256、裁法。粗高度图、模型和完整包一样
   trim?: TrimInfo;
 };
+/** 区段 (i, j)（i0 ≤ i < i0 + ni，j 同）能不能细分：bits 是 base64 的位图，第 (j − j0)·ni + (i − i0) 位，字节里从低位起；范围外的不能 */
+export type SplittableLevel = { i0: number; j0: number; ni: number; nj: number; bits: string };
 export type TrimInfo = { from: string; keepSha256: string; method: string };
 
 // 一个区段的数据（编码前 / 解码后、换成体素块之前）；解码（engine/voxel/区段解码.ts）出来的四个数组同一块缓冲
@@ -187,6 +192,19 @@ export const coarseHeightFingerprint = (heightMap: CoarseHeightMap) => {
   for (const value of [heightMap.cell, heightMap.x0, heightMap.y0, heightMap.nx, heightMap.ny]) mix(value), mix(value >> 16);
   for (let k = 0; k < heightMap.height.length; k++) mix(heightMap.height[k]);
   return (hash >>> 0).toString(16).padStart(8, '0');
+};
+/** 包.json 的 splittable → 判断函数；包里没有这一项返回 undefined（各级铺满，都能分） */
+export const decodeSplittable = (info: Pick<PackageInfo, 'splittable'>): ((level: number, i: number, j: number) => boolean) | undefined => {
+  if (!info.splittable) return undefined;
+  const levels = info.splittable.map((s) => (s ? { ...s, bytes: base64Bytes(s.bits) } : null));
+  return (level, i, j) => {
+    const s = levels[level];
+    if (!s) return false;
+    const a = i - s.i0, b = j - s.j0;
+    if (a < 0 || b < 0 || a >= s.ni || b >= s.nj) return false;
+    const n = b * s.ni + a;
+    return ((s.bytes[n >> 3]! >> (n & 7)) & 1) === 1;
+  };
 };
 // 包里有没有这个区段：核心范围里有一格粗高度有数据就有（烘焙时区段核心有一列数据就写，粗高度格对齐区段边界，两边一致）
 export const hasSection = (heightMap: CoarseHeightMap, section: SectionId) => {

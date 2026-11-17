@@ -40,7 +40,7 @@ export class SaveBlockSource implements BlockSource {
   /** 范围里要从存档解（没有列段缓存）的区域 */
   uncachedRegions(r: QueryRect): [number, number][] {
     const out: [number, number][] = [];
-    for (let rz = r.z1 >> 9; rz <= r.z2 >> 9; rz++) for (let rx = r.x1 >> 9; rx <= r.x2 >> 9; rx++) if (fs.existsSync(this.源.file(rx, rz)) && !this.源.isCached(rx, rz)) out.push([rx, rz]);
+    for (let rz = r.z1 >> 9; rz <= r.z2 >> 9; rz++) for (let rx = r.x1 >> 9; rx <= r.x2 >> 9; rx++) if (this.源.has(rx, rz) && !this.源.isCached(rx, rz)) out.push([rx, rz]);
     return out;
   }
 

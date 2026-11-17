@@ -93,60 +93,89 @@ export const bake = async (p: BakeParams): Promise<BakeResult> => {
   // ---------- 方块在哪个群系 ----------
   // 游戏取方块群系不是直接取 pos >> 2，而是给相邻 8 个群系格按种子抖动后挑最近的（BiomeManager.getBiome，见 群系色.ts 的 biomeCell）。
   // 只有染色方块要挑；8 个候选都一样就不算抖动。y 超界按边界格取，挑中的格没数据就用自己那格。
-  // 候选群系格摊成一张表，下标 ((qz − 格z0)·格宽 + qx − 格x0)·NQ + qy − qy底
+  // 候选群系格按列（4 × 4 列一根）记成从上往下的群系段：第 c 根是 cellRunStarts[c]～cellRunStarts[c+1]，cellRunBottom 是这一段最低的群系格（qy − qyBottom），
+  // 最后一段到 0。不摊成「格数 × NQ」的整表：几千格高的世界（立方存档）一块要几个 GB，而一根里的群系通常只有一两段。
   const qyBottom = firstRegion.yBottom >> 2;
   const NQ = (firstRegion.yTop - firstRegion.yBottom + 1) >> 2;
   const zoomSeed = await voxelLib.knowledge.biomeScaleSeed(firstRegion.seed);
-  let cellBiomes = new Uint16Array(0);
+  let cellRunStarts = new Uint32Array(0);
+  let cellRunBottom = new Uint16Array(1 << 16);
+  let cellRunBiome = new Uint16Array(1 << 16);
   let cellX0 = 0, cellZ0 = 0, cellWidth = 0;
   // 游戏方块 x ∈ [x0, x0 + W)、z ∈ [z0, z0 + W) 要用到的群系格：x 的候选是 (x − 2) >> 2 和它 + 1
   const fillCellBiomes = (x0: number, z0: number, width: number) => {
     cellX0 = (x0 - 2) >> 2;
     cellZ0 = (z0 - 2) >> 2;
     cellWidth = ((x0 + width - 3) >> 2) + 2 - cellX0;
-    if (cellBiomes.length < cellWidth * cellWidth * NQ) cellBiomes = new Uint16Array(cellWidth * cellWidth * NQ);
+    if (cellRunStarts.length < cellWidth * cellWidth + 1) cellRunStarts = new Uint32Array(cellWidth * cellWidth + 1);
+    let n = 0;
+    const pushRun = (bottomQ: number, biome: number) => {
+      if (n === cellRunBottom.length) {
+        const bottoms = new Uint16Array(n * 2), biomes = new Uint16Array(n * 2);
+        bottoms.set(cellRunBottom);
+        biomes.set(cellRunBiome);
+        cellRunBottom = bottoms;
+        cellRunBiome = biomes;
+      }
+      cellRunBottom[n] = bottomQ;
+      cellRunBiome[n++] = biome;
+    };
     for (let cellRow = 0; cellRow < cellWidth; cellRow++)
       for (let cellCol = 0; cellCol < cellWidth; cellCol++) {
         const x = 4 * (cellX0 + cellCol), z = 4 * (cellZ0 + cellRow);
         const rx = x >> 9, rz = z >> 9;
         const region = loadRegion(rx, rz);
         const col = (z - 512 * rz) * 512 + (x - 512 * rx);
-        const cellBase = (cellRow * cellWidth + cellCol) * NQ;
+        const cell = cellRow * cellWidth + cellCol;
+        cellRunStarts[cell] = n;
         if (!region || !region.段数[col]) {
-          cellBiomes.fill(noBiome, cellBase, cellBase + NQ);
+          pushRun(0, noBiome);
           continue;
         }
         const rc = cacheKeyFor(region);
-        // 群系格里的方块群系都一样，取格子最低那一格所在的段
-        let runIdx = region.runStarts[col]!;
-        for (let cellY = NQ - 1; cellY >= 0; cellY--) {
-          while (region.bottom[runIdx]! > firstRegion.yBottom + 4 * cellY) runIdx++;
-          const lb = region.biome[runIdx]!;
-          if (rc.biomeIds[lb]! < 0) rc.biomeIds[lb] = entryTable.internBiome(region.biomeTable[lb]!);
-          cellBiomes[cellBase + cellY] = rc.biomeIds[lb]!;
+        // 群系格里的方块群系都一样，取格子最低那一格（y = y底 + 4·格号）所在的段；一段里没有这样的 y 就不占群系格
+        const first = n;
+        let top = firstRegion.yTop;
+        for (let runIdx = region.runStarts[col]!, end = region.runStarts[col + 1]!; runIdx < end; runIdx++) {
+          const bottom = region.bottom[runIdx]!;
+          const bottomQ = (bottom - firstRegion.yBottom + 3) >> 2;
+          if (bottomQ <= (top - firstRegion.yBottom) >> 2) {
+            const lb = region.biome[runIdx]!;
+            if (rc.biomeIds[lb]! < 0) rc.biomeIds[lb] = entryTable.internBiome(region.biomeTable[lb]!);
+            if (n > first && cellRunBiome[n - 1] === rc.biomeIds[lb]) cellRunBottom[n - 1] = bottomQ;
+            else pushRun(bottomQ, rc.biomeIds[lb]!);
+          }
+          top = bottom - 1;
         }
       }
+    cellRunStarts[cellWidth * cellWidth] = n;
+  };
+  // 第 cell 根群系格列里第 m 格（qy − qyBottom）的群系号
+  const cellBiomeAt = (cell: number, m: number) => {
+    let r = cellRunStarts[cell]!;
+    while (cellRunBottom[r]! > m) r++;
+    return cellRunBiome[r]!;
   };
   // 一列 (x, z) 里 (y − 2) >> 2 = m 的那 4 格共用 8 个候选群系格：都是同一个群系就是它，不然返回 −1（要逐格算抖动）
   const uniformCandidateBiome = (x: number, qyBase: number, z: number) => {
     const m0 = Math.min(NQ - 1, Math.max(0, qyBase - qyBottom)), m1 = Math.min(NQ - 1, Math.max(0, qyBase + 1 - qyBottom));
-    const baseIdx = ((((z - 2) >> 2) - cellZ0) * cellWidth + ((x - 2) >> 2) - cellX0) * NQ, dx = NQ, dz = cellWidth * NQ;
-    const biome = cellBiomes[baseIdx + m0]!;
+    const baseCell = (((z - 2) >> 2) - cellZ0) * cellWidth + ((x - 2) >> 2) - cellX0;
+    const biome = cellBiomeAt(baseCell, m0);
     return biome !== noBiome &&
-      cellBiomes[baseIdx + m1] === biome &&
-      cellBiomes[baseIdx + dx + m0] === biome &&
-      cellBiomes[baseIdx + dx + m1] === biome &&
-      cellBiomes[baseIdx + dz + m0] === biome &&
-      cellBiomes[baseIdx + dz + m1] === biome &&
-      cellBiomes[baseIdx + dz + dx + m0] === biome &&
-      cellBiomes[baseIdx + dz + dx + m1] === biome
+      cellBiomeAt(baseCell, m1) === biome &&
+      cellBiomeAt(baseCell + 1, m0) === biome &&
+      cellBiomeAt(baseCell + 1, m1) === biome &&
+      cellBiomeAt(baseCell + cellWidth, m0) === biome &&
+      cellBiomeAt(baseCell + cellWidth, m1) === biome &&
+      cellBiomeAt(baseCell + cellWidth + 1, m0) === biome &&
+      cellBiomeAt(baseCell + cellWidth + 1, m1) === biome
       ? biome
       : -1;
   };
   // 游戏方块 (x, y, z) 按抖动挑中的群系号；ownBiome：它自己那个群系格的
   const jitteredBiome = (x: number, y: number, z: number, ownBiome: number) => {
     const [qx, qy, qz] = voxelLib.knowledge.biomeCell(zoomSeed, x, y, z);
-    const picked = cellBiomes[((qz - cellZ0) * cellWidth + qx - cellX0) * NQ + Math.min(NQ - 1, Math.max(0, qy - qyBottom))]!;
+    const picked = cellBiomeAt((qz - cellZ0) * cellWidth + qx - cellX0, Math.min(NQ - 1, Math.max(0, qy - qyBottom)));
     return picked === noBiome ? ownBiome : picked;
   };
 
@@ -260,17 +289,23 @@ export const bake = async (p: BakeParams): Promise<BakeResult> => {
     biome: biomeList,
     coarseHeight: { cell: coarseCellMeters, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, height: Buffer.from(coarseHeights.buffer).toString('base64') },
   };
-  writeFileSync(path.join(p.output, '包.json'), JSON.stringify(packInfo));
+  return finishPack({ staged: p.output, outDir, pack: packInfo, entryTable, writer, lib: voxelLib, visible: p.visible, log: p.log });
+};
+
+/** 定稿（各种烘法共用）：暂存目录里的块文件配上 包.json、缺失.tsv，学模型、做可见变换转成成品写进 outDir，暂存目录删掉 */
+export const finishPack = async (o: { staged: string; outDir: string; pack: PackageInfo; entryTable: EntryTable; writer: SectionWriter; lib: VoxelLib; visible?: VisibleSettings | null; log?: (s: string) => void }): Promise<BakeResult> => {
+  const { missingStates, missingBiomes } = o.entryTable;
+  writeFileSync(path.join(o.staged, '包.json'), JSON.stringify(o.pack));
   const missingRows = [
     ...[...missingStates].sort((a, b) => b[1] - a[1]).map(([k, count]) => `状态\t${k}\t${count}`),
     ...[...missingBiomes].sort((a, b) => b[1] - a[1]).map(([k, count]) => `群系\t${k}\t${count}`),
   ];
-  writeFileSync(path.join(p.output, '缺失.tsv'), ['类\t名\t第0级格数', ...missingRows].join('\n') + '\n');
-  const training = await transcodeDir(p.output, outDir, 1, undefined, p.visible);
-  for (const st of writer.levelStats) st.bytes = 0;
-  for (const s of walkSections(voxelLib, outDir)) writer.levelStats[s.id.L]!.bytes += s.bytes.length;
-  rmSync(p.output, { recursive: true });
-  if (p.visible) { const v = training.transformCounts; p.log?.(`可见变换：改了 ${v.changedSectionCount} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.filledCount}、埋格换 ${v.buriedCount}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格，填充 ${p.visible.fillBlock}`); }
-  p.log?.(`模型 ${training.modelClassCount} 类、${training.modelBytesCount} 字节，训练 ${training.样本数} 区段；定稿完成`);
-  return { pack: packInfo, missingStates: missingStates, missingBiomes: missingBiomes, 级: writer.levelStats, blockFileCount: writer.tileFileCount, entryCount: entryState.length };
+  writeFileSync(path.join(o.staged, '缺失.tsv'), ['类\t名\t第0级格数', ...missingRows].join('\n') + '\n');
+  const training = await transcodeDir(o.staged, o.outDir, 1, undefined, o.visible);
+  for (const st of o.writer.levelStats) st.bytes = 0;
+  for (const s of walkSections(o.lib, o.outDir)) o.writer.levelStats[s.id.L]!.bytes += s.bytes.length;
+  rmSync(o.staged, { recursive: true });
+  if (o.visible) { const v = training.transformCounts; o.log?.(`可见变换：改了 ${v.changedSectionCount} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.filledCount}、埋格换 ${v.buriedCount}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格，填充 ${o.visible.fillBlock}`); }
+  o.log?.(`模型 ${training.modelClassCount} 类、${training.modelBytesCount} 字节，训练 ${training.样本数} 区段；定稿完成`);
+  return { pack: o.pack, missingStates, missingBiomes, 级: o.writer.levelStats, blockFileCount: o.writer.tileFileCount, entryCount: o.entryTable.entryState.length };
 };
