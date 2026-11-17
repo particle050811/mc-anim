@@ -20,7 +20,7 @@ import { readModel, modelFileName } from './区段模型.ts';
 import { formatVersion, sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, decodeSplittable, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap } from './区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
-import { recordSectionRead, isCoverRun } from './地形用量.ts';
+import { recordSectionRead, isCoverRun, noteCoverWorld } from './地形用量.ts';
 import { variesByPos } from './群系色.ts';
 import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type SectionContext, type SectionPackInfo } from './导入区段.ts';
 import { fetchSectionsInPool, registerSource, registerModel, type SectionResult } from './区段工人池.ts';
@@ -200,6 +200,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
     prefetch: (qs, guessed) => {
       // 地形覆盖（engine/voxel/地形用量.ts）：只记这一帧要的区段，不取
       if (isCoverRun()) {
+        noteCoverWorld(pack.name);
         if (!guessed) recordSectionRead(pack.name, qs.filter((section) => hasSection(pack.coarseHeights, section)).map(sectionKey));
         return undefined;
       }

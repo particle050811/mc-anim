@@ -366,11 +366,12 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     world.本 = { 位: _position.clone(), dirQuat: _orientation.clone(), 心: [...camPos], projection: camera.projectionMatrix.clone(), pixelAngle: pixelAngle };
   }
   debug.logPick(list);
-  // 地形覆盖（engine/voxel/地形用量.ts）：挑出来的照常报给来源记下（来源这时只记不取），这一帧什么都不建、不画、不预取。挑法和正常渲染是同一段代码，裁级的留表就从这里来
+  // 地形覆盖（engine/voxel/地形用量.ts）：挑出来的照常报给来源记下（来源这时只记不取），这一帧什么都不建、不画、不预取。挑法和正常渲染是同一段代码，裁级的留表就从这里来。
+  // 挑出 0 个也报：来源借此记下「有体素世界从这个包挑」，整段挑过却一个没记下时 pipeline 报错（pipeline/渲/地形覆盖.ts）
   const coverRun = isCoverRun();
   if (coverRun) {
     setCoverFrame(timelineFrame);
-    if (list.length) source.prefetch?.(list);
+    source.prefetch?.(list);
   }
   const drawList = coverRun ? [] : list;
   const putEntry = (section: SectionId, entry: Entry) => {
