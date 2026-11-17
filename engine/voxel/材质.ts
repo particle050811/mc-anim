@@ -39,6 +39,7 @@ import { sectionDisplacement, displacementDecl, displaceVertex, quadIndices } fr
 import { patchWaterShader } from './水面.ts';
 import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
 import { debugShaderOn, patchDebugShader } from './调试.tsx';
+import { gradeTrial } from './分级色调.ts';
 
 const VERT_HEAD = `
 ${displacementDecl}
@@ -71,7 +72,7 @@ const fragMap = (cutout: boolean, twoSided: boolean, cell = blockAtlas().cell, t
     vec2 tc = uv * ${cell}.0;
     float lod = clamp(log2(max(max(length(dFdx(tc)), length(dFdy(tc))), 1e-6)), 0.0, ${top}.0);
     // 台阶并色的远处系数（见文件头）：一格在画布上约 6 个像素以下开始、约 2 个像素混满；贴图往 1×1 的平均色取
-    farK = vTop < 65000.0 ? smoothstep(0.16, 0.5, length(fwidth(vW))) : 0.0;
+    farK = ${gradeTrial()['并色'] === false ? '0.0' : 'vTop < 65000.0 ? smoothstep(0.16, 0.5, length(fwidth(vW))) : 0.0'};
     lod = mix(lod, ${top}.0, farK);
     vec2 f = fract(uv);
     if (fl > 1.5) {
@@ -110,6 +111,14 @@ const fragMap = (cutout: boolean, twoSided: boolean, cell = blockAtlas().cell, t
     diffuseColor.rgb *= t.rgb;
     diffuseColor.a *= t.a;
   }`;
+
+// 屏幕 AO 第 1 遍的 alpha（AO 减掉的比例，见 远处AO）；试看 分级色调 的 AO：'关' 全减掉、'满' 不按距离减（分级色调.ts）
+const aoAlphaExpr = () => {
+  const ao = gradeTrial().AO;
+  if (ao === '关') return '1.0';
+  if (ao === '满') return '0.0';
+  return `smoothstep(${farAo.start.toFixed(1)}, ${farAo.full.toFixed(1)}, length(vViewPosition)) * ${(1 - farAo.keep).toFixed(3)}`;
+};
 
 export type MaterialClass = '实心' | '镂空' | '实心树叶' | '水' | '花草';
 const mats = new Map<MaterialClass, THREE.Material>();
@@ -153,7 +162,7 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
       // 发光方块：顶点色第 4 个字节是 255 − 贴图发光（网格.ts），乘发光倍数（光照配比.ts 的 blockGlow，默认 0），和全片的自发光取大的
       .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * max(selfLight, (1.0 - vCol.a) * blockGlow);')
       // 屏幕 AO 第 1 遍（aoPass = 1）：alpha 输出 AO 减掉的比例（见 远处AO），AO 按 1 − alpha 压（lib/体素/屏幕AO.tsx）
-      .replace('#include <opaque_fragment>', `#include <opaque_fragment>\n  if (aoPass > 0.5) gl_FragColor.a = smoothstep(${farAo.start.toFixed(1)}, ${farAo.full.toFixed(1)}, length(vViewPosition)) * ${(1 - farAo.keep).toFixed(3)};`);
+      .replace('#include <opaque_fragment>', `#include <opaque_fragment>\n  if (aoPass > 0.5) gl_FragColor.a = ${aoAlphaExpr()};`);
     // 水：波纹、菲涅尔、天光反射，和导出网格的水同一段（lib/水面.ts）
     if (materialClass === '水') patchWaterShader(sh);
     // 树叶逆光透出暖色，和导出网格的树叶同一段（lib/树叶透光.ts）；镂空里不染色的（玻璃之类）不算

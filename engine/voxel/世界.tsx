@@ -228,7 +228,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   // 地形调试（试看参数，调试.tsx）：下面挑区段调的 pickSections 是它包过一层的；一项没开时就是 区段.ts 的原函数，别的几项也都是空的
   const debug = useTerrainDebug(source, camera);
   const pickSections = debug.pickSections;
-  const inView = makeFrustumTest(camera);
+  const inView = debug.inView ?? makeFrustumTest(camera);
   // 区段往背着光的方向扫 投影余量 米以后还碰得到视野，它的影子就可能落进画面
   const lh = shadowLightDir ? Math.hypot(shadowLightDir[0], shadowLightDir[1]) : 0;
   const sx = lh ? (-shadowLightDir![0] / lh) * shadowMarginM : 0;
@@ -387,7 +387,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   }
   // 这一帧没有哪一类的面，那一类的材质就不在场景里（屏幕AO 按场景里有哪些材质定怎么画）
   for (const batch of batches) if (batch?.items.length) group.add(batch);
-  if (shadowBatch.items.length) group.add(shadowBatch);
+  if (shadowBatch.items.length && !debug.noShadow) group.add(shadowBatch);
   // 这一帧用到的块不能被清掉
   if (world.faceCount > maxCachedFaces) {
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);

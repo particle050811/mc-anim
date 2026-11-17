@@ -8,8 +8,9 @@
 //   调试镜头  {位, 看}：只挪画面用的镜头；挑区段、定级别还照段里这一帧的镜头（冻结在这一帧），可以挪到交界正上方往下看、从侧面看各级怎么铺
 //   加载视点  {位, 远?}：挑区段、定级别改按这一点算（四周都建，不按视锥剔，远默认同体素世界的 远），镜头不动
 //   切级日志  true：每帧一行进终端：镜头离地多高、各级离镜头多远、看过去的俯角，和上一帧比哪些区段换了级（按世界坐标查切级跳变、量俯角用）
+//   分级色调  {定级, 定级框, 真几何, 阴影, AO, 并色}：一小块地定成某一级、逐项关掉着色，量各级色调差；键的意思在 分级色调.ts
 // 场景坐标照引擎约定：three 世界 = (x, z, −y)（engine/core/three换算.ts），画布外面套的那层旋转不能改。
-// 体素世界（世界.tsx）只接一处：每次渲染调 `useTerrainDebug`，拿回要挂的标记、包了一层的 pickSections（加载视点、切级日志）和几个开关；着色器那几项由 材质.ts、屏幕AO.tsx 来问。
+// 体素世界（世界.tsx）只接一处：每次渲染调 `useTerrainDebug`，拿回要挂的标记、包了一层的 pickSections（加载视点、切级日志、定级、真几何）和几个开关；着色器那几项由 材质.ts、屏幕AO.tsx 来问。
 import { addAfterEffect, addEffect } from '@react-three/fiber';
 import React, { useMemo } from 'react';
 import { Internals } from 'remotion';
@@ -17,8 +18,10 @@ import * as THREE from 'three';
 import { trialParams } from '../core/试看.ts';
 import { sceneToGame } from '../core/坐标.ts';
 import { sceneToThree } from '../core/three换算.ts';
+import { forceLevel, gradeTrial, type LevelBox } from './分级色调.ts';
 import type { VoxelSource } from './生成.ts';
 import { pickSections, sectionBounds, sectionKey, type PickSectionsParams, type SectionId } from './区段.ts';
+import { makeFrustumTest } from './视锥.ts';
 
 type Pos = number[];
 type Marker = { 名: string; 位: Pos; 色?: string; '光柱'?: boolean | number; '场景'?: boolean };
@@ -393,21 +396,45 @@ const buildMarker = (item: MarkerItem) => {
   return group;
 };
 
-// ---------- 挑区段过这一层：加载视点、切级日志 ----------
-// 体素世界这一帧每次挑区段（含替后几帧预取的）都走返回的函数；两项都没开时返回的就是 区段.ts 的 pickSections 本身。
+// ---------- 挑区段过这一层：加载视点、切级日志，分级色调 的 定级、真几何 ----------
+// 体素世界这一帧每次挑区段（含替后几帧预取的）都走返回的函数；这几项都没开时返回的就是 区段.ts 的 pickSections 本身。
 // pickedWith：名单 → 挑出它的那次参数，切级日志 照它算距离和俯角
 const pickedWith = new WeakMap<SectionId[], PickSectionsParams>();
+// 真几何：望远（engine/段/望远.ts）把裁剪矩阵、倍数挂在 globalThis 上；没开、这一页不是望远时返回 undefined
+const teleView = () => (gradeTrial()['真几何'] ? (globalThis as { __animTele?: { crop: THREE.Matrix4; zoom: number } }).__animTele : undefined);
 const debugPick = (source: VoxelSource): typeof pickSections => {
   const loadView = loadViewScene(source);
+  const forced = forcedLevelScene(source);
   const logOn = pickLogOn();
-  if (!loadView && !logOn) return pickSections;
+  if (!loadView && !forced && !logOn && !gradeTrial()['真几何']) return pickSections;
   const far = loadViewParam()?.远;
   return (params) => {
-    const used: PickSectionsParams = loadView ? { ...params, camPos: loadView, farM: far ?? params.farM, inView: () => true } : params;
-    const list = pickSections(used);
+    const tele = teleView();
+    let used: PickSectionsParams = tele ? { ...params, pixelAngle: params.pixelAngle / tele.zoom } : params;
+    if (loadView) used = { ...used, camPos: loadView, farM: far ?? params.farM, inView: () => true };
+    const picked = pickSections(used);
+    const list = forced ? forceLevel(picked, forced.level, forced.boxes) : picked;
     if (logOn) pickedWith.set(list, used);
     return list;
   };
+};
+// 定级的框换成场景坐标的水平范围（没开返回 null）：定级框 每个框两个对角，没给就拿各个 区域 的外接框
+const forcedLevelScene = (source: VoxelSource): { level: number; boxes: LevelBox[] } | null => {
+  const grade = gradeTrial();
+  const level = grade['定级'];
+  if (level === undefined) return null;
+  const groups = grade['定级框']?.map((corners) => ({ corners: corners as Pos[], isScene: grade['场景'] })) ?? regionsParam()?.map((r) => ({ corners: r['点'], isScene: r['场景'] })) ?? [];
+  const boxes = groups.flatMap(({ corners, isScene }): LevelBox[] => {
+    const pts = corners.map((p) => toScene(source, p, isScene)).filter((p): p is number[] => !!p);
+    if (!pts.length) return [];
+    const xs = pts.map((p) => p[0]!), ys = pts.map((p) => p[1]!);
+    return [[Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]];
+  });
+  if (!boxes.length) {
+    console.warn('[分级色调] 定级 要配 定级框 或 区域，这次不定级');
+    return null;
+  }
+  return { level, boxes };
 };
 // 加载视点换成场景坐标（没开返回 null）
 const loadViewScene = (source: VoxelSource): number[] | null => {
@@ -430,6 +457,10 @@ export type TerrainDebug = {
   logPick: (list: SectionId[]) => void;
   /** 调试镜头、加载视点 开着：画面不是从挑区段的位置看的，各朝向的面都要画 */
   allFacing: boolean;
+  /** 分级色调 的 真几何：望远后的视野判断，替掉照原整帧镜头建的那个；没开是 undefined。视锥.ts 的判断函数共用一个视锥，拿了它就别再照镜头另建 */
+  inView?: ReturnType<typeof makeFrustumTest>;
+  /** 分级色调 的 阴影 false：地形不投影 */
+  noShadow: boolean;
 };
 // 每次渲染调：区域写进 uniform、调试镜头换成场景坐标登记
 export const useTerrainDebug = (source: VoxelSource, camera: THREE.Camera): TerrainDebug => {
@@ -458,6 +489,7 @@ export const useTerrainDebug = (source: VoxelSource, camera: THREE.Camera): Terr
     // 用 warn：still、film 只把浏览器的 warn、error 打到终端
     if (text && text !== lastCameraLog) console.warn((lastCameraLog = text));
   }
+  const tele = teleView();
   const cam = debugCameraParam();
   if (cam) {
     const p = toScene(source, cam.位, cam['场景']), t = toScene(source, cam.看, cam['场景']);
@@ -475,6 +507,8 @@ export const useTerrainDebug = (source: VoxelSource, camera: THREE.Camera): Terr
       if (params) logPick(source, list, params);
     },
     allFacing: !!cam || !!loadViewParam(),
+    ...(tele ? { inView: makeFrustumTest({ projectionMatrix: tele.crop.clone().multiply(camera.projectionMatrix), matrixWorldInverse: camera.matrixWorldInverse } as THREE.Camera) } : {}),
+    noShadow: gradeTrial()['阴影'] === false,
   };
 };
 
