@@ -6,8 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { UsageError } from '../cli/参数.ts';
-import { prepareBrowser } from './浏览器.ts';
-import { openBrowser } from './渲染器.ts';
+import { realBackend, type RenderBackend } from './后端.ts';
 import { checkTrialTable, trialShortName, type TrialTable } from './试看表.ts';
 import { shellTrialTable, trialEnvName, trialTerrain } from './地形注入.ts';
 
@@ -85,10 +84,10 @@ type ShotPage = {
 
 /**
  * 接触表：同一帧的几组拼一张 PNG，每格上面标组号和短名。中文标签要字体（ffmpeg 没带 drawtext），所以拿渲染用的浏览器截一张本地 HTML：
- * 经 Remotion 的 openBrowser 开页面、CDP 截图。chrome-headless-shell 自己的 --screenshot 在这台 Mac 上不退出或不出文件（11-17 试过）。
+ * 经渲染后端开浏览器（后端.ts 的 launchBrowser，不打包）、CDP 截图。chrome-headless-shell 自己的 --screenshot 在这台 Mac 上不退出或不出文件（11-17 试过）。
  * 一格最宽 1920（4K 原图缩一半），排成近似方阵（2 组并排、4 组 2×2、5～9 组每行 3 格）
  */
-export const writeContactSheet = async (tiles: { file: string; label: string }[], out: string) => {
+export const writeContactSheet = async (tiles: { file: string; label: string }[], out: string, backend: RenderBackend = realBackend) => {
   const [w0, h0] = pngSize(tiles[0]!.file);
   const cols = Math.ceil(Math.sqrt(tiles.length));
   const rows = Math.ceil(tiles.length / cols);
@@ -107,7 +106,7 @@ export const writeContactSheet = async (tiles: { file: string; label: string }[]
 img{display:block;width:${tileW}px;height:${tileH}px}</style>${cells}`;
   const htmlFile = path.join(dir, `.接触表-${process.pid}.html`);
   fs.writeFileSync(htmlFile, html);
-  const browser = await openBrowser('chrome', { logLevel: 'error', browserExecutable: await prepareBrowser() });
+  const browser = await backend.launchBrowser({ logLevel: 'error' });
   try {
     const page = (await browser.newPage({ context: () => null, logLevel: 'error', indent: false, pageIndex: 0, onBrowserLog: null, onLog: () => {} })) as unknown as ShotPage;
     await page.setViewport({ width, height, deviceScaleFactor: 1 });

@@ -22,12 +22,12 @@ import { segStampDir } from '../环境/作品数据.ts';
 import { config } from '../环境/配置.ts';
 import { newPreviewDir } from '../预览/预览.ts';
 import { readBaseline, compareWithBaseline, checkBasis, saveSampleImage, saveSampleTable, type SampleEvidence } from '../验收/基点对照.ts';
-import { openSession, findComposition, renderFramesSamePage, missingLocalTerrain } from '../渲/渲.ts';
+import { findComposition, renderFramesSamePage, missingLocalTerrain } from '../渲/渲.ts';
+import { realBackend, type RenderBackend } from '../渲/后端.ts';
 import { segRenderEnv } from '../渲/地形注入.ts';
 import { recordMeasuredFrames } from '../渲/地形用量.ts';
 import { waitSolveCacheWrites } from '../渲/求解缓存收集.ts';
-import { perGroupWithResourcePacks } from '../资产/资产锁.ts';
-import { lazyPassGate, passRenderGate } from '../闸/闸.ts';
+import { lazyPassGate } from '../闸/闸.ts';
 import { recordPhase } from '../运行记录/阶段.ts';
 import { DetailCollector } from '../运行记录/渲染明细.ts';
 import { readThresholds } from '../验收/比较.ts';
@@ -48,7 +48,8 @@ const maxListedDiffFrames = 8;
 type SegPlan = { segment: SegInfo; artifacts: SegArtifact; 新: SegFingerprint; oldVersion: OldVersion; frame: number[] };
 
 /** anim reuse：见 认指纹.ts 文件头。返回退出码：选中的过期段有没认下来的（不同、没有旧切片、静帧证明不了）是 1 */
-export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { reason: string; sampleCount: number; level: RenderLevel; viewOnly: boolean; runRecord: RunRecord; saveBaseline?: boolean; compareBaseline?: string }): Promise<number> => {
+export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { reason: string; sampleCount: number; level: RenderLevel; viewOnly: boolean; runRecord: RunRecord; saveBaseline?: boolean; compareBaseline?: string; backend?: RenderBackend }): Promise<number> => {
+  const backend = o.backend ?? realBackend;
   const { runRecord, level: level } = o;
   const diagnose = !!(o.saveBaseline || o.compareBaseline);
   if (diagnose && (segments.length !== 1 || o.viewOnly || (o.saveBaseline && o.compareBaseline))) throw new UsageError('基点诊断一次只选一段；--save-base、--vs-base、--dry-run 不能并用');
@@ -65,7 +66,7 @@ export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { re
   let alreadyFreshCount = 0;
   let acceptedCount = 0;
   // 旧切片缺段签时 找旧版 要当场派生（解码），和后面解旧切片共用一次放行闸
-  const waitGate = lazyPassGate();
+  const waitGate = lazyPassGate(backend.passGate);
   for (const [i, s] of segments.entries()) {
     const artifact = outputs[i]!;
     const newFingerprint = artifact.pictureFingerprint;
@@ -107,8 +108,8 @@ export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { re
       const x = commitStatus();
       return x ? `${x.commit}${x.dirty ? '+未提交改动' : ''}` : '不在 git 里';
     })();
-    await perGroupWithResourcePacks(workRoot(), plans, (x) => x.segment.key, (group) =>
-      openSession(level, async (h) => {
+    await backend.perResourcePackGroup(workRoot(), plans, (x) => x.segment.key, (group) =>
+      backend.openSession(level, async (h) => {
         for (const x of group) {
           const segKey = x.segment.key;
           const composition = findComposition(h, x.segment, allSegments);
@@ -124,7 +125,7 @@ export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { re
           const label = `认指纹:${workName()}/${segKey}:${level}`;
           const queueStartMs = Date.now();
           const frameCompares: FrameCompare[] = [];
-          await passRenderGate(
+          await backend.passRenderGate(
             async () => {
               const t0 = Date.now();
               recordPhase(runRecord.stage, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
@@ -142,7 +143,7 @@ export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { re
                       detail.frameDone(frameCompares.length);
                     }));
                   },
-                });
+                }, backend);
                 await Promise.all(conversions);
               });
               await recordMeasuredFrames(segKey, x.frame);
