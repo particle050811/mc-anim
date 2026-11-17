@@ -22,7 +22,7 @@ import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
 import { recordSectionRead } from './地形用量.ts';
 import { variesByPos } from './群系色.ts';
-import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type SectionContext } from './导入区段.ts';
+import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type SectionContext, type SectionPackInfo } from './导入区段.ts';
 import { fetchSectionsInPool, registerSource, registerModel, type SectionResult } from './区段工人池.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 
@@ -86,8 +86,8 @@ const storeSection = (pack: TerrainPack, section: SectionId, data: SectionData, 
   pack.bytes += bytes;
   pack.inflight.delete(sectionKey(section));
 };
-// 取这几个区段：按块文件分组，块里按偏移排好、挨着的并成一次活交给工人；工人顺手按来源 `ctx` 换好体素块，放进 `ready`。返回每个区段取齐的 Promise
-const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: number, ctx: number, ready: Map<string, ReadyVoxels>): Map<string, Promise<void>> => {
+// 取这几个区段：按块文件分组，块里按偏移排好、挨着的并成一次活交给工人；给了来源 `ctx` 的工人顺手换好体素块，放进 `ready`。返回每个区段取齐的 Promise
+const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: number, ctx: number | undefined, ready: Map<string, ReadyVoxels>): Map<string, Promise<void>> => {
   const byFile = new Map<string, { section: SectionId; slot: number }[]>();
   for (const section of sections) {
     const { ti, tj, slot } = sectionInTile(section);
@@ -136,6 +136,10 @@ export type ImportedTerrain = {
   位置: (gamePos: number[]) => V3; // 游戏坐标（连续）→ 场景坐标（摆地标网格：网格放在 位置(origin)）
   origin: [number, number, number]; // 包.json 的原点 [ox, oy, oz]（游戏坐标），换算见 区段包.ts 文件头
   coarse: CoarseHeightMap; // 粗高度图（16 米一格，−32768 = 这一格没数据，即导入范围外），engine/voxel/主世界地形.ts 拿它认导入范围
+  // 旁路读者（光体，engine/light/光体组件.tsx）：取齐这几个区段解好的数据（包里没有的给 null），记进地形用量；不换体素块、不动体素世界的 `ready` 和预取的轮次。
+  // 体素块由读者自己的工人按 `voxelContext` 换（同 区段工人.ts，同一份纯函数）
+  sectionData: (qs: SectionId[]) => Promise<(SectionData | null)[]>;
+  voxelContext: { info: SectionPackInfo; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] };
 };
 
 const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[]): ImportedTerrain => {
@@ -211,7 +215,33 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
       return waits.size ? Promise.all(waits).then(() => undefined) : undefined;
     },
   };
+  const sectionData = async (qs: SectionId[]): Promise<(SectionData | null)[]> => {
+    const present = qs.filter((q) => hasSection(pack.coarseHeights, q));
+    recordSectionRead(pack.name, present.map(sectionKey));
+    // 取齐后这边拿到之前，体素世界的预取可能按缓存上限丢掉刚取的（只丢那一轮没要到的）：丢了再取
+    for (;;) {
+      const waits = new Set<Promise<void>>();
+      const toLoad: SectionId[] = [];
+      for (const q of present) {
+        const k = sectionKey(q);
+        if (pack.data.has(k)) continue;
+        const promise = pack.inflight.get(k);
+        if (promise) waits.add(promise);
+        else toLoad.push(q);
+      }
+      if (!waits.size && !toLoad.length) break;
+      if (toLoad.length) {
+        const loading = loadSections(pack, toLoad, pack.round, undefined, ready);
+        for (const [k, promise] of loading) pack.inflight.set(k, promise);
+        for (const promise of loading.values()) waits.add(promise);
+      }
+      await Promise.all(waits);
+    }
+    return qs.map((q) => (hasSection(pack.coarseHeights, q) ? pack.data.get(sectionKey(q))!.d : null));
+  };
   return {
+    sectionData,
+    voxelContext: { info: { origin: pack.info.origin, state: pack.info.state, biome: pack.info.biome }, cutBoxes, flattenAreas },
     key: `导入:${pack.dir}`,
     source: source,
     heightRange: [dimensionMinY[pack.info.dimension] - oy, pack.maxTop],
