@@ -6,6 +6,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RunRecord } from '../运行记录/记录.ts';
 import { UsageError } from '../cli/参数.ts';
 import { encode } from 'fast-png';
+import { fakeBackend } from '../渲/假后端.ts';
 
 const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-逐帧校验-'));
 process.env.ANIM_DATA = dataRoot;
@@ -24,31 +25,37 @@ vi.mock('../渲/段产物.ts', () => ({
   segmentProducts: async (allFlag: unknown, segments: { key: string; segment: { frameCount: number } }[]) => segments.map((s) => ({ segment: s, pictureFingerprint: { segment: s.key, fingerprint: fake.fingerprint, items: { terrain: {} } }, outputFrames: s.segment.frameCount, params: {} })),
 }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), loadAllSegments: async () => [] }));
-vi.mock('../闸/闸.ts', async (actual) => ({ ...(await actual<typeof import('../闸/闸.ts')>()), passRenderGate: <T>(fn: () => Promise<T>) => (fake.gate++, fn()), passGate: <T>(fn: () => Promise<T>) => (fake.passGate++, fn()) }));
 vi.mock('../分发/随仓库.ts', () => ({ fillBytesAndReport: () => {} }));
-vi.mock('../渲/求解缓存收集.ts', () => ({ waitSolveCacheWrites: async () => {}, collectSolveCache: () => {} }));
 vi.mock('../渲/渲.ts', async (actual) => ({
   ...(await actual<typeof import('../渲/渲.ts')>()),
   missingLocalTerrain: (s: { key: string }) => (fake.missingTerrain.has(s.key) ? '某包' : null),
-  openSession: async (level: string, fn: (h: unknown) => Promise<unknown>) => (fake.打包++, fn({ compositions: [] })),
   findComposition: (_h: unknown, s: { key: string }) => ({ id: s.key }),
-  renderFramesSamePage: async (_h: unknown, _c: unknown, frames: number[], o: { withAudio: boolean; onFrame: (b: Buffer, f: number) => void }) => {
-    fake.renderCalls.push({ frame: [...frames], withAudio: o.withAudio });
-    // 看前一帧：照真实情况，一帧的结果随同页面前一帧变
-    let prev = -1;
-    for (const f of frames) {
-      o.onFrame(fake.png ? fake.png(f, fake.changedFrames.has(f)) : Buffer.alloc(fake.thumb ? 10 : 100_000, `${f}${fake.changedFrames.has(f) ? '改' : ''}${fake.lookPrevFrame ? `接${prev}` : ''}`), f);
-      prev = f;
-    }
-  },
 }));
+// 会话、闸、出帧换成假后端；出帧照真实情况看前一帧：一帧的结果随同页面前一帧变
+const fakeRenderFrames = async (o: { frames: number[]; muted: boolean; onFrameBuffer: (b: Buffer, f: number) => void }) => {
+  fake.renderCalls.push({ frame: [...o.frames], withAudio: !o.muted });
+  let prev = -1;
+  for (const f of o.frames) {
+    o.onFrameBuffer(fake.png ? fake.png(f, fake.changedFrames.has(f)) : Buffer.alloc(fake.thumb ? 10 : 100_000, `${f}${fake.changedFrames.has(f) ? '改' : ''}${fake.lookPrevFrame ? `接${prev}` : ''}`), f);
+    prev = f;
+  }
+};
 
 const { runPerFrame, parseFrames, frameNumText, pickRenderFrames, compareChecks, checkFile, baselineImageDir, writeCheckRecord, readCheckRecord } = await import('./逐帧校验.ts');
 const makeRunRecord = () => {
   const eventMessages: string[] = [];
   return { log: (_: string, m: string) => eventMessages.push(m), stage: [], artifacts: [] as string[], events: eventMessages } as unknown as RunRecord & { events: string[] };
 };
-const runFrameCheck = (segments: unknown[], o: { checkMode: '存' | '比'; name: string; frame?: number[]; keepDir?: string; noImages?: boolean; tolerance?: number }, r = makeRunRecord()) => runPerFrame(segments as never, { frame: null, keepDir: null, ...o, runRecord: r });
+const runFrameCheck = async (segments: unknown[], o: { checkMode: '存' | '比'; name: string; frame?: number[]; keepDir?: string; noImages?: boolean; tolerance?: number }, r = makeRunRecord()) => {
+  const f = fakeBackend({ renderFrames: fakeRenderFrames as never });
+  try {
+    return await runPerFrame(segments as never, { frame: null, keepDir: null, ...o, runRecord: r, backend: f.backend });
+  } finally {
+    fake.打包 += f.sessions.length;
+    fake.gate += f.tickets.filter((t) => t.gate === 'render').length;
+    fake.passGate += f.tickets.filter((t) => t.gate === 'pass').length;
+  }
+};
 
 afterAll(() => fs.rmSync(dataRoot, { recursive: true, force: true }));
 beforeEach(() => {
