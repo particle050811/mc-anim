@@ -10,7 +10,7 @@ import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';
 import { buildCameraRig } from '../../../地点/古城4x/7-1/变速段.tsx';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { smoothstep01, lerpV } from '@engine/core/数学.ts';
 import type { Cam } from '@engine/core/机位.ts';
 

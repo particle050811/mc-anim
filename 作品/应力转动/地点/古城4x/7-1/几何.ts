@@ -4,7 +4,7 @@
 //   东南一座幽匿土丘（顶 (−856, 238)，高 7 格）、西边矮废墟（x −895～−888、z 228～237）。监守者 6-4-8 在中央台北边 (−873.5, 217.5) 钻出来；F1（李樱 6-4-1 垫的羊毛）在北墙根 (−878, 214)。
 import type { V3 } from '@engine/model/parts.tsx';
 import { RAMP_SEC } from '@库/角色/跑步.ts';
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import { vanilla, elite, baseSpeed, shieldPoint, scene71, wallTopLanding as wallEntry4x, wallJumpTakeoff, footOf, handoffs, huangPanPerch, type BlockPos } from '../布局.ts';
 import * as K649 from '../6-4-9/编排.ts';
 

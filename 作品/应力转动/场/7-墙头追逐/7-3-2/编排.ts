@@ -4,7 +4,7 @@
 import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
 import { camPoses, addOffset, localSecAt, type ShotCam } from '../../../地点/古城4x/7-1/机位.ts';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { lerpV } from '@engine/core/数学.ts';
 
 export const segmentId = '7-3-2' as const;

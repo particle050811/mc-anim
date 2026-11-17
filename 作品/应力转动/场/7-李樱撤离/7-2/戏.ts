@@ -1,7 +1,7 @@
 // 第 7 章第 2 场两段共用的「戏」：李樱的动作、羊毛、箱子、感测体和尖啸、传送石粒子、远景对齐第 1 场的哪一刻。纯函数，输入场内秒 s（见 时间线.ts）。
 // 机位各段自己定（各段 编排.ts）。羊毛按 ../古城4x布局.ts 的名字（6-4-1～6-4-5 一路垫到 V，本场加 X），一跳是强者跳。
 import type { V3 } from '@engine/model/parts.tsx';
-import { type FigurePose } from '@库/角色/骨架.tsx';
+import { type FigurePose } from '@库/角色/骨架姿势.ts';
 import { warpStoneUseParticles, teleportParticles } from '@库/物品/传送石.tsx';
 import type { ParticleSpawn } from '@库/特效/原版粒子.tsx';
 import { vibrationTravelTicks } from '@库/特效/振动粒子.tsx';

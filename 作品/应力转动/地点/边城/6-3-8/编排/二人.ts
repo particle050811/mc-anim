@@ -1,6 +1,6 @@
 // 刘心忠、黄叛：城墙上的关键姿势、跳下城墙落进墙脚的水池（原版跳），切到坑口后跑来、先后跳进竖井。
 import type { V3 } from '@engine/model/parts.tsx';
-import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
+import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { RAMP_SEC, runPoseAt as runPose, runStride, speedProfile } from '@库/角色/跑步.ts';
 import { chaseSpeed } from '../../../古城4x/布局/强者.ts';
 import { groundZ } from '../../6-3-下坠/编排.ts';

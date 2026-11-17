@@ -1,5 +1,5 @@
 // 九胡：在南窗边看海，听到「对了」回头转身，小跑到屋子中间，最后贴到 6-2-4 首帧的姿态。
-import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
+import { standPose, type FigurePose } from '@库/角色/骨架姿势.ts';
 import { mixPose, walkSwing, yawToward } from '../动作.ts';
 import { lastSec, cues } from './时间线.ts';
 import { J0, JH_END, jiuhuPath, walkPlans, trip } from './站位.ts';

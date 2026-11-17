@@ -1,6 +1,6 @@
 // 古城4x 布局的坐标类型和换算：脚底格、方块、羊毛条目 → 场景坐标。
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 export type BlockPos = [number, number, number];
 export type PlanePoint = [number, number]; // 游戏 [x, z]
 

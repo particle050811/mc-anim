@@ -12,14 +12,10 @@ import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/物品/动力压路机';
 import atlas from 'asset:贴图/物品/动力压路机';
 
+export { ROLLER } from './动力压路机尺寸.ts';
+
 const MODEL = raw as unknown as ObjModel;
 const TEX = png(atlas);
-export const ROLLER = {
-  radius: 0.75, // 滚筒半径（格）
-  width: 0.75, // 滚筒宽
-  colors: ['#8a5a2b', '#6e6e72', '#a9a9ad'], // 外壳木框、铁件、滚筒
-};
-
 const OBJ_TO_LOCAL = new THREE.Matrix4().makeRotationX(Math.PI / 2).multiply(new THREE.Matrix4().makeTranslation(-0.5, 0, -0.8125));
 let geos: THREE.BufferGeometry[] | null = null;
 const geometries = () => (geos ??= Object.values(MODEL.groups).map((g) => objGeometry(g, OBJ_TO_LOCAL)));

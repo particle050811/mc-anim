@@ -6,7 +6,7 @@
 //   5b 台面西南上空（马勒停在台面上，转过来看它倒下的地方）。7-3-3 → 本段、本段 → 7-4-2 都是硬切（7-4-2 接着本段末格之后的剧情时刻往下演）。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { G4, toGame4 } from '../../../地点/古城4x.tsx';
+import { G4, toGame4 } from '../../../地点/古城4x坐标.ts';
 import * as play from './戏.ts';
 import * as chase from './追逐.ts';
 import * as geom from './几何.ts';

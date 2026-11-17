@@ -6,14 +6,14 @@
 // 时刻、站位、她的姿势、他转身和看哪都是 Agent 取的，用户没看过。
 import { lerp, lerpV, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { STEVE, steveSize } from '@库/角色/史蒂夫.tsx';
+import { STEVE, steveSize } from '@库/角色/史蒂夫姿势.ts';
 import { definePerformance, transitionAt, type TiltSettings, type DragSettings, type PerformanceBar } from '../../角色/动作/亚波伦演出.ts';
 import { swordMoveLength, type MoveName } from '../../角色/剑招.ts';
 import type { RightHandItem, SteveState } from '../../角色/史蒂夫反应.ts';
 import { defineWalk } from '../../角色/史蒂夫走位.ts';
 import { defaultOpenClose } from '../../界面/分圈.ts';
 import type { DiscPlacement } from '../../界面/杖尖盘位姿.ts';
-import { wheelOuterRadius, type MultiRingParams } from '../../界面/多圈轮盘.tsx';
+import { wheelOuterRadius, type MultiRingParams } from '../../界面/多圈轮盘参数.ts';
 import type { Teleport } from '../../特效/瞬移烟.tsx';
 import { realNetherScene } from '../../地点/真下界位置.ts';
 import { footHeight } from './布局.ts';

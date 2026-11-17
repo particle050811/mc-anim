@@ -27,6 +27,9 @@ import { BlockMesh, type BlockMeshInfo, fromGame } from '@engine/voxel/方块网
 import type { V3 } from '@engine/model/parts.tsx';
 import { VIEW_DISTANCE, VIEW_FOG } from '@engine/voxel/视距.ts';
 import { assetDir } from '@engine/core/资产目录.ts';
+import { ORIGIN, GUCHENG4X_LANDMARKS } from './古城4x坐标.ts';
+
+export { G4, toGame4 } from './古城4x坐标.ts';
 import ancientCity4xEast1Mesh from 'asset:网格/古城4x/东1/头';
 import ancientCity4xEast1North1Mesh from 'asset:网格/古城4x/东1北1/头';
 import ancientCity4xEast1North2Mesh from 'asset:网格/古城4x/东1北2/头';
@@ -180,11 +183,6 @@ const BLOCKS: Record<string, MeshPart> = Object.fromEntries(
     ];
   }),
 );
-const ORIGIN: V3 = [-720, -50, 240];
-// 游戏坐标 → 场景坐标（和 古城.tsx 的 G 一样）
-export const G4 = (x: number, y: number, z: number): V3 => fromGame([x - ORIGIN[0], y - ORIGIN[1], z - ORIGIN[2]]);
-// 场景坐标 → 游戏坐标
-export const toGame4 = ([x, y, z]: number[]): V3 => [x + ORIGIN[0], z + ORIGIN[1], ORIGIN[2] - y];
 
 // 游戏 (x, z) 在哪一块（不在任何一块里返回 undefined）；补洞的块（中顶）和 中 平面上重叠，只认含城地面 y -50 的块
 export const partAt = (x: number, z: number) => Object.values(BLOCKS).find((b) => x >= b.x[0] && x <= b.x[1] + 1 && z >= b.z[0] && z <= b.z[1] + 1 && b.y[0] <= -50 && b.y[1] >= -50)?.name;
@@ -220,12 +218,7 @@ export const tilesInView = (camera: THREE.PerspectiveCamera): string[] => {
 const marks = (ids: string[]): V3[] => Object.values(BLOCKS).flatMap((b) => ids.flatMap((id) => (b.info.markers[id] ?? []).map(fromGame)));
 
 export const GUCHENG4X = {
-  // 结构的件（不含地形适配外扩的 12 格，游戏坐标）
-  structureBox: { from: [-1162, -52, -200], to: [-294, -22, 676] },
-  // 传送门、落点、穹顶：城心和老城同一位置（古城.tsx 的 `GUCHENG`）。新世界城心那列洞顶低一格（y -6），落点净空 44 格
-  portal: { x: 0.5, y: [-11.5, 10.5], z: [15, 23] },
-  landingPos: G4(-709.5, -50, 240.5),
-  dome: G4(-709.5, -6, 240.5),
+  ...GUCHENG4X_LANDMARKS,
   // 箱子：城里的是 quark:ancient_chest；minecraft:chest 是城外地牢、矿井里的。镜头里换成战利品箱（朝向另读，见 镜头/6-4-1/古城画面.tsx 的 `chests4x`）
   chest: marks(['quark:ancient_chest']),
   outerChests: marks(['minecraft:chest']),

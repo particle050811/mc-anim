@@ -3,7 +3,7 @@
 // 东西撒落、死亡界面、聊天栏的死亡消息是这版加进来的，Agent 摆的，用户没看过。
 import { definePerformance, type TiltSettings, type PerformanceBar } from '../../角色/动作/亚波伦演出.ts';
 import { openDoneTick, defaultOpenClose } from '../../界面/分圈.ts';
-import type { MultiRingParams } from '../../界面/多圈轮盘.tsx';
+import type { MultiRingParams } from '../../界面/多圈轮盘参数.ts';
 import { arrangeWheel } from '../../界面/轮盘法术.ts';
 import { v7Pos, rev7Clock, yaBoLunBeats, actStart, retractStart, secAt, landSec, standStillSec } from './击败拍.ts';
 import { steveEye, steveFoot } from './编排-齐放.ts';

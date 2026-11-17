@@ -9,7 +9,7 @@
 // 刘心忠右手拿杖：`LiuXinzhong` 每帧先过 `liuHoldStaff`（追兵.tsx），这里只别让右臂甩太狠（摆幅压到一半）。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { walkPose } from '../../../角色/追兵.tsx';
+import { walkPose } from '../../../角色/追兵姿势.ts';
 import { flightPose, groundPose, landPoseSec, mixPose, nearYaw, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { elite, eliteLeap, footOf, withHang, type BlockPos, type Jump } from '../../../地点/古城4x/布局.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';

@@ -1,5 +1,5 @@
 // 古城4x 第 7 章的点位：7-1 逃跑圈、高台、护盾点、上墙点、二人强者跳落脚点，7-2 远望，7-3 墙头、塔、大道，7-4 回城心、换位。
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import { feetOnWool, type BlockPos } from './换算.ts';
 import { wool645 } from './羊毛.ts';
 import { wardenEmerge } from './场子.ts';

@@ -2,7 +2,7 @@
 // 竖井那一列 (−710, 240)：古城地面方块 y −51（脚底 y −50）、洞顶最下块 y −6、地表最高方块 y 134。
 // ../6-3-下坠/编排.ts 的 `洞顶深`、`地面深` 取这里的值（挖竖井.py 按老片场石半砖 y 73 算，不用）。
 // 新世界石半砖铺在地表最高块上面 y 135：洞顶深 135 − (−6) = 141，地面深 185。深 76～82 米处有 6 格高气穴（y 53～58）。竖井相对边城位置不变（用户 10-05）。
-import { GUCHENG4X } from '../../古城4x.tsx';
+import { GUCHENG4X_LANDMARKS } from '../../古城4x坐标.ts';
 import type { PlanePoint } from './换算.ts';
 
 export const shaftLayout = {
@@ -16,6 +16,6 @@ export const shaftLayout = {
   groundDepth: 185, // = 135 − (−50)；古城.地面深
   rockDepthBlocks: 141,
   airPocket: { y: [53, 58] as [number, number], depth: [76, 82] as [number, number] }, // 竖井那一列岩层里唯一的一段空气（砸穿时有 6 格不出碎块）
-  placement: GUCHENG4X.landingPos, // 6-3-6 落地处（场景），6-4-1 从这里起跳
+  placement: GUCHENG4X_LANDMARKS.landingPos, // 6-3-6 落地处（场景），6-4-1 从这里起跳
   legacy: { ceilingDepth: 78, groundDepth: 123 },
 };

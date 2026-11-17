@@ -14,8 +14,8 @@
 // 和游戏不一样的（照旧）：警告次数照脚本数（原版每个玩家各记各的）；6-4-3 那次和这两次尖啸后 90 刻的回应（黑暗、低吼）不演。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { walkPose } from '../../../角色/追兵.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { walkPose } from '../../../角色/追兵姿势.ts';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import { crouchPose, landPoseSec, mixPose, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import * as K3 from '../6-4-3/编排.ts';
 import * as K645 from '../6-4-5/编排.ts';

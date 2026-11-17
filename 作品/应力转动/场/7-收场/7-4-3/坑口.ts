@@ -4,7 +4,7 @@
 //   头先、身子随后转过去盯着离自己近的那一个。
 // 跳：古城4x布局/强者.ts 的 `eliteLeap`（重力 32），起点在井下 15 米、落点井心往北 4.5 米；往上冲出井口时竖直 30 米/秒，出井口时水平才走了 1 米，不擦井壁。
 import type { V3 } from '@engine/model/parts.tsx';
-import { type FigurePose } from '@库/角色/骨架.tsx';
+import { type FigurePose } from '@库/角色/骨架姿势.ts';
 import { eliteLeap, type Jump } from '../../../地点/古城4x/布局/强者.ts';
 import { flightPose, landPoseSec, mixPose, nearYaw, standAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { shaftCellCenter } from '../../../地点/边城/6-3-下坠/编排.ts';

@@ -14,11 +14,11 @@
 import { type Key, sample, sampleV, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { WARDEN } from '@库/生物/监守者.tsx';
-import { walkPose } from '../../../角色/追兵.tsx';
+import { walkPose } from '../../../角色/追兵姿势.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { bowTextureFor } from '@库/物品/弓.tsx';
 import { blockCenter, nearYaw, yawTo } from '../6-4-1/古城戏.ts';
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import { allWool, liuXinzhongSpot, shrieks, wardenEmerge, handoffs, huangPanSpot, woolBlockAt, woolOrder, eliteLeap, leapFeetAt, type Jump } from '../布局.ts';
 import { bump, crouchBy, elevationTo, glanceAt, hopAir, hopTo, huangAimPose, landingCushion, liuGuardPose, pulse, rampIn, startle, stepLeg, yawToWarden } from './二人.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';

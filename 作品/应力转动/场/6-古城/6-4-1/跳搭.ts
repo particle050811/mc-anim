@@ -11,7 +11,7 @@
 //   G1 改 6-3-6 时落点、站姿不变，所以照抄数，不 import 下坠时间线。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { GUCHENG4X } from '../../../地点/古城4x.tsx';
+import { GUCHENG4X_LANDMARKS } from '../../../地点/古城4x坐标.ts';
 import { allWool, elite, eliteLeap, leapFeetAt, feetOnWool, wool641, wool642, woolLeapApex, chestB, type Jump, type WoolName } from '../../../地点/古城4x/布局.ts';
 import { PLACE_BEFORE, crouchPose, lootPose, mixPose, nearYaw, placeTime, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
@@ -19,7 +19,7 @@ import { smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
 const bump = (x: number, a: number, b: number) => Math.sin(Math.PI * clamp01((x - a) / (b - a)));
 
 // ---------- 起点（6-3-6 末帧） ----------
-export const startFoot: V3 = GUCHENG4X.landingPos;
+export const startFoot: V3 = GUCHENG4X_LANDMARKS.landingPos;
 export const startYaw = 180; // 面朝南
 export const stowHammerSec = 1 / 6; // 这一刻起手里没有锤
 export const hammerAngle = 230; // 6-3-6 末帧锤在右手里的角度（`bladeInHand` 的 angle）

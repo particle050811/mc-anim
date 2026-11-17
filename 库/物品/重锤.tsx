@@ -22,18 +22,13 @@ import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import heavyHammerRawAsset from 'asset:模型/物品/重锤';
 import tex from 'asset:贴图/物品/重锤';
+import { MACE, MACE_MODEL_SCALE as MODEL_SCALE, MACE_HANDLE_AXIS as HANDLE_AXIS } from './重锤尺寸.ts';
+
+export { MACE } from './重锤尺寸.ts';
+
 const raw = heavyHammerRawAsset as unknown as object;
 
 const MODEL = { ...raw, texture: png(tex) } as unknown as BedrockModel;
-
-const MODEL_SCALE = 1.5; // mace_wield 给 rightitem 的缩放：模型一个单位 = 玩家 1.5 像素
-const HANDLE_AXIS: [number, number] = [-0.5, -0.20711]; // 柄轴在 item2 文件坐标里的 x、z
-const HEAD_CENTER_Y = 4.70711 + 5 / 2; // 锤头中心沿柄的位置（item2 的 y，握持点为 0）
-const TIP_Y = 9.60711 + 1.2; // 顶钮最远处
-export const MACE = {
-  head: (HEAD_CENTER_Y * MODEL_SCALE) / 16, // 握持点到锤头中心（格，沿锤柄方向）
-  tip: (TIP_Y * MODEL_SCALE) / 16, // 握持点到顶钮最远处
-};
 
 // 握持点坐标系（Z 沿锤柄）里柄轴的偏移：item2 的 (x, z) 经 item1、item2 的转动和 `BedrockModelView` 的换轴、再绕 X 转 90°，落在 (z, -x)，挪回原点就是平移 (-z, x)（单位 × 缩放）
 const AXIS_OFFSET = new THREE.Vector3(-HANDLE_AXIS[1], HANDLE_AXIS[0], 0).multiplyScalar(MODEL_SCALE / 16);

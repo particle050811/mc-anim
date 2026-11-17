@@ -8,7 +8,7 @@
 // 踩羊毛走、跳、垫羊毛都不产生振动（羊毛在 BlockTags.DAMPENS_VIBRATIONS 里）；开 #212 发 container_open，但 8 格内无感测体（工具/古城4x布局/核对.py 核过）。
 import { sample, sampleV, type Key, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { G4 } from '../../../地点/古城4x.tsx';
+import { G4 } from '../../../地点/古城4x坐标.ts';
 import type { ChestOpening } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { chestB } from '../../../地点/古城4x/布局.ts';
 import * as jumpBuild from './跳搭.ts';

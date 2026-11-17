@@ -1,5 +1,5 @@
 // 古城4x 段与段的衔接：前一段的末帧状态写死在这里，两边组都从这里对，不 import 对方还没改完的编排。
-import { G4 } from '../../古城4x.tsx';
+import { G4 } from '../../古城4x坐标.ts';
 import { footOf } from './换算.ts';
 import { huangPanPerch, wallTopLanding } from './第7章.ts';
 export const handoffs = {
