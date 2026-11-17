@@ -5,7 +5,7 @@ import type { HeadlessBrowser } from '@remotion/renderer';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 const fake = vi.hoisted(() => ({ 目录: '' }));
-vi.mock('../环境/配置.ts', () => ({ solveCacheDir: () => fake.目录 }));
+vi.mock('../环境/配置.ts', () => ({ solveCacheDir: () => fake.目录, lightCacheDir: () => path.join(fake.目录, '光体') }));
 import { collectSolveCache, waitSolveCacheWrites } from './求解缓存收集.ts';
 
 beforeEach(() => { fake.目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-求解缓存测试-')); });

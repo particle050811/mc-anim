@@ -2,10 +2,12 @@
 // 写进 <数据根>/cache/求解/（页面经 public 目录的 求解 链接从这里读）。照旧项目 工具/求解缓存收集.mjs。
 // 用法：开浏览器后调一次 收求解缓存(browser)；Remotion 的 getCompositions、renderMedia 都经 browser.newPage 开页面、用完 page.close()，
 // 包住这两个就收得到每个页面的结果。同一个键内容一样，已有的文件不重写。
+// 光体缓存（光体缓存收集.ts）也挂在这里收：接 收求解缓存、等 等求解缓存写完 的地方都不用再改。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { HeadlessBrowser } from '@remotion/renderer';
 import { solveCacheDir } from '../环境/配置.ts';
+import { collectLightCachePage } from './光体缓存收集.ts';
 
 type PageLike = { _client: () => { send: (method: string, params: object) => Promise<unknown> }; close: (...a: unknown[]) => Promise<unknown> };
 
@@ -56,5 +58,7 @@ export const collectSolveCache = (browser: HeadlessBrowser) => {
   const dir = solveCacheDir();
   const stats = { 新写: 0 };
   beforeClose(browser, inFlight, async (evaluate) => { stats.新写 += await collectPage(evaluate, dir); });
+  // 另挂一个：哪个出错都不耽误另一个
+  beforeClose(browser, inFlight, async (evaluate) => { await collectLightCachePage(evaluate); });
   return stats;
 };
