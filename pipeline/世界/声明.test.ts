@@ -41,6 +41,20 @@ describe('世界声明', () => {
     expect(() => parseDecl(tomlText.replace('提取', '半公开'), '甲')).toThrow(/visibility/);
   });
 
+  it('[dh]：从 DH 的 LOD 库烘的包，范围和原点对齐 4096、高度对齐 64；原点不写用 [bake] 的', () => {
+    const tomlText = `${baseDecl}["bake"]\n"origin" = [0, 64, 0]\n["dh"]\n"db" = "data/DistantHorizons.sqlite"\n"pack" = "甲-DH"\n"extent" = [-8192, -4096, 4096, 8192]\n"yRange" = [-64, 8959]\n"license" = "LicenseRef-Origin-Unverified"\n"visibility" = "提取"\n`;
+    const w = parseDecl(tomlText, '甲');
+    expect(w.dh).toEqual({ db: 'data/DistantHorizons.sqlite', pack: '甲-DH', origin: [0, 64, 0], extent: [-8192, -4096, 4096, 8192], yRange: [-64, 8959], source: undefined, license: 'LicenseRef-Origin-Unverified', visibility: '提取' });
+    expect(parseDecl(baseDecl, '甲').dh).toBeUndefined();
+    expect(parseDecl(tomlText.replace('"pack" = "甲-DH"', '"pack" = "甲-DH"\n"origin" = [4096, 64, -4096]'), '甲').dh!.origin).toEqual([4096, 64, -4096]);
+    expect(() => parseDecl(tomlText.replace('[-8192, -4096, 4096, 8192]', '[-8192, -4096, 4096, 8000]'), '甲')).toThrow(/extent/);
+    expect(() => parseDecl(tomlText.replace('[-8192, -4096, 4096, 8192]', '[4096, -4096, -8192, 8192]'), '甲')).toThrow(/extent/);
+    expect(() => parseDecl(tomlText.replace('[0, 64, 0]', '[2048, 64, 0]'), '甲')).toThrow(/4096/);
+    expect(() => parseDecl(tomlText.replace('[-64, 8959]', '[-60, 8959]'), '甲')).toThrow(/yRange/);
+    expect(() => parseDecl(tomlText.replace('"pack" = "甲-DH"\n', ''), '甲')).toThrow(/pack/);
+    expect(() => parseDecl(tomlText.replace('提取', '半公开'), '甲')).toThrow(/visibility/);
+  });
+
   it('原点不是 2048 的倍数、oy 不对、名称和文件名不一致都报错', () => {
     expect(() => parseDecl(`${baseDecl}["bake"]\n"origin" = [100, 64, 0]`, '甲')).toThrow(/2048/);
     expect(() => parseDecl(`${baseDecl}[["bake"."pack"]]\n"name" = "a"\n"origin" = [0, 0, 0]`, '甲')).toThrow(/oy/);

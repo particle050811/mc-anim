@@ -65,6 +65,8 @@ export type WorldDecl = {
   pack: PackDecl[];
   /** 远景包（pipeline/世界/远景/）：导入范围（预生成的矩形块）外扩多远、中层（16 米）和细带（8 米）在交界外多宽，米 */
   farView?: { pack: string; outset: number; midWidth: number; fineWidth: number };
+  /** 从存档里 Distant Horizons 的 LOD 库烘的包（dh/，anim world bake-dh）：db 是库文件（相对存档目录），extent 是游戏坐标 [x0, z0, x1, z1)，yRange 是高度范围（游戏 y，两端都含） */
+  dh?: { db: string; pack: string; origin: [number, number, number]; extent: [number, number, number, number]; yRange: [number, number]; source?: string; license?: string; visibility?: string };
   /** 烘焙、转码时的可见变换（烘焙/可见.ts）：埋住的格换成 填充；保真 盒碰到的区段原样保留（作品的挖框、整平要落在里面，anim check 核） */
   visible: { fillBlock: string; faithful: { name: string; boxes: [number, number, number, number]; provenance?: string }[] };
 };
@@ -193,6 +195,20 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       };
       farTerrain = { pack: farView.pack, outset: toMeters('outset'), midWidth: toMeters('midWidth'), fineWidth: toMeters('fineWidth') };
     }
+    let dh: WorldDecl['dh'];
+    if (d.dh !== undefined) {
+      const t = d.dh as Record<string, unknown>;
+      if (typeof t.db !== 'string' || typeof t.pack !== 'string' || !t.pack) throw fileError('dh 要写 db（库文件，相对存档目录）和 pack（包名）');
+      const extent = t.extent as number[];
+      if (!Array.isArray(extent) || extent.length !== 4 || !extent.every((v) => Number.isInteger(v) && v % 4096 === 0) || extent[0]! >= extent[2]! || extent[1]! >= extent[3]!) throw fileError('dh.extent 要写游戏坐标 [x0, z0, x1, z1]，都是 4096 的整数倍、小的在前');
+      const origin = parseOrigin(t.origin, 'dh.origin') ?? defaultOrigin;
+      if (!origin || origin[0] % 4096 || origin[2] % 4096) throw fileError('dh 的原点（dh.origin 或 [bake] origin）ox、oz 要是 4096 的整数倍');
+      if (knownDim && origin[1] !== knownDim.oy) throw fileError(`dh 的 oy 是 ${origin[1]}，${dimension} 一律 ${knownDim.oy}`);
+      const dhRange = toPair(t.yRange, 'dh.yRange');
+      if ((dhRange[0] - origin[1]) % 64 || (dhRange[1] + 1 - origin[1]) % 64 || dhRange[0] > dhRange[1]) throw fileError(`dh.yRange 减 oy 要对齐 64（底是 64 的倍数、顶是 64 的倍数减 1），给的是 ${dhRange.join('～')}`);
+      if (t.visibility !== undefined && !['公开', '发布', '提取', '私有'].includes(t.visibility as string)) throw fileError('dh.visibility 只能是 公开、发布、提取、私有');
+      dh = { db: t.db, pack: t.pack, origin, extent: extent as [number, number, number, number], yRange: dhRange, source: typeof t.source === 'string' ? t.source : undefined, license: typeof t.license === 'string' ? t.license : undefined, visibility: t.visibility as string | undefined };
+    }
     return {
       displayName: worldName,
       file: fileName,
@@ -213,6 +229,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       pregen: { regionFileRange: parseRegion(pregen.regionFileRange, '预生成.区域文件范围'), chunkCount: typeof pregen.chunkCount === 'number' ? pregen.chunkCount : undefined, tile: chunks },
       pack: packs,
       farView: farTerrain,
+      dh,
       visible: { fillBlock: typeof bake.fill === 'string' ? bake.fill : 'minecraft:stone', faithful: preserve },
     };
   } catch (e) {
@@ -240,7 +257,7 @@ export const regionDir = (w: WorldDecl, overrideDir?: string) => {
 export const packWorld = (packName: string): WorldDecl | null => {
   for (const worldName of listWorlds()) {
     const w = readDecl(worldName);
-    if (w.pack.some((b) => b.name === packName)) return w;
+    if (w.pack.some((b) => b.name === packName) || w.dh?.pack === packName) return w;
   }
   return null;
 };
