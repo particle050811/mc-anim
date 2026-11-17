@@ -31,7 +31,7 @@ const tab = () => {
     runningMin = Math.min(runningMin, maceBottomZ(w0 + i * dt));
     z.push(runningMin);
   }
-  // 撞击时刻就是锤底碰到城的地面（石半砖顶面）的那一刻（时间线.ts 的 设置撞击），两边算的是同一个点，对不上说明哪边改了
+  // 撞击时刻就是锤底碰到城的地面（石半砖顶面）的那一刻（时间线.ts 的 `solveFall`），两边算的是同一个点，对不上说明哪边改了
   if (Math.abs(z[0] - choreo.groundZ) > 0.02) throw new Error(`填块.tsx：撞击时刻锤底在 ${z[0].toFixed(3)}，不在城的地面 ${choreo.groundZ}`);
   TAB = { w0, dt, z };
   return TAB;
