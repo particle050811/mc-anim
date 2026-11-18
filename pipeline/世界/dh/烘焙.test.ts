@@ -44,6 +44,7 @@ import { openDhDb } from ${fileUrl('./读库.ts')};
 import { dirFingerprint } from ${fileUrl('../版本.ts')};
 import { walkSections } from ${fileUrl('../烘焙/读区段.ts')};
 import { PackBlockSource } from ${fileUrl('../查询/源.ts')};
+import { readPackDoc } from ${fileUrl('../烘焙/包信息.ts')};
 import fs from 'node:fs';
 import path from 'node:path';
 const lib = await loadVoxelLib();
@@ -63,7 +64,7 @@ const pack = new PackBlockSource(dir, lib, '包');
 const tops = [];
 for (let z = 0; z < 64; z++) for (let x = 0; x < 64; x++) { const t = pack.topBlockAt(x, z); tops.push(t ? [t.y, t.state] : null); }
 const sections = [...walkSections(lib, dir)].map((s) => { const d = s.取(); return [d.L, d.i, d.j, d.kBottom, d.nz]; });
-const canSplit = lib.sectionPack.decodeSplittable(pack.packageInfo);
+const canSplit = lib.sectionPack.decodeSplittable(readPackDoc(lib, dir).maps.splittable);
 // 各级里 (i, j) 能不能分：含那一个第 0 级区段的那条链上的、和它旁边的
 const chain = [];
 for (let L = 1; L <= 6; L++) chain.push([canSplit(L, 0, -1), canSplit(L, 1, -1), canSplit(L, 0, -2)]);

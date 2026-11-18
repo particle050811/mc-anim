@@ -353,14 +353,21 @@ export const checkAssets = async (c: CheckContext, report: CheckReport) => {
     const chunkFiles = fs.readdirSync(dir).filter((f) => f.endsWith('.块'));
     if (chunkFiles.length) {
       try {
-        const info = JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as { version: number };
+        const info = JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as { version: number; coarsestLevel?: number; tileHeaderMax?: number };
         if (info.version !== sectionFormatVersion) throw new Error(`格式 ${info.version} 不是现行格式 ${sectionFormatVersion}：anim world transcode`);
+        if (!Number.isInteger(info.coarsestLevel) || !Number.isInteger(info.tileHeaderMax)) throw new Error('包.json 缺 coarsestLevel 或 tileHeaderMax');
+        if (!fs.existsSync(path.join(dir, '粗图.bin.gz'))) throw new Error('没有 粗图.bin.gz');
         readModel(fs.readFileSync(path.join(dir, modelFileName)));
+        // 块头开头 24 字节（engine/voxel/区段包.ts 的块文件）：魔数、版本、块号、头长、最粗级
+        let headerMax = 0;
         for (const f of chunkFiles) {
-          const fd = fs.openSync(path.join(dir, f), 'r'), h = Buffer.alloc(8);
-          try { fs.readSync(fd, h, 0, 8, 0); } finally { fs.closeSync(fd); }
+          const fd = fs.openSync(path.join(dir, f), 'r'), h = Buffer.alloc(24);
+          try { fs.readSync(fd, h, 0, 24, 0); } finally { fs.closeSync(fd); }
           if (h.readUInt32LE(0) !== 0x4b51434d || h.readUInt32LE(4) !== sectionFormatVersion) throw new Error(`${f} 不是格式 ${sectionFormatVersion} 的块文件`);
+          if (h[20] !== info.coarsestLevel) throw new Error(`${f} 的最粗级 ${h[20]} 和 包.json 的 ${info.coarsestLevel} 不一样`);
+          headerMax = Math.max(headerMax, h.readUInt32LE(16));
         }
+        if (headerMax !== info.tileHeaderMax) throw new Error(`包.json 的 tileHeaderMax ${info.tileHeaderMax}，块头最长的是 ${headerMax}`);
       } catch (e) { report.错(`地形包 ${packName}/${v.version}：${(e as Error).message}`); }
     }
     const actual = await packManifest(dir);

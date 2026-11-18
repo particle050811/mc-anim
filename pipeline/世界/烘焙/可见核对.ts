@@ -20,7 +20,7 @@ const materials = ['实心', '镂空', '实心树叶', '水', '花草'] as const
 let skirtGroupStart = 0, groupCount = 0;
 const bytesOf = (a: ArrayBufferView, start = 0, length = a.byteLength) => Buffer.from(a.buffer, a.byteOffset + start, length);
 
-export const loadMesh = async (voxelLib: VoxelLib, info: PackageInfo) => {
+export const loadMesh = async (voxelLib: VoxelLib, info: Pick<PackageInfo, 'origin' | 'state' | 'biome'>) => {
   registerAssetHook();
   const load = <T>(fileName: string) => import(pathToFileURL(path.join(codeRoot(), 'engine', 'voxel', fileName)).href) as Promise<T>;
   const [mesh, importSection] = await Promise.all([load<typeof meshModule>('网格.ts'), load<typeof importSectionModule>('导入区段.ts')]);

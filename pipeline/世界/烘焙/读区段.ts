@@ -1,4 +1,4 @@
-// 块文件的读法。旧格式（1、2、3）的区段由 区段源.ts 拼成现行格式再给转码、训练；旧格式解码仅留在 pipeline，不进任何段的依赖闭包。
+// 块文件的读法。旧格式（1～4）的块头见 旧块头.ts，区段由 区段源.ts 读成现行格式再给转码、训练；旧格式解码仅留在 pipeline，不进任何段的依赖闭包。
 import fs from 'node:fs';
 import { readModel, modelFileName, type SectionModel } from '../../../engine/voxel/区段模型.ts';
 import path from 'node:path';
@@ -55,12 +55,6 @@ export const blockFormat = (blockHeader: Uint8Array) => {
   return dv.getUint32(4, true);
 };
 
-/** 块文件头的索引，不管格式几（各版索引布局一样） */
-export const readBlockIndex = (voxelLib: VoxelLib, tileHeader: Uint8Array) => {
-  const dv = new DataView(tileHeader.buffer, tileHeader.byteOffset, voxelLib.sectionPack.tileHeaderLen);
-  return Uint32Array.from({ length: 2 * voxelLib.sectionPack.tileEntryCount }, (_, k) => dv.getUint32(16 + 4 * k, true));
-};
-
 export const blockFiles = (dir: string) =>
   fs
     .readdirSync(dir)
@@ -75,22 +69,37 @@ export const readPackModel = (dir: string) => {
   return m;
 };
 
+/** 现行格式的一个块文件（整个读进来的字节）的块头，核对块号和文件名 */
+export const decodeTileFile = (voxelLib: VoxelLib, file: string, buf: Uint8Array) => {
+  const index = voxelLib.sectionPack.decodeTileHeader(buf);
+  const [ti, tj] = blockCoordsFromName(path.basename(file));
+  if (index.ti !== ti || index.tj !== tj) throw new Error(`${file} 的块头写的是块 ${index.ti}.${index.tj}`);
+  return index;
+};
+
+/** 现行格式的块文件只读块头（先读开头定长的那段拿到头长，再读整个头） */
+export const readTileIndex = (voxelLib: VoxelLib, file: string) => {
+  const P = voxelLib.sectionPack, fd = fs.openSync(file, 'r');
+  try {
+    const prefix = Buffer.alloc(P.tilePrefixLen);
+    if (fs.readSync(fd, prefix, 0, P.tilePrefixLen, 0) !== P.tilePrefixLen) throw new Error(`${file} 不到 ${P.tilePrefixLen} 字节`);
+    const head = Buffer.alloc(P.tileHeaderLength(prefix));
+    if (fs.readSync(fd, head, 0, head.length, 0) !== head.length) throw new Error(`${file} 的块头读短了`);
+    return decodeTileFile(voxelLib, file, head);
+  } finally {
+    fs.closeSync(fd);
+  }
+};
+
 /** 现行格式的一个块文件的区段，按文件里的先后；取 才解。旧格式的包用 区段源.ts */
 export function* sectionsInBlock(voxelLib: VoxelLib, file: string) {
   const buf = fs.readFileSync(file);
-  const tileHeader = new Uint8Array(buf.buffer, buf.byteOffset, voxelLib.sectionPack.tileHeaderLen);
-  const formatVersion = blockFormat(tileHeader);
+  const formatVersion = blockFormat(buf);
   if (formatVersion !== voxelLib.sectionPack.formatVersion) throw new Error(`${file} 是格式 ${formatVersion}，这里只读现行的格式 ${voxelLib.sectionPack.formatVersion}（旧格式走 区段源.ts）`);
   const sectionModel = readPackModel(path.dirname(file));
-  const entryTable = readBlockIndex(voxelLib, tileHeader);
-  const [ti, tj] = blockCoordsFromName(path.basename(file));
-  const items: { slot: number; off: number; len: number }[] = [];
-  for (let slot = 0; slot < voxelLib.sectionPack.tileEntryCount; slot++) if (entryTable[2 * slot + 1]) items.push({ slot, off: entryTable[2 * slot]!, len: entryTable[2 * slot + 1]! });
-  items.sort((a, b) => a.off - b.off);
-  for (const { slot, off, len } of items) {
+  for (const { id, off, len } of voxelLib.sectionPack.tileSections(decodeTileFile(voxelLib, file, buf))) {
     const raw = new Uint8Array(buf.buffer, buf.byteOffset + off, len);
-    const id = voxelLib.sectionPack.sectionAtIndex(ti, tj, slot);
-    yield { slot, id, bytes: raw, 取: (): SectionData => voxelLib.sectionDecoder.decodeSection(raw, id, sectionModel) };
+    yield { id, bytes: raw, 取: (): SectionData => voxelLib.sectionDecoder.decodeSection(raw, id, sectionModel) };
   }
 }
 

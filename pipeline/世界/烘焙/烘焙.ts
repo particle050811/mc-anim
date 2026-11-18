@@ -1,5 +1,5 @@
 // 烘焙区段包：列段（一个区域一份）→ 区段包（格式和坐标见 engine/voxel/区段包.ts）。算法照旧项目 工具/导入/烘焙.ts，同样的列段烘出逐字节一样的包。
-// - 按 4096 米一块分块（格式 4 起，以前 2048），每块四周多带 64 列（最粗一级一格），多带的那圈和隔壁块算出来一样，块之间不用通信。
+// - 按最粗一级的一个区段一块分块（默认最粗级 6、4096 米一块；格式 3 以前 2048），每块四周多带最粗一级一格的列，多带的那圈和隔壁块算出来一样，块之间不用通信。
 // - 往上每级 2×2 列并一列，每格照 Voxy 的 Mipper 从 2×2×2 子格挑代表（合并.ts）。
 // - 染色方块照游戏重挑群系（BiomeManager.getBiome 的种子抖动），交界颜色和 mcai mesh 导出的地标网格一致。
 // - 查不到的方块状态、群系照常烘焙，记进 缺失.tsv。
@@ -10,13 +10,16 @@ import { defaultModel, modelBytes, modelFileName } from '../../../engine/voxel/�
 import { transcodeDir } from './转码.ts';
 import type { VisibleSettings } from './可见.ts';
 import { walkSections } from './读区段.ts';
-import type { PackageInfo } from '../../../engine/voxel/区段包.ts';
+import { writePackDoc, type PackDoc } from './包信息.ts';
 import type { UnpackedColumnSegmentRegion } from '../列段.ts';
 import type { VoxelLib } from '../体素库.ts';
 import { surfaceUnderFloating } from './地表.ts';
 import { SegmentBuffer, mergeLevel, noSurface, noTop, type Level } from './合并.ts';
 import { EntryTable, noBiome } from './条目.ts';
-import { SectionWriter, type LevelStats } from './写区段.ts';
+import { SectionWriter, defaultCoarsestLevel, type LevelStats } from './写区段.ts';
+
+/** 定稿前的包信息（包.json、粗图的内容） */
+export type StagedPack = Omit<PackDoc, 'format' | 'extra'>;
 
 export type BakeParams = {
   /** 这个包的区域（有数据的），[rx, rz] */
@@ -37,16 +40,18 @@ export type BakeParams = {
   glowFirst?: boolean;
   /** 可见变换（可见.ts）：定稿时埋住的格换填充方块、封死的腔填实，保真范围原样。不给 = 原样（anim world bake 按世界声明总是给） */
   visible?: VisibleSettings | null;
+  /** 最粗一级（包.json 的 coarsestLevel），不给 = defaultCoarsestLevel */
+  coarsestLevel?: number;
 };
 
-export type BakeResult = { pack: PackageInfo; missingStates: Map<string, number>; missingBiomes: Map<string, number>; 级: LevelStats[]; blockFileCount: number; entryCount: number };
+export type BakeResult = { pack: StagedPack; missingStates: Map<string, number>; missingBiomes: Map<string, number>; 级: LevelStats[]; blockFileCount: number; entryCount: number };
 
 const coarseCellMeters = 16; // 粗高度图一格 16 米
 
 export const bake = async (p: BakeParams): Promise<BakeResult> => {
   const { lib: voxelLib } = p;
-  const { coarsestLevel } = voxelLib.sections;
-  const tileCols = voxelLib.sectionPack.tileSizeM;
+  const coarsestLevel = p.coarsestLevel ?? defaultCoarsestLevel;
+  const tileCols = voxelLib.sectionPack.tileSizeOf(coarsestLevel);
   const [OX, OY, OZ] = p.origin;
   // 原点仍按 2048 对齐（世界声明的规矩，声明.ts）：块从原点起按 4096 米切，只要区域（512 米）不跨块；不改成 4096，现有声明和地标坐标都不用动
   if (OX % 2048 || OZ % 2048) throw new Error(`原点的 x、z 要是 2048 的整数倍，给的是 ${OX},${OZ}`);
@@ -258,7 +263,7 @@ export const bake = async (p: BakeParams): Promise<BakeResult> => {
   };
 
   // ---------- 主流程 ----------
-  const writer = new SectionWriter(voxelLib, entryTable, p.output, padCols, tileCols);
+  const writer = new SectionWriter(voxelLib, entryTable, p.output, padCols, coarsestLevel);
   const t0 = performance.now();
   p.log?.(`烘焙 → ${p.output}\n  ${p.dimension}，原点 游戏 (${OX}, ${OY}, ${OZ})，${p.regions.length} 个区域、${tiles.size} 块（${tileCols} 米一块），z ${zb}～${zt}`);
   for (const [ti, tj] of [...tiles.values()].sort((a, b) => a[1] - b[1] || a[0] - b[0])) {
@@ -281,21 +286,21 @@ export const bake = async (p: BakeParams): Promise<BakeResult> => {
     p.log?.(`  块 (${ti}, ${tj}) 完，累计 ${((performance.now() - t0) / 1000).toFixed(1)} 秒`);
   }
 
-  const packInfo: PackageInfo = {
-    version: voxelLib.sectionPack.formatVersion,
+  const packInfo: StagedPack = {
     dimension: p.dimension,
     origin: [OX, OY, OZ],
     state: stateList,
     biome: biomeList,
-    coarseHeight: { cell: coarseCellMeters, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, height: Buffer.from(coarseHeights.buffer).toString('base64') },
+    coarsestLevel,
+    maps: { coarse: { cell: coarseCellMeters, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, height: coarseHeights } },
   };
   return finishPack({ staged: p.output, outDir, pack: packInfo, entryTable, writer, lib: voxelLib, visible: p.visible, log: p.log });
 };
 
 /** 定稿（各种烘法共用）：暂存目录里的块文件配上 包.json、缺失.tsv，学模型、做可见变换转成成品写进 outDir，暂存目录删掉 */
-export const finishPack = async (o: { staged: string; outDir: string; pack: PackageInfo; entryTable: EntryTable; writer: SectionWriter; lib: VoxelLib; visible?: VisibleSettings | null; log?: (s: string) => void }): Promise<BakeResult> => {
+export const finishPack = async (o: { staged: string; outDir: string; pack: StagedPack; entryTable: EntryTable; writer: SectionWriter; lib: VoxelLib; visible?: VisibleSettings | null; log?: (s: string) => void }): Promise<BakeResult> => {
   const { missingStates, missingBiomes } = o.entryTable;
-  writeFileSync(path.join(o.staged, '包.json'), JSON.stringify(o.pack));
+  writePackDoc(o.lib, o.staged, { ...o.pack, extra: {} });
   const missingRows = [
     ...[...missingStates].sort((a, b) => b[1] - a[1]).map(([k, count]) => `状态\t${k}\t${count}`),
     ...[...missingBiomes].sort((a, b) => b[1] - a[1]).map(([k, count]) => `群系\t${k}\t${count}`),

@@ -174,7 +174,7 @@ export class VisibleEnv {
     const [ox, , oz] = info.origin;
     for (const [x0, z0, x1, z1] of this.record.faithful) {
       const a0 = x0 - ox, a1 = x1 - ox, b0 = oz - 1 - z1, b1 = oz - 1 - z0;
-      for (let L = 0; L <= voxelLib.sections.coarsestLevel; L++) {
+      for (let L = 0; L <= source.coarsestLevel; L++) {
         const s = 2 ** L, w = sectionCells * s;
         for (let j = Math.floor((b0 - 2 * s) / w); j <= Math.floor((b1 + 2 * s) / w); j++)
           for (let i = Math.floor((a0 - 2 * s) / w); i <= Math.floor((a1 + 2 * s) / w); i++) this.faithful.add(`${L}/${i}/${j}`);

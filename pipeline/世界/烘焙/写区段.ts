@@ -8,33 +8,38 @@ import { noSurface, noTop, type Level } from './合并.ts';
 import { encodeVerified } from './区段编码.ts';
 import { entryLimit, type EntryTable } from './条目.ts';
 
+// 烘焙不指定最粗级时用的：现有包都是 6（一块 4096 米）
+export const defaultCoarsestLevel = 6;
+
 export type LevelStats = { count: number; bytes: number; rawBytes: number; runCount: number; cellCount: number };
 
 export class SectionWriter {
   levelStats: LevelStats[];
   tileFileCount = 0;
   private paletteIdx = new Int32Array(entryLimit).fill(-1);
-  private tileSections: { slot: number; packed: Uint8Array }[] = [];
+  private tileSections: { id: { L: number; i: number; j: number }; bytes: Uint8Array }[] = [];
 
   private lib: VoxelLib;
   private 表: EntryTable;
   private output: string;
   private padCols: number;
   private tileCols: number;
+  private coarsestLevel: number;
 
-  constructor(voxelLib: VoxelLib, entryTable: EntryTable, output: string, padCols: number, tileCols: number) {
+  constructor(voxelLib: VoxelLib, entryTable: EntryTable, output: string, padCols: number, coarsestLevel: number) {
     this.lib = voxelLib;
     this.表 = entryTable;
     this.output = output;
     this.padCols = padCols;
-    this.tileCols = tileCols;
-    this.levelStats = Array.from({ length: voxelLib.sections.coarsestLevel + 1 }, () => ({ count: 0, bytes: 0, rawBytes: 0, runCount: 0, cellCount: 0 }));
+    this.coarsestLevel = coarsestLevel;
+    this.tileCols = voxelLib.sectionPack.tileSizeOf(coarsestLevel);
+    this.levelStats = Array.from({ length: coarsestLevel + 1 }, () => ({ count: 0, bytes: 0, rawBytes: 0, runCount: 0, cellCount: 0 }));
   }
 
   /** wanted：只写这些区段（块里第 si 列、第 sj 行）；不给 = 核心里有数据的都写 */
   writeLevel(level: Level, ti: number, tj: number, wanted?: (si: number, sj: number) => boolean) {
     const { sectionCells } = this.lib.sections;
-    const { paddedSectionCols, sectionInTile } = this.lib.sectionPack;
+    const { paddedSectionCols } = this.lib.sectionPack;
     const { entryState, entryBiome } = this.表;
     const paletteIdx = this.paletteIdx;
     const cellSize = 2 ** level.L;
@@ -107,7 +112,7 @@ export class SectionWriter {
         for (const entry of usedEntries) paletteIdx[entry] = -1;
         const id = { L: level.L, i: ti * sectionsPerSide + si, j: tj * sectionsPerSide + sj };
         const packed = encodeVerified(this.lib, { ...id, kBottom, nz, palette: Uint16Array.from(palette), runCounts, paletteIndex: runPaletteIdx.subarray(0, runCount), runLengths: runLengths.subarray(0, runCount) }, neutralModel);
-        this.tileSections.push({ slot: sectionInTile(id).slot, packed });
+        this.tileSections.push({ id, bytes: packed });
         const st = this.levelStats[level.L]!;
         st.count++;
         st.bytes += packed.length;
@@ -118,18 +123,10 @@ export class SectionWriter {
   }
 
   writeBlock(ti: number, tj: number) {
-    const { tileEntryCount, tileHeaderLen, encodeTileHeader, tileFileName } = this.lib.sectionPack;
-    const sectionIndex = new Uint32Array(2 * tileEntryCount);
-    let offset = tileHeaderLen;
-    for (const { slot, packed } of this.tileSections) {
-      sectionIndex[2 * slot] = offset;
-      sectionIndex[2 * slot + 1] = packed.length;
-      offset += packed.length;
-    }
+    const { encodeTile, tileFileName } = this.lib.sectionPack;
     const fd = openSync(path.join(this.output, tileFileName(ti, tj)), 'w');
     try {
-      writeSync(fd, encodeTileHeader(ti, tj, sectionIndex));
-      for (const { packed } of this.tileSections) writeSync(fd, packed);
+      for (const b of encodeTile(ti, tj, this.coarsestLevel, this.tileSections)) writeSync(fd, b);
     } finally {
       closeSync(fd);
     }
