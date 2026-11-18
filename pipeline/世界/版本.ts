@@ -90,7 +90,7 @@ export const release = (pack: string, dir: string, root = terrainRoot()) => {
 
 /** 裁过的包（世界/裁级/裁剪.ts，docs/世界.md「裁级」）：从完整包 from 按留表裁的，正式出片读它 */
 export type TrimmedRecord = { version: string; from: string; keepSha256: string; method: string; fileCount: number; size: number; manifestSha256: string };
-export type TerrainRecord = { version: string; oldPath?: string; source: string; license: string; visibility: string; note?: string; fileCount: number; size: number; manifestSha256: string; trimmed?: TrimmedRecord };
+export type TerrainRecord = { version: string; oldPath?: string; source: string; license: string; visibility: string; note?: string; activePolicy?: string; policies?: Record<string, TerrainRecord>; fileCount: number; size: number; manifestSha256: string; trimmed?: TrimmedRecord };
 export const terrainTablePath = () => path.join(codeRoot(), 'assets', '地形版本.json');
 export const readTerrainTable = () => JSON.parse(fs.readFileSync(terrainTablePath(), 'utf8')) as { note: string; pack: Record<string, TerrainRecord> };
 
@@ -109,4 +109,14 @@ export const registerTerrain = (pack: string, entry: TerrainRecord) => {
   terrainTable.pack[pack] = entry;
   fs.writeFileSync(terrainTablePath(), JSON.stringify(terrainTable, null, 2) + '\n');
   return existingVersion;
+};
+
+/** 正式口径只由登记项的 activePolicy 决定；试看用同名包的另一份完整/裁级版本，不改段声明。 */
+export const selectTerrainPolicy = <T extends {version: string; activePolicy?: string; policies?: Record<string, T>}>(entry: T, trial?: number): T => {
+  if (!entry.policies) return entry;
+  const policy = String(trial ?? entry.activePolicy ?? 'outside');
+  if (policy === 'outside') return entry;
+  const chosen = entry.policies[policy];
+  if (!chosen) throw new Error(`航线包没有模拟起级 ${policy} 的版本：先 world bake-far <世界> --simulate-from ${policy}`);
+  return chosen;
 };

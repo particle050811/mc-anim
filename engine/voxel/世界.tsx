@@ -359,6 +359,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     const center = look.route.at(sec, statCamera);
     if (center) list = pickThisFrame(inView, center, (statCamera.fov * Math.PI) / 180 / size.height, drawForceAt?.(sec));
   }
+  if (source.resolveSections) list = source.resolveSections(list);
   // 最近三个镜头位姿（预取下一帧用）：同一帧重画几次位姿不变，不算新的
   camera.matrixWorld.decompose(_position, _orientation, _scale);
   if (!world.本 || !world.本.位.equals(_position) || !world.本.dirQuat.equals(_orientation) || world.本.心.some((v, i) => v !== camPos[i]) || !world.本.projection.equals(camera.projectionMatrix)) {
@@ -637,7 +638,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
           const center = look.route.at(aheadSec, aheadCamera);
           if (!center) break;
           aheadCamera.updateMatrixWorld();
-          const toPrefetch = pickThisFrame(makeFrustumTest(aheadCamera), center, (aheadCamera.fov * Math.PI) / 180 / size.height, drawForceAt?.(aheadSec)).filter(
+          const wanted = pickThisFrame(makeFrustumTest(aheadCamera), center, (aheadCamera.fov * Math.PI) / 180 / size.height, drawForceAt?.(aheadSec));
+          const toPrefetch = (source.resolveSections?.(wanted, true) ?? wanted).filter(
             (q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !prefetchInFlight.has(keptKey(worldKey, q)),
           );
           if (total && total + toPrefetch.length > prefetchMaxSections) break;
@@ -663,11 +665,12 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       predictCamera.position.set(extrapolate((p) => p.位.x), extrapolate((p) => p.位.y), extrapolate((p) => p.位.z));
       predictCamera.quaternion.copy(current.dirQuat).multiply(_orientation.copy(prevPose.dirQuat).invert()).multiply(current.dirQuat).normalize();
       predictCamera.updateMatrixWorld();
-      const toPrefetch = pickThisFrame(
+      const wanted = pickThisFrame(
         makeFrustumTest(predictCamera),
         current.心.map((_, i) => extrapolate((p) => p.心[i]!)),
         extrapolate((p) => p.pixelAngle),
-      ).filter((q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !prefetchInFlight.has(keptKey(worldKey, q)));
+      );
+      const toPrefetch = (source.resolveSections?.(wanted, true) ?? wanted).filter((q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !prefetchInFlight.has(keptKey(worldKey, q)));
       if (toPrefetch.length && toPrefetch.length <= prefetchMaxSections) prefetch(worldKey, source, toPrefetch);
     }, 0);
   });

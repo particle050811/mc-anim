@@ -18,8 +18,10 @@ import type * as distantModule from '../../engine/voxel/远景.ts';
 import type * as samplerModule from '../../engine/voxel/远景兜底采样.ts';
 import type * as importedModule from '../../engine/voxel/导入区段.ts';
 
+import type * as mergeModule from '../../engine/voxel/远景并列.ts';
+
 export const VOXEL_MODULES = ['区段包.ts', '区段.ts', '区段解码.ts', '生成.ts', '群系色.ts', '真实方块表.ts'] as const;
-export const FAR_MODULES = ['远景.ts', '导入区段.ts', '远景兜底采样.ts'] as const;
+export const FAR_MODULES = ['远景.ts', '导入区段.ts', '远景兜底采样.ts', '远景并列.ts'] as const;
 
 /** 烘焙和编辑校验要的方块知识；测试里可以换成小表 */
 export type BlockKnowledge = {
@@ -72,7 +74,7 @@ export const loadVoxelLib = () =>
 // 普通存档的导入、转码不需要远景海底和草花的资产。
 export const loadFarVoxelLib = async () => {
   const lib = await loadVoxelLib();
-  const [distant, imported, sampler] = await Promise.all([loadModule<typeof distantModule>('远景.ts'), loadModule<typeof importedModule>('导入区段.ts'), loadModule<typeof samplerModule>('远景兜底采样.ts')]);
-  return { ...lib, distant, imported, sampler };
+  const [distant, imported, sampler, merge] = await Promise.all([loadModule<typeof distantModule>('远景.ts'), loadModule<typeof importedModule>('导入区段.ts'), loadModule<typeof samplerModule>('远景兜底采样.ts'), loadModule<typeof mergeModule>('远景并列.ts')]);
+  return { ...lib, distant, imported, sampler, merge };
 };
 export type FarVoxelLib = Awaited<ReturnType<typeof loadFarVoxelLib>>;

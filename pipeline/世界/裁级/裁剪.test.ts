@@ -54,6 +54,8 @@ describe('裁级', () => {
     const t = (await keepTable(['0|3|5'], present, 6)).map(sectionKey);
     expect(t).toEqual(['0|3|5', '1|1|2', '2|0|1', '3|0|0', '4|0|0', '5|0|0', '6|-1|0', '6|0|0']);
     expect((await keepTable(['0|-1|0'], present, 6)).map(sectionKey)).toContain('0|-1|0');
+    // 航线包只铺最粗一级，没请求的 L3～L5 不留。
+    expect((await keepTable([], present, 6, 6)).map(sectionKey)).toEqual(['6|-1|0', '6|0|0']);
     // 包里没有的区段（覆盖记到了、粗高度图却说没地）不进留表
     expect((await keepTable(['0|7|7'], present, 6)).map(sectionKey)).not.toContain('0|7|7');
   });
