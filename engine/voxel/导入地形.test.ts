@@ -12,19 +12,18 @@ const fetchSectionsInPool = vi.fn(async (_url: string, _start: number, _len: num
 vi.mock('./区段工人池.ts', () => ({ fetchSectionsInPool, registerSource: () => 1, registerModel: () => {} }));
 
 const sp = await import('./区段包.ts');
-// 块 (0,0)：第 0 级 (0,0) 在，(1,0) 裁掉了（索引长 0）；粗高度图 2×1 格都有地
-const index = new Uint32Array(2 * sp.tileEntryCount);
-const slot = sp.sectionInTile({ L: 0, i: 0, j: 0 }).slot;
-index[2 * slot] = sp.tileHeaderLen;
-index[2 * slot + 1] = 10;
-const header = sp.encodeTileHeader(0, 0, index);
-const heights = Buffer.from(new Int16Array([10, 10]).buffer).toString('base64');
-const info = { version: sp.formatVersion, dimension: '主世界', origin: [0, 0, 0], state: ['minecraft:air'], biome: ['minecraft:plains'], coarseHeight: { cell: 64, x0: 0, y0: 0, nx: 2, ny: 1, height: heights }, trim: { from: '完整版本', keepSha256: 'x', method: '只留用到的' } };
+// 块 (0,0)：第 0 级 (0,0) 在，(1,0) 裁掉了（块头里没有）；粗高度图 2×1 格都有地
+const file = Buffer.concat(sp.encodeTile(0, 0, 6, [{ id: { L: 0, i: 0, j: 0 }, bytes: new Uint8Array(10) }]));
+const maps = sp.encodePackMaps({ coarse: { cell: 64, x0: 0, y0: 0, nx: 2, ny: 1, height: new Int16Array([10, 10]) } });
+const info = { version: sp.formatVersion, dimension: '主世界', origin: [0, 0, 0], state: ['minecraft:air'], biome: ['minecraft:plains'], coarsestLevel: 6, tileHeaderMax: sp.tileHeaderLength(file), coarseHeight: maps.coarseHeight, trim: { from: '完整版本', keepSha256: 'x', method: '只留用到的' } };
 let packSeq = 0;
+const ranges: [number, number][] = [];
 vi.mock('../core/数据源.ts', () => ({
   dataUrl: (rel: string) => `/${rel}`,
   fetchJson: async () => info,
-  fetchRange: async () => header.slice().buffer,
+  fetchGunzip: async () => maps.bytes.slice().buffer,
+  // 越过文件尾截到文件尾（同 Remotion 的静态服务）
+  fetchRange: async (_rel: string, start: number, len: number) => (ranges.push([start, len]), new Uint8Array(file.subarray(start, start + len)).buffer),
   loadOnce: <T,>(_k: string, load: () => Promise<T>) => load(),
 }));
 vi.mock('./区段包位置.ts', () => ({ packDir: (name: string) => `terrain/${name}/裁过${++packSeq}` }));
@@ -36,7 +35,10 @@ const here = { L: 0, i: 0, j: 0 }, trimmedAway = { L: 0, i: 1, j: 0 };
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
 describe('裁过的包缺级', () => {
-  beforeEach(() => cancelRender.mockClear());
+  beforeEach(() => {
+    cancelRender.mockClear();
+    ranges.length = 0;
+  });
 
   it('真要的区段缺：报缺级、停下出片；同一块里在的区段照常取到', async () => {
     const t = await openImportedTerrain('测试包', [], []);
@@ -46,6 +48,7 @@ describe('裁过的包缺级', () => {
     expect(cancelRender).toHaveBeenCalledTimes(1);
     expect(String(cancelRender.mock.calls[0]![0])).toMatch(/缺级/);
     expect(await t.sectionData([here])).toEqual([fakeData]);
+    expect(ranges).toEqual([[0, info.tileHeaderMax]]); // 块头一次取齐（区段走工人，不经 fetchRange）
   });
 
   it('猜的预取要到缺的区段：不报、不停；之后真要到时重取并报', async () => {

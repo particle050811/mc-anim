@@ -2,9 +2,13 @@
 // 不在打包时 import Git 外的区段包：没有地形包也能打包、渲古城这类不用地形的段；别人重烘地形、换平台重烘，已经卡好配乐的航线也不跟着变（报告第 5 条）。
 // 用到哪个包的编排自己 import 那一份交进来，engine 不登记有哪些包：加一份不用改 engine，也不让没用到它的段跟着过期。
 // 重新生成：anim world freeze --write（pipeline/世界/冻结.ts），从登记的那版区段包拷。渲染时导入地形取到 包.json 后和这里比指纹，对不上只报警。
-import { coarseHeightFingerprint, decodeCoarseHeight, type PackageInfo, type CoarseHeightMap } from './区段包.ts';
+import { coarseHeightFingerprint, type CoarseHeightMap } from './区段包.ts';
+import { base64Bytes } from '../core/base64.ts';
 
-export type FrozenCoarseHeightFile = { note: string; pack: string; version: string; fingerprint: string; dimension: string; origin: [number, number, number]; coarseHeight: PackageInfo['coarseHeight'] };
+// 冻结文件里粗高度图是 base64 的 Int16 小端（按 (y, x) 排，不做差分；格式 4 以前 包.json 里也是这么存的）
+export type FrozenCoarseHeight = { cell: number; x0: number; y0: number; nx: number; ny: number; height: string };
+export type FrozenCoarseHeightFile = { note: string; pack: string; version: string; fingerprint: string; dimension: string; origin: [number, number, number]; coarseHeight: FrozenCoarseHeight };
+export const decodeFrozenCoarse = ({ cell, x0, y0, nx, ny, height }: FrozenCoarseHeight): CoarseHeightMap => ({ cell, x0, y0, nx, ny, height: new Int16Array(base64Bytes(height).buffer, 0, nx * ny) });
 
 // 本页面里用过的冻结文件（包名 → 文件），导入地形时拿来比指纹
 const used = new Map<string, FrozenCoarseHeightFile>();
@@ -18,7 +22,7 @@ const remember = (file: FrozenCoarseHeightFile) => {
 export const frozenOrigin = (file: FrozenCoarseHeightFile) => remember(file).origin;
 export const frozenCoarse = (file: FrozenCoarseHeightFile): CoarseHeightMap => {
   let coarse = decoded.get(file.pack);
-  if (!coarse) decoded.set(file.pack, (coarse = decodeCoarseHeight(remember(file))));
+  if (!coarse) decoded.set(file.pack, (coarse = decodeFrozenCoarse(remember(file).coarseHeight)));
   return coarse;
 };
 

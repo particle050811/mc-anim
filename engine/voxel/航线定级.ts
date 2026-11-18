@@ -6,7 +6,7 @@
 // 格点上的机位由航线函数按绝对的航线秒算，所以「格点 m 要细分哪些块」和从哪一帧问起无关；这里只把算过的格点记下来（记忆化），不记帧与帧之间的状态。
 // 留细要回看：从这一截的第一个格点起按格点递推 H(m) = 往后看的并集(m) ∪ { H(m−1) 里第 m 格还在视野里的 }，跳着渲时从截头补算，和连着渲同一个结果。
 // 这一帧自己的镜头不在格点上：照常按门槛算，再并上格点的（`routeDecide`，可带下限）。纯模块（不引 three、react），世界.tsx 接。
-import { coarsestLevel, pickSections, sectionCells, type PickSectionsParams, type SectionId } from './区段.ts';
+import { pickSections, sectionCells, type PickSectionsParams, type SectionId } from './区段.ts';
 
 /** 一个时刻的视野：镜头位置、每像素张角、区段的水平范围在不在视野里（同 pickSections 的同名参数） */
 export type RouteView = Pick<PickSectionsParams, 'camPos' | 'pixelAngle' | 'inView'>;
@@ -19,19 +19,20 @@ export type RouteTableOptions = {
   gridHz: number;
   splitPixels: number;
   farM: number;
+  coarsestLevel: number;
   featureTop: PickSectionsParams['featureTop'];
   canSplit?: PickSectionsParams['canSplit'];
   /** 航线秒 → 那一刻的视野；航线算不出返回 null */
   viewAt: (sec: number) => RouteView | null;
 };
 
-// 区段 → 一个数（当 Map 的键比字符串快）：i、j 各留 21 位，级别 3 位，合起来不到 2^45
+// 区段 → 一个数（当 Map 的键比字符串快）：i、j 各留 21 位，级别 4 位（最粗级上限 15，区段.ts 的 maxCoarsestLevel），合起来不到 2^46
 const keyOffset = 2 ** 20;
 const keySpan = 2 ** 21;
-export const nodeKey = (level: number, i: number, j: number) => ((i + keyOffset) * keySpan + (j + keyOffset)) * 8 + level;
+export const nodeKey = (level: number, i: number, j: number) => ((i + keyOffset) * keySpan + (j + keyOffset)) * 16 + level;
 const nodeOfKey = (key: number): SectionId => {
-  const level = key % 8;
-  const rest = (key - level) / 8;
+  const level = key % 16;
+  const rest = (key - level) / 16;
   const j = rest % keySpan;
   return { L: level, i: (rest - j) / keySpan - keyOffset, j: j - keyOffset };
 };
@@ -100,6 +101,7 @@ export class RouteTable {
         pixelAngle: view.pixelAngle,
         splitPixels: this.o.splitPixels,
         farM: this.o.farM,
+        coarsestLevel: this.o.coarsestLevel,
         inView: view.inView,
         featureTop: this.o.featureTop,
         canSplit: this.o.canSplit,
@@ -235,9 +237,12 @@ export const diffPicks = (prev: readonly SectionId[], cur: readonly SectionId[])
   const prevKeys = new Set(prev.map(keyOf));
   const curKeys = new Set(cur.map(keyOf));
   const found = new Map<number, LevelSwitch>();
+  let topLevel = 0; // 往上找到两帧里最粗的那一级为止
+  for (const q of prev) topLevel = Math.max(topLevel, q.L);
+  for (const q of cur) topLevel = Math.max(topLevel, q.L);
   const ancestorIn = (q: SectionId, keys: Set<number>): SectionId | null => {
     let { L, i, j } = q;
-    while (L < coarsestLevel) {
+    while (L < topLevel) {
       L++;
       i = Math.floor(i / 2);
       j = Math.floor(j / 2);

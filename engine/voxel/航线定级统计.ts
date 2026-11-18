@@ -1,7 +1,7 @@
 // 航线定级的量化（试看 `航线定级统计`，不改画面）：前后两帧同一块地换了级的区段有几块、占画面几成、切级那一刻较粗的一格在输出画面上几个像素；
 // 再加这一帧画的区段里最粗的一格几个像素（近处会不会方块化）。都按区段的范围和镜头算，不看遮挡、不看雾。
 import * as THREE from 'three';
-import { coarsestLevel, sectionCells, type SectionId } from './区段.ts';
+import { sectionCells, type SectionId } from './区段.ts';
 import { diffPicks } from './航线定级.ts';
 
 /** 一帧的镜头：投影 × 视图矩阵、镜头位置（场景坐标）、输出画面上一个像素的张角 */
@@ -78,7 +78,7 @@ export type SwitchStats = {
 export const bigPixels = 3;
 
 /** 前一帧 → 这一帧在画面里换了级的区段（两帧都在画面里才算） */
-export const switchStats = (prev: FramePick, cur: FramePick, featureTop: (x: number, y: number) => number): SwitchStats => {
+export const switchStats = (prev: FramePick, cur: FramePick, featureTop: (x: number, y: number) => number, coarsestLevel: number): SwitchStats => {
   const st: SwitchStats = { refine: 0, coarsen: 0, share: 0, bigShare: 0, pixelShare: 0, maxPixels: 0, byLevel: Array.from({ length: coarsestLevel + 1 }, () => 0) };
   for (const sw of diffPicks(prev.list, cur.list)) {
     const sizeM = sectionCells * 2 ** sw.coarse.L;
@@ -100,7 +100,7 @@ export const switchStats = (prev: FramePick, cur: FramePick, featureTop: (x: num
  * 这一帧画面里的区段：各级几块、合并过的格子（第 1 级起）最大的一格几个输出像素（近处方块化看这个）、一格超过 limitPixels 的占画面几成。
  * 第 0 级不算：那是游戏里的方块本身，贴到镜头前多大都不是分级弄粗的
  */
-export const coarsenessStats = (pick: FramePick, featureTop: (x: number, y: number) => number, limitPixels: number) => {
+export const coarsenessStats = (pick: FramePick, featureTop: (x: number, y: number) => number, limitPixels: number, coarsestLevel: number) => {
   const levels = Array.from({ length: coarsestLevel + 1 }, () => 0);
   let maxPixels = 0;
   let overShare = 0;

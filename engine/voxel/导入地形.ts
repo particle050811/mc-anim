@@ -1,6 +1,6 @@
 // 导入地形：把存档导入的区段包（格式见 engine/voxel/区段包.ts）接进体素世界。
 // 包在数据根的 terrain/<包名>/<版本>/ 下（engine/voxel/区段包位置.ts），经 engine/core/数据源.ts 取（取包时定下版本目录，同一个包的文件都从这一版取）：
-//   包.json 一开始就取（粗高度图要同步查）；区段按每帧要的现取：块文件先按 Range 取头部索引，要的区段按偏移排好、挨着的并成一次 Range 请求，
+//   包.json、粗图.bin.gz 一开始就取（粗高度图要同步查）；区段按每帧要的现取：块文件先按 Range 取文件头（不定长，见 loadTileIndex），要的区段按偏移排好、挨着的并成一次 Range 请求，
 //   交给区段工人（区段工人池.ts）取回、解码、换成体素块（导入区段.ts）；主线程只收结果。工人换好的体素块用一次就交出去（`区段` 返回、体素世界转交给网格工人），
 //   要第二次的（网格被挤掉、镜头又回来）在主线程上从留着的区段数据重换，两边同一份纯函数，结果一样。
 //   编排用的粗高度是冻结进仓库的那份（engine/voxel/冻结粗高度.ts），包.json 取到后和它比一次指纹，对不上只报警。
@@ -12,12 +12,12 @@
 //     不做群系间混合，用户 10-04 定的颜色规则，和导出网格一致）。粗级按格子最小角那一块算。
 import { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
-import { dataUrl, fetchJson, fetchRange, loadOnce } from '../core/数据源.ts';
+import { dataUrl, fetchGunzip, fetchJson, fetchRange, loadOnce } from '../core/数据源.ts';
 import type { V3 } from '../model/parts.tsx';
 import type { TerrainSampler } from './地表.ts';
 import { sectionKey, type SectionId } from './区段.ts';
 import { readModel, modelFileName } from './区段模型.ts';
-import { formatVersion, sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, decodeSplittable, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap } from './区段包.ts';
+import { formatVersion, sectionInTile, tileFileName, tilePrefixLen, tileHeaderGuessCap, tileHeaderLength, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodePackMaps, decodeSplittable, findInTile, packMapsFileName, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap, type TileIndex } from './区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
 import { recordSectionRead, isCoverRun, noteCoverWorld } from './地形用量.ts';
@@ -44,7 +44,7 @@ type TerrainPack = {
   maxTop: number; // 粗高度图里最高的顶（场景 z）
   canSplit: ReturnType<typeof decodeSplittable>; // 各处最细级不一样的包才有
   variesByPos: boolean[]; // 按包里的群系号
-  index: Map<string, Promise<Uint32Array>>; // 块文件名 → 索引
+  index: Map<string, Promise<TileIndex>>; // 块文件名 → 解开的块头
   data: Map<string, CachedSection>; // 按最近用到的先后排（Map 按插入顺序，用到一次挪到最后）
   bytes: number;
   round: number; // 预取 调了几次
@@ -59,19 +59,30 @@ const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
     const bytes = new Uint8Array(await res.arrayBuffer());
     readModel(bytes);
     registerModel(url, bytes);
-    const coarseHeights = decodeCoarseHeight(info);
+    const { coarse: coarseHeights, splittable } = decodePackMaps(info, new Uint8Array(await fetchGunzip(`${dir}/${packMapsFileName}`, 'anim assets pull')));
     checkFrozenCoarse(packName, coarseHeights);
     let maxTop = -Infinity;
     for (const height of coarseHeights.height) if (height !== -32768) maxTop = Math.max(maxTop, height);
-    return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, canSplit: decodeSplittable(info), variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
+    return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, canSplit: decodeSplittable(splittable), variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
   });
 
-const loadTileIndex = (pack: TerrainPack, fileName: string) => {
-  let promise = pack.index.get(fileName);
-  if (!promise) {
-    promise = fetchRange(`${pack.dir}/${fileName}`, 0, tileHeaderLen).then((ab) => decodeTileHeader(new Uint8Array(ab)));
-    pack.index.set(fileName, promise);
+// 块头不定长：第一次取 tileHeaderMax（本包最长的头）那么多，一次就够；比封顶还长的头才补取剩下的。越过文件尾的 Range 服务端截到文件尾
+export const fetchTileIndex = async (rel: string, info: Pick<PackageInfo, 'tileHeaderMax' | 'coarsestLevel'>, ti: number, tj: number): Promise<TileIndex> => {
+  let raw = new Uint8Array(await fetchRange(rel, 0, Math.max(tilePrefixLen, Math.min(info.tileHeaderMax, tileHeaderGuessCap))));
+  const headerLen = tileHeaderLength(raw);
+  if (headerLen > raw.length) {
+    const all = new Uint8Array(headerLen);
+    all.set(raw);
+    all.set(new Uint8Array(await fetchRange(rel, raw.length, headerLen - raw.length)), raw.length);
+    raw = all;
   }
+  const index = decodeTileHeader(raw);
+  if (index.coarsestLevel !== info.coarsestLevel || index.ti !== ti || index.tj !== tj) throw new Error(`${rel} 的块头（块 ${index.ti}.${index.tj}、最粗级 ${index.coarsestLevel}）和文件名、包.json（最粗级 ${info.coarsestLevel}）对不上：anim check --deep 核对地形包`);
+  return index;
+};
+const loadTileIndex = (pack: TerrainPack, fileName: string, ti: number, tj: number) => {
+  let promise = pack.index.get(fileName);
+  if (!promise) pack.index.set(fileName, (promise = fetchTileIndex(`${pack.dir}/${fileName}`, pack.info, ti, tj)));
   return promise;
 };
 // 一次活（一次 Range 请求）最多并几个区段、多长：太大了一个工人独占，别的工人闲着
@@ -87,7 +98,7 @@ const storeSection = (pack: TerrainPack, section: SectionId, data: SectionData, 
   pack.bytes += bytes;
   pack.inflight.delete(sectionKey(section));
 };
-// 包里没有这个区段（索引里长 0）、粗高度图又说有：裁过的包（包.json 的 trim）是缺级，留表没跟上镜头（docs/世界.md「裁级」）
+// 包里没有这个区段（块头里没有）、粗高度图又说有：裁过的包（包.json 的 trim）是缺级，留表没跟上镜头（docs/世界.md「裁级」）
 const missingSectionError = (pack: TerrainPack, fileName: string, section: SectionId) =>
   new Error(
     pack.info.trim
@@ -98,18 +109,18 @@ const missingSectionError = (pack: TerrainPack, fileName: string, section: Secti
 // 取这几个区段：按块文件分组，块里按偏移排好、挨着的并成一次活交给工人；给了来源 `ctx` 的工人顺手换好体素块，放进 `ready`。返回每个区段取齐的 Promise。
 // 包里没有的区段单独失败，不连累同一块里别的区段（猜的预取会要到裁过的包没留的级，别的帧真要的同块区段不能跟着失败）
 const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: number, ctx: number | undefined, ready: Map<string, ReadyVoxels>): Map<string, Promise<void>> => {
-  const byFile = new Map<string, { section: SectionId; slot: number }[]>();
+  const byFile = new Map<string, { ti: number; tj: number; list: SectionId[] }>();
   for (const section of sections) {
-    const { ti, tj, slot } = sectionInTile(section);
+    const { ti, tj } = sectionInTile(section, pack.info.coarsestLevel);
     const fileName = tileFileName(ti, tj);
-    let list = byFile.get(fileName);
-    if (!list) byFile.set(fileName, (list = []));
-    list.push({ section, slot });
+    let tile = byFile.get(fileName);
+    if (!tile) byFile.set(fileName, (tile = { ti, tj, list: [] }));
+    tile.list.push(section);
   }
   const promises = new Map<string, Promise<void>>();
-  for (const [fileName, list] of byFile) {
-    const done = loadTileIndex(pack, fileName).then((index) => {
-      const all = list.map(({ section, slot }) => ({ section, off: index[2 * slot], len: index[2 * slot + 1] }));
+  for (const [fileName, { ti, tj, list }] of byFile) {
+    const done = loadTileIndex(pack, fileName, ti, tj).then((index) => {
+      const all = list.map((section) => ({ section, ...(findInTile(index, section) ?? { off: 0, len: 0 }) }));
       const missing = new Set(all.filter((part) => !part.len).map((part) => sectionKey(part.section)));
       const parts = all.filter((part) => part.len).sort((a, b) => a.off - b.off);
       const jobs: { start: number; len: number; parts: typeof parts }[] = [];
@@ -133,7 +144,7 @@ const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: nu
       ).then(() => undefined);
       return { missing, loaded };
     });
-    for (const { section } of list) {
+    for (const section of list) {
       const k = sectionKey(section);
       promises.set(
         k,
@@ -184,6 +195,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   const unrecorded = new Set<string>();
   const source: VoxelSource = {
     采样: sample,
+    coarsestLevel: pack.info.coarsestLevel,
     toScene: (g) => [g[0]! - ox, oz - g[2]!, g[1]! - oy],
     sections: (section) => {
       if (!hasSection(pack.coarseHeights, section)) return null;

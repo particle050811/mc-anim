@@ -320,6 +320,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       pixelAngle: angle,
       splitPixels: splitCssPixels,
       farM: farM,
+      coarsestLevel: source.coarsestLevel,
       inView: inViewOf(test),
       featureTop,
       ...(force ? { decide: routeDecide(force, floorCssPixels) } : {}),
@@ -339,7 +340,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     const routeKey = [size.width, size.height, splitCssPixels, farM, heightRange[0], heightRange[1], sx, sy, lookSec, hold, gridHz].join('|');
     if (world.route?.key !== routeKey) {
       const state: RouteState = { key: routeKey, viewAt, table: undefined as unknown as RouteTable };
-      state.table = new RouteTable({ lookSec, hold, gridHz, splitPixels: splitCssPixels, farM, featureTop, canSplit: source.canSplit, viewAt: (sec) => state.viewAt(sec) });
+      state.table = new RouteTable({ lookSec, hold, gridHz, splitPixels: splitCssPixels, farM, coarsestLevel: source.coarsestLevel, featureTop, canSplit: source.canSplit, viewAt: (sec) => state.viewAt(sec) });
       world.route = state;
     }
     const routeState = world.route;
@@ -537,7 +538,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       world.routeScanned = true;
       const t0 = performance.now();
       const frameCount = Math.min(scanFrames, Math.floor((routeSpan[1] - look.route.sec) / look.frameSec + 1e-6));
-      // 按航线秒的整秒分桶：[帧数, 区段数之和, 区段数最大, 变细, 变粗, 切级面积, 较粗一格 ≥3 像素的切级面积, 面积 × 像素, 最大一格像素（第 1 级起）, 比现状粗的占屏之和, 各级块数之和 × 7]
+      // 按航线秒的整秒分桶：[帧数, 区段数之和, 区段数最大, 变细, 变粗, 切级面积, 较粗一格 ≥3 像素的切级面积, 面积 × 像素, 最大一格像素（第 1 级起）, 比现状粗的占屏之和, 各级块数之和 × (最粗级 + 1)]
       const buckets = new Map<number, number[]>();
       let prev = statPickAt(look.route.sec);
       let counted = 0;
@@ -545,11 +546,11 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
         const sec = look.route.sec + k * look.frameSec;
         const cur = statPickAt(sec);
         if (!cur) break;
-        const sw = switchStats(prev, cur, featureTop);
-        const coarse = coarsenessStats(cur, featureTop, baselineMaxCellPixels);
+        const sw = switchStats(prev, cur, featureTop, source.coarsestLevel);
+        const coarse = coarsenessStats(cur, featureTop, baselineMaxCellPixels, source.coarsestLevel);
         const bucketSec = Math.floor(sec + 1e-9);
         let b = buckets.get(bucketSec);
-        if (!b) buckets.set(bucketSec, (b = new Array<number>(17).fill(0)));
+        if (!b) buckets.set(bucketSec, (b = new Array<number>(11 + source.coarsestLevel).fill(0)));
         b[0]! += 1;
         b[1]! += cur.list.length;
         b[2] = Math.max(b[2]!, cur.list.length);
@@ -585,7 +586,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     if (unbuilt.length === 0 && world.routeStatsPose !== world.本) {
       world.routeStatsPose = world.本;
       let faces = 0;
-      const facesByLevel = [0, 0, 0, 0, 0, 0, 0];
+      const facesByLevel = new Array<number>(source.coarsestLevel + 1).fill(0);
       for (const section of list) {
         const faceCount = cache.get(sectionKey(section))?.faceCount ?? 0;
         faces += faceCount;
@@ -593,8 +594,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       }
       const cur: FramePick = { list, view: { viewProj: new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse), camPos, outPixelAngle: pixelAngle / scale } };
       const prev = routeSpan && look.route.sec - look.frameSec >= routeSpan[0] - 1e-9 ? statPickAt(look.route.sec - look.frameSec) : null;
-      const sw = prev && switchStats(prev, cur, featureTop);
-      const coarse = coarsenessStats(cur, featureTop, baselineMaxCellPixels);
+      const sw = prev && switchStats(prev, cur, featureTop, source.coarsestLevel);
+      const coarse = coarsenessStats(cur, featureTop, baselineMaxCellPixels, source.coarsestLevel);
       console.log(
         `[航线定级] ${JSON.stringify({
           sec: look.route.sec,

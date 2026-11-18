@@ -3,9 +3,10 @@
 // 这里是它的精简版（不挖地标、不平整、不并 Range 请求），区段一样交给区段工人取、解、换体素块；版本写在 画面.tsx 里，换了版本本段指纹跟着变。
 import { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
-import { dataUrl, fetchJson, fetchRange, loadOnce } from '@engine/core/数据源.ts';
+import { dataUrl, fetchGunzip, fetchJson, loadOnce } from '@engine/core/数据源.ts';
 import { sectionKey, type SectionId } from '@engine/voxel/区段.ts';
-import { formatVersion, buildPackTables, coarseHeightAt, decodeCoarseHeight, decodeTileHeader, hasSection, sectionInTile, tileFileName, tileHeaderLen, type PackageInfo, type SectionData } from '@engine/voxel/区段包.ts';
+import { formatVersion, buildPackTables, coarseHeightAt, decodePackMaps, findInTile, hasSection, packMapsFileName, sectionInTile, tileFileName, type PackageInfo, type SectionData, type TileIndex } from '@engine/voxel/区段包.ts';
+import { fetchTileIndex } from '@engine/voxel/导入地形.ts';
 import { variesByPos } from '@engine/voxel/群系色.ts';
 import { importedSectionVoxels, type SectionContext } from '@engine/voxel/导入区段.ts';
 import { fetchSectionsInPool, registerSource, registerModel } from '@engine/voxel/区段工人池.ts';
@@ -23,29 +24,34 @@ const buildSource = async (dir: string): Promise<VersionedTerrain> => {
   const bytes = new Uint8Array(await res.arrayBuffer());
   readModel(bytes);
   registerModel(url, bytes);
-  const coarse = decodeCoarseHeight(info);
+  const { coarse } = decodePackMaps(info, new Uint8Array(await fetchGunzip(`${dir}/${packMapsFileName}`, 'anim world transcode')));
   let maxTop = -Infinity;
   for (const h of coarse.height) if (h !== -32768) maxTop = Math.max(maxTop, h);
   const ctx: SectionContext = { info, tables: buildPackTables(info), variesByPos: info.biome.map(variesByPos), cutBoxes: [], flattenAreas: [] };
   const workerCtx = registerSource({ origin: info.origin, state: info.state, biome: info.biome }, [], []);
-  const indexCache = new Map<string, Promise<Uint32Array>>();
+  const indexCache = new Map<string, Promise<TileIndex>>();
   const sectionDataByKey = new Map<string, SectionData>();
   const readyVoxels = new Map<string, VoxelGrid>();
   const inFlight = new Map<string, Promise<void>>();
   const getSection = (q: SectionId) => {
-    const { ti, tj, slot } = sectionInTile(q);
+    const { ti, tj } = sectionInTile(q, info.coarsestLevel);
     const file = `${dir}/${tileFileName(ti, tj)}`;
     let idx = indexCache.get(file);
-    if (!idx) indexCache.set(file, (idx = fetchRange(file, 0, tileHeaderLen).then((ab) => decodeTileHeader(new Uint8Array(ab)))));
+    if (!idx) indexCache.set(file, (idx = fetchTileIndex(file, info, ti, tj)));
     const url = new URL(dataUrl(file), location.href).href;
     return idx
-      .then((ix) => fetchSectionsInPool(url, ix[2 * slot], ix[2 * slot + 1], [{ off: 0, len: ix[2 * slot + 1], ctx: workerCtx, id: q }]))
+      .then((ix) => {
+        const at = findInTile(ix, q);
+        if (!at) throw new Error(`${file} 里没有区段 ${sectionKey(q)}（粗高度图说有）`);
+        return fetchSectionsInPool(url, at.off, at.len, [{ off: 0, len: at.len, ctx: workerCtx, id: q }]);
+      })
       .then(([r]) => {
         sectionDataByKey.set(sectionKey(q), r.data);
         if (r.voxels) readyVoxels.set(sectionKey(q), r.voxels);
       });
   };
   const source: VoxelSource = {
+    coarsestLevel: info.coarsestLevel,
     采样: (x, y, out) => {
       const h = coarseHeightAt(coarse, x, y);
       out.z = h === -Infinity ? 0 : h;

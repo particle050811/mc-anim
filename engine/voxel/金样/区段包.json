@@ -1,4 +1,7 @@
 {
- "chunkHeaderSha256": "0d1ac1330af3ec009334df92f83158c8dcd998831f555011c2e8b79f459f30aa",
+ "tileSha256": "2ecd346e2667f2b3b8bcda9edc83120fb959f75b6a968dbe2e8f276aee8400fa",
+ "sparseTileSha256": "0a3b986fdcdf03bd12764b5ae6938d0d53379e2f40b1cb968ba2305cda082993",
+ "coarsest8TileSha256": "89fd809fa752b34353910ae15ceaaae916b262514c998ec3cbb4e2c834788120",
+ "packMapsSha256": "7da91650a32582e8929c8d54fe55bcf726edad754b494bb5a411ab8af62cc343",
  "coarseHeightFingerprint": "cc788dc0"
 }

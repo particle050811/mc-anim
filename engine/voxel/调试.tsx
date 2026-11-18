@@ -45,9 +45,9 @@ const debugCameraParam = () => trialParams<DebugCamera>('调试镜头');
 const loadViewParam = () => trialParams<LoadView>('加载视点');
 const pickLogOn = () => trialParams<boolean>('切级日志') === true;
 
-// 默认的几种颜色（标记、区域没给 色 时轮着用）；按级着色：第 0～6 级
+// 默认的几种颜色（标记、区域没给 色 时轮着用）；按级着色：第 0～10 级，更粗的用最后一色
 const defaultColors = ['#ff3b3b', '#2f8bff', '#ffd400', '#00d68f', '#ff7a00', '#c04bff', '#00e5ff', '#ff4fd8'];
-const levelColors = ['#ff3030', '#ff9a1f', '#ffe81f', '#3fdc4a', '#1fd6ff', '#4a6bff', '#d24aff'];
+const levelColors = ['#ff3030', '#ff9a1f', '#ffe81f', '#3fdc4a', '#1fd6ff', '#4a6bff', '#d24aff', '#ff4fb0', '#ffffff', '#8a8a8a', '#3a3a3a'];
 const srgb = (css: string) => {
   const c = new THREE.Color();
   c.setStyle(css, THREE.SRGBColorSpace);
@@ -87,7 +87,7 @@ const levelPalette = levelColors.map((c) => {
   const { r, g, b } = srgb(c);
   return `vec3(${r.toFixed(4)}, ${g.toFixed(4)}, ${b.toFixed(4)})`;
 });
-const levelColorGlsl = `int lv = int(clamp(floor(log2(max(vDbgCell, 1e-3)) + 0.5), 0.0, 6.0));
+const levelColorGlsl = `int lv = int(clamp(floor(log2(max(vDbgCell, 1e-3)) + 0.5), 0.0, ${levelColors.length - 1}.0));
       vec3 lc = ${levelPalette.map((c, i) => (i < levelPalette.length - 1 ? `lv == ${i} ? ${c} : ` : c)).join('')};`;
 const debugFrag = (mask: boolean, tint: number, materialClass: string) =>
   materialMaskOn()
