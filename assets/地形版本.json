@@ -120,7 +120,7 @@
         "fileCount": 109,
         "size": 49749550
       },
-      "activePolicy": "outside",
+      "activePolicy": "copy",
       "policies": {
         "2": {
           "version": "bfb8dec52030",
@@ -195,21 +195,21 @@
           }
         },
         "copy": {
-          "version": "83e7a313f50d",
+          "version": "ec24f83d2959",
           "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；存档边外照抄",
           "license": "LicenseRef-Minecraft-Derived",
           "visibility": "发布",
           "fileCount": 107,
-          "size": 270117467,
-          "manifestSha256": "94bf41d2048b2f4b889140f81e4dbfef623ac1ae042d9d6c015b04b0172f2e55",
+          "size": 271963026,
+          "manifestSha256": "c8aae6ee0b064bf565a3ea059305e188a06048273507219cf01446aea439242b",
           "trimmed": {
-            "version": "6c74141979fe",
-            "from": "83e7a313f50d",
+            "version": "884a35234fd1",
+            "from": "ec24f83d2959",
             "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
             "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
-            "manifestSha256": "aa0222761ffecf2367e6edeb0181f1b5ffdc4b6167e9a9b2057ff93522e1f033",
+            "manifestSha256": "7f1afbd17fee5e0831b4e5eecdee6c92ab707f9746147e2750052e0e28406598",
             "fileCount": 109,
-            "size": 52125997
+            "size": 52654016
           }
         }
       }
@@ -306,21 +306,21 @@
           }
         },
         "copy": {
-          "version": "87f33931c491",
-          "source": "暮色放大-1752@83e7a313f50d + 应力转动/地点/地形改动.ts",
+          "version": "e595a493da45",
+          "source": "暮色放大-1752@ec24f83d2959 + 应力转动/地点/地形改动.ts",
           "visibility": "发布",
           "license": "LicenseRef-Minecraft-Derived",
-          "manifestSha256": "eb29b4381a51f4998e2038be14b77abf5e34ab29ee077feca31a8983d0be3589",
+          "manifestSha256": "43be9175867fec8f47caedbb592e2409bb10c7e86ef51269a577404ea03b734e",
           "fileCount": 9,
-          "size": 1551568,
+          "size": 1552598,
           "trimmed": {
-            "version": "31c0f34e1d6f",
-            "from": "87f33931c491",
+            "version": "1b5347d375d8",
+            "from": "e595a493da45",
             "method": "作品覆盖层：只留底包正式版保留的受影响区段",
             "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
-            "manifestSha256": "99958bdfff41eac74697500f985b8204855a1bc9a0812830da1ac147503e44e8",
+            "manifestSha256": "7da791b7afc9a2b2b521687f2371522f8d0a03108eecf9945307c6a837bd3392",
             "fileCount": 11,
-            "size": 1361333
+            "size": 1362363
           }
         }
       }
