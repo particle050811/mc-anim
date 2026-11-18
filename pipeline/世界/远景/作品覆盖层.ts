@@ -16,7 +16,7 @@ import { versionDir, release, packManifest, type TerrainRecord } from '../版本
 import { compareTrimmed, writeTrimmed, keepFileName } from '../裁级/裁剪.ts';
 
 export const overlayName = (world: string, work: string) => `${world}-${work}-覆盖层`;
-export const bakeWorkOverlay = async (base: string, record: TerrainRecord): Promise<TerrainRecord> => {
+export const bakeWorkOverlay = async (base: string, record: TerrainRecord, scratch = path.join(draftRoot(), '工作-暮色合包')): Promise<TerrainRecord> => {
   const pack = overlayName(base, workName());
   const edits = (await readTerrainEdits(codeRoot(), workRoot(), dataRoot()))?.filter((edit) => edit.pack === base);
   if (!edits?.length) throw Error(`${workName()} 的地形改动.ts 没有 ${base} 的改动，或缺少依赖素材`);
@@ -39,7 +39,6 @@ export const bakeWorkOverlay = async (base: string, record: TerrainRecord): Prom
   info.biome.forEach((b) => table.internBiome(b));
   const tables = P.buildPackTables(info),
     ids: SectionId[] = [];
-  const scratch = path.join(draftRoot(), '工作-暮色合包');
   fs.mkdirSync(scratch, { recursive: true });
   const root = fs.mkdtempSync(path.join(scratch, '作品覆盖-')),
     folder = path.join(root, '完整');

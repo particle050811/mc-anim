@@ -120,7 +120,7 @@ export const selectTerrainPolicy = <T extends PolicyEntry<T>>(entry: T, policy: 
   return chosen;
 };
 /** 覆盖层跟随底包唯一的正式开关；试看也同时切换，不能把一种起级的覆盖块贴到另一种底包。 */
-export const terrainPolicies = <T extends PolicyEntry<T>>(entries: Record<string, T>, trial?: number): Record<string, T> =>
+export const terrainPolicies = <T extends PolicyEntry<T>>(entries: Record<string, T>, trial?: number | 'copy'): Record<string, T> =>
   Object.fromEntries(Object.entries(entries).map(([name, entry]) => {
     const owner = entry.policyFrom ? entries[entry.policyFrom] : entry;
     if (!owner) throw Error(`${name} 缺少配套底包：${entry.policyFrom} 没在 assets/地形版本.json 登记版本`);
