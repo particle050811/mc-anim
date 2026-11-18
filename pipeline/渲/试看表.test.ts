@@ -12,7 +12,7 @@ describe('试看表', () => {
     expect(() => checkTrialTable({ '关': ['乱关'] }, 'X')).toThrow(/「乱关」没登记/);
     expect(() => checkTrialTable({ '关': '云' }, 'X')).toThrow(/项名数组/);
     expect(() => checkTrialTable([1], 'X')).toThrow(/JSON 对象/);
-    expect(checkTrialTable({ '细分门槛': 1.5 }, 'X').join()).toMatch(/还在 细分门槛 上/);
+    expect(checkTrialTable({ '台阶并色': { off: true } }, 'X').join()).toMatch(/还在 标签 实验\/台阶并色分级 上/);
     expect(checkTrialTable({ '关': ['阴影'] }, 'X').join()).toMatch(/还没接/);
   });
 
