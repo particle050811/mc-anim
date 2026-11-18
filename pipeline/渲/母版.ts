@@ -1,5 +1,5 @@
 // 母版缓存的小件：<数据根>/cache/母版/<作品>/<段键>/ 下按指纹前 16 位起名。切片本身叫什么见 段产物.ts（<画面指纹>.mp4、<声音指纹>.wav，决策/0014）。
-//   <指纹>.指纹.json  逐项展开（画面、声音各一份）；<指纹>.用过 修改时间是最后一次被 film、verify 用的时间（不是账本，各文件各记各的）
+//   <指纹>.指纹.json  逐项展开（画面、声音各一份），出切片的记 renderCommit；<指纹>.用过 修改时间是最后一次被 film、verify 用的时间（不是账本，各文件各记各的）
 //   <指纹>.检出-<哈希> 哪个检出用过这个指纹，内容是检出路径（各 worktree 共用数据根，这边算不出别的检出的当前指纹，缓存/钉.ts 靠它不删人家的）
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -33,10 +33,14 @@ export const atomicWrite = (file: string, text: string) => {
   fs.renameSync(tmp, file);
 };
 
-export const writeFingerprint = (fp: SegFingerprint, dir = masterDir(fp.segment)) => atomicWrite(fingerprintFile(fp.segment, fp.fingerprint, dir), JSON.stringify({ ...fp, computedAt: new Date().toISOString() }, null, 2) + '\n');
+/** 切片的像素是哪个提交渲的（出切片时记当前提交；认指纹沿用的记源头那次的提交）。认指纹在这个提交上重出旧帧（决策/0013），dirty 的不能当基准 */
+export type RenderCommit = { commit: string; dirty: boolean };
+
+export const writeFingerprint = (fp: SegFingerprint, dir = masterDir(fp.segment), renderCommit?: RenderCommit | null) =>
+  atomicWrite(fingerprintFile(fp.segment, fp.fingerprint, dir), JSON.stringify({ ...fp, computedAt: new Date().toISOString(), ...(renderCommit ? { renderCommit } : {}) }, null, 2) + '\n');
 
 /** 这段之前渲过的指纹（新的在前），anim stale 拿最近一份比差异 */
-export const fingerprintHistory = (segKey: string, dir = masterDir(segKey)): (SegFingerprint & { computedAt?: string })[] => {
+export const fingerprintHistory = (segKey: string, dir = masterDir(segKey)): (SegFingerprint & { computedAt?: string; renderCommit?: RenderCommit })[] => {
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir)
