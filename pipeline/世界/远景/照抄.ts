@@ -1,5 +1,3 @@
-import { hash2 } from '../../../engine/core/噪声.ts';
-import { distantPoint } from '../../../engine/voxel/远景网格.ts';
 import type { SectionId } from '../../../engine/voxel/区段.ts';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
 import type { DistantGrid } from '../../../engine/voxel/远景.ts';
@@ -26,6 +24,7 @@ export const transformColumn = (x: number, y: number, pose: number) => {
 };
 
 export function copyTerrain(lib: FarVoxelLib, table: EntryTable, grid: DistantGrid, origin: Origin, rows: Iterable<Row>, exclude: readonly Box[]) {
+  const { hash2, distantPoint } = lib;
   const [ox,oy,oz] = origin, pools = new Map<string, Patch[]>();
   const key = (level: number, biome: string) => `${level}:${biome}`;
   const ordered = [...rows].filter(row => row.id.L <= 3 && !intersects(row.id, origin, exclude));

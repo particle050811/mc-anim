@@ -19,9 +19,11 @@ import type * as samplerModule from '../../engine/voxel/远景兜底采样.ts';
 import type * as importedModule from '../../engine/voxel/导入区段.ts';
 
 import type * as mergeModule from '../../engine/voxel/远景并列.ts';
+import type * as noiseModule from '../../engine/core/噪声.ts';
+import type * as gridModule from '../../engine/voxel/远景网格.ts';
 
 export const VOXEL_MODULES = ['区段包.ts', '区段.ts', '区段解码.ts', '生成.ts', '群系色.ts', '真实方块表.ts'] as const;
-export const FAR_MODULES = ['远景.ts', '导入区段.ts', '远景兜底采样.ts', '远景并列.ts'] as const;
+export const FAR_MODULES = ['远景.ts', '导入区段.ts', '远景兜底采样.ts', '远景并列.ts', '../core/噪声.ts', '远景网格.ts'] as const;
 
 /** 烘焙和编辑校验要的方块知识；测试里可以换成小表 */
 export type BlockKnowledge = {
@@ -81,6 +83,7 @@ export const loadImportedVoxelLib = async () => {
 export const loadFarVoxelLib = async () => {
   const lib = await loadVoxelLib();
   const [distant, imported, sampler, merge] = await Promise.all([loadModule<typeof distantModule>('远景.ts'), loadModule<typeof importedModule>('导入区段.ts'), loadModule<typeof samplerModule>('远景兜底采样.ts'), loadModule<typeof mergeModule>('远景并列.ts')]);
-  return { ...lib, distant, imported, sampler, merge };
+  const [{ hash2 }, { distantPoint }] = await Promise.all([loadModule<typeof noiseModule>('../core/噪声.ts'), loadModule<typeof gridModule>('远景网格.ts')]);
+  return { ...lib, distant, imported, sampler, merge, hash2, distantPoint };
 };
 export type FarVoxelLib = Awaited<ReturnType<typeof loadFarVoxelLib>>;
