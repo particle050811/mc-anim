@@ -9,7 +9,7 @@ import { codeRoot } from '../环境/路径.ts';
 import { loadAllSegments } from '../清单/清单.ts';
 import { renderParams } from '../渲/设置.ts';
 import { readAssetLock } from '../资产/资产锁.ts';
-import { stableJson, computeSegFingerprints, fingerprintDiff, type FingerprintTask } from './指纹.ts';
+import { stableJson, computeSegFingerprints, fingerprintDiff, readTerrainEntries, type FingerprintTask } from './指纹.ts';
 
 const computeSegFingerprint = async (s: SegInfo, renderSettings: Record<string, unknown>) => (await computeSegFingerprints([{ segment: s, renderSettings: renderSettings }]))[0]!;
 import { computeMerkle } from './默克尔.ts';
@@ -130,7 +130,10 @@ describe('地形按段依赖', () => {
     const s = await pierceTowerSegment();
     const baseline = await computeWithTable(s, () => {});
     const env = segRenderEnv(baseline.segment, baseline.items.terrain);
-    expect(JSON.parse(env[terrainVersionEnv]!)).toEqual(baseline.items.terrain);
+    // 段签记完整包；送正式页的是同一策略配套的裁级目录，不能把完整、裁级哈希直接当成相等。
+    const entries = readTerrainEntries();
+    const expectedDirs = Object.fromEntries(Object.entries(baseline.items.terrain).map(([pack, full]) => [pack, entries[pack]!.trimmed?.version ?? full]));
+    expect(JSON.parse(env[terrainVersionEnv]!)).toEqual(expectedDirs);
     expect(segTerrainNow(s)).toEqual(baseline.items.terrain);
     expect(env[terrainUsageSegEnv]).toBe(`应力转动/${s.key}`);
     expect(Object.keys(JSON.parse(fullTableEnv()[terrainVersionEnv]!))).toEqual(Object.keys(JSON.parse(readFile(tableFile, 'utf8')).pack));
