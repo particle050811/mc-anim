@@ -6,9 +6,10 @@ import { UsageError, parseArgs } from '../cli/参数.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { passGate } from '../闸/闸.ts';
 import { defaultThreads, bakeWorld, loadEdits } from './烘焙/流程.ts';
-import { bakeFarSections } from './远景/区段烘焙.ts';
-import { coverStatus } from '../渲/地形覆盖.ts';
-import { loadAllSegments } from '../清单/清单.ts';
+import { bakeRoutePacks, simulateFromLevel } from './远景/航线烘焙.ts';
+import { overlayName, bakeWorkOverlay } from './远景/作品覆盖层.ts';
+import { workName } from '../环境/作品.ts';
+import { packCover } from '../渲/地形覆盖.ts';
 import { bakeDhWorld } from './dh/流程.ts';
 import { transcodePack } from './烘焙/转码.ts';
 import { buildDecoder } from './区段解码器.ts';
@@ -24,7 +25,7 @@ import { installServer } from './服务端/安装.ts';
 import { buildWorld } from './服务端/建世界.ts';
 import { fetchJar } from '../取材/取jar.ts';
 import { config, dataPath } from '../环境/配置.ts';
-import { release, newStaging, registerTerrain, registerTerrainEntry, readTerrainTable } from './版本.ts';
+import { selectTerrainPolicy, versionDir, release, newStaging, registerTerrain, registerTerrainEntry, readTerrainTable } from './版本.ts';
 import { countChunks, splitTasks, distantRange, type DistantTask } from './远景/任务.ts';
 import { writeToDir, packDistant } from './远景/打包.ts';
 import { distantLandmarks, type Landmark } from './远景/地标.ts';
@@ -90,24 +91,60 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   'bake-far': {
-    usage: 'bake-far <世界> [--no-register]（烘当前作品声明使用远景区段包的全部段，先 world cover）',
+    usage: 'bake-far <世界> [--cover-dir <规划目录>] [--simulate-from 2|3|4|5|outside] [--no-register]（默认推荐起级；outside 保留存档内真实区段）',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { toggles: ['--no-register'] });
+      const p = parseArgs(args, { value: ['--simulate-from', '--cover-dir'], toggles: ['--no-register'] });
       if (p.位置.length !== 1) throw new UsageError('要给一个暮色世界名');
-      const w = readDecl(p.位置[0]!), far = w.farView;
-      if (!far?.sectionPack || w.packDimension !== '暮色') throw new UsageError('只支持声明了 farView.sectionPack 的暮色世界');
-      const all = await loadAllSegments(), segments = all.filter(s => s.segment.terrain.includes(far.sectionPack!));
-      if (!segments.length) throw new UsageError(`当前作品没有段声明 ${far.sectionPack}`);
-      const columns = new Map<string, string>();
-      for (const { segment, cover, stale } of await coverStatus(all, segments, far.sectionPack)) {
-        const used = cover?.fallback?.[far.pack];
-        if (stale || !used || !Object.keys(used).length) throw new Error(`${segment.key} 没有有效的远景覆盖：先 anim world cover ${segments.map(s => s.key).join(' ')}`);
-        for (const [k, v] of Object.entries(used)) {
-          if (columns.has(k) && columns.get(k) !== v.columns) throw new Error(`${k} 在不同镜头的空列不一致，不能共用同一区段`);
-          columns.set(k, v.columns);
-        }
+      const world = readDecl(p.位置[0]!);
+      const pack = world.farView?.sectionPack;
+      if (!pack || !world.farView?.landmarkPack) throw new UsageError('世界缺底包或远地标原料包声明');
+      const policy = p.value['--simulate-from'] ?? String(simulateFromLevel);
+      if (!['2', '3', '4', '5', 'outside'].includes(policy)) throw new UsageError('--simulate-from 只取 2、3、4、5 或 outside');
+      const directory = p.value['--cover-dir'];
+      const plan = await packCover(pack, { measure: false, ...(directory ? { override: { work: workName(), directory } } : {}) });
+      if (plan.stale.length) throw Error(`航线规划缺失或过期：${plan.stale.join('、')}；先在对应作品跑 anim world cover`);
+      const used = new Set(plan.used.keys());
+      if (!used.size) throw Error('航线留表为空，不登记');
+      const register = !p.toggles.has('--no-register');
+      if (register && !readTerrainTable().pack[pack] && policy !== 'outside') throw Error('首次登记先烘 outside 保真版');
+      const level = policy === 'outside' ? Infinity : Number(policy);
+      const made = (await passGate(() => bakeRoutePacks(world, used, [level])))[policy]!;
+      if (register) {
+        const old = readTerrainTable().pack[pack];
+        // 重烘某一档不等于批准改正式画面；正式选择只在版本表一处切换。
+        registerTerrain(pack, {
+          ...(policy === 'outside' ? made : old!), activePolicy: old?.activePolicy ?? 'outside',
+          policies: { ...old?.policies, ...(policy === 'outside' ? {} : { [policy]: made }) },
+        });
       }
-      runRecord.artifacts.push(await passGate(() => bakeFarSections(w, columns, p.toggles.has('--no-register'))));
+      runRecord.artifacts.push(versionDir(pack, made.version), versionDir(pack, made.trimmed!.version));
+    },
+  },
+  'bake-overlay': {
+    usage: 'bake-overlay <世界> [--simulate-from outside|2|3|4|5] [--no-register]（从底包和当前作品的地形改动烘整块覆盖层）',
+    跑: async (args, runRecord) => {
+      const p = parseArgs(args, { value: ['--simulate-from'], toggles: ['--no-register'] });
+      if (p.位置.length !== 1) throw new UsageError('要给一个世界名');
+      const base = readDecl(p.位置[0]!).farView?.sectionPack;
+      const registry = readTerrainTable().pack;
+      if (!base || !registry[base]) throw Error('没有已登记的世界底包，先 world bake-far');
+      const baseRecord = registry[base];
+      const policy = p.value['--simulate-from'] ?? baseRecord.activePolicy ?? 'outside';
+      if (!['outside', '2', '3', '4', '5'].includes(policy)) throw new UsageError('模拟起级只取 outside、2、3、4、5');
+      const pack = overlayName(base, workName());
+      const register = !p.toggles.has('--no-register');
+      if (register && !registry[pack] && policy !== 'outside') throw Error('首次登记作品覆盖层请先烘 outside');
+      const made = await passGate(() => bakeWorkOverlay(base, selectTerrainPolicy(baseRecord, policy)));
+      if (register) {
+        const old = readTerrainTable().pack[pack];
+        registerTerrain(pack, {
+          ...(policy === 'outside' ? made : old!),
+          policyFrom: base,
+          policies: { ...old?.policies, ...(policy === 'outside' ? {} : { [policy]: made }) },
+        });
+      }
+      runRecord.artifacts.push(versionDir(pack, made.version));
+      if (made.trimmed) runRecord.artifacts.push(versionDir(pack, made.trimmed.version));
     },
   },
   'bake-dh': {

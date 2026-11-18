@@ -1,6 +1,8 @@
 // 格式 3 的逐格预测模型；状态类、条件字面值先验见 docs/决策/0011-地形压缩.md。
 import type { VoxelLib } from '../体素库.ts';
 import type { SectionModel } from '../../../engine/voxel/区段模型.ts';
+import type { SectionId } from '../../../engine/voxel/区段.ts';
+import type { VoxelGrid } from '../../../engine/voxel/生成.ts';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
 /** 区段每边几列：按 runCounts 的长度算（格式 4 是 66；转码读格式 3 时是 34，编码规则一样，只差列数） */
 export const sideOf = (d: Pick<SectionData, 'runCounts'>) => {
@@ -238,4 +240,12 @@ const initTree = (palette: Uint16Array, m: SectionModel) => {
     }
   }
   return { tree, n };
+};
+
+/** 体素按高度排；区段编码按列排。调色板保留来源的状态和群系号。 */
+export const gridData = (id: SectionId, v: VoxelGrid, palette: number[]) => {
+  const cols = v.nx * v.ny,
+    cm = new Uint16Array(v.vox.length);
+  for (let k = 0; k < v.nz; k++) for (let c = 0; c < cols; c++) cm[c * v.nz + k] = v.vox[k * cols + c]!;
+  return fromColumnMajor(id, v.origin[2] / v.cell, v.nz, cm, palette, cols);
 };

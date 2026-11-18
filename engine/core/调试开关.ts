@@ -80,6 +80,12 @@ export const debugSwitches = [
     note: '「远」经 trialFarM 落到各镜头：作品/应力转动/地点/边城/6-2-5/飞越主世界.tsx、地点/基地小岛.tsx、地点/暮色新世界/超远景.ts、作品/亚波伦不放水/地点/真下界.tsx 等',
   },
   {
+    name: '暮色模拟起级',
+    kind: 'trial', purpose: '比较暮色存档内从哪一级改用模拟',
+    changesPicture: true, inFingerprint: false, readers: all, fullTerrain: true,
+    format: '2、3、4 或 5', files: ['pipeline/渲/地形注入.ts'],
+  },
+  {
     name: '暮色远景',
     kind: 'trial',
     purpose: '暮色超远景：盖掉正式值，或给没开的暮色镜头打开（要多读的包写在「地形」）',
@@ -292,7 +298,7 @@ export type OffName = Extract<Row, { kind: 'off' }>['name'];
 export type ChannelName = Extract<Row, { kind: 'channel' }>['name'];
 
 /** REMOTION_ANIM_ 开头、却不是调试开关的页面环境变量（正式渲染要用），check 不要求登记 */
-export const nonDebugEnvNames = ['REMOTION_ANIM_TERRAIN_PACKS', 'REMOTION_ANIM_TERRAIN_READ_MODE'] as const;
+export const nonDebugEnvNames = ['REMOTION_ANIM_TERRAIN_PACKS'] as const;
 
 export const findSwitch = (kind: SwitchKind, name: string): DebugSwitch | undefined => (debugSwitches as readonly DebugSwitch[]).find((s) => s.kind === kind && s.name === name);
 

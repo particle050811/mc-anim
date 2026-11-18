@@ -4,6 +4,7 @@
 // - 裁过的包不是从现登记的完整包裁的：违规，重裁。
 // 要算段指纹，--fast 跳过。
 import fs from 'node:fs';
+import { terrainPolicies } from '../../世界/版本.ts';
 import path from 'node:path';
 import { codeRoot } from '../../环境/路径.ts';
 import { dataPath } from '../../环境/配置.ts';
@@ -16,7 +17,7 @@ const tablePath = 'assets/地形版本.json';
 
 export const checkTerrainCover = async (c: CheckContext, report: CheckReport) => {
   const table = ((c.readJson(tablePath) ?? {}) as { pack?: Record<string, Entry> }).pack ?? {};
-  const trimmed = Object.entries(table).filter(([, v]) => v.trimmed);
+  const trimmed = Object.entries(terrainPolicies(table)).filter(([, v]) => v.trimmed);
   if (!trimmed.length) return;
   // 覆盖和段指纹都按本仓库算（测试的夹具仓库没有这些）
   if (c.root !== fs.realpathSync(codeRoot())) {
@@ -53,7 +54,7 @@ export const checkTerrainCover = async (c: CheckContext, report: CheckReport) =>
         }
         const missing = Object.entries(used).filter(([k]) => !keep.has(k)).sort((a, b) => a[1] - b[1]);
         if (missing.length)
-          report.错(`${x.segment.key} 用到的 ${missing.length} 个区段裁过的包 ${pack}/${v.trimmed!.version} 里没有（出片到那一帧报「缺级」）：${missing.slice(0, 5).map(([k, f]) => `${k}（第 ${f} 帧）`).join('、')}${missing.length > 5 ? ' …' : ''}；重裁 anim world trim ${pack}`, x.segment.segmentFile);
+          report.错(`${x.segment.key} 用到的 ${missing.length} 个区段裁过的包 ${pack}/${v.trimmed!.version} 里没有（需要重新规划，不能把缺级回退当成已覆盖）：${missing.slice(0, 5).map(([k, f]) => `${k}（第 ${f} 帧）`).join('、')}${missing.length > 5 ? ' …' : ''}；${'policies' in (table[pack] ?? {}) ? '重算定级、world bake-far 重烘' : `重裁 anim world trim ${pack}`}`, x.segment.segmentFile);
       }
     }
     report.infoLines.push(`地形覆盖：${trimmed.map(([p]) => p).join('、')} 裁过；${segs.length} 段用到，${checkedSegs} 段的覆盖是新的、核过留表`);

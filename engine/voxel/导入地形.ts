@@ -18,6 +18,7 @@ import type { TerrainSampler } from './地表.ts';
 import { sectionKey, type SectionId } from './区段.ts';
 import { readModel, modelFileName } from './区段模型.ts';
 import { formatVersion, sectionInTile, tileFileName, tilePrefixLen, tileHeaderGuessCap, tileHeaderLength, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodePackMaps, decodeSplittable, findInTile, packMapsFileName, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap, type TileIndex } from './区段包.ts';
+import { resolveRouteSections, type RouteIndex } from './航线区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
 import { recordSectionRead, isCoverRun, noteCoverWorld } from './地形用量.ts';
@@ -41,7 +42,9 @@ type TerrainPack = {
   info: PackageInfo;
   tables: PackTable;
   coarseHeights: CoarseHeightMap;
-  far?: { bytes: Uint8Array; columns: Record<string, number>; pick: CoarseHeightMap; outside: number; groundMax: number; waterLevel: number };
+  route?: Omit<RouteIndex, 'keys' | 'simulated'> & { keys: Set<string>; simulated: Set<string> };
+  overlay?: { pack: TerrainPack; keys: Set<string> };
+  overlayKeys?: Set<string>;
   maxTop: number; // 粗高度图里最高的顶（场景 z）
   canSplit: ReturnType<typeof decodeSplittable>; // 各处最细级不一样的包才有
   variesByPos: boolean[]; // 按包里的群系号
@@ -64,12 +67,21 @@ const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
     checkFrozenCoarse(packName, coarseHeights);
     let maxTop = -Infinity;
     for (const height of coarseHeights.height) if (height !== -32768) maxTop = Math.max(maxTop, height);
-    let far: TerrainPack['far'];
-    if (info.farPick && info.farColumns) {
-      const bytes = new Uint8Array(await fetchGunzip(`${dir}/选级.bin.gz`));
-      far = { ...info.farPick, bytes, columns: info.farColumns, pick: decodePackMaps(info.farPick, bytes).coarse };
+    let route: TerrainPack['route'];
+    const readKeys = async (all: string[]) => {
+      if (!info.trim) return new Set(all);
+      const res = await fetch(dataUrl(`${dir}/留表.tsv`));
+      if (!res.ok) throw new Error(`取不到 ${dir}/留表.tsv`);
+      return new Set((await res.text()).trimEnd().split('\n').filter(Boolean).map((row) => row.replaceAll('\t', '|')));
+    };
+    const overlayKeys = info.overlay && (await readKeys(info.overlay.keys));
+    if (info.routeIndex) {
+      const index = JSON.parse(new TextDecoder().decode(await fetchGunzip(`${dir}/${info.routeIndex}`))) as RouteIndex;
+      const keys = await readKeys(index.keys);
+      route = { ...index, keys, simulated: new Set(index.simulated) };
+      maxTop = index.maxTop;
     }
-    return { far, name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, canSplit: decodeSplittable(splittable), variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
+    return { route, overlayKeys, name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, canSplit: decodeSplittable(splittable), variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
   });
 
 // 块头不定长：第一次取 tileHeaderMax（本包最长的头）那么多，一次就够；比封顶还长的头才补取剩下的。越过文件尾的 Range 服务端截到文件尾
@@ -115,17 +127,19 @@ const missingSectionError = (pack: TerrainPack, fileName: string, section: Secti
 // 取这几个区段：按块文件分组，块里按偏移排好、挨着的并成一次活交给工人；给了来源 `ctx` 的工人顺手换好体素块，放进 `ready`。返回每个区段取齐的 Promise。
 // 包里没有的区段单独失败，不连累同一块里别的区段（猜的预取会要到裁过的包没留的级，别的帧真要的同块区段不能跟着失败）
 const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: number, ctx: number | undefined, ready: Map<string, ReadyVoxels>): Map<string, Promise<void>> => {
-  const byFile = new Map<string, { ti: number; tj: number; list: SectionId[] }>();
+  const byFile = new Map<string, { storage: TerrainPack; fileName: string; ti: number; tj: number; list: SectionId[] }>();
   for (const section of sections) {
     const { ti, tj } = sectionInTile(section, pack.info.coarsestLevel);
     const fileName = tileFileName(ti, tj);
-    let tile = byFile.get(fileName);
-    if (!tile) byFile.set(fileName, (tile = { ti, tj, list: [] }));
+    const storage = pack.overlay?.keys.has(sectionKey(section)) ? pack.overlay.pack : pack;
+    const url = `${storage.dir}/${fileName}`;
+    let tile = byFile.get(url);
+    if (!tile) byFile.set(url, (tile = { storage, fileName, ti, tj, list: [] }));
     tile.list.push(section);
   }
   const promises = new Map<string, Promise<void>>();
-  for (const [fileName, { ti, tj, list }] of byFile) {
-    const done = loadTileIndex(pack, fileName, ti, tj).then((index) => {
+  for (const { fileName, storage, ti, tj, list } of byFile.values()) {
+    const done = loadTileIndex(storage, fileName, ti, tj).then((index) => {
       const all = list.map((section) => ({ section, ...(findInTile(index, section) ?? { off: 0, len: 0 }) }));
       const missing = new Set(all.filter((part) => !part.len).map((part) => sectionKey(part.section)));
       const parts = all.filter((part) => part.len).sort((a, b) => a.off - b.off);
@@ -137,7 +151,7 @@ const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: nu
           last.parts.push(part);
         } else jobs.push({ start: part.off, len: part.len, parts: [part] });
       }
-      const url = absoluteUrl(`${pack.dir}/${fileName}`);
+      const url = absoluteUrl(`${storage.dir}/${fileName}`);
       const loaded = Promise.all(
         jobs.map((job) =>
           fetchSectionsInPool(url, job.start, job.len, job.parts.map((part) => ({ off: part.off - job.start, len: part.len, ctx, id: part.section }))).then((out: SectionResult[]) =>
@@ -155,7 +169,7 @@ const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: nu
       promises.set(
         k,
         done.then((r) => {
-          if (r.missing.has(k)) throw missingSectionError(pack, fileName, section);
+          if (r.missing.has(k)) throw missingSectionError(storage, fileName, section);
           return r.loaded;
         }),
       );
@@ -168,7 +182,7 @@ const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: nu
 type ReadyVoxels = { voxels: VoxelGrid; lastRound: number };
 
 export type ImportedTerrain = {
-  far?: TerrainPack['far'];
+  route?: TerrainPack['route'];
   key: string; // 体素世界的缓存键（带版本，换了版本不会接着用旧版建的网格）；同一个包要分开缓存的（挖法、补水不同）在后面接后缀
   source: VoxelSource;
   heightRange: [number, number]; // 场景 z 的范围（维度下界 ～ 最高的方块顶），给 体素世界 的 高度
@@ -191,7 +205,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   // `选区段` 拿 `采样` 的 z 当这一带的地物顶。没数据的地方给 0 而不是 −Infinity：`选区段` 只在区段中心取一次，粗级大区段中心没数据、角上有数据时，按无限远算就永远不细分
   const sample: TerrainSampler = (x, y, out) => {
     const height = coarseHeightAt(pack.coarseHeights, x, y);
-    out.z = height === -Infinity ? 0 : height;
+    out.z = height === -Infinity ? pack.route?.outside ?? 0 : height;
     out.crown = 0;
   };
   const ctx: SectionContext = { info: pack.info, tables: pack.tables, variesByPos: pack.variesByPos, cutBoxes, flattenAreas };
@@ -200,20 +214,26 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   const ready = new Map<string, ReadyVoxels>();
   // 替下一帧先取、还没记进地形用量的区段：哪一帧真要到了才记，没用上的不记（用量只记画面真用到的）
   const unrecorded = new Set<string>();
-  const contains = (q: SectionId) => pack.far ? Object.hasOwn(pack.far.columns, sectionKey(q)) : hasSection(pack.coarseHeights, q);
+  const contains = (q: SectionId) => pack.route ? pack.route.keys.has(sectionKey(q)) : hasSection(pack.coarseHeights, q);
+  const resolve = pack.route ? resolveRouteSections(pack.route.keys, pack.info.coarsestLevel) : undefined;
+  const recordReads = (keys: string[]) => {
+    recordSectionRead(pack.name, keys); // 航线按世界的完整需求规划，含覆盖块。
+    const layer = pack.overlay;
+    if (layer) recordSectionRead(layer.pack.name, keys.filter((key) => layer.keys.has(key)));
+  };
   const source: VoxelSource = {
     采样: sample,
+    ...(resolve && !isCoverRun() ? { resolveSections: resolve } : {}),
     coarsestLevel: pack.info.coarsestLevel,
     toScene: (g) => [g[0]! - ox, oz - g[2]!, g[1]! - oy],
     sections: (section) => {
       if (!contains(section)) return null;
       const k = sectionKey(section);
       const done = ready.get(k);
-      if (done) {
-        ready.delete(k);
-        return done.voxels;
-      }
-      return importedSectionVoxels(pack.data.get(k)!.d, ctx);
+      const voxels = done?.voxels ?? importedSectionVoxels(pack.data.get(k)!.d, ctx);
+      if (done) ready.delete(k);
+      if (pack.route?.simulated.has(k)) voxels.waterLevel = pack.route.waterLevel;
+      return voxels;
     },
     transferOwnership: true,
     ...(pack.canSplit ? { canSplit: pack.canSplit } : {}),
@@ -221,7 +241,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
       // 地形覆盖（engine/voxel/地形用量.ts）：只记这一帧要的区段，不取
       if (isCoverRun()) {
         noteCoverWorld(pack.name);
-        if (!guessed) recordSectionRead(pack.name, qs.filter((section) => contains(section)).map(sectionKey));
+        if (!guessed) recordReads((pack.route ? qs : qs.filter(contains)).map(sectionKey));
         return undefined;
       }
       const round = ++pack.round;
@@ -245,10 +265,10 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
         if (promise) waits.add(promise);
         else toLoad.push(section);
       }
-      if (lateRecords.length) recordSectionRead(pack.name, lateRecords);
+      if (lateRecords.length) recordReads(lateRecords);
       if (toLoad.length) {
         if (guessed) for (const section of toLoad) unrecorded.add(sectionKey(section));
-        else recordSectionRead(pack.name, toLoad.map(sectionKey));
+        else recordReads(toLoad.map(sectionKey));
         const loading = loadSections(pack, toLoad, round, workerCtx, ready);
         for (const [k, promise] of loading) {
           pack.inflight.set(k, promise);
@@ -269,8 +289,9 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
     },
   };
   const sectionData = async (qs: SectionId[]): Promise<(SectionData | null)[]> => {
-    const present = qs.filter((q) => contains(q));
-    recordSectionRead(pack.name, present.map(sectionKey));
+    const resolved = resolve ? qs.map(q => resolve([q])[0]) : qs;
+    const present = resolved.filter((q): q is SectionId => !!q && contains(q));
+    recordReads(present.map(sectionKey));
     // 取齐后这边拿到之前，体素世界的预取可能按缓存上限丢掉刚取的（只丢那一轮没要到的）：丢了再取
     for (;;) {
       const waits = new Set<Promise<void>>();
@@ -290,14 +311,14 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
       }
       await Promise.all(waits);
     }
-    return qs.map((q) => (contains(q) ? pack.data.get(sectionKey(q))!.d : null));
+    return resolved.map((q) => (q && contains(q) ? pack.data.get(sectionKey(q))!.d : null));
   };
   return {
-    far: pack.far,
+    route: pack.route,
     sectionData,
-    noteSections: (qs) => recordSectionRead(pack.name, qs.filter((q) => contains(q)).map(sectionKey)),
+    noteSections: (qs) => recordReads(qs.filter((q) => contains(q)).map(sectionKey)),
     voxelContext: { info: { origin: pack.info.origin, state: pack.info.state, biome: pack.info.biome }, cutBoxes, flattenAreas },
-    key: `导入:${pack.dir}`,
+    key: `导入:${pack.dir}${pack.overlay ? `+${pack.overlay.pack.dir}` : ''}`,
     source: source,
     heightRange: [dimensionMinY[pack.info.dimension] - oy, pack.maxTop],
     位置: (g) => [g[0] - ox, oz - g[2], g[1] - oy],
@@ -306,22 +327,47 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   };
 };
 
-// 包名：区段包的名字（数据根 渲染/区段包/ 下的目录名，版本按 区段包版本.json），如 '暮色-远景片场'。挖掉：要挖掉的地标网格（见 地标挖框）；平整：按列整平的地（见 平整）。
-// 包.json 取到之前返回 null，并用 delayRender 拦住截图。挖掉、平整 在各帧要是同一个数组（放在模块顶层）：换了要异步重建来源，中间那一帧还是旧的
+// 未迁移的世界仍可传本地挖框、整平；挂作品覆盖层时只读预烘区段。
 const noFlatten: FlattenArea[] = [];
-/** 取包.json、模型，建好地形（不挂 React，测试也走这里） */
-export const openImportedTerrain = (packName: string, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[] = noFlatten): Promise<ImportedTerrain> =>
-  loadPack(packDir(packName), packName).then((b) => buildTerrain(b, cutouts, flattenAreas));
-export const useImportedTerrain = (packName: string, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[] = noFlatten): ImportedTerrain | null => {
+/** 配对底包、作品覆盖层；选级仍以世界的粗高度图和级链为准。 */
+const withOverlay = (base: TerrainPack, layer: TerrainPack): TerrainPack => {
+  const overlay = layer.info.overlay, keys = layer.overlayKeys;
+  const baseVersion = base.info.trim?.from ?? base.dir.split('/').at(-1);
+  if (!base.route || !keys || overlay?.base !== base.name || overlay.from !== baseVersion)
+    throw Error(`作品覆盖层 ${layer.dir} 与底包 ${base.dir} 不配套，请重烘覆盖层`);
+  // 完整底包配本机仅有的裁级覆盖层时，缺的覆盖级不能偷换成未挖的底包，沿用同一条缺级回退规则。
+  const present = new Set(base.route.keys);
+  for (const key of overlay.keys) if (!keys.has(key)) present.delete(key);
+  // 覆盖层状态表是底包编号的超集。解码和网格缓存按这对版本隔离，块头仍按物理文件复用。
+  return {
+    ...base,
+    info: { ...base.info, state: layer.info.state, biome: layer.info.biome },
+    tables: layer.tables,
+    variesByPos: layer.variesByPos,
+    route: { ...base.route, keys: present },
+    overlay: { pack: layer, keys },
+    data: new Map(),
+    inflight: new Map(),
+    bytes: 0,
+    round: 0,
+  };
+};
+export const openImportedTerrain = async (packName: string, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[] = noFlatten, overlayName?: string): Promise<ImportedTerrain> => {
+  const base = loadPack(packDir(packName), packName);
+  if (!overlayName) return buildTerrain(await base, cutouts, flattenAreas);
+  const [world, layer] = await Promise.all([base, loadPack(packDir(overlayName), overlayName)]);
+  return buildTerrain(withOverlay(world, layer), [], []);
+};
+export const useImportedTerrain = (packName: string, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[] = noFlatten, overlayName?: string): ImportedTerrain | null => {
   const [terrain, setTerrain] = useState<ImportedTerrain | null>(null);
-  const dir = packDir(packName);
+  const dir = packDir(packName), overlayDir = overlayName && packDir(overlayName);
   const [handle] = useState(() => delayRender(`导入地形：取 ${dir}/包.json`));
   const released = useRef(false);
   useEffect(() => {
-    openImportedTerrain(packName, cutouts, flattenAreas)
+    openImportedTerrain(packName, cutouts, flattenAreas, overlayName)
       .then(setTerrain)
       .catch((e) => cancelRender(e));
-  }, [dir, packName, cutouts, flattenAreas]);
+  }, [dir, packName, overlayDir, overlayName, cutouts, flattenAreas]);
   // 放行要等用到地形的子组件（体素世界）这一次渲染完、挂上它自己的 delayRender 以后（子组件先渲染，effect 后跑）
   useEffect(() => {
     if (!terrain || released.current) return;

@@ -103,15 +103,191 @@
       "size": 24852612,
       "manifestSha256": "642d9f4b9ea96851d94ad95cf2a24da27c93c1505ee58e742bded8cf82b13825"
     },
-    "暮色放大-1752-远景区段": {
-      "version": "e9e59e480d18",
-      "source": "暮色放大-1752-远景@7d762d294e6a，anim world bake-far 暮色放大-1752 按镜头覆盖烘焙",
+    "暮色放大-1752": {
+      "version": "a00ed5666c71",
+      "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；模拟起级 outside",
       "license": "LicenseRef-Minecraft-Derived",
-      "visibility": "私有",
-      "note": "暮色试点，仅本地登记，不随 Release 分发",
-      "fileCount": 87,
-      "size": 4104652,
-      "manifestSha256": "b012e7ef997d8ca51ab22fa46ecd143ae69d4b6e9f6a6dd94fdd7a846eef2ac5"
+      "visibility": "发布",
+      "fileCount": 107,
+      "size": 260072926,
+      "manifestSha256": "8ee67308bd191a17bd30596c82afc48300d651e433f28c1a1bbce457465cca4e",
+      "trimmed": {
+        "version": "525aae5cd3b6",
+        "from": "a00ed5666c71",
+        "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
+        "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
+        "manifestSha256": "e4258938c992e40c75d0d1eeef5b2f8251c1c30c90612a251715e776cfa70ba8",
+        "fileCount": 109,
+        "size": 49749550
+      },
+      "activePolicy": "outside",
+      "policies": {
+        "2": {
+          "version": "bfb8dec52030",
+          "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；模拟起级 2",
+          "license": "LicenseRef-Minecraft-Derived",
+          "visibility": "发布",
+          "fileCount": 107,
+          "size": 253945925,
+          "manifestSha256": "a56633aa8a53fc00a2e12804e7e8ce4eddded963df28ed87a98d62d70a44558c",
+          "trimmed": {
+            "version": "71b3f7631261",
+            "from": "bfb8dec52030",
+            "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
+            "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
+            "manifestSha256": "01a745ad523d6119030cff0ceba646c3ee212ec88bf8f614b8cd6450d55d5f4e",
+            "fileCount": 109,
+            "size": 46194772
+          }
+        },
+        "3": {
+          "version": "343252004c9b",
+          "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；模拟起级 3",
+          "license": "LicenseRef-Minecraft-Derived",
+          "visibility": "发布",
+          "fileCount": 107,
+          "size": 258146293,
+          "manifestSha256": "7b874bc47d818526789ca977ef826bc30615403b8cbf74380b07142eca1f9c11",
+          "trimmed": {
+            "version": "b6cf33d663d7",
+            "from": "343252004c9b",
+            "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
+            "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
+            "manifestSha256": "b3ed80d4ef798e6e08513e0c616c9ab276084600d73e256762a52ca303c345b7",
+            "fileCount": 109,
+            "size": 48224252
+          }
+        },
+        "4": {
+          "version": "d3b23568488d",
+          "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；模拟起级 4",
+          "license": "LicenseRef-Minecraft-Derived",
+          "visibility": "发布",
+          "fileCount": 107,
+          "size": 259687958,
+          "manifestSha256": "233c7a70929cb09b7b6c5819c7049958cdf8a92d5eb85a728e1921d4ca141106",
+          "trimmed": {
+            "version": "a2a777e0bdef",
+            "from": "d3b23568488d",
+            "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
+            "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
+            "manifestSha256": "01c66de18f3e121ccd046ca96cc1ff611fec26de3d9ebafd9d2ba87d87e6ca75",
+            "fileCount": 109,
+            "size": 49402972
+          }
+        },
+        "5": {
+          "version": "0b80392afb23",
+          "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；模拟起级 5",
+          "license": "LicenseRef-Minecraft-Derived",
+          "visibility": "发布",
+          "fileCount": 107,
+          "size": 260009794,
+          "manifestSha256": "3ecf67c5e04ab51da2ba5ba1dc0ea15dab8928c89270c472cd7c43c904c38869",
+          "trimmed": {
+            "version": "532df7c603ee",
+            "from": "0b80392afb23",
+            "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
+            "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
+            "manifestSha256": "e8c14b73e77ce44fdfb2d94326e15dbee775b2518ed5edc0af7e447d8c836859",
+            "fileCount": 109,
+            "size": 49686809
+          }
+        }
+      }
+    },
+    "暮色放大-1752-应力转动-覆盖层": {
+      "version": "1834e3c56b55",
+      "source": "暮色放大-1752@a00ed5666c71 + 应力转动/地点/地形改动.ts",
+      "visibility": "发布",
+      "license": "LicenseRef-Minecraft-Derived",
+      "manifestSha256": "55c6f2fad0d953eeaf9f16ac0612212b83efdc56af3284ef2019ca73b6e7fbca",
+      "fileCount": 9,
+      "size": 1554977,
+      "trimmed": {
+        "version": "dbd8b926d6b9",
+        "from": "1834e3c56b55",
+        "method": "作品覆盖层：只留底包正式版保留的受影响区段",
+        "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
+        "manifestSha256": "459a999c9381aa58e750400dddeb79841a55c1b7f0a7785eac7f347d725711d0",
+        "fileCount": 11,
+        "size": 1364742
+      },
+      "policyFrom": "暮色放大-1752",
+      "policies": {
+        "2": {
+          "version": "56e40b79d8f8",
+          "source": "暮色放大-1752@bfb8dec52030 + 应力转动/地点/地形改动.ts",
+          "visibility": "发布",
+          "license": "LicenseRef-Minecraft-Derived",
+          "manifestSha256": "c4df250a1d515d14a1fd3f7efc038db3b106ca6a0927b8ed856836e8371478ba",
+          "fileCount": 9,
+          "size": 1420620,
+          "trimmed": {
+            "version": "a1fd0d36a629",
+            "from": "56e40b79d8f8",
+            "method": "作品覆盖层：只留底包正式版保留的受影响区段",
+            "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
+            "manifestSha256": "fe2c3721eb91072e0481fbd9524ef289e99c5890786b5e16d5ea711311d8a01d",
+            "fileCount": 11,
+            "size": 1230385
+          }
+        },
+        "3": {
+          "version": "109fe1afdbc2",
+          "source": "暮色放大-1752@343252004c9b + 应力转动/地点/地形改动.ts",
+          "visibility": "发布",
+          "license": "LicenseRef-Minecraft-Derived",
+          "manifestSha256": "fff01abdff60718256a55eacbea15f5222637a8683ea72d373cc5313c8742b55",
+          "fileCount": 9,
+          "size": 1484119,
+          "trimmed": {
+            "version": "a4eb8d169c99",
+            "from": "109fe1afdbc2",
+            "method": "作品覆盖层：只留底包正式版保留的受影响区段",
+            "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
+            "manifestSha256": "24f7b8e2f0e342dc70b045f1e82f3b75c8f735ee8ba1ebbb9ce82c54d0140444",
+            "fileCount": 11,
+            "size": 1293884
+          }
+        },
+        "4": {
+          "version": "2fa5a165f5e7",
+          "source": "暮色放大-1752@d3b23568488d + 应力转动/地点/地形改动.ts",
+          "visibility": "发布",
+          "license": "LicenseRef-Minecraft-Derived",
+          "manifestSha256": "114904da011f60b0e0f62006e969510e5c988a5ad8475e7d1df2be5d440dcfd7",
+          "fileCount": 9,
+          "size": 1526108,
+          "trimmed": {
+            "version": "b08007309ca8",
+            "from": "2fa5a165f5e7",
+            "method": "作品覆盖层：只留底包正式版保留的受影响区段",
+            "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
+            "manifestSha256": "1f893173cad2a99816a2e2866136c30094507514ae9881f798b47258a798e007",
+            "fileCount": 11,
+            "size": 1335873
+          }
+        },
+        "5": {
+          "version": "6566d8bdf8fe",
+          "source": "暮色放大-1752@0b80392afb23 + 应力转动/地点/地形改动.ts",
+          "visibility": "发布",
+          "license": "LicenseRef-Minecraft-Derived",
+          "manifestSha256": "d8b4b2e27a1a070f571a16a58138b07ef90a720dc043102c27f163954eaf0c50",
+          "fileCount": 9,
+          "size": 1552771,
+          "trimmed": {
+            "version": "acfbaa87f084",
+            "from": "6566d8bdf8fe",
+            "method": "作品覆盖层：只留底包正式版保留的受影响区段",
+            "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
+            "manifestSha256": "56aca9463c23b89a89abe179529d12e310e079461edf45e0a212d6264aff0453",
+            "fileCount": 11,
+            "size": 1362536
+          }
+        }
+      }
     }
   }
 }

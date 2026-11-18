@@ -19,6 +19,7 @@ import { packManifest, release, newStaging, versionDir, readTerrainTable, terrai
 export const trimMethod = '只留用到的：每处留全片用到的最细级和比它粗的级，L3～L6 全留（用户 11-17 定）';
 /** 这一级及更粗的整包全留 */
 export const keepAllFromLevel = 3;
+export const routeTrimMethod = '航线：各处最细请求及其整条祖先链，另铺全域最粗级';
 export const keepFileName = '留表.tsv';
 /** 裁过的包里带一份完整包的登记（包名和登记项）：笔记本生成的世界只传裁过的包回来，本机没有完整包也能登记（trim --import） */
 export const fullRecordFileName = '完整包登记.json';
@@ -42,7 +43,7 @@ const parseKey = (k: string): SectionId => {
 };
 
 /** 留表：用到的区段连同各级祖先（到包的最粗级），加上整包第 keepAllFromLevel 级以上的，只留包里有的。按 (L, i, j) 排好 */
-export const keepTable = async (used: Iterable<string>, present: ReadonlySet<string>, coarsestLevel: number): Promise<SectionId[]> => {
+export const keepTable = async (used: Iterable<string>, present: ReadonlySet<string>, coarsestLevel: number, keepAllFrom = keepAllFromLevel): Promise<SectionId[]> => {
   const { sectionKey } = (await loadVoxelLib()).sections;
   const keep = new Set<string>();
   for (const k of used) {
@@ -53,14 +54,14 @@ export const keepTable = async (used: Iterable<string>, present: ReadonlySet<str
       q = { L: q.L + 1, i: q.i >> 1, j: q.j >> 1 }; // >> 是向下取整，负的区段号也对
     }
   }
-  for (const k of present) if (parseKey(k).L >= keepAllFromLevel) keep.add(k);
+  for (const k of present) if (parseKey(k).L >= keepAllFrom) keep.add(k);
   return [...keep].filter((k) => present.has(k)).map(parseKey).sort((a, b) => a.L - b.L || a.i - b.i || a.j - b.j);
 };
 export const keepTableText = (table: readonly SectionId[]) => table.map((q) => `${q.L}\t${q.i}\t${q.j}\n`).join('');
 export const sha256 = (s: string | Buffer) => crypto.createHash('sha256').update(s).digest('hex');
 
 /** 照留表把完整包写到 to（空目录）：块文件只拷留下的段、重写块头；包.json 加 trim、重量 tileHeaderMax；粗图、模型和别的文件原样拷；另写留表。返回留表的 sha256 */
-export const writeTrimmed = async (fullDir: string, full: FullRecordFile, table: readonly SectionId[], to: string): Promise<string> => {
+export const writeTrimmed = async (fullDir: string, full: FullRecordFile, table: readonly SectionId[], to: string, method = trimMethod): Promise<string> => {
   const voxelLib = await loadVoxelLib(), P = voxelLib.sectionPack, { sectionKey } = voxelLib.sections;
   const fullVersion = full.record.version;
   const text = keepTableText(table);
@@ -81,7 +82,7 @@ export const writeTrimmed = async (fullDir: string, full: FullRecordFile, table:
   }
   const info = JSON.parse(fs.readFileSync(path.join(fullDir, '包.json'), 'utf8')) as PackageInfo;
   if (info.trim) throw new Error(`${fullDir} 已经是裁过的包（从 ${info.trim.from} 裁），要从完整包裁`);
-  const trim: TrimInfo = { from: fullVersion, keepSha256, method: trimMethod };
+  const trim: TrimInfo = { from: fullVersion, keepSha256, method };
   fs.writeFileSync(path.join(to, '包.json'), JSON.stringify({ ...info, tileHeaderMax: tileHeaderMaxOf(voxelLib, to), trim }));
   fs.writeFileSync(path.join(to, keepFileName), text);
   fs.writeFileSync(path.join(to, fullRecordFileName), `${JSON.stringify(full, null, 2)}\n`);
@@ -136,6 +137,7 @@ export const compareTrimmed = async (fullDir: string, trimDir: string): Promise<
 export const trimPack = async (pack: string, used: Iterable<string>, log: (s: string) => void = console.log): Promise<{ record: TrimmedRecord; table: SectionId[]; existed: boolean; dir: string }> => {
   const entry = readTerrainTable().pack[pack];
   if (!entry) throw new Error(`assets/地形版本.json 没登记包 ${pack}`);
+  if (entry.policies) throw new Error(`${pack} 有多套模拟起级；请用 world bake-far 按策略生成配套的完整、裁级版本`);
   const fullDir = versionDir(pack, entry.version);
   if (!fs.existsSync(path.join(fullDir, '包.json'))) throw new Error(`完整包 ${pack}/${entry.version} 不在本机（${fullDir}）：裁剪要在有完整包的机器上做（生成世界的笔记本，或 anim assets pull --full）`);
   const t0 = Date.now();

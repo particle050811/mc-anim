@@ -232,9 +232,10 @@ export type PackageInfo = {
   splittable?: (SplittableLevel | null)[];
   // 裁过的包才有（pipeline/世界/裁级/裁剪.ts，docs/世界.md「裁级」）：从哪个完整包版本裁的、留表（留下的区段）的 sha256、裁法。粗图、模型和完整包一样
   trim?: TrimInfo;
-  // 镜头用量烘的稀疏远景：同一位置各级不齐，不能从粗高度图推断区段存在。负一是整块，其余是空列位图在选级文件中的字节偏移（含邻圈）。
-  farColumns?: Record<string, number>;
-  farPick?: { coarseHeight: PackageInfo['coarseHeight']; outside: number; groundMax: number; waterLevel: number };
+  // 航线稀疏包：索引只含可用区段及还原导入轮廓的信息，不是第二份地形。
+  routeIndex?: string;
+  // 覆盖层按完整底包版本配对；keys 是有意覆盖的整块（即使它全为空气也不能退回底包）。
+  overlay?: { base: string; from: string; keys: string[] };
 };
 /** 区段 (i, j)（i0 ≤ i < i0 + ni，j 同）能不能细分：粗图 at 那段是位图，第 (j − j0)·ni + (i − i0) 位，字节里从低位起；范围外的不能 */
 export type SplittableLevel = { i0: number; j0: number; ni: number; nj: number; at: ByteRange };

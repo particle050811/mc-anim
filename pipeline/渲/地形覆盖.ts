@@ -3,9 +3,9 @@
 // 不另写模拟：段改了镜头、新加了段，都照段框架（清单、段.ts 的 terrain）自动算进来。光体这类旁路读者读的区段照常记（engine/voxel/导入地形.ts 的 sectionData、noteSections）。
 // 猜的预取不记（覆盖时根本不猜），所以裁过的包没留猜的那一级，页面也不报错（导入地形.ts）。
 // 结果按段存 <数据根>/cache/地形覆盖/<作品>/<段键>.json，键是覆盖指纹（段指纹去掉平台，Mac 和 Windows 量的一样能互认）：指纹不变就不重量。docs/世界.md「裁级」。
-import type { FarCover } from '../../engine/voxel/远景覆盖.ts';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import path from 'node:path';
 import { terrainCoverEnv } from '../../engine/段/地形环境.ts';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
 import { dataPath } from '../环境/配置.ts';
@@ -29,10 +29,10 @@ const coverLevel: RenderLevel = '视频';
 export const coverFormat = 2;
 
 /** 一段的覆盖：包 → 完整包版本、区段键 → 头一次用到的帧（段内帧号）；worldPacks：画面里有体素世界从它挑区段的包 */
-export type SegCover = { format: number; work: string; segment: string; coverKey: string; frameCount: number; pack: Record<string, { version: string; sections: Record<string, number> }>; worldPacks: string[]; fallback?: FarCover; measuredAt: string };
+export type SegCover = { format: number; work: string; segment: string; coverKey: string; frameCount: number; pack: Record<string, { version: string; sections: Record<string, number> }>; worldPacks: string[]; measuredAt: string };
 
 /** 一页交回的记录（collectExpr） */
-export type CoverPageRecord = { cover: string | null; first: Record<string, Record<string, number>>; worlds: string[]; fallback?: FarCover };
+export type CoverPageRecord = { cover: string | null; first: Record<string, Record<string, number>>; worlds: string[] };
 
 /**
  * 量出来的覆盖能不能拿去裁：段声明了这个包、画面里又有体素世界从它挑（页面报的 worldPacks），却一个区段都没记下，就是量错了（11-17 夜：页面记录全没收到，
@@ -45,36 +45,31 @@ export const coverProblems = (cover: Pick<SegCover, 'segment' | 'pack' | 'worldP
     .map((pack) => `${cover.segment}：画面里有体素世界从 ${pack} 挑区段，覆盖却记下 0 个区段，量错了`);
 
 export const coverFile = (work: string, segKey: string) => dataPath('cache', '地形覆盖', work, `${segKey}.json`);
-export const readCover = (work: string, segKey: string): SegCover | null => {
-  const f = coverFile(work, segKey);
+export const readCover = (work: string, segKey: string, directory?: string): SegCover | null => {
+  const f = directory ? path.join(directory, `${segKey}.json`) : coverFile(work, segKey);
   return fs.existsSync(f) ? (JSON.parse(fs.readFileSync(f, 'utf8')) as SegCover) : null;
 };
 
-/** 覆盖指纹：段画面指纹的各项去掉平台（挑区段不看平台）。地形项是完整包的版本，重裁不让它变 */
-export const coverKeys = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[], measuredOutput?: { pack: string; versions: (string | undefined)[] }): Promise<string[]> => {
+/** 覆盖指纹：含选级粗图所在包版本，不含平台。 */
+export const coverKeys = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[]) => {
   const products = await segmentProducts(allSegments, segments, coverLevel);
-  return products.map((p, i) => {
-    const items = p.pictureFingerprint.items, old = measuredOutput?.versions[i];
-    // 重烘不能让自己的输入覆盖过期：量暮色时没读成品包。只还原这个输出项的版本，别的包、镜头、代码、画质仍全量对指纹。
-    const terrain = old && measuredOutput ? { ...items.terrain, [measuredOutput.pack]: old } : items.terrain;
-    return crypto.createHash('sha256').update(stableJson({ ...items, terrain, platform: undefined })).digest('hex');
-  });
+  return products.map((p) => crypto.createHash('sha256').update(stableJson({ ...p.pictureFingerprint.items, platform: undefined })).digest('hex'));
 };
 
 /** 声明了这些包的段（所选作品里，按清单顺序） */
 export const segsUsingPacks = (allSegments: readonly SegInfo[], packs: readonly string[]) => allSegments.filter((s) => s.segment.terrain.some((p) => packs.includes(p)));
 
 /** 各段现在的覆盖指纹、存着的覆盖，和存着的是不是旧的（没量过、或量完段又改了） */
-export const coverStatus = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[], bakingFarPack?: string) => {
-  const covers = segments.map(s => readCover(workName(), s.key));
-  const keys = await coverKeys(allSegments, segments, bakingFarPack ? { pack: bakingFarPack, versions: covers.map(c => c?.pack[bakingFarPack]?.version) } : undefined);
+export const coverStatus = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[], directory?: string) => {
+  const covers = segments.map(s => readCover(workName(), s.key, directory));
+  const keys = await coverKeys(allSegments, segments);
   return segments.map((s, i) => {
     const cover = covers[i]!;
     return { segment: s, coverKey: keys[i]!, cover, stale: cover?.coverKey !== keys[i] || cover.format !== coverFormat };
   });
 };
 
-const collectExpr = `JSON.stringify({ cover: window.process?.env?.[${JSON.stringify(terrainCoverEnv)}] ?? null, first: Object.fromEntries([...(window.terrainCoverFirst ?? new Map())].map(([pack, m]) => [pack, Object.fromEntries(m)])), worlds: [...(window.terrainCoverWorlds ?? [])], fallback: window.terrainFarCover })`;
+const collectExpr = `JSON.stringify({ cover: window.process?.env?.[${JSON.stringify(terrainCoverEnv)}] ?? null, first: Object.fromEntries([...(window.terrainCoverFirst ?? new Map())].map(([pack, m]) => [pack, Object.fromEntries(m)])), worlds: [...(window.terrainCoverWorlds ?? [])] })`;
 
 /** Remotion 出完一段在 finally 里关页，通常紧接着就关；等这么久还没收完就当页面没交回记录 */
 const pageCollectTimeoutMs = 60_000;
@@ -95,7 +90,7 @@ export const describeCover = (cover: Pick<SegCover, 'pack' | 'worldPacks'>) => {
  * 量这几段的覆盖：按材质包分组一组一个会话，一页按帧号升序把整段过一遍（imageFormat none：不截图、不编码）。
  * 页面读完整包（本机没有就读裁过的）：覆盖本身不取区段，只要包.json 的粗高度图，两边一样；光体冷缓存时要取区段，读完整包才不被旧留表卡住。
  */
-export const measureCovers = async (segments: readonly SegInfo[], runRecord?: RunRecord, log: (s: string) => void = console.log, backend: RenderBackend = realBackend): Promise<SegCover[]> => {
+export const measureCovers = async (segments: readonly SegInfo[], runRecord?: RunRecord, log: (s: string) => void = console.log, backend: RenderBackend = realBackend, outputDir?: string): Promise<SegCover[]> => {
   if (!segments.length) return [];
   const allSegments = await loadAllSegments();
   const keys = new Map((await coverKeys(allSegments, segments)).map((k, i) => [segments[i]!.key, k]));
@@ -163,17 +158,7 @@ export const measureCovers = async (segments: readonly SegInfo[], runRecord?: Ru
               const into = (first[pack] ??= {});
               for (const [k, f] of Object.entries(m)) if (!(into[k]! <= f)) into[k] = f;
             }
-          const fallback: FarCover = {};
-          for (const page of mine) for (const [pack, entries] of Object.entries(page.fallback ?? {})) {
-            const into = (fallback[pack] ??= {});
-            for (const [key, use] of Object.entries(entries)) {
-              const old = into[key];
-              if (old && old.columns !== use.columns) throw new Error(`远景覆盖 ${pack} ${key}：不同页面的空列不同`);
-              into[key] = old ? { ...use, near: Math.min(old.near, use.near), far: Math.max(old.far, use.far), first: Math.min(old.first, use.first) } : use;
-            }
-          }
           const cover: SegCover = {
-            ...(Object.keys(fallback).length ? { fallback } : {}),
             format: coverFormat,
             work: workName(),
             segment: s.key,
@@ -185,8 +170,9 @@ export const measureCovers = async (segments: readonly SegInfo[], runRecord?: Ru
           };
           const problems = coverProblems(cover, s.segment.terrain);
           if (problems.length) throw new Error(`地形覆盖：${problems.join('；')}，不存覆盖、不能拿去裁`);
-          atomicWrite(coverFile(cover.work, s.key), `${JSON.stringify(cover)}\n`);
-          runRecord?.artifacts.push(coverFile(cover.work, s.key));
+          const file = outputDir ? path.join(outputDir, `${s.key}.json`) : coverFile(cover.work, s.key);
+          atomicWrite(file, `${JSON.stringify(cover)}\n`);
+          runRecord?.artifacts.push(file);
           log(`  ${s.key}：${composition.durationInFrames} 帧 ${((Date.now() - t0) / 1000).toFixed(0)} 秒，${describeCover(cover)}`);
           out.push(cover);
         }
@@ -210,7 +196,7 @@ export const inWork = async <T>(work: string, fn: () => Promise<T>): Promise<T> 
 };
 
 /** 各作品里声明了这个包的段的覆盖并起来：区段键 → 头一次用到它的（作品/段，帧）。stale 列出没量或旧了的段；measure 给了就当场量那些 */
-export const packCover = async (pack: string, o: { measure: boolean; runRecord?: RunRecord; log?: (s: string) => void }) => {
+export const packCover = async (pack: string, o: { measure: boolean; override?: { work: string; directory: string }; runRecord?: RunRecord; log?: (s: string) => void }) => {
   const used = new Map<string, { work: string; segment: string; frame: number }>();
   const stale: string[] = [];
   let segCount = 0;
@@ -220,14 +206,17 @@ export const packCover = async (pack: string, o: { measure: boolean; runRecord?:
       const segs = segsUsingPacks(allSegments, [pack]);
       if (!segs.length) return;
       segCount += segs.length;
-      const status = await coverStatus(allSegments, segs);
+      // 独立的规划目录只替换指定作品；仍须遍历其他共用同一底包的作品。
+      const directory = o.override?.work === work ? o.override.directory : undefined;
+      const status = await coverStatus(allSegments, segs, directory);
       const toMeasure = status.filter((x) => x.stale).map((x) => x.segment);
       if (toMeasure.length && o.measure) {
         o.log?.(`${work}：量 ${toMeasure.length} 段的地形覆盖（${toMeasure.map((s) => s.key).join('、')}）`);
-        await measureCovers(toMeasure, o.runRecord, o.log);
+        await measureCovers(toMeasure, o.runRecord, o.log, realBackend, directory);
       } else stale.push(...toMeasure.map((s) => `${work}/${s.key}`));
       for (const s of segs) {
-        const cover = readCover(work, s.key);
+        const cover = readCover(work, s.key, directory);
+        if (cover && (cover.work !== work || cover.segment !== s.key)) throw Error(`规划文件不是 ${work}/${s.key} 的覆盖`);
         // 存着的也再核一遍：量的时候已经核过，这里挡手改、拷来的文件
         const problems = cover ? coverProblems(cover, s.segment.terrain) : [];
         if (problems.length) throw new Error(`地形覆盖：${problems.join('；')}：anim world cover ${s.key} 重量`);

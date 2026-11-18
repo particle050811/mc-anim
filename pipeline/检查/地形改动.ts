@@ -3,65 +3,14 @@
 // 登记的包版本做过可见变换的，它 包.json 记的 可见 要盖住声明（声明加了盒、换了填充，要回存档重烘）。
 // 暮色地标的挖框按网格头（JSON 资产）算，所以 JSON 资产按资产锁换成数据根里真的字节打包执行；字节不在就跳过，不拿占位算。
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { build } from 'esbuild';
-import { esbuildAliasPlugin, nonCodeLoaders } from '../资产/esbuild插件.ts';
-import { workAssetLockPath, bytesPath, readAssetLock } from '../资产/资产锁.ts';
+import { readTerrainEdits } from '../世界/作品地形改动.ts';
 import { dataRoot as configDataRoot } from '../环境/配置.ts';
 import { parseDecl, type WorldDecl } from '../世界/声明.ts';
 import { toRecord, recordCovers, type VisibleRecord } from '../世界/烘焙/可见.ts';
 import type { CheckReport, CheckContext } from '../源码/上下文.ts';
 
-type Box = { from: number[]; to: number[] };
-type FlattenArea = { x0: number; z0: number; nx: number; nz: number };
-type Change = { name: string; pack: string; digBoxes: Box[]; flattenAreas: FlattenArea[] };
-
 const registryFile = (c: CheckContext) => c.workPath('地点/地形改动.ts');
-
-/** 打包执行登记文件：asset: 换成数据根里的 JSON；缺字节返回 null（错误照抛） */
-const loadChanges = async (c: CheckContext, dataRoot: string): Promise<Change[] | null> => {
-  const assetLock = { ...readAssetLock(path.join(c.root, 'assets', '资产锁')), ...readAssetLock(workAssetLockPath(c.absPath(c.workDir))) };
-  let missingPath = '';
-  const out = await build({
-    entryPoints: [c.absPath(registryFile(c))],
-    absWorkingDir: c.root,
-    bundle: true,
-    write: false,
-    platform: 'node',
-    format: 'esm',
-    jsx: 'automatic',
-    loader: { ...nonCodeLoaders, '.json': 'json' },
-    logLevel: 'silent',
-    plugins: [
-      esbuildAliasPlugin(c.root),
-      {
-        name: '真资产',
-        setup(b) {
-          b.onResolve({ filter: /^asset:/ }, (a) => ({ path: a.path.slice('asset:'.length), namespace: '真资产' }));
-          b.onLoad({ filter: /.*/, namespace: '真资产' }, (a) => {
-            const l = assetLock[a.path], f = l && bytesPath(l, dataRoot);
-            if (!l) return { errors: [{ text: `资产锁里没有 asset:${a.path}` }] };
-            // 贴图、音频同 宽松资产插件 给个字符串：挖框、整平用不到它们，真要解码会在执行时报错，不会悄悄算错
-            if (l.suffix !== '.json') return { contents: `export default ${JSON.stringify(`asset:${a.path}`)};`, loader: 'js' };
-            if (!fs.existsSync(f!)) { missingPath ||= a.path; return { contents: 'export default null;', loader: 'js' }; }
-            return { contents: fs.readFileSync(f!, 'utf8'), loader: 'json' };
-          });
-        },
-      },
-    ],
-  });
-  if (missingPath) return null;
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-地形改动-'));
-  try {
-    const f = path.join(dir, '登记.mjs');
-    fs.writeFileSync(f, out.outputFiles[0]!.text, 'utf8');
-    return ((await import(pathToFileURL(f).href)) as { terrainEdits: Change[] }).terrainEdits;
-  } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-};
 
 const declarations = (c: CheckContext): WorldDecl[] => {
   const dir = c.absPath('sourcing/worlds');
@@ -74,7 +23,7 @@ const isInside = (x0: number, z0: number, x1: number, z1: number, b: readonly nu
 export const checkTerrainChanges = async (c: CheckContext, report: CheckReport) => {
   if (!c.exists(registryFile(c))) return;
   const dataRoot = c.dataRoot ?? configDataRoot();
-  const changes = await loadChanges(c, dataRoot);
+  const changes = await readTerrainEdits(c.root, c.absPath(c.workDir), dataRoot);
   if (!changes) {
     report.skipped.push(`地形改动：数据根 ${dataRoot} 缺资产字节（anim assets pull），挖框、整平没核保真范围`);
     return;
@@ -83,7 +32,7 @@ export const checkTerrainChanges = async (c: CheckContext, report: CheckReport) 
   const versionTable = c.exists('assets/地形版本.json') ? (JSON.parse(c.读('assets/地形版本.json')) as { pack: Record<string, { version: string }> }).pack : {};
   let count = 0;
   for (const r of changes) {
-    const w = worlds.find((x) => x.pack.some((b) => b.name === r.pack));
+    const w = worlds.find((x) => x.farView?.sectionPack === r.pack || x.pack.some((b) => b.name === r.pack));
     if (!w) { report.错(`地形改动「${r.name}」用的包 ${r.pack} 没有世界声明（sourcing/worlds/），核不了保真范围`, registryFile(c)); continue; }
     const keepBoxes = w.visible.faithful.map((x) => x.boxes);
     const boxes: [string, number, number, number, number][] = [
@@ -95,7 +44,8 @@ export const checkTerrainChanges = async (c: CheckContext, report: CheckReport) 
     if (outOfBounds.length) report.错(`地形改动「${r.name}」有 ${outOfBounds.length} 处不在 sourcing/worlds/${w.displayName}.toml 的 [[烘焙.保真]] 盒里（可见变换会换掉那里埋着的格，挖开就露出来）：${outOfBounds.slice(0, 3).map((x) => x[0]).join('；')}。加盒以后要回存档重烘`, registryFile(c));
   }
   // 登记的包版本做过可见变换的，记的设置要盖住声明
-  const packs = new Set(changes.map((r) => r.pack));
+  // 作品登记的是合并后的世界底包，保真承诺仍应核真实存档原料，而不是不做可见变换的成品。
+  const packs = new Set(changes.map((r) => worlds.find((w) => w.farView?.sectionPack === r.pack)?.pack[0]?.name ?? r.pack));
   for (const packName of packs) {
     const w = worlds.find((x) => x.pack.some((b) => b.name === packName)), version = versionTable[packName]?.version;
     if (!w || !version) continue;
