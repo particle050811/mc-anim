@@ -8,6 +8,7 @@ import path from 'node:path';
 import { UsageError } from '../cli/参数.ts';
 import { runCmd, runCapture } from './子进程.ts';
 import { mainCheckout } from './路径.ts';
+import { registerCleanup } from './收尾.ts';
 
 /** 装依赖的命令：锁文件不许改，store 里有的不联网 */
 export const installDeps = ['pnpm', 'install', '--frozen-lockfile', '--prefer-offline'] as const;
@@ -29,4 +30,38 @@ export const openWorktree = async (worktreeName: string, fromRef: string) => {
     carried.push(d);
   }
   return { target: targetWorktreeDir, carried };
+};
+
+/**
+ * 认指纹在旧提交上出帧用的临时检出（决策/0013）：分离头指针、不建分支，依赖照 wt new 一样从 pnpm store 导进来；
+ * 放在 mc-anim-wt/ 下以点开头的目录（wt 列表、分支都不留痕）。close 删检出（git worktree remove，删不掉就整删再 prune）；进程被杀也删
+ */
+export const openTempCheckout = async (commit: string): Promise<{ dir: string; close: () => void }> => {
+  const mainDir = mainCheckout();
+  const dir = worktreeDir(mainDir, `.认指纹-${commit.slice(0, 12)}-${process.pid}`);
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    undo();
+    try {
+      runCapture(['git', '-C', mainDir, 'worktree', 'remove', '--force', dir]);
+    } catch {
+      fs.rmSync(dir, { recursive: true, force: true });
+      try {
+        runCapture(['git', '-C', mainDir, 'worktree', 'prune']);
+      } catch {
+        // prune 不了只是 git worktree list 里多一条死记录
+      }
+    }
+  };
+  const undo = registerCleanup(close);
+  try {
+    runCapture(['git', '-C', mainDir, 'worktree', 'add', '-q', '--detach', dir, commit]);
+    await runCmd([...installDeps], { cwd: dir, quiet: true });
+  } catch (e) {
+    close();
+    throw e;
+  }
+  return { dir, close };
 };

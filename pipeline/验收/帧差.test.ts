@@ -1,4 +1,4 @@
-// 帧差：PNG 解成 rgb24、逐像素几档占比、最大差，块平均差和 anim reuse 用的 computeBlockDiff 是同一个数。
+// 帧差：PNG 解成 rgb24、逐像素几档占比、最大差，块平均差和 anim verify 用的 computeBlockDiff 是同一个数。
 import { encode } from 'fast-png';
 import { describe, expect, it } from 'vitest';
 import { computeBlockDiff } from './比较.ts';
@@ -25,7 +25,7 @@ describe('帧差', () => {
     expect(d.over).toEqual({ 0: 3, 8: 2, 32: 1 });
     expect(d.maxDiff).toBe(50);
     expect(d.block).toEqual(computeBlockDiff(Buffer.from(changed), Buffer.from(base), w, h));
-    expect(frameDiffText(d)).toMatch(/^差像素 >0 1\.17%（3 像素）、>8 0\.78%（2 像素）、>32 0\.39%（1 像素），最大差 50 级；块平均差 16×16 0\.2、64×64 0\.0、8×8 0\.8（按 reuse 的门槛：容差内）$/);
+    expect(frameDiffText(d)).toMatch(/^差像素 >0 1\.17%（3 像素）、>8 0\.78%（2 像素）、>32 0\.39%（1 像素），最大差 50 级；块平均差 16×16 0\.2、64×64 0\.0、8×8 0\.8（按 verify 的门槛：容差内）$/);
     expect(() => frameDiff(png(w, h, base, 3), png(8, 8, new Uint8Array(8 * 8 * 3), 3), threshold)).toThrow(/尺寸不同/);
   });
 

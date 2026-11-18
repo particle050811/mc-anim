@@ -1,6 +1,6 @@
-// 认指纹：抽哪几帧、哪些差异静帧证明不了、一帧怎么比（新 PNG 和有损压缩的切片：画面一样在噪声内，改了一块判不同）、
-// 找旧版、登记沿用（克隆切片和 wav、照抄段签记 沿用；旧指纹的东西删了新指纹照用；cache gc 扫到的是这个指纹自己的切片）。
-// 切片用 Remotion 自带的 ffmpeg 照真切片一样压（PNG 帧 → bt709 zscale → x264），放在临时数据根里，不碰真数据，不开浏览器。
+// 认指纹：抽哪几帧、哪些差异静帧证明不了、一帧怎么比（新旧 PNG：字节一样、字节不同像素一样、改了一块判不同）、
+// 找旧版、登记沿用（克隆切片和 wav、照抄段签记 沿用、.指纹.json 记像素源头的提交；旧指纹的东西删了新指纹照用；cache gc 扫到的是这个指纹自己的切片）。
+// 切片用 Remotion 自带的 ffmpeg 压，放在临时数据根里，不碰真数据，不开浏览器。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -17,7 +17,7 @@ const { writeFingerprint, fingerprintHistory } = await import('../渲/母版.ts'
 const { segPicturePath, segSoundPath, pairedSoundFingerprint } = await import('../渲/段产物.ts');
 const { runBundledFfmpeg } = await import('../渲/自带ffmpeg.ts');
 const { scanKey } = await import('../缓存/钉.ts');
-const { pickFrames, stillCannotProve, compareFrame, frameToYuv, sliceToYuvFilter, findOldVersion, registerReuse, hasNewFingerprint, readOldFrames, cloneFile } = await import('./认指纹.ts');
+const { pickFrames, stillCannotProve, comparePng, findOldVersion, registerReuse, hasNewFingerprint, cloneFile } = await import('./认指纹.ts');
 type SegFingerprint = import('../指纹/指纹.ts').SegFingerprint;
 type FingerprintItem = import('../指纹/指纹.ts').FingerprintItem;
 
@@ -54,11 +54,11 @@ const sourcePng = (n: number | null, drawBox = false) =>
     ...(n === null ? [] : ['-vf', `select=eq(n\\,${n})${drawBox ? ',drawbox=x=0:y=0:w=24:h=24:color=red:t=fill' : ''}`, '-frames:v', '1']), '-f', 'image2pipe', '-c:v', 'png', '-',
   ]);
 
-/** 和真切片一样：PNG 帧经 Remotion 的 ffmpeg、bt709 zscale、x264 CRF18 压成 mp4；配一份 wav；写 .指纹.json（不派生段签，找旧版 会补） */
+/** PNG 帧经 Remotion 的 ffmpeg、x264 CRF18 压成 mp4；配一份 wav；写 .指纹.json（不派生段签，找旧版 会补） */
 const placeOldVersion = async (artifactName: string) => {
   const r = makeArtifact(artifactName);
   fs.mkdirSync(path.dirname(r.画面), { recursive: true });
-  await runBundledFfmpeg(['-v', 'error', '-y', '-r', '24', '-f', 'image2pipe', '-vcodec', 'png', '-i', '-', '-vf', sliceToYuvFilter, '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', r.画面], sourcePng(null));
+  await runBundledFfmpeg(['-v', 'error', '-y', '-r', '24', '-f', 'image2pipe', '-vcodec', 'png', '-i', '-', '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', r.画面], sourcePng(null));
   runCapture([config('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2:sample_rate=48000', '-c:a', 'pcm_s16le', '-ac', '2', r.sound]);
   writeFingerprint(r.pictureFingerprint, path.dirname(r.画面));
   return r;
@@ -92,21 +92,16 @@ describe('静帧证明不了', () => {
 });
 
 describe('比一帧', () => {
-  it('同一画面的 PNG 和有损压缩的切片：逐字节不一样，在噪声内；改了一块判不同；逐字节一样就是一样', async () => {
-    const r = await placeOldVersion('比一帧');
-    const { oldVersion } = await findOldVersion(segKey, segmentFingerprint('比一帧之后'), { frameCount: 48, waitGate: letThrough, work: work });
-    expect(oldVersion!.master).toBe(r.画面);
-    const oldFrames = await readOldFrames(oldVersion!, [0, 30, 47]);
-    for (const n of [0, 30, 47]) {
-      const newFrame = await frameToYuv(sourcePng(n), widthPx, height);
-      expect(newFrame.equals(oldFrames.get(n)!)).toBe(false);
-      expect(compareFrame(n, newFrame, oldFrames.get(n)!, widthPx, height, threshold).verdict).toBe('噪声内');
-      const verdict = compareFrame(n, await frameToYuv(sourcePng(n, true), widthPx, height), oldFrames.get(n)!, widthPx, height, threshold);
-      expect(verdict.verdict).toBe('不同');
-      expect(verdict.note).toContain('16×16');
-      expect(compareFrame(n, oldFrames.get(n)!, oldFrames.get(n)!, widthPx, height, threshold).verdict).toBe('一样');
-    }
-    await expect(frameToYuv(sourcePng(0), widthPx * 2, height)).rejects.toThrow('尺寸对不上');
+  it('新旧 PNG：字节一样是一样；换了压缩级别字节不同、像素一样是像素同；改了一块是不同、报差多少', () => {
+    const png = sourcePng(30);
+    expect(comparePng(30, png, Buffer.from(png), threshold).verdict).toBe('一样');
+    const recompressed = runCaptureBytes([config('ffmpeg'), '-v', 'error', '-f', 'image2pipe', '-c:v', 'png', '-i', '-', '-compression_level', '0', '-f', 'image2pipe', '-c:v', 'png', '-'], { input: png });
+    expect(recompressed.equals(png)).toBe(false);
+    expect(comparePng(30, recompressed, png, threshold).verdict).toBe('像素同');
+    const changed = comparePng(30, sourcePng(30, true), png, threshold);
+    expect(changed.verdict).toBe('不同');
+    expect(changed.note).toContain('16×16');
+    expect(comparePng(30, Buffer.from('不是 PNG'), png, threshold)).toMatchObject({ verdict: '不同', note: expect.stringContaining('比不了') });
   });
 });
 
@@ -124,12 +119,10 @@ describe('找旧版、登记沿用', () => {
     expect(await matchesSlice(oldVersion!.segStamp, fixture.画面, fixture.sound)).toBe(true);
     expect((await findOldVersion(segKey, second.pictureFingerprint, { frameCount: 47, waitGate: letThrough, work: work })).unused.join()).toContain('48 帧');
 
-    const r = registerReuse(segKey, oldVersion!, second, { reason: '搬函数', frame: [0, 47], commit: 'abc', level: '视频' }, work);
+    const r = registerReuse(segKey, oldVersion!, second, { reason: '搬函数', frame: [0, 47], commit: 'abc', sourceCommit: '源头提交', level: '视频' }, work);
     expect(r.master).toBe(second.画面);
     expect(r.sound).toBe(second.sound);
     expect(hasNewFingerprint(segKey, second, work)).toBe('切片在');
-    expect((await findOldVersion(segKey, second.pictureFingerprint, { frameCount: 48, waitGate: letThrough, work: work, pickFingerprint: second.pictureFingerprint.fingerprint })).oldVersion?.fingerprint).toBe(second.pictureFingerprint.fingerprint);
-    expect((await findOldVersion(segKey, second.pictureFingerprint, { frameCount: 48, waitGate: letThrough, work: work, pickFingerprint: '已删的旧片' })).oldVersion).toBeNull();
     const segStamp = readSegStamp(segKey, second.pictureFingerprint.fingerprint, work)!;
     expect(segStampComplete(segStamp)).toBe(true);
     expect(segStamp).toMatchObject({ version: 3, soundFingerprint: second.soundFingerprint.fingerprint });
@@ -137,6 +130,8 @@ describe('找旧版、登记沿用', () => {
     expect(segStamp.signature).toEqual(oldVersion!.segStamp.signature);
     expect(await matchesSlice(segStamp, r.master, r.sound)).toBe(true);
     expect(fingerprintHistory(segKey, path.dirname(r.master)).map((h) => h.fingerprint)).toEqual(expect.arrayContaining([second.pictureFingerprint.fingerprint, second.soundFingerprint.fingerprint]));
+    // .指纹.json 记的是像素源头的提交，不是认下时的提交：下次认指纹在它上面重出旧帧
+    expect(fingerprintHistory(segKey, path.dirname(r.master)).find((h) => h.fingerprint === second.pictureFingerprint.fingerprint)!.renderCommit).toEqual({ commit: '源头提交', dirty: false });
     // 没有临时文件留下
     expect(fs.readdirSync(path.dirname(r.master)).filter((n) => n.includes('写入中'))).toEqual([]);
 
@@ -148,7 +143,7 @@ describe('找旧版、登记沿用', () => {
     const artifactC = makeArtifact('丙');
     const { oldVersion: oldVersionForThird } = await findOldVersion(segKey, artifactC.pictureFingerprint, { frameCount: 48, waitGate: letThrough, work: work });
     expect(oldVersionForThird!.fingerprint).toBe(second.pictureFingerprint.fingerprint);
-    const r2 = registerReuse(segKey, oldVersionForThird!, artifactC, { reason: '再搬', frame: [0], commit: 'def', level: '视频' }, work);
+    const r2 = registerReuse(segKey, oldVersionForThird!, artifactC, { reason: '再搬', frame: [0], commit: 'def', sourceCommit: '源头提交', level: '视频' }, work);
     expect(readSegStamp(segKey, artifactC.pictureFingerprint.fingerprint, work)!.reuse).toMatchObject({ reusedFrom: second.pictureFingerprint.fingerprint, origRender: fixture.pictureFingerprint.fingerprint });
 
     // 旧指纹的切片、wav、段签删掉（gc 回收旧指纹）：沿用的照样对得上

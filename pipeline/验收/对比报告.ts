@@ -229,7 +229,7 @@ const writeNote = (plan: DiffPlan, results: PairResult[], o: DiffOptions, scale:
     '',
     `- 每张图左旧、中新、右差，各缩到原来的 1/${scale}。差图带符号：**红是新的亮了，蓝是暗了，绿是亮度差不多但颜色变了**；颜色深浅 = 三个通道里最大的差 × ${gain}（差 ${Math.ceil(255 / gain)} 级就到顶），底是旧图亮度的 15%。缩小时每格取差最大的那个像素，零星的差不会被平均掉。`,
     `- 框是差得最多的几个窗口的望远框（框里的数字是名次，框色 ${boxColors.map((c, i) => `${i + 1} ${c.name}`).join('、')}），每对的复查命令在下面。**看细节照命令原生复查，不要拿并排图裁一块放大当证据。**`,
-    `- 判法和 anim verify、anim reuse 同一套（\`verify/阈值.toml\`）：块平均差是 w×w 窗口里各通道「新 − 旧」的平均取绝对值、三通道取最大，取全帧最大的那块（级，0～255）。16×16 > ${t.block16Threshold}、64×64 > ${t.block64Threshold}、8×8 > ${t.block8Threshold} 任一条是「变了」；16×16 在 ${t.glanceThreshold}～${t.block16Threshold} 是「看一眼」；都不到是「容差内」；逐像素一样是「一样」。`,
+    `- 判法和 anim verify 同一套（\`verify/阈值.toml\`）：块平均差是 w×w 窗口里各通道「新 − 旧」的平均取绝对值、三通道取最大，取全帧最大的那块（级，0～255）。16×16 > ${t.block16Threshold}、64×64 > ${t.block64Threshold}、8×8 > ${t.block8Threshold} 任一条是「变了」；16×16 在 ${t.glanceThreshold}～${t.block16Threshold} 是「看一眼」；都不到是「容差内」；逐像素一样是「一样」。`,
     '- 「超门槛块」是把整帧按窗口边长铺成不重叠的块，块差超过那档门槛的有几块：看差是一小处还是一大片。',
     plan.kind === '视频' ? '- 两边都是压缩过的视频时，画面没改 16×16 也能到 8～9 级（压缩噪声，见 `docs/决策/0013-认指纹.md`），64×64 在 2.4 以下；看一眼、容差内的多半是噪声。' : '',
     '',
