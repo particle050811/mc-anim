@@ -8,9 +8,9 @@
 // 代码分在 编排/ 下；这里留汇报和接 6-4-1 用的两个函数。
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
-import { tick, impactTime, segTable, physicalTime } from './时间线.ts';
+import { segTable, physicalTime } from './时间线.ts';
 import { shaftLayout as shaftLayout } from '../../古城4x/布局.ts';
-import { liYing, liYingShaft, strikeDepth, LY_LEAP_HIP } from './编排/李樱.ts';
+import { liYing } from './编排/李樱.ts';
 import { shaftCellCenter } from './编排/坑口.ts';
 
 export { groundZ, ancientCity, caveCeilingZ, ancientCityFloorZ } from './编排/地面.ts';
@@ -21,12 +21,6 @@ export { shaftCellCenter, shaftHalfWidth, crater } from './编排/坑口.ts';
 export { guardPositions, guardHeadDown, GUARD_I, guardRaiseSec, raiseDuration, type GuardPose, guardPoseAt, guardEye } from './编排/卫兵.ts';
 export { type Cam, hiddenGuardIdx, camPose } from './编排/机位.ts';
 
-// 撞击时李樱的速度、打穿洞顶的时刻等（汇报、核对用）
-export const fallStats = () => {
-  const imp = impactTime();
-  const shaft = liYingShaft();
-  return { leap: tick.leap, impactSec: +imp.toFixed(3), impactSpeed: +shaft.impactSpeed.toFixed(1), shaftEntrySpeed: shaft.entrySpeed, ceilingBreach: +(imp + shaft.breachDelay).toFixed(3), landSec: +shaft.landSec.toFixed(3), strikeDepth: +strikeDepth.toFixed(2), leapHip: LY_LEAP_HIP.map((v) => +v.toFixed(2)) };
-};
 // 6-3-6 末帧李樱的状态（6-4-1 首帧接它，G2 用）。古城场景坐标（古城4x.tsx 的 `G4`，同 `GUCHENG4X.落点`）：脚底 = 落点那格的格心、古城地面；
 // 朝向（度，0 = 北 +Y，正 = 往左转，同 古城戏.ts）；姿势是站直、双臂微垂、右手握锤
 export const liYingEnd636 = () => {

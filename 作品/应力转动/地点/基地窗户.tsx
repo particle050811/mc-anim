@@ -6,7 +6,7 @@
 // 用哪种玻璃：
 //   默认 镶框玻璃（机械动力的 framed glass）：每扇窗连成一整片，只在外沿一圈浅蓝框，里面没有格子；本片的主角模组，窗户还认得出是玻璃。
 //   通透玻璃（匠魂的 clear glass）最透，只剩外沿一道细白线，远看像没装玻璃；原版玻璃 每格一圈框（改之前的样子）；云杉窗户 云杉木框的拱窗，只上下连。
-// 命令行 --props='{"baseGlass":"通透玻璃"}' 临时换一种出对比，不改默认。
+// 别的几种留着给 BaseWindows 的 glass 换着比。
 import React from 'react';
 import { BlockMesh, type BlockMeshInfo } from '@engine/voxel/方块网格.tsx';
 import vanillaGlassJson from 'asset:网格/基地窗户/原版玻璃/头';
@@ -21,7 +21,6 @@ import framedGlassPng from 'asset:网格/基地窗户/镶框玻璃/图集';
 import spruceWindowJson from 'asset:网格/基地窗户/云杉窗户/头';
 import spruceWindowBin from 'asset:网格/基地窗户/云杉窗户/顶点';
 import spruceWindowPng from 'asset:网格/基地窗户/云杉窗户/图集';
-import { renderInput } from '@engine/core/渲染设置.ts';
 
 const glassMeshes = {
   原版玻璃: { info: vanillaGlassJson as unknown as BlockMeshInfo, bin: vanillaGlassBin, atlas: vanillaGlassPng },
@@ -31,11 +30,8 @@ const glassMeshes = {
 };
 export type WindowGlass = keyof typeof glassMeshes;
 export const defaultWindowGlass: WindowGlass = '镶框玻璃';
-const glassOverride = (renderInput() as { baseGlass?: string }).baseGlass;
-if (glassOverride && !(glassOverride in glassMeshes)) throw new Error(`没有叫「${glassOverride}」的窗户玻璃，可选：${Object.keys(glassMeshes).join('、')}`);
-export const currentWindowGlass: WindowGlass = (glassOverride as WindowGlass | undefined) ?? defaultWindowGlass;
 
-export const BaseWindows: React.FC<{ glass?: WindowGlass }> = ({ glass: glass = currentWindowGlass }) => {
+export const BaseWindows: React.FC<{ glass?: WindowGlass }> = ({ glass: glass = defaultWindowGlass }) => {
   const mesh = glassMeshes[glass];
   return <BlockMesh info={mesh.info} bin={mesh.bin} atlas={mesh.atlas} />;
 };
