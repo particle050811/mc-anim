@@ -10,11 +10,12 @@ import type { SegInfo } from '../清单/清单.ts';
 const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-地形覆盖测试-'));
 process.env.ANIM_DATA = dataRoot;
 
+const versions = vi.hoisted((): Record<string, string> => ({ 'pack-a': 'v1' }));
 const segs = vi.hoisted(() => [] as SegInfo[]);
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<object>()), workName: () => '测试作品', workRoot: () => path.join(process.env.ANIM_DATA!, '作品') }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<object>()), loadAllSegments: async () => segs }));
 vi.mock('./段产物.ts', () => ({
-  segmentProducts: async (_all: unknown, ss: SegInfo[]) => ss.map((s) => ({ pictureFingerprint: { items: { segment: s.key, terrain: { 'pack-a': 'v1' } } } })),
+  segmentProducts: async (_all: unknown, ss: SegInfo[]) => ss.map((s) => ({ pictureFingerprint: { items: { segment: s.key, terrain: versions } } })),
   segPictureParams: (_all: unknown, ss: SegInfo[]) => ss.map(() => ({ inputProps: {} })),
 }));
 vi.mock('./渲.ts', () => ({ expectedComposition: (s: SegInfo) => ({ id: s.key, durationInFrames: 3, fps: 60, width: 64, height: 36 }) }));
@@ -96,6 +97,18 @@ describe('覆盖能不能拿去裁', () => {
     expect(coverProblems(cover, ['pack-a', 'pack-c-远景'])).toEqual([]);
     expect(coverProblems(cover, ['pack-a', 'pack-b'])).toEqual(['甲：画面里有体素世界从 pack-b 挑区段，覆盖却记下 0 个区段，量错了']);
     expect(coverProblems({ ...cover, worldPacks: [] }, ['pack-b'])).toEqual([]);
+  });
+
+  it('远景区段是烘焙输出：只换成品还能重烘，换输入必须重量', async () => {
+    segs.push(makeSeg('甲', ['pack-a']));
+    await measureCovers(segs, undefined, quiet, setup(k => ({ cover: k, first: { 'pack-a': { '1|0|0': 0 } }, worlds: [] })));
+    try {
+      versions['pack-a'] = '成品新版';
+      expect((await coverStatus(segs, segs))[0]!.stale).toBe(true);
+      expect((await coverStatus(segs, segs, 'pack-a'))[0]!.stale).toBe(false);
+      versions['输入'] = '另一版';
+      expect((await coverStatus(segs, segs, 'pack-a'))[0]!.stale).toBe(true);
+    } finally { versions['pack-a'] = 'v1'; delete versions['输入']; }
   });
 
   it('旧格式的覆盖（11-17 之前存的，记录全没收到）算旧了要重量，指纹对得上也一样', async () => {

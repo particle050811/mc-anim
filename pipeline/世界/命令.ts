@@ -90,22 +90,18 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   'bake-far': {
-    usage: 'bake-far <世界> <段…> [--no-register]（把这些镜头用到的远景烘成区段，先 world cover）',
+    usage: 'bake-far <世界> [--no-register]（烘当前作品声明使用远景区段包的全部段，先 world cover）',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { toggles: ['--no-register'] });
-      const [world, ...keys] = p.位置;
-      if (!world || !keys.length) throw new UsageError('要给世界和使用远景的全部段键');
-      const w = readDecl(world), far = w.farView;
+      if (p.位置.length !== 1) throw new UsageError('要给一个暮色世界名');
+      const w = readDecl(p.位置[0]!), far = w.farView;
       if (!far?.sectionPack || w.packDimension !== '暮色') throw new UsageError('只支持声明了 farView.sectionPack 的暮色世界');
-      const all = await loadAllSegments(), segments = keys.map(k => {
-        const s = all.find(s => s.key === k);
-        if (!s?.segment.terrain.includes(far.pack)) throw new UsageError(`${k} 不存在或没声明 ${far.pack}`);
-        return s;
-      });
+      const all = await loadAllSegments(), segments = all.filter(s => s.segment.terrain.includes(far.sectionPack!));
+      if (!segments.length) throw new UsageError(`当前作品没有段声明 ${far.sectionPack}`);
       const columns = new Map<string, string>();
-      for (const { segment, cover, stale } of await coverStatus(all, segments)) {
+      for (const { segment, cover, stale } of await coverStatus(all, segments, far.sectionPack)) {
         const used = cover?.fallback?.[far.pack];
-        if (stale || !used || !Object.keys(used).length) throw new Error(`${segment.key} 没有有效的远景覆盖：先 anim world cover ${keys.join(' ')}`);
+        if (stale || !used || !Object.keys(used).length) throw new Error(`${segment.key} 没有有效的远景覆盖：先 anim world cover ${segments.map(s => s.key).join(' ')}`);
         for (const [k, v] of Object.entries(used)) {
           if (columns.has(k) && columns.get(k) !== v.columns) throw new Error(`${k} 在不同镜头的空列不一致，不能共用同一区段`);
           columns.set(k, v.columns);

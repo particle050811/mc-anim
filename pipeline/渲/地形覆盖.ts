@@ -51,19 +51,25 @@ export const readCover = (work: string, segKey: string): SegCover | null => {
 };
 
 /** 覆盖指纹：段画面指纹的各项去掉平台（挑区段不看平台）。地形项是完整包的版本，重裁不让它变 */
-export const coverKeys = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[]): Promise<string[]> => {
+export const coverKeys = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[], measuredOutput?: { pack: string; versions: (string | undefined)[] }): Promise<string[]> => {
   const products = await segmentProducts(allSegments, segments, coverLevel);
-  return products.map((p) => crypto.createHash('sha256').update(stableJson({ ...p.pictureFingerprint.items, platform: undefined })).digest('hex'));
+  return products.map((p, i) => {
+    const items = p.pictureFingerprint.items, old = measuredOutput?.versions[i];
+    // 重烘不能让自己的输入覆盖过期：量暮色时没读成品包。只还原这个输出项的版本，别的包、镜头、代码、画质仍全量对指纹。
+    const terrain = old && measuredOutput ? { ...items.terrain, [measuredOutput.pack]: old } : items.terrain;
+    return crypto.createHash('sha256').update(stableJson({ ...items, terrain, platform: undefined })).digest('hex');
+  });
 };
 
 /** 声明了这些包的段（所选作品里，按清单顺序） */
 export const segsUsingPacks = (allSegments: readonly SegInfo[], packs: readonly string[]) => allSegments.filter((s) => s.segment.terrain.some((p) => packs.includes(p)));
 
 /** 各段现在的覆盖指纹、存着的覆盖，和存着的是不是旧的（没量过、或量完段又改了） */
-export const coverStatus = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[]) => {
-  const keys = await coverKeys(allSegments, segments);
+export const coverStatus = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[], bakingFarPack?: string) => {
+  const covers = segments.map(s => readCover(workName(), s.key));
+  const keys = await coverKeys(allSegments, segments, bakingFarPack ? { pack: bakingFarPack, versions: covers.map(c => c?.pack[bakingFarPack]?.version) } : undefined);
   return segments.map((s, i) => {
-    const cover = readCover(workName(), s.key);
+    const cover = covers[i]!;
     return { segment: s, coverKey: keys[i]!, cover, stale: cover?.coverKey !== keys[i] || cover.format !== coverFormat };
   });
 };
