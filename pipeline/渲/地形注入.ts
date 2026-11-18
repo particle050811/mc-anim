@@ -64,7 +64,7 @@ export const trialReadsFullTerrain = (table: TrialTable): boolean =>
 /** still、bench 不算指纹、不出切片，当场读表；多读：试看要多读的包（`试看地形`） */
 export const segTerrainNow = (s: Pick<SegInfo, 'key' | 'segment'>, extraReads: readonly string[] = [], trial = shellTrialTable()): Record<string, string> => {
   const level = trial[trialKey('暮色模拟起级')];
-  if (level !== undefined && (typeof level !== 'number' || ![2,3,4,5].includes(level))) throw Error('暮色模拟起级只取 2、3、4、5');
+  if (level !== undefined && level !== 'copy' && (typeof level !== 'number' || ![2,3,4,5].includes(level))) throw Error('暮色模拟起级只取 2、3、4、5 或 copy');
   const versions = level === undefined ? readTerrainVersionTable() : Object.fromEntries(Object.entries(readTerrainEntries(level)).map(([k,v])=>[k,v.version]));
   return segTerrainVersion(s.key,[...new Set([...s.segment.terrain,...extraReads])],versions);
 };

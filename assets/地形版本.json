@@ -120,7 +120,7 @@
         "fileCount": 109,
         "size": 49749550
       },
-      "activePolicy": "outside",
+      "activePolicy": "copy",
       "policies": {
         "2": {
           "version": "bfb8dec52030",
@@ -192,6 +192,24 @@
             "manifestSha256": "e8c14b73e77ce44fdfb2d94326e15dbee775b2518ed5edc0af7e447d8c836859",
             "fileCount": 109,
             "size": 49686809
+          }
+        },
+        "copy": {
+          "version": "ec24f83d2959",
+          "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；存档边外照抄",
+          "license": "LicenseRef-Minecraft-Derived",
+          "visibility": "发布",
+          "fileCount": 107,
+          "size": 271963026,
+          "manifestSha256": "c8aae6ee0b064bf565a3ea059305e188a06048273507219cf01446aea439242b",
+          "trimmed": {
+            "version": "884a35234fd1",
+            "from": "ec24f83d2959",
+            "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
+            "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
+            "manifestSha256": "7f1afbd17fee5e0831b4e5eecdee6c92ab707f9746147e2750052e0e28406598",
+            "fileCount": 109,
+            "size": 52654016
           }
         }
       }
@@ -285,6 +303,24 @@
             "manifestSha256": "56aca9463c23b89a89abe179529d12e310e079461edf45e0a212d6264aff0453",
             "fileCount": 11,
             "size": 1362536
+          }
+        },
+        "copy": {
+          "version": "e595a493da45",
+          "source": "暮色放大-1752@ec24f83d2959 + 应力转动/地点/地形改动.ts",
+          "visibility": "发布",
+          "license": "LicenseRef-Minecraft-Derived",
+          "manifestSha256": "43be9175867fec8f47caedbb592e2409bb10c7e86ef51269a577404ea03b734e",
+          "fileCount": 9,
+          "size": 1552598,
+          "trimmed": {
+            "version": "1b5347d375d8",
+            "from": "e595a493da45",
+            "method": "作品覆盖层：只留底包正式版保留的受影响区段",
+            "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
+            "manifestSha256": "7da791b7afc9a2b2b521687f2371522f8d0a03108eecf9945307c6a837bd3392",
+            "fileCount": 11,
+            "size": 1362363
           }
         }
       }

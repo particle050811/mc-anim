@@ -65,7 +65,7 @@ export const registeredTerrainEntries = (): Record<string, TerrainRecord> => {
   if (!fs.existsSync(file)) return {};
   return JSON.parse(fs.readFileSync(file, 'utf8')).pack ?? {};
 };
-export const readTerrainEntries = (trial?: number): Record<string, TerrainRecord> =>
+export const readTerrainEntries = (trial?: number | 'copy'): Record<string, TerrainRecord> =>
   terrainPolicies(registeredTerrainEntries(), trial);
 /** 包 → 完整包的版本。指纹的地形项记它（裁过的包从它派生，重裁不让段过期，一致由 anim check 的 地形覆盖 保证） */
 export const readTerrainVersionTable = (): Record<string, string> => Object.fromEntries(Object.entries(readTerrainEntries()).map(([k, v]) => [k, v.version]));

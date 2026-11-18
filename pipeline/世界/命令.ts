@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { Command } from '../cli/命令.ts';
 import { UsageError, parseArgs } from '../cli/参数.ts';
 import { codeRoot } from '../环境/路径.ts';
+import { draftRoot } from '../环境/配置.ts';
 import { passGate } from '../闸/闸.ts';
 import { defaultThreads, bakeWorld, loadEdits } from './烘焙/流程.ts';
 import { bakeRoutePacks, simulateFromLevel } from './远景/航线烘焙.ts';
@@ -91,15 +92,17 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   'bake-far': {
-    usage: 'bake-far <世界> [--cover-dir <规划目录>] [--simulate-from 2|3|4|5|outside] [--no-register]（默认推荐起级；outside 保留存档内真实区段）',
+    usage: 'bake-far <世界> [--cover-dir <规划目录>] [--simulate-from 2|3|4|5|outside | --outside copy] [--no-register]',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { value: ['--simulate-from', '--cover-dir'], toggles: ['--no-register'] });
+      const p = parseArgs(args, { value: ['--simulate-from', '--cover-dir','--outside'], toggles: ['--no-register'] });
       if (p.位置.length !== 1) throw new UsageError('要给一个暮色世界名');
       const world = readDecl(p.位置[0]!);
       const pack = world.farView?.sectionPack;
       if (!pack || !world.farView?.landmarkPack) throw new UsageError('世界缺底包或远地标原料包声明');
-      const policy = p.value['--simulate-from'] ?? String(simulateFromLevel);
-      if (!['2', '3', '4', '5', 'outside'].includes(policy)) throw new UsageError('--simulate-from 只取 2、3、4、5 或 outside');
+      const copy = p.value['--outside'] === 'copy';
+      if (p.value['--outside'] && (!copy || p.value['--simulate-from'])) throw new UsageError('--outside copy 与 --simulate-from 二选一');
+      const policy = copy ? 'copy' : p.value['--simulate-from'] ?? String(simulateFromLevel);
+      if (!copy && !['2', '3', '4', '5', 'outside'].includes(policy)) throw new UsageError('--simulate-from 只取 2、3、4、5 或 outside');
       const directory = p.value['--cover-dir'];
       const plan = await packCover(pack, { measure: false, ...(directory ? { override: { work: workName(), directory } } : {}) });
       if (plan.stale.length) throw Error(`航线规划缺失或过期：${plan.stale.join('、')}；先在对应作品跑 anim world cover`);
@@ -107,8 +110,8 @@ const subCommands: Record<string, SubCommand> = {
       if (!used.size) throw Error('航线留表为空，不登记');
       const register = !p.toggles.has('--no-register');
       if (register && !readTerrainTable().pack[pack] && policy !== 'outside') throw Error('首次登记先烘 outside 保真版');
-      const level = policy === 'outside' ? Infinity : Number(policy);
-      const made = (await passGate(() => bakeRoutePacks(world, used, [level])))[policy]!;
+      const level = copy || policy === 'outside' ? Infinity : Number(policy);
+      const made = (await passGate(() => bakeRoutePacks(world, used, [level], copy ? path.join(draftRoot(),'工作-暮色照抄远景') : undefined,copy)))[policy]!;
       if (register) {
         const old = readTerrainTable().pack[pack];
         // 重烘某一档不等于批准改正式画面；正式选择只在版本表一处切换。
@@ -121,7 +124,7 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   'bake-overlay': {
-    usage: 'bake-overlay <世界> [--simulate-from outside|2|3|4|5] [--no-register]（从底包和当前作品的地形改动烘整块覆盖层）',
+    usage: 'bake-overlay <世界> [--simulate-from outside|2|3|4|5|copy] [--no-register]（从底包和当前作品的地形改动烘整块覆盖层）',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { value: ['--simulate-from'], toggles: ['--no-register'] });
       if (p.位置.length !== 1) throw new UsageError('要给一个世界名');
@@ -130,11 +133,11 @@ const subCommands: Record<string, SubCommand> = {
       if (!base || !registry[base]) throw Error('没有已登记的世界底包，先 world bake-far');
       const baseRecord = registry[base];
       const policy = p.value['--simulate-from'] ?? baseRecord.activePolicy ?? 'outside';
-      if (!['outside', '2', '3', '4', '5'].includes(policy)) throw new UsageError('模拟起级只取 outside、2、3、4、5');
+      if (!['copy','outside', '2', '3', '4', '5'].includes(policy)) throw new UsageError('策略只取 copy、outside、2、3、4、5');
       const pack = overlayName(base, workName());
       const register = !p.toggles.has('--no-register');
       if (register && !registry[pack] && policy !== 'outside') throw Error('首次登记作品覆盖层请先烘 outside');
-      const made = await passGate(() => bakeWorkOverlay(base, selectTerrainPolicy(baseRecord, policy)));
+      const made = await passGate(() => bakeWorkOverlay(base, selectTerrainPolicy(baseRecord, policy),policy === 'copy' ? path.join(draftRoot(),'工作-暮色照抄远景') : undefined));
       if (register) {
         const old = readTerrainTable().pack[pack];
         registerTerrain(pack, {

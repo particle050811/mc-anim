@@ -83,7 +83,7 @@ export const debugSwitches = [
     name: '暮色模拟起级',
     kind: 'trial', purpose: '比较暮色存档内从哪一级改用模拟',
     changesPicture: true, inFingerprint: false, readers: all, fullTerrain: true,
-    format: '2、3、4 或 5', files: ['pipeline/渲/地形注入.ts'],
+    format: '2、3、4、5 或 "copy"（仅存档外照抄）', files: ['pipeline/渲/地形注入.ts'],
   },
   {
     name: '暮色远景',
