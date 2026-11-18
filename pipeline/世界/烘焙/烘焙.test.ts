@@ -1,4 +1,4 @@
-// 烘焙端到端：小存档 → 套编辑 → 区段包，再用查询的两种来源（存档、包）对每列最高的方块，并核对同样的输入烘两次逐字节一样（版本 = 目录指纹靠这个）；旧格式转码回来也一样。
+// 烘焙端到端：小存档 → 套编辑 → 区段包，再用查询的两种来源（存档、包）对每列最高的方块，并核对同样的输入烘两次逐字节一样（版本 = 目录指纹靠这个）；旧格式转码回来也一样，格式 4 换容器成格式 5 也一样。
 // 可见变换：烘焙时做和烘完再 转码（格式 4 → 4）做逐字节一样，封死的腔填实、埋住的换石头，保真范围碰到的区段原样。
 // 体素库要在 Node 里注册 asset: 钩子才载得进来，vitest 自己转 import 不认，所以起一个子进程跑；数据根里没有方块表字节（刚 clone）就跳过。
 import { spawnSync } from 'node:child_process';
@@ -34,7 +34,9 @@ import { EditApplier } from ${fileUrl('../编辑/套用.ts')};
 import { dirFingerprint } from ${fileUrl('../版本.ts')};
 import { blockFiles, sectionsInBlock, encodeFormat1Section } from ${fileUrl('./读区段.ts')};
 import { toColumnMajor, fromColumnMajor } from ${fileUrl('./区段编码.ts')};
-import { transcodeDir, compareDirPerCell } from ${fileUrl('./转码.ts')};
+import { transcodeDir, compareDirPerCell, rewrapDir, compareRewrap } from ${fileUrl('./转码.ts')};
+import { legacySlotOf, legacyEntryCount, legacyHeaderLen, encodeLegacyTileHeader } from ${fileUrl('./旧块头.ts')};
+import { readPackDoc } from ${fileUrl('./包信息.ts')};
 import { PackBlockSource, SaveBlockSource } from ${fileUrl('../查询/源.ts')};
 import fs from 'node:fs';
 import path from 'node:path';
@@ -90,20 +92,37 @@ const 写旧包 = (源, target, 改一格) => {
       d.paletteIndex[r] = d.paletteIndex[r] === 1 ? 0 : 1;
       改了 = true;
     }
-    const at = lib.sectionPack.sectionInTile(d), key = at.ti + '.' + at.tj;
+    const at = legacySlotOf(d), key = at.ti + '.' + at.tj;
     if (!块们.has(key)) 块们.set(key, { ti: at.ti, tj: at.tj, 段们: [] });
     块们.get(key).段们.push({ slot: at.slot, gz: encodeFormat1Section(d) });
   }
-  for (const { ti, tj, 段们 } of 块们.values()) {
-    const index = new Uint32Array(2 * lib.sectionPack.tileEntryCount);
-    let off = lib.sectionPack.tileHeaderLen;
-    for (const { slot, gz } of 段们) { index[2 * slot] = off; index[2 * slot + 1] = gz.length; off += gz.length; }
-    const 头 = lib.sectionPack.encodeTileHeader(ti, tj, index);
-    new DataView(头.buffer).setUint32(4, 1, true);
-    fs.writeFileSync(path.join(target, lib.sectionPack.tileFileName(ti, tj)), Buffer.concat([头, ...段们.map((x) => x.gz)]));
-  }
-  fs.writeFileSync(path.join(target, '包.json'), JSON.stringify({ ...JSON.parse(fs.readFileSync(path.join(源, '包.json'), 'utf8')), version: 1 }));
+  for (const { ti, tj, 段们 } of 块们.values()) 写旧块(target, ti, tj, 1, 段们);
+  写旧包信息(源, target, 1);
   fs.copyFileSync(path.join(源, '缺失.tsv'), path.join(target, '缺失.tsv'));
+};
+// 旧块文件：定长头 + 各段按给的先后
+const 写旧块 = (target, ti, tj, version, 段们) => {
+  const index = new Uint32Array(2 * legacyEntryCount);
+  let off = legacyHeaderLen;
+  for (const { slot, gz } of 段们) { index[2 * slot] = off; index[2 * slot + 1] = gz.length; off += gz.length; }
+  fs.writeFileSync(path.join(target, lib.sectionPack.tileFileName(ti, tj)), Buffer.concat([encodeLegacyTileHeader(ti, tj, version, index), ...段们.map((x) => x.gz)]));
+};
+// 旧 包.json：粗高度图、splittable 是 base64，没有 coarsestLevel、tileHeaderMax
+const 写旧包信息 = (源, target, version) => {
+  const doc = readPackDoc(lib, 源), b64 = (a) => Buffer.from(a.buffer, a.byteOffset, a.byteLength).toString('base64');
+  const { height, ...coarse } = doc.maps.coarse;
+  const splittable = doc.maps.splittable?.map((s) => (s ? { i0: s.i0, j0: s.j0, ni: s.ni, nj: s.nj, bits: b64(s.bits) } : null));
+  fs.writeFileSync(path.join(target, '包.json'), JSON.stringify({ version, dimension: doc.dimension, origin: doc.origin, state: doc.state, biome: doc.biome, coarseHeight: { ...coarse, height: b64(height) }, ...(splittable ? { splittable } : {}), ...doc.extra }));
+};
+// 格式 4：区段字节和格式 5 一样，只有块头、包.json 是旧的
+const 写四包 = (源, target) => {
+  fs.mkdirSync(target, { recursive: true });
+  for (const name of blockFiles(源)) {
+    const 段们 = [...sectionsInBlock(lib, path.join(源, name))].map((s) => ({ ...legacySlotOf(s.id), gz: s.bytes }));
+    写旧块(target, 段们[0].ti, 段们[0].tj, 4, 段们);
+  }
+  写旧包信息(源, target, 4);
+  for (const f of ['缺失.tsv', '模型.bin']) fs.copyFileSync(path.join(源, f), path.join(target, f));
 };
 const root = ${JSON.stringify(outDir)};
 写旧包(path.join(root, 'a'), path.join(root, '旧'), false);
@@ -117,7 +136,16 @@ const 模型大小 = fs.statSync(path.join(root, 'a', '模型.bin')).size;
 const 逐格 = await compareDirPerCell(path.join(root, '旧'), path.join(root, '转'), 1);
 写旧包(path.join(root, 'a'), path.join(root, '坏'), true);
 const 比坏 = await compareDirPerCell(path.join(root, '坏'), path.join(root, '转'), 1).then(() => '没报', (e) => e.message);
-console.log(JSON.stringify({ versions: 版本们, compared: 比了, 不同: 不同.slice(0, 5), glassSample: pack.topBlockAt(5, 5), plankSample: pack.topBlockAt(21, 3), 空: pack.列(70, 3), convertedVersion: 转版本, reconvertedVersion: 重转版本, modelSize: 模型大小, perCellResult: 逐格, mismatchMessage: 比坏 }));
+写四包(path.join(root, 'a'), path.join(root, '四'));
+fs.mkdirSync(path.join(root, '换容器'));
+await rewrapDir(path.join(root, '四'), path.join(root, '换容器'));
+const 换容器版本 = dirFingerprint(path.join(root, '换容器'));
+const 换容器核对 = await compareRewrap(path.join(root, '四'), path.join(root, '换容器'));
+const 换坏块 = path.join(root, '换容器', blockFiles(path.join(root, '换容器'))[0]), 换坏 = fs.readFileSync(换坏块);
+换坏[换坏.length - 1] ^= 1;
+fs.writeFileSync(换坏块, 换坏);
+const 换容器比坏 = await compareRewrap(path.join(root, '四'), path.join(root, '换容器')).then(() => '没报', (e) => e.message);
+console.log(JSON.stringify({ versions: 版本们, compared: 比了, 不同: 不同.slice(0, 5), glassSample: pack.topBlockAt(5, 5), plankSample: pack.topBlockAt(21, 3), 空: pack.列(70, 3), convertedVersion: 转版本, reconvertedVersion: 重转版本, modelSize: 模型大小, perCellResult: 逐格, mismatchMessage: 比坏, rewrapVersion: 换容器版本, rewrapResult: 换容器核对, rewrapMismatch: 换容器比坏 }));
 `;
 
 describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字节）', () => {
@@ -133,7 +161,7 @@ describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字�
     fs.writeFileSync(scriptFile, makeScript(worldDir, path.join(tempDir, '包')));
     const r = spawnSync(process.execPath, [scriptFile], { encoding: 'utf8', cwd: path.join(import.meta.dirname, '..', '..', '..') });
     expect(r.status, r.stderr).toBe(0);
-    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { versions: string[]; compared: number; 不同: unknown[]; glassSample: { y: number; state: string } | null; plankSample: { y: number; state: string } | null; 空: unknown; convertedVersion: string; reconvertedVersion: string; modelSize: number; perCellResult: { sections: number; cell: number }; mismatchMessage: string };
+    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { versions: string[]; compared: number; 不同: unknown[]; glassSample: { y: number; state: string } | null; plankSample: { y: number; state: string } | null; 空: unknown; convertedVersion: string; reconvertedVersion: string; modelSize: number; perCellResult: { sections: number; cell: number }; mismatchMessage: string; rewrapVersion: string; rewrapResult: { sections: number; bytes: number }; rewrapMismatch: string };
     expect(o.versions[0]).toMatch(/^[0-9a-f]{12}$/);
     expect(o.versions[1]).toBe(o.versions[0]);
     expect(o.compared).toBe(512);
@@ -147,6 +175,10 @@ describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字�
     expect(o.perCellResult.sections).toBeGreaterThan(0);
     expect(o.perCellResult.cell).toBeGreaterThan(0);
     expect(o.mismatchMessage).toMatch(/格不一样/);
+    // 格式 4 → 5 换容器：和直接烘的格式 5 逐字节一样，逐区段核对查得出改坏的字节
+    expect(o.rewrapVersion).toBe(o.versions[0]);
+    expect(o.rewrapResult.sections).toBeGreaterThan(0);
+    expect(o.rewrapMismatch).not.toBe('没报');
   });
 });
 
