@@ -129,18 +129,6 @@ export const debugSwitches = [
     fullTerrain: true,
     format: '数，如 1.5',
     files: ['engine/core/渲染级别.ts'],
-    pending: '细分门槛',
-  },
-  {
-    name: '地形统计',
-    kind: 'trial',
-    purpose: '每帧一行地形统计进浏览器日志（bench --verbose 的 .log），量细分门槛的代价',
-    changesPicture: false,
-    inFingerprint: false,
-    readers: all,
-    format: 'true',
-    files: ['engine/voxel/世界.tsx'],
-    pending: '细分门槛',
   },
   {
     name: '台阶并色',
