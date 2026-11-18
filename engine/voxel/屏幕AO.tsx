@@ -41,7 +41,6 @@ import { aoPassUniform } from './材质.ts';
 import { aoSkippedForMask } from './调试.tsx';
 import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, sceneDepthNeeded, type MidPassContext } from './中间步骤.ts';
-import { renderInput } from '../core/渲染设置.ts';
 import { toggleShaderMacro } from '../core/着色宏.ts';
 import { rasterCompatible, toggleRasterMacro, reverseCompare, reverseCoeffs, toReverseProjection, analyticOffset } from '../core/光栅深度.ts';
 
@@ -52,9 +51,6 @@ export type ScreenAoProps = {
   radius?: number;
   // 切向、副切向投到屏幕上最长多少（占屏幕宽、高的比例）：SSAO_MAX_RADIUS_SCREEN
   maxScreenRadius?: number;
-  // 导出网格（lib/方块网格.tsx 的实心、镂空层）也压暗。默认不压：平滑光照已烤在网格顶点色里，再压缝里会比体素世界暗，两条方块管线颜色要一致（用户 10-01）。
-  // 6-1-2 这种只有导出网格的近景可以打开（见 镜头/6-1-2/娜迦参考模型.tsx）
-  applyToMesh?: boolean;
   // 兼容已认可的地下画面：仅后期保留指定机位的大气和云影，世界雾仍由场景决定；不读取上一帧的机位。
   atmosphereCamera?: THREE.Camera;
 };
@@ -324,19 +320,15 @@ void main() {
 #endif
 }`;
 
-// 比改前改后用：渲染输入给 `光栅深度: false`，第 1 遍退回片元写对数深度；`三遍离屏: false`，第 2、3 遍照旧上画布
-const rasterDepthOff = (renderInput() as { 光栅深度?: boolean }).光栅深度 === false;
-const offscreenOff = (renderInput() as { 三遍离屏?: boolean }).三遍离屏 === false;
 const warned = new WeakSet<object>();
 type ClipControl = { clipControlEXT: (origin: number, depth: number) => void; LOWER_LEFT_EXT: number; ZERO_TO_ONE_EXT: number; NEGATIVE_ONE_TO_ONE_EXT: number };
 
 // 第 1 遍藏起来、留到第 3 遍画的：三维画布本来就按半透明另排一队的（transparent）、不是普通混合的（加色的特效之类）、标了不挡的
-const aoDisabled = (renderInput() as { 屏幕AO?: boolean }).屏幕AO === false;
 const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.NormalBlending || m.userData.screenAo === '不挡';
 
 type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null; depthFunc: THREE.DepthModes; offsetFactor: number; raster: boolean };
 
-export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 24, radius: radius = 1.5, maxScreenRadius = 0.1, applyToMesh = false, atmosphereCamera }) => {
+export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 24, radius: radius = 1.5, maxScreenRadius = 0.1, atmosphereCamera }) => {
   const resources = useMemo(() => {
     const depth = new THREE.DepthTexture(1, 1, THREE.FloatType);
     const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthTexture: depth, generateMipmaps: false });
@@ -411,11 +403,6 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
 
   // 优先级 > 0：R3F 不再自己画，这一帧由这里画
   useFrame(({ gl, scene, camera }) => {
-    // 比改前改后用：--props='{"屏幕AO":false}' 只画场景、不压 AO
-    if (aoDisabled) {
-      gl.render(scene, camera);
-      return;
-    }
     // 体素世界还在后台建区段：这一遍画出来也是半截的，截图前建齐了会再画一次，这一遍不画
     if (voxelsPending.size) return;
     const { rt, mat, bufSize: bufSize, saved: saved } = resources;
@@ -450,9 +437,9 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     // 第 1 遍：不透明的画进离屏图；要压暗的 alpha 写 0
     const cam = camera as THREE.PerspectiveCamera;
     const clip = gl.extensions.has('EXT_clip_control') ? (gl.extensions.get('EXT_clip_control') as ClipControl) : null;
-    let raster = !rasterDepthOff && clip !== null && gl.capabilities.logarithmicDepthBuffer && cam.isPerspectiveCamera === true;
+    let raster = clip !== null && gl.capabilities.logarithmicDepthBuffer && cam.isPerspectiveCamera === true;
     // 三遍离屏（文件头）还要：开了多重采样（不开的话第 2 遍边读边写同一张图）、留到第 3 遍的材质也都认光栅深度
-    let offscreen = raster && !offscreenOff && samples > 0;
+    let offscreen = raster && samples > 0;
     for (const entry of saved) {
       const material = entry.m;
       const later = drawLater(material);
@@ -528,7 +515,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       const material = entry.m;
       if (drawLater(material)) continue;
       if (raster) toRaster(entry);
-      if (material.userData.screenAo === '压暗' || (applyToMesh && material.userData.blockMesh)) {
+      if (material.userData.screenAo === '压暗') {
         material.blending = THREE.CustomBlending;
         material.blendSrc = THREE.OneFactor;
         material.blendDst = THREE.ZeroFactor;

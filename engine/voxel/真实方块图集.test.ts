@@ -62,11 +62,6 @@ describe('方块图集', () => {
     expect(hash(...(['实心', '镂空', '实心树叶', '水'] as const).map((k) => shaderSource(materialModule, k)))).toMatchInlineSnapshot(`"c1a6add1296ce99f11d0894ef25013f962aee08c64e549688b8bf3aa21e8a76d"`);
     expect(hash(shaderSource(materialModule, '花草'))).toMatchInlineSnapshot(`"2990a763237a2a205fb88270cb7a004159b7927152b4574ca8642e324a6eb46f"`);
   });
-  it('纯色方块：16 像素一格的压色和支持高清之前一样', async () => {
-    const { flattenAtlasColors } = await import('./纯色方块.ts');
-    const t = fakeVerticalStrip(16);
-    expect(hash(...(['花草', '其他', '不分'] as const).map((k) => flattenAtlasColors(t, k).px))).toMatchInlineSnapshot(`"37b91f8fd973757e058524d0ba5a8aeb56759a10e23c8f6ad5bc0f4db6c5d3aa"`);
-  });
   it.each([2, 4])('格边长 16 × %i：最近邻放大的图集往下缩 log2(倍) 级后和原版图集逐字节一样，着色器按格边长取级别', async (factor) => {
     // 没有全透明像素的贴图（全透明的颜色按最近不透明像素补，放大后先后不同，补出来不一样）
     const fakeStrip = fakeVerticalStrip(16);

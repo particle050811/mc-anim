@@ -1,10 +1,10 @@
 // 暮色森林统一光照：6-1-3 起飞到 6-1-9 降落整段（含一镜到底）都用这一套，和 6-1-2（镜头/6-1-2/娜迦参考模型.tsx）同一个配方。
 // 为什么：用户 10-02 要 6-1-2 的暮色灯光和天空贯穿，免得起飞那帧天色跳变。暮色游戏里没有太阳，要方块分得出明暗面、留一道弱冷光、全程一致。
-// 10-07 起默认是黄昏档（lib/光照配比.ts 的 `twilightDusk`）：灯、天色、雾色、云色都是落日的，下面说的薄荷绿、灰青是不开黄昏档时的样子。
-// 配方（取自 模型/场景/天空.tsx 的 `TWILIGHT`，同 6-1-2）：
-// - 天：`SkyDome` twilight（头顶深蓝、往下渐亮、地平线一圈薄荷绿、满天星星，没有太阳），背景色 = 雾色；
+// 10-07 起是黄昏档（lib/光照配比.ts 的 `twilightDusk`）：灯、天色、雾色、云色都是落日的，换掉了游戏里的薄荷绿、灰青（天空.tsx 的 `TWILIGHT`）。
+// 配方（同 6-1-2）：
+// - 天：`SkyDome` twilight（黄昏色带往下渐亮、太阳那侧一圈余晖、满天星星，没有太阳），背景色 = 雾色；
 // - 光：暮色主光（方向 `twilightSunDir`，强度见 lib/光照配比.ts 的 `twilightMix`：以直射为主，照 Photon；地形和人物都投软影子，见 lib/级联阴影.ts）；
-// - 雾：线性雾，颜色 `TWILIGHT`.fog（薄荷绿），林子里（6-1-1、6-1-2、6-1-3 起飞前）照全片的满视距只在 512 米边上淡出（lib/视距.ts）；飞上天后按镜头高度放远（`twilightFogFar`、`twilightFogNear`），再叠一层高度雾（`twilightHeightFog`，lib/高度雾.ts）；
+// - 雾：线性雾，颜色 `twilightFogColor`（天空.tsx），林子里（6-1-1、6-1-2、6-1-3 起飞前）照全片的满视距只在 512 米边上淡出（lib/视距.ts）；飞上天后按镜头高度放远（`twilightFogFar`、`twilightFogNear`），再叠一层高度雾（`twilightHeightFog`，lib/高度雾.ts）；
 // - 云：`TwilightClouds`（Photon 的云 + 暮色光照，用户 10-15 定，暮色所有镜头都用它）。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
@@ -13,7 +13,7 @@ import { CloudOnlyAtmosphere } from './大气组件.tsx';
 import { PhotonClouds } from './大气/云.ts';
 import type { V3 } from '../model/parts.tsx';
 import { VIEW_DISTANCE, VIEW_FOG } from '../voxel/视距.ts';
-import { SkyDome, TWILIGHT, twilightFogColor } from './天空.tsx';
+import { SkyDome, twilightFogColor } from './天空.tsx';
 import { useSelfLight, twilightSunDir, twilightMix, twilightDusk } from './光照配比.ts';
 import { CascadedShadow, quarterOctaveCeil } from './级联阴影.ts';
 import { useDirFog, useFarFog, useHeightFog, useSkyFog, type HeightFogParams } from './高度雾.ts';
@@ -46,7 +46,7 @@ export const twilightHeightFog: HeightFogParams = { start: 0, halfLife: 30, dens
 // 高度雾倍数：浓度乘几（暮色超远景用，作品的 暮色新世界/超远景.ts；1 就是 `twilightHeightFog` 原样）
 export const useTwilightFog = (sunDir: V3 = twilightSunDir, heightFogScale = 1) => {
   useHeightFog(heightFogScale === 1 ? twilightHeightFog : { ...twilightHeightFog, density: twilightHeightFog.density * heightFogScale });
-  useDirFog(twilightDusk && { sunDir, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength });
+  useDirFog({ sunDir, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength });
 };
 
 // 暮色主光：主光（three 的 `SunLight`，三级级联软投影 lib/级联阴影.ts）+ 天光 + 环境光，强度都是 `twilightMix`，方块材质的自发光系数也跟着设。放在 Z 朝上的场景组里。
@@ -56,7 +56,7 @@ export const useTwilightFog = (sunDir: V3 = twilightSunDir, heightFogScale = 1) 
 export const TwilightSunLight: React.FC<{ lightDir?: V3; shadowFar: number; splitDist?: number; gain?: number }> = ({ lightDir = twilightSunDir, shadowFar: shadowFar, splitDist = 300, gain: gain = 1 }) => {
   useSelfLight(twilightMix.selfLight * gain);
   const light = useMemo(() => {
-    const sunLight = new SunLight(twilightDusk?.keyLight ?? TWILIGHT.light, twilightMix.direct);
+    const sunLight = new SunLight(twilightDusk.keyLight, twilightMix.direct);
     const sh = new CascadedShadow();
     // 每级 3072（原 4096；用户 11-14 看过 穿塔 对照定采用，静帧看不出运动中的闪烁）
     sh.mapSize.set(3072, 3072);
@@ -77,7 +77,7 @@ export const TwilightSunLight: React.FC<{ lightDir?: V3; shadowFar: number; spli
     <>
       <primitive object={light} />
       {/* 天光的"上"是灯的位置方向，场景坐标 Z 朝上 */}
-      <hemisphereLight args={[twilightDusk?.skyLight ?? TWILIGHT.skyLight, twilightDusk?.groundLight ?? TWILIGHT.groundLight, twilightMix.skylight * gain]} position={[0, 0, 1]} />
+      <hemisphereLight args={[twilightDusk.skyLight, twilightDusk.groundLight, twilightMix.skylight * gain]} position={[0, 0, 1]} />
       <ambientLight intensity={twilightMix.ambient * gain} />
     </>
   );
@@ -107,7 +107,7 @@ export const TwilightLighting: React.FC<{ camPos: number[]; domeCenter?: number[
   const farOn = farFog !== undefined && (farFog.ramp ?? 1) > 0;
   useFarFog(farOn ? farFog : null);
   // 色带、余晖同下面 SkyDome twilight 的默认（天空.tsx 的 duskAfterglow）；开远雾时比例 0 也登记天色
-  useSkyFog(skyFog > 0 || farOn ? { k: skyFog, bands: twilightDusk?.skyColors ?? TWILIGHT.sky, glow: twilightDusk?.afterglow ?? null, glowK: twilightDusk?.afterglowStrength ?? 0, sunDir: twilightSunDir } : null);
+  useSkyFog(skyFog > 0 || farOn ? { k: skyFog, bands: twilightDusk.skyColors, glow: twilightDusk.afterglow, glowK: twilightDusk.afterglowStrength, sunDir: twilightSunDir } : null);
   return (
     <>
       <color attach="background" args={[twilightFogColor]} />
@@ -132,8 +132,8 @@ const linColor = (hex: string) => {
   const c = new THREE.Color(hex);
   return [c.r, c.g, c.b];
 };
-const skyBands = (twilightDusk?.skyColors ?? TWILIGHT.sky).map(([at, hex]) => [at, linColor(hex)] as const);
-const glowColor = twilightDusk ? linColor(twilightDusk.afterglow) : null;
+const skyBands = twilightDusk.skyColors.map(([at, hex]) => [at, linColor(hex)] as const);
+const glowColor = linColor(twilightDusk.afterglow);
 // 暮色穹顶在方向 d 的颜色（线性），sun：余晖朝哪边
 const twilightSkyAt = (sun: V3) => (d: number[]) => {
   const h = d[2];
@@ -142,20 +142,18 @@ const twilightSkyAt = (sun: V3) => (d: number[]) => {
     const k = smoothstep(skyBands[i - 1][0], skyBands[i][0], h);
     col = col.map((x, j) => x + (skyBands[i][1][j] - x) * k);
   }
-  if (glowColor && twilightDusk) {
-    const s = sun;
-    const sl = Math.hypot(...s);
-    const gk = twilightDusk.afterglowStrength;
-    const lh = Math.hypot(d[0], d[1]) || 1;
-    const ls = Math.hypot(s[0], s[1]);
-    const az = Math.max((d[0] * s[0] + d[1] * s[1]) / lh / ls, 0);
-    const m = gk * az ** 3 * (1 - smoothstep(-0.05, 0.4, h));
-    const halo = gk * 0.6 * Math.max((d[0] * s[0] + d[1] * s[1] + d[2] * s[2]) / sl, 0) ** 40;
-    col = col.map((x, j) => x + (glowColor[j] - x) * m + glowColor[j] * halo);
-  }
+  const s = sun;
+  const sl = Math.hypot(...s);
+  const gk = twilightDusk.afterglowStrength;
+  const lh = Math.hypot(d[0], d[1]) || 1;
+  const ls = Math.hypot(s[0], s[1]);
+  const az = Math.max((d[0] * s[0] + d[1] * s[1]) / lh / ls, 0);
+  const m = gk * az ** 3 * (1 - smoothstep(-0.05, 0.4, h));
+  const halo = gk * 0.6 * Math.max((d[0] * s[0] + d[1] * s[1] + d[2] * s[2]) / sl, 0) ** 40;
+  col = col.map((x, j) => x + (glowColor[j] - x) * m + glowColor[j] * halo);
   return col;
 };
-const cloudLight = linColor(twilightDusk?.keyLight ?? TWILIGHT.light).map((x) => x * twilightMix.direct * 0.9);
+const cloudLight = linColor(twilightDusk.keyLight).map((x) => x * twilightMix.direct * 0.9);
 const cloudAmbient = (sun: V3) => {
   const l = Math.hypot(sun[0], sun[1]);
   const c = Math.sqrt(1 - 0.78 * 0.78);

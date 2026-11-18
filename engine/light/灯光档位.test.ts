@@ -1,26 +1,11 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { overworldMix, twilightMix } from './光照配比.ts';
 import { tierMix, lightTierTable } from './灯光档位.ts';
 import { tierNames } from './环境.ts';
 
-// 光照配比.ts 的 presets 没导出，灯光档位.ts 抄了一份：这里按源文件逐个核对，那边改了数这里就红
-const sourceText = readFileSync(path.join(import.meta.dirname, '光照配比.ts'), 'utf8');
-const sourceTiers = () => {
-  const presetsSource = sourceText.slice(sourceText.indexOf('const presets'), sourceText.indexOf('};', sourceText.indexOf('const presets')));
-  const out: Record<string, Record<string, number>> = {};
-  for (const m of presetsSource.matchAll(/^\s*([一-鿿]+): \{([^}]*)\},/gm)) {
-    out[m[1]!] = Object.fromEntries([...m[2]!.matchAll(/([A-Za-z]+): ([\d.]+)/g)].map((x) => [x[1]!, Number(x[2])]));
-  }
-  return out;
-};
-
 describe('灯光档位', () => {
-  it('六档和 光照配比.ts 的 presets 一字不差', () => {
-    const sourceTable = sourceTiers();
-    expect(Object.keys(sourceTable).sort()).toEqual(['中档', '柔档', '柔档提亮', '强档', '硬档', '黄昏'].sort());
-    for (const [lightTierName, mix] of Object.entries(sourceTable)) expect(lightTierTable[lightTierName as keyof typeof lightTierTable]).toEqual(mix);
+  it('黄昏档 × 光倍 2 就是暮色那份（光照配比.ts 的 duskMix 和这里的 黄昏 要一样）', () => {
+    expect(tierMix({ tier: '黄昏', intensity: 2 })).toEqual(twilightMix);
   });
   it('环境.ts 的 档位名们（定义环境 拿它查档位名）和表一一对应', () => {
     expect([...tierNames].sort()).toEqual(Object.keys(lightTierTable).sort());

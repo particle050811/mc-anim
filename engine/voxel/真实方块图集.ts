@@ -6,7 +6,6 @@
 import * as THREE from 'three';
 import texUri from 'asset:贴图/场景/关键帧/方块表';
 import { png } from '../model/贴图.ts';
-import { flattenAtlasColors, flatColorBlocks } from './纯色方块.ts';
 
 const HOLE = 0.6;
 const ATLAS_COLS = 16; // 图集每行 16 张
@@ -92,10 +91,7 @@ export const blockAtlas = () => {
   const src = png(texUri);
   const cell = src.w;
   if (cell < 16 || (cell & (cell - 1)) !== 0 || src.h % cell !== 0) throw new Error(`方块图集竖条宽 ${src.w}、高 ${src.h}：格边长要是 16 起的 2 的幂、高是它的整数倍（材质包覆盖层见 pipeline/资产/材质包.ts）`);
-  // 纯色方块（纯色方块.ts）按 16 一格压色；高清图集不压，不然一格被拆成四块各算各的平均色
-  if (flatColorBlocks && cell !== 16) throw new Error(`纯色方块只认 16 像素一格的方块图集，这里是 ${cell}：出纯色参考视频时作品不选高清材质包（材质包.toml 写 "cap" = 16）`);
-  const sheet = flatColorBlocks ? flattenAtlasColors(src, '不分') : src;
-  const texCount = sheet.h / cell;
+  const texCount = src.h / cell;
   const cols = colsFor(cell, texCount);
   const rows = Math.ceil(texCount / cols);
   const mk = (solidFill: boolean) => {
@@ -104,7 +100,7 @@ export const blockAtlas = () => {
       return { width: cols * cellPx, height: rows * cellPx, data: new Uint8Array(cols * cellPx * rows * cellPx * 4) };
     });
     for (let texIdx = 0; texIdx < texCount; texIdx++) {
-      const mips = buildMips(sheet.px.subarray(texIdx * cell * cell * 4, (texIdx + 1) * cell * cell * 4), solidFill, cell);
+      const mips = buildMips(src.px.subarray(texIdx * cell * cell * 4, (texIdx + 1) * cell * cell * 4), solidFill, cell);
       const cx = texIdx % cols, cy = Math.floor(texIdx / cols);
       mips.forEach((mip, k) => {
         const cellPx = cell >> k;

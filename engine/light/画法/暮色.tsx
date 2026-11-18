@@ -20,14 +20,14 @@ const twilightPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight,
   if (cloud.种类 === 'photon' && (cloud.seaLevel !== 0 || cloud.weather || cloud.加?.length || cloud.clearRect || cloud.aroundCamera || cloud.exposure !== undefined)) {
     throw new Error('暮色画法的 Photon 云只能是 TwilightClouds 那套（海平面 0、默认天气、不加不让）；要调参数得先让 暮色光照.tsx 导出云的天色函数');
   }
-  const lightColor = lighting.isMoonLight ? moonLightColor : (twilightDusk?.keyLight ?? TWILIGHT.light);
+  const lightColor = lighting.isMoonLight ? moonLightColor : (twilightDusk.keyLight);
   return (
     <>
       {e.heightFog && <HeightFogLayer params={e.heightFog} />}
-      <DirFogLayer opts={twilightDusk && { sunDir: lighting.sun, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength }} />
+      <DirFogLayer opts={{ sunDir: lighting.sun, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength }} />
       <SelfLightLayer k={mix.selfLight} />
       {e.farFog && <FarFogLayer far={e.farFog.far} />}
-      {e.farFog && <SkyBandsLayer opts={{ k: 0, bands: twilightDusk?.skyColors ?? TWILIGHT.sky, glow: twilightDusk?.afterglow ?? null, glowK: twilightDusk?.afterglowStrength ?? 0, sunDir: lighting.sun }} />}
+      {e.farFog && <SkyBandsLayer opts={{ k: 0, bands: twilightDusk.skyColors, glow: twilightDusk.afterglow, glowK: twilightDusk.afterglowStrength, sunDir: lighting.sun }} />}
       <color attach="background" args={[fogColor]} />
       {fogElement(e.fog, fogColor)}
       <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -46,7 +46,7 @@ const twilightPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight,
         ) : (
           <ParallelMainLight lightDir={lighting.lightDir} 色={lightColor} strength={mix.direct * lighting.directMult} cameraPos={cameraPos} />
         )}
-        <hemisphereLight args={[twilightDusk?.skyLight ?? TWILIGHT.skyLight, twilightDusk?.groundLight ?? TWILIGHT.groundLight, mix.skylight * lighting.skyLightMult]} position={[0, 0, 1]} />
+        <hemisphereLight args={[twilightDusk.skyLight, twilightDusk.groundLight, mix.skylight * lighting.skyLightMult]} position={[0, 0, 1]} />
         <ambientLight intensity={mix.ambient * lighting.skyLightMult} />
         {cloud.种类 === '原版' && vanillaCloud(cloud, twilightCloudColor)}
       </group>

@@ -4,18 +4,14 @@
 // 刀光、命中闪光的泛光另有一套（模型/特效/夜幕刀光/泛光.tsx）。
 //
 // 用法：ThreeCanvas 里挂 <PostFx />。画布上有 <ScreenAo />（优先级 1）时传 drawsScene={false}，由 AO 往这里的离屏图画；
-// <NightfallBloom />（优先级 2）在这之后接着画，也传 drawsScene={false}。命令行 --props='{"postFx":false}' 整个关掉。
+// <NightfallBloom />（优先级 2）在这之后接着画，也传 drawsScene={false}。
 // 不支持：画布上别的 useFrame 接管渲染、又不经过 gl.getRenderTarget() 的（目前没有）。
 import { useFrame } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { renderInput } from '../core/渲染设置.ts';
 
 // 挂了 <PostFx /> 的画布：屏幕 AO 的离屏图跟着换成半精度（lib/体素/屏幕AO.tsx），亮部不在那一步被量化成 8 位
 export const postFxRenderers = new WeakSet<THREE.WebGLRenderer>();
-
-const inputOverrides = renderInput() as { postFx?: boolean };
-export const postFxEnabled = inputOverrides.postFx !== false;
 
 const VS = /* glsl */ `
 varying vec2 vUv;
@@ -115,14 +111,9 @@ export const PostFx: React.FC<{ drawsScene?: boolean; remap?: boolean }> = ({ dr
     },
     [resources],
   );
-  const enabled = postFxEnabled;
 
   // 优先级 0.5：在 屏幕AO（1）之前，把渲染目标换成离屏图；没有别人接管时这里画场景
   useFrame(({ gl, scene, camera }) => {
-    if (!enabled) {
-      if (drawsScene) gl.render(scene, camera);
-      return;
-    }
     postFxRenderers.add(gl);
     gl.getDrawingBufferSize(resources.bufSize);
     const width = Math.max(1, Math.floor(resources.bufSize.x));
@@ -140,7 +131,6 @@ export const PostFx: React.FC<{ drawsScene?: boolean; remap?: boolean }> = ({ dr
 
   // 优先级 1.5：屏幕 AO（含云这类中间步骤）画完以后，拷到原来的目标（画布）上
   useFrame(({ gl }) => {
-    if (!enabled) return;
     const autoClear = gl.autoClear;
     gl.autoClear = false;
     (resources.copyMat.uniforms.uSize.value as THREE.Vector2).set(resources.scene.width, resources.scene.height);
