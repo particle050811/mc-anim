@@ -23,7 +23,7 @@ import { ExplosionBurst, PoofBurst } from '@库/特效/生物死亡.tsx';
 import { BladeTrail, type BladePos, NightfallHit, NightfallBloom, liYingTrailPts } from '@库/特效/夜幕刀光.tsx';
 import { shadowFarFor, TwilightClouds, TwilightSunLight, useTwilightFog } from '@engine/light/暮色光照.tsx';
 import { VIEW_FOG } from '@engine/voxel/视距.ts';
-import { sunDirFromAngles, cliGain, cliSunDir, twilightSunDir } from '@engine/light/光照配比.ts';
+import { sunDirFromAngles } from '@engine/light/光照配比.ts';
 import { LandmarkPlacement, twilightLandmark, TwilightTerrain } from '../../../地点/暮色新世界.tsx';
 import * as choreo from './编排.ts';
 import * as motion from './动作改进.ts';
@@ -44,9 +44,9 @@ export const courtyardToWorld = (p: number[]) => [p[0] + courtyardOrigin[0], p[1
 
 // 庭院的光（用户 10-13 定）：东偏北 70°、仰角 28°、灯 0.75 倍（相当于光倍 1.5）。原来一镜到底的黄昏光（200°/14°）在庭院里太低，整片地面落在树影里，又平又蓝。
 // 依据写实关键帧（正篇/…/2-斩娜迦/关键帧/0、60）；仰角再高或强度照旧时第 159 帧墙角整片受光、没了黄昏感。
-// 只管 6-1-2：一镜到底往东飞那几程照旧用 200°（见 lib/光照配比.ts）。命令行给了 `lightAzimuth`/`lightElevation`/`lightGain` 时让给命令行。6-1-1 的暮色那半段也用这一道。
-export const courtyardLightDir = cliSunDir ? twilightSunDir : sunDirFromAngles(70, 28);
-export const courtyardLightGain = cliGain ? 1 : 0.75;
+// 只管 6-1-2：一镜到底往东飞那几程照旧用 200°（见 lib/光照配比.ts）。6-1-1 的暮色那半段也用这一道。
+export const courtyardLightDir = sunDirFromAngles(70, 28);
+export const courtyardLightGain = 0.75;
 // 迷宫镜头（S3 起，九胡被传送进树篱迷宫）的光：70°/28° 时太阳在镜头背后，顺光把她晒成粉橙、脸发白。用 --props='{"mazeLight":"…"}' 切换，对比帧在 预览/1013-纯渲染光影材质与动作/收尾/：
 // 庭院（70°/28°、0.75 倍）过曝；压暗（灯 0.5 倍）仍平、发粉；
 // 侧光（东偏南 115°、仰角 28°，从左后方斜照）肤色本色、有暖光斑，和庭院收刀的 70° 只差 45°，硬切不跳；
@@ -202,7 +202,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
   const { width, height } = useVideoConfig();
   const { t: storyTime, cam: cam } = nagaShotCam({ hitStopSec, newCams, followMode: followMode }, sec);
   // 光：庭院几个镜头 70°/28°；迷宫镜头（S3 起）按 迷宫光 换（见上面）
-  const mazePreset = storyTime >= choreo.S3 && !cliSunDir && !cliGain ? mazeLightPresets[props.mazeLight ?? defaultMazeLight] : null;
+  const mazePreset = storyTime >= choreo.S3 ? mazeLightPresets[props.mazeLight ?? defaultMazeLight] : null;
   const lightDir = mazePreset ? mazePreset.dir : courtyardLightDir;
   const lightGain = mazePreset ? mazePreset.intensity : courtyardLightGain;
   const liyingVersion = motionV2 ? motion.liyingV2 : preSheathFix ? preFixLiying : choreo.liying;

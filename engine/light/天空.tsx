@@ -41,18 +41,14 @@ export const TWILIGHT = {
     [0.5, '#2a3440'],
     [1.0, '#1b212d'],
   ] as [number, string][],
-  fog: '#c1ffe8',
-  cloud: '#8ba3a3', // 云顶的颜色；底面 ×0.7 = 截图里从下往上看到的 #617272
-  // 灯的颜色（强度在 lib/光照配比.ts 的 暮色配比）。游戏里没有太阳直射，主光是艺术选择（见 光照配比.ts）。
-  // 光是偏蓝的灰：原版光照贴图在天变暗时把天光往蓝里偏（天光颜色 ≈ (f, f, 1) 和白色按 0.35 混合），截图里石墙是 (51,51,66)、草地是 (56,86,57)
+  // 光是偏蓝的灰：原版光照贴图在天变暗时把天光往蓝里偏（天光颜色 ≈ (f, f, 1) 和白色按 0.35 混合），截图里石墙是 (51,51,66)、草地是 (56,86,57)。
+  // 暮色的主光用黄昏灯色（lib/光照配比.ts 的 `twilightDusk`），这个色现在只给月光用（画法/暮色.tsx、画法/主世界.tsx）
   light: '#9aa6e6',
-  skyLight: '#7c8ad6',
-  groundLight: '#30364a',
 };
 
-// 暮色的雾色（背景、线性雾）和原版方块云的颜色：黄昏档（lib/光照配比.ts 的 暮色黄昏）换成落日后的颜色，否则是游戏里的薄荷绿、灰青。云色取黄昏积云向光面、背光面之间（桃橙偏灰），6-1-1～6-1-3 头上那层原版云用
-export const twilightFogColor = twilightDusk?.fogColor ?? TWILIGHT.fog;
-export const twilightCloudColor = twilightDusk ? brighten('#c9998a') : TWILIGHT.cloud;
+// 暮色的雾色（背景、线性雾）和原版方块云的颜色：黄昏档（lib/光照配比.ts 的 `twilightDusk`），换掉游戏里的薄荷绿、灰青。云色取黄昏积云向光面、背光面之间（桃橙偏灰），6-1-1～6-1-3 头上那层原版云用
+export const twilightFogColor = twilightDusk.fogColor;
+export const twilightCloudColor = brighten('#c9998a');
 
 const skyShader = (twilight: boolean) => `
   uniform vec3 top; uniform vec3 horizon; uniform vec3 glow; uniform vec3 sunDir; uniform float glowK; varying vec3 vDir;
@@ -193,7 +189,7 @@ export const OverworldWaterSky: React.FC<{ sec?: number }> = ({ sec: sec }) => {
 
 // 余晖：暮色天空在太阳（sun）那一侧加的黄昏余晖（色、强 0～1），给 null 就没有；天色：换掉 `TWILIGHT.sky`（条数一样）。
 // twilight 时不给 余晖、sun 就按 lib/光照配比.ts 的 `twilightDusk`、`twilightSunDir`
-const duskAfterglow = twilightDusk && { 色: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength, skyColors: twilightDusk.skyColors };
+const duskAfterglow = { 色: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength, skyColors: twilightDusk.skyColors };
 export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: boolean; afterglow?: { 色: string; strength: number; skyColors?: [number, string][] } | null }> = ({
   sun: sunProp,
   twilight = false,
