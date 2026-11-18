@@ -28,6 +28,6 @@ describe('调试开关', () => {
     expect(v).toMatch(/engine\/a\.ts:2 环境变量「REMOTION_ANIM_NEW」没登记/);
     expect(v).toMatch(/登记了 trial「雾曲线」，代码里没人用/);
     // 占位行没人用不报
-    expect(v).not.toMatch(/「细分门槛」，代码里没人用/);
+    expect(v).not.toMatch(/「台阶并色」，代码里没人用/);
   });
 });
