@@ -9,6 +9,7 @@ import { codeRoot } from '../环境/路径.ts';
 import { loadAllSegments } from '../清单/清单.ts';
 import { renderParams } from '../渲/设置.ts';
 import { readAssetLock } from '../资产/资产锁.ts';
+import { terrainPolicies } from '../世界/版本.ts';
 import { stableJson, computeSegFingerprints, fingerprintDiff, readTerrainEntries, type FingerprintTask } from './指纹.ts';
 
 const computeSegFingerprint = async (s: SegInfo, renderSettings: Record<string, unknown>) => (await computeSegFingerprints([{ segment: s, renderSettings: renderSettings }]))[0]!;
@@ -109,7 +110,7 @@ describe('地形按段依赖', () => {
     });
     expect(afterUnrelatedEdit.fingerprint).toBe(baseline.fingerprint);
     const afterDeclEdit = await computeWithTable(s, (packs) => {
-      packs[s.segment.terrain[0]!]!.version = '声明新版本';
+      terrainPolicies(packs)[s.segment.terrain[0]!]!.version = '声明新版本';
     });
     expect(afterDeclEdit.fingerprint).not.toBe(baseline.fingerprint);
     // 模型是包内数据，换表只换包版本，不改解码器闭包。
