@@ -78,8 +78,6 @@ describe('远景兜底采样', () => {
     expect(maxHeight + 1 - origin[1] + 26).toBeGreaterThan(20);
     expect(buildOverworld(fakeImported([-128, 20]), grid, null).heightRange).toEqual([-128, maxHeight + 1 - origin[1] + 26]);
     expect(fallbackHeightRange([-128, 20], grid, origin, 26)).toEqual([-128, maxHeight + 1 - origin[1] + 26]);
-    const supplement = fakeImported([-96, 500]);
-    expect(buildOverworld(fakeImported([-128, 60]), grid, null, { fillCoarse: false, treeHeight: 10, supplement }).heightRange).toEqual([-128, 500]);
     expect(fallbackHeightRange([-128, 60], grid, origin, 10, 500)).toEqual([-128, 500]);
   });
 });

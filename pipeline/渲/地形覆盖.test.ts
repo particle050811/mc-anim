@@ -99,15 +99,12 @@ describe('覆盖能不能拿去裁', () => {
     expect(coverProblems({ ...cover, worldPacks: [] }, ['pack-b'])).toEqual([]);
   });
 
-  it('远景区段是烘焙输出：只换成品还能重烘，换输入必须重量', async () => {
+  it('航线包包含选级粗图：换包后覆盖应重新量', async () => {
     segs.push(makeSeg('甲', ['pack-a']));
     await measureCovers(segs, undefined, quiet, setup(k => ({ cover: k, first: { 'pack-a': { '1|0|0': 0 } }, worlds: [] })));
     try {
       versions['pack-a'] = '成品新版';
       expect((await coverStatus(segs, segs))[0]!.stale).toBe(true);
-      expect((await coverStatus(segs, segs, 'pack-a'))[0]!.stale).toBe(false);
-      versions['输入'] = '另一版';
-      expect((await coverStatus(segs, segs, 'pack-a'))[0]!.stale).toBe(true);
     } finally { versions['pack-a'] = 'v1'; delete versions['输入']; }
   });
 

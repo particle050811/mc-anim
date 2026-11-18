@@ -50,13 +50,13 @@ export const TRIM_COMMANDS: Record<string, SubCommand> = {
     },
   },
   cover: {
-    usage: 'cover <段…>（量段的地形覆盖：每帧挑哪些区段，存 <数据根>/cache/地形覆盖/；不出图不画，过放行闸、整批一张票）',
+    usage: 'cover <段…> [--to <独立目录>]（量段的地形覆盖：每帧挑哪些区段，存 <数据根>/cache/地形覆盖/；不出图不画，过放行闸、整批一张票）',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, {});
+      const p = parseArgs(args, { value: ['--to'] });
       if (!p.位置.length) throw new UsageError('要给段（选择器同 anim film）');
       const segs = (await selectSegs(p.位置)).filter((s) => s.segment.terrain.length);
       if (!segs.length) throw new UsageError('选中的段都没声明地形包');
-      await measureCovers(segs, runRecord);
+      await measureCovers(segs, runRecord, undefined, undefined, p.value['--to']);
       return 0;
     },
   },

@@ -1,16 +1,13 @@
-// 暮色超远景：导入的地形外面拿暮色远景包、远处地标的补充包兜底，雾放远，全进雾的远处融进天色（engine/light/高度雾.ts 的天色雾）。
+// 暮色超远景：存档、远地标、模拟地形都在同一个预烘区段包里，雾放远，全进雾的远处融进天色（engine/light/高度雾.ts 的天色雾）。
 // 用户 11-07 定 10 公里那档（预览 1107-0542-暮色超远景，「10km 修复」），只给两个飞行段：6-起飞（起飞后，6-1-3 起飞.tsx）、6-穿塔斩首领（一镜到底 画面.tsx 的 `Oner`）；
-// 6-落地后 也画一镜到底，但不开，照旧。没开的镜头不读这两个包，雾照 `clampFogToEdge` 压到导入范围的边以内。
-// 试看（engine/core/试看.ts）还能盖掉正式值，也能给没开的镜头打开：
-//   REMOTION_ANIM_TRIAL='{"暮色远景": {"雾远": 6000, "高度雾": 1}, "地形": ["暮色放大-1752-远景", "暮色放大-1752-远地标"]}'
+// 6-落地后 也画一镜到底，但不开，照旧。没开的镜头只看原扩展边界，雾照 `clampFogToEdge` 压到导入范围的边以内。
+// 试看能盖掉正式值，同一航线包供所有读法使用。
 // 雾远：巡航时雾的远端（米，没开时是 3500），不再压到边以内（边外有远景了）；高度雾：暮色高度雾浓度的倍数（engine/light/暮色光照.tsx 的 `twilightHeightFog`）
 import { trialParams } from '@engine/core/试看.ts';
 import { trialFarM } from '@engine/light/高度雾.ts';
 import { TWILIGHT_CRUISE_FOG_FAR } from '@engine/light/暮色光照.tsx';
 
-export const twilightDistantPack = '暮色放大-1752-远景';
-export const twilightSectionPack = '暮色放大-1752-远景区段';
-export const twilightFarLandmarkPack = '暮色放大-1752-远地标'; // 远处地标周围的小块（sourcing/worlds/暮色放大-1752-远地标.toml）
+export const twilightSectionPack = '暮色放大-1752-航线';
 export type TwilightFarView = { fogFar: number; heightFog: number };
 // 规矩 暮色超远景雾（作品/应力转动/规矩.toml）
 export const TWILIGHT_FAR_VIEW: TwilightFarView = { fogFar: 10000, heightFog: 0.35 };

@@ -209,7 +209,7 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
       // 读哪一版地形包：试看里会挑到别的区段的项、望远的细一级和真值读完整包，别的照正式出片读裁过的（地形注入.ts）
       const envOf = (g: TrialGroup | undefined, fullTerrain: boolean) => {
         const mode = fullTerrain || trialReadsFullTerrain(g ? g.table : shellTrialTable()) ? '完整' : '正式';
-        return { ...segRenderEnv(s.key, segTerrainNow(s, g ? g.terrain : trialTerrain()), mode), ...(g ? g.env : trialEnv()) };
+        return { ...segRenderEnv(s.key, segTerrainNow(s, g ? g.terrain : trialTerrain(), g?.table), mode), ...(g ? g.env : trialEnv()) };
       };
       await detail.pack(async () => {
         for (const [i, v] of variants.entries()) {

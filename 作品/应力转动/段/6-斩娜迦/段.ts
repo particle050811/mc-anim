@@ -2,7 +2,7 @@
 // 11-06 改成秒（docs/决策/0015-原生60帧.md）。11-16 按编排的真时刻重算（用户 11-16 定：1/24 秒格的取整一处不留）：段长是 6-1/段界.ts 截表的刻数（1/120 秒）往上取到 1/60 秒；cue 的秒、长秒、入点秒照事件的真时刻（扣掉文件头的静音）写到毫秒，跨段界、截界的声音拆成几条接着放；逐格增益还是每秒 24 个值，从 cue 起点数，不对齐 1/24 秒格。
 import { defineSeg } from '@engine/段/段定义.ts';
 
-export default defineSeg({ scene: '6-暮色森林', sec: 7.133, width: 1280, height: 720, terrain: ["暮色放大-1752-扩展", "暮色放大-1752-远景", "暮色放大-1752-远地标"], overlay: [{ name: '伤害数字层', entry: '叠层.tsx' }], sound: [
+export default defineSeg({ scene: '6-暮色森林', sec: 7.133, width: 1280, height: 720, terrain: ["暮色放大-1752-航线"], overlay: [{ name: '伤害数字层', entry: '叠层.tsx' }], sound: [
   { sec: 3.542, lines: '6-李樱-不值一提' },
   { sec: 0, asset: '音效/block.portal.travel', name: '换维度', 档: '中 -20', 长秒: 0.375, 入点秒: 1.242046842564985, 速率: 0.9615846523083746, 增益: 0.309742 },
   { sec: 0.042, asset: '音效/block.grass.step.1', name: '李樱落地', 档: '脚步 -30', 长秒: 0.333, 增益: 0.367174 },

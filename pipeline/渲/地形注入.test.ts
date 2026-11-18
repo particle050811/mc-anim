@@ -3,8 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { terrainVersionEnv, terrainReadModeEnv } from '../../engine/段/地形环境.ts';
-import { pageReadsFullTerrain } from '../../engine/voxel/区段包位置.ts';
+import { terrainVersionEnv } from '../../engine/段/地形环境.ts';
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), '地形注入-'));
 vi.mock('../环境/配置.ts', async (orig) => ({ ...(await orig<typeof import('../环境/配置.ts')>()), terrainRoot: () => root }));
@@ -12,9 +11,9 @@ vi.mock('../环境/作品.ts', async (orig) => ({ ...(await orig<typeof import('
 vi.mock('./光体缓存收集.ts', () => ({ lightCacheFiles: () => '[]' }));
 vi.mock('../指纹/指纹.ts', async (orig) => ({
   ...(await orig<typeof import('../指纹/指纹.ts')>()),
-  readTerrainEntries: () => ({ trimmedPack: { version: 'full1', trimmed: { version: 'trim1' } }, plainPack: { version: 'only1' } }),
+  registeredTerrainEntries: () => ({ route: { version: 'outside', policies: { 4: { version: 'rec', trimmed: { version: 'recTrim' } } } }, trimmedPack: { version: 'full1', trimmed: { version: 'trim1' } }, plainPack: { version: 'only1' } }),
 }));
-const { trialTerrain, terrainOnlyEnv, trialReadsFullTerrain, segRenderEnv, fullTableEnv } = await import('./地形注入.ts');
+const { trialTerrain, terrainOnlyEnv, trialReadsFullTerrain } = await import('./地形注入.ts');
 const read = (versions: Record<string, string>, mode: '正式' | '完整' | '完整优先') => JSON.parse(terrainOnlyEnv(versions, mode)[terrainVersionEnv]!);
 
 describe('试看参数的「地形」', () => {
@@ -46,19 +45,9 @@ describe('读哪一版地形包', () => {
     expect(read({ trimmedPack: 'full1' }, '完整优先')).toEqual({ trimmedPack: 'full1' });
   });
 
-  it('同一份包声明：正式读区段，完整试看、覆盖和 Studio 读网格', () => {
-    const packs = { plainPack: 'only1' };
-    const readsFull = (env: Record<string, string>) => {
-      vi.stubEnv(terrainReadModeEnv, env[terrainReadModeEnv]);
-      return pageReadsFullTerrain();
-    };
-    try {
-      expect(readsFull(segRenderEnv('甲', packs))).toBe(false);
-      expect(readsFull(segRenderEnv('甲', packs, '完整'))).toBe(true);
-      expect(readsFull(segRenderEnv('甲', packs, '完整优先'))).toBe(true);
-      expect(readsFull(terrainOnlyEnv(packs, '完整'))).toBe(true);
-      expect(readsFull(fullTableEnv())).toBe(true);
-    } finally { vi.unstubAllEnvs(); }
+  it('本机没有候选完整包，望远取同一策略的裁级包而不换画面口径', () => {
+    fs.mkdirSync(path.join(root, 'route', 'recTrim'), { recursive: true });
+    expect(read({ route: 'rec' }, '完整')).toEqual({ route: 'recTrim' });
   });
 
   it('会挑到正式画面不用的区段的试看读完整包', () => {

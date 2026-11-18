@@ -64,7 +64,7 @@ export type WorldDecl = {
   pregen: { regionFileRange?: RegionRange; chunkCount?: number; tile: PregenBox[] };
   pack: PackDecl[];
   /** 远景包（pipeline/世界/远景/）：导入范围（预生成的矩形块）外扩多远、中层（16 米）和细带（8 米）在交界外多宽，米 */
-  farView?: { pack: string; sectionPack?: string; outset: number; midWidth: number; fineWidth: number };
+  farView?: { pack: string; sectionPack?: string; landmarkPack?: string; outset: number; midWidth: number; fineWidth: number };
   /** 从存档里 Distant Horizons 的 LOD 库烘的包（dh/，anim world bake-dh）：db 是库文件（相对存档目录），extent 是游戏坐标 [x0, z0, x1, z1)，yRange 是高度范围（游戏 y，两端都含） */
   dh?: { db: string; pack: string; origin: [number, number, number]; extent: [number, number, number, number]; yRange: [number, number]; source?: string; license?: string; visibility?: string };
   /** 烘焙、转码时的可见变换（烘焙/可见.ts）：埋住的格换成 填充；保真 盒碰到的区段原样保留（作品的挖框、整平要落在里面，anim check 核） */
@@ -193,7 +193,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
         if (typeof v !== 'number' || !(v >= 0)) throw fileError(`远景.${k} 要写非负的米数`);
         return v;
       };
-      farTerrain = { pack: farView.pack, ...(typeof farView.sectionPack === 'string' ? { sectionPack: farView.sectionPack } : {}), outset: toMeters('outset'), midWidth: toMeters('midWidth'), fineWidth: toMeters('fineWidth') };
+      farTerrain = { pack: farView.pack, ...(typeof farView.sectionPack === 'string' ? { sectionPack: farView.sectionPack } : {}), ...(typeof farView.landmarkPack === 'string' ? {landmarkPack: farView.landmarkPack} : {}), outset: toMeters('outset'), midWidth: toMeters('midWidth'), fineWidth: toMeters('fineWidth') };
     }
     let dh: WorldDecl['dh'];
     if (d.dh !== undefined) {

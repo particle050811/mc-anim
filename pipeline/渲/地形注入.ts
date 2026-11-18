@@ -1,7 +1,7 @@
 // 把本段声明的地形包和版本传给页面（engine/voxel/区段包位置.ts 的唯一来源）：renderMedia、renderStill、renderFrames 都传 envVariables: 段渲染环境(键, 地形)。
 // anim film、still、bench、verify --render 走这一处。用环境变量不用 inputProps：inputProps 整份进指纹、规范化设置 拒收不认识的键、每段 getCompositions 也得跟着传，
 // 而版本已经单独进指纹的地形项。读 Composition 列表的页面不传：列表阶段不该读任何包，读了就报错。
-import { terrainVersionEnv, terrainReadModeEnv, terrainUsageSegEnv, lightCacheFilesEnv } from '../../engine/段/地形环境.ts';
+import { terrainVersionEnv, terrainUsageSegEnv, lightCacheFilesEnv } from '../../engine/段/地形环境.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { trialKey, findSwitch } from '../../engine/core/调试开关.ts';
@@ -10,7 +10,7 @@ import { parseTrialJson, type TrialTable } from './试看表.ts';
 export const trialEnvName = 'REMOTION_ANIM_TRIAL';
 import { workName } from '../环境/作品.ts';
 import { lightCacheFiles } from './光体缓存收集.ts';
-import { segTerrainVersion, readTerrainVersionTable, readTerrainEntries } from '../指纹/指纹.ts';
+import { segTerrainVersion, readTerrainVersionTable, readTerrainEntries, registeredTerrainEntries } from '../指纹/指纹.ts';
 import { terrainRoot } from '../环境/配置.ts';
 import type { SegInfo } from '../清单/清单.ts';
 
@@ -31,22 +31,28 @@ export const segRenderEnv = (segKey: string, terrainFiles: Record<string, string
  */
 export type TerrainReadMode = '正式' | '完整' | '完整优先';
 const readVersions = (fullVersions: Record<string, string>, mode: TerrainReadMode): Record<string, string> => {
-  const entries = readTerrainEntries();
+  const entries = registeredTerrainEntries();
   return Object.fromEntries(
     Object.entries(fullVersions).map(([pack, version]) => {
-      const entry = entries[pack];
+      // 只按这次传来的完整版本找配套留表，不能把另一种起级（哪怕是正式默认）的裁级包交给试看。
+      const registered = entries[pack];
+      const entry = registered?.version === version ? registered : Object.values(registered?.policies ?? {}).find((v) => v.version === version);
       if (mode === '正式' && entry?.trimmed && entry.version === version) return [pack, entry.trimmed.version];
       // 完整优先：地形覆盖用，光体冷缓存会取区段，读完整包才不被旧留表卡住；本机只有裁过的就读裁过的
       if (mode === '完整优先' && entry?.trimmed && entry.version === version && !fs.existsSync(path.join(terrainRoot(), pack, version))) return [pack, entry.trimmed.version];
+      if (mode === '完整' && registered?.policies && entry?.trimmed && !fs.existsSync(path.join(terrainRoot(), pack, version)) && fs.existsSync(path.join(terrainRoot(), pack, entry.trimmed.version))) {
+        console.warn(`${pack} 完整版不在本机，读裁级版；缺级时取已有区段，请重算定级、重烘或下载完整包。`);
+        return [pack, entry.trimmed.version];
+      }
       if (mode === '完整' && entry?.trimmed && !fs.existsSync(path.join(terrainRoot(), pack, version)))
         throw new Error(`往细里看要读完整地形包 ${pack}/${version}，本机没有（只有裁过的 ${entry.trimmed.version}）：anim assets pull --full 从 Release 取备份，或从生成它的机器（笔记本）拷到 <数据根>/terrain/${pack}/${version}/`);
       return [pack, version];
     }),
   );
 };
-const pageTerrainEnv = (versions: Record<string, string>, mode: TerrainReadMode) => ({ [terrainVersionEnv]: JSON.stringify(versions), [terrainReadModeEnv]: mode });
+const pageTerrainEnv = (versions: Record<string, string>) => ({ [terrainVersionEnv]: JSON.stringify(versions) });
 /** 只传地形版本和读法（试看 film 不记用量） */
-export const terrainOnlyEnv = (fullVersions: Record<string, string>, mode: TerrainReadMode): Record<string, string> => pageTerrainEnv(readVersions(fullVersions, mode), mode);
+export const terrainOnlyEnv = (fullVersions: Record<string, string>, mode: TerrainReadMode): Record<string, string> => pageTerrainEnv(readVersions(fullVersions, mode));
 /** shell 里的试看参数要不要读完整包 */
 export const shellTrialMode = (): TerrainReadMode => (trialReadsFullTerrain(shellTrialTable()) ? '完整' : '正式');
 /** 段声明的包现登记的完整包版本（覆盖、still 用；切片走指纹里记的那份） */
@@ -56,7 +62,12 @@ export const trialReadsFullTerrain = (table: TrialTable): boolean =>
   Object.keys(table).some((k) => findSwitch('trial', k)?.fullTerrain) || (Array.isArray(table[trialKey('关')]) && (table[trialKey('关')] as unknown[]).some((x) => typeof x === 'string' && findSwitch('off', x)?.fullTerrain));
 
 /** still、bench 不算指纹、不出切片，当场读表；多读：试看要多读的包（`试看地形`） */
-export const segTerrainNow = (s: Pick<SegInfo, 'key' | 'segment'>, extraReads: readonly string[] = []): Record<string, string> => segTerrainVersion(s.key, [...new Set([...s.segment.terrain, ...extraReads])], readTerrainVersionTable());
+export const segTerrainNow = (s: Pick<SegInfo, 'key' | 'segment'>, extraReads: readonly string[] = [], trial = shellTrialTable()): Record<string, string> => {
+  const level = trial[trialKey('暮色模拟起级')];
+  if (level !== undefined && (typeof level !== 'number' || ![2,3,4,5].includes(level))) throw Error('暮色模拟起级只取 2、3、4、5');
+  const versions = level === undefined ? readTerrainVersionTable() : Object.fromEntries(Object.entries(readTerrainEntries(level)).map(([k,v])=>[k,v.version]));
+  return segTerrainVersion(s.key,[...new Set([...s.segment.terrain,...extraReads])],versions);
+};
 
 /** shell 里设了试看参数（engine/core/试看.ts）没有：anim film 设了就只出试看片（出片/试看.ts） */
 export const trialActive = (): boolean => Boolean(process.env[trialEnvName]);
@@ -99,5 +110,5 @@ export const fullTableEnv = (): Record<string, string> => {
       return [pack, v.version];
     }),
   );
-  return pageTerrainEnv(table, '完整优先');
+  return pageTerrainEnv(table);
 };

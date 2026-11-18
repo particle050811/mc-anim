@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { CheckContext } from '../源码/上下文.ts';
-import { packManifest } from '../世界/版本.ts';
+import { packManifest, selectTerrainPolicy } from '../世界/版本.ts';
 import { config } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { runCmd, tryRun } from '../环境/子进程.ts';
@@ -52,8 +52,10 @@ const streamSha256 = (f: string) =>
 
 type PackRecord = { version: string; manifestSha256?: string; fileCount?: number; size?: number };
 type TerrainRecord = PackRecord & { visibility?: string; trimmed?: PackRecord };
-const readTerrainTable = (): Record<string, TerrainRecord> =>
-  (JSON.parse(fs.readFileSync(path.join(codeRoot(), 'assets', '地形版本.json'), 'utf8')) as { pack?: Record<string, TerrainRecord> }).pack ?? {};
+const readTerrainTable = (): Record<string, TerrainRecord> => {
+  const entries = (JSON.parse(fs.readFileSync(path.join(codeRoot(), 'assets', '地形版本.json'), 'utf8')) as { pack?: Record<string, TerrainRecord> }).pack ?? {};
+  return Object.fromEntries(Object.entries(entries).map(([pack,v])=>[pack,selectTerrainPolicy(v)]));
+};
 /** 登记表里这个版本的那一项：完整包或它裁过的包 */
 const recordOf = (table: Record<string, TerrainRecord>, pack: string, version: string): PackRecord | undefined => {
   const v = table[pack];
