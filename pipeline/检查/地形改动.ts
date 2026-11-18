@@ -32,7 +32,7 @@ export const checkTerrainChanges = async (c: CheckContext, report: CheckReport) 
   const versionTable = c.exists('assets/地形版本.json') ? (JSON.parse(c.读('assets/地形版本.json')) as { pack: Record<string, { version: string }> }).pack : {};
   let count = 0;
   for (const r of changes) {
-    const w = worlds.find((x) => x.pack.some((b) => b.name === r.pack));
+    const w = worlds.find((x) => x.farView?.sectionPack === r.pack || x.pack.some((b) => b.name === r.pack));
     if (!w) { report.错(`地形改动「${r.name}」用的包 ${r.pack} 没有世界声明（sourcing/worlds/），核不了保真范围`, registryFile(c)); continue; }
     const keepBoxes = w.visible.faithful.map((x) => x.boxes);
     const boxes: [string, number, number, number, number][] = [
@@ -44,7 +44,8 @@ export const checkTerrainChanges = async (c: CheckContext, report: CheckReport) 
     if (outOfBounds.length) report.错(`地形改动「${r.name}」有 ${outOfBounds.length} 处不在 sourcing/worlds/${w.displayName}.toml 的 [[烘焙.保真]] 盒里（可见变换会换掉那里埋着的格，挖开就露出来）：${outOfBounds.slice(0, 3).map((x) => x[0]).join('；')}。加盒以后要回存档重烘`, registryFile(c));
   }
   // 登记的包版本做过可见变换的，记的设置要盖住声明
-  const packs = new Set(changes.map((r) => r.pack));
+  // 作品登记的是合并后的世界底包，保真承诺仍应核真实存档原料，而不是不做可见变换的成品。
+  const packs = new Set(changes.map((r) => worlds.find((w) => w.farView?.sectionPack === r.pack)?.pack[0]?.name ?? r.pack));
   for (const packName of packs) {
     const w = worlds.find((x) => x.pack.some((b) => b.name === packName)), version = versionTable[packName]?.version;
     if (!w || !version) continue;

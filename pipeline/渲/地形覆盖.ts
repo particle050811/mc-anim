@@ -196,7 +196,7 @@ export const inWork = async <T>(work: string, fn: () => Promise<T>): Promise<T> 
 };
 
 /** 各作品里声明了这个包的段的覆盖并起来：区段键 → 头一次用到它的（作品/段，帧）。stale 列出没量或旧了的段；measure 给了就当场量那些 */
-export const packCover = async (pack: string, o: { measure: boolean; runRecord?: RunRecord; log?: (s: string) => void }) => {
+export const packCover = async (pack: string, o: { measure: boolean; override?: { work: string; directory: string }; runRecord?: RunRecord; log?: (s: string) => void }) => {
   const used = new Map<string, { work: string; segment: string; frame: number }>();
   const stale: string[] = [];
   let segCount = 0;
@@ -206,14 +206,17 @@ export const packCover = async (pack: string, o: { measure: boolean; runRecord?:
       const segs = segsUsingPacks(allSegments, [pack]);
       if (!segs.length) return;
       segCount += segs.length;
-      const status = await coverStatus(allSegments, segs);
+      // 独立的规划目录只替换指定作品；仍须遍历其他共用同一底包的作品。
+      const directory = o.override?.work === work ? o.override.directory : undefined;
+      const status = await coverStatus(allSegments, segs, directory);
       const toMeasure = status.filter((x) => x.stale).map((x) => x.segment);
       if (toMeasure.length && o.measure) {
         o.log?.(`${work}：量 ${toMeasure.length} 段的地形覆盖（${toMeasure.map((s) => s.key).join('、')}）`);
-        await measureCovers(toMeasure, o.runRecord, o.log);
+        await measureCovers(toMeasure, o.runRecord, o.log, realBackend, directory);
       } else stale.push(...toMeasure.map((s) => `${work}/${s.key}`));
       for (const s of segs) {
-        const cover = readCover(work, s.key);
+        const cover = readCover(work, s.key, directory);
+        if (cover && (cover.work !== work || cover.segment !== s.key)) throw Error(`规划文件不是 ${work}/${s.key} 的覆盖`);
         // 存着的也再核一遍：量的时候已经核过，这里挡手改、拷来的文件
         const problems = cover ? coverProblems(cover, s.segment.terrain) : [];
         if (problems.length) throw new Error(`地形覆盖：${problems.join('；')}：anim world cover ${s.key} 重量`);

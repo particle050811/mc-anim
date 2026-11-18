@@ -234,6 +234,8 @@ export type PackageInfo = {
   trim?: TrimInfo;
   // 航线稀疏包：索引只含可用区段及还原导入轮廓的信息，不是第二份地形。
   routeIndex?: string;
+  // 覆盖层按完整底包版本配对；keys 是有意覆盖的整块（即使它全为空气也不能退回底包）。
+  overlay?: { base: string; from: string; keys: string[] };
 };
 /** 区段 (i, j)（i0 ≤ i < i0 + ni，j 同）能不能细分：粗图 at 那段是位图，第 (j − j0)·ni + (i − i0) 位，字节里从低位起；范围外的不能 */
 export type SplittableLevel = { i0: number; j0: number; ni: number; nj: number; at: ByteRange };

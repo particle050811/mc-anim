@@ -1,4 +1,4 @@
-import { selectTerrainPolicy } from '../../世界/版本.ts';
+import { terrainPolicies } from '../../世界/版本.ts';
 import { readModel, modelFileName, sectionFormatVersion } from '../../../engine/voxel/区段模型.ts';
 // 资产：资产表字段齐全（许可是 SPDX 表达式）、资产表和资产锁一一对应、可见性私有的在 私有/ 库；
 // 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁/）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
@@ -274,7 +274,7 @@ export const checkAssets = async (c: CheckContext, report: CheckReport) => {
 
   // 段声明的地形、cue 里的资产
   const registered = (c.readJson('assets/地形版本.json') ?? {}) as TerrainTable;
-  const terrainTable = {pack: Object.fromEntries(Object.entries(registered.pack ?? {}).map(([k,v])=>[k,selectTerrainPolicy(v)]))};
+  const terrainTable = {pack: terrainPolicies(registered.pack ?? {})};
   const parsedContent = await readContent(c);
   if (!('errors' in parsedContent)) {
     for (const s of parsedContent.segments) {

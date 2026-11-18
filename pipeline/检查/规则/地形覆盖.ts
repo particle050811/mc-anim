@@ -4,7 +4,7 @@
 // - 裁过的包不是从现登记的完整包裁的：违规，重裁。
 // 要算段指纹，--fast 跳过。
 import fs from 'node:fs';
-import { selectTerrainPolicy } from '../../世界/版本.ts';
+import { terrainPolicies } from '../../世界/版本.ts';
 import path from 'node:path';
 import { codeRoot } from '../../环境/路径.ts';
 import { dataPath } from '../../环境/配置.ts';
@@ -17,7 +17,7 @@ const tablePath = 'assets/地形版本.json';
 
 export const checkTerrainCover = async (c: CheckContext, report: CheckReport) => {
   const table = ((c.readJson(tablePath) ?? {}) as { pack?: Record<string, Entry> }).pack ?? {};
-  const trimmed = Object.entries(table).map(([pack,v])=>[pack,selectTerrainPolicy(v)] as const).filter(([, v]) => v.trimmed);
+  const trimmed = Object.entries(terrainPolicies(table)).filter(([, v]) => v.trimmed);
   if (!trimmed.length) return;
   // 覆盖和段指纹都按本仓库算（测试的夹具仓库没有这些）
   if (c.root !== fs.realpathSync(codeRoot())) {

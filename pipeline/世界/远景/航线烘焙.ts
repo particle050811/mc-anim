@@ -1,24 +1,20 @@
-// 一个包、一套状态号和压缩模型。先在真实区段上套作品挖框/整平，随后只补没有存档的列；模拟不继承存档的地标编辑。
+// 世界底包只合并存档、远地标和模拟区段，不读作品登记。
 import fs from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
 import type { SectionId } from '../../../engine/voxel/区段.ts';
 import type { BoundaryColumns, RouteIndex } from '../../../engine/voxel/航线区段包.ts';
 import type { SectionContext } from '../../../engine/voxel/导入区段.ts';
-import type { VoxelGrid } from '../../../engine/voxel/生成.ts';
 import { modelFileName } from '../../../engine/voxel/区段模型.ts';
 import { loadFarVoxelLib } from '../体素库.ts';
 import { EntryTable } from '../烘焙/条目.ts';
-import { encodeSection, fromColumnMajor } from '../烘焙/区段编码.ts';
+import { encodeSection, gridData } from '../烘焙/区段编码.ts';
 import { walkSections, readPackModel } from '../烘焙/读区段.ts';
 import { readPackDoc, writePackDoc } from '../烘焙/包信息.ts';
 import { readTerrainTable, registerTerrainEntry, versionDir, release, packManifest, type TerrainRecord } from '../版本.ts';
 import { compareTrimmed, keepTable, writeTrimmed, routeTrimMethod } from '../裁级/裁剪.ts';
 import { nodeDataSource } from '../node数据源.ts';
-import { readTerrainEdits } from '../作品地形改动.ts';
-import { codeRoot } from '../../环境/路径.ts';
-import { workRoot } from '../../环境/作品.ts';
-import { dataRoot, draftRoot } from '../../环境/配置.ts';
+import { draftRoot } from '../../环境/配置.ts';
 import { farSectionData } from './区段烘焙.ts';
 import type { WorldDecl } from '../声明.ts';
 
@@ -29,12 +25,6 @@ const maskText = (mask: Uint8Array) => {
   const bits = Buffer.alloc(Math.ceil(mask.length / 8));
   mask.forEach((v, c) => (bits[c >> 3]! |= v << (c & 7)));
   return bits.toString('base64');
-};
-const gridData = (id: SectionId, v: VoxelGrid, palette: number[]) => {
-  const cols = v.nx * v.ny,
-    cm = new Uint16Array(v.vox.length);
-  for (let k = 0; k < v.nz; k++) for (let c = 0; c < cols; c++) cm[c * v.nz + k] = v.vox[k * cols + c]!;
-  return fromColumnMajor(id, v.origin[2] / v.cell, v.nz, cm, palette, cols);
 };
 const idFromKey = (key: string): SectionId => {
   const [L, i, j] = key.split('|').map(Number) as [number, number, number];
@@ -50,7 +40,7 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
     P = lib.sectionPack;
   // 并列也给主世界渲染使用，加载方块表的 Node 钩子注册完才能导入。
   const { emptyColumns, mergeColumns } = lib.merge;
-  const { sectionKey, sectionBounds } = lib.sections;
+  const { sectionKey } = lib.sections;
   const registry = readTerrainTable().pack,
     dir = (n: string) => versionDir(n, registry[n]!.version);
   const info = readPackDoc(lib, dir(base)),
@@ -65,31 +55,8 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
   info.biome.forEach((b) => table.internBiome(b));
   const stateMap = lm.state.map((s) => table.internState(s)),
     biomeMap = lm.biome.map((b) => table.internBiome(b));
-  const edits = await readTerrainEdits(codeRoot(), workRoot(), dataRoot());
-  if (!edits) throw Error('缺作品地形改动的素材，不能烘焙');
-  const edit = edits.filter((e) => e.pack === base);
-  if (!edit.length) throw Error(`没有 ${base} 的作品挖框/整平登记`);
-  const cutBoxes = edit.flatMap((e) =>
-    e.digBoxes.map((m) => ({
-      boxes: [m.from[0]! - ox, oz - 1 - m.to[2]!, m.from[1]! - oy, m.to[0]! + 1 - ox, oz - m.from[2]!, m.to[1]! + 1 - oy],
-      留: m.留 ? lib.imported.globRegex(m.留) : null,
-    })),
-  );
-  const flat = edit.flatMap((e) => e.flattenAreas);
-  const tables = P.buildPackTables(info),
-    lmTables = P.buildPackTables(lm);
-  const context = (id: SectionId, isBase: boolean): SectionContext => {
-    const [x, y, w] = sectionBounds(id),
-      c = 2 ** id.L;
-    const hits = (a: number, b: number, d: number, e: number) => a < x + w + c && d > x - c && b < y + w + c && e > y - c;
-    return {
-      info: isBase ? info : lm,
-      tables: isBase ? tables : lmTables,
-      variesByPos: [],
-      cutBoxes: isBase ? cutBoxes.filter(({ boxes: b }) => hits(b[0]!, b[1]!, b[3]!, b[4]!)) : [],
-      flattenAreas: isBase ? flat.filter((a) => hits(a.x0 - ox, oz - a.z0 - a.nz, a.x0 + a.nx - ox, oz - a.z0)) : [],
-    };
-  };
+  const cleanContext = (source: typeof info): SectionContext => ({ info: source, tables: P.buildPackTables(source), variesByPos: [], cutBoxes: [], flattenAreas: [] });
+  const baseContext = cleanContext(info), landmarkContext = cleanContext(lm);
   // 完整版留原来可查的真实区段；存档外只做航线及其所有祖先，另铺全幅最粗一级。不是把整个远景生成 L0。
   type Raw = ReturnType<typeof walkSections> extends Generator<infer T> ? T : never;
   const originals = new Map<string, { row: Raw; base: boolean }>();
@@ -148,7 +115,7 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
         const sim = (mask?: Uint8Array) => lib.distant.distantSection(grid, origin, id, mask ? (c) => !!mask[c] : undefined);
         if (original) {
           const d = original.row.取(),
-            ctx = context(id, original.base),
+            ctx = original.base ? baseContext : landmarkContext,
             v = lib.imported.importedSectionVoxels(d, ctx),
             mask = emptyColumns(v);
           if (mask && original.base) edges[key] = { bottom: v.origin[2] / v.cell, nz: v.nz, empty: maskText(mask) };
@@ -160,8 +127,6 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
                 palette[k] = stateMap[palette[k]!]!;
                 if (palette[k + 1] !== P.noBiome) palette[k + 1] = biomeMap[palette[k + 1]!]!;
               }
-            for (let n = palette.length / 2; n < v.palette.length; n++)
-              palette.push(table.internState(lib.blockTable.blockNames[v.palette[n]!.v - 1]!), P.noBiome);
             if (mask) {
               const fill = sim(mask),
                 sd = farSectionData(lib, table, grid, origin, id, fill);
@@ -169,8 +134,7 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
               const sv = P.sectionToVoxels(sd, { value: new Uint16Array(table.stateList.length), 色: () => [255, 255, 255] });
               const merged = mergeColumns(v, sv, mask);
               data = gridData(id, merged, [...palette, ...sd.palette.slice(2), table.internState('minecraft:stone'), P.noBiome]);
-            } else if (ctx.cutBoxes.length || ctx.flattenAreas.length) data = gridData(id, v, palette);
-            else if (!original.base) data = { ...d, palette: Uint16Array.from(palette) };
+            } else if (!original.base) data = { ...d, palette: Uint16Array.from(palette) };
             realBytes = data === d && original.base ? original.row.bytes : encodeSection(data, model);
           }
         }

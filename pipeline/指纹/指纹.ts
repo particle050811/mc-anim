@@ -11,7 +11,7 @@
 //   缺字节  闭包里 import 的资产字节不在数据根（公开仓库只带 随仓库.toml 的段要用的）、打进的是占位的（分发/缺字节.ts）：记这些 id；都在就不写这个键
 // 指纹 = 项按键排序后的 JSON 的 sha256；.指纹.json 另存 明细（路径 → 模块哈希、asset id → sha），不进指纹，只给 anim stale 说明是哪个文件变了。
 import crypto from 'node:crypto';
-import { selectTerrainPolicy, type TerrainRecord } from '../世界/版本.ts';
+import { terrainPolicies, type TerrainRecord } from '../世界/版本.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { codeRoot, relativeToCodeRoot } from '../环境/路径.ts';
@@ -66,7 +66,7 @@ export const registeredTerrainEntries = (): Record<string, TerrainRecord> => {
   return JSON.parse(fs.readFileSync(file, 'utf8')).pack ?? {};
 };
 export const readTerrainEntries = (trial?: number): Record<string, TerrainRecord> =>
-  Object.fromEntries(Object.entries(registeredTerrainEntries()).map(([k, v]) => [k, selectTerrainPolicy(v, trial)]));
+  terrainPolicies(registeredTerrainEntries(), trial);
 /** 包 → 完整包的版本。指纹的地形项记它（裁过的包从它派生，重裁不让段过期，一致由 anim check 的 地形覆盖 保证） */
 export const readTerrainVersionTable = (): Record<string, string> => Object.fromEntries(Object.entries(readTerrainEntries()).map(([k, v]) => [k, v.version]));
 

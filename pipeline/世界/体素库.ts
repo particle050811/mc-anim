@@ -71,6 +71,12 @@ export const loadVoxelLib = () =>
     return { sectionPack, sections: section, sectionDecoder, generated: generator, biomeColor: biomeColor, blockTable, knowledge };
   })());
 
+/** 作品覆盖层只改底包的体素，不依赖远景网格和采样器。 */
+export const loadImportedVoxelLib = async () => {
+  const lib = await loadVoxelLib();
+  return { ...lib, imported: await loadModule<typeof importedModule>('导入区段.ts') };
+};
+
 // 普通存档的导入、转码不需要远景海底和草花的资产。
 export const loadFarVoxelLib = async () => {
   const lib = await loadVoxelLib();
