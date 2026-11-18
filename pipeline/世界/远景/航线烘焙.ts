@@ -17,6 +17,8 @@ import { nodeDataSource } from '../node数据源.ts';
 import { draftRoot } from '../../环境/配置.ts';
 import { farSectionData } from './区段烘焙.ts';
 import type { WorldDecl } from '../声明.ts';
+import { copyTerrain, parentTerrain } from './照抄.ts';
+import type { SectionData } from '../../../engine/voxel/区段包.ts';
 
 // 看片分界：L3 替换会明显改变两帧望远的林冠；L4 起基本只改地平线。正式保真版不按这道门槛替换。
 export const simulateFromLevel = 4;
@@ -31,7 +33,7 @@ const idFromKey = (key: string): SectionId => {
   return { L, i, j };
 };
 
-export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels: number[], scratch: string = path.join(draftRoot(), '工作-暮色合包')) => {
+export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels: number[], scratch: string = path.join(draftRoot(), '工作-暮色合包'), copy = false) => {
   const far = world.farView!,
     pack = far.sectionPack!,
     base = world.pack[0]!.name,
@@ -95,6 +97,34 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
       return { L, folder, simulated: [] as string[] };
     });
   const edges: Record<string, BoundaryColumns> = {};
+  const copyLeaf = copy && copyTerrain(lib, table, grid, origin, [...originals.values()].filter(v => v.base).map(v => v.row), world.visible.faithful.map(v => v.boxes));
+  const cache = new Map<string, SectionData>();
+  const copied = (id: SectionId): SectionData => {
+    const key = sectionKey(id), cached = cache.get(key);
+    if (cached) return cached;
+    if (!copyLeaf) throw Error('未启用照抄');
+    const item = originals.get(key);
+    const fill = () => id.L > 3 ? parentTerrain(lib, table, id, copied) : copyLeaf(id);
+    let data: SectionData;
+    if (!item) data = fill();
+    else {
+      data = item.row.取();
+      const vox = lib.imported.importedSectionVoxels(data,item.base ? baseContext : landmarkContext), mask = emptyColumns(vox);
+      if (!item.base) data = { ...data, palette: data.palette.map((v,n) => n%2 ? (v === P.noBiome ? v : biomeMap[v]!) : stateMap[v]!) };
+      if (mask) {
+        if (item.base) edges[key] = { bottom: vox.origin[2]/vox.cell,nz:vox.nz,empty:maskText(mask) };
+        const other = fill();
+        if (id.L > 3) data = other;
+        else {
+          const sv = P.sectionToVoxels(other,{value:new Uint16Array(table.stateList.length),色:()=>[255,255,255]});
+          data = gridData(id,mergeColumns(vox,sv,mask),[...data.palette,...other.palette.slice(2),table.internState('minecraft:stone'),P.noBiome]);
+        }
+      }
+    }
+    if (cache.size >= 512) cache.delete(cache.keys().next().value!);
+    cache.set(key,data);
+    return data;
+  };
   const keep = await keepTable(used, keys, coarsestLevel, coarsestLevel),
     tiles = new Map<string, SectionId[]>();
   for (const key of keys) {
@@ -111,6 +141,12 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
       for (const id of ids) {
         const key = sectionKey(id),
           original = originals.get(key);
+        if (copy) {
+          const data = copied(id);
+          parts[0]!.push({id, bytes: original?.base && !edges[key] ? original.row.bytes : encodeSection(data, model)});
+          if (!original) stages[0]!.simulated.push(key);
+          continue;
+        }
         let realBytes: Uint8Array | undefined, simBytes: Uint8Array | undefined;
         const sim = (mask?: Uint8Array) => lib.distant.distantSection(grid, origin, id, mask ? (c) => !!mask[c] : undefined);
         if (original) {
@@ -149,7 +185,7 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
     }
     const records: Record<string, TerrainRecord> = {};
     for (const stage of stages) {
-      const level = Number.isFinite(stage.L) ? String(stage.L) : 'outside';
+      const level = copy ? 'copy' : Number.isFinite(stage.L) ? String(stage.L) : 'outside';
       const index: RouteIndex = {
         keys: [...keys],
         simulated: stage.simulated,
@@ -172,7 +208,7 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
       });
       const full = release(pack, stage.folder),
         registered = await registerTerrainEntry(pack, full.version, {
-          source: `${base}@${registry[base]!.version}、${land}@${registry[land]!.version}、${far.pack}@${registry[far.pack]!.version}；模拟起级 ${level}`,
+          source: `${base}@${registry[base]!.version}、${land}@${registry[land]!.version}、${far.pack}@${registry[far.pack]!.version}；${copy ? '存档边外照抄' : `模拟起级 ${level}`}`,
           license: registry[base]!.license,
           visibility: '发布',
         });
