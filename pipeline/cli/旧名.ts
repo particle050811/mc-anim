@@ -106,8 +106,6 @@ export const renamedFlags: Record<string, string> = {
   '--理由': '--reason',
   '--抽': '--sample',
   '--只看': '--dry-run',
-  '--存基点': '--save-base',
-  '--对基点': '--vs-base',
   '--严格': '--strict',
   '--名': '--name',
   '--重渲': '--rerender',
