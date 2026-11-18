@@ -25,6 +25,7 @@ import { clearBufferPool } from './容器池.ts';
 import { useTerrainDebug, TerrainMarkers } from './调试.tsx';
 import { posScale, crossGroup, visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
+import { outputScale } from '../core/渲染级别.ts';
 import { sectionKey, sectionBounds, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 import { trialOff, trialParams } from '../core/试看.ts';
@@ -32,8 +33,10 @@ import { RouteTable, routeDecide, type RouteView } from './航线定级.ts';
 import { coarsenessStats, switchStats, type FramePick } from './航线定级统计.ts';
 import { isCoverRun, setCoverFrame } from './地形用量.ts';
 
-// 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）
+// 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）。
+// 下面两个上限都至少放大到装得下这一帧要画的面（`frameSlack` 倍）：照一帧 560 万面定的，穿塔一帧已过千万面，定死的话每帧都在挤
 const maxCachedFaces = 6_000_000;
+const frameSlack = { cache: 1.25, kept: 1.5 };
 const materialClasses: MaterialClass[] = ['实心', '镂空', '实心树叶', '水', '花草'];
 
 // 区段网格（CPU 这边的数组）按世界键跨渲染器留着：拼段的下一截是新的 Canvas、新的 WebGL 上下文，前一截建过的区段不用再取、再换体素块、再建网格，只重新上传。
@@ -55,10 +58,10 @@ const keep = (k: string, rec: Kept) => {
   keptFaces += keptCost(rec);
   return rec;
 };
-const trimKept = () => {
-  if (keptFaces <= maxKeptFaces) return;
+const trimKept = (limit: number) => {
+  if (keptFaces <= limit) return;
   for (const [k, rec] of [...kept.entries()].sort((a, b) => a[1].used - b[1].used)) {
-    if (keptFaces <= maxKeptFaces * 0.8) break;
+    if (keptFaces <= limit * 0.8) break;
     kept.delete(k);
     keptFaces -= keptCost(rec);
     // 缓存里的 Entry 还指着这条记录（记最近画过用）：数组不放掉就一直被它钉着，一帧画 1900 万面时 CPU 这边多留一千多兆，上限等于没管住
@@ -205,8 +208,6 @@ export const resolveRouteLod = (registered: RouteLod | undefined, splitPixels: n
 // 差的就是这半秒里切级改掉的像素（镜头没动，差里没有运动）
 const routeStatsTrial = () => trialParams<boolean | Record<string, unknown>>('航线定级统计');
 const routeStatsNumber = (stats: ReturnType<typeof routeStatsTrial>, key: '扫帧' | '选级偏帧') => (typeof stats === 'object' && typeof stats[key] === 'number' ? stats[key] : 0);
-// 输出像素对页面像素的倍数：渲染时是截图放大倍数（4K 成片 3），Studio 照 4K 算
-const outputScale = () => (getRemotionEnvironment().isRendering ? window.devicePixelRatio || 1 : 3);
 // 一格超过这么多输出像素算「比现状最粗的还粗」：现状门槛 2.25，细一级到 2.25 就换，所以画出来的一格最多 4.5
 const baselineMaxCellPixels = 4.5;
 const routeCamera = new THREE.PerspectiveCamera();
@@ -230,7 +231,7 @@ export type VoxelWorldProps = {
   worldKey: string;
   source: VoxelSource;
   center: number[]; // 镜头位置（场景坐标）
-  pixel: number; // 细一级的一格在画面上还有这么多像素（画面的 CSS 像素）就细分，见 lib/渲染级别.ts
+  pixel: number; // 细一级的一格在输出画面上还有这么多像素就细分（输出像素，不是页面 CSS 像素），见 engine/core/渲染级别.ts
   far: number; // 最远画到多远（米）
   heightRange?: [number, number]; // 地面和树最低、最高大概在哪（米），判断区段在不在视野里用
   shadowLightDir?: V3; // 地形投影的光向（指向光源）：给了才建投影网格
@@ -309,7 +310,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
       test(Math.min(x0, x0 + sx) - 8, Math.min(y0, y0 + sy) - 8, heightRange[0], Math.max(x1, x1 + sx) + 8, Math.max(y1, y1 + sy) + 8, heightRange[1]);
   // 航线定级的参数：镜头登记航线时给的，试看逐项盖。试看的「门槛」「下限」按输出像素给，换成页面像素（pixelAngle 按页面高算；4K 上 2.25 ÷ 3 正好是画质门槛 0.75）
   const look = lookaheads.get(camera);
-  const { splitCssPixels, floorCssPixels, lookSec, hold, gridHz } = resolveRouteLod(look?.route.lod, splitPixels, outputScale);
+  const { splitCssPixels, floorCssPixels, lookSec, hold, gridHz } = resolveRouteLod(look?.route.lod, splitPixels / outputScale(), outputScale);
   const statsTrial = routeStatsTrial();
   const scanFrames = routeStatsNumber(statsTrial, '扫帧');
   const pickOffsetFrames = routeStatsNumber(statsTrial, '选级偏帧');
@@ -509,17 +510,20 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   for (const batch of batches) if (batch?.items.length) group.add(batch);
   if (shadowBatch.items.length && !debug.noShadow) group.add(shadowBatch);
   // 这一帧用到的块不能被清掉
-  if (world.faceCount > maxCachedFaces) {
+  let drawnFaces = 0;
+  for (const section of drawList) drawnFaces += cache.get(sectionKey(section))?.faceCount ?? 0;
+  const cacheLimit = Math.max(maxCachedFaces, drawnFaces * frameSlack.cache);
+  if (world.faceCount > cacheLimit) {
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
     for (const [k, entry] of all) {
-      if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
+      if (world.faceCount <= cacheLimit * 0.8 || entry.used > frameClock) break;
       releaseBatchItems(ctx, [...entry.items.map((x) => x[1]), ...(entry.shadowOnly ? [entry.shadowOnly] : [])]);
       if (entry.water) releaseVoxelMeshes(ctx, [entry.water]);
       world.faceCount -= entry.faceCount;
       cache.delete(k);
     }
   }
-  trimKept();
+  trimKept(Math.max(maxKeptFaces, drawnFaces * frameSlack.kept));
   // 试看 航线定级统计（只算、只打日志，不动画面）
   if (statsTrial && look) {
     const scale = outputScale();
