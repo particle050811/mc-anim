@@ -2,7 +2,7 @@
 // 模型.bin：小端 u32[魔数 MCQM, 表格式 1, 类数, 状态跨度]，然后 u8 类[跨度]、u16 初值[类数×1371]、u16 权重[类数×跨度]。
 // 类数 1、跨度 0 是 16 字节的中性表：初值 1024、未见状态权重 1。小包不必承担完整训练表的固定成本。
 export type SectionModel = { classes: number; stride: number; map: Uint8Array; init: Uint16Array; weights: Uint16Array };
-export const sectionFormatVersion = 4;
+export const sectionFormatVersion = 5;
 export const modelFileName = '模型.bin';
 const magic = 0x4d51434d;
 export const defaultModel = (): SectionModel => ({ classes: 1, stride: 0, map: new Uint8Array(65536), init: new Uint16Array(1371).fill(1024), weights: new Uint16Array(0) });

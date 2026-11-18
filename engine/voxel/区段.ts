@@ -6,7 +6,9 @@
 
 export const sectionCells = 64;
 export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 66 列（区段包、解码共用；pipeline 经体素库取，可见.ts 另写死一份并对过）
-export const coarsestLevel = 6; // 一格 64 米，一块 4 公里
+// 最粗一级每个包自己定（包.json 的 coarsestLevel，engine/voxel/区段包.ts），挑区段、块大小都按包取；现有包都是 6（一格 64 米、一块 4 公里）。
+// 上限 15：航线定级的区段键给级别留 4 位（航线定级.ts 的 nodeKey）
+export const maxCoarsestLevel = 15;
 export type SectionId = { L: number; i: number; j: number };
 export const sectionKey = (q: SectionId) => `${q.L}|${q.i}|${q.j}`;
 // 区段的范围（世界坐标，米）
@@ -26,6 +28,7 @@ export type PickSectionsParams = {
   decide?: (level: number, i: number, j: number, wantsSplit: boolean, finerPixels: number) => boolean;
   // 这一块能不能再细分（包里有没有更细的区段，engine/voxel/区段包.ts 的 splittable）；不给 = 都能
   canSplit?: (level: number, i: number, j: number) => boolean;
+  coarsestLevel: number; // 从这一级往下走（来源的 coarsestLevel）
 };
 
 export const pickSections = (params: PickSectionsParams): SectionId[] => {
@@ -50,8 +53,9 @@ export const pickSections = (params: PickSectionsParams): SectionId[] => {
     }
     out.push({ L: level, i, j });
   };
-  const S0 = sectionCells * 2 ** coarsestLevel;
+  const rootLevel = params.coarsestLevel;
+  const S0 = sectionCells * 2 ** rootLevel;
   for (let j = Math.floor((cy - params.farM) / S0); j <= Math.floor((cy + params.farM) / S0); j++)
-    for (let i = Math.floor((cx - params.farM) / S0); i <= Math.floor((cx + params.farM) / S0); i++) visit(coarsestLevel, i, j);
+    for (let i = Math.floor((cx - params.farM) / S0); i <= Math.floor((cx + params.farM) / S0); i++) visit(rootLevel, i, j);
   return out;
 };

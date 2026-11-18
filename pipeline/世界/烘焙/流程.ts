@@ -13,6 +13,7 @@ import { regionDir, saveDir, pickPack, editFile, type PackDecl, type WorldDecl }
 import { loadVoxelLib } from '../体素库.ts';
 import { release, newStaging, registerTerrain, registerTerrainEntry, readTerrainTable, type TerrainRecord } from '../版本.ts';
 import { bake } from './烘焙.ts';
+import type { CoarseHeightMap } from '../../../engine/voxel/区段包.ts';
 
 export const columnSegmentCacheDir = () => dataPath('cache', '列段');
 export const defaultThreads = () => Math.max(1, os.availableParallelism() - 2);
@@ -73,17 +74,17 @@ export const bakeWorld = async (w: WorldDecl, o: BakeOptions): Promise<PackResul
         (same ? '，和 assets/地形版本.json 登记的一样' : shouldRegister ? `，已登记进 assets/地形版本.json（原来是 ${existing?.version ?? '没有'}），要随代码提交；用这个包的段都会过期` : `，没登记（${b.entries ? '--no-register' : '声明里 登记 = false'}；登记的是 ${existing?.version ?? '没有'}）`),
     );
     for (const x of editApplier?.warnings ?? []) o.log(`  编辑：${x}`);
-    warnFrozenCoarseHeight(b.name, r.pack, voxelLib, o.log);
+    warnFrozenCoarseHeight(b.name, r.pack.maps.coarse, voxelLib, o.log);
     results.push({ pack: b.name, version: version, 目录: dir, priorVersion: existing?.version, entry, registered: same || shouldRegister, editStepCount: editSet?.step.length ?? 0, editWarnings: [...(editApplier?.warnings ?? [])], missingStateCount: r.missingStates.size, missingBiomeCount: r.missingBiomes.size });
   }
   return results;
 };
 
 // 编排用的是冻结的粗高度（engine/voxel/冻结粗高度.ts、assets/冻结粗高度/）：这个包冻结过、粗高度又变了，提醒一下
-const warnFrozenCoarseHeight = (pack: string, info: Parameters<Awaited<ReturnType<typeof loadVoxelLib>>['sectionPack']['decodeCoarseHeight']>[0], voxelLib: Awaited<ReturnType<typeof loadVoxelLib>>, log: (s: string) => void) => {
+const warnFrozenCoarseHeight = (pack: string, coarse: CoarseHeightMap, voxelLib: Awaited<ReturnType<typeof loadVoxelLib>>, log: (s: string) => void) => {
   const f = path.join(codeRoot(), 'assets', '冻结粗高度', `${pack}.json`);
   if (!fs.existsSync(f)) return;
   const frozenFingerprint = JSON.parse(fs.readFileSync(f, 'utf8')).fingerprint as string;
-  const currentFingerprint = voxelLib.sectionPack.coarseHeightFingerprint(voxelLib.sectionPack.decodeCoarseHeight(info));
+  const currentFingerprint = voxelLib.sectionPack.coarseHeightFingerprint(coarse);
   if (frozenFingerprint !== currentFingerprint) log(`  粗高度变了（冻结的 ${frozenFingerprint} → ${currentFingerprint}），编排还按冻结的那份排；要跟上新地形得重新冻结（anim world freeze --write）并核对航线`);
 };

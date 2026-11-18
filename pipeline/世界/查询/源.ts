@@ -8,7 +8,8 @@ import path from 'node:path';
 import { columnIndex, type UnpackedColumnSegmentRegion } from '../列段.ts';
 import type { RegionSource } from '../区域源.ts';
 import type { VoxelLib } from '../体素库.ts';
-import type { PackageInfo, SectionData } from '../../../engine/voxel/区段包.ts';
+import type { PackageInfo, SectionData, TileIndex } from '../../../engine/voxel/区段包.ts';
+import { readTileIndex } from '../烘焙/读区段.ts';
 
 /** 一列从上往下的段，盖满 [y底, y顶]；状态 null = 没数据 */
 export type ColumnSeg = { bottom: number; topY: number; state: string | null; biome: string | null };
@@ -103,7 +104,7 @@ export class PackBlockSource implements BlockSource {
   private model: SectionModel;
   private dir: string;
   private lib: VoxelLib;
-  private heads = new Map<string, Uint32Array | null>();
+  private heads = new Map<string, TileIndex | null>();
   private sections = new Map<string, { d: SectionData; start: Uint32Array } | null>();
 
   constructor(dir: string, voxelLib: VoxelLib, description: string) {
@@ -119,15 +120,16 @@ export class PackBlockSource implements BlockSource {
     const k = `${si},${sj}`;
     if (this.sections.has(k)) return this.sections.get(k)!;
     const P = this.lib.sectionPack;
-    const { ti, tj, slot } = P.sectionInTile({ L: 0, i: si, j: sj });
+    const { ti, tj } = P.sectionInTile({ L: 0, i: si, j: sj }, this.packageInfo.coarsestLevel);
     const f = path.join(this.dir, P.tileFileName(ti, tj));
     let tileHeader = this.heads.get(`${ti},${tj}`);
     if (tileHeader === undefined) {
-      tileHeader = fs.existsSync(f) ? P.decodeTileHeader(new Uint8Array(fs.readFileSync(f).subarray(0, P.tileHeaderLen))) : null;
+      tileHeader = fs.existsSync(f) ? readTileIndex(this.lib, f) : null;
       this.heads.set(`${ti},${tj}`, tileHeader);
     }
     let v: { d: SectionData; start: Uint32Array } | null = null;
-    const byteOffset = tileHeader?.[2 * slot] ?? 0, length = tileHeader?.[2 * slot + 1] ?? 0;
+    const at = tileHeader && P.findInTile(tileHeader, { L: 0, i: si, j: sj });
+    const byteOffset = at?.off ?? 0, length = at?.len ?? 0;
     if (length) {
       const fd = fs.openSync(f, 'r');
       const buf = Buffer.alloc(length);

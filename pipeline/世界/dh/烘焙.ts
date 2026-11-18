@@ -1,6 +1,6 @@
 // 从 DH 的 LOD 库（读库.ts）烘区段包：我们的第 L 级直接取 DH 的第 L 级（两边一个区段都是 64 × 64 列、一列 2^L 米），不从第 0 级往上合并。
 // 库里细的级只有玩家附近有，所以这种包各处最细能到哪一级不一样：
-// - 第 6 级（最粗）铺满范围：DH 第 6 级，没有的地方拿第 7、8 级（128、256 米一列）的列放大顶上。
+// - 最粗一级（默认第 6 级）铺满范围：DH 的同一级，没有的地方拿更粗的两级（第 6 级时是第 7、8 级，128、256 米一列）的列放大顶上。
 // - 往下每一级：一个区段只要它的父区段里有 DH 原生的更细数据就写，四个兄弟一起写（挑区段是四叉树，要么四块都换细要么不换）；
 //   兄弟里 DH 没有这一级的列，拿上一级的列放大顶上。
 // - 包.json 多一项 splittable（engine/voxel/区段包.ts）：哪些区段能再往下细分。挑区段时不能分的就停在这一级。
@@ -8,28 +8,30 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { defaultModel, modelBytes, modelFileName } from '../../../engine/voxel/区段模型.ts';
-import type { PackageInfo, SplittableLevel } from '../../../engine/voxel/区段包.ts';
+import type { SplittableBits } from '../../../engine/voxel/区段包.ts';
 import type { VoxelLib } from '../体素库.ts';
-import { finishPack, type BakeResult } from '../烘焙/烘焙.ts';
+import { finishPack, type BakeResult, type StagedPack } from '../烘焙/烘焙.ts';
 import type { VisibleSettings } from '../烘焙/可见.ts';
 import { noSurface, noTop, type Level } from '../烘焙/合并.ts';
 import { EntryTable } from '../烘焙/条目.ts';
-import { SectionWriter } from '../烘焙/写区段.ts';
+import { SectionWriter, defaultCoarsestLevel } from '../烘焙/写区段.ts';
 import type { DhColumns, DhDb } from './读库.ts';
 
 export type DhBakeParams = {
   db: DhDb;
   dimension: string;
-  /** 场景原点 [ox, oy, oz]：ox、oz 是 4096 的整数倍（最粗一级的区段要和 DH 的对齐） */
+  /** 场景原点 [ox, oy, oz]：ox、oz 是块边长（最粗级 6 是 4096）的整数倍（最粗一级的区段要和 DH 的对齐） */
   origin: readonly [number, number, number];
-  /** 烘的范围，游戏坐标 [x0, z0, x1, z1)，对齐 4096 */
+  /** 烘的范围，游戏坐标 [x0, z0, x1, z1)，对齐块边长 */
   extent: readonly [number, number, number, number];
-  /** 高度范围（游戏 y，两端都含）：底 − oy、顶 + 1 − oy 都是 64 的倍数 */
+  /** 高度范围（游戏 y，两端都含）：底 − oy、顶 + 1 − oy 都是最粗一级一格（最粗级 6 是 64 米）的倍数 */
   yRange: readonly [number, number];
   output: string;
   lib: VoxelLib;
   log?: (s: string) => void;
   visible?: VisibleSettings | null;
+  /** 最粗一级（包.json 的 coarsestLevel），不给 = defaultCoarsestLevel */
+  coarsestLevel?: number;
 };
 
 const coarseCellMeters = 64; // 粗高度图一格 = 第 0 级一个区段：各级区段有没有数据都能从它判
@@ -39,13 +41,13 @@ const cacheLimit = 400;
 
 export const bakeDh = async (p: DhBakeParams): Promise<BakeResult & { sectionCounts: number[] }> => {
   const { lib: voxelLib, db } = p;
-  const { coarsestLevel } = voxelLib.sections;
-  const tileCols = voxelLib.sectionPack.tileSizeM;
+  const coarsestLevel = p.coarsestLevel ?? defaultCoarsestLevel;
+  const tileCols = voxelLib.sectionPack.tileSizeOf(coarsestLevel), topCell = 2 ** coarsestLevel;
   const [OX, OY, OZ] = p.origin;
   const [ex0, ez0, ex1, ez1] = p.extent;
   for (const v of [OX, OZ, ex0, ez0, ex1, ez1]) if (v % tileCols) throw new Error(`原点和范围的 x、z 要是 ${tileCols} 的整数倍，给的有 ${v}`);
   const zb = p.yRange[0] - OY, zt = p.yRange[1] - OY;
-  if (zb % 64 || (zt + 1) % 64 || zt < zb) throw new Error(`yRange 减 oy 要对齐 64（最粗一级的格），给的是 ${p.yRange.join('～')}`);
+  if (zb % topCell || (zt + 1) % topCell || zt < zb) throw new Error(`yRange 减 oy 要对齐 ${topCell}（最粗一级的格），给的是 ${p.yRange.join('～')}`);
   const outDir = p.output;
   const staged = path.join(outDir, '.训练输入');
   mkdirSync(staged, { recursive: true });
@@ -54,7 +56,7 @@ export const bakeDh = async (p: DhBakeParams): Promise<BakeResult & { sectionCou
   const entryTable = new EntryTable(voxelLib.knowledge);
   const { entryFullCube, stateVoxel, missingStates, missingBiomes, biomeKnown } = entryTable;
 
-  // 块 (ti, tj)：场景 X ∈ [ti·4096, …)，Y ∈ [tj·4096, …)；场景 Y = oz − 游戏 z
+  // 块 (ti, tj)：场景 X ∈ [ti·块边长, …)，Y ∈ [tj·块边长, …)；场景 Y = oz − 游戏 z
   const ti0 = (ex0 - OX) / tileCols, ti1 = (ex1 - OX) / tileCols;
   const tj0 = (OZ - ez1) / tileCols, tj1 = (OZ - ez0) / tileCols;
   // 我们的区段 (L, i, j) ↔ DH 的 (L, PosX, PosZ)：i = PosX − ox/边长，j = oz/边长 − 1 − PosZ
@@ -195,7 +197,7 @@ export const bakeDh = async (p: DhBakeParams): Promise<BakeResult & { sectionCou
     if (parent.tops[parentCol] !== noTop) b.tops[col] = parent.tops[parentCol]! * 2 + 1;
   };
 
-  const writer = new SectionWriter(voxelLib, entryTable, staged, padCols, tileCols);
+  const writer = new SectionWriter(voxelLib, entryTable, staged, padCols, coarsestLevel);
   const sectionCounts = new Array<number>(coarsestLevel + 1).fill(0);
   const nativeColumns = new Array<number>(coarsestLevel + 1).fill(0);
   const t0 = performance.now();
@@ -264,7 +266,7 @@ export const bakeDh = async (p: DhBakeParams): Promise<BakeResult & { sectionCou
   p.log?.(`各级区段数（0～${coarsestLevel}）：${sectionCounts.join('、')}；DH 原生的列数：${nativeColumns.join('、')}`);
 
   // 能细分的区段，按级一张位图
-  const splittableInfo: (SplittableLevel | null)[] = [null];
+  const splittableInfo: SplittableBits = [null];
   for (let L = 1; L <= coarsestLevel; L++) {
     const perTile = tileCols / sectionSize(L);
     const i0 = ti0 * perTile, j0 = tj0 * perTile, ni = (ti1 - ti0) * perTile, nj = (tj1 - tj0) * perTile;
@@ -274,16 +276,15 @@ export const bakeDh = async (p: DhBakeParams): Promise<BakeResult & { sectionCou
       const n = (j - j0) * ni + (i - i0);
       bits[n >> 3]! |= 1 << (n & 7);
     }
-    splittableInfo.push({ i0, j0, ni, nj, bits: Buffer.from(bits).toString('base64') });
+    splittableInfo.push({ i0, j0, ni, nj, bits });
   }
-  const pack: PackageInfo = {
-    version: voxelLib.sectionPack.formatVersion,
+  const pack: StagedPack = {
     dimension: p.dimension,
     origin: [OX, OY, OZ],
     state: entryTable.stateList,
     biome: entryTable.biomeList,
-    coarseHeight: { cell: coarseCellMeters, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, height: Buffer.from(coarseHeights.buffer).toString('base64') },
-    splittable: splittableInfo,
+    coarsestLevel,
+    maps: { coarse: { cell: coarseCellMeters, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, height: coarseHeights }, splittable: splittableInfo },
   };
   return { ...(await finishPack({ staged, outDir, pack, entryTable, writer, lib: voxelLib, visible: p.visible, log: p.log })), sectionCounts };
 };

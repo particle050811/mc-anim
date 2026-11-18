@@ -8,18 +8,19 @@ const pixelAngle = 1.43e-3;
 const splitPixels = 0.75;
 const farM = 6000;
 const featureTop = () => 0;
+const coarsestLevel = 6;
 const viewAt = (sec: number): RouteView => {
   const cx = speed * sec;
   return { camPos: [cx, 0, 150], pixelAngle, inView: (x0, y0, x1, y1) => x1 > cx && y1 > -(x1 - cx) && y0 < x1 - cx };
 };
 const cut: [number, number] = [0.5, 6.5];
-const newTable = (lookSec: number, hold: boolean) => new RouteTable({ lookSec, hold, gridHz: 64, splitPixels, farM, featureTop, viewAt });
-const plain = (sec: number) => pickSections({ ...viewAt(sec), splitPixels, farM, featureTop });
+const newTable = (lookSec: number, hold: boolean) => new RouteTable({ lookSec, hold, gridHz: 64, splitPixels, farM, featureTop, coarsestLevel, viewAt });
+const plain = (sec: number) => pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, coarsestLevel });
 const routed = (table: RouteTable, sec: number) => {
   const force = table.forFrame(sec, cut[0], cut[1]);
-  return pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, decide: routeDecide(force, 0) });
+  return pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, coarsestLevel, decide: routeDecide(force, 0) });
 };
-const routedWithFloor = (table: RouteTable, sec: number, floorPixels: number) => pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, decide: routeDecide(table.forFrame(sec, cut[0], cut[1]), floorPixels) });
+const routedWithFloor = (table: RouteTable, sec: number, floorPixels: number) => pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, coarsestLevel, decide: routeDecide(table.forFrame(sec, cut[0], cut[1]), floorPixels) });
 // 这一块自己的一格在镜头里几个像素（同 pickSections 的距离算法：到区段盒子最近点，地面高 0）
 const cellPixelsAt = (sec: number, q: SectionId) => {
   const size = 64 * 2 ** q.L;
@@ -100,17 +101,17 @@ describe('航线定级', () => {
   test('只留细：视野里的区段不变粗', () => {
     // 镜头先往前再倒退：照门槛会变粗，留细不会
     const backAndForth = (sec: number): RouteView => viewAt(sec < 3 ? sec : 6 - sec);
-    const table = new RouteTable({ lookSec: 0, hold: true, gridHz: 64, splitPixels, farM, featureTop, viewAt: backAndForth });
+    const table = new RouteTable({ lookSec: 0, hold: true, gridHz: 64, splitPixels, farM, featureTop, coarsestLevel, viewAt: backAndForth });
     const pick = (sec: number) => {
       const force = table.forFrame(sec, 0.5, 5.5);
-      return pickSections({ ...backAndForth(sec), splitPixels, farM, featureTop, decide: (level, i, j, wants) => wants || force(level, i, j) });
+      return pickSections({ ...backAndForth(sec), splitPixels, farM, featureTop, coarsestLevel, decide: (level, i, j, wants) => wants || force(level, i, j) });
     };
     let prev = pick(1);
     let plainCoarsen = 0;
     for (let m = 65; m <= 64 * 5; m++) {
       const cur = pick(m / 64);
       expect(diffPicks(prev, cur).filter((s) => s.kind === 'coarsen')).toEqual([]);
-      plainCoarsen += diffPicks(pickSections({ ...backAndForth((m - 1) / 64), splitPixels, farM, featureTop }), pickSections({ ...backAndForth(m / 64), splitPixels, farM, featureTop })).filter((s) => s.kind === 'coarsen').length;
+      plainCoarsen += diffPicks(pickSections({ ...backAndForth((m - 1) / 64), splitPixels, farM, featureTop, coarsestLevel }), pickSections({ ...backAndForth(m / 64), splitPixels, farM, featureTop, coarsestLevel })).filter((s) => s.kind === 'coarsen').length;
       prev = cur;
     }
     expect(plainCoarsen).toBeGreaterThan(20);
@@ -118,7 +119,7 @@ describe('航线定级', () => {
 
   test('航线函数不是航线秒的纯函数：报错，不悄悄用错表', () => {
     let drift = 0;
-    const table = new RouteTable({ lookSec: 1, hold: false, gridHz: 64, splitPixels, farM, featureTop, viewAt: (sec) => viewAt(sec + drift) });
+    const table = new RouteTable({ lookSec: 1, hold: false, gridHz: 64, splitPixels, farM, featureTop, coarsestLevel, viewAt: (sec) => viewAt(sec + drift) });
     table.forFrame(2, cut[0], cut[1]);
     drift = 0.01;
     expect(() => table.forFrame(2.1, cut[0], cut[1])).toThrow(/不是航线秒的纯函数/);
@@ -141,15 +142,24 @@ describe('航线定级', () => {
       for (const q of list) expect(q.L).toBeGreaterThanOrEqual(q.j >= 0 ? 2 : 4);
     };
     const sec = 3;
-    const limited = pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, canSplit });
+    const limited = pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, coarsestLevel, canSplit });
     check(limited);
     // 不限的时候这两半都挑得到更细的，说明上面是 canSplit 拦下的
     expect(plain(sec).some((q) => q.j >= 0 && q.L < 2)).toBe(true);
     expect(plain(sec).some((q) => q.j < 0 && q.L < 4)).toBe(true);
     // 没被拦到的地方和不限时一样
     expect(keys(limited.filter((q) => q.j >= 0 && q.L > 2))).toBe(keys(plain(sec).filter((q) => q.j >= 0 && q.L > 2)));
-    const table = new RouteTable({ lookSec: 2, hold: true, gridHz: 64, splitPixels, farM, featureTop, canSplit, viewAt });
-    for (const at of [2, 3.5, 5]) check(pickSections({ ...viewAt(at), splitPixels, farM, featureTop, canSplit, decide: routeDecide(table.forFrame(at, cut[0], cut[1]), 0) }));
+    const table = new RouteTable({ lookSec: 2, hold: true, gridHz: 64, splitPixels, farM, featureTop, coarsestLevel, canSplit, viewAt });
+    for (const at of [2, 3.5, 5]) check(pickSections({ ...viewAt(at), splitPixels, farM, featureTop, coarsestLevel, canSplit, decide: routeDecide(table.forFrame(at, cut[0], cut[1]), 0) }));
+  });
+
+  test('最粗级 8（一块 16 公里）：远处都要细分时挑出的和最粗级 6 一样；都不细分时停在第 8 级', () => {
+    for (const sec of [0, 2.5]) expect(keys(pickSections({ ...viewAt(sec), splitPixels, farM, featureTop, coarsestLevel: 8 }))).toBe(keys(plain(sec)));
+    const coarse = pickSections({ ...viewAt(1), pixelAngle: 10, splitPixels, farM, featureTop, coarsestLevel: 8 });
+    expect(coarse.length).toBeGreaterThan(0);
+    expect(coarse.every((q) => q.L === 8)).toBe(true);
+    const table = new RouteTable({ lookSec: 1, hold: true, gridHz: 64, splitPixels, farM, featureTop, coarsestLevel: 8, viewAt });
+    expect(keys(pickSections({ ...viewAt(2), splitPixels, farM, featureTop, coarsestLevel: 8, decide: routeDecide(table.forFrame(2, cut[0], cut[1]), 0) }))).toBe(keys(routed(newTable(1, true), 2)));
   });
 
   test('diffPicks：变细、变粗按较粗那一块各记一次，进出视野不算', () => {

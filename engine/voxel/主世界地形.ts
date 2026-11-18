@@ -209,7 +209,10 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
   const coarseHeights = imported.coarse;
   const baseSource = imported.source;
   const groundAt = fallbackSampler(coarseHeights, grid, seam, origin);
+  // 补充包的区段按主包的级取：最粗级要一样
+  if (options.supplement && options.supplement.source.coarsestLevel !== baseSource.coarsestLevel) throw new Error(`补充的导入包最粗级 ${options.supplement.source.coarsestLevel}，和主导入包的 ${baseSource.coarsestLevel} 不一样`);
   const source: VoxelSource = {
+    coarsestLevel: baseSource.coarsestLevel,
     采样: (x, y, out) => {
       out.z = groundAt(x, y);
       out.crown = 0;

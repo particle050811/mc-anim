@@ -1,10 +1,11 @@
 // anim world transcode 的工作线程（转码.ts 起）：一次一个块文件。
-//   转：源包（区段源.ts：现行格式原样，格式 1、2、3 拼成 64×64）→ 现行格式，给了 可见 就先过可见变换（可见.ts）；现行格式的源区段在文件里的先后不变，和直接烘焙写出的字节一样。
+//   转：源包（区段源.ts：格式 4、5 原样，格式 1、2、3 拼成 64×64）→ 现行格式，给了 可见 就先过可见变换（可见.ts）；块文件里区段按级、级内项号排（encodeTile），和直接烘焙写出的字节一样。
 //   比：从磁盘上两边各解一遍逐格比（状态、群系）。给了 可见 就拿旧包的格子重做一遍变换再比，改了的区段另核格和网格（可见核对.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { parentPort } from 'node:worker_threads';
-import type { SectionData, PackageInfo } from '../../../engine/voxel/区段包.ts';
+import type { SectionData } from '../../../engine/voxel/区段包.ts';
+import type { SectionId } from '../../../engine/voxel/区段.ts';
 import { loadVoxelLib } from '../体素库.ts';
 import { VisibleEnv, type VisibleSettings } from './可见.ts';
 import { checkGrid, checkMesh, loadMesh } from './可见核对.ts';
@@ -34,9 +35,13 @@ const getSource = (oldDir: string, fill: string, visible: VisibleSettings | null
   }
   return sourceCache;
 };
+const getSourceInfo = (oldDir: string) => {
+  if (sourceCache?.source.dir !== oldDir) throw new Error(`工人还没打开 ${oldDir}`);
+  return sourceCache.source.info;
+};
 let meshCache: { oldDir: string; build: (d: SectionData) => ReturnType<Awaited<ReturnType<typeof loadMesh>>> } | null = null;
 const getMesh = async (oldDir: string) => {
-  if (meshCache?.oldDir !== oldDir) meshCache = { oldDir, build: await loadMesh(voxelLib, JSON.parse(fs.readFileSync(path.join(oldDir, '包.json'), 'utf8')) as PackageInfo) };
+  if (meshCache?.oldDir !== oldDir) meshCache = { oldDir, build: await loadMesh(voxelLib, getSourceInfo(oldDir)) };
   return meshCache.build;
 };
 const recordTransform = (result: TranscodeResult, changeRecord: ReturnType<VisibleEnv['transform']>['changeRecord']) => {
@@ -45,14 +50,11 @@ const recordTransform = (result: TranscodeResult, changeRecord: ReturnType<Visib
 };
 
 const transcode = ({ oldDir, 新: newDir, name: fileName, visible, fill }: TranscodeJob): TranscodeResult => {
-  const { tileHeaderLen, tileEntryCount, encodeTileHeader } = voxelLib.sectionPack;
-  const entryTable = new Uint32Array(2 * tileEntryCount);
-  const segments: Uint8Array[] = [];
-  let off = tileHeaderLen;
+  const segments: { id: SectionId; bytes: Uint8Array }[] = [];
   const result = emptyResult(fileName), { source, env: visibleEnv } = getSource(oldDir, fill, visible);
   for (const s of source.inTile(fileName)) {
     let d = s.取();
-    if (d.L !== s.id.L || d.i !== s.id.i || d.j !== s.id.j) throw new Error(`${fileName} 第 ${s.slot} 项写的是区段 ${d.L}/${d.i}/${d.j}，位置算出来是 ${s.id.L}/${s.id.i}/${s.id.j}`);
+    if (d.L !== s.id.L || d.i !== s.id.i || d.j !== s.id.j) throw new Error(`${fileName} 里区段 ${s.id.L}/${s.id.i}/${s.id.j} 解出来写的是 ${d.L}/${d.i}/${d.j}`);
     if (visibleEnv) {
       const r = visibleEnv.transform(d);
       recordTransform(result, r.changeRecord);
@@ -60,10 +62,7 @@ const transcode = ({ oldDir, 新: newDir, name: fileName, visible, fill }: Trans
       d = r.d;
     }
     const packed = encodeVerified(voxelLib, d, readPackModel(newDir));
-    entryTable[2 * s.slot] = off;
-    entryTable[2 * s.slot + 1] = packed.length;
-    off += packed.length;
-    segments.push(packed);
+    segments.push({ id: s.id, bytes: packed });
     result.sections++;
     result.旧字节 += s.byteCount;
     result.新字节 += packed.length;
@@ -71,8 +70,7 @@ const transcode = ({ oldDir, 新: newDir, name: fileName, visible, fill }: Trans
   const [ti, tj] = blockCoordsFromName(fileName);
   const fd = fs.openSync(path.join(newDir, fileName), 'w');
   try {
-    fs.writeSync(fd, encodeTileHeader(ti, tj, entryTable));
-    for (const b of segments) fs.writeSync(fd, b);
+    for (const b of voxelLib.sectionPack.encodeTile(ti, tj, source.coarsestLevel, segments)) fs.writeSync(fd, b);
   } finally {
     fs.closeSync(fd);
   }
@@ -81,11 +79,12 @@ const transcode = ({ oldDir, 新: newDir, name: fileName, visible, fill }: Trans
 
 const compareCells = async ({ oldDir, 新: newDir, name: fileName, visible, fill }: TranscodeJob): Promise<TranscodeResult> => {
   const result = emptyResult(fileName), { source, env: visibleEnv } = getSource(oldDir, fill, visible), meshBuilder = visibleEnv ? await getMesh(oldDir) : null;
-  const newSections = new Map([...sectionsInBlock(voxelLib, path.join(newDir, fileName))].map((s) => [s.slot, s]));
+  const { sectionKey } = voxelLib.sections;
+  const newSections = new Map([...sectionsInBlock(voxelLib, path.join(newDir, fileName))].map((s) => [sectionKey(s.id), s]));
   for (const s of source.inTile(fileName)) {
-    const b = newSections.get(s.slot);
-    if (!b) throw new Error(`${fileName} 第 ${s.slot} 项：新包里没有这个区段`);
-    newSections.delete(s.slot);
+    const b = newSections.get(sectionKey(s.id));
+    if (!b) throw new Error(`${fileName} 区段 ${sectionKey(s.id)}：新包里没有这个区段`);
+    newSections.delete(sectionKey(s.id));
     const original = s.取();
     const t0 = performance.now();
     const x = b.取();
