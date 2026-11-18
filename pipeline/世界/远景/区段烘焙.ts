@@ -1,4 +1,4 @@
-// 用户 11-18 定：暮色先试，保留现场生成的全部格子，不做可见变换。边块只烘用到的列，否则整块的高低极值会改变并列后的竖直范围。
+// 要能逐格对回现场生成的结果，所以不做可见变换。边块只烘用到的列，否则整块的高低极值会改变并列后的竖直范围。
 import { gzipSync } from 'node:zlib';
 import fs from 'node:fs';
 import path from 'node:path';

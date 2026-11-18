@@ -11,7 +11,7 @@ const matchesColumns = (offset: number | undefined, bytes: Uint8Array, mask: Uin
   return true;
 };
 
-// 用户 11-18 定：暮色按原镜头选级，不能为了迁就包里没有的块而退粗级。选级的点表和区段清单分开，不能拿区段里的树冠顶当地面选级。
+// 沿用裁级的口径：正式出片缺区段就停，退粗级会悄悄改变画面。选级的点表和区段清单分开，不能拿区段里的树冠顶当地面选级。
 export const buildBakedFarTerrain = (base: ImportedTerrain, landmarks: ImportedTerrain, baked: ImportedTerrain, treeHeight: number) => {
   const far = baked.far;
   if (!far) throw new Error(`${baked.key} 没有远景列清单或选级表：anim world bake-far 重烘`);
