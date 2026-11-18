@@ -6,6 +6,9 @@ import { UsageError, parseArgs } from '../cli/参数.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { passGate } from '../闸/闸.ts';
 import { defaultThreads, bakeWorld, loadEdits } from './烘焙/流程.ts';
+import { bakeFarSections } from './远景/区段烘焙.ts';
+import { coverStatus } from '../渲/地形覆盖.ts';
+import { loadAllSegments } from '../清单/清单.ts';
 import { bakeDhWorld } from './dh/流程.ts';
 import { transcodePack } from './烘焙/转码.ts';
 import { buildDecoder } from './区段解码器.ts';
@@ -84,6 +87,31 @@ const subCommands: Record<string, SubCommand> = {
         runRecord.artifacts.push(r.目录);
         runRecord.log('信息', `${r.pack} 版本 ${r.version}${r.registered ? '' : '（没登记）'}`);
       }
+    },
+  },
+  'bake-far': {
+    usage: 'bake-far <世界> <段…> [--no-register]（把这些镜头用到的远景烘成区段，先 world cover）',
+    跑: async (args, runRecord) => {
+      const p = parseArgs(args, { toggles: ['--no-register'] });
+      const [world, ...keys] = p.位置;
+      if (!world || !keys.length) throw new UsageError('要给世界和使用远景的全部段键');
+      const w = readDecl(world), far = w.farView;
+      if (!far?.sectionPack || w.packDimension !== '暮色') throw new UsageError('只支持声明了 farView.sectionPack 的暮色世界');
+      const all = await loadAllSegments(), segments = keys.map(k => {
+        const s = all.find(s => s.key === k);
+        if (!s?.segment.terrain.includes(far.pack)) throw new UsageError(`${k} 不存在或没声明 ${far.pack}`);
+        return s;
+      });
+      const columns = new Map<string, string>();
+      for (const { segment, cover, stale } of await coverStatus(all, segments)) {
+        const used = cover?.fallback?.[far.pack];
+        if (stale || !used || !Object.keys(used).length) throw new Error(`${segment.key} 没有有效的远景覆盖：先 anim world cover ${keys.join(' ')}`);
+        for (const [k, v] of Object.entries(used)) {
+          if (columns.has(k) && columns.get(k) !== v.columns) throw new Error(`${k} 在不同镜头的空列不一致，不能共用同一区段`);
+          columns.set(k, v.columns);
+        }
+      }
+      runRecord.artifacts.push(await passGate(() => bakeFarSections(w, columns, p.toggles.has('--no-register'))));
     },
   },
   'bake-dh': {
