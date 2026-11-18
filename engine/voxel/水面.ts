@@ -6,10 +6,7 @@
 // - 太阳高光：粗糙度压到 0.12，主光高光照着波纹法线落出碎亮点（逆光最明显）。
 // 接口：`水面GLSL`（片元函数）、`patchWaterShader`(shader, 判水) 在 onBeforeCompile 里调；`waterSky` 是共用 uniform。
 import * as THREE from 'three';
-import { renderInput } from '../core/渲染设置.ts';
 
-// 试档用：--props='{"waterReflMax":0.3}'，给了就盖掉下面按天定的上限
-const cliReflMax = (renderInput() as { waterReflMax?: number }).waterReflMax;
 export const skyBandCount = 8;
 // 天色：穹顶按仰角正弦的渐变（线性颜色，同穹顶着色器里的 Color）；时间：秒（帧号 / fps）
 export const waterSky = {
@@ -17,9 +14,9 @@ export const waterSky = {
   elevation: { value: Array.from({ length: skyBandCount }, (_, i) => i / (skyBandCount - 1)) },
   time: { value: 0 },
   // 天光反射的上限（菲涅尔封顶），由 天空.tsx 的 `useWaterSky` 按天写：暮色天 0.6；主世界 0——主世界天地平线一圈米白，远处海面掠射反射会把整片海冲成灰白像蒙雾（用户 10-13 看 6-1-1 开头），关掉就是原来的青绿水色，波纹和太阳高光照旧
-  reflectionMax: { value: cliReflMax ?? 0.6 },
+  reflectionMax: { value: 0.6 },
 };
-export const skyReflMax = (isTwilight: boolean) => cliReflMax ?? (isTwilight ? 0.6 : 0);
+export const skyReflMax = (isTwilight: boolean) => (isTwilight ? 0.6 : 0);
 const defaultSkyColors = waterSky.skyColors.value.map((c) => c.clone());
 const defaultElevation = [...waterSky.elevation.value];
 const defaultReflectionMax = waterSky.reflectionMax.value;

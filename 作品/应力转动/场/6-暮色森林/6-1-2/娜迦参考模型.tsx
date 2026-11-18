@@ -28,7 +28,6 @@ import { LandmarkPlacement, twilightLandmark, TwilightTerrain } from '../../../�
 import * as choreo from './编排.ts';
 import * as motion from './动作改进.ts';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
-import { renderInput } from '@engine/core/渲染设置.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { onTick } from '../时刻.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
@@ -62,8 +61,6 @@ const mazeLightPresets: Record<MazeLightPreset, { dir: V3; intensity: number; re
   一镜: { dir: sunDirFromAngles(200, 14), intensity: 1, remap: false },
 };
 const defaultMazeLight: MazeLightPreset = '一镜';
-// 屏幕 AO 压不压导出网格（评估用：--props='{"meshAO":true}'）
-const meshAO = Boolean((renderInput() as { meshAO?: boolean }).meshAO);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
 // 口型用的台词开口（段内秒，cue 在 段/6-斩娜迦/段.ts）：打击停顿以后的台词跟着往后挪。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
@@ -220,7 +217,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
         {/* 刀光、命中闪光的泛光（夜幕的 bloom 管线），这个画布由它来画 */}
         {/* 渲染顺序：后期（0.5，换到半精度离屏图）→ 屏幕 AO（1）→ 后期拷到画布（1.5）→ 夜幕刀光泛光（2） */}
         <PostFx drawsScene={false} remap={mazePreset ? mazePreset.remap : true} />
-        <ScreenAo applyToMesh={meshAO} />
+        <ScreenAo />
         <NightfallBloom drawsScene={false} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 暮色森林天上没有太阳（见 模型/场景/天空.tsx），主光是艺术选择，和一镜到底同一道（lib/光照配比.ts 的 暮色光向）。

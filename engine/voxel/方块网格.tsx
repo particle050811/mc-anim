@@ -9,7 +9,6 @@ import * as THREE from 'three';
 import { selfLight } from '../light/光照配比.ts';
 import { placeBehind } from '../core/稳定排序.ts';
 import { type Png, png } from '../model/贴图.ts';
-import { flattenAtlasColors, flatColorBlocks } from './纯色方块.ts';
 import type { V3 } from '../model/parts.tsx';
 import { arrangeFaces, type ExtraFaces } from './方块网格补面.ts';
 import type { BlockMeshInfo } from './方块网格信息.ts';
@@ -71,15 +70,12 @@ const mkTex = (atlas: Png) => {
   return t;
 };
 // 图集纹理一张图集一份，同时挂着的几份网格（块进出视野重挂、换 hide 重建）共用；最后一个用它的网格卸载才释放显存
-type AtlasTextures = { base: THREE.DataTexture; plant: THREE.DataTexture; users: number };
+type AtlasTextures = { base: THREE.DataTexture; users: number };
 const atlasTextures = new Map<string, AtlasTextures>();
 const acquireAtlas = (atlas: string) => {
   let entry = atlasTextures.get(atlas);
   if (!entry) {
-    const src = png(atlas);
-    // 纯色方块时花草层和别的层处理不同（草要抠掉、树叶要补实，光看贴图分不开，见 lib/纯色方块.ts），各用一张
-    const base = flatColorBlocks ? mkTex(flattenAtlasColors(src, '其他')) : mkTex(src);
-    entry = { base, plant: flatColorBlocks ? mkTex(flattenAtlasColors(src, '花草')) : base, users: 0 };
+    entry = { base: mkTex(png(atlas)), users: 0 };
     atlasTextures.set(atlas, entry);
   }
   entry.users++;
@@ -89,7 +85,6 @@ const releaseAtlas = (atlas: string) => {
   const entry = atlasTextures.get(atlas)!;
   if (--entry.users > 0) return;
   entry.base.dispose();
-  if (entry.plant !== entry.base) entry.plant.dispose();
   atlasTextures.delete(atlas);
 };
 
@@ -129,7 +124,7 @@ const inBox = ([x, y, z]: V3, [x0, y0, z0, x1, y1, z1]: number[]) => x > x0 && x
 // 自发光的半透明方块（暮色力场）：模型里 forge_data 亮度 15、shade false，游戏里不受光照、按贴图原色画。受光的话夕阳把紫色照成浅粉、高光一盖更透，
 // 后面露天的地方像墙缺了块（6-1-9b 终焉城堡，用户 10-19 指出）。fullbright 盒子里单面的半透明面走不受光照的材质；双面的是盔甲架这类实体，照常受光
 type FaceOptions ={ clearPlants?: number[][]; hide?: number[][]; hideBlocks?: number[][]; patchEdges?: boolean | number; glow?: number[][]; fullbright?: number[][] };
-const build = (info: BlockMeshInfo, data: Uint8Array, { base: baseTex, plant: plantTex }: AtlasTextures, { clearPlants, hide, hideBlocks, patchEdges, glow, fullbright }: FaceOptions) => {
+const build = (info: BlockMeshInfo, data: Uint8Array, { base: tex }: AtlasTextures, { clearPlants, hide, hideBlocks, patchEdges, glow, fullbright }: FaceOptions) => {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const stride = info.vertexBytes;
   // 一层里挑出来的这些面（null = 整层）加上另加的面（extra：按方块藏切开的大面、补边补的面）做成一个网格；unlit：不受光照（自发光的传送门表面、力场）
@@ -207,7 +202,6 @@ const build = (info: BlockMeshInfo, data: Uint8Array, { base: baseTex, plant: pl
     geom.computeBoundingSphere();
     for (const attr of [...Object.values(geom.attributes), geom.index!]) (attr as THREE.BufferAttribute).onUpload(releaseCpuArray);
     const translucent = layer.name === 'translucent';
-    const tex = layer.name === 'plants' ? plantTex : baseTex;
     if (unlit) {
       const mat = new THREE.MeshBasicMaterial({
         map: tex,
@@ -268,8 +262,6 @@ const build = (info: BlockMeshInfo, data: Uint8Array, { base: baseTex, plant: pl
     } else {
       mat.onBeforeCompile = (shader) => tiled(shader, true);
     }
-    // 屏幕 AO 的 压网格 认这个（lib/体素/屏幕AO.tsx），花草层不算（同体素世界的花草：不压）
-    if (layer.name !== 'plants') mat.userData.blockMesh = true;
     placeBehind(mat);
     const mesh = new THREE.Mesh(geom, mat);
     if (mat.alphaTest > 0) {
