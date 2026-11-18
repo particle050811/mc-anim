@@ -3,7 +3,7 @@
 // 11-16 一小节改用真值（6-1-9b/编排.ts 的 `BAR_CUT`）：两句台词的开口、配乐入点照 编排.ts 的 `lineTimes`、`musicStartSec` 写真值。
 import { defineSeg } from '@engine/段/段定义.ts';
 
-export default defineSeg({ scene: '6-暮色森林', sec: 15.55, width: 1280, height: 720, terrain: ["暮色放大-1752-航线"], sound: [
+export default defineSeg({ scene: '6-暮色森林', sec: 15.55, width: 1280, height: 720, terrain: ["暮色放大-1752", "暮色放大-1752-应力转动-覆盖层"], sound: [
   { sec: 5.9811990009640255, lines: '6-九胡-什么也没有' },
   { sec: 10.039199000964025, lines: '6-李樱-没有最终boss' },
   { sec: 0.167, asset: '音效/entity.player.big_fall', name: '李樱落地', 档: '中 -20', 长秒: 0.25, 增益: 0.343904 },

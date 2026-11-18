@@ -14,21 +14,34 @@ vi.mock('./区段工人池.ts', () => ({ fetchSectionsInPool, registerSource: ()
 const sp = await import('./区段包.ts');
 // 块 (0,0)：第 0 级 (0,0) 在，(1,0) 裁掉了（块头里没有）；粗高度图 2×1 格都有地
 const file = Buffer.concat(sp.encodeTile(0, 0, 6, [{ id: { L: 0, i: 0, j: 0 }, bytes: new Uint8Array(10) }]));
+const second = { L: 0, i: 1, j: 0 };
+const parent = { L: 1, i: 0, j: 0 };
+const parentFile = Buffer.concat(sp.encodeTile(0, 0, 6, [{ id: parent, bytes: new Uint8Array(10) }]));
+const worldFile = Buffer.concat(sp.encodeTile(0, 0, 6, [0, 1].map((i) => ({ id: { L: 0, i, j: 0 }, bytes: new Uint8Array(10) }))));
+const routeIndex = { keys: ['0|0|0', '0|1|0', '1|0|0'], simulated: [], edges: {}, waterLevel: 0, outside: 0, maxTop: 10, simulateFromLevel: null };
 const maps = sp.encodePackMaps({ coarse: { cell: 64, x0: 0, y0: 0, nx: 2, ny: 1, height: new Int16Array([10, 10]) } });
 const info = { version: sp.formatVersion, dimension: '主世界', origin: [0, 0, 0], state: ['minecraft:air'], biome: ['minecraft:plains'], coarsestLevel: 6, tileHeaderMax: sp.tileHeaderLength(file), coarseHeight: maps.coarseHeight, trim: { from: '完整版本', keepSha256: 'x', method: '只留用到的' } };
 let packSeq = 0;
 const ranges: [number, number][] = [];
 vi.mock('../core/数据源.ts', () => ({
   dataUrl: (rel: string) => `/${rel}`,
-  fetchJson: async () => info,
-  fetchGunzip: async () => maps.bytes.slice().buffer,
+  fetchJson: async (rel: string) => {
+    if (rel.includes('/底包/')) return { ...info, trim: undefined, routeIndex: '航线.json.gz', tileHeaderMax: sp.tileHeaderLength(worldFile) };
+    if (rel.includes('/裁级覆盖层/')) return { ...info, tileHeaderMax: sp.tileHeaderLength(parentFile), overlay: { base: '底包', from: '完整版本', keys: ['0|0|0', '1|0|0'] } };
+    if (rel.includes('覆盖层/')) return { ...info, trim: undefined, overlay: { base: '底包', from: rel.includes('错版') ? '过期版' : '完整版本', keys: ['0|0|0'] } };
+    return info;
+  },
+  fetchGunzip: async (rel: string) => rel.endsWith('/航线.json.gz') ? new TextEncoder().encode(JSON.stringify(routeIndex)).buffer : maps.bytes.slice().buffer,
   // 越过文件尾截到文件尾（同 Remotion 的静态服务）
-  fetchRange: async (_rel: string, start: number, len: number) => (ranges.push([start, len]), new Uint8Array(file.subarray(start, start + len)).buffer),
+  fetchRange: async (rel: string, start: number, len: number) => {
+    ranges.push([start, len]);
+    return new Uint8Array((rel.includes('/底包/') ? worldFile : rel.includes('/裁级覆盖层/') ? parentFile : file).subarray(start, start + len)).buffer;
+  },
   loadOnce: <T,>(_k: string, load: () => Promise<T>) => load(),
 }));
-vi.mock('./区段包位置.ts', () => ({ packDir: (name: string) => `terrain/${name}/裁过${++packSeq}` }));
+vi.mock('./区段包位置.ts', () => ({ packDir: (name: string) => `terrain/${name}/${name === '测试包' ? `裁过${++packSeq}` : '完整版本'}` }));
 (globalThis as { location?: { href: string } }).location = { href: 'http://本机/' };
-globalThis.fetch = (async () => new Response(new Uint8Array(4))) as typeof fetch;
+globalThis.fetch = (async (url) => String(url).endsWith('/留表.tsv') ? new Response('1\t0\t0\n') : new Response(new Uint8Array(4))) as typeof fetch;
 
 const { openImportedTerrain } = await import('./导入地形.ts');
 const here = { L: 0, i: 0, j: 0 }, trimmedAway = { L: 0, i: 1, j: 0 };
@@ -90,3 +103,43 @@ describe('地形覆盖页', () => {
   });
 });
 
+
+
+describe('作品覆盖层整块替换', () => {
+  it('同一瓦片里命中只读层（含全空气块），未命中只读底包；旁路和预取不分两套', async () => {
+    const air = { ...fakeData, palette: new Uint16Array([0, sp.noBiome]) };
+    fetchSectionsInPool.mockImplementation(async (url, _start, _len, parts) => parts.map(() => ({ data: decodeURI(url).includes('/覆盖层/') ? air : fakeData, voxels: null })));
+    const layered = await openImportedTerrain('底包', [], [], '覆盖层');
+    for (const first of ['旁路', '预取']) {
+      const t = first === '旁路' ? layered : await openImportedTerrain('底包', [], [], '覆盖层');
+      fetchSectionsInPool.mockClear();
+      if (first === '预取') await t.source.prefetch!([here, second]);
+      expect(await t.sectionData([here, second])).toEqual([air, fakeData]);
+      const reads = fetchSectionsInPool.mock.calls.map(([url, , , parts]) => [decodeURI(url).split('/').at(-3), parts.map((p) => p.id)]);
+      expect(reads).toEqual(expect.arrayContaining([['覆盖层', [here]], ['底包', [second]]]));
+      expect(reads).toHaveLength(2);
+    }
+    const base = await openImportedTerrain('底包', []);
+    expect(await base.sectionData([here])).toEqual([fakeData]);
+    expect(base.key).not.toBe(layered.key);
+  });
+
+  it('只有裁级覆盖层时，不拿底包未挖的细块冒充，退到有覆盖的父块并告警', async () => {
+    const t = await openImportedTerrain('底包', [], [], '裁级覆盖层');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      fetchSectionsInPool.mockClear();
+      await t.sectionData([here]);
+      const [url, , , parts] = fetchSectionsInPool.mock.calls[0]!;
+      expect(decodeURI(url)).toContain('/裁级覆盖层/');
+      expect(parts.map((p) => p.id)).toEqual([parent]);
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/0\|0\|0→1\|0\|0.*重算定级、重烘/));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('覆盖层不是从这一版底包烘的就拒绝混读', async () => {
+    await expect(openImportedTerrain('底包', [], [], '错版覆盖层')).rejects.toThrow(/不配套，请重烘覆盖层/);
+  });
+});

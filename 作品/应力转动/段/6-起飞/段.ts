@@ -2,7 +2,7 @@
 // 11-06 改成秒（docs/决策/0015-原生60帧.md）。11-16 按编排的真时刻重算（用户 11-16 定：1/24 秒格的取整一处不留）：段长是 6-1/段界.ts 截表的刻数（1/120 秒）往上取到 1/60 秒；cue 的秒、长秒、入点秒照事件的真时刻（扣掉文件头的静音）写到毫秒，跨段界、截界的声音拆成几条接着放；逐格增益还是每秒 24 个值，从 cue 起点数，不对齐 1/24 秒格。
 import { defineSeg } from '@engine/段/段定义.ts';
 
-export default defineSeg({ scene: '6-暮色森林', sec: 6.75, width: 1280, height: 720, terrain: ["暮色放大-1752-航线"], sound: [
+export default defineSeg({ scene: '6-暮色森林', sec: 6.75, width: 1280, height: 720, terrain: ["暮色放大-1752", "暮色放大-1752-应力转动-覆盖层"], sound: [
   { sec: 0.333, lines: '6-九胡-等等我' },
   { sec: 1.333, lines: '6-九胡-等等我', 接上段: true },
   { sec: 4.125, lines: '6-李樱-看我速通暮色' },

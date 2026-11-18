@@ -20,7 +20,7 @@ import { NagaCourtyard } from './娜迦庭院.tsx';
 import { FinalCastle } from './终焉高原城堡.tsx';
 import { twilightFrozen, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 import { frameByName, landmarkHideOutsideCore, castleMeshHide } from './暮色新世界/摆放.ts';
-import { twilightSectionPack, farViewOf, twilightFarViewM, type TwilightFarView } from './暮色新世界/超远景.ts';
+import { twilightOverlayPack, twilightSectionPack, farViewOf, twilightFarViewM, type TwilightFarView } from './暮色新世界/超远景.ts';
 
 export { twilightPackName, twilightFrozen, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 export {
@@ -46,23 +46,40 @@ export {
 type TerrainProps = { camPos: number[]; landmarks?: TwilightLandmarkName[]; t?: number; clearPlants?: number[][]; pixel?: number; far?: number; shadowLightDir?: V3; farView?: TwilightFarView };
 const noCutouts: [] = [];
 const originalCoarse = frozenCoarse(twilightFrozen);
-const originalTop = originalCoarse.height.reduce((a,b)=>Math.max(a,b), -Infinity);
-// 两种镜头共用一个区段包。没开超远景时保留原场景边界、选级和高度范围，不能把原来没有的地平线带进庭院。
-export const TwilightTerrain: React.FC<TerrainProps> = props => {
-  const terrain = useImportedTerrain(twilightSectionPack, noCutouts);
-  const far = !!farViewOf(props.farView);
+const originalTop = originalCoarse.height.reduce((top, height) => Math.max(top, height), -Infinity);
+
+// 作品覆盖层只换整块；不开超远景的镜头仍用原存档边界选级，不能把原来没有的地平线带进庭院。
+export const TwilightTerrain: React.FC<TerrainProps> = (props) => {
+  const terrain = useImportedTerrain(twilightSectionPack, noCutouts, undefined, twilightOverlayPack);
+  const showDistant = !!farViewOf(props.farView);
   const view = useMemo(() => {
-    if (!terrain || far) return terrain;
-    const {source, route} = terrain;
-    if (!route) throw Error('暮色区段包缺航线索引');
-    const local: VoxelSource = { ...source,
-      采样: (x,y,out) => { const h=coarseHeightAt(originalCoarse,x,y); out.z=h===-Infinity?0:h; out.crown=0; },
-      resolveSections: (requests, guessed) => { const inside=requests.filter(q=>hasSection(originalCoarse,q)); return source.resolveSections?.(inside,guessed) ?? inside; },
-      sections: q => { const v=source.sections(q), key=sectionKey(q), edge=route.edges[key]; return v && edge ? limitToOriginal(v,edge,route.simulateFromLevel!==null && q.L>=route.simulateFromLevel) : v; },
+    if (!terrain || showDistant) return terrain;
+    const { source, route } = terrain;
+    if (!route) throw Error('暮色底包缺区段索引');
+    const localSource: VoxelSource = {
+      ...source,
+      采样: (x, y, sample) => {
+        const height = coarseHeightAt(originalCoarse, x, y);
+        sample.z = height === -Infinity ? 0 : height;
+        sample.crown = 0;
+      },
+      resolveSections: (requests, guessed) => {
+        const inside = requests.filter((section) => hasSection(originalCoarse, section));
+        return source.resolveSections?.(inside, guessed) ?? inside;
+      },
+      sections: (section) => {
+        const grid = source.sections(section);
+        const edge = route.edges[sectionKey(section)];
+        if (!grid || !edge) return grid;
+        const simulated = route.simulateFromLevel !== null && section.L >= route.simulateFromLevel;
+        return limitToOriginal(grid, edge, simulated);
+      },
     };
-    return { key: `${terrain.key}:存档范围`, source:local, heightRange:[terrain.heightRange[0],originalTop] as [number,number] };
-  }, [terrain,far]);
-  return view ? <TerrainView terrain={view} {...props} far={props.far ?? (far ? twilightFarViewM(LevelParams.视频.far) : LevelParams.视频.far)} /> : null;
+    return { key: `${terrain.key}:存档范围`, source: localSource, heightRange: [terrain.heightRange[0], originalTop] as [number, number] };
+  }, [terrain, showDistant]);
+  if (!view) return null;
+  const far = props.far ?? (showDistant ? twilightFarViewM(LevelParams.视频.far) : LevelParams.视频.far);
+  return <TerrainView terrain={view} {...props} far={far} />;
 };
 const TerrainView: React.FC<TerrainProps & { terrain: { key: string; source: VoxelSource; heightRange: [number, number] } }> = ({
   terrain,
