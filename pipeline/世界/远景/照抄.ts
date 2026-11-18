@@ -12,6 +12,11 @@ type Patch = { columns: (Uint16Array | undefined)[]; valid: number[] };
 const side = 66, span = 64, patch = 16;
 const ground = /:(?:grass_block|mycelium|podzol|(?:coarse_|rooted_)?dirt|stone|gravel|clay|sand(?:stone)?|mud|snow_block|ice|(?:weathered_|cracked_)?deadrock)(?:\[|$)/;
 const structure = /(?:castle_(?:brick|door|rune)|towerwood|naga_stone|mazestone|underbrick|stronghold_shield|boss_spawner|trophy_pedestal|aurora_(?:block|pillar)|spawner(?:\[|$))/;
+export const landmarkState = (state: string) => structure.test(state) || /^twilightforest:(?:giant_(?:leaves|log|cobblestone|obsidian)|(?:fluffy|wispy)_cloud)(?:\[|$)/.test(state);
+export const sampleIndex = (count: number, tileX: number, tileY: number, roll: number) => {
+  const parity = count > 1 ? (tileX ^ tileY) & 1 : 0;
+  return parity + 2 * Math.floor(roll * Math.ceil((count - parity) / 2));
+};
 export const intersects = ({ L, i, j }: SectionId, [ox,,oz]: Origin, boxes: readonly Box[]) => {
   const width = span * 2 ** L;
   const x = ox + i * width, z = oz - (j + 1) * width;
@@ -34,13 +39,14 @@ export function copyTerrain(lib: FarVoxelLib, table: EntryTable, grid: DistantGr
   for (const { id, 取: read } of ordered) {
     const cell = 2 ** id.L, bx = ox + id.i * span * cell, bz = oz - id.j * span * cell;
     let data: SectionData | undefined, dense: Uint16Array | undefined;
+    const contributed = new Set<string>();
     for (let py = 0; py < span; py += patch) for (let px = 0; px < span; px += patch) {
       const biome = lib.distant.distantBiome(grid,bx+(px+patch/2)*cell,bz-(py+patch/2)*cell);
       const poolKey = key(id.L,biome), pool = pools.get(poolKey) ?? [];
-      if (pool.length >= 12) continue;
+      if (pool.length >= 48 || contributed.has(biome)) continue;
       if (!data) {
         data = read();
-        if (Array.from(data.palette).some((state,n) => !(n&1) && structure.test(table.stateList[state]!))) break;
+        if (Array.from(data.palette).some((state,n) => !(n&1) && landmarkState(table.stateList[state]!))) break;
         dense = toColumnMajor(data);
       }
       if (!dense) break;
@@ -60,7 +66,7 @@ export function copyTerrain(lib: FarVoxelLib, table: EntryTable, grid: DistantGr
         columns[off] = Uint16Array.from({length:top-base+1},(_,k) => stateAt(base+k));
         valid.push(off);
       }
-      if (valid.length >= patch) { pool.push({columns,valid}); pools.set(poolKey,pool); }
+      if (valid.length >= patch) { pool.push({columns,valid}); pools.set(poolKey,pool); contributed.add(biome); }
     }
   }
   const missing = new Set<string>();
@@ -76,7 +82,7 @@ export function copyTerrain(lib: FarVoxelLib, table: EntryTable, grid: DistantGr
       const tileX = Math.floor(gx/(patch*cell)), tileY = Math.floor((-gz-cell)/(patch*cell));
       const poolKey = key(id.L,biome), pool = pools.get(poolKey);
       if (pool) {
-        const sample = pool[Math.floor(hash2(tileX,tileY,bi)*pool.length)]!;
+        const sample = pool[sampleIndex(pool.length,tileX,tileY,hash2(tileX,tileY,bi))]!;
         const off = transformColumn(x&15,y&15,Math.floor(hash2(tileX,tileY,37)*8));
         profiles[col] = sample.columns[off] ?? sample.columns[sample.valid[off%sample.valid.length]!];
       } else {

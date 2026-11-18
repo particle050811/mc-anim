@@ -114,11 +114,8 @@ export const bakeRoutePacks = async (world: WorldDecl, used: Set<string>, levels
       if (mask) {
         if (item.base) edges[key] = { bottom: vox.origin[2]/vox.cell,nz:vox.nz,empty:maskText(mask) };
         const other = fill();
-        if (id.L > 3) data = other;
-        else {
-          const sv = P.sectionToVoxels(other,{value:new Uint16Array(table.stateList.length),色:()=>[255,255,255]});
-          data = gridData(id,mergeColumns(vox,sv,mask),[...data.palette,...other.palette.slice(2),table.internState('minecraft:stone'),P.noBiome]);
-        }
+        const sv = P.sectionToVoxels(other,{value:new Uint16Array(table.stateList.length),色:()=>[255,255,255]});
+        data = gridData(id,mergeColumns(vox,sv,mask),[...data.palette,...other.palette.slice(2),table.internState('minecraft:stone'),P.noBiome]);
       }
     }
     if (cache.size >= 512) cache.delete(cache.keys().next().value!);
