@@ -6,7 +6,9 @@
 //   6-1-1～6-1-3 的编排用庭院本地坐标：整个场景放进 <group position={庭院原点}>，地形照世界坐标画。
 //   不反过来把地形挪到庭院原点：庭院网格原点在半格上，挪了以后方块材质按世界坐标算的格（lib/体素/材质.ts 的 `vW`）会错开。
 //
-import React from 'react';
+import React, { useMemo } from 'react';
+import { farCoverage } from '@engine/voxel/远景覆盖.ts';
+import { isCoverRun } from '@engine/voxel/地形用量.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { useImportedTerrain } from '@engine/voxel/导入地形.ts';
 import { useDistantFallbackTerrain } from '@engine/voxel/主世界地形.ts';
@@ -74,7 +76,8 @@ const TerrainView: React.FC<TerrainProps & { terrain: { key: string; source: Vox
 const noCutouts: [] = [];
 const useTwilightWithDistant = () => {
   const farLandmarks = useImportedTerrain(twilightFarLandmarkPack, noCutouts);
-  return useDistantFallbackTerrain(twilightPackName, twilightDistantPack, allCutouts, allFlattens, { keyPrefix: '暮色', farM: LevelParams.视频.far, seam: false, fillCoarse: false, treeHeight: 50, supplement: farLandmarks });
+  const terrain = useDistantFallbackTerrain(twilightPackName, twilightDistantPack, allCutouts, allFlattens, { keyPrefix: '暮色', farM: LevelParams.视频.far, seam: false, fillCoarse: false, treeHeight: 50, supplement: farLandmarks });
+  return useMemo(() => terrain && farLandmarks && isCoverRun() ? { ...terrain, source: { ...terrain.source, coverSections: farCoverage(twilightDistantPack, terrain.imported, farLandmarks) } } : terrain, [terrain, farLandmarks]);
 };
 
 // boss 那几座的 戏.tsx 用同样的变换包自己的场景

@@ -372,6 +372,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   const coverRun = isCoverRun();
   if (coverRun) {
     setCoverFrame(timelineFrame);
+    source.coverSections?.(list, camPos, timelineFrame);
     source.prefetch?.(list);
   }
   const drawList = coverRun ? [] : list;
