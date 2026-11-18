@@ -309,7 +309,7 @@ describe('报差多少', () => {
     const errorText = r.events.join('\n');
     // 左上角 8×8 = 64 个像素差 40 级：占 32×32 的 6.25%；8×8 窗口平均差 40，16×16 窗口 10
     expect(errorText).toMatch(/甲：5 帧里 2 帧不同（1、3）/);
-    expect(errorText).toMatch(/第 1 帧：差像素 >0 6\.25%（64 像素）、>8 6\.25%（64 像素）、>32 6\.25%（64 像素），最大差 40 级；块平均差 16×16 10\.0、64×64 0\.0、8×8 40\.0（按 reuse 的门槛：变了）/);
+    expect(errorText).toMatch(/第 1 帧：差像素 >0 6\.25%（64 像素）、>8 6\.25%（64 像素）、>32 6\.25%（64 像素），最大差 40 级；块平均差 16×16 10\.0、64×64 0\.0、8×8 40\.0（按 verify 的门槛：变了）/);
     expect(errorText).toMatch(/乙：3 帧里 1 帧不同（1）/);
     expect(fake.passGate).toBe(2);
     const output = vi.mocked(console.log).mock.calls.map((c) => String(c[0])).join('\n');

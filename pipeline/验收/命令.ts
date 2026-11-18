@@ -79,7 +79,7 @@ const writePreviewNote = (previewDir: string, items: { key: string; comparedWith
   fs.writeFileSync(path.join(previewDir, '00-说明.md'), lines.join('\n'), 'utf8');
 };
 
-const perFrameNote = '只用来查同一份代码走不同路径（单帧、跳帧、连出、重渲）出的图是否一致，预期差是 0；比两份代码、两组参数出的图用 anim diff。--save 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --frames 是整段，不覆盖已有的），PNG 留在旁边的 <段键>/（--no-images 不留，比的时候就报不了差多少）；--compare 再渲一次、列出不同的帧，每帧报差像素占比（任一通道差 >0、>8、>32）、最大差、块平均差（和 anim reuse 同一套），结尾列最差的几帧；有不同退出码 1，--tolerance <级> 把最大差不超过它的帧算过（默认不给，逐字节）。照基准存的帧连着渲，给了 --frames 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--keep-images 给空目录，在 --save 时 PNG 留在那里，在 --compare 时只留不同的帧。不写母版，不碰段签和认可';
+const perFrameNote = '只用来查同一份代码走不同路径（单帧、跳帧、连出、重渲）出的图是否一致，预期差是 0；比两份代码、两组参数出的图用 anim diff。--save 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --frames 是整段，不覆盖已有的），PNG 留在旁边的 <段键>/（--no-images 不留，比的时候就报不了差多少）；--compare 再渲一次、列出不同的帧，每帧报差像素占比（任一通道差 >0、>8、>32）、最大差、块平均差（和 anim verify 同一套），结尾列最差的几帧；有不同退出码 1，--tolerance <级> 把最大差不超过它的帧算过（默认不给，逐字节）。照基准存的帧连着渲，给了 --frames 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--keep-images 给空目录，在 --save 时 PNG 留在那里，在 --compare 时只留不同的帧。不写母版，不碰段签和认可';
 
 const verifyCmd: Command = {
   usage: 'verify [<选择器…>] [--render] [--to-preview <主题>]；verify accept <段…> --reason <…> [--render]；verify backfill [<选择器…>]；verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名> [--no-images]|--compare <名> [--tolerance <级>] [--keep-images <目录>]',
@@ -338,7 +338,7 @@ const parseSegArg = (v: string | undefined): SegFrame | null => {
 export const diffNote =
   '改前改后对比：A 是旧、B 是新，差 = B − A。A、B 是两个静帧目录（同名配对，名字不同的按「第N帧」或最后一串数字配）、两张 PNG，或两个视频（按帧号对齐抽帧：--frames a-b|帧,帧，--every n，默认每秒一帧含首尾；两条起点差几帧用 --offset k，A 的第 n+k 帧对 B 的第 n 帧；yuv420p 按 verify 的固定公式换 RGB）。' +
   '每对出 旧｜新｜差 并排图（差图带符号：红亮了、蓝暗了、绿亮度差不多但颜色变了；--gain 放大倍数默认 8，--panel-width 每格宽默认 1920），只出最差的 --images 张（默认 24）；' +
-  '算块平均差（和 verify、reuse 同一个 computeBlockDiff，门槛和分档读 verify/阈值.toml）、各档超门槛的块数、差像素占比、最大差；挑差得最多的 --windows 个窗口（默认 5）在图上框出，打印能直接复制的 anim still <段> <帧> --tele <x,y,宽> 原生复查（--zoom 望远倍数默认 8；视频旁有 anim film 的 manifest.json 就照它定段和帧，否则 --seg <段键>[@起帧]）。' +
+  '算块平均差（和 verify 同一个 computeBlockDiff，门槛和分档读 verify/阈值.toml）、各档超门槛的块数、差像素占比、最大差；挑差得最多的 --windows 个窗口（默认 5）在图上框出，打印能直接复制的 anim still <段> <帧> --tele <x,y,宽> 原生复查（--zoom 望远倍数默认 8；视频旁有 anim film 的 manifest.json 就照它定段和帧，否则 --seg <段键>[@起帧]）。' +
   '汇总写进 00-说明.md、打到终端；出到 --to-preview <主题>（预览/，「工作-」开头进 run/草稿/）或 --out <新目录>，都不给是 run/草稿/<UTC>-工作-对比/。有一对判「变了」退出码 1。' +
   '和 verify frames --compare 的分工：那边比同一份代码走不同路径（预期逐字节一样），这里比两份代码或两组参数（预期有差，要知道差在哪、差多少）。省事写法：anim still <段> <帧…> --to-preview <主题> --vs <检出|分支|main>';
 

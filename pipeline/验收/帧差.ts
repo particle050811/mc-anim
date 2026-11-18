@@ -1,5 +1,5 @@
 // anim verify frames --compare 的「差多少」（用户 11-16 要：只改 pipeline/ 的改动段不过期、认指纹管不到，只能靠逐帧比，以前只报哪几帧 sha 不同）。
-// 两张无损 PNG 逐像素比：差像素占比（任一通道差 > 0、> 8、> 32）、最大差，加 anim reuse 同一套块平均差（比较.ts 的 computeBlockDiff、judgeBlockDiff，门槛 verify/阈值.toml）。
+// 两张无损 PNG 逐像素比：差像素占比（任一通道差 > 0、> 8、> 32）、最大差，加 anim verify 同一套块平均差（比较.ts 的 computeBlockDiff、judgeBlockDiff，门槛 verify/阈值.toml）。
 // 只报数，判过不过还是逐字节（预期差是 0，见 docs/决策/0013）；--tolerance 才按最大差放行。只比 RGB：Remotion 出的帧不透明，alpha 不看。
 import { convertIndexedToRgb, decode } from 'fast-png';
 import { computeBlockDiff, judgeBlockDiff, type BlockDiff, type BlockVerdict, type DiffIntegral, type Threshold } from './比较.ts';
@@ -72,7 +72,7 @@ export const ratioText = (count: number, total: number) => {
 
 export const frameDiffText = (d: FrameDiff) =>
   `差像素 >0 ${ratioText(d.over[0], d.pixelCount)}、>8 ${ratioText(d.over[8], d.pixelCount)}、>32 ${ratioText(d.over[32], d.pixelCount)}，最大差 ${d.maxDiff} 级；` +
-  `块平均差 16×16 ${d.block[16].差.toFixed(1)}、64×64 ${d.block[64].差.toFixed(1)}、8×8 ${d.block[8].差.toFixed(1)}（按 reuse 的门槛：${d.verdict}）`;
+  `块平均差 16×16 ${d.block[16].差.toFixed(1)}、64×64 ${d.block[64].差.toFixed(1)}、8×8 ${d.block[8].差.toFixed(1)}（按 verify 的门槛：${d.verdict}）`;
 
 /** 越差越靠前：先比 16×16 块差，再比最大差、差像素数 */
 export const worseFirst = (x: FrameDiff, y: FrameDiff) => y.block[16].差 - x.block[16].差 || y.maxDiff - x.maxDiff || y.over[0] - x.over[0];
