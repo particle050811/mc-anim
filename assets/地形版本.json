@@ -193,6 +193,24 @@
             "fileCount": 109,
             "size": 49686809
           }
+        },
+        "copy": {
+          "version": "83e7a313f50d",
+          "source": "暮色放大-1752-扩展@5b27077759e7、暮色放大-1752-远地标@5d0045d626ce、暮色放大-1752-远景@7d762d294e6a；存档边外照抄",
+          "license": "LicenseRef-Minecraft-Derived",
+          "visibility": "发布",
+          "fileCount": 107,
+          "size": 270117467,
+          "manifestSha256": "94bf41d2048b2f4b889140f81e4dbfef623ac1ae042d9d6c015b04b0172f2e55",
+          "trimmed": {
+            "version": "6c74141979fe",
+            "from": "83e7a313f50d",
+            "method": "航线：各处最细请求及其整条祖先链，另铺全域最粗级",
+            "keepSha256": "2dd1109c53f677fe00985bbbfdc4fa3446494080fa239d75d436cb2862e3495a",
+            "manifestSha256": "aa0222761ffecf2367e6edeb0181f1b5ffdc4b6167e9a9b2057ff93522e1f033",
+            "fileCount": 109,
+            "size": 52125997
+          }
         }
       }
     },
@@ -285,6 +303,24 @@
             "manifestSha256": "56aca9463c23b89a89abe179529d12e310e079461edf45e0a212d6264aff0453",
             "fileCount": 11,
             "size": 1362536
+          }
+        },
+        "copy": {
+          "version": "87f33931c491",
+          "source": "暮色放大-1752@83e7a313f50d + 应力转动/地点/地形改动.ts",
+          "visibility": "发布",
+          "license": "LicenseRef-Minecraft-Derived",
+          "manifestSha256": "eb29b4381a51f4998e2038be14b77abf5e34ab29ee077feca31a8983d0be3589",
+          "fileCount": 9,
+          "size": 1551568,
+          "trimmed": {
+            "version": "31c0f34e1d6f",
+            "from": "87f33931c491",
+            "method": "作品覆盖层：只留底包正式版保留的受影响区段",
+            "keepSha256": "2805075600e455f45444cbca6526b0d95dcf8da3241c0796528615fabfcd0eed",
+            "manifestSha256": "99958bdfff41eac74697500f985b8204855a1bc9a0812830da1ac147503e44e8",
+            "fileCount": 11,
+            "size": 1361333
           }
         }
       }
