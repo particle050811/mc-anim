@@ -104,14 +104,14 @@
       "manifestSha256": "642d9f4b9ea96851d94ad95cf2a24da27c93c1505ee58e742bded8cf82b13825"
     },
     "暮色放大-1752-远景区段": {
-      "version": "0f79d7f57b93",
+      "version": "e9e59e480d18",
       "source": "暮色放大-1752-远景@7d762d294e6a，anim world bake-far 暮色放大-1752 按镜头覆盖烘焙",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "私有",
       "note": "暮色试点，仅本地登记，不随 Release 分发",
       "fileCount": 87,
-      "size": 4601358,
-      "manifestSha256": "b121a05cae909ced934f07826a0d4c98cf808fdf52a662ca3149a09c86933758"
+      "size": 4104652,
+      "manifestSha256": "b012e7ef997d8ca51ab22fa46ecd143ae69d4b6e9f6a6dd94fdd7a846eef2ac5"
     }
   }
 }

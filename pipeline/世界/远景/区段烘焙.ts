@@ -6,7 +6,7 @@ import type { SectionId } from '../../../engine/voxel/区段.ts';
 import type { VoxelGrid } from '../../../engine/voxel/生成.ts';
 import type { DistantGrid } from '../../../engine/voxel/远景.ts';
 import { modelFileName, modelBytes } from '../../../engine/voxel/区段模型.ts';
-import { loadVoxelLib, type VoxelLib } from '../体素库.ts';
+import { loadFarVoxelLib, type FarVoxelLib } from '../体素库.ts';
 import { nodeDataSource } from '../node数据源.ts';
 import { EntryTable } from '../烘焙/条目.ts';
 import { fromColumnMajor, encodeSection } from '../烘焙/区段编码.ts';
@@ -16,7 +16,7 @@ import { newStaging, release, readTerrainTable, registerTerrain, registerTerrain
 import type { WorldDecl } from '../声明.ts';
 
 // 染色按列选群系，不把 RGB 反查成群系号（同色的两个群系在别的位置不一定同色）。群系取中心，解码时按最小角重新染色，和 distantSection 一致。
-export const farSectionData = (lib: VoxelLib, table: EntryTable, grid: DistantGrid, origin: number[], id: SectionId, v: VoxelGrid) => {
+export const farSectionData = (lib: FarVoxelLib, table: EntryTable, grid: DistantGrid, origin: number[], id: SectionId, v: VoxelGrid) => {
   const cols = v.nx * v.ny, cm = new Uint16Array(cols * v.nz), palette = [0, lib.sectionPack.noBiome];
   const states = v.palette.map(p => p.v ? table.internState(lib.blockTable.blockNames[p.v - 1]!) : 0);
   const local = new Map<number, number>();
@@ -43,7 +43,7 @@ export const bakeFarSections = async (world: WorldDecl, columns: Map<string, str
   const baseInfo = JSON.parse(fs.readFileSync(path.join(versionDir(base.name, terrain[base.name]!.version), '包.json'), 'utf8')) as { origin: [number, number, number]; coarsestLevel: number };
   const { origin, coarsestLevel } = baseInfo;
   const version = terrain[far.pack]!.version;
-  const lib = await loadVoxelLib(), P = lib.sectionPack, grid = await lib.distant.readDistantGrid(nodeDataSource(), `terrain/${far.pack}/${version}`, far.pack);
+  const lib = await loadFarVoxelLib(), P = lib.sectionPack, grid = await lib.distant.readDistantGrid(nodeDataSource(), `terrain/${far.pack}/${version}`, far.pack);
   const table = new EntryTable(lib.knowledge), ordered = [...columns].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
   const rows = ordered.map(([key, mask]) => {
     const [L, i, j] = key.split('|').map(Number) as [number, number, number];
@@ -63,11 +63,21 @@ export const bakeFarSections = async (world: WorldDecl, columns: Map<string, str
   const x0 = Math.min(...bounds.map(b => b[0])), y0 = Math.min(...bounds.map(b => b[1]));
   const nx = (Math.max(...bounds.map(b => b[0] + b[2])) - x0) / cell, ny = (Math.max(...bounds.map(b => b[1] + b[2])) - y0) / cell;
   const height = new Int16Array(nx * ny).fill(-32768);
+  const info = { origin, state: table.stateList, biome: table.biomeList };
+  const context = () => ({ info, cutBoxes: [], flattenAreas: [], tables: P.buildPackTables(info), variesByPos: info.biome.map(lib.biomeColor.variesByPos) });
+  let ctx = context();
+  const colors = (v: VoxelGrid) => v.palette.map(p => p.v * 2 ** 24 + (p.c[0] << 16) + (p.c[1] << 8) + p.c[2]);
   for (const r of rows) {
     const v = make(r), d = data(r, v), { ti, tj } = P.sectionInTile(r.id, coarsestLevel), file = P.tileFileName(ti, tj);
     let tile = tiles.get(file);
     if (!tile) tiles.set(file, tile = { ti, tj, parts: [] });
-    tile.parts.push({ id: r.id, bytes: encodeSection(d, model) });
+    const bytes = encodeSection(d, model);
+    if (ctx.tables.value.length !== info.state.length || ctx.variesByPos.length !== info.biome.length) ctx = context();
+    // 编码器能无损还原状态/群系对，不代表这对能还原现场色。用页面的导入函数比每一格，包括邻圈、埋格。
+    const read = lib.imported.importedSectionVoxels(lib.sectionDecoder.decodeSection(bytes, r.id, model), ctx);
+    const a = colors(v), b = colors(read);
+    if (read.nz !== v.nz || read.origin.some((n, i) => n !== v.origin[i]) || v.vox.some((p, i) => a[p] !== b[read.vox[i]!])) throw new Error(`远景 ${lib.sections.sectionKey(r.id)} 逐格回读不一致，不登记`);
+    tile.parts.push({ id: r.id, bytes });
     for (let y = 1; y < v.ny - 1; y++) for (let x = 1; x < v.nx - 1; x++) {
       const c = y * v.nx + x;
       let k = v.nz - 1;
@@ -87,12 +97,19 @@ export const bakeFarSections = async (world: WorldDecl, columns: Map<string, str
   const samples = Int16Array.from({ length: sampleNx * sampleNy }, (_, i) => sampler(sampleX + (i % sampleNx) * step, sampleY + Math.floor(i / sampleNx) * step));
   const pick = P.encodePackMaps({ coarse: { cell: step, x0: sampleX, y0: sampleY, nx: sampleNx, ny: sampleNy, height: samples } });
   const pickInfo = { coarseHeight: pick.coarseHeight, outside: sampler(sampleX - step, sampleY - step), groundMax: lib.sampler.fallbackHeightRange([-Infinity, -Infinity], grid, origin, 0)[1], waterLevel: grid.seaLevel - origin[1] };
+  // 位图不塞进包.json，也不另发请求：和高度一起压，连续大片全空或全实的列只占很少的字节。
+  const pickParts = [pick.bytes], farColumns: Record<string, number> = {};
+  let offset = pick.bytes.length;
+  for (const [key, columns] of ordered) {
+    farColumns[key] = columns === '*' ? -1 : offset;
+    if (columns !== '*') { const bits = Buffer.from(columns, 'base64'); pickParts.push(bits); offset += bits.length; }
+  }
   const staging = newStaging(pack);
   try {
     for (const [name, t] of tiles) fs.writeFileSync(path.join(staging.dir, name), Buffer.concat(P.encodeTile(t.ti, t.tj, coarsestLevel, t.parts)));
     fs.writeFileSync(path.join(staging.dir, modelFileName), modelBytes(model));
-    fs.writeFileSync(path.join(staging.dir, '选级.bin.gz'), gzipSync(pick.bytes, { level: 9 }));
-    writePackDoc(lib, staging.dir, { dimension: world.packDimension, origin, state: table.stateList, biome: table.biomeList, coarsestLevel, maps: { coarse: { cell, x0, y0, nx, ny, height } }, extra: { farColumns: Object.fromEntries(ordered), farPick: pickInfo } });
+    fs.writeFileSync(path.join(staging.dir, '选级.bin.gz'), gzipSync(Buffer.concat(pickParts), { level: 9 }));
+    writePackDoc(lib, staging.dir, { dimension: world.packDimension, origin, state: table.stateList, biome: table.biomeList, coarsestLevel, maps: { coarse: { cell, x0, y0, nx, ny, height } }, extra: { farColumns, farPick: pickInfo } });
     const out = release(pack, staging.dir);
     const entry = await registerTerrainEntry(pack, out.version, { source: `${far.pack}@${version}，anim world bake-far ${world.displayName} 按镜头覆盖烘焙`, license: terrain[far.pack]!.license, visibility: '私有', note: '暮色试点，仅本地登记，不随 Release 分发' });
     if (!noRegister) registerTerrain(pack, entry);

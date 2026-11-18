@@ -18,7 +18,8 @@ import type * as distantModule from '../../engine/voxel/远景.ts';
 import type * as samplerModule from '../../engine/voxel/远景兜底采样.ts';
 import type * as importedModule from '../../engine/voxel/导入区段.ts';
 
-export const VOXEL_MODULES = ['区段包.ts', '区段.ts', '区段解码.ts', '生成.ts', '群系色.ts', '真实方块表.ts', '远景.ts', '导入区段.ts', '远景兜底采样.ts'] as const;
+export const VOXEL_MODULES = ['区段包.ts', '区段.ts', '区段解码.ts', '生成.ts', '群系色.ts', '真实方块表.ts'] as const;
+export const FAR_MODULES = ['远景.ts', '导入区段.ts', '远景兜底采样.ts'] as const;
 
 /** 烘焙和编辑校验要的方块知识；测试里可以换成小表 */
 export type BlockKnowledge = {
@@ -36,7 +37,7 @@ export type BlockKnowledge = {
   allStates: readonly string[];
 };
 
-export type VoxelLib = { sampler: typeof samplerModule; distant: typeof distantModule; imported: typeof importedModule; sectionPack: typeof sectionPackModule; sections: typeof sectionModule; sectionDecoder: typeof sectionDecodeModule; generated: typeof generateModule; biomeColor: typeof biomeColorModule; blockTable: typeof blockTableModule; knowledge: BlockKnowledge };
+export type VoxelLib = { sectionPack: typeof sectionPackModule; sections: typeof sectionModule; sectionDecoder: typeof sectionDecodeModule; generated: typeof generateModule; biomeColor: typeof biomeColorModule; blockTable: typeof blockTableModule; knowledge: BlockKnowledge };
 
 const ASSET_HOOK_MARK = Symbol.for('mc-anim.node资产钩子');
 export const registerAssetHook = () => {
@@ -46,12 +47,13 @@ export const registerAssetHook = () => {
   register('../资产/node资产钩子.ts', { parentURL: import.meta.url, data: { 表: assetJsonTable() } });
 };
 
+const loadModule = <T>(moduleName: (typeof VOXEL_MODULES | typeof FAR_MODULES)[number]) => import(pathToFileURL(path.join(codeRoot(), 'engine', 'voxel', moduleName)).href) as Promise<T>;
+
 let voxelLibCache: Promise<VoxelLib> | undefined;
 export const loadVoxelLib = () =>
   (voxelLibCache ??= (async () => {
     registerAssetHook();
-    const loadModule = <T>(moduleName: (typeof VOXEL_MODULES)[number]) => import(pathToFileURL(path.join(codeRoot(), 'engine', 'voxel', moduleName)).href) as Promise<T>;
-    const [sectionPack, section, sectionDecoder, generator, biomeColor, blockTable, distant, imported, sampler] = await Promise.all([loadModule<typeof sectionPackModule>('区段包.ts'), loadModule<typeof sectionModule>('区段.ts'), loadModule<typeof sectionDecodeModule>('区段解码.ts'), loadModule<typeof generateModule>('生成.ts'), loadModule<typeof biomeColorModule>('群系色.ts'), loadModule<typeof blockTableModule>('真实方块表.ts'), loadModule<typeof distantModule>('远景.ts'), loadModule<typeof importedModule>('导入区段.ts'), loadModule<typeof samplerModule>('远景兜底采样.ts')]);
+    const [sectionPack, section, sectionDecoder, generator, biomeColor, blockTable] = await Promise.all([loadModule<typeof sectionPackModule>('区段包.ts'), loadModule<typeof sectionModule>('区段.ts'), loadModule<typeof sectionDecodeModule>('区段解码.ts'), loadModule<typeof generateModule>('生成.ts'), loadModule<typeof biomeColorModule>('群系色.ts'), loadModule<typeof blockTableModule>('真实方块表.ts')]);
     const knowledge: BlockKnowledge = {
       voxelValue: blockTable.voxelFromState,
       biomeNames: blockTable.biomeNames,
@@ -64,5 +66,13 @@ export const loadVoxelLib = () =>
       biomeCell: biomeColor.biomeCell,
       allStates: blockTable.blockNames,
     };
-    return { sampler, distant, imported, sectionPack, sections: section, sectionDecoder, generated: generator, biomeColor: biomeColor, blockTable, knowledge };
+    return { sectionPack, sections: section, sectionDecoder, generated: generator, biomeColor: biomeColor, blockTable, knowledge };
   })());
+
+// 普通存档的导入、转码不需要远景海底和草花的资产。
+export const loadFarVoxelLib = async () => {
+  const lib = await loadVoxelLib();
+  const [distant, imported, sampler] = await Promise.all([loadModule<typeof distantModule>('远景.ts'), loadModule<typeof importedModule>('导入区段.ts'), loadModule<typeof samplerModule>('远景兜底采样.ts')]);
+  return { ...lib, distant, imported, sampler };
+};
+export type FarVoxelLib = Awaited<ReturnType<typeof loadFarVoxelLib>>;

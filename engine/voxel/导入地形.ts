@@ -41,6 +41,7 @@ type TerrainPack = {
   info: PackageInfo;
   tables: PackTable;
   coarseHeights: CoarseHeightMap;
+  far?: { bytes: Uint8Array; columns: Record<string, number>; pick: CoarseHeightMap; outside: number; groundMax: number; waterLevel: number };
   maxTop: number; // 粗高度图里最高的顶（场景 z）
   canSplit: ReturnType<typeof decodeSplittable>; // 各处最细级不一样的包才有
   variesByPos: boolean[]; // 按包里的群系号
@@ -63,7 +64,12 @@ const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
     checkFrozenCoarse(packName, coarseHeights);
     let maxTop = -Infinity;
     for (const height of coarseHeights.height) if (height !== -32768) maxTop = Math.max(maxTop, height);
-    return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, canSplit: decodeSplittable(splittable), variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
+    let far: TerrainPack['far'];
+    if (info.farPick && info.farColumns) {
+      const bytes = new Uint8Array(await fetchGunzip(`${dir}/选级.bin.gz`));
+      far = { ...info.farPick, bytes, columns: info.farColumns, pick: decodePackMaps(info.farPick, bytes).coarse };
+    }
+    return { far, name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, canSplit: decodeSplittable(splittable), variesByPos: info.biome.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
   });
 
 // 块头不定长：第一次取 tileHeaderMax（本包最长的头）那么多，一次就够；比封顶还长的头才补取剩下的。越过文件尾的 Range 服务端截到文件尾
@@ -162,6 +168,7 @@ const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: nu
 type ReadyVoxels = { voxels: VoxelGrid; lastRound: number };
 
 export type ImportedTerrain = {
+  far?: TerrainPack['far'];
   key: string; // 体素世界的缓存键（带版本，换了版本不会接着用旧版建的网格）；同一个包要分开缓存的（挖法、补水不同）在后面接后缀
   source: VoxelSource;
   heightRange: [number, number]; // 场景 z 的范围（维度下界 ～ 最高的方块顶），给 体素世界 的 高度
@@ -193,12 +200,13 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   const ready = new Map<string, ReadyVoxels>();
   // 替下一帧先取、还没记进地形用量的区段：哪一帧真要到了才记，没用上的不记（用量只记画面真用到的）
   const unrecorded = new Set<string>();
+  const contains = (q: SectionId) => pack.far ? Object.hasOwn(pack.far.columns, sectionKey(q)) : hasSection(pack.coarseHeights, q);
   const source: VoxelSource = {
     采样: sample,
     coarsestLevel: pack.info.coarsestLevel,
     toScene: (g) => [g[0]! - ox, oz - g[2]!, g[1]! - oy],
     sections: (section) => {
-      if (!hasSection(pack.coarseHeights, section)) return null;
+      if (!contains(section)) return null;
       const k = sectionKey(section);
       const done = ready.get(k);
       if (done) {
@@ -213,7 +221,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
       // 地形覆盖（engine/voxel/地形用量.ts）：只记这一帧要的区段，不取
       if (isCoverRun()) {
         noteCoverWorld(pack.name);
-        if (!guessed) recordSectionRead(pack.name, qs.filter((section) => hasSection(pack.coarseHeights, section)).map(sectionKey));
+        if (!guessed) recordSectionRead(pack.name, qs.filter((section) => contains(section)).map(sectionKey));
         return undefined;
       }
       const round = ++pack.round;
@@ -232,7 +240,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
           cached.lastRound = round;
           continue;
         }
-        if (!hasSection(pack.coarseHeights, section)) continue;
+        if (!contains(section)) continue;
         const promise = pack.inflight.get(k);
         if (promise) waits.add(promise);
         else toLoad.push(section);
@@ -261,7 +269,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
     },
   };
   const sectionData = async (qs: SectionId[]): Promise<(SectionData | null)[]> => {
-    const present = qs.filter((q) => hasSection(pack.coarseHeights, q));
+    const present = qs.filter((q) => contains(q));
     recordSectionRead(pack.name, present.map(sectionKey));
     // 取齐后这边拿到之前，体素世界的预取可能按缓存上限丢掉刚取的（只丢那一轮没要到的）：丢了再取
     for (;;) {
@@ -282,11 +290,12 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
       }
       await Promise.all(waits);
     }
-    return qs.map((q) => (hasSection(pack.coarseHeights, q) ? pack.data.get(sectionKey(q))!.d : null));
+    return qs.map((q) => (contains(q) ? pack.data.get(sectionKey(q))!.d : null));
   };
   return {
+    far: pack.far,
     sectionData,
-    noteSections: (qs) => recordSectionRead(pack.name, qs.filter((q) => hasSection(pack.coarseHeights, q)).map(sectionKey)),
+    noteSections: (qs) => recordSectionRead(pack.name, qs.filter((q) => contains(q)).map(sectionKey)),
     voxelContext: { info: { origin: pack.info.origin, state: pack.info.state, biome: pack.info.biome }, cutBoxes, flattenAreas },
     key: `导入:${pack.dir}`,
     source: source,

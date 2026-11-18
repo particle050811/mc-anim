@@ -5,18 +5,20 @@ import { buildPackTables, hasSection } from './区段包.ts';
 import { variesByPos } from './群系色.ts';
 import { importedSectionVoxels } from './导入区段.ts';
 import type { ImportedTerrain } from './导入地形.ts';
+import { recordSectionRead } from './地形用量.ts';
 import { emptyColumns } from './远景并列.ts';
 
 export type FarUse = { first: number; near: number; far: number; columns: string }; // * 是整块；其余是含邻圈的空列位图
 export type FarCover = Record<string, Record<string, FarUse>>;
 const globals = globalThis as { terrainFarCover?: FarCover };
-export const columnBits = (mask: Uint8Array) => {
+
+const columnBits = (mask: Uint8Array) => {
   const bits = new Uint8Array(Math.ceil(mask.length / 8));
   for (let i = 0; i < mask.length; i++) if (mask[i]) bits[i >> 3] |= 1 << (i & 7);
   return btoa(String.fromCharCode(...bits));
 };
 
-export const farCoverage = (name: string, base: ImportedTerrain, supplement: ImportedTerrain) => {
+export const farCoverage = (name: string, bakedPack: string, base: ImportedTerrain, supplement: ImportedTerrain) => {
   const sources = [base, supplement].map(t => ({ t, ctx: { ...t.voxelContext, tables: buildPackTables(t.voxelContext.info), variesByPos: t.voxelContext.info.biome.map(variesByPos) } }));
   const seen = new Map<string, FarUse>();
   const output = ((globals.terrainFarCover ??= {})[name] ??= {});
@@ -30,7 +32,7 @@ export const farCoverage = (name: string, base: ImportedTerrain, supplement: Imp
       const use = { first: frame, near: d, far: d, columns: '*' };
       seen.set(key, use);
       const i = sources.findIndex(s => hasSection(s.t.coarse, q));
-      if (i < 0) output[key] = use;
+      if (i < 0) { output[key] = use; recordSectionRead(bakedPack, [key]); }
       else fresh[i].push(q);
     }
     fresh.forEach((ids, i) => {
@@ -44,6 +46,7 @@ export const farCoverage = (name: string, base: ImportedTerrain, supplement: Imp
           const key = sectionKey(ids[j]), use = seen.get(key)!;
           use.columns = columnBits(mask);
           output[key] = use;
+          recordSectionRead(bakedPack, [key]);
         });
         continueRender(handle);
       }).catch(cancelRender);
