@@ -8,7 +8,7 @@
 //
 import { Internals } from 'remotion';
 import { buildBakedFarTerrain } from '@engine/voxel/远景区段地形.ts';
-import { packDir } from '@engine/voxel/区段包位置.ts';
+import { packDir, pageReadsFullTerrain } from '@engine/voxel/区段包位置.ts';
 import React, { useMemo, useRef } from 'react';
 import { farCoverage } from '@engine/voxel/远景覆盖.ts';
 import { isCoverRun } from '@engine/voxel/地形用量.ts';
@@ -52,7 +52,7 @@ const ImportedTerrainOnly: React.FC<TerrainProps> = (props) => {
   const terrain = useImportedTerrain(twilightPackName, allCutouts, allFlattens);
   return terrain ? <TerrainView terrain={terrain} {...props} /> : null;
 };
-const TerrainWithDistant: React.FC<TerrainProps> = props => isCoverRun() ? <MeasureDistant {...props} /> : <BakedDistant {...props} />;
+const TerrainWithDistant: React.FC<TerrainProps> = props => pageReadsFullTerrain() ? <GridDistant {...props} /> : <BakedDistant {...props} />;
 const BakedDistant: React.FC<TerrainProps> = props => {
   const base = useImportedTerrain(twilightPackName, allCutouts, allFlattens);
   const landmarks = useImportedTerrain(twilightFarLandmarkPack, noCutouts);
@@ -60,7 +60,7 @@ const BakedDistant: React.FC<TerrainProps> = props => {
   const terrain = useMemo(() => base && landmarks && baked && buildBakedFarTerrain(base, landmarks, baked, treeHeight), [base, landmarks, baked]);
   return terrain ? <TerrainView terrain={terrain} {...props} far={props.far ?? twilightFarViewM(LevelParams.视频.far)} /> : null;
 };
-const MeasureDistant: React.FC<TerrainProps> = props => {
+const GridDistant: React.FC<TerrainProps> = props => {
   const terrain = useTwilightWithDistant(props.camPos);
   return terrain ? <TerrainView terrain={terrain} {...props} far={props.far ?? twilightFarViewM(LevelParams.视频.far)} /> : null;
 };
@@ -93,7 +93,7 @@ const useTwilightWithDistant = (camera: number[]) => {
   const farLandmarks = useImportedTerrain(twilightFarLandmarkPack, noCutouts);
   const terrain = useDistantFallbackTerrain(twilightPackName, twilightDistantPack, allCutouts, allFlattens, { keyPrefix: '暮色', farM: LevelParams.视频.far, seam: false, fillCoarse: false, treeHeight, supplement: farLandmarks });
   return useMemo(() => {
-    if (!terrain || !farLandmarks) return null;
+    if (!terrain || !farLandmarks || !isCoverRun()) return terrain;
     packDir(twilightSectionPack); // 记覆盖的目标包，不打开它：镜头换了要能量出本地还没烘过的区段
     const note = farCoverage(twilightDistantPack, twilightSectionPack, terrain.imported, farLandmarks);
     const source: VoxelSource = { ...terrain.source, prefetch: (qs, guessed) => {
