@@ -15,6 +15,7 @@ import { pageDataSource } from '../core/页面数据源.ts';
 import type { V3 } from '../model/parts.tsx';
 import { blockNames, blockProps, blockTint, voxelFromState } from './真实方块表.ts';
 import { useImportedTerrain, type LandmarkCutout, type ImportedTerrain, type FlattenArea } from './导入地形.ts';
+import { mergeColumns, emptyColumns } from './远景并列.ts';
 import { sectionCells } from './区段.ts';
 import { coarseHeightAt, type CoarseHeightMap } from './区段包.ts';
 import { packDir } from './区段包位置.ts';
@@ -167,34 +168,6 @@ const fillGroundPlants = (voxels: VoxelGrid, grid: DistantGrid, origin: number[]
   for (const [colIdx, k, i] of placements) voxels.vox[k * colCount + colIdx] = i;
 };
 
-// 两块同一个区段的体素块按列并起来：`取[c]` 为真的列用 B，其余用 A。竖直范围取并集，原范围以下当实心（体素块的约定），并后多出的格子填石头（地下本来是石头）
-const mergeColumns = (gridA: VoxelGrid, gridB: VoxelGrid, pickB: Uint8Array): VoxelGrid => {
-  const cellM = gridA.cell;
-  const colCount = gridA.nx * gridA.ny;
-  const k0 = Math.min(gridA.origin[2], gridB.origin[2]) / cellM;
-  const k1 = Math.max(gridA.origin[2] + gridA.nz * cellM, gridB.origin[2] + gridB.nz * cellM) / cellM;
-  const nz = k1 - k0;
-  const palette = [...gridA.palette];
-  const paletteOffset = palette.length - 1;
-  for (let paletteIdx = 1; paletteIdx < gridB.palette.length; paletteIdx++) palette.push(gridB.palette[paletteIdx]);
-  const stonePaletteId = palette.push({ v: voxelFromState('minecraft:stone'), c: [255, 255, 255] }) - 1;
-  const vox = new Uint16Array(colCount * nz);
-  for (let colIdx = 0; colIdx < colCount; colIdx++) {
-    const useB = pickB[colIdx] === 1;
-    const srcGrid = useB ? gridB : gridA;
-    const kb = srcGrid.origin[2] / cellM - k0; // S 的第 0 格在新块里的格号
-    let filled = false;
-    for (let k = 0; k < srcGrid.nz; k++) {
-      const paletteIdx = srcGrid.vox[k * colCount + colIdx];
-      if (!paletteIdx) continue;
-      vox[(k + kb) * colCount + colIdx] = useB ? paletteIdx + paletteOffset : paletteIdx;
-      filled = true;
-    }
-    if (filled) for (let k = 0; k < kb; k++) vox[k * colCount + colIdx] = stonePaletteId;
-  }
-  return { nx: gridA.nx, ny: gridA.ny, nz, cell: cellM, origin: [gridA.origin[0], gridA.origin[1], k0 * cellM], vox, palette: palette, waterLevel: gridA.waterLevel };
-};
-
 // 补粗级：导入的粗级补水面、水草、地面草花（照主世界导入量的表，见上）；暮色不补，导入那片和只画导入地形时一样。树高：竖直范围在远景最高的地面上再留多少米给树
 // 补充：导入范围外另一个导入包（同一个原点烘的，暮色远处地标的小块），主导入包没有的区段先取它、它也没有的列再用远景
 export type FarFallbackOptions = { fillCoarse: boolean; treeHeight: number; supplement?: ImportedTerrain };
@@ -226,23 +199,8 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
         fillSeagrass(voxels, grid, origin);
         fillGroundPlants(voxels, grid, origin);
       }
-      // 没数据的列：整列空气（烘焙时区段的 `k底` 取所有列最低地表，有数据的列在其上一定有方块）；挖地标整列挖空的列（`V.挖空`）也是整列空气但有数据，不补
-      const colCount = voxels.nx * voxels.ny;
-      const emptyCols = new Uint8Array(colCount).fill(1);
-      let anyEmpty = false;
-      for (let colIdx = 0; colIdx < colCount; colIdx++) {
-        if (voxels.carveMask?.[colIdx]) {
-          emptyCols[colIdx] = 0;
-          continue;
-        }
-        for (let k = 0; k < voxels.nz; k++)
-          if (voxels.vox[k * colCount + colIdx]) {
-            emptyCols[colIdx] = 0;
-            break;
-          }
-        if (emptyCols[colIdx]) anyEmpty = true;
-      }
-      if (!anyEmpty) return voxels;
+      const emptyCols = emptyColumns(voxels);
+      if (!emptyCols) return voxels;
       return mergeColumns(voxels, distantSection(grid, origin, section, (c) => emptyCols[c] === 1, correction), emptyCols);
     },
     prefetch: options.supplement ? (qs, guessed) => {

@@ -9,6 +9,7 @@ import { trialFarM } from '@engine/light/高度雾.ts';
 import { TWILIGHT_CRUISE_FOG_FAR } from '@engine/light/暮色光照.tsx';
 
 export const twilightDistantPack = '暮色放大-1752-远景';
+export const twilightSectionPack = '暮色放大-1752-远景区段';
 export const twilightFarLandmarkPack = '暮色放大-1752-远地标'; // 远处地标周围的小块（sourcing/worlds/暮色放大-1752-远地标.toml）
 export type TwilightFarView = { fogFar: number; heightFog: number };
 // 规矩 暮色超远景雾（作品/应力转动/规矩.toml）

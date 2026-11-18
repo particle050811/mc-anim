@@ -9,7 +9,7 @@ import { worldSeed, stateString, unpackCompact, readRegion } from './存档.ts';
 import { RegionSource } from './区域源.ts';
 import { packCompact, makeWorld, makeRegionFile } from './测试夹具.ts';
 import { dirFingerprint } from './版本.ts';
-import { VOXEL_MODULES } from './体素库.ts';
+import { VOXEL_MODULES, FAR_MODULES } from './体素库.ts';
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), '世界-存档-'));
 afterAll(() => fs.rmSync(tempDir, { recursive: true, force: true }));
@@ -133,6 +133,12 @@ describe('体素库', () => {
     const externalImports = await externalImportsOf(VOXEL_MODULES.map((f) => `engine/voxel/${f}`));
     expect(externalImports.filter((p) => /^(react|three|remotion|@remotion\/)/.test(p))).toEqual([]);
     expect(externalImports.filter((p) => p.startsWith('asset:')).sort()).toEqual(['asset:数据/场景/关键帧/方块表', 'asset:数据/场景/关键帧/群系色']);
+  });
+
+  it('远景生成和回读只另外用两张远景统计表', async () => {
+    const deps = await externalImportsOf(FAR_MODULES.map(f => `engine/voxel/${f}`));
+    expect(deps.filter(p => /^(react|three|remotion|@remotion\/)/.test(p))).toEqual([]);
+    expect(deps.filter(p => p.startsWith('asset:')).sort()).toEqual(['asset:数据/体素/远景地面草', 'asset:数据/体素/远景海底', 'asset:数据/场景/关键帧/方块表', 'asset:数据/场景/关键帧/群系色']);
   });
 
   // 数据源接口和经它读数据的纯函数：node数据源.ts、远景/打包.ts（动态 import 远景网格.ts）、Node 里算地形覆盖都执行它们

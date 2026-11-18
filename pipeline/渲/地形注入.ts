@@ -1,7 +1,7 @@
 // 把本段声明的地形包和版本传给页面（engine/voxel/区段包位置.ts 的唯一来源）：renderMedia、renderStill、renderFrames 都传 envVariables: 段渲染环境(键, 地形)。
 // anim film、still、bench、verify --render 走这一处。用环境变量不用 inputProps：inputProps 整份进指纹、规范化设置 拒收不认识的键、每段 getCompositions 也得跟着传，
 // 而版本已经单独进指纹的地形项。读 Composition 列表的页面不传：列表阶段不该读任何包，读了就报错。
-import { terrainVersionEnv, terrainUsageSegEnv, lightCacheFilesEnv } from '../../engine/段/地形环境.ts';
+import { terrainVersionEnv, terrainReadModeEnv, terrainUsageSegEnv, lightCacheFilesEnv } from '../../engine/段/地形环境.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { trialKey, findSwitch } from '../../engine/core/调试开关.ts';
@@ -19,7 +19,7 @@ import type { SegInfo } from '../清单/清单.ts';
  * 指纹在批次开头算，闸按段放，中途 anim world bake 或合并提交改了表，页面要是拿到新版，切片就是名字说 v1、画面是 v2，还查不出来。旧版本目录只增不改，照样读得到
  */
 export const segRenderEnv = (segKey: string, terrainFiles: Record<string, string>, mode: TerrainReadMode = '正式'): Record<string, string> => ({
-  [terrainVersionEnv]: JSON.stringify(readVersions(terrainFiles, mode)),
+  ...terrainOnlyEnv(terrainFiles, mode),
   [terrainUsageSegEnv]: `${workName()}/${segKey}`,
   [lightCacheFilesEnv]: lightCacheFiles(workName()),
 });
@@ -44,8 +44,9 @@ const readVersions = (fullVersions: Record<string, string>, mode: TerrainReadMod
     }),
   );
 };
-/** 只有地形版本表这一项（试看 film 不记用量） */
-export const terrainOnlyEnv = (fullVersions: Record<string, string>, mode: TerrainReadMode): Record<string, string> => ({ [terrainVersionEnv]: JSON.stringify(readVersions(fullVersions, mode)) });
+const pageTerrainEnv = (versions: Record<string, string>, mode: TerrainReadMode) => ({ [terrainVersionEnv]: JSON.stringify(versions), [terrainReadModeEnv]: mode });
+/** 只传地形版本和读法（试看 film 不记用量） */
+export const terrainOnlyEnv = (fullVersions: Record<string, string>, mode: TerrainReadMode): Record<string, string> => pageTerrainEnv(readVersions(fullVersions, mode), mode);
 /** shell 里的试看参数要不要读完整包 */
 export const shellTrialMode = (): TerrainReadMode => (trialReadsFullTerrain(shellTrialTable()) ? '完整' : '正式');
 /** 段声明的包现登记的完整包版本（覆盖、still 用；切片走指纹里记的那份） */
@@ -98,5 +99,5 @@ export const fullTableEnv = (): Record<string, string> => {
       return [pack, v.version];
     }),
   );
-  return { [terrainVersionEnv]: JSON.stringify(table) };
+  return pageTerrainEnv(table, '完整优先');
 };

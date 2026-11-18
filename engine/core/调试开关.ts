@@ -292,7 +292,7 @@ export type OffName = Extract<Row, { kind: 'off' }>['name'];
 export type ChannelName = Extract<Row, { kind: 'channel' }>['name'];
 
 /** REMOTION_ANIM_ 开头、却不是调试开关的页面环境变量（正式渲染要用），check 不要求登记 */
-export const nonDebugEnvNames = ['REMOTION_ANIM_TERRAIN_PACKS'] as const;
+export const nonDebugEnvNames = ['REMOTION_ANIM_TERRAIN_PACKS', 'REMOTION_ANIM_TERRAIN_READ_MODE'] as const;
 
 export const findSwitch = (kind: SwitchKind, name: string): DebugSwitch | undefined => (debugSwitches as readonly DebugSwitch[]).find((s) => s.kind === kind && s.name === name);
 

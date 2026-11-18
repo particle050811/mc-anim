@@ -2,11 +2,16 @@
 // 版本不从 assets/地形版本.json import：整表进闭包的话改任何一个包所有地形段都过期（用户 10-31 定按段依赖）。页面只拿到本段声明的包和版本，
 // 由渲染入口经环境变量传（pipeline/渲/地形注入.ts；Remotion 只打包一次，环境变量能逐段不同，也不混进进指纹的 inputProps）；Studio 传全表（pipeline/预览/命令.ts）。
 // 读没声明的包直接报错，不退回全表：指纹的地形项只记声明的包，偷读的包换了版本这段不会过期。Node 工具要用就自己设这个环境变量。
-import { terrainVersionEnv } from '../段/地形环境.ts';
+import { terrainVersionEnv, terrainReadModeEnv } from '../段/地形环境.ts';
 import { recordPackRead } from './地形用量.ts';
 
 // webpack 里没有 process 这个变量时（模块求值很早、Worker）也不能炸，只从 globalThis 取
 const readProcessEnv = () => (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+
+export const pageReadsFullTerrain = () => {
+  const mode = readProcessEnv()?.[terrainReadModeEnv];
+  return mode === '完整' || mode === '完整优先';
+};
 
 let lastRawText: string | undefined;
 let lastTable: Record<string, string> = {};
