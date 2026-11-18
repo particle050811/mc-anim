@@ -2,22 +2,22 @@
   "note": "地形区段包（正式段用的和只给预览用的都登记，后者在 说明 里写清）：<数据根>/terrain/<包名>/<版本>/，版本是内容指纹，目录只写不改。文件数、大小、清单sha256 由 anim world bake、转码 算（清单sha256 = 按相对路径排好的「路径\\tsha256」逐行再取 sha256）",
   "pack": {
     "暮色放大-1752-扩展": {
-      "version": "4b8aed73c49f",
-      "source": "手工:取材服务端生成的暮色森林（放大 4 倍）存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 b29dfba0d167 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 d85050c74ee2 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 c42d60d01992 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 a5acd7e9165b 改键名；anim world transcode 从 a5acd7e9165b 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）",
+      "version": "5b27077759e7",
+      "source": "手工:取材服务端生成的暮色森林（放大 4 倍）存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 b29dfba0d167 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 d85050c74ee2 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 c42d60d01992 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 a5acd7e9165b 改键名；anim world transcode 从 a5acd7e9165b 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）；anim world transcode 从 4b8aed73c49f 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 19,
-      "size": 227992975,
-      "manifestSha256": "2449d1734686fb8759f33f440a51bfcc148e1a0cc6303ac883ed9e830c5c3cbf"
+      "fileCount": 20,
+      "size": 225530329,
+      "manifestSha256": "677b0669ed822f59ea8c09399aaf73c1a3c1f72035658b2e8a28d4c2d8e16f1b"
     },
     "主世界-116": {
-      "version": "380a9da31469",
-      "source": "手工:取材服务端生成的主世界存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 9cd3fdcf8361 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 43b681414058 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 5c8a6378419e 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 4f4ce09adc78 改键名；anim world transcode 从 4f4ce09adc78 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）",
+      "version": "9507da09100d",
+      "source": "手工:取材服务端生成的主世界存档，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 9cd3fdcf8361 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 43b681414058 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world 转码 从 5c8a6378419e 过可见变换（只保真看得见的格子；docs/决策/0011-地形压缩.md）；盘键迁移从 4f4ce09adc78 改键名；anim world transcode 从 4f4ce09adc78 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）；anim world transcode 从 380a9da31469 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 26,
-      "size": 224929886,
-      "manifestSha256": "dffff0e22e9f36a2c39cc78ca44c3c4e2271456195e79d8848843fdb276acce6"
+      "fileCount": 27,
+      "size": 219947240,
+      "manifestSha256": "2c5229e7eeb795e43280c983b24af0b3a906a70abb098128a191dd33aed4f40b"
     },
     "主世界-116-远景": {
       "version": "811fc551250c",
@@ -30,24 +30,24 @@
       "manifestSha256": "428b97206dafdd58a735103d14f064a0183cf642c884aa70e1818dc10b9ba09c"
     },
     "暮色-远景片场": {
-      "version": "95ce837a0421",
-      "source": "手工:取材客户端-远景 片场存档里原版尺寸的暮色森林，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 dd06ec2eff1c 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 16e7bc057f0d 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 df4e879500e6 改键名；anim world transcode 从 e53f7a675223 转成格式 4（64×64 区段、每包状态条件模型；docs/决策/0011-地形压缩.md）",
+      "version": "d432fe222176",
+      "source": "手工:取材客户端-远景 片场存档里原版尺寸的暮色森林，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 dd06ec2eff1c 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 16e7bc057f0d 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 df4e879500e6 改键名；anim world transcode 从 e53f7a675223 转成格式 4（64×64 区段、每包状态条件模型；docs/决策/0011-地形压缩.md）；anim world transcode 从 95ce837a0421 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
       "note": "地标网格就是从这片地导出的；正式段不用，旧项目 地貌导入预览、地标巡检 用",
-      "fileCount": 7,
-      "size": 4481948,
-      "manifestSha256": "f216018fe5e28d724d72d46545ff278f478d84d7640f36d918ecaaa52907b26a"
+      "fileCount": 8,
+      "size": 4267120,
+      "manifestSha256": "50da951985ff98115f32216a514de454601674d57145fa276a7cc39207d4425a"
     },
     "测试-修整-岛": {
-      "version": "59f6f772db5a",
-      "source": "手工:取材服务端-主世界 测试-修整-种子116 存档的 RX 75～79、RZ -5～0，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 887d3c5c1b89 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 ea8e4fb3f0a4 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 2ee8d068d56b 改键名；anim world transcode 从 f50e095335df 转成格式 4（64×64 区段、每包状态条件模型，过可见变换；docs/决策/0011-地形压缩.md）",
+      "version": "234a397ff4a3",
+      "source": "手工:取材服务端-主世界 测试-修整-种子116 存档的 RX 75～79、RZ -5～0，经旧项目 工具/导入 烘焙成区段包；anim world 转码 从 887d3c5c1b89 转成逐格预测压缩（docs/决策/0011-地形压缩.md）；anim world 转码 从 ea8e4fb3f0a4 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）；盘键迁移从 2ee8d068d56b 改键名；anim world transcode 从 f50e095335df 转成格式 4（64×64 区段、每包状态条件模型，过可见变换；docs/决策/0011-地形压缩.md）；anim world transcode 从 59f6f772db5a 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
       "note": "主世界修整的试验包；正式段不用，旧项目 主世界修整窗外、主世界远景预览 用",
-      "fileCount": 7,
-      "size": 6885011,
-      "manifestSha256": "eddc1a7f981c26776266c6b3e1e527b144b8b95efe0455b199ccb044eca9e7af"
+      "fileCount": 8,
+      "size": 6640428,
+      "manifestSha256": "2707d4563004728542a5f0ed79a04b28bfe96abc751f25a3a384996dee948d7a"
     },
     "暮色放大-1752-远景": {
       "version": "7d762d294e6a",
@@ -59,49 +59,49 @@
       "manifestSha256": "af8dcc0a519b81c152b12a24a189a8d6d64c32b09df2e6cebf136c7d621e0b45"
     },
     "暮色放大-1752-远地标": {
-      "version": "3dc2980684fe",
-      "source": "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙；盘键迁移从 cda55bb7f0a2 改键名；anim world transcode 从 cda55bb7f0a2 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）",
+      "version": "5d0045d626ce",
+      "source": "取材服务端 暮色放大-1752-远地标 存档（只预生成了远处地标周围的区块），anim world bake 烘焙；盘键迁移从 cda55bb7f0a2 改键名；anim world transcode 从 cda55bb7f0a2 转成格式 4（64×64 区段、每包状态条件模型，过可见变换，转完包.json 照盘键迁移改英文键；试转在 run/草稿/1116-1005-工作-地形64，用户 11-16 定直接登记；docs/决策/0011-地形压缩.md）；anim world transcode 从 3dc2980684fe 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 54,
-      "size": 26208281,
-      "manifestSha256": "05d4eda68ada77330ea37f73c30449932cb24e5a82b90e15faa4ff4278a01381"
+      "fileCount": 55,
+      "size": 16596616,
+      "manifestSha256": "7aff732189754513135641251a9803625c4c59f622939c7319ac4556e595e1a4"
     },
     "下界-无结构-1110": {
-      "version": "a46cc3db62a3",
-      "source": "取材服务端 下界-无结构-1110 存档的下界 RX -1～3、RZ -3～1，套编辑层（场地一带的模组岩层换成下界岩，地形不动），anim world bake 烘焙（全高），套编辑 sourcing/worlds/下界-无结构-1110.编辑.toml（2 条命令，sha256 5969307f3e6f）",
+      "version": "6ff1215ac1f2",
+      "source": "取材服务端 下界-无结构-1110 存档的下界 RX -1～3、RZ -3～1，套编辑层（场地一带的模组岩层换成下界岩，地形不动），anim world bake 烘焙（全高），套编辑 sourcing/worlds/下界-无结构-1110.编辑.toml（2 条命令，sha256 5969307f3e6f）；anim world transcode 从 a46cc3db62a3 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 7,
-      "size": 16982202,
-      "manifestSha256": "0e1a81cdab96437fde6c79af99db3ddbf2070505cc32729e8b08e98b0f9ae001"
+      "fileCount": 8,
+      "size": 16752148,
+      "manifestSha256": "6d7805c9ab2f7010a430797f4258769c67f7bc056b664affc9d36171f66a9c0e"
     },
     "古城放大幽匿-20260930": {
-      "version": "e999b9049c82",
-      "source": "取材服务端 古城放大幽匿-20260930 存档的主世界 RX -3～-1、RZ -1～1，anim world bake 烘焙（全高），只给光体试看用",
+      "version": "f2b6046d6fb9",
+      "source": "取材服务端 古城放大幽匿-20260930 存档的主世界 RX -3～-1、RZ -1～1，anim world bake 烘焙（全高），只给光体试看用；anim world transcode 从 e999b9049c82 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Minecraft-Derived",
       "visibility": "发布",
-      "fileCount": 5,
-      "size": 6136676,
-      "manifestSha256": "7d670c3076f6630124a6a359fb4abc5602300e5a293acb709a4eab5f650f64bb"
+      "fileCount": 6,
+      "size": 6031042,
+      "manifestSha256": "f8be292eb2ff15b1b58e2f1537c121c3148a025601214a7b28fb73734f2f4a1c"
     },
     "珠峰-真实地球": {
-      "version": "ad0112abd115",
-      "source": "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 cubes/*.mcr3d，生成完的全部 cube，anim world bake 烘焙",
+      "version": "7cd9b2c60f9e",
+      "source": "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 cubes/*.mcr3d，生成完的全部 cube，anim world bake 烘焙；anim world transcode 从 ad0112abd115 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Origin-Unverified",
       "visibility": "私有",
-      "fileCount": 17,
-      "size": 12934763,
-      "manifestSha256": "318c94895f1b9dad5054952bcfe9be8a028bac2f721d2e28dffa44cfd88b6ea6"
+      "fileCount": 18,
+      "size": 7931319,
+      "manifestSha256": "574100acba4fbfc7b6efc3588ed210826e1fbf80ffe8c291680f51364ec8c4ea"
     },
     "珠峰-真实地球-DH": {
-      "version": "9789420f0cbe",
-      "source": "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 data/DistantHorizons.sqlite，anim world bake-dh 烘焙",
+      "version": "261d5acdcffb",
+      "source": "外来存档 real world.zip（sha256 aba2de33737b3e8c3cbad5048e71820e2ddb7f1a1eb35eac9bb2ecff1f896146）的 data/DistantHorizons.sqlite，anim world bake-dh 烘焙；anim world transcode 从 9789420f0cbe 换成格式 5 的容器（块头只记有的区段、粗图挪出 包.json，区段字节不变；docs/决策/0011-地形压缩.md）",
       "license": "LicenseRef-Origin-Unverified",
       "visibility": "私有",
-      "fileCount": 1443,
-      "size": 101525581,
-      "manifestSha256": "de7a5ccc5b18420bf5ae2cb9021f6fbefe8d4cd8fbafa10b91ad08367fa3f1c8"
+      "fileCount": 1444,
+      "size": 24852612,
+      "manifestSha256": "642d9f4b9ea96851d94ad95cf2a24da27c93c1505ee58e742bded8cf82b13825"
     }
   }
 }
