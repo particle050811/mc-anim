@@ -92,3 +92,18 @@ export const useBlockGlow = (k: number) => {
   useWriter(blockGlowSlot, resetBlockGlow);
   blockGlow.value = k;
 };
+// 地形受光倍（线性）：地形类材质（体素地形 engine/voxel/材质.ts、方块拼搭 engine/model/方块拼搭.tsx）吃灯的那份（环境光、方向光的漫反射和高光）再乘它，
+// 人物、模型照灯原样。自发光、光体（加在自发光里）不乘。默认 1（乘 1.0 逐位不变，主世界、暮色画面不变）；世界自己设（真下界），卸下时回 1
+export const terrainLightGain = { value: 1 };
+const terrainLightGainSlot = newWriteSlot();
+const resetTerrainLightGain = () => {
+  terrainLightGain.value = 1;
+};
+export const useTerrainLightGain = (k: number) => {
+  useWriter(terrainLightGainSlot, resetTerrainLightGain);
+  terrainLightGain.value = k;
+};
+/** 片元里接在 lights_fragment_end 后面：声明在 terrainLightGainHead */
+export const terrainLightGainHead = 'uniform float terrainLightGain;';
+export const terrainLightGainBody =
+  '#include <lights_fragment_end>\n  reflectedLight.directDiffuse *= terrainLightGain; reflectedLight.indirectDiffuse *= terrainLightGain; reflectedLight.directSpecular *= terrainLightGain; reflectedLight.indirectSpecular *= terrainLightGain;';
