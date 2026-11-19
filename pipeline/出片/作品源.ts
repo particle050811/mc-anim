@@ -9,7 +9,7 @@ import type { ResolvedSceneSound } from '../../engine/段/场声音.ts';
 import type { AudioInfo, SoundTable } from '../../engine/段/声音助手.ts';
 import type { SegmentDef } from '../../engine/段/段定义.ts';
 import { knownAudioMeasure } from '../段框架/音频数.ts';
-import { applySwap, readAssetLock, workAssetLockPath } from '../资产/资产锁.ts';
+import { applySwap, readAssetLock, workAssetLockPath, type AssetLock } from '../资产/资产锁.ts';
 import { importBundled } from '../验收/打包加载.ts';
 
 export type SourceSeg = { key: string; serial: string | null; def: SegmentDef; soundTable: SoundTable | null };
@@ -29,6 +29,8 @@ export type WorkSource = {
   motionError?: string;
   /** 音频时长等（和 anim check 的声音接缝检查同一个取法：锁里的数或量过的缓存） */
   measure: (id: string) => AudioInfo | undefined;
+  /** 出片时打包用的资产锁（作品的换件表换过的），时间轴的波形按它找字节；测试里可以不给 */
+  lock?: AssetLock;
 };
 
 type WorkManifest = { manifest: readonly ManifestEntry[]; segDir: (segKey: string) => string; segmentCode: (segKey: string) => string | null };
@@ -86,5 +88,6 @@ export const loadWorkSource = async (o: { codeRoot: string; workRoot: string; wo
     motion: sampled?.motion ?? null,
     ...(sampled?.error ? { motionError: sampled.error } : {}),
     measure: (id) => knownAudioMeasure(measureLock[id], o.dataRoot),
+    lock,
   };
 };

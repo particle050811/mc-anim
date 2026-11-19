@@ -41,6 +41,9 @@ export type TimelineAudio = {
   cutAtSegEnd: boolean;
   cutReason: string | null;
 };
+/** 一件资产的波形（波形.ts 算）：peaks 是 base64 的字节串，第 i 个字节是文件 [startSec + i/perSec, startSec + (i+1)/perSec) 秒的峰值，
+ *  0–255 线性对应 [floorDb, 0] dBFS */
+export type TimelineWaveform = { perSec: number; startSec: number; floorDb: number; peaks: string };
 export type TimelineBody = { segments: TimelineSegment[]; shots: TimelineShot[]; markers: TimelineMarker[]; audio: TimelineAudio[] };
 export type FilmTimeline = {
   format: typeof timelineFormat;
@@ -53,6 +56,8 @@ export type FilmTimeline = {
   durationSec: number;
   code: { commit: string; dirty: boolean } | null;
   stale: boolean;
+  /** 音频块上画的波形，键是 audio 的 asset（波形.ts）；v1 后加的可选字段，老文件没有 */
+  waveforms?: Record<string, TimelineWaveform>;
 } & TimelineBody;
 
 const r6 = (x: number) => Math.round(x * 1e6) / 1e6;
@@ -228,7 +233,10 @@ export const computeTimeline = (src: WorkSource, keys: readonly string[], fps: n
   return { segments, shots, markers, audio };
 };
 
-export const timelineDoc = (o: { work: string; film: string; video: string; fps: number; code: FilmTimeline['code']; stale: boolean; body: TimelineBody }): FilmTimeline => {
+export const timelineDoc = (o: { work: string; film: string; video: string; fps: number; code: FilmTimeline['code']; stale: boolean; body: TimelineBody; waveforms?: FilmTimeline['waveforms'] }): FilmTimeline => {
   const frameCount = o.body.segments.reduce((a, s) => a + s.frameCount, 0);
-  return { format: timelineFormat, version: timelineVersion, work: o.work, film: o.film, video: o.video, fps: o.fps, frameCount, durationSec: r6(frameCount / o.fps), code: o.code, stale: o.stale, ...o.body };
+  return {
+    format: timelineFormat, version: timelineVersion, work: o.work, film: o.film, video: o.video, fps: o.fps, frameCount, durationSec: r6(frameCount / o.fps), code: o.code, stale: o.stale, ...o.body,
+    ...(o.waveforms ? { waveforms: o.waveforms } : {}),
+  };
 };
