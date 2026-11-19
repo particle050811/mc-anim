@@ -13,7 +13,7 @@ import type { BlockMeshInfo } from '../voxel/方块网格信息.ts';
 import { loadBlockMeshBin } from '../voxel/方块网格.tsx';
 import { sectionKey, sectionCells } from '../voxel/区段.ts';
 import { hash64 } from '../core/求解缓存.ts';
-import { cascades, extraCells, lightWindows, windowKey, windowSections, cellOf, type ExtraBlock, type ExtraCell, type LightVolumeParams, type LightWindow } from './光体.ts';
+import { cascades, extraCells, lightWindows, windowKey, windowSections, cellOf, type ExtraBlock, type ExtraCell, type LightScheme, type LightVolumeParams, type LightWindow, schemeCurves, schemeKinds } from './光体.ts';
 import { meshLightCodes, type MeshGlow } from './光体网格.ts';
 import { gatherProbes, occupancyTexture, probeTarget } from './光体探针.ts';
 import { lightVolumeUniforms, useLightVolumeOn, wrapLightVolume, LIGHT_LAYERS } from './光体着色.ts';
@@ -66,9 +66,10 @@ const held = new Map<string, { bytes: number; used: number }>();
 let heldBytes = 0;
 let clock = 0;
 
-const terrainLayers = async (t: ImportedTerrain, allWindows: LightWindow[], keys: string[], need: boolean[], minLight: number, extra: { cells: ExtraCell[]; key: string }) => {
+const terrainLayers = async (t: ImportedTerrain, allWindows: LightWindow[], keys: string[], need: boolean[], minLight: number, extra: { cells: ExtraCell[]; key: string }, scheme?: LightScheme) => {
   const out: (LightLayerData | null)[] = allWindows.map(() => null);
-  const slots = lightCacheSlots(t, keys);
+  // 试看方案不进光体缓存（缓存只存现状那套团表）
+  const slots = scheme ? null : lightCacheSlots(t, keys);
   const toBuild = [...need];
   if (slots) {
     const got = await Promise.all(need.map((n, i) => (n ? readLightCache(slots[i]!) : null)));
@@ -112,7 +113,7 @@ const terrainLayers = async (t: ImportedTerrain, allWindows: LightWindow[], keys
       drop.push(k);
     }
   const cacheKeys = windows.map((_, i) => (slots && toBuild[i] ? slots[i]!.key : null));
-  const reply = await ask({ type: '建', id: nextId++, ctx, minLight, windows, need: toBuild.slice(0, last + 1), sections, drop, cacheKeys, extra: extra.cells, extraKey: extra.key });
+  const reply = await ask({ type: '建', id: nextId++, ctx, minLight, windows, need: toBuild.slice(0, last + 1), sections, drop, cacheKeys, extra: extra.cells, extraKey: extra.key, scheme });
   reply.layers.forEach((d, i) => {
     if (d) out[i] = d;
   });
@@ -173,7 +174,7 @@ const useLightVolume = (params: LightVolumeParams | undefined, want: Want | null
           const d = data[n];
           if (!d) continue;
           const occs = next.slice(0, n + 1).reverse().map((l) => ({ w: l!.w, tex: l!.occ }));
-          await gatherProbes(gl, next[n]!.w, occs, d.set, next[n]!.probes, params.minLight);
+          await gatherProbes(gl, next[n]!.w, occs, d.set, next[n]!.probes, params.minLight, params.scheme, d.field);
         }
         shown.current = next;
       }
@@ -231,6 +232,8 @@ const useLightVolume = (params: LightVolumeParams | undefined, want: Want | null
     anchor.current.updateMatrixWorld();
     u.lightVolView.value.copy(anchor.current.matrixWorld).invert().multiply(camera.matrixWorld);
     k.set(params.strength, params.knee, blendM);
+    const sc = params.scheme;
+    u.lightVolMode.value.set(sc ? schemeKinds.indexOf(sc.kind) : 0, sc ? schemeCurves.indexOf(sc.curve) : 0, 0, 0);
   });
   return anchor;
 };
@@ -250,9 +253,10 @@ export const LightVolume: React.FC<{ t: ImportedTerrain | null; center: readonly
     // 层键带上参数、另摆的方块和比它粗的各层（团表、探针要用粗层）
     const windows = lightWindows(center, heightRange);
     let chain = extra.key ? `${params.minLight}|${extra.key}` : `${params.minLight}`;
+    if (params.scheme) chain += `|${JSON.stringify(params.scheme)}`;
     want = { windows, keys: windows.map((w) => (chain += `|${windowKey(w)}`)) };
   }
-  const anchor = useLightVolume(params, want, (w, need) => terrainLayers(t!, w.windows, w.keys, need, params!.minLight, extra));
+  const anchor = useLightVolume(params, want, (w, need) => terrainLayers(t!, w.windows, w.keys, need, params!.minLight, extra, params!.scheme));
   return <group ref={anchor} />;
 };
 
