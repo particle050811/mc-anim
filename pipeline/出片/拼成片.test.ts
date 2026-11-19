@@ -14,6 +14,7 @@ process.env.ANIM_DATA = dataRoot;
 const fake = vi.hoisted(() => ({ segments: [] as unknown[], outputs: [] as unknown[], audit: vi.fn() }));
 vi.mock('../验收/动作体检命令.ts', () => ({ verifyWorkMotion: fake.audit }));
 vi.mock('./渲段.ts', () => ({ renderSegments: async () => fake.outputs }));
+vi.mock('./时间轴文件.ts', () => ({ buildFilmTimeline: async () => { throw new Error('测试里不算时间轴'); } }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<object>()), loadAllSegments: async () => fake.segments }));
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<object>()), workName: () => '测试' }));
 

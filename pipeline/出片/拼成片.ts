@@ -2,7 +2,7 @@
 //   选的段要是清单里挨着的一串（单独一段、一个核对段也行），不挨着的先照样渲完，再拒绝接；
 //   画面：ffmpeg concat 直接拷流（各段同一套编码参数、都从关键帧起）；
 //   声音：各段的 wav（和画面同一遍出，长度就是段长）按样本截、接，整片一个固定增益拉到 −16 LUFS + 限幅，压 AAC 量真峰值，超了压低限幅重做（照旧 成片.ts）；
-//   出到 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、字幕表、SRT、全片-未拉响度.flac、manifest.json；
+//   出到 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、字幕表、SRT、全片-未拉响度.flac、<名>.时间轴.json（出片/时间轴.ts）、manifest.json；
 //   --share 另从成片压一份 B 站 1080P60 AV1 档的（参数、文件名照旧 成片.ts，用户 11-05 定），只在要时加。
 // 试看（设了 REMOTION_ANIM_TRIAL，出片/试看.ts）：各段当场渲进草稿夹、不进切片缓存，接法同上，出到 <数据根>/run/草稿/<UTC 月日-时分>-工作-试看-<名>/，不进 交付/。
 import fs from 'node:fs';
@@ -10,7 +10,7 @@ import path from 'node:path';
 import { deliveryRoot } from '../环境/作品数据.ts';
 import { config, draftRoot } from '../环境/配置.ts';
 import { commitStatus, relativeToCodeRoot } from '../环境/路径.ts';
-import { workName } from '../环境/作品.ts';
+import { workName, workRoot } from '../环境/作品.ts';
 import { lowPriority, runCmd, runCapture } from '../环境/子进程.ts';
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { atomicWrite } from '../渲/母版.ts';
@@ -30,6 +30,8 @@ import { placeFilmSubtitles } from '../合成/段字幕.ts';
 import { srt, subtitleTableTsv } from '../合成/字幕.ts';
 import { checkFilmClock, packetClockArgs } from './视频时钟.ts';
 import { verifyWorkMotion } from '../验收/动作体检命令.ts';
+import { timelineFileName } from './时间轴.ts';
+import { buildFilmTimeline } from './时间轴文件.ts';
 
 const targetLoudness = -16;
 const truePeakLimit = -1;
@@ -133,6 +135,18 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
     atomicWrite(path.join(dir, '字幕表.tsv'), subtitleTableTsv(screens, filmTier.fps));
     atomicWrite(path.join(dir, `${opts.name}.srt`), srt(screens, filmTier.fps));
     Object.assign(files, { subtitleTable: '字幕表.tsv', SRT: `${opts.name}.srt` });
+  }
+  // 时间轴（给 image-flow 播放器）：写不成只警告，成片照常，事后 anim film timeline <交付夹> 补
+  if (!trial) {
+    try {
+      const doc = await buildFilmTimeline({ work: workName(), workRoot: workRoot(), film: opts.name, video: path.basename(filmPath), keys: outputs.map((r) => r.segment.key), fps: filmTier.fps });
+      const bad = doc.segments.find((x, k) => x.frameCount !== outputs[k]!.outputFrames || x.startFrame !== outputs[k]!.outputStartFrame - outputs[0]!.outputStartFrame);
+      if (bad) throw new Error(`${bad.key} 的起帧、帧数和接成片的不一样`);
+      atomicWrite(path.join(dir, timelineFileName(path.basename(filmPath))), JSON.stringify(doc, null, 2) + '\n');
+      files.timeline = timelineFileName(path.basename(filmPath));
+    } catch (e) {
+      opts.runRecord.log('警告', `时间轴没写成：${(e as Error).message}（成片照常；anim film timeline ${dir} 可以补）`);
+    }
   }
   const manifest = {
     version: 4,

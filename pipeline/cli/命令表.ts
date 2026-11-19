@@ -20,5 +20,6 @@ import { worldCommand } from '../世界/命令.ts';
 import { voiceCommands } from '../配音/命令.ts';
 import { cacheCommands } from '../缓存/命令.ts';
 import { segFrameCommands } from '../段框架/命令.ts';
+import { impactCommands } from '../出片/命令.ts';
 
-export const commandTable: Record<string, Command> = { ...batchCommands, ...schedulerCommands, ...envCommands, ...worktreeCommands, ...assetCommands, ...renderCommands, ...trialCommands, ...fingerprintCommands, ...composeCommands, ...previewCommands, ...checkCommands, ...verifyCommands, ...sourcingCommands, ...gameExportCommands, ...worldCommand, ...platformCommands, ...voiceCommands, ...cacheCommands, ...segFrameCommands };
+export const commandTable: Record<string, Command> = { ...batchCommands, ...schedulerCommands, ...envCommands, ...worktreeCommands, ...assetCommands, ...renderCommands, ...trialCommands, ...fingerprintCommands, ...composeCommands, ...previewCommands, ...checkCommands, ...verifyCommands, ...sourcingCommands, ...gameExportCommands, ...worldCommand, ...platformCommands, ...voiceCommands, ...cacheCommands, ...segFrameCommands, ...impactCommands };
