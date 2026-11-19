@@ -1,7 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { build } from 'esbuild';
 import { auditMotion, type MotionProfile, type MotionSample } from '../../engine/anim/动作体检.ts';
 import { parseArgs, UsageError } from '../cli/参数.ts';
 import { workRoot } from '../环境/作品.ts';
@@ -9,32 +7,11 @@ import { config } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { lowPriority, runCapture } from '../环境/子进程.ts';
 import { passGate } from '../闸/闸.ts';
-import { esbuildAliasPlugin } from '../资产/esbuild插件.ts';
-import { resolveAsset, readWorkAssetLock } from '../资产/资产锁.ts';
+import { readWorkAssetLock } from '../资产/资产锁.ts';
+import { importBundled } from './打包加载.ts';
 import { auditCadence } from './成片节拍.ts';
 
-const loadMotion = async (entry: string): Promise<MotionProfile> => {
-  const lock = readWorkAssetLock(workRoot());
-  const built = await build({ entryPoints: [entry], bundle: true, format: 'esm', packages: 'external', platform: 'node', write: false, jsx: 'automatic', logLevel: 'silent', plugins: [esbuildAliasPlugin(codeRoot()), {
-    name: 'motion-assets', setup(builder) {
-      builder.onResolve({ filter: /^asset:/ }, args => ({ path: args.path.slice(6), namespace: 'motion' }));
-      builder.onLoad({ filter: /.*/, namespace: 'motion' }, args => {
-        const { file, entry: asset } = resolveAsset(args.path, lock);
-        if (asset.suffix === '.json') return { contents: fs.readFileSync(file), loader: 'json' };
-        const value = asset.suffix === '.png' ? `data:image/png;base64,${fs.readFileSync(file).toString('base64')}` : `asset:${args.path}`;
-        return { contents: `export default ${JSON.stringify(value)}` };
-      });
-    },
-  }] });
-  const cache = path.join(codeRoot(), 'node_modules', '.cache');
-  fs.mkdirSync(cache, { recursive: true });
-  const dir = fs.mkdtempSync(path.join(cache, 'motion-'));
-  try {
-    const moduleFile = path.join(dir, 'profile.mjs');
-    fs.writeFileSync(moduleFile, built.outputFiles[0]!.contents);
-    return (await import(pathToFileURL(moduleFile).href)).default;
-  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
-};
+const loadMotion = async (entry: string): Promise<MotionProfile> => (await importBundled({ file: entry }, { codeRoot: codeRoot(), lock: readWorkAssetLock(workRoot()) })).default as MotionProfile;
 
 export const runMotionAudit = async (args: string[]) => {
   const parsed = parseArgs(args, { value: ['--video', '--out', '--trace'] });
