@@ -1,10 +1,12 @@
 // 结算舞核对的机位（纯数据，段.ts 也读）。坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格），角色面朝南（yaw 180），机位在南边。机位都是 Agent 暂定的。
 import type { V3 } from '@engine/model/parts.tsx';
+import { danceEndSec } from '../../角色/动作/忘情牛肉面时长.ts';
+import { segFps } from '@engine/段/段定义.ts';
 
 /** 竖构图，和参考视频 08（1080×1920）同比例 */
 export const aspect = { width: 720, height: 1280 } as const;
 /** 前后两半各多少秒：前半纯色底，后半教堂 */
-export const halfSec = 10;
+export const halfSec = Math.round(danceEndSec * segFps) / segFps;
 
 /** 纯色底：角色站原点。脚底到举起的手都在画里，人占画面高约六成（同 08）；头后大光环（顶约 3 格）、两边蜘蛛腿（±1.7 格）会出画 */
 export const front = { 眼: [0, -10.5, 1.3] as V3, 看: [0, 0, 1.3] as V3, fov: 17.5 };

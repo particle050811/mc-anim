@@ -5,11 +5,12 @@
 import { lerp, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
+import { withCastingLegs } from './施法飞行腿姿.ts';
 import { animSkeletonTable, defineAct, holdWandPose, raisedPose, aimStaff, type YaBoLunAct, type WandPose } from '../娘化亚波伦.tsx';
 
-export type PoseName = '站立' | '起飞' | '悬停' | '指向' | '开盘' | '收盘' | '落地' | '蓄势' | '回拉' | DodgePoseName;
+export type PoseName = '站立' | '起飞' | '悬停' | '指向' | '开盘' | '侧身定杖' | '侧身离杖' | '连射' | '收盘' | '落地' | '蓄势' | '回拉' | DodgePoseName;
 /** 第 1、2 幕的动作（用户 11-10 要她现身就做动作、张盘前「只躲不还手」地躲史蒂夫的追砍）：现身低头、甩杖，和几种躲法 */
-export type DodgePoseName = '低头' | '甩杖' | '后仰闪' | '侧飞' | '贴地滑' | '瞬移收' | '升空' | '飞行' | '升指';
+export type DodgePoseName = '低头' | '回腕' | '甩杖' | '后仰闪' | '侧飞' | '贴地滑' | '瞬移收' | '升空' | '飞行' | '升指';
 
 type HandPose = Readonly<Record<string, BonePose>>;
 export type PoseDef = {
@@ -21,6 +22,8 @@ export type PoseDef = {
   手: HandPose;
   /** 杖身朝哪：目标 = 杖尖指着演出的 目标；上 = 竖起来。给了就用 瞄杖 改右肩，手 里的右臂只当起点 */
   staffFacing?: '目标' | '上';
+  gripOffset?: number;
+  wristAim?: boolean;
 };
 
 // 右臂往前伸、杖从手里朝前指出去的起点（封面六稿的「前指」：肘微弯，手腕以绕小臂长轴转为主，杖从手的侧面穿过）；指哪由 瞄杖 解右肩
@@ -28,9 +31,16 @@ export type PoseDef = {
 // 这里只留一点侧身；腿、蜘蛛腿、身后的缺口环照 fly。左臂从胸前放下来摊在身侧（封面六稿的左臂）
 // 用户 11-10 定：正片里她站着飞，不用 fly 那个侧倒在缺口环（弯月）上的坐姿（「他可以站着飞呀」）。所以空中的姿势底子都是 idle（飞 = 0），上身不用再扶正
 const uprightPose: HandPose = { LeftArm: { rot: [20, 0, -35] }, LeftForeArm: { rot: [-25, 0, 0] } };
-const reachForward: HandPose = { ...uprightPose, RightArm: { rot: [-61, 25, -1.25] }, RightForeArm: { rot: [-22, 0, 0] }, RightHand: { rot: [33, -90, 0] } };
+const castLegs = (front: number, frontKnee: number, back: number, backKnee: number): HandPose => ({
+  RightLeg: { rot: [front, -3, 7] }, RightLowerLeg: { rot: [frontKnee, 0, 0] },
+  LeftLeg: { rot: [back, 4, -8] }, LeftLowerLeg: { rot: [backKnee, 0, 0] },
+});
+const reachForward: HandPose = { ...uprightPose, ...castLegs(-31, 33, 12, 24), RightArm: { rot: [-61, 25, -1.25] }, RightForeArm: { rot: [-22, 0, 0] }, RightHand: { rot: [33, -90, 0] } };
 // 开盘那一下：肘伸直（杖往前送约 0.15 格），左臂往外后方甩开，头抬一点
-const sendOutPose: HandPose = { ...reachForward, RightForeArm: { rot: [-3.75, 0, 0] }, LeftArm: { rot: [25, 0, -70] }, LeftForeArm: { rot: [-10, 0, 0] }, Head: { rot: [-8, 0, 0] } };
+const sendOutPose: HandPose = { ...reachForward, ...castLegs(-35, 38, 15, 21), RightForeArm: { rot: [-3.75, 0, 0] }, LeftArm: { rot: [25, 0, -70] }, LeftForeArm: { rot: [-10, 0, 0] }, Head: { rot: [-8, 0, 0] } };
+const castArm: HandPose = { RightArm: { rot: [-39, -25, 0] }, RightForeArm: { rot: [-12, 0, 0] }, RightHand: { rot: [25, 45, 0] } };
+const castAim = { staffFacing: '目标', gripOffset: 0.87, wristAim: true } as const;
+const sideCastGrip: HandPose = { ...castArm, Root: { rot: [0, 0, 0] }, UpBody: { rot: [0, 0, 0] }, LeftArm: { rot: [-80, -20, -70] }, LeftForeArm: { rot: [-18, 0, 0] }, Head: { rot: [42, 28, -6] } };
 // 收盘：肘收回来，杖竖在身前右侧（杖朝上由 瞄杖 解）
 const retractPose: HandPose = { ...uprightPose, RightArm: { rot: [-35, 10, 15] }, RightForeArm: { rot: [-70, 0, 0] }, RightHand: { rot: [0, 70, 0] } };
 // 第 4 幕收缩结界前的蓄势：杖举过头顶竖起来（杖朝上由 瞄杖 解），左手朝前伸出去对着他，头抬一点；接 开盘 那一拍就是杖往前一挥
@@ -52,8 +62,9 @@ const bothKnees = (thigh: number, calf: number, leftThigh = thigh, leftCalf = ca
 const dodgePoses: Record<DodgePoseName, PoseDef> = {
   /** 刚现身：头垂着（眼睛闭着由 演出设定 的 闭眼 管），杖照斜举 */
   低头: { fly: 0, hover: 0, 手: { ...raisedPose.站, UpBody: { rot: [6, 0, 0] }, Head: { rot: [24, 0, 0] } } },
+  '回腕': { fly: 0, hover: 0, 手: { ...raisedPose.站, UpBody: { rot: [4, -15, 5] }, Head: { rot: [-3, 12, -3] }, RightArm: { rot: [-18, 6, 32] }, RightForeArm: { rot: [-55, 0, 0] }, LeftArm: { rot: [12, 0, -18] } } },
   /** 杖一甩：右臂把杖往外、往前甩开，左臂跟着摊开，头微抬；排完回 站立 */
-  甩杖: { fly: 0, hover: 0, 手: { ...uprightPose, LeftArm: { rot: [10, 0, -48] }, RightArm: { rot: [-38, 0, 78] }, RightForeArm: { rot: [-8, 0, 0] }, RightHand: { rot: [0, 70, 0] }, Head: { rot: [-6, 0, 0] } } },
+  甩杖: { fly: 0, hover: 0, 手: { ...uprightPose, UpBody: { rot: [1, 14, -6] }, LeftArm: { rot: [10, 0, -48] }, RightArm: { rot: [-38, 0, 78] }, RightForeArm: { rot: [-8, 0, 0] }, RightHand: { rot: [0, 70, 0] }, Head: { rot: [-6, -9, 3] } } },
   /** 起身后退：上身往后仰、头跟着仰，左臂往上甩出去找平衡，杖往外撇，右膝提起来 */
   后仰闪: {
     fly: 0,
@@ -120,23 +131,18 @@ const dodgePoses: Record<DodgePoseName, PoseDef> = {
       RightHand: { rot: [0, 70, 0] },
     },
   },
-  /** 拉升里伸杖指他（用户 11-11「飞行的时候伸出法杖」）：右臂整条伸出去、肘几乎伸直，杖尖指着他（瞄杖 解右肩）；上身往他那边探一点、头低着盯他，
-   *  左臂往后下方甩开，两腿照 升空 错开。他在她前下方约 50 度，肘弯着的 指向（第 4 幕用的）从多数角度看杖贴着身子往下垂，所以这里另摆一个伸直的；
-   *  拉升完、慢放过了再回到 指向（第 4 幕从 指向 接）。Agent 摆的 */
   升指: {
     fly: 0,
     hover: 1,
     手: {
-      ...bothKnees(-16, 30, 12, 22),
-      UpBody: { rot: [10, 0, 0] },
-      Head: { rot: [14, 0, 0] },
+      ...castLegs(-24, 34, 16, 29),
+      UpBody: { rot: [4, -16, 8] },
+      Head: { rot: [10, 12, -5] },
       LeftArm: { rot: [30, 0, -40] },
       LeftForeArm: { rot: [-16, 0, 0] },
-      RightArm: { rot: [-75, 25, 0] },
-      RightForeArm: { rot: [-6, 0, 0] },
-      RightHand: { rot: [33, -90, 0] },
+      ...castArm,
     },
-    staffFacing: '目标',
+    ...castAim,
   },
 };
 
@@ -150,6 +156,9 @@ export const poses: Record<PoseName, PoseDef> = {
   悬停: { fly: 0, hover: 1, 手: raisedPose.站 },
   /** 举杖指向目标：杖尖朝目标 */
   指向: { fly: 0, hover: 1, 手: reachForward, staffFacing: '目标' },
+  '侧身定杖': { fly: 0, hover: 1, 手: { ...reachForward, ...sideCastGrip }, ...castAim },
+  '侧身离杖': { fly: 0, hover: 1, 手: { ...reachForward, ...sideCastGrip, UpBody: { rot: [-2.5, 0, 0] } }, ...castAim },
+  '连射': { fly: 0, hover: 1, 手: { ...reachForward, ...sideCastGrip, RightForeArm: { rot: [-3, 0, 0] } }, ...castAim },
   /** 张开轮盘的一下：杖往前一送、左臂甩开；排完这一拍再回到 指向 */
   开盘: { fly: 0, hover: 1, 手: sendOutPose, staffFacing: '目标' },
   /** 收盘：杖收回来竖在身前 */
@@ -199,7 +208,7 @@ export type DragSettings = { perSpeed: number; perAccel: number; limit: number; 
 
 export type PerformanceSnapshot = {
   /** 直接摊给 <娘化亚波伦 {...属性} 持杖 /> */
-  props: { pose: { loc: V3; yaw: number }; sec: number; act: YaBoLunAct; bonePose: Record<string, BonePose> };
+  props: { pose: { loc: V3; yaw: number }; sec: number; act: YaBoLunAct; bonePose: Record<string, BonePose>; gripOffset?: number; castingFlightLegs?: boolean };
   /** 这一刻在两条之间：从哪个姿势到哪个、走了多少（0～1，已缓动） */
   transition: { 从: PoseName; dest: PoseName; 比: number };
 };
@@ -325,6 +334,8 @@ export const dragAngles = (settings: DragSettings, posAt: (sec: number) => V3, y
 };
 
 export const definePerformance = (settings: PerformanceSettings) => {
+  const castingFlightLegs = settings.timeline.some(beat => beat.pose === '侧身定杖');
+  const legPoses = castingFlightLegs ? withCastingLegs(poses) : poses;
   const posAt = (sec: number) => valueAt(settings.位, sec);
   const targetAt = (sec: number) => valueAt(settings.target, sec);
   const yaw = (sec: number) => {
@@ -358,7 +369,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
     const cached = stateCache.get(sec);
     if (cached) return cached;
     const transition = transitionAt(settings.timeline, sec);
-    const [fromPose, toPose] = [poses[transition.从], poses[transition.dest]];
+    const [fromPose, toPose] = [legPoses[transition.从], legPoses[transition.dest]];
     const k = transition.比;
     const floatWeight = lerp(fromPose.hover, toPose.hover, k);
     const [basePos, floatOffset] = [posAt(sec), floatOffsetAt(sec)];
@@ -371,19 +382,49 @@ export const definePerformance = (settings: PerformanceSettings) => {
       const [a, b] = [fromPose.手[boneName]?.rot ?? bottomRot, toPose.手[boneName]?.rot ?? bottomRot];
       blended[boneName] = { rot: [0, 1, 2].map((j) => lerp(a[j]!, b[j]!, k)) };
     }
+    if (settings.lean) {
+      const [pitch, bank] = tiltAt(settings.lean, posAt, pose.yaw, sec, settings.breakpoints);
+      blended.MAllBody = { rot: [pitch, 0, bank] };
+      if (floatWeight > 0) {
+        const breakpoints = settings.breakpoints ?? [];
+        const followSec = noCross(breakpoints, sec - 0.08, sec) ? sec - 0.08 : sec;
+        const { 速: velocity } = avgSpeedAccel(posAt, followSec, 0.06, breakpoints);
+        const lift = Math.tanh(velocity[2] / 16) * floatWeight;
+        const drive = Math.tanh(Math.hypot(velocity[0], velocity[1]) / 18) * floatWeight;
+        const offset = (bone: string, flex: number, twist: number, tilt: number) => {
+          const base = blended[bone]?.rot ?? animPose[bone]?.rot ?? [0, 0, 0];
+          blended[bone] = { rot: [base[0]! + flex, base[1]! + twist, base[2]! + tilt] };
+        };
+        const legWeight = castingFlightLegs ? 0.12 : 1;
+        offset('RightLeg', (-12 * drive - 13 * lift) * legWeight, 0, -2 * drive * legWeight);
+        offset('RightLowerLeg', (16 * drive + 10 * lift) * legWeight, 0, 0);
+        offset('LeftLeg', (10 * drive + 14 * lift) * legWeight, 0, 3 * drive * legWeight);
+        offset('LeftLowerLeg', (15 * drive + 9 * lift) * legWeight, 0, 0);
+        offset('UpBody', 4 * drive, -8 * drive, -0.16 * bank);
+        offset('Head', -0.38 * pitch, 5 * drive, -0.42 * bank);
+        offset('LeftArm', 9 * lift, -4 * drive, -0.45 * bank);
+      }
+    }
     const aimPose = (aimMode: '目标' | '上') => aimStaff({ pose, sec: sec, act, bonePose: blended, aim: aimMode === '目标' ? { points: targetAt(sec) } : { dir: [0, 0, 1] } });
     let bonePose = blended;
-    if (fromPose.staffFacing && fromPose.staffFacing === toPose.staffFacing) bonePose = aimPose(fromPose.staffFacing);
-    else if (fromPose.staffFacing || toPose.staffFacing) {
+    const fromAim = fromPose.wristAim ? undefined : fromPose.staffFacing;
+    const toAim = toPose.wristAim ? undefined : toPose.staffFacing;
+    if (fromAim && fromAim === toAim) bonePose = aimPose(fromAim);
+    else if (fromAim || toAim) {
       // 两头瞄的不一样（或只有一头瞄）：各解各的右肩，再按过渡插
-      const shoulderRot = (poseDef: PoseDef) => (poseDef.staffFacing ? aimPose(poseDef.staffFacing) : blended).RightArm!.rot!;
-      const [a, b] = [shoulderRot(fromPose), shoulderRot(toPose)];
+      const shoulderRot = (mode: PoseDef['staffFacing']) => (mode ? aimPose(mode) : blended).RightArm!.rot!;
+      const [a, b] = [shoulderRot(fromAim), shoulderRot(toAim)];
       bonePose = { ...blended, RightArm: { rot: [0, 1, 2].map((j) => lerp(a[j]!, b[j]!, k)) } };
     }
-    if (settings.lean) {
-      // MAllBody（轴心在髋，idle 和 fly 都不动它）整个转：前倾 = 绕 x，侧倾 = 绕 z
-      const [pitch, rightTilt] = tiltAt(settings.lean, posAt, pose.yaw, sec, settings.breakpoints);
-      bonePose = { ...bonePose, MAllBody: { rot: [pitch, 0, rightTilt] } };
+    const wristWeight = lerp(Number(!!fromPose.wristAim), Number(!!toPose.wristAim), k);
+    if (wristWeight > 0) {
+      const aimed = aimStaff({ pose, sec, act, bonePose, joint: 'RightHand', aim: { points: targetAt(sec) } });
+      if (wristWeight === 1 || fromPose.staffFacing === toPose.staffFacing) bonePose = aimed;
+      else {
+        const wrist = bonePose.RightHand!.rot!;
+        const rot = wrist.map((value, index) => value + (((aimed.RightHand!.rot![index]! - value + 540) % 360) - 180) * wristWeight);
+        bonePose = { ...bonePose, RightHand: { rot } };
+      }
     }
     if (settings.dragSettings) {
       // 姿势里自己摆了袍摆的（加在上面）
@@ -405,7 +446,8 @@ export const definePerformance = (settings: PerformanceSettings) => {
       const wrist = bonePose.RightHand?.rot ?? [0, 0, 0];
       bonePose = { ...bonePose, RightHand: { rot: [wrist[0]! - staffShake, wrist[1]!, wrist[2]!] } };
     }
-    const moment: PerformanceSnapshot = { props: { pose, sec: sec, act, bonePose }, transition };
+    const gripOffset = lerp(fromPose.gripOffset ?? 0, toPose.gripOffset ?? 0, k);
+    const moment: PerformanceSnapshot = { props: { pose, sec: sec, act, bonePose, gripOffset, castingFlightLegs }, transition };
     stateCache.set(sec, moment);
     return moment;
   };

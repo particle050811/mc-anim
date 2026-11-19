@@ -1,11 +1,10 @@
-// 结算舞「忘情牛肉面」（用户 11-09 定用这支）：娘化亚波伦的手做动作，按秒取一张骨骼姿势，交给 <娘化亚波伦 姿势={…}>，盖在 idle 上面。
-// 照参考视频 08（小透明，真人全身正面，BV1PnHY6sE7d，9.36 秒）每 0.25 秒抽帧看着摆的，09（MMD）、10（MC 模型）只用来对段落。
-// 关键帧表 `时间线` 里的秒数就是 08 的秒数：配乐对上 08 的音轨，拍子就对上。公开的动作数据没有，姿势都是看图估的，不是量出来的。
-// 左右：08 当成没镜像，画面右边 = 她的左手（推测，调研没法确认哪版是正的）；要反过来把 `镜像` 套在整条时间线上。
-// 写法：每个关键姿势写「舞台坐标」里的量（胯挪多少、身子转多少、上臂前臂各朝哪、两脚踩在哪），逐通道用 engine/anim/anim.ts 的 sample 插值，
-// 再解成骨骼转角：腿按脚的落点反解（两节，膝盖朝脚尖），所以叉腿顶胯时脚不滑。头后大光环、浮块挂在 aaabody 上，这里只动 UpBody、DownBody，它们不跟着晃。
+// BV1UFH76QETS 草地版：只跟画面左侧舞者。上身取可见关节，脚与转身按原帧的接触、遮挡和朝向校正。
 import { onePassSec } from './忘情牛肉面时长.ts';
+import { leftDancerTrack } from './草地舞采样.ts';
+import { grassArmFrames, type ArmFrame } from './草地手臂逐帧.ts';
+import { grassTurn, leftStep, rightStep } from './草地舞步.ts';
 import * as THREE from 'three';
+import { lerpV as mixDir } from '@engine/core/数学.ts';
 import { sample, type Key } from '@engine/anim/anim.ts';
 import type { MolangEnv } from '@engine/anim/Molang.ts';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
@@ -26,6 +25,7 @@ export type DancePose = {
   bodyTwist: number;
   /** 上身前俯（度） */
   forwardBend: number;
+  gazeDip: number;
   /** 头在「跟着上身」之外再加的 [转, 歪]（度）；头自己会往回找镜头，见 回头 */
   头: [转: number, 歪: number];
   /** 上臂、前臂朝哪（上身坐标，只表方向）：[0,-1,0] 垂着，[1,0,0] 往她左边平举，[0,1,0] 举过头 */
@@ -50,6 +50,7 @@ const neutralPose: DancePose = {
   bodyTilt: 0,
   bodyTwist: 0,
   forwardBend: 0,
+  gazeDip: 0,
   头: [0, 0],
   leftUpperArm: [0.22, -1, 0.05],
   leftForeArm: [0.2, -1, 0.3],
@@ -60,7 +61,6 @@ const neutralPose: DancePose = {
   leftFootDir: [8, 0],
   rightFootDir: [8, 0],
 };
-const dancePose = (patch: Partial<DancePose>, bottomPose: DancePose = neutralPose): DancePose => ({ ...bottomPose, ...patch });
 const mirrorX = ([left, up, forward]: DirVec3): DirVec3 => [-left, up, forward];
 /** 左右对调 */
 export const mirrorPose = (p: DancePose): DancePose => ({
@@ -70,6 +70,7 @@ export const mirrorPose = (p: DancePose): DancePose => ({
   bodyTilt: -p.bodyTilt,
   bodyTwist: -p.bodyTwist,
   forwardBend: p.forwardBend,
+  gazeDip: p.gazeDip,
   头: [-p.头[0], -p.头[1]],
   leftUpperArm: mirrorX(p.rightUpperArm),
   leftForeArm: mirrorX(p.rightForeArm),
@@ -81,127 +82,50 @@ export const mirrorPose = (p: DancePose): DancePose => ({
   rightFootDir: p.leftFootDir,
 });
 
-// 叉腿站：两脚各往外 6.5 像素（腿长 21 像素的三成，照 08 量的），重心略降
-const straddle = dancePose({ hip: [0, -0.6, 0], leftFoot: [6.5, 0, 0], rightFoot: [-6.5, 0, 0], leftFootDir: [18, 0], rightFootDir: [18, 0] });
-
-// 第一段：胯顶向一边，上身倒向另一边，倒向的那只手举起来指斜上，另一只手垂在胯旁
-const raiseLeftBend = dancePose(
-  { hip: [-2.6, -0.6, 0], hipTilt: -7, bodyTilt: 14, 头: [0, -6], leftUpperArm: [0.85, 0.55, 0.1], leftForeArm: [0.2, 1, 0.2], rightUpperArm: [-0.35, -1, 0], rightForeArm: [-0.6, -0.75, 0.35] },
-  straddle,
-);
-// 手臂短、帽檐宽：照 08 的角度举直，手会藏到帽子后面，所以举直的都往外、往前多偏一点让手露出来
-const raiseLeftStraight = dancePose({ hip: [-3.2, -0.6, 0], hipTilt: -9, bodyTilt: 17, 头: [0, -7], leftUpperArm: [0.45, 1, 0.18], leftForeArm: [0.45, 1, 0.2] }, raiseLeftBend);
-const raiseLeftDiag = dancePose({ leftUpperArm: [0.8, 1, 0.1], leftForeArm: [0.85, 1, 0.12] }, raiseLeftStraight);
-// 换边的中间：两肘抬到胸口高、小臂竖着
-const switchPose = dancePose({ leftUpperArm: [0.85, -0.45, 0.15], leftForeArm: [0.3, 0.85, 0.4], rightUpperArm: [-0.85, -0.45, 0.15], rightForeArm: [-0.3, 0.85, 0.4] }, straddle);
-// 一只手抬得高些（往左 = 1 左手高，−1 右手高）：多数时候是下一下要举的那只先抬
-const switchSidePose = (leftSign: 1 | -1) => {
-  const preLift = { leftUpperArm: [0.9, 0.05, 0.12] as DirVec3, leftForeArm: [0.25, 1, 0.25] as DirVec3 };
-  const p = dancePose({ hip: [-0.8, -0.6, 0], bodyTilt: 5, ...preLift }, switchPose);
-  return leftSign === 1 ? p : mirrorPose(p);
-};
-
-// 第二段：身子转成侧面，两小臂平伸在腰前；转回正面两臂在胯旁斜向下摊开
-const sideLeft = dancePose(
-  { 转: 48, bodyTwist: 12, hip: [0.6, -0.8, 0], 头: [0, 0], leftUpperArm: [0.3, -1, 0.15], leftForeArm: [0.25, -0.25, 1], rightUpperArm: [-0.3, -1, 0.25], rightForeArm: [-0.1, -0.2, 1] },
-  straddle,
-);
-// 转过去的那一下，转向那边的脚抬起来点一下地
-const sideLeftLift = dancePose({ 转: 38, bodyTwist: 8, leftFoot: [7.2, 1.6, 0.5], leftFootDir: [40, 30], leftUpperArm: [0.3, -1, 0.2], leftForeArm: [-0.3, -0.5, 0.8], rightUpperArm: [-0.3, -1, 0.2], rightForeArm: [0.4, -0.5, 0.8] }, sideLeft);
-const spreadHands = dancePose({ leftUpperArm: [0.85, -0.5, 0], leftForeArm: [1, -0.3, 0.12], rightUpperArm: [-0.85, -0.5, 0], rightForeArm: [-1, -0.3, 0.12] }, straddle);
-// 换边时两手在身前交叉着过
-const crossArmsPose = (yaw: number) => dancePose({ 转: yaw, hip: [0, -1, 0], leftUpperArm: [0.3, -1, 0.2], leftForeArm: [-0.5, -0.6, 0.6], rightUpperArm: [-0.3, -1, 0.2], rightForeArm: [0.5, -0.6, 0.6] }, straddle);
-
-// 第三段：双手过头两次，中间收脚
-const handsToChest = dancePose({ 转: -12, leftUpperArm: [0.45, -0.9, 0.1], leftForeArm: [-0.3, 0.6, 0.7], rightUpperArm: [-0.45, -0.9, 0.1], rightForeArm: [0.3, 0.6, 0.7] }, straddle);
-const handsOnHead = dancePose({ hip: [0, -0.2, 0], leftUpperArm: [0.9, 0.5, 0.2], leftForeArm: [-0.35, 0.9, 0.3], rightUpperArm: [-0.9, 0.5, 0.2], rightForeArm: [0.35, 0.9, 0.3] }, straddle);
-const bothRaisedStraight = dancePose({ hip: [0, 0.2, 0], leftUpperArm: [0.8, 1, 0.35], leftForeArm: [0.7, 1, 0.4], rightUpperArm: [-0.8, 1, 0.35], rightForeArm: [-0.7, 1, 0.4] }, straddle);
-// 小跳收脚：右膝提起来，两拳收在肩前
-const liftKnee = dancePose({
-  hip: [0.3, 1.2, 0],
-  bodyTilt: -4,
-  leftUpperArm: [0.45, -0.9, 0.1],
-  leftForeArm: [0.05, 0.9, 0.45],
-  rightUpperArm: [-0.45, -0.9, 0.1],
-  rightForeArm: [-0.05, 0.9, 0.45],
-  leftFoot: [2.6, 0.8, 0],
-  rightFoot: [-2.6, 4.2, 2.8],
-  rightFootDir: [8, 35],
-});
-const feetTogether = dancePose({ leftFoot: [1.7, 0, 0], rightFoot: [-1.7, 0, 0] });
-const landCrouch = dancePose({ hip: [-0.8, -1.6, 0], bodyTilt: -7, 头: [0, 4], rightForeArm: [-0.45, -0.9, 0.3], leftForeArm: [0.45, -0.9, 0.3] }, feetTogether);
-const feetTogetherArmsUp = dancePose({ hip: [0, 0.5, 0], leftUpperArm: [0.95, 0.8, 0.3], leftForeArm: [0.45, 1, 0.4], rightUpperArm: [-0.95, 0.8, 0.3], rightForeArm: [-0.45, 1, 0.4] }, feetTogether);
-const handsGather = dancePose({ hip: [0, -1, 0], leftUpperArm: [0.3, -1, 0], leftForeArm: [0.3, -0.5, 0.8], rightUpperArm: [-0.3, -1, 0], rightForeArm: [-0.3, -0.5, 0.8] }, feetTogether);
-
-// ---------- 时间线 ----------
-
 export { onePassSec };
-
-/**
- * [08 的秒数, 姿势, 说明]。拍子：第一段每 0.5 秒一下（单、单、双 ×2），第二段 3.5 秒起每 1.5 秒换一面，第三段 7.5、8.25 秒两次双手过头。
- * 标「看」的是 08 抽帧上看得清的，标「估」的是抽帧糊、被身子挡住或两帧之间补的。
- */
-export const timeline: readonly (readonly [sec: number, 姿势: DancePose, note: string])[] = [
-  [0, neutralPose, '看：并脚站，手垂在身前'],
-  [0.25, raiseLeftBend, '看：叉开腿，胯顶右、上身倒左，左手举起肘还弯着'],
-  [0.5, switchSidePose(1), '看：两手都在胸口高，左手还没全放下'],
-  [0.75, mirrorPose(raiseLeftStraight), '看：右手伸直举过头'],
-  [1.0, switchSidePose(1), '看'],
-  [1.25, raiseLeftBend, '看：左手举，肘弯（双拍的第一下）'],
-  [1.5, raiseLeftDiag, '看：左手伸直指斜上（双拍的第二下）'],
-  [1.75, switchPose, '看：两肘平抬、小臂竖着'],
-  [2.0, mirrorPose(raiseLeftStraight), '看'],
-  [2.25, switchSidePose(1), '看'],
-  [2.5, raiseLeftDiag, '看：左手伸直指斜上，全片伸得最开的一下'],
-  [2.75, switchSidePose(-1), '看'],
-  [3.0, mirrorPose(raiseLeftStraight), '看'],
-  [3.25, mirrorPose(raiseLeftBend), '看：右手没放下，肘松一下（双拍）'],
-  [3.5, mirrorPose(raiseLeftStraight), '看：再伸直'],
-  [3.75, mirrorPose(sideLeftLift), '看：手放下、身子转向她的右边，右脚抬起点地；两手怎么收的估'],
-  [4.0, mirrorPose(sideLeft), '看：侧身，小臂平伸在腰前'],
-  [4.25, mirrorPose(sideLeft), '看：停住'],
-  [4.5, spreadHands, '看：转回正面，两臂斜向下摊开'],
-  [5.0, spreadHands, '看：停住'],
-  [5.25, crossArmsPose(22), '估：两手在身前交叉着过，抽帧是糊的'],
-  [5.5, sideLeftLift, '看：转向她的左边，左脚抬起点地'],
-  [5.75, sideLeft, '看'],
-  [6.0, sideLeft, '看：停住'],
-  [6.25, dancePose({ 转: 15 }, spreadHands), '看：转回来，手在打开'],
-  [6.5, spreadHands, '看'],
-  [6.75, spreadHands, '看：停住'],
-  [7.0, handsToChest, '看：两手收到胸前，身子略偏右；手的前后估'],
-  [7.25, handsOnHead, '看：两手搭在头顶、肘朝外，脚还叉着'],
-  [7.5, bothRaisedStraight, '看：两臂伸直举过头'],
-  [7.75, liftKnee, '看：手落到肩前，右膝提起、小跳；跳多高估'],
-  [8.0, landCrouch, '看：并脚落地屈膝，手垂下，上身歪向右；08 里两脚是前后交叉的，这里只并拢'],
-  [8.25, feetTogetherArmsUp, '看：并脚，双手再举过头'],
-  [8.5, feetTogetherArmsUp, '看：停住'],
-  [8.75, handsGather, '看：手落到腰前，略蹲'],
-  [9.0, feetTogether, '看：站直收住'],
-  [onePassSec, feetTogether, '片尾'],
-];
-
-// ---------- 插值 ----------
-
-const channelNames = Object.keys(neutralPose) as (keyof DancePose)[];
-const flattenPose = (p: DancePose): number[] => channelNames.flatMap((k) => (typeof p[k] === 'number' ? [p[k] as number] : (p[k] as number[])));
-const tracks: Key[][] = flattenPose(neutralPose).map((_, i) => timeline.map(([sec, p]) => [sec, flattenPose(p)[i]!] as Key));
-
-/** 这一秒的舞姿（舞台坐标）；0 秒以前、一遍结束以后停在首尾 */
-export const danceAt = (sec: number): DancePose => {
-  const value = tracks.map((keys) => sample(keys, sec));
-  let i = 0;
-  const poseValues: Record<string, number | number[]> = {};
-  for (const k of channelNames) {
-    if (typeof neutralPose[k] === 'number') poseValues[k] = value[i++]!;
-    else {
-      const n = (neutralPose[k] as number[]).length;
-      poseValues[k] = value.slice(i, i + n);
-      i += n;
-    }
-  }
-  return poseValues as unknown as DancePose;
+const degrees = Math.PI / 180;
+const lookBackMix = 0.65;
+const smoothMix = (sec: number, start: number, end: number) => {
+  const progress = Math.max(0, Math.min(1, (sec - start) / (end - start)));
+  return progress * progress * (3 - 2 * progress);
 };
+const poseAtSample = ([frame, lateral, crouch, lean]: typeof leftDancerTrack[number]): DancePose => {
+  const sec = frame / 30;
+  const yaw = grassTurn(sec);
+  const spinning = smoothMix(sec, 11.21, 11.43);
+  const highTuck = smoothMix(sec, 3.16, 3.44) * (1 - smoothMix(sec, 3.51, 3.84));
+  const lowTuck = smoothMix(sec, 5.02, 5.27) * (1 - smoothMix(sec, 5.38, 5.66));
+  return { ...neutralPose, hip: [lateral * 0.76, crouch, 0], 转: yaw, hipTilt: -lean * 0.32,
+    bodyTilt: lean * 0.83 - 6 * highTuck, forwardBend: Math.min(7, -crouch * 1.3) + 11 * highTuck + 6 * lowTuck,
+    gazeDip: 17 * highTuck + 8 * lowTuck, 头: [(spinning + smoothMix(sec, 7.05, 7.32) * (1 - smoothMix(sec, 10.70, 11.0))) * yaw * lookBackMix - 23 * highTuck + 12 * lowTuck, -lean * 0.18],
+  };
+};
+const bodyKeys = leftDancerTrack.map(row => [row[0] / 30, poseAtSample(row)] as const);
+const poseChannels = ['hip', 'hipTilt', 'bodyTilt', 'bodyTwist', 'forwardBend', 'gazeDip', '头'] as const;
+const flattenPose = (pose: DancePose) => poseChannels.flatMap(channel => Array.isArray(pose[channel]) ? pose[channel] as number[] : [pose[channel] as number]);
+const samples = bodyKeys.map(([sec, pose]) => [sec, flattenPose(pose)] as const);
+const tracks: Key[][] = flattenPose(neutralPose).map((_, axis) => samples.map(([sec, values]) => [sec, values[axis]!]));
+
+export function danceAt(sec: number): DancePose {
+  const values = tracks.map(track => sample(track, sec));
+  let offset = 0;
+  const pose = { ...neutralPose };
+  for (const channel of poseChannels) {
+    const base = neutralPose[channel];
+    Object.assign(pose, { [channel]: typeof base === 'number' ? values[offset++] : values.slice(offset, offset += base.length) });
+  }
+  const left = leftStep(sec);
+  const right = rightStep(sec);
+  const yaw = grassTurn(sec);
+  pose.转 = yaw;
+  pose.leftFoot = left.point;
+  pose.rightFoot = right.point;
+  pose.leftFootDir = [6 + yaw, left.toe];
+  pose.rightFootDir = [6 - yaw, right.toe];
+  applyArmTrack(pose, sec);
+  fitStance(pose);
+  return pose;
+}
 
 // ---------- 解成骨骼 ----------
 // 骨骼自己的坐标（engine/model/基岩模型.tsx）：X = 她的右，Y 上，Z = 后；转角 = Euler(−x, −y, z, 'ZYX')（度），和骨骼自带的 rotation 相加；pos 的 x 取负。
@@ -213,8 +137,6 @@ const axisX = new THREE.Vector3(1, 0, 0);
 const axisY = new THREE.Vector3(0, 1, 0);
 const axisZ = new THREE.Vector3(0, 0, 1);
 const axisQuat = (axis: THREE.Vector3, angle: number) => new THREE.Quaternion().setFromAxisAngle(axis, angle * radPerDeg);
-/** 把垂着的一节转到朝 向 的最小转动 */
-const pointAt = (dir: THREE.Vector3) => new THREE.Quaternion().setFromUnitVectors(downDir, dir.clone().normalize());
 /** 四元数 → BonePose 的 rot（减掉骨骼自带的转角） */
 const quatToEuler = (q: THREE.Quaternion, builtIn: readonly number[] = [0, 0, 0]): number[] => {
   const e = new THREE.Euler().setFromQuaternion(q, 'ZYX');
@@ -222,20 +144,111 @@ const quatToEuler = (q: THREE.Quaternion, builtIn: readonly number[] = [0, 0, 0]
 };
 const displacement = ([left, up, forward]: DirVec3): number[] => [left, up, -forward];
 
-// 模型尺寸（像素，models/main.json 的轴心）：UpBody、DownBody 的轴心高 20.65；髋 (±2.2, 21.15)，膝 11.7，踝 2.5；肩的自带转角 ±18 度
-const waistHeight = 20.65;
-const hip = { 左: new THREE.Vector3(-2.2, 21.15, 0), 右: new THREE.Vector3(2.2, 21.15, 0) };
-const thighLength = 21.15 - 11.7;
-const calfLength = 11.7 - 2.5;
-const ankleHeight = 2.5;
+import danceModel from 'asset:模型/角色/娘化亚波伦';
+import type { BedrockBone } from '@engine/model/基岩模型.tsx';
+import { skeletonMatrix } from '@engine/model/基岩正解.ts';
+
+const model = danceModel as unknown as { bones: BedrockBone[] };
+const bones = new Map(model.bones.map(bone => [bone.name, bone]));
+const modelPivot = (name: string) => new THREE.Vector3(...bones.get(name)!.pivot).multiply(new THREE.Vector3(-1, 1, 1));
+const waistPivot = modelPivot('DownBody');
+const bindLeg = (side: string) => {
+  const foot = `${side}Foot`;
+  const hip = modelPivot(`${side}Leg`), knee = modelPivot(`${side}LowerLeg`), ankle = modelPivot(foot);
+  const thigh = knee.clone().sub(hip), calf = ankle.clone().sub(knee);
+  const toFoot = skeletonMatrix(model, foot, {}, 1).invert();
+  // 两只鞋各由七根刚性子骨组成。踝不在鞋底中心，绷脚时最低点也会从前掌换到鞋尖。
+  const vertices = model.bones.filter(bone => bone.parent === foot).flatMap(bone => {
+    const local = toFoot.clone().multiply(skeletonMatrix(model, bone.name, {}, 1));
+    return bone.cubes!.flatMap(cube => Array.from({ length: 8 }, (_, corner) => new THREE.Vector3(
+      bone.pivot[0] - cube.origin[0] - ((corner & 1) ? cube.size[0] : 0),
+      cube.origin[1] - bone.pivot[1] + ((corner & 2) ? cube.size[1] : 0),
+      cube.origin[2] - bone.pivot[2] + ((corner & 4) ? cube.size[2] : 0),
+    ).applyMatrix4(local)));
+  });
+  const bounds = new THREE.Box3().setFromPoints(vertices);
+  const sole = bounds.getCenter(new THREE.Vector3());
+  sole.y = bounds.min.y;
+  return { hip, thighLength: thigh.length(), calfLength: calf.length(), thighAxis: thigh.normalize(), calfAxis: calf.normalize(), sole, vertices };
+};
+const legs = { Left: bindLeg('Left'), Right: bindLeg('Right') };
 const shoulderBuiltIn = { 左: [0, 0, -18], 右: [0, 0, 18] } as const;
-/** 头往回找镜头的比例：身子转 60 度时头只跟 21 度（08 里侧身时脸还是朝镜头多）。侧倒跟多少、点头、弹簧见文件末「头」一节 */
-const lookBackMix = 0.65;
+const bindArm = (side: string) => {
+  const forearm = bones.get(side + 'ForeArm')!;
+  const [skin, sleeve] = [...forearm.cubes!].sort((first, second) => first.origin[1] - second.origin[1]);
+  const edge = (cube: NonNullable<BedrockBone['cubes']>[number]) => cube.origin[1] - (cube.inflate ?? 0);
+  const palm = new THREE.Vector3(forearm.pivot[0] - skin!.origin[0] - skin!.size[0] / 2,
+    (edge(skin!) + edge(sleeve!)) / 2 - forearm.pivot[1], skin!.origin[2] + skin!.size[2] / 2 - forearm.pivot[2]);
+  return { upper: modelPivot(side + 'ForeArm').sub(modelPivot(side + 'Arm')).normalize(), palm: palm.normalize() };
+};
+const armAxes = { Left: bindArm('Left'), Right: bindArm('Right') };
+const frontAxis = new THREE.Vector3(0, 0, -1);
+const palmToFront = {
+  Left: new THREE.Quaternion().setFromUnitVectors(armAxes.Left.palm, frontAxis),
+  Right: new THREE.Quaternion().setFromUnitVectors(armAxes.Right.palm, frontAxis),
+};
+
+const armInShot = (row: ArmFrame, axis: number) => {
+  const angle = row[axis]! * degrees, span = row[axis + 1]! / 100;
+  const across = Math.sin(angle) * span, up = -Math.cos(angle) * span, depth = Math.sqrt(Math.max(0, 1 - span * span));
+  return new THREE.Vector3(-across - 0.08 * depth, up + 0.14 * depth, -depth + 0.08 * across + 0.14 * up).normalize();
+};
+
+const armDirectionTracks = [0, 2, 4, 6].map(axis => {
+  const directions = grassArmFrames.map(row => armInShot(row, axis));
+  return (['x', 'y', 'z'] as const).map(coord => directions.map((direction, frame): Key => [frame, direction[coord]]));
+});
+
+const applyArmTrack = (pose: DancePose, sec: number) => {
+  const frame = THREE.MathUtils.clamp(sec * 30, 0, grassArmFrames.length - 1);
+  const index = Math.floor(frame), row = grassArmFrames[index]!, next = grassArmFrames[Math.min(index + 1, grassArmFrames.length - 1)]!;
+  // 收肘展开在真人键之间接速度；不改起手的快甩或后面的舞步，过渡两端仍照原轨。
+  const continuous = smoothMix(frame, 98, 104) * (1 - smoothMix(frame, 152, 158));
+  const inverse = torsoFacing(pose).invert();
+  const local = (axis: number): DirVec3 => {
+    const [across, up, depth] = armDirectionTracks[axis / 2]!;
+    const dir = armInShot(row, axis).lerp(armInShot(next, axis), frame - index).normalize();
+    if (continuous) dir.lerp(new THREE.Vector3(sample(across!, frame), sample(up!, frame), sample(depth!, frame)).normalize(), continuous).normalize();
+    dir.applyQuaternion(inverse);
+    return [-dir.x, dir.y, -dir.z];
+  };
+  const turn = smoothMix(frame, 338, 342) * (1 - smoothMix(frame, 355, 359));
+  for (const side of ['left', 'right'] as const) {
+    const left = side === 'left', sign = left ? 1 : -1, axis = left ? 4 : 0;
+    const akimbo = smoothMix(frame, left ? 371 : 373, left ? 374 : 378);
+    pose[`${side}UpperArm`] = mixDir(mixDir(local(axis), [sign * 0.74, -0.62, 0.18], turn), [sign * 0.66, -0.74, 0.15], akimbo);
+    pose[`${side}ForeArm`] = mixDir(mixDir(local(axis + 2), [sign * 0.17, 0.94, 0.25], turn), [-sign * 0.72, -0.60, 0.27], akimbo);
+  }
+};
+
+const footTarget = (side: keyof typeof legs, feet: DirVec3, footSplay: number, toePitch: number) => {
+  const shoe = legs[side];
+  const footYaw = axisQuat(axisY, (side === 'Left' ? 1 : -1) * footSplay);
+  const footRot = footYaw.clone().multiply(axisQuat(axisX, -toePitch));
+  const upInShoe = axisY.clone().applyQuaternion(footRot.clone().invert());
+  const soleOffset = shoe.sole.clone().applyQuaternion(footRot);
+  soleOffset.y = Math.min(...shoe.vertices.map(vertex => vertex.dot(upInShoe)));
+  return { footYaw, footRot, ankle: toThreeVector(feet).sub(soleOffset) };
+};
+
+const fitStance = (pose: DancePose) => {
+  const rotation = axisQuat(axisY, pose.转).multiply(axisQuat(axisZ, pose.hipTilt));
+  const shift = toThreeVector(pose.hip);
+  let lower = 0;
+  for (const side of ['Left', 'Right'] as const) {
+    const leg = legs[side];
+    const hip = leg.hip.clone().sub(waistPivot).applyQuaternion(rotation).add(waistPivot).add(shift);
+    const { ankle } = side === 'Left' ? footTarget(side, pose.leftFoot, ...pose.leftFootDir) : footTarget(side, pose.rightFoot, ...pose.rightFootDir);
+    const height = Math.sqrt(Math.max(0, (leg.thighLength + leg.calfLength) ** 2 - (ankle.x - hip.x) ** 2 - (ankle.z - hip.z) ** 2));
+    lower = Math.max(lower, hip.y - ankle.y - height);
+  }
+  pose.hip[1] -= lower;
+};
 
 const armPose = (out: Record<string, BonePose>, side: '左' | '右', upperArm: DirVec3, foreArm: DirVec3) => {
   const sideName = side === '左' ? 'Left' : 'Right';
-  const upperArmDir = pointAt(toThreeVector(upperArm));
-  const forearmDir = pointAt(toThreeVector(foreArm));
+  const upperArmDir = new THREE.Quaternion().setFromUnitVectors(armAxes[sideName]!.upper, toThreeVector(upperArm).normalize());
+  const forearmDir = new THREE.Quaternion().setFromUnitVectors(frontAxis, toThreeVector(foreArm).normalize()).multiply(palmToFront[sideName]);
   out[`${sideName}Arm`] = { rot: quatToEuler(upperArmDir, shoulderBuiltIn[side]) };
   out[`${sideName}ForeArm`] = { rot: quatToEuler(upperArmDir.clone().invert().multiply(forearmDir)) };
 };
@@ -243,22 +256,24 @@ const armPose = (out: Record<string, BonePose>, side: '左' | '右', upperArm: D
 /** 腿：胯的位置、朝向定了以后，按脚底落点反解大腿、小腿，脚掌按 脚向 摆（舞台坐标里摆平） */
 const legPose = (out: Record<string, BonePose>, side: '左' | '右', hipShift: THREE.Vector3, hipRot: THREE.Quaternion, feet: DirVec3, [footSplay, toePitch]: readonly number[]) => {
   const sideName = side === '左' ? 'Left' : 'Right';
-  const waistPivot = new THREE.Vector3(0, waistHeight, 0);
-  const hipPos = hip[side].clone().sub(waistPivot).applyQuaternion(hipRot).add(waistPivot).add(hipShift);
-  const footRot = axisQuat(axisY, (side === '左' ? 1 : -1) * footSplay).multiply(axisQuat(axisX, -toePitch));
-  const ankle = toThreeVector(feet).add(new THREE.Vector3(0, ankleHeight, 0));
+  const { hip, thighLength, calfLength, thighAxis, calfAxis } = legs[sideName];
+  const hipPos = hip.clone().sub(waistPivot).applyQuaternion(hipRot).add(waistPivot).add(hipShift);
+  const { footYaw, footRot, ankle } = footTarget(sideName, feet, footSplay!, toePitch!);
   const hipInverse = hipRot.clone().invert();
   const d = ankle.sub(hipPos).applyQuaternion(hipInverse);
-  const distance = Math.min(d.length(), thighLength + calfLength - 1e-3);
-  const ankleDir = d.clone().normalize();
+  const reach = d.length();
+  const distance = THREE.MathUtils.clamp(reach, Math.abs(thighLength - calfLength), thighLength + calfLength);
+  const ankleDir = reach > 1e-9 ? d.divideScalar(reach) : downDir;
   // 膝盖朝脚尖那边顶
-  const kneeDir = new THREE.Vector3(0, 0, -1).applyQuaternion(footRot).applyQuaternion(hipInverse);
-  const perpVec = kneeDir.sub(ankleDir.clone().multiplyScalar(kneeDir.dot(ankleDir))).normalize();
+  const kneeDir = new THREE.Vector3(0, 0, -1).applyQuaternion(footYaw).applyQuaternion(hipInverse);
+  const perpVec = kneeDir.projectOnPlane(ankleDir);
+  if (perpVec.lengthSq() < 1e-12) perpVec.copy(Math.abs(ankleDir.y) < 0.9 ? axisY : axisX).projectOnPlane(ankleDir);
+  perpVec.normalize();
   const hipAngle = Math.acos(Math.min(1, Math.max(-1, (thighLength ** 2 + distance ** 2 - calfLength ** 2) / (2 * thighLength * distance))));
   const thighDir = ankleDir.clone().multiplyScalar(Math.cos(hipAngle)).add(perpVec.multiplyScalar(Math.sin(hipAngle)));
   const calfDir = ankleDir.clone().multiplyScalar(distance).sub(thighDir.clone().multiplyScalar(thighLength));
-  const thighAim = pointAt(thighDir);
-  const lowerLegAim = pointAt(calfDir);
+  const thighAim = new THREE.Quaternion().setFromUnitVectors(thighAxis, thighDir.normalize());
+  const lowerLegAim = new THREE.Quaternion().setFromUnitVectors(calfAxis, calfDir.normalize());
   out[`${sideName}Leg`] = { rot: quatToEuler(thighAim) };
   out[`${sideName}LowerLeg`] = { rot: quatToEuler(thighAim.clone().invert().multiply(lowerLegAim)) };
   out[`${sideName}Foot`] = { rot: quatToEuler(lowerLegAim.clone().invert().multiply(hipInverse).multiply(footRot)) };
@@ -301,7 +316,7 @@ type HeadAngle = [转: number, 歪: number, 俯: number];
 /** 头在世界里的 [转, 歪, 俯] → 四元数（俯 = 低头） */
 const headOrient = ([yawDeg, tilt, pitchRad]: readonly number[]) => axisQuat(axisY, yawDeg!).multiply(axisQuat(axisZ, tilt!)).multiply(axisQuat(axisX, -pitchRad!));
 /** 不算点头和弹簧时头在世界里该朝哪：转身跟 1 − 回头，侧倒跟 跟倾，再加姿势里的 头 */
-const headRestTarget = (p: DancePose): HeadAngle => [(1 - lookBackMix) * (p.转 + p.bodyTwist) + p.头[0], followTilt * p.bodyTilt + p.头[1], p.forwardBend];
+const headRestTarget = (p: DancePose): HeadAngle => [(1 - lookBackMix) * (p.转 + p.bodyTwist) + p.头[0], followTilt * p.bodyTilt + p.头[1], p.forwardBend + p.gazeDip];
 
 const headStep = 1 / 480;
 const headStartSec = -0.5;
@@ -337,11 +352,13 @@ export const headAngleAt = (sec: number): HeadAngle => {
   return [0, 1, 2].map((k) => headTable[k]![i]! * (1 - t) + headTable[k]![i + 1]! * t) as HeadAngle;
 };
 
-/** 这一秒的骨骼姿势；循环 = 一遍跳完从头再来（默认停在收住的站姿）。头换成弹簧追过的（见上） */
+/** 默认走完整舞谱；显式循环才从原片第一拍重放。 */
 export const noodleDancePose = (sec: number, settings: { 循环?: boolean } = {}): Record<string, BonePose> => {
   const t = settings.循环 ? ((sec % onePassSec) + onePassSec) % onePassSec : sec;
   const p = danceAt(t);
   const pose = solveSkeleton(p);
+  const lift = Math.max(p.leftFoot[1], p.rightFoot[1]);
+  pose.Skirt = { scale: [1, 0.77 - 0.29 * smoothMix(lift, 0, 9), 1] };
   const upperBody = torsoFacing(p);
   pose.Head = { rot: quatToEuler(upperBody.invert().multiply(headOrient(headAngleAt(t)))) };
   return pose;

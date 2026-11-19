@@ -1,34 +1,28 @@
 // 忘情牛肉面：时间线的秒数、左右对称、解出来的骨骼转角是不是有限数，腿的反解（并脚站直时腿不该有转角），头跟着上身慢半拍。
 import { describe, expect, it } from 'vitest';
-import { onePassSec, headAngleAt, noodleDancePose, noodleDanceEnv, timeline, danceAt, solveSkeleton, mirrorPose } from './忘情牛肉面.ts';
+import { onePassSec, headAngleAt, noodleDancePose, noodleDanceEnv, danceAt, solveSkeleton, mirrorPose } from './忘情牛肉面.ts';
+import { leftDancerTrack } from './草地舞采样.ts';
+import settlement from '../../段/6-结算舞/段.ts';
+
+const expectPlanted = (actual: readonly number[], anchor: readonly number[]) => {
+  actual.forEach((value, axis) => expect(value).toBeCloseTo(anchor[axis]!, 9));
+};
 
 describe('忘情牛肉面', () => {
-  it('时间线按时间递增，从 0 秒到一遍结束，都卡在 08 抽帧的 0.25 秒格上（片尾除外）', () => {
-    const timelineSecs = timeline.map(([sec]) => sec);
-    expect(timelineSecs[0]).toBe(0);
-    expect(timelineSecs.at(-1)).toBe(onePassSec);
-    for (let i = 1; i < timelineSecs.length; i++) expect(timelineSecs[i]!).toBeGreaterThan(timelineSecs[i - 1]!);
-    for (const sec of timelineSecs.slice(0, -1)) expect(sec * 4).toBe(Math.round(sec * 4));
-  });
-
-  it('关键帧那一刻取到的就是那个姿势', () => {
-    const [sec, dancePose] = timeline.find(([sec]) => sec === 2.5)!;
-    const poseAt = danceAt(sec);
-    expect(poseAt.hip[0]).toBeCloseTo(dancePose.hip[0], 9);
-    expect(poseAt.leftUpperArm[1]).toBeCloseTo(dancePose.leftUpperArm[1], 9);
+  it('主参考 423 帧、30 fps，结算舞 846 帧，不加结尾', () => {
+    expect(leftDancerTrack[0]![0]).toBe(0);
+    expect(leftDancerTrack.at(-1)![0]).toBe(422);
+    expect(onePassSec).toBe(423 / 30);
+    expect(settlement.sec * 60).toBe(846);
+    expect(danceAt(onePassSec + 1)).toEqual(danceAt(onePassSec));
   });
 
   it('每 1/60 秒的骨骼转角、位移都是有限数', () => {
-    for (let f = 0; f <= onePassSec * 60; f++) {
+    for (let f = 0; f < settlement.sec * 60; f++) {
       for (const [boneName, pose] of Object.entries(noodleDancePose(f / 60))) {
-        for (const v of [...(pose.rot ?? []), ...(pose.pos ?? [])]) expect(Number.isFinite(v), `${boneName} 第 ${f} 帧`).toBe(true);
+        expect([...(pose.rot ?? []), ...(pose.pos ?? [])].every(Number.isFinite), `${boneName} 第 ${f} 帧`).toBe(true);
       }
     }
-  });
-
-  it('并脚站直：腿的转角接近 0（脚的落点和模型的站姿差不到半像素）', () => {
-    const bones = solveSkeleton(danceAt(9));
-    for (const boneName of ['LeftLeg', 'RightLeg', 'LeftLowerLeg', 'RightLowerLeg']) for (const v of bones[boneName]!.rot!) expect(Math.abs(v)).toBeLessThan(4);
   });
 
   it('镜像：左臂的转角 = 原来右臂的转角，y、z 反号', () => {
@@ -40,36 +34,61 @@ describe('忘情牛肉面', () => {
     expect(leftArmRot[2]).toBeCloseTo(-rightArmRot[2]!, 6);
   });
 
-  it('循环：过了一遍从头再来；不循环停在收住的站姿', () => {
-    expect(noodleDancePose(onePassSec + 1.5, { 循环: true })).toEqual(noodleDancePose(1.5));
-    // 头的弹簧在收住后还要回稳一会儿，所以拿收住 3 秒后比；身子收住那一刻就停了
-    const { Head: headBone, ...bodyBones } = noodleDancePose(onePassSec + 5);
-    const { Head: headRetract, ...bodyRetract } = noodleDancePose(onePassSec);
-    expect(bodyBones).toEqual(bodyRetract);
-    expect(headBone).toEqual(noodleDancePose(onePassSec + 3).Head);
-    headRetract!.rot!.forEach((v, i) => expect(v).toBeCloseTo(headBone!.rot![i]!, 1));
-  });
-
-  it('环境：站着不动时转身、竖直速度是 0，第二段转身时有转身速度', () => {
-    expect(noodleDanceEnv(9.2).query).toEqual({ yaw_speed: 0, vertical_speed: 0 });
-    expect(Math.abs(noodleDanceEnv(3.62).query!.yaw_speed as number)).toBeGreaterThan(50);
-  });
-
-  it('头跟着上身侧倒、比身子晚：第一下身子 0.3 秒倒到最大，头的歪在那以后才到最大，且至少歪 3 度（原来只歪 ±2.6 度）', () => {
-    let [bodyMaxSec, headMaxSec, headMax] = [0, 0, 0];
-    let bodyMax = 0;
-    for (let t = 0; t <= 0.6; t += 1 / 120) {
-      if (danceAt(t).bodyTilt > bodyMax) [bodyMax, bodyMaxSec] = [danceAt(t).bodyTilt, t];
-      if (headAngleAt(t)[1] > headMax) [headMax, headMaxSec] = [headAngleAt(t)[1], t];
+  it('两次屈膝后收再落地时支撑脚不滑，第一次抬得更高', () => {
+    for (const [takeOff, peak, contact] of [[3.40, 3.50, 3.74], [5.23, 5.32, 5.59]]) {
+      for (let frame = Math.ceil(takeOff * 60); frame / 60 <= contact; frame++) {
+        expectPlanted(danceAt(frame / 60).rightFoot, danceAt(peak).rightFoot);
+      }
+      expect(danceAt(peak).leftFoot[1]).toBeGreaterThan(5);
+      expect(danceAt(peak).leftFoot[2]).toBeLessThan(-3);
+      expect(danceAt(contact).leftFoot[1]).toBe(0);
     }
-    expect(headMaxSec).toBeGreaterThan(bodyMaxSec + 0.05);
-    expect(headMax).toBeGreaterThan(3);
+    expect(danceAt(3.50).leftFoot[1]).toBeGreaterThan(danceAt(5.32).leftFoot[1]);
   });
 
-  it('头：取哪一秒和取的顺序无关；跳完站稳后回到正前方', () => {
+  it('交臂段交替收脚：宽、窄、宽，脚离地后才平移', () => {
+    const width = (sec: number) => Math.abs(danceAt(sec).leftFoot[0] - danceAt(sec).rightFoot[0]);
+    expect(width(7.56) - width(7.99)).toBeGreaterThan(8);
+    expect(width(8.48) - width(7.99)).toBeGreaterThan(7);
+    expect(danceAt(7.85).rightFoot[1]).toBeGreaterThan(2);
+    expect(danceAt(8.69).leftFoot[1]).toBeGreaterThan(2);
+  });
+
+  it('第一次高收腿低头侧看，第二次只轻点，两次之间抬头', () => {
+    expect(headAngleAt(3.50)[2]).toBeGreaterThan(20);
+    expect(headAngleAt(3.50)[0]).toBeLessThan(-20);
+    expect(headAngleAt(3.50)[2]).toBeGreaterThan(headAngleAt(5.32)[2] + 6);
+    expect(headAngleAt(4.35)[2]).toBeLessThan(7);
+  });
+
+  it('转身经过背面、提脚再着地，叉腰收住以后双脚不滑', () => {
+    expect(danceAt(11.66).转).toBeGreaterThan(175);
+    expect(danceAt(12.03).转).toBe(360);
+    expect(danceAt(11.46).rightFoot[1]).toBeGreaterThan(4);
+    expect(danceAt(11.69).rightFoot[1]).toBe(0);
+    for (const sec of [12.6,13,13.6,14.08]) {
+      expectPlanted(danceAt(sec).leftFoot, danceAt(14.1).leftFoot);
+      expectPlanted(danceAt(sec).rightFoot, danceAt(14.1).rightFoot);
+      expect(danceAt(sec).leftForeArm[0]).toBeLessThan(-0.7);
+    }
+  });
+
+  it('默认只跳一遍，显式循环时才重放', () => {
+    expect(noodleDancePose(onePassSec + 1.5, { 循环: true })).toEqual(noodleDancePose(1.5));
+    expect(noodleDancePose(onePassSec + 1.5)).not.toEqual(noodleDancePose(1.5));
+  });
+
+  it('转身时头和发饰跟随；舞后速度回到零', () => {
+    expect(Math.abs(noodleDanceEnv(11.55).query!.yaw_speed as number)).toBeGreaterThan(150);
+    expect(headAngleAt(11.76)[0]).toBeGreaterThan(110);
+    expect(noodleDanceEnv(onePassSec + 1).query).toEqual({ yaw_speed: 0, vertical_speed: 0 });
+  });
+
+  it('头：随机取帧不改结果，舞后回稳在原片末姿', () => {
     const earlier = headAngleAt(2.37);
     headAngleAt(8.1);
     expect(headAngleAt(2.37)).toEqual(earlier);
-    for (const v of headAngleAt(onePassSec + 2)) expect(Math.abs(v)).toBeLessThan(0.05);
+    const settled = noodleDancePose(onePassSec + 3).Head!.rot!;
+    solveSkeleton(danceAt(onePassSec)).Head!.rot!.forEach((angle, axis) => expect(settled[axis]).toBeCloseTo(angle, 4));
   });
 });

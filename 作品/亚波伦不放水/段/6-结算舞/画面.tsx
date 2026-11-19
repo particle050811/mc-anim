@@ -1,4 +1,4 @@
-// 第 6 幕 结算舞的画面：照分镜第 9 节「跳一遍」。一进来就是中殿走道正面全身跳一遍（固定），收住停 2 秒。
+// 第 6 幕结算舞：中殿走道正面全身，随真人短片结束。
 // 用户 11-11：外立面全景「意义不明 去掉 直接跳」，「右边放一个躺在地上的史蒂夫表示也完全打不过投降」。
 // 史蒂夫在画面右边、她左手边地上仰面瘫着，摆成「大」字：两臂往两边平摊在地上、两腿叉开，头微抬冲着机位、偏向她，一直不动
 // （用户 11-11「史蒂夫瘫在地上，张开双手，不要把手举起来  摆成一个大字形」，取代原来两手朝天张成 V、随拍摆、隔一阵抬头看她）。
@@ -16,30 +16,19 @@ import type { Cam } from '@engine/core/机位.ts';
 import { placeCamera } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { blendLayers } from '@engine/anim/基岩动画.ts';
-import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import type { StevePose } from '@库/角色/史蒂夫.tsx';
 import { church, ChurchLighting, PinkChurch } from '../../地点/粉色教堂.tsx';
-import { noodleDancePose, noodleDanceEnv } from '../../角色/动作/忘情牛肉面.ts';
-import { animSkeletonTable, GirlYaBoLun, GirlYaBoLunCreature, defineAct } from '../../角色/娘化亚波伦.tsx';
-import { hemYieldLeg } from '../../角色/袍摆让腿.ts';
+import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
+import { settlementAct, settlementRig } from '../../角色/结算舞姿势.ts';
 import { EquippedSteve } from '../../角色/史蒂夫装备.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
 const aspect = { width: 1280, height: 720 } as const;
 const skyColor = '#b4cfff';
-// idle 垫底，舞的姿势盖在上面（同 核对/结算舞）
-const dance = defineAct({ 主: () => [{ name: 'idle' }], env: noodleDanceEnv });
 const addVec = (a: readonly number[], b: readonly number[]): V3 => [a[0]! + b[0]!, a[1]! + b[1]!, a[2]! + b[2]!];
-const yaBoLunGeometry = GirlYaBoLunCreature.definition.model as Parameters<typeof hemYieldLeg>[0];
-/** 这一刻她的手摆姿势：舞的骨骼，加上按腿让开的袍摆（袍摆要看动画垫底的那份合起来以后腿在哪） */
-const dancePose = (sec: number, danceSec: number): Record<string, BonePose> => {
-  const danceBones = noodleDancePose(danceSec);
-  return { ...danceBones, ...hemYieldLeg(yaBoLunGeometry, blendLayers([{ skeleton: animSkeletonTable(sec, dance) }, { skeleton: danceBones }], 'TLM')).bonePose };
-};
 
 // 人站跳舞位面朝南，机位在南边过道里；横幅要把她脚底到举起的手、右边躺着的他都收进来
 const naveRig: Cam = { pos: addVec(church.dancePos, [0.5, -5.6, 2.0]), tgt: addVec(church.dancePos, [1.1, 0, 0.95]), lens: 23 };
@@ -101,7 +90,7 @@ const PlaceRig: React.FC<{ cameraRig: Cam }> = ({ cameraRig }) => {
 
 export default definePicture(seg, soundUrl, () => {
   const { sec: sec, events: events } = useSeg(seg);
-  const danceSec = sec - events.danceStart;
+  const rig = settlementRig(sec - events.danceStart);
   return (
     <AbsoluteFill style={{ background: skyColor }}>
       <ThreeCanvas width={aspect.width} height={aspect.height} gl={{ antialias: true }} dpr={canvasDpr(1)}>
@@ -110,7 +99,7 @@ export default definePicture(seg, soundUrl, () => {
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ChurchLighting />
           <PinkChurch />
-          <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} sec={Math.max(0, danceSec)} act={dance} bonePose={dancePose(Math.max(0, danceSec), danceSec)} />
+          <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} sec={rig.sec} act={settlementAct} bonePose={rig.bonePose} />
           <LyingSteve sec={sec} />
         </group>
       </ThreeCanvas>
