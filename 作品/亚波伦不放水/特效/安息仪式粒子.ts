@@ -1,7 +1,7 @@
 import type { V3 } from '@engine/core/坐标.ts';
 import { mulberry32 } from '@engine/core/数学.ts';
 import { interpPathPos } from '@库/特效/粒子物理.ts';
-import { altarCell, cageCell, offeringCell } from './安息仪式时序.ts';
+import { altarCell, baseCells, cageCell } from './安息仪式时序.ts';
 
 // 只列本片弹道能碰到的实体方块。用粒子包围盒的底面中心扫过扩张后的方块；画面半边长不参与碰撞。
 const particleWidth = Math.fround(0.2);
@@ -61,7 +61,7 @@ const residualVelocity = (rand: () => number): V3 => {
 export const offeringDebris = (index: number, seed: number) => {
   const rand = mulberry32(seed * 2654435761 + 31);
   const lifetime = Math.floor(Math.fround(4 / Math.fround(Math.fround(Math.fround(rand()) * Math.fround(0.9)) + Math.fround(0.1))));
-  const [east, north, height] = offeringCell(index);
+  const [east, north, height] = baseCells[index];
   const velocity = residualVelocity(rand);
   velocity[0] += Math.fround(0.1 * (altarCell[0] - east));
   velocity[1] += Math.fround(0.1 * (altarCell[1] - north));

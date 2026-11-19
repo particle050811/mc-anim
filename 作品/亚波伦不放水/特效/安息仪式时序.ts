@@ -1,14 +1,16 @@
 // 安息仪式（召唤亚波伦）的摆法、祭品、时刻表。纯数据、纯计算，段.ts 也能引。画法在 安息仪式.tsx。
 // 出处（Goety 2.5.60.6 + 启示录 2.3.6 反编译）：
-//   配方 goety_revelation:summon_apollyon2：激活物 末日勋章，仪式类型 sabbath，每秒 666 灵魂、30 秒，4 件祭品，生成 goety_revelation:summon_apollyon（过渡实体）。
-//     用这个不用 12 件祭品、破碎之环激活的 summon_apollyon（用户 11-19 定）：本片在下界召唤，下界能召唤的前提是在主世界召唤过祂（启示录 DarkAltarBlockEntityMixin），打过就有她掉的末日勋章。
+//   配方 goety_revelation:summon_apollyon：激活物 破碎之环，仪式类型 sabbath，每秒 666 灵魂、30 秒，12 件祭品，生成 goety_revelation:summon_apollyon（过渡实体）。
+//     不用末日勋章激活、4 件祭品的 summon_apollyon2，主要原因是画面：用户 11-19 看过成片说末日勋章太难看，没有破碎之环好看。
+//     剧情上也说得通：下界召唤要先在主世界召唤过祂（启示录 DarkAltarBlockEntityMixin），
+//     他在主世界杀了她多次才凑齐神灵金套和晋升之环，掉的末日勋章都当材料用掉了，所以走破碎之环这条。
+//     下界第一次右键只出警告「你即将召唤此界最为畏怖之神，你做好准备了么?」、第二次才开始（setApostleWarned），片里当他已经点过一次，没演。
 //   结构（RitualRequirements "sabbath"）：游戏只数范围里的方块，哭泣黑曜石 ≥ 8、黑曜石（forge:obsidian）≥ 16、灵魂火 ≥ 4，不查位置；本片由祭坛下的诅咒笼通过连接宝石从灵魂方舟取能。
-//   过程（DarkAltarBlockEntity.tick、Ritual.update）：见下面「游戏」。祭品每 30/5 秒吃一件（RitualRecipe.durationPerIngredient = 时长 ÷ (件数 + 1)）。
-//   完成（SummonRitual.finish、SabbathRitualType）：暗红光柱、altar_finish、祭坛中心一颗大烟、末日勋章消失、过渡实体生在祭坛那格的中心。
+//   过程（DarkAltarBlockEntity.tick、Ritual.update）：见下面「游戏」。祭品每 30/13 秒吃一件（RitualRecipe.durationPerIngredient = 时长 ÷ (件数 + 1)）。
+//   完成（SummonRitual.finish、SabbathRitualType）：暗红光柱、altar_finish、祭坛中心一颗大烟、破碎之环消失、过渡实体生在祭坛那格的中心。
 //     灭掉灵魂火、给黑暗那一段只认本体的 SUMMON_APOSTLE，亚波伦的过渡实体是另一个类型，不触发：火一直烧着。
 //   过渡（SummonApostle.tick、SummonApostleRenderer、启示录 SummonApollyonMixin）：活 450 刻，地面法阵加两道环、聚风带越来越密；
 //     第 150 刻提示「世界凝视着你....」加黑暗，第 300 刻使徒低语、此后每刻一颗大烟，第 450 刻雷声、200 颗火焰炸开、亚波伦生在原地。亚波伦自己没有出场动作，「召唤动画」就是这个过渡。
-//   没演：下界里第一次右键祭坛只出警告「你即将召唤此界最为畏怖之神，你做好准备了么?」、不开始（启示录 setApostleWarned），第二次才开始；片里当他已经点过一次。
 // 坐标：场景约定（Z 朝上，单位格），祭坛那一列的中心在 (0, 0)，地面（黑曜石底的顶）z = 0。
 import { clamp } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
@@ -17,8 +19,8 @@ import type { V3 } from '@engine/model/parts.tsx';
 export const game = {
   ritualSec: 30,
   soulPerSec: 666,
-  /** 第 k 件（1 起）在第 k × 30/5 秒被吃掉：6、12、18、24 */
-  offeringVanishSecs: Array.from({ length: 4 }, (_, i) => Math.ceil(((i + 1) * 30) / 5)),
+  /** 第 k 件（1 起）在第 ceil(k × 30/13) 秒被吃掉：3、5、7、10、12、14、17、19、21、24、26、28 */
+  offeringVanishSecs: Array.from({ length: 12 }, (_, i) => Math.ceil(((i + 1) * 30) / 13)),
   transitionTicks: 450,
   hintTicks: 150,
   whisperTicks: 300,
@@ -32,18 +34,26 @@ export const game = {
   hintText: '世界凝视着你....',
 } as const;
 
-export type OfferingName = '邪恶头盔' | '老巫婆帽' | '术士腰带';
-/** 配方里的顺序（英文 id 在右）；术士腰带要两条。基座：放在第几个基座（baseCells 的下标），各边正中那个 */
-export const offerings: readonly { name: OfferingName; id: string; pedestal: number }[] = [
-  { name: '老巫婆帽', id: 'goety:crone_hat', pedestal: 1 },
-  { name: '邪恶头盔', id: 'goety:malefic_helm', pedestal: 4 },
-  { name: '术士腰带', id: 'goety:warlock_sash', pedestal: 7 },
-  { name: '术士腰带', id: 'goety:warlock_sash', pedestal: 10 },
+export type OfferingName = '暗夜之心' | '龙息' | '禁忌卷轴' | '附魔金苹果' | '下界之星' | '不洁之血' | '暗影精华' | '灵魂红宝石' | '炼狱魔典' | '邪恶头盔' | '老巫婆帽' | '术士腰带';
+/** 配方里的顺序（英文 id 在右） */
+export const offerings: readonly { name: OfferingName; id: string }[] = [
+  { name: '暗夜之心', id: 'goety:heart_of_the_night' },
+  { name: '龙息', id: 'minecraft:dragon_breath' },
+  { name: '禁忌卷轴', id: 'goety:forbidden_scroll' },
+  { name: '附魔金苹果', id: 'minecraft:enchanted_golden_apple' },
+  { name: '下界之星', id: 'minecraft:nether_star' },
+  { name: '不洁之血', id: 'goety:unholy_blood' },
+  { name: '暗影精华', id: 'goety:shadow_essence' },
+  { name: '灵魂红宝石', id: 'goety:soul_ruby' },
+  { name: '炼狱魔典', id: 'goety:infernal_tome' },
+  { name: '邪恶头盔', id: 'goety:malefic_helm' },
+  { name: '老巫婆帽', id: 'goety:crone_hat' },
+  { name: '术士腰带', id: 'goety:warlock_sash' },
 ];
 
 // ---- 摆法 ----
 // 游戏不规定位置，这是本片的摆法：中间照 MC 百科那张图（哭泣黑曜石 3×3 台高一格、中心诅咒笼上摞祭坛、灵魂火烧在灵魂土上），
-// 火放台子四个斜角外（用户说的「四角灵魂火」），12 个基座在外圈每边 3 个（用户 11-19 定：基座平常就是摆多的，只用其中几个；百科图只摆了 4 个），祭品放每边正中那个，底下铺一层 7×7 黑曜石凑够 16 块。
+// 火放台子四个斜角外（用户说的「四角灵魂火」），12 个基座在外圈每边 3 个（百科图只摆了 4 个基座，放不下 12 件），底下铺一层 7×7 黑曜石凑够 16 块。
 export type GridPos = readonly [number, number, number];
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
@@ -73,14 +83,9 @@ export const structureBlocks = (options: { obsidianBase?: boolean } = {}): { sta
 // item/generated 的 ground 变换再往上 2/16、缩到 0.5
 const groundLift = 2 / 16;
 export const itemSpinPerTick = 3;
-/** 第 i 件祭品所在基座的格 */
-export const offeringCell = (i: number): GridPos => baseCells[offerings[i]!.pedestal]!;
-/** 第 i 件祭品的中心 */
-export const offeringPos = (i: number): V3 => {
-  const [x, y, z] = offeringCell(i);
-  return [x, y, z + 1.1 + groundLift];
-};
-/** 祭坛上末日勋章的中心 */
+/** 第 i 个基座上祭品的中心 */
+export const offeringPos = (i: number): V3 => [baseCells[i]![0], baseCells[i]![1], baseCells[i]![2] + 1.1 + groundLift];
+/** 祭坛上破碎之环的中心 */
 export const activatorPos: V3 = [0, 0, altarCell[2] + 0.85 + groundLift];
 /** 笼里物品的中心 */
 export const cageItemPos: V3 = [0, 0, cageCell[2] + 0.25 + groundLift];
@@ -91,12 +96,12 @@ export const appearPos: V3 = altarCenter;
 
 // ---- 时长方案 ----
 /**
- * 一套压缩后的时刻（秒，从放下末日勋章算起）。游戏里仪式 30 秒 + 过渡 22.5 秒，片里压短：
+ * 一套压缩后的时刻（秒，从放下破碎之环算起）。游戏里仪式 30 秒 + 过渡 22.5 秒，片里压短：
  * 转速、粒子怎么飞照真实时间走（不跟着快进），只有「进行到哪」（聚风带的疏密和粗细、几时起烟）按 过渡进度刻 映射。
  */
 export type SummonPlan = {
   name: string;
-  /** 祭品同时消失的时刻（用户 11-10 定同时消失；游戏里隔 2.3 秒一件） */
+  /** 12 件祭品同时消失的时刻（用户 11-10 定同时消失；游戏里隔 2.3 秒一件） */
   offeringVanishSec: number;
   /** 祭品消失前自己飞向祭坛、缩小的秒数。游戏里祭品不动（只往祭坛喷物品碎屑），0 = 照游戏；大于 0 是本片自己补的 */
   offeringFlyInSec: number;
@@ -132,7 +137,7 @@ export const transitionProgressTick = (sec: number, plan: SummonPlan): number =>
 export type SummonPhase = '没开始' | '仪式' | '过渡' | '现身后';
 export type SummonState = {
   stage: SummonPhase;
-  /** 祭坛上有末日勋章（仪式期间） */
+  /** 祭坛上有破碎之环（仪式期间） */
   hasActivator: boolean;
   /** 基座上的祭品：1 = 原样在基座上，0 = 没了；飞入期间在中间（位置按它往祭坛插，大小乘它） */
   offeringAlpha: number;

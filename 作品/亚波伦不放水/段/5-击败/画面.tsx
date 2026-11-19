@@ -114,7 +114,7 @@ export default definePicture(seg, soundUrl, () => {
     >
       {/* 仪式做完后留在台地上的结构和四角灵魂火，同第 2 幕；仪式的钟走编排的钟，同第 4 幕 */}
       <group position={altar}>
-        <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeMedal.sec} plan={summonPlans.短} />
+        <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeRing.sec} plan={summonPlans.短} />
       </group>
       <GirlYaBoLun {...yaBoLun.props} bonePose={yaBoLun.transition.从 === '指向' || yaBoLun.transition.dest === '指向' ? withCastingHem(yaBoLun.props) : yaBoLun.props.bonePose} holdWand />
       <nearFadeContext.Provider value={shot.name === '5-02' ? [1.5, 3.5] : [1, 3]}>

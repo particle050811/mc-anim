@@ -1,5 +1,5 @@
 // 安息仪式核对的视图表（纯数据，段.ts 也读）：一秒一个视图。坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格），祭坛那一列在 (0, 0)。
-// 画：结构 = 只有结构和祭品（仪式没开始）；陈列 = 4 件祭品放大排成一排；演出 = 整段召唤在某个方案的第几秒。
+// 画：结构 = 只有结构和祭品（仪式没开始）；陈列 = 12 件祭品放大排成两排；演出 = 整段召唤在某个方案的第几秒。
 import type { V3 } from '@engine/model/parts.tsx';
 import { summonPlans, type SummonPlan } from '../../特效/安息仪式时序.ts';
 
@@ -28,18 +28,18 @@ const { 短: short, 长: lengthScheme } = summonPlans;
 const makeView = (name: string, rig: CameraRig, plan: SummonPlan, sec: number, note?: string): View => ({ name: `${plan.name}方案-${name}`, ...rig, pictureMode: { type: '演出', plan, sec: sec }, note: note });
 
 export const views: readonly View[] = [
-  { name: '结构-斜俯全景', ...diagTop, pictureMode: { type: '结构' }, note: '黑曜石底 7×7、哭泣黑曜石 3×3 台、诅咒笼上摞祭坛、四个斜角灵魂火、外圈 12 个基座、每边正中那个放一件祭品' },
+  { name: '结构-斜俯全景', ...diagTop, pictureMode: { type: '结构' }, note: '黑曜石底 7×7、哭泣黑曜石 3×3 台、诅咒笼上摞祭坛、四个斜角灵魂火、外圈 12 个基座各一件祭品' },
   { name: '结构-平视', ...levelLook, pictureMode: { type: '结构' }, note: '从南往北看' },
   { name: '结构-俯视', ...topView, pictureMode: { type: '结构' }, note: '上北' },
-  { name: '祭品-陈列', 眼: [0, -9, 1.6], 看: [0, 0, 1.6], fov: 40, pictureMode: { type: '陈列' }, note: '4 件祭品照配方顺序，放大 2 倍（基座上是半格大）' },
-  { name: '祭品特写-北边', ...dirCam(0, 1), pictureMode: { type: '结构' }, note: '老巫婆帽' },
-  { name: '祭品特写-东边', ...dirCam(1, 0), pictureMode: { type: '结构' }, note: '邪恶头盔' },
-  { name: '祭品特写-南边', ...dirCam(0, -1), pictureMode: { type: '结构' }, note: '术士腰带' },
-  { name: '祭品特写-西边', ...dirCam(-1, 0), pictureMode: { type: '结构' }, note: '术士腰带' },
-  makeView('过程1-开始0.6秒', diagTop, lengthScheme, 0.6, '末日勋章在祭坛上转，4 个放了祭品的基座往祭坛喷碎屑'),
+  { name: '祭品-陈列', 眼: [0, -9, 1.6], 看: [0, 0, 1.6], fov: 40, pictureMode: { type: '陈列' }, note: '12 件祭品照配方顺序，放大 2 倍（基座上是半格大）' },
+  { name: '祭品特写-北边', ...dirCam(0, 1), pictureMode: { type: '结构' }, note: '暗夜之心、龙息、禁忌卷轴（从左到右是镜头里的顺序，不一定是配方顺序）' },
+  { name: '祭品特写-东边', ...dirCam(1, 0), pictureMode: { type: '结构' }, note: '附魔金苹果、下界之星、不洁之血' },
+  { name: '祭品特写-南边', ...dirCam(0, -1), pictureMode: { type: '结构' }, note: '暗影精华、灵魂红宝石、炼狱魔典' },
+  { name: '祭品特写-西边', ...dirCam(-1, 0), pictureMode: { type: '结构' }, note: '邪恶头盔、老巫婆帽、术士腰带' },
+  makeView('过程1-开始0.6秒', diagTop, lengthScheme, 0.6, '破碎之环在祭坛上转，12 个基座往祭坛喷祭品碎屑'),
   makeView('过程2-祭品消失前', diagTop, lengthScheme, lengthScheme.offeringVanishSec - 0.05, '碎屑喷满'),
-  makeView('过程3-祭品消失后0.3秒', diagTop, lengthScheme, lengthScheme.offeringVanishSec + 0.3, '4 件同时没了（用户 11-10 定），最后一批碎屑还在飞'),
-  makeView('过程4-完成0.5秒', altarClose, lengthScheme, lengthScheme.completed + 0.5, '暗红光柱最亮（活 20 刻的第 10 刻），勋章没了，法阵开始长'),
+  makeView('过程3-祭品消失后0.3秒', diagTop, lengthScheme, lengthScheme.offeringVanishSec + 0.3, '12 件同时没了（用户 11-10 定），最后一批碎屑还在飞'),
+  makeView('过程4-完成0.5秒', altarClose, lengthScheme, lengthScheme.completed + 0.5, '暗红光柱最亮（活 20 刻的第 10 刻），环没了，法阵开始长'),
   makeView('过渡1-完成后1秒', transitionWide, lengthScheme, lengthScheme.completed + 1, '法阵半边 2 格（1.5 秒长到 3），两道环已升到 2、4 格'),
   makeView('过渡2-提示后0.5秒', transitionWide, lengthScheme, lengthScheme.提示 + 0.5, '相当于游戏第 150 刻之后：聚风带变密'),
   makeView('过渡3-低语后1秒', transitionWide, lengthScheme, lengthScheme.whisperSec + 1, '相当于第 300 刻之后：每刻一颗大烟'),

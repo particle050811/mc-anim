@@ -26,8 +26,8 @@ import type { JointPose } from './史蒂夫关节.ts';
 import { addJointAction } from './史蒂夫关节动作.ts';
 import type { AirSnapshot } from './史蒂夫走位.ts';
 
-/** 勋章 = 末日勋章（第 1 幕他拿着放到祭坛上） */
-export type RightHandItem = '剑' | '弓' | '空' | '勋章';
+/** 环 = 破碎之环（第 1 幕他拿着走上去放到祭坛上） */
+export type RightHandItem = '剑' | '弓' | '空' | '环';
 export type LeftHandItem = '盾' | '图腾' | '空';
 export type BowTexture = '弓' | '弓拉0' | '弓拉1' | '弓拉2';
 

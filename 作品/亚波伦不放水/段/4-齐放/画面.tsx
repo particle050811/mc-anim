@@ -153,7 +153,7 @@ export default definePicture(seg, soundUrl, () => {
       <nearFadeContext.Provider value={isFirstPerson ? [1.5, 3.5] : [1, 3]}>
         {/* 仪式做完后留在台地上的结构和四角灵魂火，同第 2 幕；仪式的钟走编排的钟（第 2 幕慢放过，比片秒慢），火和第 2 幕末接上 */}
         <group position={altar}>
-          <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeMedal.sec} plan={summonPlans.短} />
+          <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeRing.sec} plan={summonPlans.短} />
         </group>
         <GirlYaBoLun {...yaBoLunState.props} bonePose={withCastingHem(yaBoLunState.props)} holdWand />
         {wheel && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={wheel} cellsPerPixel={cellsPerPixel} />}

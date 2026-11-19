@@ -178,11 +178,11 @@ export const steveFacing = (t: number): number => {
 
 // ── 他手里 ──
 /** 他右手拿什么：环 → 放下后空手 → 光柱起来拔剑 */
-export const steveRightHand = (t: number): RightHandItem => (t < act1.medalReleaseSec ? '勋章' : t < act1.drawSwordSec ? '空' : '剑');
+export const steveRightHand = (t: number): RightHandItem => (t < act1.ringReleaseSec ? '环' : t < act1.drawSwordSec ? '空' : '剑');
 /** 挥手的点击（编排的钟）、招、蓄几秒：右键放环那一下也是挥手；两次冲各是潜行着左键挥一下。
  *  第一次挥跳劈（接第 1 幕拔剑后一直摆着的跳劈架势，不换招）、第二次横斩，挥剑的样子是本片的剑招（角色/剑招.ts），不是原版挥手 */
 const clicks: readonly { sec: number; move?: MoveName; windUpSec?: number }[] = [
-  { sec: act1.medalReleaseSec },
+  { sec: act1.ringReleaseSec },
   { sec: act(beats.dashFirstSec), move: '跳劈', windUpSec: beats.dashFirstSec - beats.sneakFirstSec },
   { sec: act(beats.dashSecondSec), move: '横斩', windUpSec: beats.dashSecondSec - beats.lookBack[0] },
 ];

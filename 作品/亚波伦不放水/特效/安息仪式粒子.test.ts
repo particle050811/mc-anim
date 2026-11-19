@@ -1,16 +1,15 @@
 import { expect, test } from 'vitest';
 import { sceneToGame } from '@engine/core/坐标.ts';
-import { activatorPos, altarCenter, offeringCell, offerings } from './安息仪式时序.ts';
+import { activatorPos, altarCenter, baseCells } from './安息仪式时序.ts';
 import { largeSmoke, offeringDebris, ritualParticlePos } from './安息仪式粒子.ts';
 
-test('末日勋章的 GROUND 模型中心和完成光柱的出生点不是一个高度', () => {
+test('破碎之环的 GROUND 模型中心和完成光柱的出生点不是一个高度', () => {
   expect(sceneToGame(activatorPos, [898.5, 50, -299.5])).toEqual([898.5, 52.975, -299.5]);
   expect(altarCenter).toEqual([0, 0, 2.5]);
 });
 
-test('各件祭品从所在基座中心上方 1.5 格起飞；水平速度朝内，重力只沿场景 Z', () => {
-  for (const index of offerings.keys()) {
-    const [east, north] = offeringCell(index);
+test('十二个基座从本格中心上方 1.5 格起飞；水平速度朝内，重力只沿场景 Z', () => {
+  for (const [index, [east, north]] of baseCells.entries()) {
     const { path } = offeringDebris(index, 7920);
     const [start, first, second] = path;
     expect(start).toEqual([east, north, 1.5]);
@@ -24,7 +23,7 @@ test('各件祭品从所在基座中心上方 1.5 格起飞；水平速度朝内
 });
 
 test('北侧第一个发射刻的碎片贴住祭坛侧面，继续下落到笼顶，不悬在前一刻', () => {
-  const { path } = offeringDebris(0, 7920);
+  const { path } = offeringDebris(1, 7920);
   expect(path[9][2]).toBeCloseTo(2.410732, 5);
   expect(path[10][1]).toBeCloseTo(7 / 16 + 0.1, 7);
   expect(path[10][2]).toBeLessThan(path[9][2]);
@@ -34,7 +33,7 @@ test('北侧第一个发射刻的碎片贴住祭坛侧面，继续下落到笼�
 });
 
 test('短寿命碎片在半空结束，最后一个物理步仍能被插值显示', () => {
-  const { path } = offeringDebris(0, 3);
+  const { path } = offeringDebris(1, 3);
   expect(path).toHaveLength(5);
   expect(path[4][1]).toBeGreaterThan(1.8);
   expect(ritualParticlePos(path, -0.01)).toBeNull();
@@ -43,7 +42,7 @@ test('短寿命碎片在半空结束，最后一个物理步仍能被插值显�
   expect(ritualParticlePos(path, 5)).toBeNull();
 });
 
-test('完成的大烟从祭坛格中心上浮，寿命乘 2.5 后才取整，没有末日勋章终点', () => {
+test('完成的大烟从祭坛格中心上浮，寿命乘 2.5 后才取整，没有破碎之环终点', () => {
   const { path, lifetime } = largeSmoke(altarCenter, 31);
   expect(lifetime).toBe(66);
   expect(path[0]).toEqual(altarCenter);
