@@ -29,6 +29,7 @@ anim reuse <选择器…> --reason "…" [--sample N] [--dry-run]   过期段抽
 anim verify [<段>] [--render]  |  verify accept <段…> --reason …  |  verify backfill [<选择器>]
 anim verify frames <选择器…> [--frames a-b] --save <名> | --compare <名> [--keep-images <目录>]   不写切片，不碰段签和认可
 anim diff <A旧> <B新> [--to-preview <主题>] [--frames …|--every n] [--offset ±n]  |  anim still <段> <帧…> --to-preview <主题> --vs <检出|分支|main>   改前改后对比：出旧｜新｜差、块统计、最差几处的 --tele 复查命令
+anim impact [--vs <检出|分支|提交>] [--at …] [<段选择器…>] [--json]   改动影响面：两份代码各算全片快照（段长、声音、切镜、动作轨），不渲染列出连锁平移和平移以外真变了的（docs/时间轴.md）
 anim assets add <id> <文件> | measure [--check] | vendor | seed | pack [--upload] | pull   （0005、0006）
 anim extract <配方|组…> | --all [--print-only|--check] [--register] | --licenses | --backfill-mesh | --download | --particle-frames […]
 anim preview new <主题> | preview clean [--apply]   anim cache gc [--apply]
