@@ -56,8 +56,14 @@ export type NetherLight = {
 export const netherVanilla: NetherLight = { baseLight: [0.393, 0.323, 0.267], lavaBright: 1, fog: { 色: '#330808', near: 25.6, far: 96 } };
 /** 整体提亮、雾放远（用户 11-10 嫌黑、要看清背景）：底光提到原版方块光约 12 级的亮度，雾推到 32 区块外才满，雾色提亮 */
 // 雾远（= 远雾的 D）1000：用户 11-16「地狱 我看 D1000 就够了」；包按镜头范围外扩 1000 烘（sourcing/worlds/下界-无结构-1110.toml）
-// 光体的强、软封顶、最小光是 Agent 暂定（用户 11-17 定做法「圆形的光」，数还没看过）
-export const netherBrighter: NetherLight = { baseLight: [0.86, 0.74, 0.64], lavaBright: 1.1, fog: { 色: '#5a1a12', near: 96, far: 1000 }, lightVolume: { strength: 1.5, knee: 1.5, minLight: 0.004 } };
+// 底光是 11-10 提亮时的 [0.86, 0.74, 0.64] 乘 0.7、光体用「圆洪水」强 2（用户 11-19 看 预览/1119-1452-底光对比 定「0.7 圆洪水」：
+// 底光压下去，熔岩、火照亮周围才显得出来）。软封顶、最小光是 Agent 暂定；圆洪水不用软封顶
+export const netherBrighter: NetherLight = {
+  baseLight: [0.602, 0.518, 0.448],
+  lavaBright: 1.1,
+  fog: { 色: '#5a1a12', near: 96, far: 1000 },
+  lightVolume: { strength: 2, knee: 1.5, minLight: 0.004, scheme: { kind: '圆洪水', curve: '原版', metersPerLevel: 1, p: 4 } },
+};
 
 /** 远雾的 D（格）= 雾远；试看 {"雾曲线": {"远": 格}} 盖掉，地形最远距离跟着换（用户 11-16 要比下界放大视距）。包烘了 x −512～2047、z −1536～1023 */
 export const netherFarM = (light: NetherLight) => trialFarM(light.fog.far);
@@ -132,7 +138,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
     });
   });
   if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
-  // 试看「下界底光」：底光整体乘一个倍数（用户 11-19 问「有没有考虑削弱一下基准亮度」）
+  // 试看「下界底光」：底光整体再乘一个倍数
   const baseScale = trialParams<{ 倍?: number }>('下界底光')?.['倍'] ?? 1;
   const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * baseScale * face), toLinear(netherLight.baseLight[1] * baseScale * face), toLinear(netherLight.baseLight[2] * baseScale * face));
   const bottomColor = faceColor(faceShade.eastWest);

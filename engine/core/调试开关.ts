@@ -189,7 +189,7 @@ export const debugSwitches = [
     inFingerprint: false,
     readers: all,
     fullTerrain: true,
-    format: '{"倍": 数}：1 = 现状（正片 0.86，原版 0.393 约是 0.46 倍）',
+    format: '{"倍": 数}：1 = 现状（正片 0.6，原版 0.393 约是 0.65 倍）',
     keys: ['倍'],
     files: ['作品/亚波伦不放水/地点/真下界.tsx'],
     note: '只乘底光，熔岩、火的自发光和光体不变',
