@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { animationPose } from '@engine/model/基岩实体.tsx';
 import type { BedrockBone } from '@engine/model/基岩模型.tsx';
 import modelRaw from 'asset:模型/角色/娘化亚波伦';
-import { defineAct, GirlYaBoLunCreature, outlineFace, stand, staticEnv, type YaBoLunAct } from './娘化亚波伦.tsx';
+import { defineAct, GirlYaBoLunCreature, outlineFace, packCreature, stand, staticEnv, type YaBoLunAct } from './娘化亚波伦.tsx';
 
 const modelBones = (modelRaw as unknown as { bones: BedrockBone[] }).bones;
 
@@ -36,11 +36,11 @@ describe('娘化亚波伦', () => {
     expect([...unresolved].sort()).toEqual(['v.bg', 'v.bv', 'v.hg', 'v.hv']);
   });
 
-  it('眨眼：0.15 秒眼皮缩没、眉毛往下，1 秒睁着', () => {
+  it('D 版眨眼：闭合时眼白不翻面，缩薄的上睫线落约一像素；随后完全睁开', () => {
     const eyelidPose = poseAt(stand, 0.15);
-    // catmullrom 在两个 0 之间冲过头一点（魔法酒狐的眨眼也这样）
-    expect(Math.abs((eyelidPose.LeftEyelid!.scale as number[])[1]!)).toBeLessThan(0.15);
-    expect(eyelidPose.RightEyebrow!.pos![1]).toBeLessThan(-1.4);
+    expect((eyelidPose.LeftEyelid!.scale as number[])[1]).toBe(0);
+    expect(eyelidPose.RightEyebrow!.pos![1]).toBeCloseTo(-1.01);
+    expect((eyelidPose.RightEyebrow!.scale as number[])[1]).toBeCloseTo(.48);
     expect(poseAt(stand, 1).LeftEyelid!.scale).toEqual([1, 1, 1]);
   });
 
@@ -82,13 +82,14 @@ describe('娘化亚波伦', () => {
     expect(veilCount).toBeGreaterThan(100);
     expect(vortexCount).toBeGreaterThan(100);
   });
-  it('浮块（用户 11-10 定不留）：ysmGlowbone54～61 一个方盒都不剩，骨骼还在；蜘蛛腿、头后大光环的方盒数和包里一样', () => {
-    const model = GirlYaBoLunCreature.getModel({});
+  it('原包外观保留蜘蛛腿、头后环，浮块（用户 11-10 定不留）在原包和正片中都隐藏', () => {
+    const model = packCreature.getModel({});
     const originalBones = modelBones;
     const currentBone = (boneName: string) => model.bones.find((b) => b.name === boneName)!;
     for (let n = 54; n <= 61; n++) {
       expect(originalBones.find((b) => b.name === `ysmGlowbone${n}`)!.cubes!.length).toBe(7);
       expect(currentBone(`ysmGlowbone${n}`).cubes).toEqual([]);
+      expect(GirlYaBoLunCreature.getModel().bones.find(bone => bone.name === `ysmGlowbone${n}`)!.cubes).toEqual([]);
     }
     // c1、c2 是两组蜘蛛腿的根，ysmGlowbone24 是头后大光环
     const subtree = (rootName: string): BedrockBone[] => [originalBones.find((b) => b.name === rootName)!, ...originalBones.filter((b) => b.parent === rootName).flatMap((b) => subtree(b.name))];

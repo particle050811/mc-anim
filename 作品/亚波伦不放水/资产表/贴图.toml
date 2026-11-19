@@ -5448,3 +5448,19 @@ id = "贴图/法术/minecraft/entity/trident_riptide"
 "license" = "LicenseRef-Minecraft-EULA"
 "visibility" = "提取"
 "note" = "anim extract --register 自动登记（src/贴图/法术/minecraft/entity/trident_riptide.png）"
+
+[["asset"]]
+id = "贴图/仪式/goety/item/soul_transfer"
+"category" = "贴图"
+"source" = "提取:亚波伦安息仪式@154ae1f767f8+56b71336d2b4"
+"license" = "MIT AND LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "anim extract --register 自动登记（src/贴图/仪式/goety/item/soul_transfer.png）"
+
+[["asset"]]
+id = "贴图/角色/娘化亚波伦/YSM头脸"
+"category" = "贴图"
+"source" = "手工:D 版亚波伦头脸图集，基于 4911 使徒娘化版 YSM 可编辑源包制作"
+"license" = "GPL-3.0-only"
+"visibility" = "发布"
+"note" = "可编辑 PNG 和逐面 UV 几何在本作品 角色/YSM原生/；更新 PNG 后重新 assets add --replace。"

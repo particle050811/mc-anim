@@ -93,6 +93,7 @@ clone 下来以后，以仓库里的 docs/从零渲染.md 为准。
 | [docs/二次开发.md](docs/二次开发.md) | 想改作品、加素材、做自己作品的人 |
 | [docs/架构.md](docs/架构.md)、[docs/命名.md](docs/命名.md) | 要读代码的人，先看这两篇 |
 | [docs/新段.md](docs/新段.md)、[docs/世界.md](docs/世界.md)、[docs/游戏导表.md](docs/游戏导表.md) | 写新段、改地形、从游戏取数据 |
+| [动作体检](docs/动作体检.md)、[亚波伦 YSM 往返](作品/亚波伦不放水/制作/ysm/README.md) | 查同镜跳位、穿裙和视频帧距，或编辑 YSM 模型、贴图与舞轨 |
 | [docs/决策/](docs/决策/) | 每个大决定为什么这样做；公开素材的来龙去脉在 [0017-全部公开.md](docs/决策/0017-全部公开.md) |
 | [assets/README.md](assets/README.md) | 素材怎么登记、存在哪、怎么核对 |
 

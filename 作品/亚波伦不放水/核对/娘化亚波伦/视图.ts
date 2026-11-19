@@ -7,6 +7,8 @@ export const aspect = { width: 1280, height: 720 } as const;
 /** 表演：画面.tsx 里按名字取；秒：表演的时钟；变体：不写就是本片默认（default 贴图，面纱、漩涡光环照贴图原样） */
 export type View = {
   name: string;
+  clean?: true;
+  sourcePack?: boolean;
   眼: V3;
   看: V3;
   fov: number;
@@ -67,4 +69,13 @@ export const views: readonly View[] = [
   { name: '握杖-飞行-手部-外侧上', 眼: [0, 0, 0], 看: [0, 0, 0], lookRightHand: [-1.5, 0.2, 1.1], fov: 24, act: '悬停', lift: 1.5, sec: 1.4, holdWand: true, note: 'fly 的斜举，从右手外侧上方看' },
   { name: '握杖-飞行-手部-正面', 眼: [0, 0, 0], 看: [0, 0, 0], lookRightHand: [0, -1.9, 0.1], fov: 24, act: '悬停', lift: 1.5, sec: 1.4, holdWand: true, note: 'fly 的斜举，从正面平着看右手' },
   { name: '持杖-飞行-正面-0秒', ...front, act: '悬停', lift: 1.5, sec: 0, holdWand: true, note: 'fly 一遍里身子摆到最右的一刻：杖尾离身子最近' },
+  ...([['正面', 0, -12], ['正侧', -12, 0], ['背面', 0, 12]] as const).map(([name, east, north]): View => ({
+    name: `定妆-${name}`, clean: true, 眼: [east, north, 1.52], 看: [0, 0, 1.52], fov: 16.5, act: '站立', sec: 0.5,
+  })),
+  { name: '定妆-脸', clean: true, 眼: [0.16, -4.2, 1.58], 看: [0, 0, 1.57], fov: 10.8, act: '站立', sec: 0.5 },
+  { name: '定妆-脸四分之三', clean: true, 眼: [-2.40, -3.45, 1.58], 看: [0, 0, 1.57], fov: 10.8, act: '站立', sec: 0.5 },
+  { name: '定妆-脸眨眼', clean: true, 眼: [0.16, -4.2, 1.58], 看: [0, 0, 1.57], fov: 10.8, act: '站立', sec: 0.15 },
+  ...[true, false].map((sourcePack): View => ({ name: sourcePack ? 'YSM原包-俯视' : '正片-同位俯视', sourcePack, clean: true,
+    眼: [-0.32, -3.0, 2.25], 看: [0, 0, 1.55], fov: 16, act: '站立', sec: 0.5 })),
+  { name: '同机位半闭眼', clean: true, 眼: [0.16, -4.2, 1.58], 看: [0, 0, 1.57], fov: 10.8, act: '站立', sec: 0.043 },
 ];

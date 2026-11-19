@@ -2,7 +2,7 @@
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { CheckCamera, CheckCanvas, CheckGround, CheckLabel, checkGrey, NeutralLights, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
-import { rightHandCenter, GirlYaBoLun, defineAct, hover, raisedPose, stand, type YaBoLunAct } from '../../角色/娘化亚波伦.tsx';
+import { rightHandCenter, GirlYaBoLun, packCreature as SourceActor, defineAct, hover, raisedPose, stand, type YaBoLunAct } from '../../角色/娘化亚波伦.tsx';
 import { ItemDisplay } from '@engine/model/物品贴图.tsx';
 import { NetherWand, netherWandDisplay } from '../../物品/下界魔杖.tsx';
 import { aspect, views, type View } from './视图.ts';
@@ -38,12 +38,14 @@ const picture: React.FC = () => {
                 <NetherWand />
               </ItemDisplay>
             </group>
+          ) : v.sourcePack ? (
+            <SourceActor pose={{ loc: [0, 0, 0], yaw: 180 }} sec={v.sec} layers={stand.layers(v.sec)} env={{ ...stand.env(v.sec), functions: { 'ysm.second_order': stand.secondOrderAt(v.sec) } }} />
           ) : (
             <GirlYaBoLun pose={{ loc: [0, 0, v.lift ?? 0], yaw: 180 }} sec={v.sec} act={performances[v.act]} variant={v.variant} holdWand={v.holdWand} />
           )}
         </ZUp>
       </CheckCanvas>
-      <CheckLabel title={v.name} note={v.note} />
+      {!v.clean && <CheckLabel title={v.name} note={v.note} />}
     </AbsoluteFill>
   );
 };
