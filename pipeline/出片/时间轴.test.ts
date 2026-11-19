@@ -3,7 +3,7 @@ import type { SoundTable } from '../../engine/段/声音助手.ts';
 import { defineSeg, type AssetCue } from '../../engine/段/段定义.ts';
 import { defineSceneTimeline, windowSeg } from '../../engine/段/窗口段.ts';
 import { checkSoundSeams, seamSegOf } from '../段框架/声音接缝.ts';
-import { computeTimeline, timelineDoc, timelineFileName } from './时间轴.ts';
+import { computeTimeline, joinContinuations, timelineDoc, timelineFileName, type TimelineAudio } from './时间轴.ts';
 import type { SourceSeg, WorkSource } from './作品源.ts';
 
 const table: SoundTable = {
@@ -85,6 +85,51 @@ describe('成片时间轴', () => {
     const b = defineSeg({ scene: 'x', sec: 2, width: 1, height: 1, terrain: [], sound: [{ sec: 0, asset: '音效/雷', name: '雷（接）', 长秒: 2, 入点秒: 1 } satisfies AssetCue] });
     const t = computeTimeline({ work: 'w', segments: [seg('甲', a), seg('乙', b)], timelines: {}, motion: null, measure }, ['甲', '乙'], 60);
     expect(t.audio.map((x) => [x.id, x.group, x.cutAtSegEnd])).toEqual([['甲/0', '接续:甲/0', false], ['乙/0', '接续:甲/0', true]]); // 乙 是片尾，雷声没放完
+  });
+
+  it('同一文件接着放的几截跨名字、跨段归成一组（战斗曲 → 战斗曲-齐放 → 下一段）', () => {
+    const joined = defineSceneTimeline({
+      scene: '1-测试场',
+      events: { begin: { 在: { sec: 0 } }, cutOne: { 在: { sec: 4 } }, cutTwo: { 在: { sec: 6.5 } }, finish: { 在: { sec: 10 } } },
+      sound: [
+        { asset: '配乐/曲', name: '曲', 在: { sec: 1 }, end: { sec: 5 }, 入点秒: 20 },
+        { asset: '配乐/曲', name: '曲-齐放', 在: { sec: 5 }, end: { sec: 9 }, 入点秒: 24 },
+        // 同一文件、时间上也挨着，但文件位置跳了：不算接着放
+        { asset: '配乐/曲', name: '曲-跳', 在: { sec: 9 }, end: { sec: 9.5 }, 入点秒: 60 },
+      ],
+    });
+    const segs = [
+      seg('1-甲', windowSeg(joined, { start: 'begin', end: 'cutOne', soundTable: table })),
+      seg('1-乙', windowSeg(joined, { start: 'cutOne', end: 'cutTwo', soundTable: table })),
+      seg('1-丙', windowSeg(joined, { start: 'cutTwo', end: 'finish', soundTable: table })),
+    ];
+    const t = computeTimeline({ work: 'w', segments: segs, timelines: { '1-测试场': joined }, motion: null, measure }, ['1-甲', '1-乙', '1-丙'], 60);
+    const music = t.audio.filter((a) => a.asset === '配乐/曲').sort((a, b) => a.startSec - b.startSec);
+    expect(music.map((a) => [a.segment, a.name, a.group])).toEqual([
+      ['1-甲', '曲', '场声音:曲'],
+      ['1-乙', '曲', '场声音:曲'],
+      ['1-乙', '曲-齐放', '场声音:曲'],
+      ['1-丙', '曲-齐放', '场声音:曲'],
+      ['1-丙', '曲-跳', '场声音:曲-跳'],
+    ]);
+  });
+
+  it('接着放的判定：起点差 1 毫秒内、文件位置差 2 毫秒内、同速率', () => {
+    const item = (id: string, startSec: number, durSec: number, inSec: number, extra: Partial<TimelineAudio> = {}): TimelineAudio => ({
+      id, segment: '甲', kind: '音效', name: id, asset: '音效/雷', startSec, durSec, inSec, rate: 1, loop: false,
+      gainDb: 0, endGainDb: 0, fadeOutSec: null, group: null, fileDurSec: 7, cutAtSegEnd: false, cutReason: null, ...extra,
+    });
+    const run = (...xs: TimelineAudio[]) => (joinContinuations(xs), xs.map((x) => x.group));
+    expect(run(item('a', 0, 1, 2), item('b', 1.0009, 1, 3.0019))).toEqual(['接续:a', '接续:a']);
+    expect(run(item('a', 0, 1, 2), item('b', 1.002, 1, 3))).toEqual([null, null]); // 中间空了 2 毫秒
+    expect(run(item('a', 0, 1, 2), item('b', 1, 1, 3.003))).toEqual([null, null]); // 文件跳了 3 毫秒
+    expect(run(item('a', 0, 1, 2, { rate: 1.5 }), item('b', 1, 1, 3.5))).toEqual([null, null]); // 速率不同
+    expect(run(item('a', 0, 1, 2, { rate: 1.5 }), item('b', 1, 1, 3.5, { rate: 1.5 }))).toEqual(['接续:a', '接续:a']);
+    expect(run(item('a', 0, 1, 2), item('b', 1, 1, 3, { asset: '音效/风' }))).toEqual([null, null]);
+    // 循环的绕回文件开头
+    expect(run(item('a', 0, 8, 0, { loop: true }), item('b', 8, 1, 1, { loop: true }))).toEqual(['接续:a', '接续:a']);
+    // 后一截原来的组整组并过来，前一截的组名不变
+    expect(run(item('a', 0, 1, 2, { group: '场声音:甲' }), item('b', 1, 1, 3, { group: '场声音:乙' }), item('c', 2, 1, 4, { group: '场声音:乙' }))).toEqual(['场声音:甲', '场声音:甲', '场声音:甲']);
   });
 
   it('台词：按开口秒算起放、入点', () => {
