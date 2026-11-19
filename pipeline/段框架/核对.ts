@@ -6,6 +6,8 @@ import { isFrameworkSeg } from '../../engine/段/窗口段.ts';
 import { checkOldSeg } from '../../engine/段/老段接续.ts';
 import { checkSeg, type LineRow } from './生成.ts';
 import { knownAudioMeasure } from './音频数.ts';
+import { checkSoundSeams, parseSeamBaseline, seamBaselineFile } from './声音接缝.ts';
+import { segDurSec, type AssetCue } from '../../engine/段/段定义.ts';
 
 /** continueOldSeg 手给的起秒：老段按清单顺序摆，后一段不能起在前一段的止秒之前（跳过一截可以，重叠是抄错了），顺序要和清单一样。放这里不放 engine 的 checkOldSeg：engine 进指纹 */
 export const checkLegacySegStartSec = (legacySegs: readonly { key: string; startSec: number; sec: number }[], manifestOrder: readonly string[]): string[] => {
@@ -55,4 +57,14 @@ export const checkSegFramework = async (c: CheckContext, report: CheckReport, se
     for (const x of issues) report.错(`${s.key}：${x}`, s.segmentFile);
   }
   report.infoLines.push(`段框架的段 ${frameworkSegs.length} 个，生成的声音表、声音地址都核对过`);
+  // 声音接缝按成片顺序走：老段（没有 cue 的）照样占位，免得把隔着老段的两段当成相邻
+  const seamSegs = filmSegments.filter((s) => s.definition).map((s) => ({ key: s.key, durSec: segDurSec(s.definition!), cues: (s.definition!.sound ?? []).filter((x): x is AssetCue => !x.lines) }));
+  const seamIssues = checkSoundSeams(seamSegs, (id) => knownAudioMeasure(assetLock[id], c.dataRoot));
+  const baselinePath = c.workPath(seamBaselineFile);
+  const baseline = c.exists(baselinePath) ? parseSeamBaseline(c.读(baselinePath)) : new Set<string>();
+  const fresh = seamIssues.filter((x) => !baseline.has(x.baselineKey));
+  for (const x of fresh) report.错(`声音接缝：${x.text}`, c.workPath('清单.ts'));
+  const stale = [...baseline].filter((k) => !seamIssues.some((x) => x.baselineKey === k));
+  for (const k of stale) report.notice(`声音接缝：基线里的「${k.replaceAll('\t', ' ')}」已经没有了，从 ${seamBaselineFile} 删掉这行`, baselinePath);
+  report.infoLines.push(`声音接缝：${seamSegs.length} 段按成片顺序核了段缝上的音效、配乐${seamIssues.length ? `，基线放行 ${seamIssues.length - fresh.length} 处` : ''}`);
 };

@@ -31,6 +31,8 @@ export type AssetCue = {
   循环?: true;
   增益?: number | PerCellGain;
   fadeOutSec?: number;
+  /** 故意截在段尾的原因（pipeline/段框架/声音接缝.ts 不报）；不进混音 */
+  cutReason?: string;
   lines?: undefined;
 };
 export type SoundCue = LineCue | AssetCue;

@@ -38,6 +38,8 @@ export type PlayOptions = {
   循环?: true;
   fadeOutSec?: number;
   档?: string;
+  /** 放到段尾、文件没放完、下一段也不接着放时，写明为什么故意截（anim check 的声音接缝检查要它） */
+  cutReason?: string;
 };
 
 /** 6 位小数（段定义.ts：增益是 6 位小数） */
@@ -105,6 +107,7 @@ export const makeSoundHelper = (o: { sec: number; 表?: SoundTable; segmentName?
       ...(s.循环 ? { 循环: true as const } : {}),
       ...(gain !== undefined && gain !== 1 ? { 增益: gain } : {}),
       ...(s.fadeOutSec !== undefined ? { fadeOutSec: s.fadeOutSec } : {}),
+      ...(s.cutReason !== undefined ? { cutReason: s.cutReason } : {}),
     };
   };
 
