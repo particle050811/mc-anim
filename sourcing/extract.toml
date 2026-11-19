@@ -2995,7 +2995,7 @@
 "贴图/方块/黑暗祭坛.激活" = "src/贴图/方块/黑暗祭坛.激活.png"
 
 # 安息仪式（召唤亚波伦，用户 11-10 说还没搞）：配方 goety_revelation:summon_apollyon 的 12 件祭品里本体的 9 件图标（shadow_essence 是 4 帧竖条，mcmeta 每帧 2 刻、插值）、
-# 笼里灵魂图腾充满的图标（full_totem）、炼狱魔典的物品模型（默认 active = 0 走 infernal_tome_close，是个立体的合上的书，不是平面图标）、
+# 笼里连接宝石的图标、炼狱魔典的物品模型（默认 active = 0 走 infernal_tome_close，是个立体的合上的书，不是平面图标）、
 # 仪式结束生成的过渡实体（SummonApostleRenderer）的地面法阵和两道环、聚风带（WindGatherParticle）的贴图、祭坛的四个声音。
 # 祭坛、基座、诅咒笼的方块形状不在这里：本作品的方块表（数据/方块附加/方块表）里已经有；祭坛另见「亚波伦黑暗祭坛」。
 [["sourcing"]]
@@ -3007,6 +3007,7 @@
 "license" = "MIT"
 "steps" = [
   ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/item", "assets/goety/textures/item/heart_of_the_night.png", "assets/goety/textures/item/forbidden_scroll.png", "assets/goety/textures/item/unholy_blood.png", "assets/goety/textures/item/shadow_essence.png", "assets/goety/textures/item/soul_ruby.png", "assets/goety/textures/item/malefic_helm.png", "assets/goety/textures/item/crone_hat.png", "assets/goety/textures/item/warlock_sash.png", "assets/goety/textures/item/full_totem.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/item", "assets/goety/textures/item/soul_transfer.png"],
   ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/entity/cultist", "assets/goety/textures/entity/cultist/summon_apostle.png", "assets/goety/textures/entity/cultist/summon_apostle_ring.png"],
   ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/particle", "assets/goety/textures/particle/gathering_trail.png"],
   ["导出模型", "{jar:goety,client-1.20.1}", "src/模型/仪式/炼狱魔典.模型.json", "书=goety:item/infernal_tome_close"],

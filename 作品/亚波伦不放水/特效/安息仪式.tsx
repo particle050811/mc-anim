@@ -1,11 +1,11 @@
-// 安息仪式的画法：结构（方块拼搭 + 会动的灵魂火 + 笼里的图腾）、基座上的祭品、仪式过程（祭品往祭坛喷碎屑、完成的暗红光柱）、
+// 安息仪式的画法：结构（方块拼搭 + 会动的灵魂火 + 笼里的连接宝石）、基座上的祭品、仪式过程（祭品往祭坛喷碎屑、完成的暗红光柱）、
 // 过渡实体（法阵和两道环、聚风带、大烟、现身那一下的火焰）。摆法、时刻、出处在 安息仪式时序.ts。都按秒算，自己不取时间。
 // 坐标：场景约定（Z 朝上，单位格），放在 rotation [−π/2, 0, 0] 的 group 里；祭坛那一列中心在 (0, 0)，黑曜石底的顶是 z = 0。
 // 和游戏不一样的地方（粗做）：
 //   聚风带的宽度方向照游戏跟着镜头偏航歪（WindTrailParticle.getCameraRot），取的是 useThree 的相机朝向，前提是演出整体没再转过；游戏里带头那一截因为没更新 xo 会每帧闪回出生点，没照做。
 //   灵魂火的烟（BaseFireBlock.animateTick，3 颗 LARGE_SMOKE）出烟率取决于玩家站哪，这里固定按游戏实拍机位（玩家格）算，片里镜头怎么动都不变。
 //   祭坛的眼睛（lit 的 composite 模型第二层）画在 方块拼搭 的祭坛上面，自己加了 polygonOffset 防共面；完成光柱的粗细核过源码和实拍是一样的（宽约 0.65～0.9 格），没改。
-//   物品碎屑不算碰撞，只在撞进祭坛那一列时停住；灵魂火的面片双面画（游戏里每片只有一面）。
+//   粒子碰撞只算本仪式弹道上的祭坛、笼和台面；灵魂火的面片双面画（游戏里每片只有一面）。
 //   暗影精华的 4 帧图标游戏里帧间插值，这里只换帧。
 //   没做：祭坛脚边转圈的图腾粒子（goety:totem_effect，没有灵魂时每秒一次、仪式中每刻一次）、祭坛上方每秒两颗幽匿灵魂粒子、仪式没开始时祭坛格里每刻 4 颗火焰（贴图都没取）。
 // 待迁移（私有资产）：破碎之环是启示录的（保留所有权益），只能私有；公开版怎么办（缺了报错还是换占位）等用户定
@@ -30,7 +30,7 @@ import apostleRingPng from 'asset:贴图/仪式/goety/entity/cultist/summon_apos
 import gatheringTrailPng from 'asset:贴图/仪式/goety/particle/gathering_trail';
 import croneHatPng from 'asset:贴图/仪式/goety/item/crone_hat';
 import forbiddenScrollPng from 'asset:贴图/仪式/goety/item/forbidden_scroll';
-import fullTotemPng from 'asset:贴图/仪式/goety/item/full_totem';
+import soulTransferPng from 'asset:贴图/仪式/goety/item/soul_transfer';
 import heartOfNightPng from 'asset:贴图/仪式/goety/item/heart_of_the_night';
 import maleficHelmPng from 'asset:贴图/仪式/goety/item/malefic_helm';
 import shadowEssencePng from 'asset:贴图/仪式/goety/item/shadow_essence';
@@ -43,10 +43,10 @@ import dragonBreathPng from 'asset:贴图/仪式/minecraft/item/dragon_breath';
 import netherStarPng from 'asset:贴图/仪式/minecraft/item/nether_star';
 import goldenApplePng from 'asset:贴图/法术/minecraft/item/golden_apple';
 import brokenRingPng from 'asset:贴图/物品/破碎之环';
+import { largeSmoke, offeringDebris, ritualParticlePos } from './安息仪式粒子.ts';
 import {
-  baseCells,
   summonStateAt,
-  totemPos,
+  cageItemPos,
   game,
   soulFireCells,
   altarCell,
@@ -131,15 +131,15 @@ export const Offering: React.FC<{ name: OfferingName; sec: number; scale?: numbe
   );
 };
 
-/** 祭坛上的破碎之环、笼里的灵魂图腾：同样的掉落物显示 */
+/** 祭坛上的破碎之环、笼里的连接宝石：同样的掉落物显示 */
 export const BrokenRing: React.FC<{ sec: number }> = ({ sec: sec }) => (
   <GroundItem spinDeg={itemSpinPerTick * sec * 20}>
     <ItemSprite layers={itemLayers(brokenRingPng)} />
   </GroundItem>
 );
-const SoulTotem: React.FC<{ sec: number }> = ({ sec: sec }) => (
+const BoundTransferGem: React.FC<{ sec: number }> = ({ sec }) => (
   <GroundItem spinDeg={itemSpinPerTick * sec * 20}>
-    <ItemSprite layers={itemLayers(fullTotemPng)} />
+    <GlintItem layers={itemLayers(soulTransferPng)} sec={sec} />
   </GroundItem>
 );
 
@@ -239,7 +239,7 @@ const AltarEye: React.FC = () => <BlockModel data={altarModelData as unknown as 
 
 // ---------- 结构 ----------
 /**
- * 仪式结构：黑曜石底 7×7、哭泣黑曜石 3×3 台、中心诅咒笼（里面转着灵魂图腾）上摞点亮的黑暗祭坛、四个斜角灵魂土上的灵魂火、外圈 12 个基座。
+ * 仪式结构：黑曜石底 7×7、哭泣黑曜石 3×3 台、中心诅咒笼（里面转着已绑定的连接宝石）上摞点亮的黑暗祭坛、四个斜角灵魂土上的灵魂火、外圈 12 个基座。
  * 不含祭品和破碎之环。黑曜石底 = false 时不画底下那层（场地自己有地面时用，基座和灵魂土照旧立在 z = 0）。
  */
 export const RestRitualStructure: React.FC<{ sec: number; obsidianBase?: boolean; withSoulFire?: boolean }> = ({ sec: sec, obsidianBase = true, withSoulFire = true }) => {
@@ -253,8 +253,8 @@ export const RestRitualStructure: React.FC<{ sec: number; obsidianBase?: boolean
             <SoulFire sec={sec} />
           </group>
         ))}
-      <group position={totemPos}>
-        <SoulTotem sec={sec} />
+      <group position={cageItemPos}>
+        <BoundTransferGem sec={sec} />
       </group>
       <group position={[altarCell[0], altarCell[1], altarCell[2] + 0.5]}>
         <AltarEye />
@@ -267,50 +267,14 @@ const originPos: V3 = [-0.5, -0.5, 0];
 // ---------- 祭品喷向祭坛的碎屑 ----------
 // Ritual.update：仪式进行时每刻、每个还有祭品的基座，在基座上方 1.5 格放一颗 ITEM 粒子（BreakingItemParticle），速度 (0.1 × 到祭坛的格数, 0.3, …)。
 // BreakingItemParticle：重力 1、摩擦 0.98、半边长 0.1 × (随机 × 0.5 + 0.5)（父类的再除 2）、寿命 4 ÷ (随机 × 0.9 + 0.1) 刻、贴图取图标上随机一块 4×4 像素。
-type Debris = { sacrificeIndex: number; 刻: number; seed: number };
-const debrisState = (c: Debris, currentTick: number): Particle | null => {
-  const τ = currentTick - c.刻;
-  if (τ < 0) return null;
-  const rand = mulberry32(c.seed * 2654435761 + 31);
-  const lifetime = Math.floor(4 / (rand() * 0.9 + 0.1));
-  const ageTicks = Math.floor(τ);
-  if (ageTicks >= lifetime) return null;
-  const [gx, gy] = baseCells[c.sacrificeIndex]!;
-  // 父类随机速度 × 0.1 + 给的速度
-  let x = (rand() * 2 - 1) * 0.4;
-  let y = (rand() * 2 - 1) * 0.4;
-  let z = (rand() * 2 - 1) * 0.4;
-  const speed = (rand() + rand() + 1) * 0.15;
-  const vecLength = Math.hypot(x, y, z) || 1;
-  let v: V3 = [((x / vecLength) * speed * 0.4) * 0.1 + 0.1 * -gx, ((y / vecLength) * speed * 0.4) * 0.1 + 0.1 * -gy, ((z / vecLength) * speed * 0.4 + 0.1) * 0.1 + 0.3];
-  const halfSize = (0.1 * (rand() * 0.5 + 0.5) * 2) / 2;
-  const [u, w] = [rand() * 3, rand() * 3];
-  let p: V3 = [gx, gy, 1.5];
-  let prev = p;
-  let stopped = false;
-  for (let k = 0; k < ageTicks && !stopped; k++) {
-    prev = p;
-    v = [v[0], v[1], v[2] - 0.04];
-    const nextPos: V3 = [p[0] + v[0], p[1] + v[1], p[2] + v[2]];
-    // 撞进祭坛、笼那一列就停在外面
-    if (Math.abs(nextPos[0]) < 0.5 && Math.abs(nextPos[1]) < 0.5 && nextPos[2] < 3) {
-      stopped = true;
-      prev = p;
-      break;
-    }
-    p = nextPos;
-    v = [v[0] * 0.98, v[1] * 0.98, v[2] * 0.98];
-  }
-  const f = stopped ? 1 : τ - ageTicks;
-  return { p: [lerp(prev[0], p[0], f), lerp(prev[1], p[1], f), lerp(prev[2], p[2], f)], half: halfSize, uv: [u / 4, w / 4, (u + 1) / 4, (w + 1) / 4], color: [1, 1, 1] };
-};
+type Debris = ReturnType<typeof offeringDebris> & { spawnTick: number };
 
 /** 起、止：喷碎屑的时间段（秒）。每件祭品一批（各用自己的图标当贴图） */
 const OfferingDebris: React.FC<{ sec: number; start: number; end: number; seed: number }> = ({ sec: sec, start: startSec, end: endSec, seed: seed }) => {
   const currentTick = sec * 20;
   const debrisTable = useMemo(() => {
     const perItemDebrisTable: Debris[][] = offerings.map(() => []);
-    for (let tick = Math.ceil(startSec * 20); tick < endSec * 20; tick++) for (let sacrificeIndex = 0; sacrificeIndex < offerings.length; sacrificeIndex++) perItemDebrisTable[sacrificeIndex]!.push({ sacrificeIndex, 刻: tick, seed: seed * 7919 + tick * 13 + sacrificeIndex });
+    for (let tick = Math.ceil(startSec * 20); tick < endSec * 20; tick++) for (let sacrificeIndex = 0; sacrificeIndex < offerings.length; sacrificeIndex++) perItemDebrisTable[sacrificeIndex]!.push({ spawnTick: tick, ...offeringDebris(sacrificeIndex, seed * 7919 + tick * 13 + sacrificeIndex) });
     return perItemDebrisTable;
   }, [startSec, endSec, seed]);
   return (
@@ -319,8 +283,11 @@ const OfferingDebris: React.FC<{ sec: number; start: number; end: number; seed: 
         const image = offeringImage(offering.name);
         // 魔典的贴图是 256×32 的模型图集，只取左上 32×32 那块里的碎片
         const uScale = offering.name === '炼狱魔典' ? image.h / image.w : 1;
-        const particles = debrisTable[sacrificeIndex]!.map((c) => debrisState(c, currentTick)).filter((s): s is Particle => !!s);
-        for (const s of particles) s.uv = [s.uv[0] * uScale, s.uv[1], s.uv[2] * uScale, s.uv[3]];
+        const particles: Particle[] = [];
+        for (const { spawnTick, path, half, uv } of debrisTable[sacrificeIndex]!) {
+          const pos = ritualParticlePos(path, currentTick - spawnTick);
+          if (pos) particles.push({ p: pos, half, uv: [uv[0] * uScale, uv[1], uv[2] * uScale, uv[3]], color: [1, 1, 1] });
+        }
         return <ParticleQuads key={sacrificeIndex} tex={particleTexture(image.px, image.w, image.h, image)} items={particles} />;
       })}
     </>
@@ -491,33 +458,6 @@ const GatherWindBands: React.FC<{ 表: GatherWind[]; realTick: number }> = ({ �
 // LARGE_SMOKE = LargeSmokeParticle：SmokeParticle 放大 2.5 倍（半边长 0.1 × (随机 × 0.5 + 0.5) × 2 × 0.75 × 2.5，寿命 8 ÷ (随机 × 0.8 + 0.2) × 2.5 刻），
 // 灰度 随机 × 0.3，重力 −0.1（往上飘）、摩擦 0.96，贴图 generic_7 → generic_0。库里的 smoke 是小号的，这里照同一套算法写大号。
 type SmokePuff = { 刻: number; p: V3; seed: number };
-const smokeState = (c: SmokePuff, currentTick: number): Particle | null => {
-  const τ = currentTick - c.刻;
-  if (τ < 0) return null;
-  const rand = mulberry32(c.seed * 2654435761 + 53);
-  let x = (rand() * 2 - 1) * 0.4;
-  let y = (rand() * 2 - 1) * 0.4;
-  let z = (rand() * 2 - 1) * 0.4;
-  const speed = (rand() + rand() + 1) * 0.15;
-  const vecLength = Math.hypot(x, y, z) || 1;
-  let v: V3 = [(x / vecLength) * speed * 0.4 * 0.1, (y / vecLength) * speed * 0.4 * 0.1, ((z / vecLength) * speed * 0.4 + 0.1) * 0.1];
-  const grayShade = rand() * 0.3;
-  const halfSize = 0.1 * (rand() * 0.5 + 0.5) * 2 * 0.75 * 2.5;
-  const lifetime = Math.max(1, Math.floor(Math.floor(8 / (rand() * 0.8 + 0.2)) * 2.5));
-  const ageTicks = Math.floor(τ);
-  if (ageTicks >= lifetime) return null;
-  let p = c.p;
-  let prev = p;
-  for (let k = 0; k < ageTicks; k++) {
-    prev = p;
-    v = [v[0], v[1], v[2] + 0.04 * 0.1];
-    p = [p[0] + v[0], p[1] + v[1], p[2] + v[2]];
-    v = [v[0] * 0.96, v[1] * 0.96, v[2] * 0.96];
-  }
-  const f = τ - ageTicks;
-  const frame = 7 - Math.min(7, Math.floor((ageTicks * 7) / lifetime));
-  return { p: [lerp(prev[0], p[0], f), lerp(prev[1], p[1], f), lerp(prev[2], p[2], f)], half: halfSize, uv: vanillaParticleAtlas.uv[`generic_${frame}`]!, color: [grayShade, grayShade, grayShade] };
-};
 
 // 灵魂火自己的烟：原版 BaseFireBlock.animateTick（客户端每刻在玩家四周随机抽方块调用，抽法 = 三个轴各「两个 0～14 的随机整数之差」，每刻 667 次），
 // 下面是实心方块（灵魂土）时放 3 颗 LARGE_SMOKE，位置 = 火格内水平随机、高 0.5～1.0。所以每团火的出烟率取决于玩家站在哪，离得近就多：
@@ -541,7 +481,15 @@ const soulFireSmokeTable = (startTick: number, endTick: number, seed: number): S
   return smokeTable;
 };
 const BigSmokes: React.FC<{ 表: SmokePuff[]; currentTick: number }> = ({ 表: smokeTable, currentTick }) => {
-  const particles = smokeTable.map((c) => smokeState(c, currentTick)).filter((s): s is Particle => !!s);
+  const puffs = useMemo(() => smokeTable.map((spawn) => ({ spawnTick: spawn.刻, ...largeSmoke(spawn.p, spawn.seed) })), [smokeTable]);
+  const particles: Particle[] = [];
+  for (const { spawnTick, path, lifetime, half, shade } of puffs) {
+    const age = currentTick - spawnTick;
+    const pos = ritualParticlePos(path, age);
+    if (!pos) continue;
+    const frame = 7 - Math.floor(Math.floor(age) * 7 / lifetime);
+    particles.push({ p: pos, half: half * clamp01(age / lifetime * 32), uv: vanillaParticleAtlas.uv[`generic_${frame}`]!, color: [shade, shade, shade] });
+  }
   return <ParticleQuads tex={vanillaParticleAtlas.tex} items={particles} />;
 };
 

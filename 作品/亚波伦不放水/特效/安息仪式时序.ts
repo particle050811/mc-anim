@@ -1,7 +1,7 @@
 // 安息仪式（召唤亚波伦）的摆法、祭品、时刻表。纯数据、纯计算，段.ts 也能引。画法在 安息仪式.tsx。
 // 出处（Goety 2.5.60.6 + 启示录 2.3.6 反编译）：
 //   配方 goety_revelation:summon_apollyon：激活物 破碎之环，仪式类型 sabbath，每秒 666 灵魂、30 秒，12 件祭品，生成 goety_revelation:summon_apollyon（过渡实体）。
-//   结构（RitualRequirements "sabbath"）：游戏只数范围里的方块，哭泣黑曜石 ≥ 8、黑曜石（forge:obsidian）≥ 16、灵魂火 ≥ 4，不查位置；祭坛正下方必须是装着灵魂图腾的诅咒笼（DarkAltarBlockEntity.checkCage）。
+//   结构（RitualRequirements "sabbath"）：游戏只数范围里的方块，哭泣黑曜石 ≥ 8、黑曜石（forge:obsidian）≥ 16、灵魂火 ≥ 4，不查位置；本片由祭坛下的诅咒笼通过连接宝石从灵魂方舟取能。
 //   过程（DarkAltarBlockEntity.tick、Ritual.update）：见下面「游戏」。祭品每 30/13 秒吃一件（RitualRecipe.durationPerIngredient = 时长 ÷ (件数 + 1)）。
 //   完成（SummonRitual.finish、SabbathRitualType）：暗红光柱、altar_finish、祭坛中心一颗大烟、破碎之环消失、过渡实体生在祭坛那格的中心。
 //     灭掉灵魂火、给黑暗那一段只认本体的 SUMMON_APOSTLE，亚波伦的过渡实体是另一个类型，不触发：火一直烧着。
@@ -83,8 +83,8 @@ export const itemSpinPerTick = 3;
 export const offeringPos = (i: number): V3 => [baseCells[i]![0], baseCells[i]![1], baseCells[i]![2] + 1.1 + groundLift];
 /** 祭坛上破碎之环的中心 */
 export const activatorPos: V3 = [0, 0, altarCell[2] + 0.85 + groundLift];
-/** 笼里灵魂图腾的中心 */
-export const totemPos: V3 = [0, 0, cageCell[2] + 0.25 + groundLift];
+/** 笼里物品的中心 */
+export const cageItemPos: V3 = [0, 0, cageCell[2] + 0.25 + groundLift];
 /** 祭坛那格的中心：光柱、完成的大烟、过渡实体都在这（SummonRitual.finish：方块坐标 + 0.5） */
 export const altarCenter: V3 = [0, 0, altarCell[2] + 0.5];
 /** 亚波伦现身的位置（脚底）= 过渡实体的位置 */

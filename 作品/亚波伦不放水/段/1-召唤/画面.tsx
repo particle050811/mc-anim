@@ -21,7 +21,6 @@ import soundUrl from './声音地址.生成.ts';
 
 const plan = summonPlans.短;
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [lerp(a[0]!, b[0]!, k), lerp(a[1]!, b[1]!, k), lerp(a[2]!, b[2]!, k)];
 const fromAltar = (x: number, y: number, z: number): V3 => addVec(altar, [x, y, z]);
 /** 段内秒 → 编排的钟（现身后几秒） */
 const clock = (segSec: number) => choreoClock(timeline.events.开始.sec + segSec);
@@ -72,10 +71,16 @@ const shotTable: Shot[] = (() => {
     // 1-04 越过她右肩看他：她抬头、转过身来对着他、杖一甩；他在远处压低身子，第 2 幕接她飞出来
     { name: '1-04', start: cuts.五, cameraRig: followShot(cuts.end - cuts.五, (s, k): Cam => {
       const t = clock(cuts.五 + s);
-      return { pos: fromAltar(lerp(-1.7, -2.0, k), lerp(2.7, 2.3, k), lerp(5.0, 4.8, k)), tgt: lerpVec(yaBoLunHead(t), chestAt(t), lerp(0.55, 0.65, k)), lens: lerp(26, 28, k) };
+      const head = yaBoLunHead(t), chest = chestAt(t);
+      const angle = Math.atan2(chest[1] - head[1], chest[0] - head[0]);
+      const ahead = Math.cos(angle), across = Math.sin(angle);
+      const pos = addVec(head, [-3.8 * ahead - 2.4 * across, -3.8 * across + 2.4 * ahead, lerp(1.1, 0.8, k)]);
+      return { pos, tgt: lookBetween(pos, head, chest, lerp(0.55, 0.4, k)), lens: lerp(24, 27, k) };
     }) },
   ];
 })();
+
+export const summonShots = shotTable;
 
 export default definePicture(seg, soundUrl, () => {
   const { sec: sec, events: events, segment: thisSegment } = useSeg(seg);
