@@ -36,13 +36,15 @@ export const orbitBeat = {
 
 /** 绕完时（她刹在祭坛上空、朝着他）机位的世界方位（度，x 东为 0、逆时针）；绕之前的方位 = 它 − 方位 */
 const endAzimuth = orbitBeat.endRelDeg + yaBoLunFacing(actEnd) + 90;
-/** 这一刻机位的世界方位（度） */
+/**
+ * 这一刻机位的世界方位（度）：1.37 片秒起绕、绕到这一镜末，只绕一次。角速度 ∝ u(1 − u)⁴（u 是这段里的进度），从 0 加速到 u = 1/5 最快、之后一路慢下来（尾巴留长：定杖时镜头还在反着她的杖绕，编排-开盘.test.ts 查）。
+ * 用户 11-19「围着他转圈的时候……明显的两段中间好像没有连续」：原来叠了一段提前量，先甩 130 度、2.3 片秒几乎停住（每秒 4 度）、再绕剩下的 50 度
+ */
+const orbitFrom = 1.37;
 export const orbitAzimuth = (s: number) => {
-  const leadStart = 1.37, rejoin = 2.8;
-  const entry = linearstep(leadStart, rejoin, s);
-  const leadSec = 2.9 * (rejoin - leadStart) * entry * (1 - entry) ** 2;
-  const phase = linearstep(orbitBeat.orbit[0], orbitBeat.orbit[1], s + leadSec);
-  return endAzimuth - orbitBeat.azimuthDeg * (1 - smoothstep01(phase * (1.9 - 0.9 * phase)));
+  const u = linearstep(orbitFrom, orbitBeat.orbit[1], s);
+  const done = 1 - (1 - u) ** 5 * (1 + 5 * u); // ∫ u(1 − u)⁴ 归一
+  return endAzimuth - orbitBeat.azimuthDeg * (1 - done);
 };
 /** 这一刻机位在她面朝方向往她左手边偏几度（−180～180）：给测试看相对她转了多少 */
 export const orbitRel = (s: number) => ((((orbitAzimuth(s) - yaBoLunFacing(clock(s)) - 90 + 180) % 360) + 360) % 360) - 180;
