@@ -143,7 +143,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
   });
   if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
   // 试看「下界底光」：底光整体再乘一个倍数
-  const baseScale = trialParams<{ 倍?: number }>('下界底光')?.['倍'] ?? 1;
+  const baseScale = trialParams<{ '倍'?: number }>('下界底光')?.['倍'] ?? 1;
   const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * baseScale * face), toLinear(netherLight.baseLight[1] * baseScale * face), toLinear(netherLight.baseLight[2] * baseScale * face));
   const bottomColor = faceColor(faceShade.eastWest);
   const fillColor = (face: number) => faceColor(face).sub(bottomColor);

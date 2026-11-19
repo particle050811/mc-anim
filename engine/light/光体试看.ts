@@ -7,7 +7,7 @@ import { schemeCurves, schemeKinds, type LightVolumeParams } from './光体.ts';
 
 const netherSet: LightVolumeParams = { strength: 1.5, knee: 1.5, minLight: 0.004 };
 
-type Trial = Partial<{ 强: number; 软封顶: number; 方案: (typeof schemeKinds)[number]; 曲线: (typeof schemeCurves)[number]; 米每级: number; p: number }>;
+type Trial = Partial<{ '强': number; '软封顶': number; '方案': (typeof schemeKinds)[number]; '曲线': (typeof schemeCurves)[number]; '米每级': number; p: number }>;
 
 export const trialLightVolume = (base: LightVolumeParams = netherSet): LightVolumeParams | undefined => {
   const t = trialParams<Trial>('光体');
