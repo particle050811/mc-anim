@@ -10,7 +10,7 @@ import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { withCastingHem } from '../../角色/空中施法袍摆.ts';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
 import { steveDrops, steveDropCount, DeathDrop, deathDropTrack } from '../../角色/史蒂夫掉落.tsx';
-import { yaBoLunName, yaBoLunTitle, BattleUi, bossGuiScale } from '../../界面/战斗界面.tsx';
+import { yaBoLunName, yaBoLunTitle, BattleUi, guiScale } from '../../界面/战斗界面.tsx';
 import { RestRitualPerformance } from '../../特效/安息仪式.tsx';
 import { summonPlans } from '../../特效/安息仪式时序.ts';
 import { RevelationCageGlow } from '../../特效/炼狱结界辉线.tsx';
@@ -32,7 +32,6 @@ const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]!
 const atHeight = (z: number): V3 => [0, 0, z];
 const S = steveFoot;
 const totemTable = totemParticleTable(S, 1, { ground: S[2] });
-const uiScale = 2;
 /** 死亡消息：凶手是她的显示名（名字 + 称号，同血条） */
 const deathMsg = { template: deathMsgTemplate, killer: `${yaBoLunName} ${yaBoLunTitle}` };
 const deathText = deathMsgTemplate.replace('%1$s', 'Steve').replace('%2$s', deathMsg.killer);
@@ -96,7 +95,7 @@ export default definePicture(seg, soundUrl, () => {
   const whiteSmoke = useMemo(() => deathPoof(S, 0.6, 1.8, 0, 5), []);
   const { shot, shotSec, cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
   // 死亡界面：切进 5-02 时打开，20 刻后按钮才能按；光标在「重生」上是指着，点下去以后不能按
-  const uiDims = uiSize(aspect.width, aspect.height, uiScale);
+  const uiDims = uiSize(aspect.width, aspect.height, guiScale);
   const cursor = cursorAt(shotSec);
   const respawnButtonState: DeathButtonState = shotSec * 20 < deathButtonDelayTicks || shotSec >= cursorMove.points ? '不能按' : deathButtonAt(0, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
   const titleButtonState: DeathButtonState = shotSec * 20 < deathButtonDelayTicks ? '不能按' : deathButtonAt(1, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
@@ -108,8 +107,8 @@ export default definePicture(seg, soundUrl, () => {
       cameraRig={cameraRig}
       ui={
         <>
-          {shot.name !== '5-03' && <BattleUi width={aspect.width} height={aspect.height} s={bossGuiScale} healthBar={{ healthRatio: 1 }} />}
-          {inGameUi && shot.name === '5-02' && <DeathScreen width={aspect.width} height={aspect.height} s={uiScale} buttonImg={png(widgetsPng)} deathCause={deathText} respawnButtonState={respawnButtonState} titleButtonState={titleButtonState} cursor={cursor} />}
+          {shot.name !== '5-03' && <BattleUi width={aspect.width} height={aspect.height} s={guiScale} healthBar={{ healthRatio: 1 }} />}
+          {inGameUi && shot.name === '5-02' && <DeathScreen width={aspect.width} height={aspect.height} s={guiScale} buttonImg={png(widgetsPng)} deathCause={deathText} respawnButtonState={respawnButtonState} titleButtonState={titleButtonState} cursor={cursor} />}
         </>
       }
     >

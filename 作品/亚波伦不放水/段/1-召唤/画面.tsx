@@ -9,7 +9,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
 import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
-import { bossGuiScale, YaBoLunHealthBar } from '../../界面/战斗界面.tsx';
+import { guiScale, YaBoLunHealthBar } from '../../界面/战斗界面.tsx';
 import { RestRitualPerformance } from '../../特效/安息仪式.tsx';
 import { summonPlans, game } from '../../特效/安息仪式时序.ts';
 import { altar } from '../../场/1-台地/布局.ts';
@@ -100,7 +100,7 @@ export default definePicture(seg, soundUrl, () => {
           {hint && (
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: aspect.height * 0.2, textAlign: 'center', color: '#FF5555', fontFamily: 'Minecraft, monospace', fontSize: 26, textShadow: '2px 2px 0 #3F1515' }}>{game.hintText}</div>
           )}
-          {hpBarOpacity > 0 && <YaBoLunHealthBar width={aspect.width} s={bossGuiScale} healthRatio={1} opacity={hpBarOpacity} />}
+          {hpBarOpacity > 0 && <YaBoLunHealthBar width={aspect.width} s={guiScale} healthRatio={1} opacity={hpBarOpacity} />}
         </>
       }
     >

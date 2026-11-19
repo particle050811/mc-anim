@@ -98,8 +98,9 @@ const itemClear = 1.2;
   }
 }
 
-// ── 死亡界面的光标（GUI 像素，界面 640 × 360，5-02 镜内秒）：打开时原版把鼠标放在窗口正中；20 刻后按钮能按，移到「重生」上，幕末前点下去 ──
-export const cursorMove = { start: [320, 180] as const, dest: [326, 170] as const, moveStart: 1.35, moveSec: 0.45, points: 2.6 };
+// ── 死亡界面的光标（GUI 像素，界面 480 × 270 = 战斗界面.tsx 的 guiScale，5-02 镜内秒）：打开时原版把鼠标放在窗口正中；20 刻后按钮能按，移到「重生」上，幕末前点下去 ──
+// 「重生」在 (140～340, 139～159)：正中 (240, 135) 在它上沿外面一点，往下挪进去（界面 640 × 360 时正中本来就在按钮里，是往上挪 10）
+export const cursorMove = { start: [240, 135] as const, dest: [246, 148] as const, moveStart: 1.35, moveSec: 0.45, points: 2.6 };
 export const cursorAt = (shotSec: number): readonly [number, number] => {
   const u = smoothstep01(clamp01((shotSec - cursorMove.moveStart) / cursorMove.moveSec));
   return [lerp(cursorMove.start[0], cursorMove.dest[0], u), lerp(cursorMove.start[1], cursorMove.dest[1], u)];

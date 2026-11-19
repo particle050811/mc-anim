@@ -21,7 +21,7 @@ import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { withCastingHem } from '../../角色/空中施法袍摆.ts';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
 import { ascensionHaloIcon } from '../../角色/史蒂夫掉落.tsx';
-import { BattleUi, bossGuiScale } from '../../界面/战斗界面.tsx';
+import { BattleUi, guiScale } from '../../界面/战斗界面.tsx';
 import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
 import { Valettein, valetteinDisplay } from '../../物品/断曜流光.tsx';
 import { defaultAppearance } from '../../物品/装备外观.ts';
@@ -143,10 +143,10 @@ export default definePicture(seg, soundUrl, () => {
           {isFirstPerson && (
             <AbsoluteFill>
               <SceneFirstPersonHand actSec={sec} />
-              <ItemActivate width={aspect.width} height={aspect.height} s={bossGuiScale} sec={t - totemSec} offset={ringOffset} items={ringLayers} />
+              <ItemActivate width={aspect.width} height={aspect.height} s={guiScale} sec={t - totemSec} offset={ringOffset} items={ringLayers} />
             </AbsoluteFill>
           )}
-          <BattleUi width={aspect.width} height={aspect.height} s={bossGuiScale} healthBar={{ healthRatio: 1 }} />
+          <BattleUi width={aspect.width} height={aspect.height} s={guiScale} healthBar={{ healthRatio: 1 }} />
         </>
       }
     >

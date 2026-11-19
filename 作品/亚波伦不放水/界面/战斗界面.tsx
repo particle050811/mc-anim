@@ -33,9 +33,9 @@ const TextureBlock: React.FC<{ image: Png; u: number; v: number; width: number; 
   return <canvas ref={ref} width={width} height={height} style={{ position: 'absolute', left: left * s, top: top * s, width: width * s, height: height * s, imageRendering: 'pixelated' }} />;
 };
 
-/** 血条、图腾翻出来的界面缩放：等于游戏里 1080p 屏幕、界面大小「自动」（界面 480×270），用户 11-19 定（原来血条 2、图腾 1，图腾翻出来太小）。
+/** 全片游戏界面（血条、图腾翻出来、死亡界面）的界面缩放：等于游戏里 1080p 屏幕、界面大小「自动」（界面 480×270），用户 11-19 定（原来血条、死亡界面 2，图腾 1，图腾翻出来太小）。
  *  写 8/3 不写 2.667：成片 3840×2160 是 1280×720 的页面 × 3，一格界面像素正好 8 个像素，血条贴图逐像素对齐；预览级（720p）一格是 2～3 个像素不等 */
-export const bossGuiScale = 8 / 3;
+export const guiScale = 8 / 3;
 export const yaBoLunName = '亚波伦';
 /** title.goety.13（启示录 zh_cn；游戏里血量剩最后 1/14 才是它，本片开场就挂，分镜第 3 节） */
 export const yaBoLunTitle = '末日终结';
