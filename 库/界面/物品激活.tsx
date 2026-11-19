@@ -11,6 +11,7 @@ import React from 'react';
 import * as THREE from 'three';
 import { ItemDisplay, ItemSprite, type ItemLayer, type ItemTransform } from '../../engine/model/物品贴图.tsx';
 import { rad } from '../../engine/core/数学.ts';
+import { canvasDpr } from '../../engine/core/渲染级别.ts';
 
 /** 动画多少刻（itemActivationTicks 的初值） */
 export const itemActivateTicks = 40;
@@ -57,7 +58,8 @@ export const ItemActivate: React.FC<{ width: number; height: number; s: number; 
   const activeParams = itemActivateParams(sec, offset, uiWidth, uiHeight);
   if (!activeParams) return null;
   return (
-    <ThreeCanvas orthographic width={width} height={height} gl={{ antialias: true, alpha: true }} style={{ position: 'absolute', left: 0, top: 0 }}>
+    // dpr 要写：react-three-fiber 默认 [1, 2]，视频级页面 dpr 3 时只按 2 倍画、再拉到 4K，图腾是糊的
+    <ThreeCanvas orthographic width={width} height={height} gl={{ antialias: true, alpha: true }} dpr={canvasDpr(1)} style={{ position: 'absolute', left: 0, top: 0 }}>
       <UiCamera uiWidth={uiWidth} uiHeight={uiHeight} />
       <ambientLight intensity={0.4 * Math.PI} />
       {lights.map((d, i) => (
