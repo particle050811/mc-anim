@@ -129,7 +129,8 @@ const material = (tex: Png, opts: MatOpts) => {
       transparent: opts.opacity < 1,
       opacity: opts.opacity,
       depthWrite: opts.opacity >= 1,
-      color: opts.color ? new THREE.Color(opts.color) : undefined,
+      // 不给 color 时整个键不传：传 undefined 照样是默认白，但 three 每建一份材质就打一条警告
+      ...(opts.color ? { color: new THREE.Color(opts.color) } : {}),
     });
     if (opts.emissive > 0) {
       mm.emissive = new THREE.Color('#ffffff');
