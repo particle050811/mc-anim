@@ -2,11 +2,13 @@
 // 段 = 场时间线上 [起, 止) 这一截（docs/架构.md「新章节一律用场窗口」）。段.ts 里不写段键、段长、画幅：段键只在目录名（和清单里），
 // 段长由窗口推，画幅取时间线的（不给就是 defaultSegFormat）。声音 cue 用 声音助手.ts 的 放、说 写一次，画面那头 <SegSound> 照表放（段画面.tsx）。
 // 跨段的音效、配乐写在场时间线的 声音 里（场声音.ts），每个窗口段自动带上落在自己窗口里的那一截。
+// 场时间线的 gainAutomation 是跨段的音量走势（配乐淡入淡出、出手前把音效收一下这类），乘到本时间线各窗口段的资产 cue 上（场声音的那截、段自己 放() 的都乘；音量包络.ts）。
 // 时间一律是秒（决策 0015）。窗口的起止对齐到 1/段格 秒，段首尾相接、段长落在格上；事件、cue 的秒不对齐。
-import { defineSeg, segFps, type SegmentDef, type SoundCue, type OverlayDef } from './段定义.ts';
+import { defineSeg, segFps, type AssetCue, type SegmentDef, type SoundCue, type OverlayDef } from './段定义.ts';
 import { definitelyDisjoint, sceneSoundSlice, type SceneSoundOptions, type ResolvedSceneSound } from './场声音.ts';
 import { makeSoundHelper, type SoundHelper, type SoundTable } from './声音助手.ts';
 import { resolveEvents, resolveMoment, type EventDef, type Moment, type ResolvedEvent } from './时间线.ts';
+import { applyEnvelopes, checkEnvelope, type GainEnvelope, type GainPoint } from './音量包络.ts';
 
 /** 页面 1280×720（成片渲染 scale 2 出 2K，见 段定义.ts 文件头） */
 export const defaultSegFormat = { width: 1280, height: 720 } as const;
@@ -29,7 +31,17 @@ export type SceneTimeline<K extends string = string, Ext = never> = {
   duration?: number;
   /** 跨段的场声音（起止已解成场时间线的秒）：本时间线上的每个窗口段自动放落在自己窗口里的那一截 */
   sound?: readonly ResolvedSceneSound[];
+  /** 跨段的音量走势（点已解成场时间线的秒） */
+  gainAutomation?: readonly ResolvedGainAutomation[];
 };
+
+/** 音量走势管哪些声音：按名（场声音的名、段里 放() 的名），或按资产分 配乐（id 以 配乐/ 开头）、非配乐。台词不归它管 */
+export type GainTarget = { names: readonly string[] } | { kind: '配乐' | '非配乐' };
+/** 一条跨段的音量走势：管哪些、几个点（时刻是事件名或时刻，dB，到这一点的过渡）。几条都管到同一个声音的，倍数相乘 */
+export type GainAutomationDef<K extends string, Ext> = { target: GainTarget; points: readonly (Omit<GainPoint, 'sec'> & { 在: Endpoint<K, Ext> })[] };
+export type ResolvedGainAutomation = { target: GainTarget; envelope: GainEnvelope };
+
+const targets = (t: GainTarget, c: AssetCue) => ('names' in t ? t.names.includes(c.name) : (t.kind === '配乐') === c.asset.startsWith('配乐/'));
 
 /** 场时间线上的一个跨段声音：在 = 文件头（或入点秒那一处）落在哪一刻；止 不给就放到文件完，循环的要给 */
 export type SceneSoundDef<K extends string, Ext> = SceneSoundOptions & { 在: Endpoint<K, Ext>; end?: Endpoint<K, Ext> | { 长秒: number } };
@@ -44,6 +56,7 @@ export const defineSceneTimeline = <const K extends string, Ext = never>(d: {
   resolveTime?: (t: Ext) => number;
   duration?: number;
   sound?: readonly SceneSoundDef<NoInfer<K>, Ext>[];
+  gainAutomation?: readonly GainAutomationDef<NoInfer<K>, Ext>[];
 }): SceneTimeline<K, Ext> => {
   const axis = axisAt(d.resolveTime);
   const events = resolveEvents(d.events, axis);
@@ -62,6 +75,11 @@ export const defineSceneTimeline = <const K extends string, Ext = never>(d: {
     if (x.fadeOutSec !== undefined && !(x.fadeOutSec > 0)) throw new Error(`场声音「${soundName}」：淡出秒要是正数`);
     return { ...options, name: soundName, startSec, ...(endSec !== undefined ? { endSec } : {}) };
   });
+  const automation = (d.gainAutomation ?? []).map((x, i): ResolvedGainAutomation => {
+    const envelope = x.points.map(({ 在: at, ...p }) => ({ ...p, sec: secAt(at) }));
+    checkEnvelope(envelope, `场 ${d.scene} 的第 ${i + 1} 条音量走势`);
+    return { target: x.target, envelope };
+  });
   return {
     scene: d.scene,
     width: d.aspect?.width ?? defaultSegFormat.width,
@@ -71,6 +89,7 @@ export const defineSceneTimeline = <const K extends string, Ext = never>(d: {
     resolveTime: d.resolveTime,
     duration: d.duration,
     sound: sounds,
+    ...(automation.length ? { gainAutomation: automation } : {}),
   };
 };
 
@@ -129,7 +148,13 @@ export const windowSeg = <K extends string, Ext = never>(
       // 收集模式下表里还没有：先不出 cue，量完再执行一遍
       return audioFile ? sceneSoundSlice(x, span, audioFile) : [];
     });
-  const sounds = ownSounds || sceneSlice.length ? [...(ownSounds ?? []), ...sceneSlice] : undefined;
+  const automation = timeline.gainAutomation ?? [];
+  const automate = (c: SoundCue): SoundCue => {
+    if (c.lines !== undefined) return c;
+    const envs = automation.filter((x) => targets(x.target, c)).map((x) => x.envelope);
+    return envs.length ? applyEnvelopes(c, envs, startSec) : c;
+  };
+  const sounds = ownSounds || sceneSlice.length ? [...(ownSounds ?? []), ...sceneSlice].map(automate) : undefined;
   const seg = defineSeg({
     scene: timeline.scene,
     sec: durSec,

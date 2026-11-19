@@ -2,6 +2,7 @@
 // 声音表 是按段生成的：一段只依赖自己用到的那几个声音的数，加一个音效不让别的段过期（不像一张全作品的大表）。
 // 生成时 anim 先在「收集」模式下执行 段.ts：表里还没有的资产不报错，记下来、先给占位 cue，量完写进表再正常执行一遍（pipeline/段框架/生成.ts）。
 import type { LineCue, AssetCue, PerCellGain } from './段定义.ts';
+import { applyEnvelopes, checkEnvelope, type GainEnvelope } from './音量包络.ts';
 
 /** 一个音频文件的数（资产锁里有就取锁里的，没有就 anim cues 现量）：时长秒、采样峰值 dBFS、积分响度 LUFS */
 export type AudioInfo = { duration: number; peakDb?: number; loudness?: number };
@@ -37,6 +38,8 @@ export type PlayOptions = {
   速率?: number;
   循环?: true;
   fadeOutSec?: number;
+  /** 随时间变的音量乘子（音量包络.ts）：点的秒是段内秒，乘在峰值、响度、增益算出的倍数上（等功率淡入淡出这类） */
+  gainEnvelope?: GainEnvelope;
   档?: string;
   /** 放到段尾、文件没放完、下一段也不接着放时，写明为什么故意截（anim check 的声音接缝检查要它） */
   cutReason?: string;
@@ -96,7 +99,7 @@ export const makeSoundHelper = (o: { sec: number; 表?: SoundTable; segmentName?
       if (audioFile.loudness === undefined) throw new Error(`放「${name}」：${asset} 没有响度数，按峰值给或直接给 增益`);
       gain = dbToGain(s.loudness - audioFile.loudness);
     }
-    return {
+    const cue: AssetCue = {
       sec: sec,
       asset: asset,
       name: name,
@@ -109,6 +112,9 @@ export const makeSoundHelper = (o: { sec: number; 表?: SoundTable; segmentName?
       ...(s.fadeOutSec !== undefined ? { fadeOutSec: s.fadeOutSec } : {}),
       ...(s.cutReason !== undefined ? { cutReason: s.cutReason } : {}),
     };
+    if (!s.gainEnvelope) return cue;
+    checkEnvelope(s.gainEnvelope, `放「${name}」`);
+    return applyEnvelopes(cue, [s.gainEnvelope], 0);
   };
 
   /** 台词：秒是开口落在段内第几秒；配音文件头 = 秒 − 开口秒，数在作品的 台词.toml */

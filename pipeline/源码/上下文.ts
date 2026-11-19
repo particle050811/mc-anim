@@ -53,9 +53,10 @@ export const isRenderCode = (p: string) => renderLayerPrefixes.some((x) => p.sta
  * engine/core/调试开关.ts 是试看、调试开关的登记表：页面的 trialParams 和 pipeline 的 anim trial list、核对、check 共用。
  * engine/core/数据读取.ts 是数据源接口：页面源、pipeline/世界/node数据源.ts 共用报错写法和去重表。
  * 放法 是段的 cue 表 → 实际怎么放：<SegSound> 和成片时间轴（pipeline/出片/时间轴.ts）共用。
+ * 音量包络 是窗口段、声音助手乘到 cue 上的音量走势。
  */
 // 区段模型只做 TypedArray 与字节转换，编码、检查和浏览器共用同一份格式定义。
-const enginePureModules = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '预载', '出帧', '按时取值', '核对段', '放法'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts', 'engine/core/调试开关.ts', 'engine/core/数据读取.ts');
+const enginePureModules = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '预载', '出帧', '按时取值', '核对段', '放法', '音量包络'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts', 'engine/core/调试开关.ts', 'engine/core/数据读取.ts');
 export const isPureModule = (p: string) =>
   enginePureModules.includes(p) || p === 'engine/anim/动作体检.ts' ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||
