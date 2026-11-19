@@ -4,7 +4,7 @@
 //   第一人称一直到他死（用户 11-11「第一人称镜头直到死亡，一镜到底不就好了，加个侧写镜头干嘛？」，八版后面那一镜「挨炸」删了）：
 //     他的眼睛（原版视角 70 度、右手断曜流光、原版 bobHurt 的受伤晃动），法术一发发朝镜头砸过来，她从画面一侧横着冲到另一侧；
 //     索命劈中时晋升之环照原版不死图腾的样子从屏幕中间翻出来（库/界面/物品激活.tsx），身上冒金绿的图腾粒子；
-//     她从他头顶一侧冲到他跟前上方，卫射照满打死他（幕末，切第 5 幕死亡界面）。
+//     他转向一块空地，闪电抢先劈在落脚处；回头看见卫射，屈膝，切第 5 幕侧拍倒下。
 // 镜头照用户 11-10 说的：每个镜头里都有人在做动作，机位跟着动作走，1～3 秒一切。台地上留着仪式结构（祭坛、四角灵魂火），同第 2 幕。
 // 机位、第一人称里的手和图腾都是 Agent 摆的，用户没看过。没做：猩红雨、伤害数字、第一人称的物品栏和血条（全片第一人称都没画 HUD，只留 boss 血条）。声音在 段.ts。
 import React from 'react';
@@ -15,9 +15,10 @@ import { rigSpline, type Cam, type SplineKey } from '@engine/core/机位.ts';
 import { png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
-import { FirstPersonCanvas, FirstPersonHand, handTimeline, viewAngles } from '@库/角色/第一人称.tsx';
+import { FirstPersonCanvas, FirstPersonHand, viewAngles } from '@库/角色/第一人称.tsx';
 import { ItemActivate } from '@库/界面/物品激活.tsx';
 import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
+import { withCastingHem } from '../../角色/空中施法袍摆.ts';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
 import { ascensionHaloIcon } from '../../角色/史蒂夫掉落.tsx';
 import { BattleUi } from '../../界面/战斗界面.tsx';
@@ -33,10 +34,12 @@ import { CastLaunches } from '../../场/1-台地/出手.tsx';
 import { nearFadeContext } from '../../法术/演出/零件/面片.tsx';
 import { pickShot, TerraceCanvas, aspect, type Shot } from '../../场/1-台地/台地场.tsx';
 import timeline from '../../场/1-台地/时间线.ts';
+import { releaseRig } from '../../场/1-台地/绕拍.ts';
 import { cellsPerPixel, wheelPlace } from '../../场/1-台地/编排-开盘.ts';
-import { castHits, swingTimes, steveClock, steveBackToWorld, hurtTilt, gazeSlowSec } from '../../场/1-台地/齐放拍.ts';
+import { castHits, escapeMotion, hurtTilt } from '../../场/1-台地/齐放拍.ts';
+import { firstPersonCast } from './受击视角.ts';
 import type { Launch } from '../../场/1-台地/出手表.ts';
-import { yaBoLunPos, castTable, sceneCtx, steveStateAt, steveFoot, totemSec, actStart, throwSec, perform, secAt, cageSetup, wheelParams, cameraStart } from '../../场/1-台地/编排-齐放.ts';
+import { yaBoLunPos, castTable, sceneCtx, steveStateAt, steveViewAt, steveFoot, totemSec, actStart, throwSec, perform, secAt, cageSetup, wheelParams, cameraStart } from '../../场/1-台地/编排-齐放.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
@@ -48,6 +51,7 @@ const uiScale = 2;
 /** 她在幕内第 s 秒的脚底、胸口 */
 const yaBoLunAt = (s: number) => yaBoLunPos(secAt(s));
 const chestAt = (s: number) => addVec(yaBoLunAt(s), atHeight(1.1));
+const openingSpread = Math.hypot(...chestAt(0).map((coord, index) => coord - S[index]!));
 /** 水平单位向量 a → b；侧 = 它往右转 90 度 */
 const dirBetween = (a: readonly number[], b: readonly number[]): V3 => {
   const [x, y] = [b[0]! - a[0]!, b[1]! - a[1]!];
@@ -62,18 +66,14 @@ const follow = (startSec: number, end: number, cameraRig: (s: number) => [V3, V3
   linspace(startSec, end, Math.max(1, Math.ceil((end - startSec) / stepSec - 1e-9))).map((s) => keyframe(s, ...cameraRig(s)));
 const makeShot = (name: string, startSec: number, keyframes: readonly SplineKey[]): Shot => ({ name: name, start: startSec, cameraRig: (_u, shotSec): Cam => rigSpline(keyframes, startSec + shotSec) });
 
-// ── 第一人称：眼睛跟着他（挨打往后让、被结界拽回），视线慢 0.1 秒跟着她（玩家拿鼠标追着她）；原版视角 70 度 ──
 /** 原版默认 fov 70（竖直）的焦距，同第 5 幕 */
 const firstPersonLensMm = 14.46;
-const firstPersonEye = (actSec: number) => addVec(steveStateAt(secAt(actSec)).位置, atHeight(1.62));
-const firstPersonLook = (actSec: number) => addVec(yaBoLunAt(steveBackToWorld(steveClock(actSec)) - gazeSlowSec), atHeight(1.3));
 /** bobHurt 在视图空间的转轴（齐放拍.ts 的 受伤们 开头）：视图空间 x 右、y 上、−z 往前 */
 const hurtAxis = (yawDeg: number) => new THREE.Vector3(Math.sin(rad(yawDeg)), 0, -Math.cos(rad(yawDeg)));
 const upAxis = new THREE.Vector3(0, 0, 1);
 /** 第一人称机位：原版投影前先乘 R（bobHurt），世界里的相机就转 R⁻¹；换成看点 + 绕视线的 roll（engine/core/机位.ts 的约定：lookAt 以后 rotateZ(+roll)） */
 const firstPersonRig = (actSec: number): Cam => {
-  const eye = firstPersonEye(actSec);
-  const lookAt = firstPersonLook(actSec);
+  const { eye, look: lookAt } = steveViewAt(secAt(actSec));
   const { tiltDeg, dirDeg: yawDeg } = hurtTilt(actSec);
   if (tiltDeg === 0) return { pos: eye, tgt: lookAt, lens: firstPersonLensMm };
   const forward = new THREE.Vector3(lookAt[0] - eye[0], lookAt[1] - eye[1], lookAt[2] - eye[2]);
@@ -88,42 +88,41 @@ const firstPersonRig = (actSec: number): Cam => {
   const roll = deg(Math.atan2(-newUp.dot(rightVec), newUp.dot(rightVec.clone().cross(newForward))));
   return { pos: eye, tgt: addVec(eye, [newForward.x, newForward.y, newForward.z], vecLength), lens: firstPersonLensMm, roll };
 };
-/** 右手：断曜流光照原版 ItemInHandRenderer 挥、挥完按攻击冷却升回来（剑攻速 1.6：12.5 刻）。挥剑的刻照他的局部钟（索命那 16 帧定住） */
-const handScript = { start: '剑', swings: swingTimes.map((c) => Math.round(c * 20)), cooldown: 12.5 } as const;
 /** 晋升之环的屏幕动画往哪一角飞（原版 random.nextFloat() × 2 − 1，这里取定）：右上 */
 const ringOffset = [0.55, -0.7] as const;
 const ringLayers = [{ tex: png(ascensionHaloIcon) }];
+const sideWideStart = 7 / 60;
 
 /** 镜头表（幕内秒） */
 const shotTable: readonly Shot[] = [
-  // 侧：机位在两人连线的右侧（她在画面左上、他在右下）、离连线中点 22 → 20 格（她高 12 格、离他水平 10 格，20 毫米下两人连血条都框得下），
-  // 镜头跟着两人中点慢慢往他那边推
-  makeShot('侧', cameraStart.side, follow(cameraStart.side, cameraStart.firstPerson, (s) => {
+  // 侧镜按首发斜距留出弹道，上缘避开血条。
+  { name: '离杖', start: cameraStart.side, cameraRig: (_progress, sec) => releaseRig(sec) },
+  makeShot('侧', sideWideStart, follow(sideWideStart, cameraStart.firstPerson, (s) => {
     const u = smoothstep01(s / cameraStart.firstPerson);
     const centerPos = mixVec(yaBoLunAt(s), S, lerp(0.5, 0.56, u));
     const right = dirBetween(yaBoLunAt(0), S);
-    return [addVec(addVec(addVec(centerPos, perpendicular(right), lerp(22, 20, u)), right, lerp(-1, 1, u)), atHeight(lerp(-1.5, -0.8, u))), addVec(centerPos, atHeight(lerp(0.8, 0.4, u))), 20];
+    return [addVec(addVec(addVec(centerPos, perpendicular(right), Math.max(20, openingSpread * 1.18) + 2 * (1 - u)), right, lerp(-1, 1, u)), atHeight(lerp(-1.5, -0.8, u))), addVec(centerPos, atHeight(lerp(3.1, 2.7, u))), 20];
   }, 0.25)),
   { name: '第一人称', start: cameraStart.firstPerson, cameraRig: (_u, shotSec) => firstPersonRig(cameraStart.firstPerson + shotSec) },
 ];
+export const volleyShots = shotTable;
 const totemTable = totemParticleTable(S, 1, { ground: S[2] });
 
-/** 按镜头清场（Agent 取的）：第一人称镜头就在他眼睛里，打到他身上的那一刻就不画了（他身上炸开的、长出来的会把镜头整个糊住），
- *  当刻就到的（闪电、音爆这种）只留 0.2 秒 */
-const withEnd = (cast: Launch, endSec: number): Launch => ({ ...cast, end: Math.min(cast.end ?? Infinity, endSec) });
-const firstPersonTable = castTable.map((cast, i) => withEnd(cast, castHits[i] ?? cast.sec + 0.2));
-const throwsByShot: Record<string, readonly Launch[]> = { 侧: castTable, 第一人称: firstPersonTable };
+const firstPersonTable = castTable.map((cast, index) => firstPersonCast(cast, castHits[index]));
+const throwsByShot: Record<string, readonly Launch[]> = { '离杖': castTable, 侧: castTable, 第一人称: firstPersonTable };
 
 const SceneFirstPersonHand: React.FC<{ actSec: number }> = ({ actSec }) => {
-  const handState = handTimeline(steveClock(actSec) * 20, handScript);
-  const eye = firstPersonEye(actSec);
+  const { step, turn, flinch, buckle } = escapeMotion(actSec);
+  const { eye, look } = steveViewAt(secAt(actSec));
   const { tiltDeg, dirDeg: yawDeg } = hurtTilt(actSec);
   const handRot = new THREE.Quaternion().setFromAxisAngle(hurtAxis(yawDeg), rad(tiltDeg));
   return (
-    <FirstPersonCanvas width={aspect.width} height={aspect.height} view={viewAngles(eye, firstPersonLook(actSec))}>
+    <FirstPersonCanvas width={aspect.width} height={aspect.height} view={viewAngles(eye, look)}>
       {/* 原版 renderItemInHand 画手之前也调一遍 bobHurt：手跟着视角一起歪 */}
       <group quaternion={handRot}>
-        <FirstPersonHand held={<Valettein glintSec={actSec} />} display={valetteinDisplay[defaultAppearance].firstperson_righthand} swing={handState.swing} equip={handState.equip} />
+        <group rotation={[rad(-8 * step + 10 * flinch), rad(8 * turn), rad(-7 * turn + 8 * flinch)]}>
+          <FirstPersonHand held={<Valettein glintSec={actSec} />} display={valetteinDisplay[defaultAppearance].firstperson_righthand} swing={0} equip={0.24 + 0.38 * turn + 0.18 * step + 0.36 * buckle} />
+        </group>
       </group>
     </FirstPersonCanvas>
   );
@@ -133,6 +132,7 @@ export default definePicture(seg, soundUrl, () => {
   const { sec: sec, segment: thisSegment } = useSeg(seg);
   const t = actStart + sec;
   const yaBoLunState = perform.在(t);
+  const wheel = wheelParams(t);
   const { shot, cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
   const isFirstPerson = shot.name === '第一人称';
   return (
@@ -144,7 +144,7 @@ export default definePicture(seg, soundUrl, () => {
           {isFirstPerson && (
             <AbsoluteFill>
               <SceneFirstPersonHand actSec={sec} />
-              <ItemActivate width={aspect.width} height={aspect.height} s={uiScale} sec={t - totemSec} offset={ringOffset} items={ringLayers} />
+              <ItemActivate width={aspect.width} height={aspect.height} s={1} sec={t - totemSec} offset={ringOffset} items={ringLayers} />
             </AbsoluteFill>
           )}
           <BattleUi width={aspect.width} height={aspect.height} s={uiScale} healthBar={{ healthRatio: 1 }} />
@@ -156,8 +156,8 @@ export default definePicture(seg, soundUrl, () => {
         <group position={altar}>
           <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeRing.sec} plan={summonPlans.短} />
         </group>
-        <GirlYaBoLun {...yaBoLunState.props} holdWand />
-        <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={wheelParams(t)} cellsPerPixel={cellsPerPixel} />
+        <GirlYaBoLun {...yaBoLunState.props} bonePose={withCastingHem(yaBoLunState.props)} holdWand />
+        {wheel && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={wheel} cellsPerPixel={cellsPerPixel} />}
         <RevelationCagePerformance sec={t - throwSec} settings={cageSetup} />
         <CastLaunches 表={throwsByShot[shot.name]!} sec={t} sceneCtx={sceneCtx} />
         <TotemParticles 表={totemTable} sec={t - totemSec} />

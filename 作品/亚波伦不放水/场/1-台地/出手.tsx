@@ -4,14 +4,22 @@
 import React from 'react';
 import { SpellPerformance } from '../../法术/演出/注册表.tsx';
 import { launchFrom, launchTarget, type Launch, type SceneCtx } from './出手表.ts';
+import type { Vec3 } from '../../法术/演出/接口.ts';
+import { terracePoint } from './布局.ts';
 
 export * from './出手表.ts';
+
+const landAt = ([east, north]: Vec3) => terracePoint(east, -north);
 
 /** 画这一刻还在演的每一发；放在场景坐标的 group 里 */
 export const CastLaunches: React.FC<{ 表: readonly Launch[]; sec: number; sceneCtx: SceneCtx }> = ({ 表: shotTable, sec: sec, sceneCtx }) => (
   <>
     {shotTable.map((cast, i) =>
-      sec < cast.sec || (cast.end !== undefined && sec >= cast.end) ? null : <SpellPerformance key={`${cast.id}-${i}`} id={cast.id} sec={(cast.clock?.(sec) ?? sec) - cast.sec} from={cast.follow?.(sec) ?? launchFrom(cast, sceneCtx)} target={launchTarget(cast, sceneCtx)} seed={cast.seed ?? 101 + i * 7} options={cast.options} />,
+      sec < cast.sec || (cast.end !== undefined && sec >= cast.end) ? null : <SpellPerformance key={`${cast.id}-${i}`} id={cast.id}
+        sec={(cast.clock?.(sec) ?? sec) - cast.sec} from={cast.follow?.(sec) ?? launchFrom(cast, sceneCtx)}
+        target={launchTarget(cast, sceneCtx, cast.follow ? sec : undefined)} casterFootAt={age => sceneCtx.casterFoot(cast.sec + age)}
+        wandTipAt={age => sceneCtx.wandTip(cast.sec + age)} targetFootAt={age => launchTarget(cast, sceneCtx, cast.sec + age)}
+        landAt={landAt} seed={cast.seed ?? 101 + i * 7} options={cast.options} />,
     )}
   </>
 );

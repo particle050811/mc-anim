@@ -1,38 +1,37 @@
-// 第 5 幕 击败的画面：编排在 场/1-台地/编排-击败.ts，这里摆镜头和界面。
-// 用户 11-11 看完七版：东西撒一地那一镜（七版 5-01）单拍没意义，「死后亚伯伦 环绕的镜头 我觉得做得挺好 不改」，东西「就在死亡界面撒一地」。
-// 所以一镜到底：七版 5-03 的机位原样（贴着她：盘一圈圈收回杖尖、杖收到身侧，她一下俯冲落到那堆东西跟前，落地滑一小段站住低头看），
-// 原版死亡界面（库/界面/死亡界面.tsx）从第一帧盖着，光标移到「重生」上点下去；他一死就倒下、化烟，东西从他身上照原版死亡掉落撒出去，落在她脚边；
-// 聊天栏（在死亡界面底下）同时出死亡消息。死亡界面、撒落、聊天栏摆进这一镜是 Agent 做的，用户没看过；开关是 场/1-台地/编排-击败.ts 的 游戏界面。
-// 台地上留着仪式结构（祭坛、四角灵魂火），同第 2 幕。没做：经验球、地上留的火冰酸、猩红雨，只留 boss 血条。
-// 点「重生」以后不演重生，幕末硬切第 6 幕教堂（分镜 5-02 下的说明）。
 import React, { useMemo } from 'react';
-import { lerp } from '@engine/core/数学.ts';
+import { rigSpline, type Cam, type SplineKey } from '@engine/core/机位.ts';
+import { lerp, lerpV } from '@engine/core/数学.ts';
 import { png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
-import { ChatOverlay } from '@库/界面/聊天栏.tsx';
 import { DeathScreen, deathButtonDelayTicks, deathButtonAt, uiSize, type DeathButtonState } from '@库/界面/死亡界面.tsx';
 import { deathPoof, VanillaParticles } from '@库/特效/原版粒子.tsx';
 import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
+import { withCastingHem } from '../../角色/空中施法袍摆.ts';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
 import { steveDrops, steveDropCount, DeathDrop, deathDropTrack } from '../../角色/史蒂夫掉落.tsx';
-import { yaBoLunName, yaBoLunTitle, BattleUi, deathMessageLine } from '../../界面/战斗界面.tsx';
-import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
+import { yaBoLunName, yaBoLunTitle, BattleUi } from '../../界面/战斗界面.tsx';
 import { RestRitualPerformance } from '../../特效/安息仪式.tsx';
 import { summonPlans } from '../../特效/安息仪式时序.ts';
+import { RevelationCageGlow } from '../../特效/炼狱结界辉线.tsx';
+import { TotemParticles, totemParticleTable } from '../../特效/图腾粒子.tsx';
+import { nearFadeContext } from '../../法术/演出/零件/面片.tsx';
+import { CastLaunches } from '../../场/1-台地/出手.tsx';
 import { altar } from '../../场/1-台地/布局.ts';
-import { pickShot, TerraceCanvas, aspect, followShot, type Shot } from '../../场/1-台地/台地场.tsx';
+import { pickShot, TerraceCanvas, aspect, type Shot } from '../../场/1-台地/台地场.tsx';
 import timeline from '../../场/1-台地/时间线.ts';
-import { cellsPerPixel, wheelPlace } from '../../场/1-台地/编排-开盘.ts';
-import { steveStateAt } from '../../场/1-台地/编排-齐放.ts';
-import { yaBoLunPos, cursorMove, cursorAt, steveFoot, actStart, actDur, dropSeed, deathMsgTemplate, afterDeathSec, inGameUi, perform, landSec, wheelParams } from '../../场/1-台地/编排-击败.ts';
+import { totemSec } from '../../场/1-台地/编排-齐放.ts';
+import { steveEye, steveFoot, deathMsgTemplate, afterDeathSec, defeatedSteveAt, inGameUi, performAt } from '../../场/1-台地/编排-击败.ts';
+import { yaBoLunPos, towardYaBoLun, dashTo, cursorMove, cursorAt, actStart, shotStart, dropSeed, landSec } from '../../场/1-台地/击败拍.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
+import { cageTailAt, remainingVolley, tailSceneCtx } from './余术.ts';
 import widgetsPng from 'asset:贴图/法术/minecraft/gui/widgets';
 
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 const atHeight = (z: number): V3 => [0, 0, z];
 const S = steveFoot;
+const totemTable = totemParticleTable(S, 1, { ground: S[2] });
 const uiScale = 2;
 /** 死亡消息：凶手是她的显示名（名字 + 称号，同血条） */
 const deathMsg = { template: deathMsgTemplate, killer: `${yaBoLunName} ${yaBoLunTitle}` };
@@ -44,63 +43,73 @@ const dirBetween = (a: readonly number[], b: readonly number[]): V3 => {
   return [x / vecLength, y / vecLength, 0];
 };
 
+const sideKey = (sec: number, degrees: number, radius: number, height: number, aim: number): SplineKey => {
+  const angle = degrees * Math.PI / 180;
+  const [east, north] = towardYaBoLun;
+  const side: V3 = [east * Math.cos(angle) - north * Math.sin(angle), east * Math.sin(angle) + north * Math.cos(angle), 0];
+  return [sec, {
+    pos: addVec(addVec(S, side, radius), atHeight(height)),
+    tgt: lerpV(addVec(S, atHeight(0.8)), addVec(dashTo, atHeight(1)), aim),
+    lens: 18,
+  }];
+};
+const sideKeys = [sideKey(0, 80, 8.6, 1.6, 0.55), sideKey(1, 84, 9.4, 2.2, 0.6), sideKey(shotStart.deathScreen, 88, 10.2, 2.8, 0.62)];
+const deathCamera: Cam = {
+  pos: steveEye,
+  tgt: addVec(yaBoLunPos(actStart + (shotStart.deathScreen + shotStart.landing) / 2), atHeight(-0.6)),
+  lens: 14.46,
+  roll: -(40 - 8000 / 220),
+};
 const shotTable: Shot[] = [
-  // 七版 5-03，一个数不改（用户 11-11「不改」）：镜头在她左前方（杖在右手，从右边拍杖头会挡脸），开头比她低一点、离得远些把盘框进来；
-  // 她俯冲 0.25 秒落地，镜头每 0.1 秒一个关键跟着往下（高度晚她 0.06 秒，看得出在落），一路推近；落地后跟着她滑停，最后略往下看她低头看的那堆东西。
+  { name: '5-01', start: shotStart.fall, cameraRig: (_progress, shotSec) => rigSpline(sideKeys, shotSec) },
+  { name: '5-02', start: shotStart.deathScreen, cameraRig: () => deathCamera },
   {
     name: '5-03',
-    start: 0,
-    cameraRig: followShot(
-      actDur,
-      (s, k) => {
-        const t = actStart + s;
-        const yaBoLun = yaBoLunPos(t);
-        const lagPos = yaBoLunPos(t - 0.06);
-        const forward = dirBetween(yaBoLun, S);
-        const leftDir: V3 = [-forward[1], forward[0], 0];
-        const landTime = landSec - actStart;
-        const nearProgress = Math.min(1, s / landTime);
-        const mixT = Math.max(0, Math.min(1, (s - landTime) / 0.8));
-        const eyeHeight = lerp(lerp(0.3, 0.9, nearProgress), 1.6, mixT);
-        return {
-          pos: addVec(addVec(addVec([yaBoLun[0], yaBoLun[1], lagPos[2]], forward, lerp(lerp(3.4, 3.0, nearProgress), 3.8, mixT)), leftDir, lerp(lerp(4.2, 2.6, nearProgress), 2.9, mixT)), atHeight(eyeHeight)),
-          tgt: addVec(addVec(yaBoLun, forward, lerp(0, 0.4, mixT)), atHeight(lerp(1.7, 1.25, mixT))),
-          lens: lerp(20, 22, k),
-        };
-      },
-      0.1,
-    ),
+    start: shotStart.landing,
+    cameraRig: (k, s) => {
+      const t = actStart + shotStart.landing + s;
+      const yaBoLun = yaBoLunPos(t);
+      const forward = dirBetween(yaBoLun, S);
+      const leftDir: V3 = [-forward[1], forward[0], 0];
+      const landTime = landSec - (actStart + shotStart.landing);
+      const nearProgress = Math.min(1, s / landTime);
+      const mixT = Math.max(0, Math.min(1, (s - landTime) / 0.8));
+      const eyeHeight = lerp(lerp(0.3, 0.9, nearProgress), 1.6, mixT);
+      return {
+        pos: addVec(addVec(addVec(yaBoLun, forward, lerp(lerp(2.5, 1.9, nearProgress), 2.2, mixT)), leftDir, lerp(lerp(-4.6, -3.6, nearProgress), -4.2, mixT)), atHeight(eyeHeight)),
+        tgt: addVec(addVec(yaBoLun, forward, lerp(0, 0.4, mixT)), atHeight(lerp(1.7, 1.25, mixT))),
+        lens: lerp(20, 22, k),
+      };
+    },
   },
 ];
+export const actFiveShotTable = shotTable;
 
 export default definePicture(seg, soundUrl, () => {
   const { sec: sec, segment: thisSegment } = useSeg(seg);
   const t = actStart + sec;
-  const yaBoLun = perform.在(t);
-  const params = wheelParams(t);
+  const yaBoLun = performAt(t);
   const sinceDeath = afterDeathSec(t);
+  const volley = useMemo(remainingVolley, []);
+  const cage = cageTailAt(t);
   const trajectory = useMemo(() => deathDropTrack(S, steveDropCount, dropSeed), []);
   const whiteSmoke = useMemo(() => deathPoof(S, 0.6, 1.8, 0, 5), []);
-  const { cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
-  // 死亡界面：他一死就打开，20 刻后按钮才能按；光标在「重生」上是指着，点下去以后不能按
+  const { shot, shotSec, cameraRig } = pickShot(shotTable, sec, thisSegment.sec);
+  // 死亡界面：切进 5-02 时打开，20 刻后按钮才能按；光标在「重生」上是指着，点下去以后不能按
   const uiDims = uiSize(aspect.width, aspect.height, uiScale);
-  const cursor = cursorAt(sec);
-  const respawnButtonState: DeathButtonState = sec * 20 < deathButtonDelayTicks || sec >= cursorMove.points ? '不能按' : deathButtonAt(0, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
-  const titleButtonState: DeathButtonState = sec * 20 < deathButtonDelayTicks ? '不能按' : deathButtonAt(1, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
-  // 死亡消息和死亡界面同一刻出（原版死的那一刻发系统消息）
-  const chatLines = inGameUi ? [deathMessageLine(0, deathMsg)] : [];
+  const cursor = cursorAt(shotSec);
+  const respawnButtonState: DeathButtonState = shotSec * 20 < deathButtonDelayTicks || shotSec >= cursorMove.points ? '不能按' : deathButtonAt(0, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
+  const titleButtonState: DeathButtonState = shotSec * 20 < deathButtonDelayTicks ? '不能按' : deathButtonAt(1, cursor[0], cursor[1], uiDims.width, uiDims.height) ? '指着' : '平常';
   // 他：死了不再挣，倒下 1 秒后人没了（反应史蒂夫 照 死后秒 自己藏）
-  const steveState = { ...steveStateAt(t), struggle: 0 };
+  const steveState = defeatedSteveAt(t);
   return (
     <TerraceCanvas
       ritualStructure
       cameraRig={cameraRig}
       ui={
         <>
-          <BattleUi width={aspect.width} height={aspect.height} s={uiScale} healthBar={{ healthRatio: 1 }}>
-            {chatLines.length > 0 && <ChatOverlay lines={chatLines} 刻={sec * 20} s={uiScale} />}
-          </BattleUi>
-          {inGameUi && <DeathScreen width={aspect.width} height={aspect.height} s={uiScale} buttonImg={png(widgetsPng)} deathCause={deathText} respawnButtonState={respawnButtonState} titleButtonState={titleButtonState} cursor={cursor} />}
+          {shot.name !== '5-03' && <BattleUi width={aspect.width} height={aspect.height} s={uiScale} healthBar={{ healthRatio: 1 }} />}
+          {inGameUi && shot.name === '5-02' && <DeathScreen width={aspect.width} height={aspect.height} s={uiScale} buttonImg={png(widgetsPng)} deathCause={deathText} respawnButtonState={respawnButtonState} titleButtonState={titleButtonState} cursor={cursor} />}
         </>
       }
     >
@@ -108,11 +117,15 @@ export default definePicture(seg, soundUrl, () => {
       <group position={altar}>
         <RestRitualPerformance sec={t + timeline.events.yaBoLunAppears.sec - timeline.events.placeRing.sec} plan={summonPlans.短} />
       </group>
-      <GirlYaBoLun {...yaBoLun.props} holdWand />
-      {params && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={params} cellsPerPixel={cellsPerPixel} />}
+      <GirlYaBoLun {...yaBoLun.props} bonePose={yaBoLun.transition.从 === '指向' || yaBoLun.transition.dest === '指向' ? withCastingHem(yaBoLun.props) : yaBoLun.props.bonePose} holdWand />
+      <nearFadeContext.Provider value={shot.name === '5-02' ? [1.5, 3.5] : [1, 3]}>
+        <CastLaunches 表={volley} sec={t} sceneCtx={tailSceneCtx} />
+      </nearFadeContext.Provider>
+      {cage.opacity > 0 && <group position={cage.center}><RevelationCageGlow sec={cage.spinSec} radiusFactor={cage.radiusFactor} opacity={cage.opacity} /></group>}
+      <TotemParticles 表={totemTable} sec={t - totemSec} />
       <ReactingSteve state={steveState} />
       <DeathDrop trajectory={trajectory} drops={steveDrops(sinceDeath)} sec={sinceDeath} />
-      <VanillaParticles spawns={whiteSmoke} sec={sinceDeath} />
+      {shot.name === '5-01' && <VanillaParticles spawns={whiteSmoke} sec={sinceDeath} />}
     </TerraceCanvas>
   );
 });

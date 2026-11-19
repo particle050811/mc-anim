@@ -1,4 +1,4 @@
-// 第 4 幕（轰炸）的纯计算部分：幕内时刻、她怎么飞、连放的出手表和几时打到他、他几时挨打挥剑、几时死。段.ts 排声音也引，所以不引模型、贴图、React；
+// 第 4 幕（轰炸）的纯计算部分：幕内时刻、连放与命中、史蒂夫试探退路、受击和死亡。段.ts 排声音也引，所以不引模型、贴图、React；
 // 要杖尖的（她的姿势、盘、结界从哪扔出去）在 编排-齐放.ts。
 // 用户 11-11 看了七版：「这个画面未必要按时间推进」「侧视角看着亚伯伦放一堆法术 并且每个法术是一直放 不是只放一次」「在以史蒂夫第一人称视角看到一堆法术，
 // 并且晋升之环像不死图腾一样炸开」「史蒂夫应该是在被狂轰滥炸 然后在短短几秒内就死去 而不是法术烧完后死掉」「大招要落到他身上」。
@@ -7,15 +7,15 @@
 // 他被晋升之环救一次以后几秒就死，死在幕末。用户 11-11 看八版又说「法术的速度以及事发频率是不是有点慢」「聚晶是默认满附魔聚晶 高速附魔 增加法术飞行，
 // 并且晋升之环有 4 倍施法速度」：连放的间隔、弹速照游戏里戴晋升之环、拿满附魔聚晶的玩家按住右键连放算（见下面 连放表）。
 // 连放挑哪些、两镜多长、她怎么飞是 Agent 取的，用户没看过。
-import { clamp01, smoothstep01 } from '@engine/core/数学.ts';
+import { clamp01, lerp, lerpV, smoothstep, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { appearPos } from '../../特效/安息仪式时序.ts';
 import { spellSoundAt, spellDuration, type SpellOptions } from '../../法术/演出/接口.ts';
 import { getSpellMeta } from '../../法术/演出/元表.ts';
 import { launchTarget, launchFrom, type Launch, type SceneCtx } from './出手表.ts';
-import { steveTrappedPos, altar } from './布局.ts';
+import { steveTrappedPos, altar, terracePoint, openingPerch } from './布局.ts';
 import { slowExtraSec, act2EndWheelTick as openingEndWheelTick } from './开盘拍.ts';
 import timeline from './时间线.ts';
+import { volleyLayers } from './齐放补演.ts';
 
 const events = timeline.events;
 /** 编排的钟是「现身后几秒」的世界秒（编排-开盘.ts 的 现身后；那个模块引了模型，这里不能引）：第 2 幕慢放过，从第 2 幕末起比片上慢 慢放多出 秒 */
@@ -27,8 +27,6 @@ export const secAt = (s: number) => actStart + s;
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 
 // ── 第 2 幕末的样子（本幕的初始状态）：位置、高度、盘转到第几刻都取第 2 幕的末态（开盘拍.ts、编排-开盘.ts 的 第二幕末），编排-齐放.ts 载入时核对 ──
-/** 第 2 幕末她悬停的高度（脚底离祭坛那层地面）= 编排-开盘.ts 的 悬停高；编排-齐放.ts 载入时核对两边一样 */
-const act2EndHeight = 12;
 /** 第 2 幕末盘已经张满、杖尖的盘转了几刻（多圈轮盘参数 的 刻；三圈弹完是 7.5 刻） */
 export const act2EndWheelTick = openingEndWheelTick;
 /** 原版玩家眼高 1.62（库/角色/史蒂夫.tsx 的 steveSize 在原版缩放下就是它）；编排-齐放.ts 载入时核对 */
@@ -36,12 +34,10 @@ export const eyeHeight = 1.62;
 /** 史蒂夫被钉住的地方（脚底）：第 2 幕退到的受困位 */
 export const steveFoot: V3 = steveTrappedPos;
 export const steveEye: V3 = addVec(steveFoot, [0, 0, eyeHeight]);
-/** 结界中心：史蒂夫半身高（原版结界中心也在半身高） */
-export const cageCenter: V3 = addVec(steveFoot, [0, 0, 0.9]);
-/** 她第 2 幕末悬停的地方（祭坛上空 12 格），转过身来杖指着他 */
-export const startPos: V3 = [altar[0] + appearPos[0], altar[1] + appearPos[1], altar[2] + act2EndHeight];
+/** 她第 2 幕末悬停的地方（祭坛西北高位），转过身来杖指着他 */
+export const startPos: V3 = [altar[0] + openingPerch[0], altar[1] + openingPerch[1], altar[2] + openingPerch[2]];
 
-/** 开幕杖往前一顶 5 帧（线性），顶到头那一帧第一轮离手；战斗曲 27.0 秒砸在这一刻（时间线.ts 的 齐放出手） */
+/** 开幕保持握姿，第 5 帧第一轮离手；战斗曲 27.0 秒砸在这一刻。 */
 export const castStart = 5 / 60;
 /** 他死（幕内秒）：幕末那一刻，接第 5 幕的死亡界面。致命的是卫射第五发结算（11 个大招都打到他以后头一发；下面核对） */
 export const deathTime = actDur;
@@ -93,12 +89,12 @@ export const chainCastTable: readonly { id: string; periodTick: number; isBig?: 
   { id: 'killing', periodTick: 65 },
   { id: 'fireball', periodTick: 4 },
   { id: 'lavaball', periodTick: 10 },
-  { id: 'ice_spike', periodTick: 8 },
+  { id: 'ice_spike', periodTick: 8, options: { flightPower: 3 } },
   { id: 'hail', periodTick: 35 },
-  { id: 'soul_bolt', periodTick: 8 },
+  { id: 'soul_bolt', periodTick: 8, options: { flightPower: 3.19 } },
   { id: 'magic_bolt', periodTick: 8 },
   { id: 'sonic_boom', periodTick: 25 },
-  { id: 'sword', periodTick: 8 },
+  { id: 'sword', periodTick: 8, options: { flightPower: 3 } },
   { id: 'razor_wind', periodTick: 16 },
   { id: 'poison_dart', periodTick: 8 },
   { id: 'electrocute', periodTick: 12 },
@@ -115,7 +111,7 @@ export const gap = (id: string): number => {
   return item.periodTick / 20;
 };
 /** 第一发：开幕那一轮在 出手起 起 8 帧里按表的先后错开 0～8 帧（同一帧挂上几十个法术，第一帧编译材质的时间会叠在一帧里）。
- *  蓄力的法术当它们第 2 幕张盘时就蓄上了，开幕这一顶离手（卫射、撕裂的演出带着蓄力，从这一刻起蓄） */
+ *  蓄力的法术当它们第 2 幕张盘时就蓄上了，开幕同拍离手（卫射、撕裂的演出带着蓄力，从这一刻起蓄） */
 const launchTime = (i: number) => castStart + ((i % 5) * 2) / 60;
 /** 索命劈中（幕内秒）：第一人称切进来 0.4 秒。Agent 取的 */
 export const killingSec = cameraStart.firstPerson + 0.4;
@@ -125,12 +121,11 @@ const tailSec = 0.8;
 export const cageFlySec = 0.75;
 export const coverFullSec = castStart + cageFlySec;
 
-// ── 她怎么飞：开幕悬在起位，连放不停手地一下下冲（快的那几下 20～30 格/秒，2～3 帧到全速、到位前急刹），两下之间慢慢漂，
-//    最后一下从他头顶斜着冲到他跟前上方，刹住、慢慢漂到七版 5-03 开头她在的地方（第 5 幕一开始就是那一镜）。
+// ── 她怎么飞：开幕悬在起位，连放不停手地一下下冲（快的那几下约 70～85 格/秒，到位前急刹），
+//    最后一下从他头顶斜着冲到他跟前上方，刹住、慢慢漂到第六版 5-01 的起位。
 //    角度、离他多远、多高（他脚底起）都绕着他量；冲法、时刻都是 Agent 取的 ──
 type KeyStep = { sec: number; angle: number; radial: number; height: number; reachMode: '漂' | '冲' | '直冲' };
-/** 七版 5-03 开头她的脚底（七版 击败拍.ts 的 亚波伦位 在第 5 幕 5.3 秒），第 5 幕照七版原样，所以本幕末停在这里。击败拍.ts 载入时核对 */
-export const act5StartPos: V3 = [907.1770742442654, 288.66251327801626, 54.51164537941398];
+export const act5StartPos: V3 = [914.5, 287.5, 62];
 const polar = (p: readonly number[]) => ({
   angle: (Math.atan2(p[1]! - steveFoot[1], p[0]! - steveFoot[0]) * 180) / Math.PI,
   radial: Math.hypot(p[0]! - steveFoot[0], p[1]! - steveFoot[1]),
@@ -138,17 +133,18 @@ const polar = (p: readonly number[]) => ({
 });
 const startPolar = polar(startPos);
 const endPolar = polar(act5StartPos);
+const lastRushTarget = polar([907.1770742442654, 288.66251327801626, 54.51164537941398]);
 /** 关键位置：从起位起，角度一路往大走（从上往下看逆时针）绕到他另一侧。
- *  第一下（侧面那一镜里）往后下方拉开：在侧面画面里是斜着往下走；第二下（第一人称里，晋升之环翻完之前）绕着他横着冲 55 度，他眼里她从画面一侧冲到另一侧；
+ *  第一下往后下方拉开；第二下切过他视线斜入近位，第二发气旋仍来得及在原死亡拍前卷到，再拉出去反冲；
  *  第三下（八版在「挨炸」那一镜，现在还在第一人称里）直着冲到他跟前上方。三下的时刻同八版 */
 export const yaBoLunKeyframes: readonly KeyStep[] = [
   { sec: 0, ...startPolar, reachMode: '漂' },
-  { sec: 1.25, angle: startPolar.angle + 1.5, radial: startPolar.radial + 0.3, height: 12.3, reachMode: '漂' },
-  { sec: 1.55, angle: startPolar.angle + 6, radial: 13, height: 7.5, reachMode: '冲' },
-  { sec: 3.4, angle: startPolar.angle + 10, radial: 13.3, height: 8, reachMode: '漂' },
-  { sec: 3.95, angle: startPolar.angle + 64, radial: 10, height: 8.6, reachMode: '冲' },
-  { sec: 4.95, angle: startPolar.angle + 70, radial: 9.4, height: 8.2, reachMode: '漂' },
-  { sec: 5.4, angle: endPolar.angle + 4, radial: endPolar.radial + 0.25, height: endPolar.height + 0.15, reachMode: '直冲' },
+  { sec: 1.25, angle: startPolar.angle + 1.5, radial: startPolar.radial + 0.3, height: startPolar.height + 0.3, reachMode: '漂' },
+  { sec: 1.55, angle: startPolar.angle + 6, radial: startPolar.radial + 8.4, height: startPolar.height - 14.1, reachMode: '冲' },
+  { sec: 3.4, angle: startPolar.angle + 10, radial: 38.8, height: 23.5, reachMode: '漂' },
+  { sec: 3.95, angle: startPolar.angle + 61, radial: 8, height: 6.5, reachMode: '直冲' },
+  { sec: 4.95, angle: startPolar.angle + 70, radial: 27.5, height: 17.8, reachMode: '漂' },
+  { sec: 5.4, angle: lastRushTarget.angle + 4, radial: lastRushTarget.radial + 0.25, height: lastRushTarget.height + 0.15, reachMode: '直冲' },
   { sec: actDur, ...endPolar, reachMode: '漂' },
 ];
 if (Math.abs(yaBoLunKeyframes[yaBoLunKeyframes.length - 1]!.sec - actDur) > 1e-9) throw new Error('齐放：她关们 最后一关要在幕末');
@@ -156,8 +152,8 @@ const keyPoint = (k: { angle: number; radial: number; height: number }): V3 => {
   const a = (k.angle * Math.PI) / 180;
   return [steveFoot[0] + k.radial * Math.cos(a), steveFoot[1] + k.radial * Math.sin(a), steveFoot[2] + k.height];
 };
-/** 冲：头 0.04 秒加到全速、后 30% 急刹 */
-const dashStartSec = 0.04;
+/** 两帧提速，后 30% 急刹；沿用三次出冲、停顿与收势的原拍点。 */
+const dashStartSec = 2 / 60;
 const dashBrakeRatio = 0.3;
 
 // ── 打击停顿（照 Linker 打戏知识库 animation.md 第 7 节：局部时间，攻防两方定在接触那一刻，别的照走）：只停索命劈中那一下（重，16 帧；七版用户看过）。
@@ -207,35 +203,52 @@ export const approxWandTip = (t: number): V3 => {
   const vecLength = Math.hypot(d[0]!, d[1]!, d[2]!) || 1;
   return addVec(shoulderPoint, d, 1.6 / vecLength);
 };
-export const approxSceneCtx: SceneCtx = { wandTip: approxWandTip, steveFoot: () => steveFoot };
+export const approxSceneCtx: SceneCtx = { wandTip: approxWandTip, casterFoot: yaBoLunPos, steveFoot: () => steveFoot };
 
 // ── 出手表 ──
 /** 一发连同它几时打到他（编排的钟；没有命中一说的 undefined） */
 type QueuedLaunch = Launch & { hitSec?: number };
+export const escapeGap = terracePoint(907.5, -287.5);
 const launchHit = (cast: Launch): number | undefined => {
   const hitSec = spellDuration(getSpellMeta(cast.id), launchFrom(cast, approxSceneCtx), launchTarget(cast, approxSceneCtx), cast.options).hitSec;
   return hitSec === undefined ? undefined : cast.sec + hitSec;
 };
-const queuedLaunches: readonly QueuedLaunch[] = chainCastTable.flatMap((item, i) => {
+const primaryLaunches: readonly QueuedLaunch[] = chainCastTable.flatMap((item, i) => {
   const firstFireSec = item.id === 'killing' ? killingSec : launchTime(i);
   const n = item.id === 'killing' ? 1 : Math.ceil((deathTime - firstFireSec) / gap(item.id) - 1e-9);
   const options = { ...fullEnchant, ...item.options };
   return Array.from({ length: n }, (_, k): QueuedLaunch => {
-    const bottomArranged: Launch = { id: item.id, sec: secAt(firstFireSec + k * gap(item.id)), seed: 101 + i * 37 + k * 7, options };
-    const hitSec = launchHit(bottomArranged);
+    const cutsOffEscape = item.id === 'lightning' && k === 3;
+    const bottomArranged: Launch = { id: item.id, sec: secAt(firstFireSec + k * gap(item.id)), seed: 101 + i * 37 + k * 7, options, ...(cutsOffEscape && { target: escapeGap }) };
+    const hitSec = cutsOffEscape ? undefined : launchHit(bottomArranged);
     // 连放的小法术打到以后只留一小段余波；没有命中一说的（闪电、音爆这种当刻就到的）按出手算
     const endSec = item.isBig || item.id === 'killing' ? {} : { end: Math.max(bottomArranged.sec, hitSec ?? bottomArranged.sec) + tailSec };
-    return { ...bottomArranged, ...endSec, ...(hitSec !== undefined ? { hitSec } : {}) };
+    return { ...bottomArranged, ...endSec, ...(hitSec !== undefined ? { hitSec, ...(getSpellMeta(item.id).duration && { aimSec: hitSec }) } : {}) };
   });
 });
+const layeredLaunches = volleyLayers.flatMap((layer, index) => {
+  const launches: QueuedLaunch[] = [];
+  for (let frame = layer.frame; frame < Math.round(deathTime * 60);) {
+    const cast = { id: layer.id, sec: secAt(frame / 60), options: fullEnchant, seed: 14011 + index * 61 + launches.length * 11, origin: layer.origin };
+    const timing = spellDuration(getSpellMeta(layer.id), launchFrom(cast, approxSceneCtx), launchTarget(cast, approxSceneCtx), cast.options);
+    const lifetime = Math.max(1, Math.ceil(timing.长秒 * 60));
+    launches.push({ ...cast, end: cast.sec + lifetime / 60, ...(timing.hitSec !== undefined && !layer.fromCaster && (!layer.field || layer.id === 'ghost_fire') && { hitSec: cast.sec + timing.hitSec }) });
+    if (!layer.period) break;
+    frame += Math.max(layer.period * 3, lifetime);
+  }
+  return launches;
+});
+const queuedLaunches = [...primaryLaunches, ...layeredLaunches];
+
 // 索命自己跟她一起停 16 帧（劈下来的电弧定住）
 const fireClock = (hold: Pause) => (t: number) => secAt(localClock([hold])(t - actStart));
 /** 画的全部（编排-齐放.ts 给跟杖的接上真杖尖） */
 export const castTable: readonly Launch[] = queuedLaunches.map(({ hitSec: omittedHitSec, ...cast }) => (cast.id === 'killing' ? { ...cast, clock: fireClock(killingPause) } : cast));
 /** 出手表 每一发几时打到他（编排的钟，和 出手表 一一对应；没有命中一说的 undefined）：画面按镜头清场用 */
 export const castHits: readonly (number | undefined)[] = queuedLaunches.map((x) => x.hitSec);
+export const cutoffSec = queuedLaunches.find((cast) => cast.target === escapeGap)!.sec - actStart;
 /** 持续施法的光束：起点每帧跟着杖尖（她在飞） */
-export const followStaffIds = ['prisma_beam'];
+export const followStaffIds = ['prisma_beam', ...volleyLayers.filter(layer => layer.follow).map(layer => layer.id)];
 /** 打得重的：大招里除了凋灵之首（它冷却 0、一直在连射，算轻的），加索命 */
 const heavyIds = [...bigCastIds.filter((id) => id !== 'wither_skull'), 'killing'];
 /** 打到他的每一发（幕内秒，世界钟），他死之前的 */
@@ -263,7 +276,7 @@ export const spellSounds = (cast: Launch): { asset: string; sec: number; 音量:
     .map((x) => ({ ...x, sec: x.sec - actStart }));
 };
 
-// ── 史蒂夫几时挨打、挥剑（时刻按 近似杖尖 算；他怎么动在 编排-齐放.ts 的 史蒂夫状态在） ──
+// ── 史蒂夫几时挨打（时刻按近似杖尖算） ──
 /** 挨打（他的局部钟）：第三人称里他身子的反应和受伤声，最多 0.5 秒一下（原版 LivingEntity.hurt 无敌帧前 10 刻里再挨只补更大的那部分血、不重放受伤动画）；
  *  大招打到的算重的（后仰大、腿软）。结界每刻烧他不算在这里（八版就是这样，声音没改）；第一人称的视角晃动照原版另算，见 受伤们 */
 export const takenHits: readonly { sec: number; 重: boolean }[] = hitEvents.reduce<{ sec: number; 重: boolean }[]>((hits, h) => {
@@ -275,14 +288,29 @@ export const takenHits: readonly { sec: number; 重: boolean }[] = hitEvents.red
   }
   return [...hits, { sec: s, 重: h.重 }];
 }, []);
-/** 挥剑（他的局部钟）：赶在弹到之前 0.1 秒劈，两下至少隔 0.45 秒（断曜流光照剑的攻速 1.6，12.5 刻一满）；死前 0.15 秒起不挥 */
-export const swingTimes: readonly number[] = hitEvents.reduce<number[]>((swings, h) => {
-  const c = Math.round((steveClock(h.sec) - 0.1) * 20) / 20;
-  return c >= 0.3 && c < steveClock(deathTime) - 0.15 && (!swings.length || c - swings[swings.length - 1]! >= 0.45) ? [...swings, c] : swings;
-}, []);
-/** 声音用的世界钟（幕内秒）：挨打、挥剑 */
 export const takenHitsWorld = takenHits.map((h) => ({ ...h, sec: steveBackToWorld(h.sec) }));
-export const swingWorldTimes = swingTimes.map(steveBackToWorld);
+
+export const escapeMotion = (actSec: number) => {
+  const worldSec = steveBackToWorld(steveClock(Math.min(actSec, deathTime)));
+  const turn = smoothstep(cutoffSec - 1.03, cutoffSec - 0.3, worldSec) * (1 - smoothstep(cutoffSec + 0.32, cutoffSec + 0.98, worldSec));
+  const step = smoothstep(cutoffSec - 0.62, cutoffSec, worldSec) * (1 - smoothstep(cutoffSec + 0.07, cutoffSec + 0.36, worldSec));
+  const flinch = smoothstep(cutoffSec, cutoffSec + 0.12, worldSec) * (1 - smoothstep(cutoffSec + 0.28, cutoffSec + 0.76, worldSec));
+  const buckle = smoothstep(deathTime - 0.45, deathTime - 0.05, worldSec);
+  const sneak = 0.46 * step + 0.43 * flinch + 0.76 * buckle;
+  const foot = lerpV(steveFoot, [escapeGap[0], escapeGap[1], steveFoot[2]], 0.14 * step);
+  const threat = addVec(yaBoLunPos(secAt(worldSec - 0.1)), [0, 0, 1.5 + 2.4 * smoothstep(0.5, cameraStart.firstPerson, worldSec) - 3.5 * buckle]);
+  const gap = addVec(escapeGap, [0, 0, 0.7 + 1.5 * flinch]);
+  const eyeZ = foot[2] + eyeHeight - 0.35 * sneak;
+  const view = (point: V3) => {
+    const east = point[0] - foot[0], north = point[1] - foot[1], distance = Math.hypot(east, north);
+    return { yaw: Math.atan2(north, east), slope: (point[2] - eyeZ) / distance, distance };
+  };
+  const from = view(threat), to = view(gap), delta = to.yaw - from.yaw;
+  const yaw = from.yaw + turn * Math.atan2(Math.sin(delta), Math.cos(delta));
+  const distance = lerp(from.distance, to.distance, turn);
+  const look: V3 = turn <= 0 ? threat : turn >= 1 ? gap : [foot[0] + distance * Math.cos(yaw), foot[1] + distance * Math.sin(yaw), eyeZ + distance * lerp(from.slope, to.slope, turn)];
+  return { foot, look, sneak, step, turn, flinch, buckle };
+};
 
 // ── 受伤视角晃动：只在第一人称那一镜（玩家的相机），照原版 1.20.1 GameRenderer.bobHurt。用户 11-11 看八版第一人称：
 //    「画面没有受击感 我记得原版受伤是屏幕是会抖的 并且那个末日终结的焚烧也会抖来着」（「末日终结」是她的称号 title.goety.13，焚烧是炼狱结界）。
@@ -299,14 +327,13 @@ export const swingWorldTimes = swingTimes.map(steveBackToWorld);
 export const hurtIntervalTick = 10;
 /** 服务端打中那一刻到客户端处理包、把 hurtTime 置 10 隔几刻。Agent 取的 */
 const settleTick = 0.5;
-/** 他看的方向比她慢 0.1 秒（第一人称视线追着她，段/4-齐放/画面.tsx 同一个数） */
-export const gazeSlowSec = 0.1;
 /** 平面方位角（度，x 轴起逆时针）从 a 看 b */
 const azimuthDeg = (a: readonly number[], b: readonly number[]) => (Math.atan2(b[1]! - a[1]!, b[0]! - a[0]!) * 180) / Math.PI;
 /** hurtDir（度）：她在他朝向的哪边。场景 x 东 y 北，换成游戏的 atan2(dz, dx) − yRot 就是 90 − (她的方位 − 他朝的方位) */
 const incomingDir = (steveLocalSec: number) => {
   const w = steveBackToWorld(steveLocalSec);
-  const azimuthDiff = azimuthDeg(steveEye, yaBoLunPos(secAt(w))) - azimuthDeg(steveEye, yaBoLunPos(secAt(w - gazeSlowSec)));
+  const { foot, look } = escapeMotion(w);
+  const azimuthDiff = azimuthDeg(foot, yaBoLunPos(secAt(w))) - azimuthDeg(foot, look);
   return 90 - ((((azimuthDiff % 360) + 540) % 360) - 180);
 };
 /** 客户端 hurtTime 置 10 的每一刻（他的局部钟，刻；索命的打击停顿里不走）和那时的 hurtDir */

@@ -2,6 +2,10 @@
 // 两人站着不动的时间不超过两幕的 20%（用户 11-10 嫌「大部分时间都是在站着不动」）、快的那几下峰值不低于 20 格/秒（用户 11-11「起码得有个 20~30m/s」，慢放那段按世界秒算）、
 // 他不穿基座和灵魂火、她不钻进地里。
 import { describe, expect, it } from 'vitest';
+import { Matrix4, Vector3 } from 'three';
+import { blendLayers } from '@engine/anim/基岩动画.ts';
+import { skeletonMatrix } from '@engine/model/基岩正解.ts';
+import { boneGeometry } from '@engine/model/基岩模型.tsx';
 
 
 const { teleportTick, stevePos, yaBoLunPos, altarPoint, hoverHeight, afterAppear, steveRightHand, stillCheck, trappedLocal, openingTimeline, actionTable, localGroundHeight, actStart, actEnd, act2End, steveEye } = await import('./编排-开盘.ts');
@@ -9,7 +13,7 @@ const openingTimes = await import('./开盘时刻.ts');
 const { calcDash, groundElevMax } = await import('../../物品/断曜流光冲刺.ts');
 const { openDoneTick } = await import('../../界面/分圈.ts');
 const { toWorldSec, toClipSec, slowRateAt } = await import('./开盘拍.ts');
-const { appearPos, baseCells, soulFireCells } = await import('../../特效/安息仪式时序.ts');
+const { baseCells, soulFireCells } = await import('../../特效/安息仪式时序.ts');
 const timeline = (await import('./时间线.ts')).default;
 const events = timeline.events;
 /** 第 4 幕开头（编排的钟）：片上的 开盘完 减去慢放多出来的那段 = 幕末 */
@@ -22,10 +26,10 @@ const speedAt = (posAt: (t: number) => number[], t: number) => {
 const relToAltar = (p: readonly number[]) => [p[0]! - altarPoint[0], p[1]! - altarPoint[1], p[2]! - altarPoint[2]];
 
 describe('第 1、2 幕编排', () => {
-  it('第 2 幕末：她在祭坛上空 悬停高 停住、杖指他、盘全开；他在 受困本地 站住、拿着剑；到第 4 幕开头都不动', () => {
+  it('第 2 幕末：她在西北高位 停住、杖指他、盘全开；他在 受困本地 站住、拿着剑；到第 4 幕开头都不动', () => {
     const yaBoLun = yaBoLunPos(act4Start);
-    expect(yaBoLun[0]).toBeCloseTo(altarPoint[0] + appearPos[0], 9);
-    expect(yaBoLun[1]).toBeCloseTo(altarPoint[1] + appearPos[1], 9);
+    expect(yaBoLun[0]).toBeCloseTo(altarPoint[0] + openingTimes.endLocal[0], 9);
+    expect(yaBoLun[1]).toBeCloseTo(altarPoint[1] + openingTimes.endLocal[1], 9);
     expect(yaBoLun[2]).toBeCloseTo(altarPoint[2] + hoverHeight, 9);
     // 第 2 幕的钟走世界秒，比片秒短；第 4 幕的钟减掉慢放多出来的，开头正好是 幕末
     expect(act4Start).toBeCloseTo(actEnd, 9);
@@ -37,7 +41,7 @@ describe('第 1、2 幕编排', () => {
     expect(steve[0] - altarPoint[0]).toBeCloseTo(trappedLocal[0], 6);
     expect(steve[1] - altarPoint[1]).toBeCloseTo(trappedLocal[1], 6);
     expect(steveRightHand(act4Start)).toBe('剑');
-    expect(openingTimeline.at(-1)!.pose).toBe('指向');
+    expect(openingTimeline.at(-1)!.pose).toBe('侧身定杖');
     expect(openingTimeline.at(-1)!.dest!).toBeLessThan(actEnd);
     expect(act2End.disc.刻).toBeGreaterThanOrEqual(openDoneTick(3));
     // 末了站直了（眼高 1.62），第 4 幕的 眼高 照这个
@@ -54,6 +58,12 @@ describe('第 1、2 幕编排', () => {
     expect(flatSprint(2.25).farDist).toBeCloseTo(15.82, 1);
     expect(openingTimes.firstDash.landTick).toBe(3);
     expect(openingTimes.secondDash.landTick).toBe(1);
+    for (const [trail, position, spacing, stoppingDistance] of [[openingTimes.firstDash, openingTimes.hoverFirst, 24, 39.7], [openingTimes.secondDash, openingTimes.hoverSecond, 18, 24.19]] as const) {
+      const [begin, nextTick] = trail.points;
+      expect(Math.hypot(position[0] - begin![0], position[1] - begin![1])).toBeCloseTo(spacing, 6);
+      expect(Math.hypot(nextTick![0] - begin![0], nextTick![1] - begin![1]) * 20).toBeCloseTo(180, 0);
+      expect(trail.farDist).toBeCloseTo(stoppingDistance, 2);
+    }
     expect(openingTimes.secondElevationDeg).toBeLessThanOrEqual(groundElevMax);
     const secondDashEnd = openingTimes.secondDash.points.at(-1)!;
     expect(Math.hypot(secondDashEnd[0] - trappedLocal[0], secondDashEnd[1] - trappedLocal[1])).toBeLessThan(0.01);
@@ -83,6 +93,7 @@ describe('第 1、2 幕编排', () => {
     }
     console.log(`第一次冲：她挪走之前他身子前端离她最近 ${nearestDist.toFixed(2)} 格；第二次冲：他从她底下过去时旋风顶离她脚底最少 ${secondMinClear.toFixed(2)} 格`);
     expect(nearestDist).toBeGreaterThan(0.9);
+    expect(Number.isFinite(secondMinClear)).toBe(true);
     expect(secondMinClear).toBeGreaterThan(0.4);
   });
 
@@ -143,11 +154,11 @@ describe('第 1、2 幕编排', () => {
 });
 
 describe('2-03 绕拍（用户 11-11「我要环绕 180 度」）', async () => {
-  const { orbitBeat, orbitAzimuth, orbitRel, orbitRig } = await import('../../段/2-开盘/绕拍.ts');
+  const { orbitBeat, orbitAzimuth, orbitRel, orbitRig } = await import('./绕拍.ts');
   const { projectToScreen } = await import('../../界面/指杖机位.ts');
   const times = Array.from({ length: Math.floor((orbitBeat.end - orbitBeat.start) * 60) + 1 }, (_, i) => orbitBeat.start + i / 60);
 
-  it('世界里绕 180 度，相对她也转了 150 度以上（八版跟着她转身只差 10 度）', () => {
+  it('世界里绕 180 度；扣掉她提前转正的 32 度仍有超过四分之一圈的独立绕拍', () => {
     expect(orbitAzimuth(orbitBeat.end) - orbitAzimuth(orbitBeat.start)).toBeCloseTo(180, 6);
     // 相对角逐帧累加（跨 ±180 不跳）
     let totalDeg = 0;
@@ -155,7 +166,7 @@ describe('2-03 绕拍（用户 11-11「我要环绕 180 度」）', async () => 
       if (times[i]! < orbitBeat.orbit[0]) continue;
       totalDeg += ((((orbitRel(times[i]!) - orbitRel(times[i - 1]!) + 180) % 360) + 360) % 360) - 180;
     }
-    expect(totalDeg).toBeGreaterThanOrEqual(150);
+    expect(totalDeg).toBeGreaterThanOrEqual(118);
   });
 
   it('她整个在画里，头不顶到血条底下（八版 10.6～10.9 秒顶着血条）；机位不入地', () => {
@@ -170,6 +181,76 @@ describe('2-03 绕拍（用户 11-11「我要环绕 180 度」）', async () => 
       expect(feetScreen.y, `片秒 ${s.toFixed(3)}`).toBeLessThan(0.9);
       for (const q of [headScreen, feetScreen]) expect(q.x).toBeGreaterThan(0.15), expect(q.x).toBeLessThan(0.85), expect(q.depth).toBeGreaterThan(1);
       expect(c.pos[2] - altarPoint[2] - localGroundHeight(c.pos[0] - altarPoint[0], c.pos[1] - altarPoint[1])).toBeGreaterThanOrEqual(0.8 - 1e-9);
+    }
+  });
+
+  it('实际右手持杖与机位反向旋转；定杖时人物在左、杖尖在右，跨幕不换手', async () => {
+    const { perform } = await import('./编排-开盘.ts');
+    const { releaseRig } = await import('./绕拍.ts');
+    const sample = (frame: number) => {
+      const time = frame / 60;
+      const wand = perform.杖(actStart + toWorldSec(time));
+      const rig = orbitRig(time), actorTime = actStart + toWorldSec(time);
+      return { wand, camera: orbitAzimuth(time), screen: projectToScreen(rig, 16 / 9, wand.tip), actor: projectToScreen(rig, 16 / 9, yaBoLunPos(actorTime)) };
+    };
+    const start = sample(115), mid = sample(169), end = sample(241);
+    const azimuth = (snap: typeof start) => Math.atan2(snap.wand.axis[1], snap.wand.axis[0]);
+    expect(azimuth(start) - azimuth(end)).toBeGreaterThan(Math.PI / 6);
+    expect(end.camera - mid.camera).toBeGreaterThan(10);
+    expect(end.actor.x).toBeLessThan(0.48);
+    expect(end.screen.x).toBeGreaterThan(0.52);
+    expect(end.screen.x - end.actor.x).toBeGreaterThan(0.09);
+    expect(releaseRig(0)).toEqual(orbitRig(orbitBeat.end));
+  });
+
+  it('正片开盘全开近景：双眼不隔盘、脸朝镜头，盘完整且比人物小', async () => {
+    const { perform, wheelPlace, wheelRadius, act2WheelParams } = await import('./编排-开盘.ts');
+    const { actTwoShotTable } = await import('../../段/2-开盘/画面.tsx');
+    const { pickShot } = await import('./台地场.tsx');
+    const { animSkeletonTable, GirlYaBoLunCreature } = await import('../../角色/娘化亚波伦.tsx');
+    const { pictureSelfCheck } = await import('../../界面/指杖机位.ts');
+    const { staffTipPlatePose } = await import('../../界面/杖尖盘位姿.ts');
+    const model = GirlYaBoLunCreature.getModel();
+    const bodyMeshes = model.bones.filter(part => part.name === 'mao' || part.parent === 'RightFoot' || part.parent === 'LeftFoot').map(part => {
+      const geometry = boneGeometry(part, model.texW, model.texH)!;
+      const vertices = geometry.getAttribute('position');
+      const points = Array.from({ length: vertices.count }, (_, index) => new Vector3().fromBufferAttribute(vertices, index));
+      geometry.dispose();
+      return { name: part.name, points };
+    });
+    const release = await import('./编排-齐放.ts');
+    const { releaseRig } = await import('./绕拍.ts');
+    const peakFrame = Math.round(orbitBeat.end * 60);
+    for (const frame of [221, 222, 223, 224, 231, 241, peakFrame]) {
+      const peak = frame === peakFrame;
+      const sec = frame / 60, time = peak ? release.secAt(0) : actStart + toWorldSec(sec);
+      const cameraRig = peak ? releaseRig(0) : pickShot(actTwoShotTable, sec, orbitBeat.end).cameraRig;
+      const actor = peak ? release.perform : perform;
+      const { props } = actor.在(time);
+      const skeleton = blendLayers([{ skeleton: animSkeletonTable(props.sec, props.act) }, { skeleton: props.bonePose }], 'TLM');
+      const world = new Matrix4().makeRotationZ((props.pose.yaw ?? 0) * Math.PI / 180).setPosition(...props.pose.loc);
+      const bone = (name: string) => world.clone().multiply(skeletonMatrix(model, name, skeleton, GirlYaBoLunCreature.definition.scale));
+      const direction = new Vector3(0, 0, -1).transformDirection(bone('Head')).toArray();
+      const bodyPoints = bodyMeshes.flatMap(mesh => {
+        const matrix = bone(mesh.name);
+        return mesh.points.map(point => point.clone().applyMatrix4(matrix).toArray());
+      });
+      const staff = actor.杖(time), plate = staffTipPlatePose(staff, wheelPlace);
+      expect((peak ? release.wheelParams(time) : act2WheelParams(time))!.刻).toBeGreaterThanOrEqual(openDoneTick(3));
+      for (const eye of ['ysmGlowLeftEyesBase', 'ysmGlowRightEyesBase']) {
+        const face = new Vector3().setFromMatrixPosition(bone(eye)).toArray();
+        const check = pictureSelfCheck({ cameraRig, aspectRatio: 16 / 9, 心: plate.心, d: plate.normal, radius: wheelRadius, staffTail: staff.tail, face, faceDir: direction, bodyDir: direction, bodyPoints });
+        if (peak && eye === 'ysmGlowRightEyesBase') console.log(`蓄光峰值占画高：人物 ${(100 * check.bodyHeightFrac).toFixed(1)}%，盘 ${(100 * (check.discBox[3] - check.discBox[1])).toFixed(1)}%`);
+        expect(check.faceDistToEdge).toBeGreaterThan(0.10);
+        expect(check.faceTowardShot).toBeGreaterThan(0.8);
+        expect(check.shortLongRatio).toBeGreaterThan(0.75);
+        expect(check.bodyBox[1]).toBeGreaterThan(0.20);
+        expect(check.bodyBox[3]).toBeLessThan(0.98);
+        expect(check.bodyHeightFrac).toBeGreaterThan(0.60);
+        expect(check.discBox[3] - check.discBox[1]).toBeGreaterThan(0.50);
+        expect(check.plateToHerRatio).toBeLessThan(0.9);
+        expect(check.plateInFrame).toBe(1);
+      }
     }
   });
 });

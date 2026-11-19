@@ -42,6 +42,7 @@ import {
 import { act2EndWheelTick } from './开盘拍.ts';
 import { pointTrack } from './轨迹.ts';
 import timeline from './时间线.ts';
+import { castCharge } from './聚晶蓄光.ts';
 
 const events = timeline.events;
 /** 场时间线的秒 → 现身后几秒 */
@@ -80,19 +81,23 @@ const crouchSegs = [
   [turnWindows[0]![1], beats.dashSecondSec],
   [turnWindows[1]![1], beats.standUp],
 ] as const;
-/** 潜行 0～1：游戏里一刻切过去，这里用 1 刻（0.05 秒）过渡；冲出去那一下直接换成激流姿势 */
+/** 潜行按下与松开各用一刻，出刀那一刻仍蹲着。 */
 const sneakProgress = (w: number) => {
   for (const [a, b] of crouchSegs) {
-    const extraSec = b === beats.standUp ? 0.05 : 0;
-    if (w >= a && w < b + extraSec) return Math.min(1, (w - a) / 0.05, w < b ? 1 : 1 - (w - b) / 0.05);
+    if (w >= a && w < b + 0.05) return easeBetween(w, a, a + 0.05) * (1 - easeBetween(w, b, b + 0.05));
   }
   return 0;
 };
-/** 激流：转了几刻、冲的仰角；转完 1 刻里从横着回到站着（游戏里一刻切过去，这里给 1 刻过渡） */
+/** 起冲前先压低重心。收势只插余下的转角，不让已经转完的整圈随横躺权重一起倒放。 */
 const surge = (w: number): { 刻: number; elevationDeg: number; weight: number } | undefined => {
   for (const [i, [a, b]] of turnWindows.entries()) {
-    if (w < a || w >= b + 0.05) continue;
-    return { 刻: (w - a) * 20, elevationDeg: i === 0 ? firstElevationDeg : secondElevationDeg, weight: w < b ? 1 : 1 - (w - b) / 0.05 };
+    const enter = a - 0.12, release = b - 0.15, finish = b - 0.025;
+    if (w <= enter || w >= finish) continue;
+    const ticks = Math.max(0, (w - a) * 20);
+    const fullTurnTicks = 360 / 75;
+    const remaining = 1 - easeBetween(w, release, finish);
+    const phase = remaining === 1 ? ticks : ticks - Math.round((b - a) * 20 / fullTurnTicks) * fullTurnTicks;
+    return { 刻: phase, elevationDeg: i === 0 ? firstElevationDeg : secondElevationDeg, weight: easeBetween(w, enter, a) * remaining };
   }
   return undefined;
 };
@@ -136,20 +141,25 @@ const followDashLook = (t: number, i: 0 | 1): V3 => {
   const [dir, pitch] = i === 0 ? [firstDir, firstElevationDeg] : [secondDir, secondElevationDeg];
   return [eye[0] + dir[0] * 10, eye[1] + dir[1] * 10, eye[2] + Math.tan(pitch / degPerRad) * 10];
 };
+const [firstDashFacing, secondDashFacing] = [facingAngle(firstDir[0], firstDir[1]), facingAngle(secondDir[0], secondDir[1])];
 /** 他看的点：第 2 幕冲之前盯着她胸口（瞄着冲）、冲的时候顺着冲的方向、转完回头找她，最后抬头看祭坛上空的她 */
 export const steveLook = (t: number): V3 => {
-  if (t < actStart) return lookYaBoLun(t);
+  if (t < actStart) return lerpV(toAirPos([0, 0, 2.75]), lookYaBoLun(t), easeBetween(t, -0.18, 0.18));
   const w = t - actStart;
   if (w < beats.dashFirstSec) return lerpV(lookYaBoLun(t), yaBoLunChest(t), easeBetween(w, beats.sneakFirstSec - 0.1, beats.sneakFirstSec)) as V3;
   if (w < beats.lookBack[0]) return followDashLook(t, 0);
   // 回头找她、瞄着她往下沉到的地方（她往上一拉的时候他已经在蓄剑，视线不跟着往上）
-  if (w < beats.dashSecondSec) return lerpV(followDashLook(t, 0), toAirPos(sinkPos), easeBetween(w, beats.lookBack[0], beats.lookBack[1])) as V3;
+  if (w < beats.dashSecondSec) {
+    const eye = steveEye(t), target = toAirPos(sinkPos), progress = easeBetween(w, ...beats.lookBack);
+    const angle = turnTo(firstDashFacing, secondDashFacing, progress) / degPerRad;
+    const distance = Math.hypot(target[0] - eye[0], target[1] - eye[1]);
+    return [eye[0] - distance * Math.sin(angle), eye[1] + distance * Math.cos(angle), lerp(eye[2] + distance * Math.tan(firstElevationDeg / degPerRad), target[2], progress)];
+  }
   if (w < turnWindows[1]![1]) return followDashLook(t, 1);
   return lerpV(followDashLook(t, 1), yaBoLunHead(t), easeBetween(w, turnWindows[1]![1], turnWindows[1]![1] + 0.15)) as V3;
 };
 /** 史蒂夫第 1 幕的位置、身子朝向、摆腿（从第 1 幕开头推起，那时面朝北）；第 2 幕的朝向另算（见 史蒂夫朝向） */
 export const steveWalk = defineWalk({ 位: stevePos, 看: steveLook, start: afterAppear(events.开始.sec), initFacing: 0 });
-const [firstDashFacing, secondDashFacing] = [facingAngle(firstDir[0], firstDir[1]), facingAngle(secondDir[0], secondDir[1])];
 /** 第 2 幕末他面朝她（水平） */
 const endFacing = (() => {
   const [p, q] = [stevePos(actEnd), yaBoLunPos(actEnd)];
@@ -197,7 +207,8 @@ export const steveCharge = (t: number): number => {
   const upcoming = nextClick(t);
   if (!upcoming) return 0;
   const windUp = smoothstep01((t - (upcoming.sec - upcoming.windUpSec!)) / upcoming.windUpSec!);
-  const bottomCharge = upcoming === clicks[1] ? raiseStance * smoothstep01((t - act1.drawSwordSec - 0.1) / 0.3) : 0;
+  const flinch = easeBetween(t, -0.16, 0.16) * (1 - easeBetween(t, 0.2, 0.75));
+  const bottomCharge = upcoming === clicks[1] ? (raiseStance + 0.30 * flinch + 0.17 * easeBetween(t, 1.25, 1.62)) * smoothstep01((t - act1.drawSwordSec) / 0.32) : 0;
   return Math.max(windUp, bottomCharge);
 };
 
@@ -229,35 +240,37 @@ const faceSteve = (t: number) => {
   const [p, q] = [yaBoLunPos(t), steveEye(t)];
   return facingAngle(q[0] - p[0], q[1] - p[1]);
 };
-/** 她第二次冲之前朝着他冲过来的那头；他从她脚底下穿过去以后转过身来对着他（这一转在慢放里） */
-const secondDashPreFacing = (() => {
-  const [p, q] = [yaBoLunSecondLocal(beats.dashSecondSec), steveSecondLocal(beats.dashSecondSec)];
-  return facingAngle(q[0] - p[0], q[1] - p[1]);
-})();
-/** 转身：他从她脚底下穿过去那一下一甩身，0.15 秒（世界秒，3 刻；慢放里约 0.35 片秒）转过去对着他，往他那边转短的那头（顺时针）。
- *  八版是 0.46 秒慢慢转、2-03 的机位跟着她转身绕，看着没绕（用户 11-11「这个你压根儿没有环绕」）；改成先甩过去，镜头再在世界里绕（段/2-开盘/绕拍.ts）。Agent 取的 */
+const altarTurnEnd = 1.35;
+const altarTurnFacing = faceSteve(altarTurnEnd);
+const secondDashPreFacing = faceSteve(act(beats.dashSecondSec));
+const castingShoulderDeg = -32;
+const castingFacing = faceSteve(actEnd) + castingShoulderDeg;
+const castTurnProgress = (world: number) => 0.68 * easeBetween(world, beats.openWheelSec, beats.peakSec) + 0.32 * easeBetween(world, beats.openWheelSec, beats.aimSettleSec);
 const turnWindow = [beats.dashSecondSec + 0.06, beats.dashSecondSec + 0.21] as const;
-/** 她身子朝向（度）：现身时朝东、头垂着，1.0～1.35 秒转向他；之后一直朝着他，只有他从她脚底下穿过去那一下另算（不然一帧转 180 度） */
+/** 台上、拉升各走一次到收拍姿态的短弧；二冲经过正下方时不拿瞬时方位给身子选边。 */
 export const yaBoLunFacing = (t: number): number => {
   if (t < 1.0) return -95;
-  if (t < 1.35) return turnTo(-95, faceSteve(t), smoothstep01((t - 1.0) / 0.35));
+  if (t < altarTurnEnd) return turnTo(-95, altarTurnFacing, easeBetween(t, 1.0, altarTurnEnd));
   const w = t - actStart;
-  if (w < beats.dashSecondSec || w >= turnWindow[1]) return faceSteve(t);
-  return turnTo(secondDashPreFacing, faceSteve(t), easeBetween(w, turnWindow[0], turnWindow[1]));
+  if (w >= beats.移 && w < beats.sinkSec) return turnTo(faceSteve(teleportTick), secondDashPreFacing, easeBetween(w, beats.移, beats.sinkSec));
+  if (w < beats.dashSecondSec) return faceSteve(t);
+  if (w < beats.openWheelSec) return wrap180(turnTo(secondDashPreFacing, castingFacing, easeBetween(w, turnWindow[0], turnWindow[1])));
+  return turnTo(castingFacing, faceSteve(t), castTurnProgress(w));
 };
 /** 现身后闭着眼，0.5～0.8 秒睁开 */
 const eyeClose = (t: number) => (t < 0 ? 0 : 1 - smoothstep01((t - 0.5) / 0.3));
 /** 身子跟着动作倾。六版 {2.2, 0.45, 30} 飞出来那一下前倾到 30 度，像趴着飞（用户 11-11「这样飞行姿势非常诡异」）；她「站着飞」（用户 11-10），这里只倾一点。Agent 取的 */
-const lean: TiltSettings = { perSpeed: 0.35, perAccel: 0.012, limit: 12, 窗: 0.1 };
+const lean: TiltSettings = { perSpeed: 0.62, perAccel: 0.023, limit: 18, 窗: 0.1 };
 
-/** 她到举杖指着他为止的姿势轴（编排的钟）；后面的幕接着往下排（第 4 幕从最后的 指向 接着）。 */
+/** 开盘前定好右臂；拉升、侧身和转腕共用同一握姿。第 4 幕从侧身定杖接着排。 */
 export const openingTimeline: readonly PerformanceBar[] = [
   // 第 1 幕：低头闭眼 → 抬头 → 转向他、甩杖 → 站好
   { start: 0, pose: '低头' },
-  { start: 0.85, dest: 1.2, pose: '站立' },
+  { start: 0.63, dest: 1.17, pose: '站立' },
+  { start: 1.17, dest: act1.staffFlick[0], pose: '回腕' },
   { start: act1.staffFlick[0], dest: act1.staffFlick[1], pose: '甩杖' },
-  { start: 1.75, dest: 2.05, pose: '站立' },
-  // 第 2 幕：一蹬飞出来 → 飞 → 刹住一收、冒烟瞬移 → 出来飞一下 → 悬停 → 看他回头往下一沉 → 往上一拉 → 拉升里伸直手臂、杖指他 → 慢放过了收回 指向（第 4 幕从这里接）
+  { start: 1.59, dest: 2.32, pose: '站立' },
+  { start: actStart - 0.32, dest: actStart, pose: '起飞' },
   { start: act(beats.takeoff), dest: act(beats.takeoff + 0.05), pose: '起飞' },
   { start: act(beats.takeoff + 0.05), dest: act(beats.takeoff + 0.16), pose: '飞行' },
   { start: act(beats.smokeStart), dest: act(beats.smokeStart + 0.12), pose: '瞬移收' },
@@ -266,16 +279,26 @@ export const openingTimeline: readonly PerformanceBar[] = [
   { start: act(beats.sinkSec), dest: act(beats.liftStart), pose: '起飞' },
   { start: act(beats.liftStart), dest: act(beats.liftStart + 0.08), pose: '升空' },
   { start: act(beats.staffExtend[0]), dest: act(beats.staffExtend[1]), pose: '升指' },
-  { start: act(beats.finishStanceSec[0]), dest: act(beats.finishStanceSec[1]), pose: '指向' },
+  { start: act(beats.finishStanceSec[0]), dest: act(beats.finishStanceSec[1]), pose: '侧身定杖' },
 ];
 /** 袍摆、身后披风跟着飞拖（用户 11-11「飞行姿势很诡异」：八版衣服一动不动，像挂着的人偶）：27 格/秒往上蹿下摆往里收约 16 度、20 格/秒平飞往后拖约 12 度，
  *  刹住反着甩一下，飞得快时叠一点抖。第 2 幕末她停住了，这些都回到 0（第 4 幕不拖，一帧接上）。Agent 取的 */
 const dragSettings: DragSettings = { perSpeed: 0.6, perAccel: 0.02, limit: 22, jitterPerSpeed: 0.2, shakeMax: 4, shakeFreq: 3, 窗: 0.1 };
-export const perform = definePerformance({ timeline: openingTimeline, 位: yaBoLunPos, target: steveEye, yaw: yaBoLunFacing, lean, dragSettings, breakpoints: [teleportTick], eyeClose });
+const staffSweepTarget = (time: number): V3 => {
+  const eye = steveEye(time);
+  const world = time - actStart;
+  if (world < beats.staffExtend[0] || world >= beats.aimSettleSec) return eye;
+  const body = yaBoLunPos(time);
+  const sweep = 1 - lerp(easeBetween(world, beats.openWheelSec, beats.peakSec), castTurnProgress(world), 0.22);
+  const east = eye[0] - body[0], north = eye[1] - body[1];
+  const angle = 1.12 * sweep;
+  return [body[0] + east * Math.cos(angle) - north * Math.sin(angle), body[1] + north * Math.cos(angle) + east * Math.sin(angle), lerp(eye[2], body[2] + 1.4 + Math.hypot(east, north) * 0.60, sweep)];
+};
+export const perform = definePerformance({ timeline: openingTimeline, 位: yaBoLunPos, target: staffSweepTarget, yaw: yaBoLunFacing, lean, dragSettings, breakpoints: [teleportTick], eyeClose });
 
 // ── 轮盘：第 2 幕拉升里从杖尖张开（用户 11-11「飞行的时候伸出法杖 圆环缓缓张开」），第 4、5 幕接着用 ──
-/** 盘在世界里的半径（格）。用户 11-10 看了直径 12 格的说过大、「比人都大这么多」；缩到直径 4 格是 Agent 取的，用户没看过 */
-export const wheelRadius = 2;
+/** 杖尖开盘和离杖前五帧是同一只盘，场景半径用格，不随绕拍机位变。 */
+export const wheelRadius = 0.66;
 export const cellsPerPixel = wheelRadius / wheelOuterRadius({ 放: '有画面' });
 export const wheelPlace = { facing: '垂直杖身', tipOffset: 0.1 } satisfies DiscPlacement;
 /** 张盘的那一刻（编排的钟，世界秒）。张开照原版快慢（每圈 2.5 刻，界面/分圈.ts 的 默认开合），慢放里看着慢 */
@@ -284,7 +307,7 @@ export const openWheelTick = act(beats.openWheelSec);
  *  图标从盘心散出去（用户 11-11「应该是一开始都是从中心点蜷缩的 重叠的 移到正确的位置上」），只这里开；第 2 幕末盘早张满了，和第 4 幕第一帧画的一样 */
 export const act2WheelParams = (t: number): MultiRingParams | null => {
   const tick = (Math.min(t, actEnd) - openWheelTick) * 20;
-  return tick < 0 ? null : { 放: '有画面', 刻: tick, openClose: defaultOpenClose, exitIcon: '盘心移出' };
+  return tick < 0 ? null : { 放: '有画面', 刻: tick, openClose: defaultOpenClose, exitIcon: '盘心移出', ...castCharge(t - actEnd) };
 };
 
 /** 第 2 幕末（第 4 幕的起点）：编排的钟到 幕末 以后两人都停在这里不动 */
@@ -294,7 +317,7 @@ export const act2End = {
   yaBoLunPos: yaBoLunPos(actEnd),
   yaBoLunFacing: yaBoLunFacing(actEnd),
   /** 姿势轴最后一条（杖指着他的 眼） */
-  poseName: '指向' as const,
+  poseName: '侧身定杖' as const,
   stevePos: stevePos(actEnd),
   steveFacing: endFacing,
   disc: {

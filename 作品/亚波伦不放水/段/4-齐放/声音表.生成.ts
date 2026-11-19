@@ -34,6 +34,24 @@ const soundTable: SoundTable = {
       "loudness": -36.3,
       "sha": "d7c0af67c932"
     },
+    "音效/block.grindstone.use.1": {
+      "duration": 0.642979,
+      "peakDb": -7,
+      "loudness": -20,
+      "sha": "9c6f49cc006f"
+    },
+    "音效/entity.arrow.shoot": {
+      "duration": 0.455102,
+      "peakDb": -0.1,
+      "loudness": -21.4,
+      "sha": "9492b5233938"
+    },
+    "音效/entity.blaze.ambient.1": {
+      "duration": 2.5,
+      "peakDb": -0.3,
+      "loudness": -17.5,
+      "sha": "a49e4572828f"
+    },
     "音效/entity.blaze.burn": {
       "duration": 1.82059,
       "peakDb": -3.8,
@@ -76,11 +94,35 @@ const soundTable: SoundTable = {
       "loudness": -17,
       "sha": "5f6c84e5821d"
     },
+    "音效/entity.evoker.prepare_summon": {
+      "duration": 3.488,
+      "peakDb": -4.6,
+      "loudness": -22.9,
+      "sha": "96e683a5590c"
+    },
+    "音效/entity.evoker_fangs.attack": {
+      "duration": 0.836417,
+      "peakDb": -1.9,
+      "loudness": -16.1,
+      "sha": "eab1ff10c785"
+    },
     "音效/entity.generic.explode.1": {
       "duration": 2.5,
       "peakDb": -0.3,
       "loudness": -12.6,
       "sha": "ec6fe52205a8"
+    },
+    "音效/entity.generic.splash.1": {
+      "duration": 1.652562,
+      "peakDb": -2,
+      "loudness": -26.2,
+      "sha": "a53b581f8654"
+    },
+    "音效/entity.generic.splash.2": {
+      "duration": 3.867188,
+      "peakDb": -1.4,
+      "loudness": -32,
+      "sha": "6c968a1702ad"
     },
     "音效/entity.ghast.shoot": {
       "duration": 0.718753,
@@ -99,48 +141,6 @@ const soundTable: SoundTable = {
       "peakDb": 0.4,
       "loudness": -17.5,
       "sha": "a361a1586e1c"
-    },
-    "音效/entity.player.attack.sweep.1": {
-      "duration": 0.234667,
-      "peakDb": 0.7,
-      "loudness": -70,
-      "sha": "595f127d896a"
-    },
-    "音效/entity.player.attack.sweep.2": {
-      "duration": 0.215,
-      "peakDb": 0.5,
-      "loudness": -70,
-      "sha": "aba683ef86b1"
-    },
-    "音效/entity.player.attack.sweep.3": {
-      "duration": 0.194,
-      "peakDb": 0.4,
-      "loudness": -70,
-      "sha": "737538a8b1f9"
-    },
-    "音效/entity.player.attack.sweep.4": {
-      "duration": 0.158,
-      "peakDb": 1,
-      "loudness": -70,
-      "sha": "b1c96cc6b0e9"
-    },
-    "音效/entity.player.attack.sweep.5": {
-      "duration": 0.197333,
-      "peakDb": 0.3,
-      "loudness": -70,
-      "sha": "4087c81ce1c5"
-    },
-    "音效/entity.player.attack.sweep.6": {
-      "duration": 0.174333,
-      "peakDb": 1.1,
-      "loudness": -70,
-      "sha": "cd09c71ae431"
-    },
-    "音效/entity.player.attack.sweep.7": {
-      "duration": 0.226,
-      "peakDb": 0.2,
-      "loudness": -70,
-      "sha": "b043e15380d6"
     },
     "音效/entity.player.hurt.1": {
       "duration": 0.5,
@@ -208,6 +208,12 @@ const soundTable: SoundTable = {
       "loudness": -10.7,
       "sha": "a29d10700537"
     },
+    "音效/item.crossbow.loading_middle.1": {
+      "duration": 1.035125,
+      "peakDb": -5.6,
+      "loudness": -29.7,
+      "sha": "419b38043691"
+    },
     "音效/item.totem.use": {
       "duration": 3.422667,
       "peakDb": 1.7,
@@ -262,11 +268,23 @@ const soundTable: SoundTable = {
       "loudness": -17.1,
       "sha": "975dcc012094"
     },
+    "音效/诡厄巫法/goety.biomine_spawn.1": {
+      "duration": 3.931723,
+      "peakDb": -0.3,
+      "loudness": -16.6,
+      "sha": "300b2394a734"
+    },
     "音效/诡厄巫法/goety.blast_fungus_throw.1": {
       "duration": 0.985918,
       "peakDb": -1.7,
       "loudness": -21,
       "sha": "c3381a703aa4"
+    },
+    "音效/诡厄巫法/goety.bomb_load": {
+      "duration": 6.060408,
+      "peakDb": -13.1,
+      "loudness": -30.4,
+      "sha": "afef9e93fb5b"
     },
     "音效/诡厄巫法/goety.cast_spell.1": {
       "duration": 1.254603,
@@ -292,11 +310,47 @@ const soundTable: SoundTable = {
       "loudness": -21.3,
       "sha": "72e699b3f7d3"
     },
+    "音效/诡厄巫法/goety.cast_steam.1": {
+      "duration": 2.391156,
+      "peakDb": -3.4,
+      "loudness": -21.6,
+      "sha": "a9a0864d04a9"
+    },
+    "音效/诡厄巫法/goety.corrupt_beam_start.1": {
+      "duration": 3.55,
+      "peakDb": 0.7,
+      "loudness": -13.5,
+      "sha": "efed0df2e97e"
+    },
+    "音效/诡厄巫法/goety.dirt_debris.1": {
+      "duration": 1.188571,
+      "peakDb": 0.1,
+      "loudness": -22.4,
+      "sha": "074b7cc72455"
+    },
+    "音效/诡厄巫法/goety.fire_breath": {
+      "duration": 8,
+      "peakDb": 0,
+      "loudness": -10.5,
+      "sha": "afce25fb5f34"
+    },
+    "音效/诡厄巫法/goety.fire_breath_start": {
+      "duration": 2.855283,
+      "peakDb": 1.6,
+      "loudness": -10.8,
+      "sha": "138a795a357d"
+    },
     "音效/诡厄巫法/goety.flight": {
       "duration": 2.322268,
       "peakDb": -28.5,
       "loudness": -43.2,
       "sha": "78a8002d908c"
+    },
+    "音效/诡厄巫法/goety.frost_breath": {
+      "duration": 1.05034,
+      "peakDb": -12.7,
+      "loudness": -25.6,
+      "sha": "d72a45fe2628"
     },
     "音效/诡厄巫法/goety.frost_prepare_spell.1": {
       "duration": 2.728798,
@@ -334,6 +388,30 @@ const soundTable: SoundTable = {
       "loudness": -16.9,
       "sha": "8374091aead9"
     },
+    "音效/诡厄巫法/goety.hell_blast_impact.1": {
+      "duration": 1.125011,
+      "peakDb": -1.3,
+      "loudness": -17.6,
+      "sha": "828c48f30777"
+    },
+    "音效/诡厄巫法/goety.ice_chunk_hit": {
+      "duration": 3.312494,
+      "peakDb": -2.8,
+      "loudness": -15.2,
+      "sha": "5ae2c1d267fa"
+    },
+    "音效/诡厄巫法/goety.ice_chunk_idle": {
+      "duration": 4.887528,
+      "peakDb": -4.3,
+      "loudness": -29.3,
+      "sha": "4dd15bdeaba8"
+    },
+    "音效/诡厄巫法/goety.ice_chunk_summon": {
+      "duration": 2.937506,
+      "peakDb": -6.5,
+      "loudness": -21.4,
+      "sha": "54dfd6e27cae"
+    },
     "音效/诡厄巫法/goety.ice_spike_cast": {
       "duration": 1.698005,
       "peakDb": -7.7,
@@ -345,6 +423,30 @@ const soundTable: SoundTable = {
       "peakDb": 0.6,
       "loudness": -21.7,
       "sha": "a6fd1cbe1911"
+    },
+    "音效/诡厄巫法/goety.insect_swarm.1": {
+      "duration": 2.147279,
+      "peakDb": -19.7,
+      "loudness": -34,
+      "sha": "7acdf8e96b2b"
+    },
+    "音效/诡厄巫法/goety.master_fang_telegraph.1": {
+      "duration": 1.609333,
+      "peakDb": -5.8,
+      "loudness": -20.8,
+      "sha": "424bf1ec78ac"
+    },
+    "音效/诡厄巫法/goety.master_fang_telegraph.2": {
+      "duration": 1.916,
+      "peakDb": -5.7,
+      "loudness": -19.5,
+      "sha": "1b415571bfe6"
+    },
+    "音效/诡厄巫法/goety.necromancer_summon.1": {
+      "duration": 1.254603,
+      "peakDb": -6.5,
+      "loudness": -25,
+      "sha": "0aa0cebc1535"
     },
     "音效/诡厄巫法/goety.poison_quill_impact.1": {
       "duration": 0.980839,
@@ -388,11 +490,41 @@ const soundTable: SoundTable = {
       "loudness": -20.6,
       "sha": "68dc1752d5bc"
     },
+    "音效/诡厄巫法/goety.quick_growing_vine_burst.1": {
+      "duration": 1.25,
+      "peakDb": -1.8,
+      "loudness": -21.2,
+      "sha": "f543b7fdb18a"
+    },
+    "音效/诡厄巫法/goety.redstone_explode.1": {
+      "duration": 2,
+      "peakDb": -6.4,
+      "loudness": -25.1,
+      "sha": "6b14dc8c54c3"
+    },
+    "音效/诡厄巫法/goety.redstone_golem_electric_sparks.1": {
+      "duration": 1.103197,
+      "peakDb": -0.6,
+      "loudness": -22.8,
+      "sha": "578dfe21bbc7"
+    },
     "音效/诡厄巫法/goety.rumble.1": {
       "duration": 4.101338,
       "peakDb": -1.7,
       "loudness": -17.9,
       "sha": "f04d3af3b59d"
+    },
+    "音效/诡厄巫法/goety.rumble.2": {
+      "duration": 2.058685,
+      "peakDb": -2.5,
+      "loudness": -18.3,
+      "sha": "938c48788613"
+    },
+    "音效/诡厄巫法/goety.rumble.3": {
+      "duration": 1.981338,
+      "peakDb": -2.8,
+      "loudness": -17.1,
+      "sha": "21b7535f1510"
     },
     "音效/诡厄巫法/goety.shock_cast.1": {
       "duration": 1.214354,
@@ -400,11 +532,35 @@ const soundTable: SoundTable = {
       "loudness": -18.5,
       "sha": "4709dd3fb74b"
     },
+    "音效/诡厄巫法/goety.shock_cast.2": {
+      "duration": 1.131156,
+      "peakDb": -1.6,
+      "loudness": -16.6,
+      "sha": "190d2f9a4e3d"
+    },
     "音效/诡厄巫法/goety.soul_bolt_cast": {
       "duration": 0.729977,
       "peakDb": -10.9,
       "loudness": -24.6,
       "sha": "daec572f8f60"
+    },
+    "音效/诡厄巫法/goety.soul_eat.1": {
+      "duration": 2.375011,
+      "peakDb": -4.1,
+      "loudness": -19.8,
+      "sha": "6b105f4a4053"
+    },
+    "音效/诡厄巫法/goety.soul_eat.2": {
+      "duration": 2.375011,
+      "peakDb": -2.3,
+      "loudness": -18.9,
+      "sha": "e35c036512f2"
+    },
+    "音效/诡厄巫法/goety.soul_explode.1": {
+      "duration": 5,
+      "peakDb": 0.2,
+      "loudness": -11.5,
+      "sha": "253283e26942"
     },
     "音效/诡厄巫法/goety.teleport_orb_throw": {
       "duration": 0.595556,
@@ -430,11 +586,41 @@ const soundTable: SoundTable = {
       "loudness": -15.8,
       "sha": "5965ad5b6dc7"
     },
+    "音效/诡厄巫法/goety.trident_storm_explode.1": {
+      "duration": 2.608957,
+      "peakDb": -3.1,
+      "loudness": -18,
+      "sha": "c8be427f9ba5"
+    },
+    "音效/诡厄巫法/goety.trident_storm_pre.1": {
+      "duration": 4.714649,
+      "peakDb": -1.5,
+      "loudness": -18.8,
+      "sha": "a8b253c546ce"
+    },
+    "音效/诡厄巫法/goety.updraft_blast.1": {
+      "duration": 3.25,
+      "peakDb": -6.8,
+      "loudness": -24.6,
+      "sha": "b3b53e71ad84"
+    },
     "音效/诡厄巫法/goety.vex_vapor.1": {
       "duration": 1.63068,
       "peakDb": -18.1,
       "loudness": -37,
       "sha": "b43e964163c7"
+    },
+    "音效/诡厄巫法/goety.vine_trap_burst.1": {
+      "duration": 1.25,
+      "peakDb": -2.8,
+      "loudness": -18.2,
+      "sha": "2ac91c1e96f5"
+    },
+    "音效/诡厄巫法/goety.vine_trap_hold": {
+      "duration": 3.687891,
+      "peakDb": -1.7,
+      "loudness": -24.5,
+      "sha": "6f47fc1bbe16"
     },
     "音效/诡厄巫法/goety.void_prepare_spell.1": {
       "duration": 1.813583,
@@ -460,6 +646,42 @@ const soundTable: SoundTable = {
       "loudness": -19.8,
       "sha": "7cad16462e1d"
     },
+    "音效/诡厄巫法/goety.wall_spawn.1": {
+      "duration": 0.83737,
+      "peakDb": 0.3,
+      "loudness": -16.7,
+      "sha": "4dafa20fe53d"
+    },
+    "音效/诡厄巫法/goety.water_jet": {
+      "duration": 2.5,
+      "peakDb": -3.8,
+      "loudness": -12.9,
+      "sha": "d4bae443170b"
+    },
+    "音效/诡厄巫法/goety.weaken_cast.1": {
+      "duration": 3.01424,
+      "peakDb": -0.8,
+      "loudness": -14.8,
+      "sha": "3ef43a5e421a"
+    },
+    "音效/诡厄巫法/goety.weaken_cast.2": {
+      "duration": 3.892245,
+      "peakDb": -1.9,
+      "loudness": -17.3,
+      "sha": "ed907dc55ecf"
+    },
+    "音效/诡厄巫法/goety.whip_swing.1": {
+      "duration": 0.5,
+      "peakDb": 0.4,
+      "loudness": -13.5,
+      "sha": "d4657c6be8d3"
+    },
+    "音效/诡厄巫法/goety.whirlwind": {
+      "duration": 13.371519,
+      "peakDb": -29.7,
+      "loudness": -43.9,
+      "sha": "858903957e68"
+    },
     "音效/诡厄巫法/goety.wild_prepare_spell": {
       "duration": 3.25,
       "peakDb": 0.3,
@@ -478,11 +700,53 @@ const soundTable: SoundTable = {
       "loudness": -17,
       "sha": "1db08eb10c93"
     },
+    "音效/诡厄巫法/goety.wind_horn": {
+      "duration": 2.804785,
+      "peakDb": 0.8,
+      "loudness": -8.8,
+      "sha": "6131ccabd1b8"
+    },
+    "音效/诡厄巫法/goety.wraith_fire": {
+      "duration": 1.203084,
+      "peakDb": -0.9,
+      "loudness": -18.5,
+      "sha": "e36cfe4e0143"
+    },
     "音效/诡厄巫法/goety.zap.1": {
       "duration": 1.100385,
       "peakDb": -15.7,
       "loudness": -28.9,
       "sha": "7e0bcfbb3d70"
+    },
+    "音效/诡厄巫法/goety.zap.2": {
+      "duration": 1.207324,
+      "peakDb": -18.6,
+      "loudness": -31.1,
+      "sha": "24aa2db48627"
+    },
+    "音效/诡厄巫法/goety.zap.3": {
+      "duration": 1.09941,
+      "peakDb": -14,
+      "loudness": -28.5,
+      "sha": "b095f6eb31fd"
+    },
+    "音效/诡厄巫法/goety.zap.4": {
+      "duration": 1.107664,
+      "peakDb": -17.9,
+      "loudness": -30.3,
+      "sha": "219fd20393c3"
+    },
+    "音效/诡厄巫法/goety.zap.5": {
+      "duration": 1.1,
+      "peakDb": -14.9,
+      "loudness": -27.7,
+      "sha": "4d5514610960"
+    },
+    "音效/诡厄巫法/goety.zap.6": {
+      "duration": 1.158322,
+      "peakDb": -17.2,
+      "loudness": -31.7,
+      "sha": "613a15bdebb8"
     }
   },
   "lines": {}

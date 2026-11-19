@@ -8,7 +8,7 @@ import sound1 from "asset:音效/block.beacon.deactivate";
 import sound2 from "asset:音效/entity.generic.small_fall";
 import sound3 from "asset:音效/entity.player.death.1";
 import sound4 from "asset:音效/ui.button.click";
-import sound5 from "asset:音效/诡厄巫法/goety.cast_spell.2";
+import sound5 from "asset:音效/诡厄巫法/goety.heavy_woosh.1";
 import sound6 from "asset:音效/诡厄巫法/goety.heavy_woosh.2";
 
 const soundUrl: SoundUrl = {
@@ -19,7 +19,7 @@ const soundUrl: SoundUrl = {
     "音效/entity.generic.small_fall": sound2,
     "音效/entity.player.death.1": sound3,
     "音效/ui.button.click": sound4,
-    "音效/诡厄巫法/goety.cast_spell.2": sound5,
+    "音效/诡厄巫法/goety.heavy_woosh.1": sound5,
     "音效/诡厄巫法/goety.heavy_woosh.2": sound6,
   },
   表: soundTable,

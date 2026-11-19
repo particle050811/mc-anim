@@ -46,11 +46,11 @@ const soundTable: SoundTable = {
       "loudness": -70,
       "sha": "f69421ba0522"
     },
-    "音效/诡厄巫法/goety.cast_spell.2": {
-      "duration": 1.101859,
-      "peakDb": -8,
-      "loudness": -27,
-      "sha": "e824c6f59409"
+    "音效/诡厄巫法/goety.heavy_woosh.1": {
+      "duration": 1.48542,
+      "peakDb": -0.6,
+      "loudness": -15.9,
+      "sha": "08042e1e7a4c"
     },
     "音效/诡厄巫法/goety.heavy_woosh.2": {
       "duration": 1.669456,

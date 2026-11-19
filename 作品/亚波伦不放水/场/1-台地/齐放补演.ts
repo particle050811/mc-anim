@@ -1,0 +1,26 @@
+export type VolleyLayer = { id: string; frame: number; period?: number; follow?: true; fromCaster?: true; field?: true; origin?: 'feet' | 'body' };
+
+export const volleyLayers: readonly VolleyLayer[] = [
+  { id: 'arrow_rain', frame: 9 }, { id: 'biting', frame: 10, period: 35 },
+  { id: 'trident_storm', frame: 11, period: 150, origin: 'feet', field: true }, { id: 'bombardment', frame: 12 },
+  { id: 'meteor_shower', frame: 14 }, { id: 'feast', frame: 15 },
+  { id: 'shredding', frame: 17, period: 65 }, { id: 'iceology', frame: 18, period: 76 },
+  { id: 'entangling', frame: 19, period: 112 }, { id: 'ghost_fire', frame: 20, period: 60, field: true },
+  { id: 'shockwave', frame: 22, period: 20, fromCaster: true, origin: 'body' }, { id: 'ice', frame: 23, fromCaster: true, origin: 'feet' },
+  { id: 'whirlwind', frame: 24, fromCaster: true, origin: 'body' },
+  { id: 'corruption', frame: 26, follow: true }, { id: 'scatter', frame: 27, period: 60, origin: 'feet', field: true },
+  { id: 'swarm', frame: 29 }, { id: 'shocking', frame: 31, follow: true },
+  { id: 'weakening', frame: 32, period: 100, fromCaster: true, origin: 'body' }, { id: 'leeching', frame: 34, follow: true },
+  { id: 'bolting', frame: 35, period: 52, fromCaster: true, origin: 'body' }, { id: 'quaking', frame: 36, period: 67, origin: 'feet' },
+  { id: 'wind_blast', frame: 38, period: 16 }, { id: 'water_whip', frame: 39, period: 4 },
+  { id: 'barricade', frame: 40, field: true }, { id: 'thunderbolt', frame: 41, period: 10 },
+  { id: 'water_jet', frame: 43, follow: true }, { id: 'frost_breath', frame: 45, follow: true, fromCaster: true },
+  { id: 'updraft', frame: 47, period: 16 }, { id: 'blizzard', frame: 48 },
+  { id: 'biomine', frame: 50, period: 60, field: true }, { id: 'surging', frame: 52 },
+  { id: 'monsoon', frame: 54, period: 35 }, { id: 'overgrowth', frame: 55, period: 32, field: true },
+  { id: 'discharge', frame: 57, period: 28, fromCaster: true, origin: 'body' }, { id: 'trembling', frame: 58, period: 52, fromCaster: true, origin: 'body' },
+  { id: 'steaming', frame: 60 }, { id: 'bouncy_bubble', frame: 62, period: 28 },
+  { id: 'frost_nova', frame: 64, period: 52, fromCaster: true, origin: 'body' }, { id: 'flame_strike', frame: 65, period: 65, field: true },
+  { id: 'fire_breath', frame: 67, follow: true, fromCaster: true }, { id: 'temblor_clap', frame: 70, period: 36, fromCaster: true, origin: 'body' },
+  { id: 'fire_blast', frame: 79, period: 28, fromCaster: true, origin: 'body' }, { id: 'wither_quietus', frame: 82, period: 36 },
+];

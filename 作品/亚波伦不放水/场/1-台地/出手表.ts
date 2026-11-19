@@ -12,8 +12,10 @@ export type Launch = {
   sec: number;
   /** 不给 = 出手那一刻的杖尖 */
   from?: V3;
+  origin?: 'feet' | 'body';
   /** 不给 = 出手那一刻史蒂夫的脚底 */
   target?: V3;
+  aimSec?: number;
   /** 持续施法的（光束、吐息、绕身的风）起点跟着施法者走：画的时候每帧取这一刻的位置当起点；命中时刻照出手那一刻的 起点 算 */
   follow?: (sec: number) => V3;
   seed?: number;
@@ -28,6 +30,7 @@ export type Launch = {
 /** 这一幕里随时间变的东西，出手 要用的那几样 */
 export type SceneCtx = {
   wandTip: (sec: number) => V3;
+  casterFoot: (sec: number) => V3;
   steveFoot: (sec: number) => V3;
 };
 
@@ -38,8 +41,13 @@ export const fireKey = (id: string): string => {
   return focusKey;
 };
 
-export const launchFrom = (cast: Launch, sceneCtx: SceneCtx): V3 => cast.from ?? sceneCtx.wandTip(cast.sec);
-export const launchTarget = (cast: Launch, sceneCtx: SceneCtx): V3 => cast.target ?? sceneCtx.steveFoot(cast.sec);
+export const launchFrom = (cast: Launch, sceneCtx: SceneCtx): V3 => {
+  if (cast.from) return cast.from;
+  if (!cast.origin) return sceneCtx.wandTip(cast.sec);
+  const foot = sceneCtx.casterFoot(cast.sec);
+  return cast.origin === 'feet' ? foot : [foot[0], foot[1], foot[2] + 0.5];
+};
+export const launchTarget = (cast: Launch, sceneCtx: SceneCtx, sec = cast.aimSec ?? cast.sec): V3 => cast.target ?? sceneCtx.steveFoot(sec);
 /** 这一发命中的时刻；没有命中一说的返回 undefined */
 export const launchHit = (cast: Launch, sceneCtx: SceneCtx): number | undefined => {
   const hitSec = spellDuration(getSpellMeta(cast.id), launchFrom(cast, sceneCtx), launchTarget(cast, sceneCtx), cast.options).hitSec;

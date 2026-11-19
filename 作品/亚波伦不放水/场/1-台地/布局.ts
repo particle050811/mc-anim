@@ -22,3 +22,6 @@ export const terracePoint = (x: number, z: number, lift = 0): V3 => realNetherSc
 export const altar = terracePoint(898.5, -299.5);
 /** 结界罩住他的地方（第 3 幕起他被钉在这里）：祭坛东南，四周 10 格内脚高 49～51 */
 export const steveTrappedPos = terracePoint(906.5, -293.5);
+
+/** 开盘、齐放共用的高位：相对祭坛向西北退、同时拔高，保留真实右手指向受困位的俯角。 */
+export const openingPerch = [-15, 11.50, 36.0] as const;
