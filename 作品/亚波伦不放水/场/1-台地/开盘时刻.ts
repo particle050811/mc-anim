@@ -7,7 +7,7 @@ import { baseCells, soulFireCells, appearPos } from '../../特效/安息仪式�
 import { footHeight, openingPerch } from './布局.ts';
 import { beats, slowMo, toClipSec, actDur } from './开盘拍.ts';
 import { pointTrack, type TrackPoint } from './轨迹.ts';
-import timeline from './时间线.ts';
+import timeline, { staffFlick } from './时间线.ts';
 
 export { beats, slowMo, toClipSec, actDur };
 const events = timeline.events;
@@ -49,8 +49,8 @@ export const act1 = {
   ringReleaseSec: -6.08,
   /** 仪式完成的光柱起来，他往后一缩、拔剑（右手从空换成剑） */
   drawSwordSec: -3.3,
-  /** 她甩杖 */
-  staffFlick: [1.38, 1.55] as const,
+  /** 她甩杖（定在 时间线.ts，那阵风是场声音） */
+  staffFlick,
 };
 export const trappedLocal = [8, -6] as const;
 export const hoverHeight = openingPerch[2];

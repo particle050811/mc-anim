@@ -34,6 +34,12 @@ const soundTable: SoundTable = {
       "loudness": -70,
       "sha": "f6c607669ba7"
     },
+    "音效/entity.lightning_bolt.thunder.1": {
+      "duration": 7,
+      "peakDb": 0.4,
+      "loudness": -17.5,
+      "sha": "a361a1586e1c"
+    },
     "音效/entity.player.death.1": {
       "duration": 0.5,
       "peakDb": 1,
@@ -57,6 +63,12 @@ const soundTable: SoundTable = {
       "peakDb": -0.9,
       "loudness": -16.2,
       "sha": "659943d6ed2c"
+    },
+    "音效/诡厄巫法/goety.wind.1": {
+      "duration": 1.945625,
+      "peakDb": -9.7,
+      "loudness": -25.9,
+      "sha": "99dfe31aad93"
     }
   },
   "lines": {}

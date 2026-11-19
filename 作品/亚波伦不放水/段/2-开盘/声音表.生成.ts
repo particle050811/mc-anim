@@ -52,6 +52,12 @@ const soundTable: SoundTable = {
       "loudness": -29.7,
       "sha": "2b65e1bdb942"
     },
+    "音效/entity.lightning_bolt.thunder.1": {
+      "duration": 7,
+      "peakDb": 0.4,
+      "loudness": -17.5,
+      "sha": "a361a1586e1c"
+    },
     "音效/item.trident.riptide_1": {
       "duration": 1.780458,
       "peakDb": -7,

@@ -3,6 +3,8 @@
 import { defineSceneTimeline } from '@engine/段/窗口段.ts';
 import { slowClipMarks, beats as openingBeat, toClipSec as openToClipSec, actDur as act2Dur } from './开盘拍.ts';
 
+/** 她现身后几秒甩杖（起、止）。放这里不放 开盘时刻.ts 的 act1：甩杖那阵风写在下面的场声音里，开盘时刻.ts 引着本文件 */
+export const staffFlick = [1.38, 1.55] as const;
 /** 第 1 幕现身到召唤完（秒）。原来 2.8：她甩完杖还站 1.25 秒，他早到了起点干等（用户 11-19「提前到了预定位置 那是不是应该提前进攻呢？……好像在罚站」），甩完杖就起飞 */
 const appearToSummonSec = 1.95;
 /** 第 4 幕开头到第一发出手几秒：盘已张开、杖已指向他，留 5 帧离手。 */
@@ -50,6 +52,9 @@ export default defineSceneTimeline({
     { asset: '配乐/亚波伦/決戦の刻', name: '战斗曲', 在: 'yaBoLunAppears', end: 'volleyCast', 入点秒: 27 - appearToCastSec, loudness: -22 },
     // 他死在第 4 幕最后一刻：倒下前半秒开始淡，死后两秒淡完
     { asset: '配乐/亚波伦/決戦の刻', name: '战斗曲-齐放', 在: 'volleyCast', end: { after: 'volleyDone', addSec: 2 }, 入点秒: 27, loudness: -22, fadeOutSec: 2.5 },
+    // 现身的雷声（7 秒）和她甩杖那阵风都响过 召唤完，原来写在 1-召唤 的 段.ts 里，被段尾一刀截掉（用户 11-19 听出 8～9 秒不连续）；挪到这里跨进第 2 幕放完
+    { asset: '音效/entity.lightning_bolt.thunder.1', name: '现身雷声', 在: 'yaBoLunAppears', peakDb: -10 },
+    { asset: '音效/诡厄巫法/goety.wind.1', name: '甩杖', 在: { after: 'yaBoLunAppears', addSec: staffFlick[0] }, peakDb: -18 },
     // 下界荒地氛围垫底：mood.2 是 18 秒的长低鸣，从开头垫到现身以后、渐弱在曲子底下，文件自己放完（尾巴已经很轻，不截）；他死后曲子淡掉，再接一条 mood.1（8.8 秒）垫到第 5 幕完
     { asset: '音效/ambient.nether_wastes.mood.2', name: '下界氛围-开场', 在: '开始', loudness: -28 },
     { asset: '音效/ambient.nether_wastes.mood.1', name: '下界氛围-击败', 在: { after: 'volleyDone', addSec: 1 }, loudness: -28 },

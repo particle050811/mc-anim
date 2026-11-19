@@ -10,13 +10,14 @@ import sound3 from "asset:音效/block.stone.step.3";
 import sound4 from "asset:音效/block.stone.step.4";
 import sound5 from "asset:音效/block.stone.step.5";
 import sound6 from "asset:音效/block.stone.step.6";
-import sound7 from "asset:音效/item.trident.riptide_1";
-import sound8 from "asset:音效/诡厄巫法/goety.apostle_pre_teleport";
-import sound9 from "asset:音效/诡厄巫法/goety.apostle_prepare_spell.1";
-import sound10 from "asset:音效/诡厄巫法/goety.apostle_teleport.1";
-import sound11 from "asset:音效/诡厄巫法/goety.wind.1";
-import sound12 from "asset:音效/诡厄巫法/goety.wind.2";
-import sound13 from "asset:音效/诡厄巫法/goety.wind.3";
+import sound7 from "asset:音效/entity.lightning_bolt.thunder.1";
+import sound8 from "asset:音效/item.trident.riptide_1";
+import sound9 from "asset:音效/诡厄巫法/goety.apostle_pre_teleport";
+import sound10 from "asset:音效/诡厄巫法/goety.apostle_prepare_spell.1";
+import sound11 from "asset:音效/诡厄巫法/goety.apostle_teleport.1";
+import sound12 from "asset:音效/诡厄巫法/goety.wind.1";
+import sound13 from "asset:音效/诡厄巫法/goety.wind.2";
+import sound14 from "asset:音效/诡厄巫法/goety.wind.3";
 
 const soundUrl: SoundUrl = {
   urls: {
@@ -28,13 +29,14 @@ const soundUrl: SoundUrl = {
     "音效/block.stone.step.4": sound4,
     "音效/block.stone.step.5": sound5,
     "音效/block.stone.step.6": sound6,
-    "音效/item.trident.riptide_1": sound7,
-    "音效/诡厄巫法/goety.apostle_pre_teleport": sound8,
-    "音效/诡厄巫法/goety.apostle_prepare_spell.1": sound9,
-    "音效/诡厄巫法/goety.apostle_teleport.1": sound10,
-    "音效/诡厄巫法/goety.wind.1": sound11,
-    "音效/诡厄巫法/goety.wind.2": sound12,
-    "音效/诡厄巫法/goety.wind.3": sound13,
+    "音效/entity.lightning_bolt.thunder.1": sound7,
+    "音效/item.trident.riptide_1": sound8,
+    "音效/诡厄巫法/goety.apostle_pre_teleport": sound9,
+    "音效/诡厄巫法/goety.apostle_prepare_spell.1": sound10,
+    "音效/诡厄巫法/goety.apostle_teleport.1": sound11,
+    "音效/诡厄巫法/goety.wind.1": sound12,
+    "音效/诡厄巫法/goety.wind.2": sound13,
+    "音效/诡厄巫法/goety.wind.3": sound14,
   },
   表: soundTable,
 };
