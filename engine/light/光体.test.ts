@@ -1,10 +1,10 @@
-// 光体的纯函数：方块格码、区段拼窗口、各层窗口的套法、发光格聚团、团分砖、各级的权重、方块网格反推格码。方块格码按数据根里的真方块表。
+// 光体的纯函数：方块格码、区段拼窗口、另摆的方块、各层窗口的套法、发光格聚团、团分砖、各级的权重、方块网格反推格码。方块格码按数据根里的真方块表。
 import { describe, expect, it } from 'vitest';
 import { sectionCells } from '../voxel/区段.ts';
 import type { VoxelGrid } from '../voxel/生成.ts';
 import type { BlockMeshInfo } from '../voxel/方块网格信息.ts';
 import { voxelFromState } from '../voxel/真实方块表.ts';
-import { BRICK, buildLightSet, cascades, cellCode, CODE_AIR, CODE_OPAQUE, EMIT_OPAQUE, emitColors, fillWindow, KMAX, levelWeight, LIGHT_FLOATS, lightWindows, occupancy, sectionCodes, windowSections, type LightWindow } from './光体.ts';
+import { BRICK, buildLightSet, cascades, cellCode, CODE_AIR, CODE_OPAQUE, EMIT_OPAQUE, emitColors, extraCells, fillWindow, KMAX, stampExtra, levelWeight, LIGHT_FLOATS, lightWindows, occupancy, sectionCodes, windowSections, type LightWindow } from './光体.ts';
 import { meshLightCodes } from './光体网格.ts';
 
 const fire = cellCode[voxelFromState('minecraft:fire')]!;
@@ -141,5 +141,33 @@ describe('光体', () => {
     expect(cell(0, -1, 1)).toBe(CODE_AIR);
     expect(cell(3, -1, 0)).toBe(2);
     expect(colors[0]![0]).toBe(1);
+  });
+});
+
+describe('另摆的方块', () => {
+  const blocks = extraCells([
+    { pos: [1, 1, 0], state: 'minecraft:soul_fire' },
+    { pos: [1, 1, -1 + 1e-9], state: 'minecraft:obsidian' },
+    { pos: [2, 2, 2], state: 'minecraft:air' },
+  ]);
+  it('照方块表换格码，空气不进表', () => {
+    expect(blocks).toEqual([
+      { x: 1, y: 1, z: 0, code: cellCode[voxelFromState('minecraft:soul_fire')] },
+      { x: 1, y: 1, z: -1, code: CODE_OPAQUE },
+    ]);
+  });
+  it('1 米一层照格盖，不改传进来的那份', () => {
+    const w = { L: 0, x0: 0, y0: 0, z0: -1, W: 4, H: 4, D: 3 };
+    const codes = new Uint8Array(4 * 4 * 3);
+    const out = stampExtra(w, codes, blocks);
+    expect(out[(1 * 4 + 1) * 4 + 1]).toBe(blocks[0]!.code);
+    expect(out[(0 * 4 + 1) * 4 + 1]).toBe(CODE_OPAQUE);
+    expect(codes.every((c) => c === CODE_AIR)).toBe(true);
+  });
+  it('粗层只盖发光的：一块挡光的不盖满一大格', () => {
+    const w = { L: 1, x0: 0, y0: 0, z0: -2, W: 2, H: 2, D: 2 };
+    const out = stampExtra(w, new Uint8Array(8), blocks);
+    expect([...out].filter((c) => c !== CODE_AIR)).toEqual([blocks[0]!.code]);
+    expect(out[(1 * 2 + 0) * 2 + 0]).toBe(blocks[0]!.code);
   });
 });

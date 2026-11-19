@@ -5,7 +5,7 @@
 // 这里出：每层的占用格（挡光 255），每层探针要用的团表（团的位置、各向同性发光、朝向发光、影响半径）和按砖（8 × 8 × 8 格）分好的团号。
 // 团的分级：探针离团 d 米时用大小约 d / 1.4 米的团，相邻两级按 log₂ 距离线性过渡（每一处的光在各级里的权重加起来是 1，换级处没有台阶）；
 // 最细一级（这一层自己的格子）管更近的，最粗一级（64 米）管更远的。
-import { blockNames, blockProps, voxelCount } from '../voxel/真实方块表.ts';
+import { blockNames, blockProps, voxelCount, voxelFromState } from '../voxel/真实方块表.ts';
 import { sectionCells } from '../voxel/区段.ts';
 import type { VoxelGrid } from '../voxel/生成.ts';
 
@@ -121,6 +121,35 @@ export const fillWindow = (w: LightWindow, codesOf: (i: number, j: number) => Ui
         const src = (z * n + (y - sy0)) * n;
         out.set(codes.subarray(src + xa - sx0, src + xb - sx0), (z * H + (y - oy)) * W + (xa - ox));
       }
+  }
+  return out;
+};
+
+/** 地形外另摆的方块（模型画的，如仪式结构、四角的灵魂火）：pos 方块最小角（场景坐标），state 方块状态。照方块表进光体：发光的发光、挡光的挡光，别的不管 */
+export type ExtraBlock = { pos: readonly [number, number, number]; state: string };
+/** 换成格码的另摆方块（1 米一格的格号） */
+export type ExtraCell = { x: number; y: number; z: number; code: number };
+export const extraCells = (blocks: readonly ExtraBlock[]): ExtraCell[] =>
+  blocks.flatMap((b) => {
+    const code = cellCode[voxelFromState(b.state)] ?? CODE_AIR;
+    return code === CODE_AIR ? [] : [{ x: Math.floor(b.pos[0] + 1e-6), y: Math.floor(b.pos[1] + 1e-6), z: Math.floor(b.pos[2] + 1e-6), code }];
+  });
+
+/**
+ * 另摆的方块盖进一层窗口的格码（返回新的一份）。1 米一层照格盖；粗层一格装得下好几块，只盖发光的（落进的那一格原来不是发光格才盖），
+ * 挡光的不盖：一块挡光的方块盖满 2、4 米一格会挡多了
+ */
+export const stampExtra = (w: LightWindow, codes: Uint8Array, cells: readonly ExtraCell[]): Uint8Array => {
+  const out = codes.slice();
+  const cell = cellOf(w);
+  for (const c of cells) {
+    const emits = c.code >= 2;
+    if (w.L > 0 && !emits) continue;
+    const x = Math.floor((c.x - w.x0) / cell), y = Math.floor((c.y - w.y0) / cell), z = Math.floor((c.z - w.z0) / cell);
+    if (x < 0 || y < 0 || z < 0 || x >= w.W || y >= w.H || z >= w.D) continue;
+    const i = (z * w.H + y) * w.W + x;
+    if (w.L > 0 && out[i]! >= 2) continue;
+    out[i] = c.code;
   }
   return out;
 };

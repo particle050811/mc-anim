@@ -5,14 +5,15 @@
 // 区段数据经地形的旁路读（导入地形.ts 的 sectionData，记进地形用量），工人那边按区段留着格码，主线程记着它有哪些，超了上限让它丢最久没用的。
 // 体素地形各层的工人结果先查光体缓存（光体缓存读写.ts），读到的层不再让工人算；工人新算的顺手存。
 import { useFrame, useThree } from '@react-three/fiber';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
 import type { ImportedTerrain } from '../voxel/导入地形.ts';
 import type { BlockMeshInfo } from '../voxel/方块网格信息.ts';
 import { loadBlockMeshBin } from '../voxel/方块网格.tsx';
 import { sectionKey, sectionCells } from '../voxel/区段.ts';
-import { cascades, lightWindows, windowKey, windowSections, cellOf, type LightVolumeParams, type LightWindow } from './光体.ts';
+import { hash64 } from '../core/求解缓存.ts';
+import { cascades, extraCells, lightWindows, windowKey, windowSections, cellOf, type ExtraBlock, type ExtraCell, type LightVolumeParams, type LightWindow } from './光体.ts';
 import { meshLightCodes, type MeshGlow } from './光体网格.ts';
 import { gatherProbes, occupancyTexture, probeTarget } from './光体探针.ts';
 import { lightVolumeUniforms, useLightVolumeOn, wrapLightVolume, LIGHT_LAYERS } from './光体着色.ts';
@@ -65,7 +66,7 @@ const held = new Map<string, { bytes: number; used: number }>();
 let heldBytes = 0;
 let clock = 0;
 
-const terrainLayers = async (t: ImportedTerrain, allWindows: LightWindow[], keys: string[], need: boolean[], minLight: number) => {
+const terrainLayers = async (t: ImportedTerrain, allWindows: LightWindow[], keys: string[], need: boolean[], minLight: number, extra: { cells: ExtraCell[]; key: string }) => {
   const out: (LightLayerData | null)[] = allWindows.map(() => null);
   const slots = lightCacheSlots(t, keys);
   const toBuild = [...need];
@@ -111,7 +112,7 @@ const terrainLayers = async (t: ImportedTerrain, allWindows: LightWindow[], keys
       drop.push(k);
     }
   const cacheKeys = windows.map((_, i) => (slots && toBuild[i] ? slots[i]!.key : null));
-  const reply = await ask({ type: '建', id: nextId++, ctx, minLight, windows, need: toBuild.slice(0, last + 1), sections, drop, cacheKeys });
+  const reply = await ask({ type: '建', id: nextId++, ctx, minLight, windows, need: toBuild.slice(0, last + 1), sections, drop, cacheKeys, extra: extra.cells, extraKey: extra.key });
   reply.layers.forEach((d, i) => {
     if (d) out[i] = d;
   });
@@ -234,16 +235,24 @@ const useLightVolume = (params: LightVolumeParams | undefined, want: Want | null
   return anchor;
 };
 
-/** 体素地形的光体：t 地形，center 镜头位置（场景坐标），heightRange 场景 z 的范围，params 光体参数（不给 = 不开） */
-export const LightVolume: React.FC<{ t: ImportedTerrain | null; center: readonly number[]; heightRange: readonly [number, number]; params: LightVolumeParams | undefined }> = ({ t, center, heightRange, params }) => {
+const noExtra: readonly ExtraBlock[] = [];
+/**
+ * 体素地形的光体：t 地形，center 镜头位置（场景坐标），heightRange 场景 z 的范围，params 光体参数（不给 = 不开）；
+ * extraBlocks 地形外另摆的方块（模型画的发光、挡光方块，光体.ts 的 ExtraBlock），要是模块级常量。不给时层键、缓存都和没有这一项时一样
+ */
+export const LightVolume: React.FC<{ t: ImportedTerrain | null; center: readonly number[]; heightRange: readonly [number, number]; params: LightVolumeParams | undefined; extraBlocks?: readonly ExtraBlock[] }> = ({ t, center, heightRange, params, extraBlocks = noExtra }) => {
+  const extra = useMemo(() => {
+    const cells = extraCells(extraBlocks);
+    return { cells, key: cells.length ? `另摆${hash64(JSON.stringify(cells))}` : '' };
+  }, [extraBlocks]);
   let want: Want | null = null;
   if (params && t) {
-    // 层键带上参数和比它粗的各层（团表、探针要用粗层）
+    // 层键带上参数、另摆的方块和比它粗的各层（团表、探针要用粗层）
     const windows = lightWindows(center, heightRange);
-    let chain = `${params.minLight}`;
+    let chain = extra.key ? `${params.minLight}|${extra.key}` : `${params.minLight}`;
     want = { windows, keys: windows.map((w) => (chain += `|${windowKey(w)}`)) };
   }
-  const anchor = useLightVolume(params, want, (w, need) => terrainLayers(t!, w.windows, w.keys, need, params!.minLight));
+  const anchor = useLightVolume(params, want, (w, need) => terrainLayers(t!, w.windows, w.keys, need, params!.minLight, extra));
   return <group ref={anchor} />;
 };
 

@@ -7,12 +7,13 @@ import { buildPackTables, type SectionData } from '../voxel/区段包.ts';
 import { variesByPos } from '../voxel/群系色.ts';
 import { importedSectionVoxels, type SectionContext, type SectionPackInfo, type CutBox, type FlattenArea } from '../voxel/导入区段.ts';
 import { sectionKey } from '../voxel/区段.ts';
-import { buildLightSet, emitColors, fillWindow, occupancy, sectionCodes, windowKey, type LayerCodes, type LightLayerData, type LightWindow } from './光体.ts';
+import { buildLightSet, emitColors, fillWindow, occupancy, sectionCodes, stampExtra, windowKey, type ExtraCell, type LayerCodes, type LightLayerData, type LightWindow } from './光体.ts';
 import { encodeLayer, gzipBytes } from './光体缓存.ts';
 
 export type LightWorkerMessage =
   | { type: '来源'; ctx: number; info: SectionPackInfo; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
-  | { type: '建'; id: number; ctx: number; minLight: number; windows: LightWindow[]; need: boolean[]; sections: { data: SectionData }[]; drop: string[]; cacheKeys: (string | null)[] }
+  // extra：地形外另摆的方块（光体.ts 的 stampExtra），extraKey 是它的键（空表 = 空串）
+  | { type: '建'; id: number; ctx: number; minLight: number; windows: LightWindow[]; need: boolean[]; sections: { data: SectionData }[]; drop: string[]; cacheKeys: (string | null)[]; extra: ExtraCell[]; extraKey: string }
   | { type: '网格'; id: number; layer: LayerCodes; minLight: number };
 export type { LightLayerData };
 /** cache：要存的层压好的缓存文件（下标同 windows） */
@@ -32,8 +33,11 @@ const build = (msg: Extract<LightWorkerMessage, { type: '建' }>): (LightLayerDa
     codes.set(`${msg.ctx}|${sectionKey(data)}`, sectionCodes(importedSectionVoxels(data, ctx), w.z0, w.D));
   }
   const layers = msg.windows.map((w, n) => {
-    const key = `${msg.ctx}|${windowKey(w)}`;
-    if (lastCodes[n]?.key !== key) lastCodes[n] = { key, layer: { w, codes: fillWindow(w, (i, j) => codes.get(`${msg.ctx}|${sectionKey({ L: w.L, i, j })}`) ?? null), colors: emitColors } };
+    const key = `${msg.ctx}|${msg.extraKey}|${windowKey(w)}`;
+    if (lastCodes[n]?.key !== key) {
+      const filled = fillWindow(w, (i, j) => codes.get(`${msg.ctx}|${sectionKey({ L: w.L, i, j })}`) ?? null);
+      lastCodes[n] = { key, layer: { w, codes: msg.extra.length ? stampExtra(w, filled, msg.extra) : filled, colors: emitColors } };
+    }
     return lastCodes[n]!.layer;
   });
   return msg.windows.map((w, n) => (msg.need[n] ? { occ: occupancy(layers[n]!.codes), set: buildLightSet(w, layers.slice(0, n + 1), msg.minLight) } : null));
