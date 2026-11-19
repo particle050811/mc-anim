@@ -5,7 +5,7 @@
 // 用户 11-11「战败了 怎么还穿着装备把装备下了呀」：不穿装备，原版史蒂夫皮肤（他第 5 幕死时东西撒了一地）；盔甲、披风、剑去掉，头后的晋升之环也是饰品，一起去掉（Agent 取的）。
 // 用户 11-11「跳舞这里衣服穿模了」：她的腿叉开、提膝时从袍子下摆戳出来，袍摆按腿让开（角色/袍摆让腿.ts），舞的动作不改。
 // 用户 11-11「跳舞头动作有点僵硬」：头跟着上身慢半拍走（角色/动作/忘情牛肉面.ts 末尾「头」一节），身子不改。
-// 机位、他躺的位置和姿势都是 Agent 取的，用户没看过。天空是纯色淡蓝（教堂所在空间的天没核实，同 核对/粉色教堂）。
+// 他的姿势是 Agent 取的，用户没单独评过；机位和他躺的位置用户 11-19 定（见下面机位一节）。天空是纯色淡蓝（教堂所在空间的天没核实，同 核对/粉色教堂）。
 // 底部字幕「亚波伦结算动画」用户 11-10 说多余，去掉了。没做：结算面板（分镜默认不要）。
 import { ThreeCanvas } from '@remotion/three';
 import { useThree } from '@react-three/fiber';
@@ -30,12 +30,15 @@ const aspect = { width: 1280, height: 720 } as const;
 const skyColor = '#b4cfff';
 const addVec = (a: readonly number[], b: readonly number[]): V3 => [a[0]! + b[0]!, a[1]! + b[1]!, a[2]! + b[2]!];
 
-// 人站跳舞位面朝南，机位在南边过道里；横幅要把她脚底到举起的手、右边躺着的他都收进来
-const naveRig: Cam = { pos: addVec(church.dancePos, [0.5, -5.6, 2.0]), tgt: addVec(church.dancePos, [1.1, 0, 0.95]), lens: 23 };
+// 用户 11-19「镜头离得有点远，跳舞动作看不太清」，挑了推近的第 4 档，又要「正一点，没有必要斜着向下拍」「亚波伦站中间的 C 位」：
+// 她从跳舞位往南（往镜头）挪 1.5 米；机位在教堂中轴线上正对祭坛，水平离她约 2.2 米，只微微低头 8 度（用户在平视、低 8 度两档里选了低 8 度：完全平视时躺着的史蒂夫被压扁）。
+// 头顶的眼形法阵出画不管（用户 11-19「没有必要把头上的那个光环露出来」）。要拍全心形地毯就得退到长椅中间或抬高俯拍、她会比原来还小，用户 11-19 定先保证她是画面主体。
+const dancePos = addVec(church.dancePos, [0, -1.5, 0]);
+const naveRig: Cam = { pos: addVec(church.dancePos, [0, -3.72, 1.5]), tgt: addVec(church.dancePos, [0, -1.0, 1.1]), lens: 18 };
 
-/** 他躺在哪：脚底中心（场景坐标），在她右前方、离机位比她近；脚冲着机位、头朝里，镜头看过去脸是正的 */
+/** 他躺在哪：脚底中心（场景坐标），在她身后约 1 米、往右 2.2 米（用户 11-19 先说「可以挪到后面一点」，看过又要「再近一点」）；她转身时翅膀扫过他用户说没关系；脚冲着机位、头朝里，镜头看过去脸是正的 */
 const lying = {
-  feet: addVec(church.dancePos, [1.5, -1.9, 0]),
+  feet: addVec(church.dancePos, [2.2, -0.5, 0]),
   /** 头朝哪（弧度，0 = 头朝南、90 度朝东）：朝北偏东 25 度。横着躺（头朝东）脸在画面里是横的、被头盔两翼和近处的手挡住，认不出是他（协调者 11-11） */
   headDirRad: (155 * Math.PI) / 180,
   /** 绕东西轴侧多少（弧度）：现在身子顺着南北，侧了就是头抬离地面，不侧 */
@@ -99,7 +102,7 @@ export default definePicture(seg, soundUrl, () => {
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ChurchLighting />
           <PinkChurch />
-          <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} sec={rig.sec} act={settlementAct} bonePose={rig.bonePose} />
+          <GirlYaBoLun pose={{ loc: dancePos, yaw: 180 }} sec={rig.sec} act={settlementAct} bonePose={rig.bonePose} />
           <LyingSteve sec={sec} />
         </group>
       </ThreeCanvas>
