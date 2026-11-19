@@ -10,7 +10,7 @@ import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { withCastingHem } from '../../角色/空中施法袍摆.ts';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
 import { steveDrops, steveDropCount, DeathDrop, deathDropTrack } from '../../角色/史蒂夫掉落.tsx';
-import { yaBoLunName, yaBoLunTitle, BattleUi } from '../../界面/战斗界面.tsx';
+import { yaBoLunName, yaBoLunTitle, BattleUi, bossGuiScale } from '../../界面/战斗界面.tsx';
 import { RestRitualPerformance } from '../../特效/安息仪式.tsx';
 import { summonPlans } from '../../特效/安息仪式时序.ts';
 import { RevelationCageGlow } from '../../特效/炼狱结界辉线.tsx';
@@ -108,7 +108,7 @@ export default definePicture(seg, soundUrl, () => {
       cameraRig={cameraRig}
       ui={
         <>
-          {shot.name !== '5-03' && <BattleUi width={aspect.width} height={aspect.height} s={uiScale} healthBar={{ healthRatio: 1 }} />}
+          {shot.name !== '5-03' && <BattleUi width={aspect.width} height={aspect.height} s={bossGuiScale} healthBar={{ healthRatio: 1 }} />}
           {inGameUi && shot.name === '5-02' && <DeathScreen width={aspect.width} height={aspect.height} s={uiScale} buttonImg={png(widgetsPng)} deathCause={deathText} respawnButtonState={respawnButtonState} titleButtonState={titleButtonState} cursor={cursor} />}
         </>
       }

@@ -11,7 +11,7 @@ import { definePicture, useSeg } from '@engine/段/段画面.tsx';
 import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { withCastingHem } from '../../角色/空中施法袍摆.ts';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
-import { YaBoLunHealthBar } from '../../界面/战斗界面.tsx';
+import { bossGuiScale, YaBoLunHealthBar } from '../../界面/战斗界面.tsx';
 import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
 import { RestRitualPerformance } from '../../特效/安息仪式.tsx';
 import { summonPlans } from '../../特效/安息仪式时序.ts';
@@ -83,7 +83,7 @@ export default definePicture(seg, soundUrl, () => {
   const disc = act2WheelParams(t);
   const wand = disc && perform.杖(t);
   return (
-    <TerraceCanvas ritualStructure cameraRig={cameraRig} ui={<YaBoLunHealthBar width={aspect.width} s={2} healthRatio={1} />}>
+    <TerraceCanvas ritualStructure cameraRig={cameraRig} ui={<YaBoLunHealthBar width={aspect.width} s={bossGuiScale} healthRatio={1} />}>
       {/* 仪式做完后留在台地上的结构：方案的 总秒 之后就是静态的结构和火 */}
       <group position={altar}>
         <RestRitualPerformance sec={timeline.events.summonDone.sec - timeline.events.placeRing.sec + w} plan={summonPlans.短} />

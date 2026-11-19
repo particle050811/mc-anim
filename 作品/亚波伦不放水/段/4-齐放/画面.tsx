@@ -21,7 +21,7 @@ import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { withCastingHem } from '../../角色/空中施法袍摆.ts';
 import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
 import { ascensionHaloIcon } from '../../角色/史蒂夫掉落.tsx';
-import { BattleUi } from '../../界面/战斗界面.tsx';
+import { BattleUi, bossGuiScale } from '../../界面/战斗界面.tsx';
 import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
 import { Valettein, valetteinDisplay } from '../../物品/断曜流光.tsx';
 import { defaultAppearance } from '../../物品/装备外观.ts';
@@ -47,7 +47,6 @@ const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]!
 const mixVec = (a: readonly number[], b: readonly number[], u: number): V3 => [lerp(a[0]!, b[0]!, u), lerp(a[1]!, b[1]!, u), lerp(a[2]!, b[2]!, u)];
 const atHeight = (z: number): V3 => [0, 0, z];
 const S = steveFoot;
-const uiScale = 2;
 /** 她在幕内第 s 秒的脚底、胸口 */
 const yaBoLunAt = (s: number) => yaBoLunPos(secAt(s));
 const chestAt = (s: number) => addVec(yaBoLunAt(s), atHeight(1.1));
@@ -144,10 +143,10 @@ export default definePicture(seg, soundUrl, () => {
           {isFirstPerson && (
             <AbsoluteFill>
               <SceneFirstPersonHand actSec={sec} />
-              <ItemActivate width={aspect.width} height={aspect.height} s={1} sec={t - totemSec} offset={ringOffset} items={ringLayers} />
+              <ItemActivate width={aspect.width} height={aspect.height} s={bossGuiScale} sec={t - totemSec} offset={ringOffset} items={ringLayers} />
             </AbsoluteFill>
           )}
-          <BattleUi width={aspect.width} height={aspect.height} s={uiScale} healthBar={{ healthRatio: 1 }} />
+          <BattleUi width={aspect.width} height={aspect.height} s={bossGuiScale} healthBar={{ healthRatio: 1 }} />
         </>
       }
     >
