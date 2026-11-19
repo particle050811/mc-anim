@@ -6,9 +6,8 @@
 //   灵魂火的烟（BaseFireBlock.animateTick，3 颗 LARGE_SMOKE）出烟率取决于玩家站哪，这里固定按游戏实拍机位（玩家格）算，片里镜头怎么动都不变。
 //   祭坛的眼睛（lit 的 composite 模型第二层）画在 方块拼搭 的祭坛上面，自己加了 polygonOffset 防共面；完成光柱的粗细核过源码和实拍是一样的（宽约 0.65～0.9 格），没改。
 //   粒子碰撞只算本仪式弹道上的祭坛、笼和台面；灵魂火的面片双面画（游戏里每片只有一面）。
-//   暗影精华的 4 帧图标游戏里帧间插值，这里只换帧。
 //   没做：祭坛脚边转圈的图腾粒子（goety:totem_effect，没有灵魂时每秒一次、仪式中每刻一次）、祭坛上方每秒两颗幽匿灵魂粒子、仪式没开始时祭坛格里每刻 4 颗火焰（贴图都没取）。
-// 待迁移（私有资产）：破碎之环是启示录的（保留所有权益），只能私有；公开版怎么办（缺了报错还是换占位）等用户定
+// 待迁移（私有资产）：末日勋章是启示录的（保留所有权益），只能私有；公开版怎么办（缺了报错还是换占位）等用户定
 import { useThree } from '@react-three/fiber';
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
@@ -21,28 +20,18 @@ import { png, type Png } from '@engine/model/贴图.ts';
 import { GlintItem } from '@库/物品/附魔物品.tsx';
 import { type Particle, ParticleQuads, particleTexture } from '@库/特效/粒子面片.tsx';
 import { type ParticleSpawn, vanillaParticleAtlas, VanillaParticles } from '@库/特效/原版粒子.tsx';
-import grimoireModelData from 'asset:模型/仪式/炼狱魔典';
-import grimoirePng from 'asset:贴图/仪式/炼狱魔典';
 import altarModelData from 'asset:模型/方块/黑暗祭坛';
 import altarEyePng from 'asset:贴图/方块/黑暗祭坛.激活';
 import summonCirclePng from 'asset:贴图/仪式/goety/entity/cultist/summon_apostle';
 import apostleRingPng from 'asset:贴图/仪式/goety/entity/cultist/summon_apostle_ring';
 import gatheringTrailPng from 'asset:贴图/仪式/goety/particle/gathering_trail';
 import croneHatPng from 'asset:贴图/仪式/goety/item/crone_hat';
-import forbiddenScrollPng from 'asset:贴图/仪式/goety/item/forbidden_scroll';
 import soulTransferPng from 'asset:贴图/仪式/goety/item/soul_transfer';
-import heartOfNightPng from 'asset:贴图/仪式/goety/item/heart_of_the_night';
 import maleficHelmPng from 'asset:贴图/仪式/goety/item/malefic_helm';
-import shadowEssencePng from 'asset:贴图/仪式/goety/item/shadow_essence';
-import soulRubyPng from 'asset:贴图/仪式/goety/item/soul_ruby';
-import unholyBloodPng from 'asset:贴图/仪式/goety/item/unholy_blood';
 import warlockSashPng from 'asset:贴图/仪式/goety/item/warlock_sash';
 import soulFire0Png from 'asset:贴图/仪式/minecraft/block/soul_fire_0';
 import soulFire1Png from 'asset:贴图/仪式/minecraft/block/soul_fire_1';
-import dragonBreathPng from 'asset:贴图/仪式/minecraft/item/dragon_breath';
-import netherStarPng from 'asset:贴图/仪式/minecraft/item/nether_star';
-import goldenApplePng from 'asset:贴图/法术/minecraft/item/golden_apple';
-import brokenRingPng from 'asset:贴图/物品/破碎之环';
+import doomMedalPng from 'asset:贴图/物品/末日勋章';
 import { largeSmoke, offeringDebris, ritualParticlePos } from './安息仪式粒子.ts';
 import {
   summonStateAt,
@@ -62,25 +51,10 @@ import {
 
 
 // ---------- 物品 ----------
-/** 竖条动画图标取一帧（暗影精华 16×64，mcmeta 每帧 2 刻） */
-const cropFrame = (image: Png, frame: number): Png => ({ w: image.w, h: image.w, px: image.px.subarray(frame * image.w * image.w * 4, (frame + 1) * image.w * image.w * 4) });
-const shadowEssenceFrames = (() => {
-  let frames: Png[] | undefined;
-  return () => (frames ??= [0, 1, 2, 3].map((i) => cropFrame(png(shadowEssencePng), i)));
-})();
-
-const flatIcons: Record<Exclude<OfferingName, '炼狱魔典' | '暗影精华'>, { image: string; enchantGlow?: boolean }> = {
-  暗夜之心: { image: heartOfNightPng },
-  龙息: { image: dragonBreathPng },
-  禁忌卷轴: { image: forbiddenScrollPng },
-  // 附魔金苹果、下界之星游戏里带附魔光效（EnchantedGoldenAppleItem、SimpleFoiledItem 的 isFoil）
-  附魔金苹果: { image: goldenApplePng, enchantGlow: true },
-  下界之星: { image: netherStarPng, enchantGlow: true },
-  不洁之血: { image: unholyBloodPng },
-  灵魂红宝石: { image: soulRubyPng },
-  邪恶头盔: { image: maleficHelmPng },
-  老巫婆帽: { image: croneHatPng },
-  术士腰带: { image: warlockSashPng },
+const flatIcons: Record<OfferingName, string> = {
+  邪恶头盔: maleficHelmPng,
+  老巫婆帽: croneHatPng,
+  术士腰带: warlockSashPng,
 };
 const layerCache = new Map<string, ItemLayer[]>();
 const itemLayers = (imagePath: string): ItemLayer[] => {
@@ -88,10 +62,9 @@ const itemLayers = (imagePath: string): ItemLayer[] => {
   if (!l) layerCache.set(imagePath, (l = [{ tex: png(imagePath) }]));
   return l;
 };
-const shadowLayerCache: ItemLayer[][] = [];
 
-/** 碎屑用的贴图：图标（暗影精华取第一帧，魔典取模型贴图） */
-const offeringImage = (name: OfferingName): Png => (name === '炼狱魔典' ? png(grimoirePng) : name === '暗影精华' ? shadowEssenceFrames()[0]! : png(flatIcons[name].image));
+/** 碎屑用的贴图：图标 */
+const offeringImage = (name: OfferingName): Png => png(flatIcons[name]);
 
 /** 平面物品摆成掉落物的样子（item/generated 的 ground：缩到 0.5；往上 2/16 已经算在位置里），物品空间 Y 朝上 → 场景 Z 朝上 */
 const GroundItem: React.FC<{ spinDeg: number; scale?: number; children: React.ReactNode }> = ({ spinDeg, scale: scale = 1, children }) => (
@@ -100,41 +73,17 @@ const GroundItem: React.FC<{ spinDeg: number; scale?: number; children: React.Re
   </group>
 );
 
-/**
- * 一件祭品，中心在原点、照基座上的大小（游戏里的掉落物显示，半格大）。秒：转动和附魔光效、暗影精华换帧的钟。
- * 炼狱魔典是立体的合着的书（默认 active = 0 走 infernal_tome_close），别的是平面图标。
- */
-export const Offering: React.FC<{ name: OfferingName; sec: number; scale?: number }> = ({ name: name, sec: sec, scale: scale = 1 }) => {
-  const spinDeg = itemSpinPerTick * sec * 20;
-  if (name === '炼狱魔典') {
-    // BlockModel 已经是 Z 朝上；模型的 ground 变换和 item/generated 一样（往上 2、缩 0.5）
-    return (
-      <group rotation={[0, 0, rad(spinDeg)]} scale={0.5 * scale}>
-        <BlockModel data={grimoireModelData as unknown as BlockModelData} atlas={png(grimoirePng)} part="书" />
-      </group>
-    );
-  }
-  if (name === '暗影精华') {
-    const frame = ((Math.floor((sec * 20) / 2) % 4) + 4) % 4; // 秒可以是负的（仪式开始前）
-    const l = (shadowLayerCache[frame] ??= [{ tex: shadowEssenceFrames()[frame]! }]);
-    return (
-      <GroundItem spinDeg={spinDeg} scale={scale}>
-        <ItemSprite layers={l} />
-      </GroundItem>
-    );
-  }
-  const itemDef = flatIcons[name];
-  return (
-    <GroundItem spinDeg={spinDeg} scale={scale}>
-      {itemDef.enchantGlow ? <GlintItem layers={itemLayers(itemDef.image)} sec={sec} /> : <ItemSprite layers={itemLayers(itemDef.image)} />}
-    </GroundItem>
-  );
-};
+/** 一件祭品，中心在原点、照基座上的大小（游戏里的掉落物显示，半格大，平面图标）。秒：转动的钟 */
+export const Offering: React.FC<{ name: OfferingName; sec: number; scale?: number }> = ({ name: name, sec: sec, scale: scale = 1 }) => (
+  <GroundItem spinDeg={itemSpinPerTick * sec * 20} scale={scale}>
+    <ItemSprite layers={itemLayers(flatIcons[name])} />
+  </GroundItem>
+);
 
-/** 祭坛上的破碎之环、笼里的连接宝石：同样的掉落物显示 */
-export const BrokenRing: React.FC<{ sec: number }> = ({ sec: sec }) => (
+/** 祭坛上的末日勋章（item/generated，没有附魔光效）、笼里的连接宝石：同样的掉落物显示 */
+export const DoomMedal: React.FC<{ sec: number }> = ({ sec: sec }) => (
   <GroundItem spinDeg={itemSpinPerTick * sec * 20}>
-    <ItemSprite layers={itemLayers(brokenRingPng)} />
+    <ItemSprite layers={itemLayers(doomMedalPng)} />
   </GroundItem>
 );
 const BoundTransferGem: React.FC<{ sec: number }> = ({ sec }) => (
@@ -240,7 +189,7 @@ const AltarEye: React.FC = () => <BlockModel data={altarModelData as unknown as 
 // ---------- 结构 ----------
 /**
  * 仪式结构：黑曜石底 7×7、哭泣黑曜石 3×3 台、中心诅咒笼（里面转着已绑定的连接宝石）上摞点亮的黑暗祭坛、四个斜角灵魂土上的灵魂火、外圈 12 个基座。
- * 不含祭品和破碎之环。黑曜石底 = false 时不画底下那层（场地自己有地面时用，基座和灵魂土照旧立在 z = 0）。
+ * 不含祭品和末日勋章。黑曜石底 = false 时不画底下那层（场地自己有地面时用，基座和灵魂土照旧立在 z = 0）。
  */
 export const RestRitualStructure: React.FC<{ sec: number; obsidianBase?: boolean; withSoulFire?: boolean }> = ({ sec: sec, obsidianBase = true, withSoulFire = true }) => {
   const blocks = useMemo(() => structureBlocks({ obsidianBase }), [obsidianBase]);
@@ -281,12 +230,10 @@ const OfferingDebris: React.FC<{ sec: number; start: number; end: number; seed: 
     <>
       {offerings.map((offering, sacrificeIndex) => {
         const image = offeringImage(offering.name);
-        // 魔典的贴图是 256×32 的模型图集，只取左上 32×32 那块里的碎片
-        const uScale = offering.name === '炼狱魔典' ? image.h / image.w : 1;
         const particles: Particle[] = [];
         for (const { spawnTick, path, half, uv } of debrisTable[sacrificeIndex]!) {
           const pos = ritualParticlePos(path, currentTick - spawnTick);
-          if (pos) particles.push({ p: pos, half, uv: [uv[0] * uScale, uv[1], uv[2] * uScale, uv[3]], color: [1, 1, 1] });
+          if (pos) particles.push({ p: pos, half, uv, color: [1, 1, 1] });
         }
         return <ParticleQuads key={sacrificeIndex} tex={particleTexture(image.px, image.w, image.h, image)} items={particles} />;
       })}
@@ -495,7 +442,7 @@ const BigSmokes: React.FC<{ 表: SmokePuff[]; currentTick: number }> = ({ 表: s
 
 // ---------- 整段演出 ----------
 export type RestRitualPerformanceProps = {
-  /** 从放下破碎之环算起的秒（负的 = 还没开始：结构和祭品都在，祭坛上没有环） */
+  /** 从放下末日勋章算起的秒（负的 = 还没开始：结构和祭品都在，祭坛上没有勋章） */
   sec: number;
   plan: SummonPlan;
   seed?: number;
@@ -550,14 +497,14 @@ export const RestRitualPerformance: React.FC<RestRitualPerformanceProps> = ({ se
           const p = offeringPos(i);
           const pos: V3 = [lerp(p[0], activatorPos[0], unsacrificed), lerp(p[1], activatorPos[1], unsacrificed), lerp(p[2], activatorPos[2], unsacrificed) + Math.sin(unsacrificed * Math.PI) * 0.8];
           return (
-            <group key={offering.name} position={pos}>
+            <group key={i} position={pos}>
               <Offering name={offering.name} sec={sec} scale={s.offeringAlpha} />
             </group>
           );
         })}
       {s.hasActivator && (
         <group position={activatorPos}>
-          <BrokenRing sec={sec} />
+          <DoomMedal sec={sec} />
         </group>
       )}
       {sec >= 0 && <OfferingDebris sec={sec} start={0} end={Math.min(plan.offeringVanishSec, plan.completed)} seed={seed} />}

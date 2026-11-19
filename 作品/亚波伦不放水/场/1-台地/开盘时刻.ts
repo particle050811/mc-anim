@@ -46,7 +46,7 @@ export const standHeight = (x: number, y: number) => localGroundHeight(x, y) + s
 // ── 第 1 幕（编排的钟：现身后几秒，现身前是负的） ──
 export const act1 = {
   /** 右键把环放上祭坛那一下挥手（放环 事件前 0.08 秒点下去） */
-  ringReleaseSec: -6.08,
+  medalReleaseSec: -6.08,
   /** 仪式完成的光柱起来，他往后一缩、拔剑（右手从空换成剑） */
   drawSwordSec: -3.3,
   /** 她甩杖 */

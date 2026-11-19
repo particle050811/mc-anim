@@ -41,7 +41,7 @@ export default function CastTurnReview() {
         <div style={{ height: 3, marginTop: 5, background: '#57484a' }}><div style={{ height: '100%', width: `${100 * Math.abs(measuredDeg) / 30}%`, background: '#f5bb71' }} /></div>
       </div>
     </>}>
-      <group position={altar}><RestRitualPerformance sec={timeline.events.summonDone.sec - timeline.events.placeRing.sec + worldSec} plan={summonPlans.短} /></group>
+      <group position={altar}><RestRitualPerformance sec={timeline.events.summonDone.sec - timeline.events.placeMedal.sec + worldSec} plan={summonPlans.短} /></group>
       <GirlYaBoLun {...actor} bonePose={withCastingHem(actor)} holdWand />
       {wheel && <>
         {beforePeakSec > 0 && <pointLight position={staff.tip} color="#ffdfc2" intensity={6 * smoothstep01(wheel.刻 / 5) * smoothstep01((beats.endSec - worldSec) / 0.18)} distance={3.5} decay={2} />}
