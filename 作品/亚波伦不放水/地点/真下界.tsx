@@ -25,6 +25,12 @@ import { trialFarM, useFarFog } from '@engine/light/高度雾.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { voxelMaterial } from '@engine/voxel/材质.ts';
+import { useBlockTextureAnimation, type AnimatedBlockTexture } from '@engine/voxel/贴图动画.ts';
+import { useCurrentSec } from '@engine/段/时间.tsx';
+import fire0Png from 'asset:贴图/方块动画/minecraft/block/fire_0';
+import fire1Png from 'asset:贴图/方块动画/minecraft/block/fire_1';
+import soulFire0Png from 'asset:贴图/仪式/minecraft/block/soul_fire_0';
+import soulFire1Png from 'asset:贴图/仪式/minecraft/block/soul_fire_1';
 import { LightVolume } from '@engine/light/光体组件.tsx';
 import type { LightVolumeParams } from '@engine/light/光体.ts';
 import { trialLightVolume } from '@engine/light/光体试看.ts';
@@ -81,12 +87,23 @@ const getLavaMaterial = (waterMaterial: THREE.Material) => {
 
 /** 挖：场地上自己摆了方块的地方，把导入地形的那几格挖掉，不然两层共面互相闪（要模块顶层的同一个数组）；键后缀 让挖法不同的不共用网格缓存 */
 export type NetherCut = { box: LandmarkCutout[]; keySuffix: string };
+// 地形里的火、灵魂火逐刻换帧（用户 11-19「近处的火居然不会烧动，应该像灵魂火那样会烧动」）。帧序照 1.20.1 jar 里的 .png.mcmeta：
+// fire_0、soul_fire_0 从第 16 帧起，fire_1、soul_fire_1 顺序，都是每刻一帧。熔岩（lava_still 也会动）没开，用户没提。
+const fireFrames = [...Array.from({ length: 16 }, (_, i) => 16 + i), ...Array.from({ length: 16 }, (_, i) => i)];
+const netherAnimatedTextures: readonly AnimatedBlockTexture[] = [
+  { name: 'minecraft:block/fire_0', strip: fire0Png, frames: fireFrames },
+  { name: 'minecraft:block/fire_1', strip: fire1Png },
+  { name: 'minecraft:block/soul_fire_0', strip: soulFire0Png, frames: fireFrames },
+  { name: 'minecraft:block/soul_fire_1', strip: soulFire1Png },
+];
+
 export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLight; carve?: NetherCut }> = ({ cameraPos, 光: netherLight, carve }) => {
   const t = useImportedTerrain(realNetherPack, carve?.box ?? noCuts);
   const scene = useThree((s) => s.scene);
   const groupRef = useRef<THREE.Group>(null);
   useSelfLight(0);
   useBlockGlow(netherLight.lavaBright);
+  useBlockTextureAnimation(netherAnimatedTextures, useCurrentSec());
   const farM = netherFarM(netherLight);
   useFarFog({ far: farM });
   // 雾、底色挂在场景上（<fog attach> 在场景组里挂不到 scene）
