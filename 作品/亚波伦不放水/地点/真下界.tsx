@@ -32,7 +32,7 @@ import fire1Png from 'asset:贴图/方块动画/minecraft/block/fire_1';
 import soulFire0Png from 'asset:贴图/仪式/minecraft/block/soul_fire_0';
 import soulFire1Png from 'asset:贴图/仪式/minecraft/block/soul_fire_1';
 import { LightVolume } from '@engine/light/光体组件.tsx';
-import type { LightVolumeParams } from '@engine/light/光体.ts';
+import type { ExtraBlock, LightVolumeParams } from '@engine/light/光体.ts';
 import { trialLightVolume } from '@engine/light/光体试看.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
@@ -97,7 +97,8 @@ const netherAnimatedTextures: readonly AnimatedBlockTexture[] = [
   { name: 'minecraft:block/soul_fire_1', strip: soulFire1Png },
 ];
 
-export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLight; carve?: NetherCut }> = ({ cameraPos, 光: netherLight, carve }) => {
+/** lightBlocks：地形外另摆、要进光体的方块（模型画的发光、挡光方块），模块级常量 */
+export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLight; carve?: NetherCut; lightBlocks?: readonly ExtraBlock[] }> = ({ cameraPos, 光: netherLight, carve, lightBlocks }) => {
   const t = useImportedTerrain(realNetherPack, carve?.box ?? noCuts);
   const scene = useThree((s) => s.scene);
   const groupRef = useRef<THREE.Group>(null);
@@ -142,7 +143,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      <LightVolume t={t} center={cameraPos} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} params={trialLightVolume(netherLight.lightVolume) ?? netherLight.lightVolume} />
+      <LightVolume t={t} center={cameraPos} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} params={trialLightVolume(netherLight.lightVolume) ?? netherLight.lightVolume} extraBlocks={lightBlocks} />
       {t && <VoxelWorld worldKey={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );
