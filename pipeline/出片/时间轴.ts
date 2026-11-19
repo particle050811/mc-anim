@@ -33,13 +33,17 @@ export type TimelineAudio = {
   /** 末尾增益，算上淡出（cueGain 在 cue 末尾取值）；淡到 0 给 null，播放器退回 gainDb 按 fadeOutSec 画斜线 */
   endGainDb: number | null;
   fadeOutSec: number | null;
-  /** 跨段的同一个声音：场声音是 场声音:<名>；段里自己写、下一段从段头接着放的（声音接缝认得出的）是 接续:<头一截的 id>；不跨段的 null */
+  /** 同一个声音的几截：场声音是 场声音:<名>；段里自己写、下一段从段头接着放的（声音接缝认得出的）是 接续:<头一截的 id>；
+   *  同一文件接着放的（joinContinuations，跨名字、跨段）沿用前一截的；单独一截的 null */
   group: string | null;
   fileDurSec: number | null;
   /** 放到段尾、文件没放完、下一段也没接（声音接缝检查判的那种；写了 cutReason 的照样是 true，原因在 cutReason） */
   cutAtSegEnd: boolean;
   cutReason: string | null;
 };
+/** 一件资产的波形（波形.ts 算）：peaks 是 base64 的字节串，第 i 个字节是文件 [startSec + i/perSec, startSec + (i+1)/perSec) 秒的峰值，
+ *  0–255 线性对应 [floorDb, 0] dBFS */
+export type TimelineWaveform = { perSec: number; startSec: number; floorDb: number; peaks: string };
 export type TimelineBody = { segments: TimelineSegment[]; shots: TimelineShot[]; markers: TimelineMarker[]; audio: TimelineAudio[] };
 export type FilmTimeline = {
   format: typeof timelineFormat;
@@ -52,6 +56,8 @@ export type FilmTimeline = {
   durationSec: number;
   code: { commit: string; dirty: boolean } | null;
   stale: boolean;
+  /** 音频块上画的波形，键是 audio 的 asset（波形.ts）；v1 后加的可选字段，老文件没有 */
+  waveforms?: Record<string, TimelineWaveform>;
 } & TimelineBody;
 
 const r6 = (x: number) => Math.round(x * 1e6) / 1e6;
@@ -91,6 +97,40 @@ const linePlays = (def: SegmentDef, table: SoundTable | null) => {
   let k = 0;
   for (const c of lineCues) if (items[k]?.name === c.lines) out.set(c, items[k++]!);
   return out;
+};
+
+/** 认「接着放」的余量：成片起点差（秒保留 6 位、段长整帧，差不到 1 毫秒）、文件位置差（入点 + 长 × 速率的取整误差） */
+export const joinGapSec = 1e-3;
+export const joinFileTolSec = 2e-3;
+
+/** 一截放完停在文件第几秒：入点 + 长 × 速率；循环的、知道文件长的绕回去 */
+const fileEnd = (a: TimelineAudio) => {
+  const end = a.inSec + a.durSec * a.rate;
+  return a.loop && a.fileDurSec ? end % a.fileDurSec : end;
+};
+
+/**
+ * 同一个文件接着放的几截归成一组（用户 11-19：「战斗曲」和「战斗曲-齐放」是同一文件接着放，播放器却分成两行）：
+ * 同 asset、同速率、后一截起点 ≈ 前一截终点、文件位置接得上，就沿用前一截的 group（前一截没有就起一个 接续:<前一截 id>），
+ * 跨名字、跨段都算；后一截原来的 group 整组改过来（场声音:战斗曲-齐放 的下一段那截也跟着进来）。原地改 audio
+ */
+export const joinContinuations = (audio: TimelineAudio[]) => {
+  const order = audio.map((a, i) => ({ a, i })).sort((x, y) => x.a.startSec - y.a.startSec || x.i - y.i).map((x) => x.a);
+  const earlier = new Map<string, TimelineAudio[]>();
+  for (const b of order) {
+    const key = `${b.kind}\0${b.asset}`;
+    const same = earlier.get(key) ?? [];
+    earlier.set(key, same);
+    const at = same.findIndex((a) => a.rate === b.rate && Math.abs(a.startSec + a.durSec - b.startSec) <= joinGapSec && Math.abs(fileEnd(a) - b.inSec) <= joinFileTolSec);
+    const prev = at >= 0 ? same.splice(at, 1)[0] : undefined;
+    same.push(b);
+    if (!prev) continue;
+    const group = (prev.group ??= `接续:${prev.id}`);
+    const old = b.group;
+    if (old === group) continue;
+    if (old) for (const x of audio) if (x.group === old) x.group = group;
+    b.group = group;
+  }
 };
 
 /**
@@ -159,6 +199,8 @@ export const computeTimeline = (src: WorkSource, keys: readonly string[], fps: n
     });
   }
 
+  joinContinuations(audio);
+
   // 事件：场时间线上落在段窗口 [起, 止] 里的，换成成片秒；段缝上的同一个事件只记一次
   const markers: TimelineMarker[] = [];
   for (const [j, i] of index.entries()) {
@@ -191,7 +233,10 @@ export const computeTimeline = (src: WorkSource, keys: readonly string[], fps: n
   return { segments, shots, markers, audio };
 };
 
-export const timelineDoc = (o: { work: string; film: string; video: string; fps: number; code: FilmTimeline['code']; stale: boolean; body: TimelineBody }): FilmTimeline => {
+export const timelineDoc = (o: { work: string; film: string; video: string; fps: number; code: FilmTimeline['code']; stale: boolean; body: TimelineBody; waveforms?: FilmTimeline['waveforms'] }): FilmTimeline => {
   const frameCount = o.body.segments.reduce((a, s) => a + s.frameCount, 0);
-  return { format: timelineFormat, version: timelineVersion, work: o.work, film: o.film, video: o.video, fps: o.fps, frameCount, durationSec: r6(frameCount / o.fps), code: o.code, stale: o.stale, ...o.body };
+  return {
+    format: timelineFormat, version: timelineVersion, work: o.work, film: o.film, video: o.video, fps: o.fps, frameCount, durationSec: r6(frameCount / o.fps), code: o.code, stale: o.stale, ...o.body,
+    ...(o.waveforms ? { waveforms: o.waveforms } : {}),
+  };
 };

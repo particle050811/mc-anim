@@ -9,6 +9,7 @@ import { deliveryRoot } from '../环境/作品数据.ts';
 import { dataRoot } from '../环境/配置.ts';
 import { codeRoot, commitStatus } from '../环境/路径.ts';
 import { atomicWrite } from '../渲/母版.ts';
+import { timelineWaveforms } from './波形.ts';
 import { computeTimeline, timelineDoc, timelineFileName, type FilmTimeline } from './时间轴.ts';
 import { loadWorkSource } from './作品源.ts';
 
@@ -26,7 +27,12 @@ export const buildFilmTimeline = async (o: { work: string; workRoot: string; fil
   if (src.motionError) console.warn(`== 时间轴：${src.motionError}`);
   const code = commitStatus();
   const stale = o.manifestCode === undefined ? false : !code || !o.manifestCode || code.commit !== o.manifestCode.commit || code.dirty || o.manifestCode.dirty;
-  return timelineDoc({ work: o.work, film: o.film, video: o.video, fps: o.fps, code, stale, body: computeTimeline(src, o.keys, o.fps) });
+  const body = computeTimeline(src, o.keys, o.fps);
+  // 波形：台词的 asset 是台词 id，按声音表里它的配音资产找字节
+  const voiceOf = new Map(src.segments.flatMap((s) => Object.entries(s.soundTable?.lines ?? {}).map(([id, t]) => [id, t.voice] as const)));
+  const { waveforms, missing } = timelineWaveforms(body.audio, (a) => src.lock?.[a.kind === '台词' ? (voiceOf.get(a.asset) ?? '') : a.asset], dataRoot());
+  if (missing.length) console.warn(`== 时间轴：${missing.length} 件资产没有波形（字节不在数据根或解不开）：${missing.slice(0, 5).join('、')}${missing.length > 5 ? ' …' : ''}`);
+  return timelineDoc({ work: o.work, film: o.film, video: o.video, fps: o.fps, code, stale, body, waveforms });
 };
 
 const sampleHash = (file: string) => {
