@@ -3157,3 +3157,16 @@
 "贴图/物品/断曜流光.旧版.图标" = "src/贴图/物品/断曜流光.旧版.图标.png"
 "模型/物品/断曜流光.旧版" = "src/模型/物品/断曜流光.旧版.模型.json"
 "贴图/物品/断曜流光.旧版" = "src/模型/物品/断曜流光.旧版.模型.png"
+
+# 体素地形里会动的方块贴图（engine/voxel/贴图动画.ts）：方块表图集每张贴图只放第一帧，会动的整条竖条另取。帧序、每帧几刻照同名 .png.mcmeta，抄在用的地方。
+[["sourcing"]]
+"displayName" = "体素动画贴图"
+"requires" = ["client-1.20.1"]
+"publicVersion" = "提取"
+"source" = "原版 Minecraft 1.20.1"
+"license" = "Mojang EULA"
+"steps" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/方块动画/minecraft/block", "assets/minecraft/textures/block/fire_0.png", "assets/minecraft/textures/block/fire_1.png"],
+]
+["sourcing"."artifacts"]
+"贴图/方块动画/minecraft/block/*" = "src/贴图/方块动画/minecraft/block/*.png"

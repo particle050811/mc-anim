@@ -41,6 +41,7 @@ import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
 import { lightVolumeOn, lightVolumeKey, patchLightVolume, registerLightVolumeMaterial } from '../light/光体着色.ts';
 import { debugShaderOn, patchDebugShader } from './调试.tsx';
 import { gradeTrial } from './分级色调.ts';
+import { patchTextureAnimation, registerTextureAnimationMaterial, textureAnimationKey, textureAnimationOn } from './贴图动画.ts';
 
 const VERT_HEAD = `
 ${displacementDecl}
@@ -170,11 +171,14 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     if (materialClass === '镂空' || materialClass === '实心树叶') patchLeafShader(sh, tintedLeafExpr('vCol'));
     // 光体（发光方块照亮周围，engine/light/光体着色.ts）：世界开了才编进去；发光的面（vCol.a 是 0）不加
     if (lightVolumeOn()) patchLightVolume(sh, 'vCol.a');
+    // 会动的方块贴图（火这类，贴图动画.ts）：作品开了才编进去
+    if (textureAnimationOn()) patchTextureAnimation(sh);
     // 地形调试（试看 区域、区域遮罩、级别遮罩、材质遮罩、按级着色、世界网格，调试.tsx）：没开时不改源码
     if (debugShaderOn()) patchDebugShader(sh, materialClass);
   };
-  mat.customProgramCacheKey = () => `体素-${materialClass}${lightVolumeKey()}`;
+  mat.customProgramCacheKey = () => `体素-${materialClass}${lightVolumeKey()}${textureAnimationKey()}`;
   registerLightVolumeMaterial(mat);
+  registerTextureAnimationMaterial(mat);
   // 屏幕空间 AO（lib/体素/屏幕AO.tsx）：方块压暗（同 Voxy 只压 LOD 地形）；花草不挡也不压（游戏平滑光照里花草本来也不挡光）；水半透明，AO 之后再画
   if (materialClass === '花草') mat.userData.screenAo = '不挡';
   else if (materialClass !== '水') {

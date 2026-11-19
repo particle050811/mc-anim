@@ -24,7 +24,7 @@ const toLin = (c: number) => Math.pow(c / 255, 2.2);
 const toSrgb = (c: number) => Math.round(255 * Math.pow(Math.min(1, Math.max(0, c)), 1 / 2.2));
 
 // 一张 格×格 贴图的多级纹理：[格×格, …, 2×2, 1×1]（16 时 5 级），每级 RGBA
-const buildMips = (px: Uint8Array, solidFill: boolean, cell: number): Uint8Array[] => {
+export const buildMips = (px: Uint8Array, solidFill: boolean, cell: number): Uint8Array[] => {
   const t = new Uint8Array(px);
   const n = cell * cell;
   let hasAlpha = false;

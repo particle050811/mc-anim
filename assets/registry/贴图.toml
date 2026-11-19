@@ -2844,3 +2844,19 @@ id = "贴图/物品/蛋糕方块/cake_top"
 "license" = "LicenseRef-Minecraft-EULA"
 "visibility" = "提取"
 "note" = "client jar 的 block/cake_top.png，16×16：蛋糕方块的顶面（库/物品/蛋糕方块.tsx）"
+
+[["asset"]]
+id = "贴图/方块动画/minecraft/block/fire_0"
+"category" = "贴图"
+"source" = "提取:体素动画贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "anim extract --register 自动登记（src/贴图/方块动画/minecraft/block/fire_0.png）"
+
+[["asset"]]
+id = "贴图/方块动画/minecraft/block/fire_1"
+"category" = "贴图"
+"source" = "提取:体素动画贴图@56b71336d2b4"
+"license" = "LicenseRef-Minecraft-EULA"
+"visibility" = "提取"
+"note" = "anim extract --register 自动登记（src/贴图/方块动画/minecraft/block/fire_1.png）"
