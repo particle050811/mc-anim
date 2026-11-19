@@ -15,6 +15,7 @@ import { cagePerformanceDefaults, type CagePerformanceSetting } from '../../特�
 import type { Launch, SceneCtx } from './出手表.ts';
 import { castCharge } from './聚晶蓄光.ts';
 import { act2EndSteveSec } from './开盘拍.ts';
+import { act1TrimSec } from './开盘时刻.ts';
 import { perform as openingPerformance, yaBoLunPos as openingPos, stevePos as openingStevePos, openingTimeline, hoverHeight, altarPoint } from './编排-开盘.ts';
 import {
   yaBoLunLocalPos,
@@ -68,7 +69,7 @@ const castFacing = (time: number) => {
   const pos = yaBoLunLocalPos(sec);
   return Math.atan2(pos[0] - steveEye[0], steveEye[1] - pos[1]) * 180 / Math.PI;
 };
-const performBase = definePerformance({ timeline, 位: (τ) => yaBoLunLocalPos(τ - actStart), yaw: castFacing, target: () => steveEye, swingTimes: shakeTimes.map((s) => secAt(yaBoLunClock(s - actStart))), lean });
+const performBase = definePerformance({ timeline, 位: (τ) => yaBoLunLocalPos(τ - actStart), yaw: castFacing, target: () => steveEye, swingTimes: shakeTimes.map((s) => secAt(yaBoLunClock(s - actStart))), lean, animLead: act1TrimSec });
 /** 她的演出（编排的钟）：换到她的局部钟再取，索命那 16 帧连头发、身子一起定住 */
 export const perform = { ...performBase, 在: (t: number) => t <= actStart ? openingPerformance.在(t) : performBase.在(yaBoLunArrange(t - actStart)), 杖: (t: number) => t <= actStart ? openingPerformance.杖(t) : performBase.杖(yaBoLunArrange(t - actStart)) };
 

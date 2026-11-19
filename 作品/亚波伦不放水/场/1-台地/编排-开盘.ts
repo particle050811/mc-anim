@@ -1,4 +1,4 @@
-// 第 1、2 幕的走位和她的演出：第 1 幕他已经站在基座外，右键放环、退开拔剑、仪式里紧张地挪步，她现身就动（睁眼、抬头、转向他、甩杖）；
+// 第 1、2 幕的走位和她的演出：第 1 幕他已经站在基座外，右键放环、退开拔剑、仪式里退到一冲起点，她现身就动（睁眼、抬头、转向他、甩杖）；
 // 第 2 幕（用户 11-11 重排）：他拿断曜流光潜行挥剑冲两次（物品/断曜流光冲刺.ts，照游戏原样）——第一次她瞬移走；第二次她往上一拉，他从她脚底下冲过去，
 // 她拉升的同时转身、伸杖指他、杖尖张盘（这一段画面慢放、镜头绕她转，在 段/2-开盘/画面.tsx），停在祭坛上空 悬停高、盘张开、杖指着他。
 // 纯计算，时钟是「现身后几秒」（现身前是负的），第 4、5 幕接着用；第 2 幕里这个钟走世界秒（开盘时刻.ts 的 幕），慢放只换画面的钟。
@@ -24,6 +24,7 @@ import {
   secondDir,
   steveFirstPath,
   steveSecondLocal,
+  act1TrimSec,
   yaBoLunSecondLocal,
   yaBoLunAppearLocal,
   act,
@@ -264,12 +265,11 @@ const lean: TiltSettings = { perSpeed: 0.62, perAccel: 0.023, limit: 18, 窗: 0.
 
 /** 开盘前定好右臂；拉升、侧身和转腕共用同一握姿。第 4 幕从侧身定杖接着排。 */
 export const openingTimeline: readonly PerformanceBar[] = [
-  // 第 1 幕：低头闭眼 → 抬头 → 转向他、甩杖 → 站好
+  // 第 1 幕：低头闭眼 → 抬头 → 转向他、甩杖 → 接着起飞（用户 11-19 嫌他到位后干等，甩完杖不再站一会儿）
   { start: 0, pose: '低头' },
   { start: 0.63, dest: 1.17, pose: '站立' },
   { start: 1.17, dest: act1.staffFlick[0], pose: '回腕' },
   { start: act1.staffFlick[0], dest: act1.staffFlick[1], pose: '甩杖' },
-  { start: 1.59, dest: 2.32, pose: '站立' },
   { start: actStart - 0.32, dest: actStart, pose: '起飞' },
   { start: act(beats.takeoff), dest: act(beats.takeoff + 0.05), pose: '起飞' },
   { start: act(beats.takeoff + 0.05), dest: act(beats.takeoff + 0.16), pose: '飞行' },
@@ -294,7 +294,7 @@ const staffSweepTarget = (time: number): V3 => {
   const angle = 1.12 * sweep;
   return [body[0] + east * Math.cos(angle) - north * Math.sin(angle), body[1] + north * Math.cos(angle) + east * Math.sin(angle), lerp(eye[2], body[2] + 1.4 + Math.hypot(east, north) * 0.60, sweep)];
 };
-export const perform = definePerformance({ timeline: openingTimeline, 位: yaBoLunPos, target: staffSweepTarget, yaw: yaBoLunFacing, lean, dragSettings, breakpoints: [teleportTick], eyeClose });
+export const perform = definePerformance({ timeline: openingTimeline, 位: yaBoLunPos, target: staffSweepTarget, yaw: yaBoLunFacing, lean, dragSettings, breakpoints: [teleportTick], eyeClose, animLead: act1TrimSec });
 
 // ── 轮盘：第 2 幕拉升里从杖尖张开（用户 11-11「飞行的时候伸出法杖 圆环缓缓张开」），第 4、5 幕接着用 ──
 /** 杖尖开盘和离杖前五帧是同一只盘，场景半径用格，不随绕拍机位变。 */

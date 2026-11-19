@@ -3,8 +3,8 @@
 import { defineSceneTimeline } from '@engine/段/窗口段.ts';
 import { slowClipMarks, beats as openingBeat, toClipSec as openToClipSec, actDur as act2Dur } from './开盘拍.ts';
 
-/** 第 1 幕现身到召唤完（秒） */
-const appearToSummonSec = 2.8;
+/** 第 1 幕现身到召唤完（秒）。原来 2.8：她甩完杖还站 1.25 秒，他早到了起点干等（用户 11-19「提前到了预定位置 那是不是应该提前进攻呢？……好像在罚站」），甩完杖就起飞 */
+const appearToSummonSec = 1.95;
 /** 第 4 幕开头到第一发出手几秒：盘已张开、杖已指向他，留 5 帧离手。 */
 const act4CastSec = 5 / 60;
 /** 第 4 幕多长：到他死。打死他的是卫射第五发（开幕起蓄、戴晋升之环 25 刻一发、蓄 20 刻结算，11 个大招都打到他以后头一发）；

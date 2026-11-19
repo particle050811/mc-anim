@@ -13,6 +13,9 @@ export { beats, slowMo, toClipSec, actDur };
 const events = timeline.events;
 /** 第 2 幕开头（编排的钟 = 现身后几秒） */
 export const actStart = events.summonDone.sec - events.yaBoLunAppears.sec;
+/** 第 1 幕比原来短几秒（用户 11-19 嫌他到位后「罚站」，现身到第 2 幕从 2.8 秒剪到 时间线.ts 的现身到召唤完）：
+ *  她的动画、浮动相位往后照剪之前的走（亚波伦演出.ts 的 animLead），第 2、4 幕她的样子和用户看过的一样 */
+export const act1TrimSec = 2.8 - actStart;
 /** 第 2 幕幕内世界秒 → 编排的钟 */
 export const act = (w: number) => actStart + w;
 /** 第 2 幕末（编排的钟，世界秒）：这之后两人都停在末态，第 4 幕从这里接 */
@@ -69,28 +72,30 @@ const backtrackStart = (end: readonly number[], direction: [number, number], ele
 // 正式地形的东侧窄脊和南侧折返点。平地公式只倒推设计起点，真正运动仍查四角脚高，终点另验。
 export const secondStart = backtrackStart(trappedLocal, secondDir, secondElevationDeg, secondProfile);
 const from = backtrackStart(secondStart, firstDir, firstElevationDeg, firstProfile);
+// 用户 11-19「召唤出亚伯伦以后为什么还要往后退……应该改成在召唤时就已经退开了足够的距离 后面只往前冲」：
+// 原来她现身后他从祭坛南边绕过祭坛、往东北退到一冲起点（1-04 越肩镜里看着是越跑越远）。现在：1-01 里他看着祭坛往东南退、拔剑；
+// 切到 1-02（镜头在祭坛正东往西看，他在镜头右后方）他不在画面里，从镜头背后绕到一冲起点东北边一点，她现身时已经到了；
+// 之后（1-04 里）只顺着一冲的方向压低身子往前挪到起点，她甩完杖第 2 幕就开始、他接着冲（用户同日嫌到位后「罚站」，第 2 幕提前，见 时间线.ts）。一冲起点、第 2 幕、受困位都没动
+const creepBack = 1.6; // 到位时站在一冲起点身后几格，往前挪过去
+const creepFrom = (k: number): [number, number] => [from[0] - firstDir[0] * creepBack * k, from[1] - firstDir[1] * creepBack * k];
 export const steveFirstPath: readonly TrackPoint[] = [
   [-6.4, [-0.07, -5.38], [0.05, 3.7]],
   [-6.35, [-0.05, -5.2], [0, 3.6]],
   [-6.12, [0, -4.3], [0, 0]],
   [-5.85, [0, -4.32], [0, 0]],
-  [-5.35, [0.1, -6.6]],
-  [-4.8, [0.25, -7.6], [0.3, -0.8]],
-  [-4.0, [0.3, -8.0]],
-  [-3.55, [0.3, -8.1], [0, 0]],
-  [-3.3, [0.35, -8.9], [0, 0]],
-  [-2.9, [0.1, -8.8]],
-  [-2.4, [-1.3, -8.6], [0, 0]],
-  [-1.95, [-1.2, -8.75]],
-  [-1.45, [0.2, -8.9]],
-  [-0.9, [1.4, -8.7], [0, 0]],
-  [-0.3, [1.3, -8.8]],
-  [0.0, [1.2, -8.9]],
-  [0.25, [1.0, -9.8], [0, 0]],
-  [0.8, [3.8, -4.6]],
-  [1.6, [7.4, 1.8]],
-  [1.95, [9.4, 5.0]],
-  [2.3, [13.0, 7.2]],
+  [-5.35, [0.7, -5.9]],
+  [-4.8, [2.0, -6.7]],
+  [-4.0, [3.5, -7.1]],
+  [-3.55, [4.2, -7.4], [0, 0]],
+  [-3.3, [5.0, -7.9], [0, 0]],
+  [-2.9, [5.5, -8.0]],
+  // 1-02 起（切镜在 −2.7 秒）：从镜头背后跑过去（祭坛东边都是平地，x 9～11 有一格浅坑）
+  [-2.4, [8.0, -6.5]],
+  [-1.5, [12.0, -2.0]],
+  [-0.6, [14.0, 3.6]],
+  [0.5, creepFrom(1), [0, 0]],
+  [1.0, creepFrom(0.6)],
+  [1.45, creepFrom(0.25)],
   [actStart - 0.04, from, [0, 0]],
 ];
 if (steveFirstPath[0]![0] !== events.开始.sec - events.yaBoLunAppears.sec) throw new Error('开盘时刻：史一 要从第 1 幕开头起');

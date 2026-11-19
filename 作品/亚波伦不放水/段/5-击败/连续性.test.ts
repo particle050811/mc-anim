@@ -44,7 +44,8 @@ describe('齐放接死亡', () => {
     expect(cageTailAt(actStart).spinSec - before.spinSec).toBeCloseTo(1 / 60, 10);
     expect(cageTailAt(actStart).opacity).toBe(1);
     expect(cageTailAt(secAt(0.75)).opacity).toBeCloseTo(0.5, 10);
-    expect(cageTailAt(secAt(1.5)).opacity).toBe(0);
+    // 淡完那一刻按刻数算，秒换刻有浮点尾数
+    expect(cageTailAt(secAt(1.5)).opacity).toBeCloseTo(0, 12);
   });
 });
 

@@ -198,6 +198,8 @@ export type PerformanceSettings = {
   breakpoints?: readonly number[];
   /** 闭眼 0～1（1 = 闭着）；不给 = 照动画眨眼 */
   eyeClose?: (sec: number) => number;
+  /** 动画、浮动、袍摆抖的钟比编排的钟快几秒（不给 = 0）：编排前面剪短了，后面的动画相位照剪之前的走，看过的画面不变 */
+  animLead?: number;
 };
 
 /** 倾：前倾、侧倾（度）= 速度（格/秒）× 每速 + 加速度（格/秒²）× 每加速，各自夹在 ±上限；加速度在前后 窗 秒里取三角加权平均，免得关键点上一顿 */
@@ -312,7 +314,7 @@ const avgSpeedAccel = (posAt: (sec: number) => V3, sec: number, span: number, br
  * 刹住、拐弯反过来甩一下，再按速度叠一点抖。返回要盖上去的骨骼转角（前、后、左、右四片袍摆和 pfh1、pfh2），停着不动时全是 0。
  * 正负照这个模型：袍摆、披风 x 正 = 下摆往后，LeftSkirt z 正、RightSkirt z 负 = 往里收
  */
-export const dragAngles = (settings: DragSettings, posAt: (sec: number) => V3, yaw: number, sec: number, breakpoints: readonly number[] = []): Record<string, BonePose> => {
+export const dragAngles = (settings: DragSettings, posAt: (sec: number) => V3, yaw: number, sec: number, breakpoints: readonly number[] = [], shakeSec = sec): Record<string, BonePose> => {
   const { 速: speedVec, accel } = avgSpeedAccel(posAt, sec, settings.窗, breakpoints);
   const r = (yaw * Math.PI) / 180;
   const [forwardX, forwardY, rightX, rightY] = [-Math.sin(r), Math.cos(r), Math.cos(r), Math.sin(r)];
@@ -322,7 +324,7 @@ export const dragAngles = (settings: DragSettings, posAt: (sec: number) => V3, y
   const sideLean = clampLimit(measure(rightX, rightY, 0));
   const dragAmount = clampLimit(measure(0, 0, 1));
   const shakeAmp = Math.min(settings.shakeMax, settings.jitterPerSpeed * Math.hypot(...speedVec));
-  const jitter = (phase: number) => shakeAmp * Math.sin(2 * Math.PI * settings.shakeFreq * sec + phase);
+  const jitter = (phase: number) => shakeAmp * Math.sin(2 * Math.PI * settings.shakeFreq * shakeSec + phase);
   return {
     FrontSkirt: { rot: [backAngle + dragAmount + jitter(0), 0, 0] },
     BackSkirt: { rot: [backAngle - dragAmount + jitter(1.7), 0, 0] },
@@ -349,13 +351,15 @@ export const definePerformance = (settings: PerformanceSettings) => {
     return lerp(poses[fromIndex].fly, poses[toIndex].fly, progress);
   };
   const h = 1 / 120;
+  const lead = settings.animLead ?? 0;
   const act = defineAct({
     主: (sec) => {
       const w = flyWeight(sec);
       return w <= 0 ? [{ name: 'idle' }] : w >= 1 ? [{ name: 'fly' }] : [{ name: 'idle' }, { name: 'fly', weight: w }];
     },
     // 头发、胸的弹簧吃速度：竖直速度按米/秒（YSM wiki）；水平速度 YSM 的单位没查到，飞行时写的是 20，这里按 10 格/秒 ≈ 20 估
-    env: (sec) => {
+    env: (animSec) => {
+      const sec = animSec - lead;
       const breakPoints = settings.breakpoints ?? [];
       const [rangeStart, endSec] = noCross(breakPoints, sec - h, sec + h) ? [sec - h, sec + h] : noCross(breakPoints, sec - 2 * h, sec) ? [sec - 2 * h, sec] : [sec, sec + 2 * h];
       const [a, b] = [posAt(rangeStart), posAt(endSec)];
@@ -372,10 +376,11 @@ export const definePerformance = (settings: PerformanceSettings) => {
     const [fromPose, toPose] = [legPoses[transition.从], legPoses[transition.dest]];
     const k = transition.比;
     const floatWeight = lerp(fromPose.hover, toPose.hover, k);
-    const [basePos, floatOffset] = [posAt(sec), floatOffsetAt(sec)];
+    const animSec = sec + lead;
+    const [basePos, floatOffset] = [posAt(sec), floatOffsetAt(animSec)];
     const pose = { loc: [basePos[0] + floatOffset[0] * floatWeight, basePos[1] + floatOffset[1] * floatWeight, basePos[2] + floatOffset[2] * floatWeight] as V3, yaw: yaw(sec) };
     // 手摆的转角在两个姿势间插；一边没摆的骨骼，从动画这一刻的转角插过去
-    const animPose = animSkeletonTable(sec, act);
+    const animPose = animSkeletonTable(animSec, act);
     const blended: Record<string, BonePose> = {};
     for (const boneName of new Set([...Object.keys(fromPose.手), ...Object.keys(toPose.手)])) {
       const bottomRot = animPose[boneName]?.rot ?? [0, 0, 0];
@@ -405,7 +410,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
         offset('LeftArm', 9 * lift, -4 * drive, -0.45 * bank);
       }
     }
-    const aimPose = (aimMode: '目标' | '上') => aimStaff({ pose, sec: sec, act, bonePose: blended, aim: aimMode === '目标' ? { points: targetAt(sec) } : { dir: [0, 0, 1] } });
+    const aimPose = (aimMode: '目标' | '上') => aimStaff({ pose, sec: animSec, act, bonePose: blended, aim: aimMode === '目标' ? { points: targetAt(sec) } : { dir: [0, 0, 1] } });
     let bonePose = blended;
     const fromAim = fromPose.wristAim ? undefined : fromPose.staffFacing;
     const toAim = toPose.wristAim ? undefined : toPose.staffFacing;
@@ -418,7 +423,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
     }
     const wristWeight = lerp(Number(!!fromPose.wristAim), Number(!!toPose.wristAim), k);
     if (wristWeight > 0) {
-      const aimed = aimStaff({ pose, sec, act, bonePose, joint: 'RightHand', aim: { points: targetAt(sec) } });
+      const aimed = aimStaff({ pose, sec: animSec, act, bonePose, joint: 'RightHand', aim: { points: targetAt(sec) } });
       if (wristWeight === 1 || fromPose.staffFacing === toPose.staffFacing) bonePose = aimed;
       else {
         const wrist = bonePose.RightHand!.rot!;
@@ -428,7 +433,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
     }
     if (settings.dragSettings) {
       // 姿势里自己摆了袍摆的（加在上面）
-      const dragPose = dragAngles(settings.dragSettings, posAt, pose.yaw, sec, settings.breakpoints);
+      const dragPose = dragAngles(settings.dragSettings, posAt, pose.yaw, sec, settings.breakpoints, animSec);
       const overrides: Record<string, BonePose> = {};
       for (const [boneName, p] of Object.entries(dragPose)) {
         const baseRot = bonePose[boneName]?.rot ?? [0, 0, 0];
@@ -447,7 +452,7 @@ export const definePerformance = (settings: PerformanceSettings) => {
       bonePose = { ...bonePose, RightHand: { rot: [wrist[0]! - staffShake, wrist[1]!, wrist[2]!] } };
     }
     const gripOffset = lerp(fromPose.gripOffset ?? 0, toPose.gripOffset ?? 0, k);
-    const moment: PerformanceSnapshot = { props: { pose, sec: sec, act, bonePose, gripOffset, castingFlightLegs }, transition };
+    const moment: PerformanceSnapshot = { props: { pose, sec: animSec, act, bonePose, gripOffset, castingFlightLegs }, transition };
     stateCache.set(sec, moment);
     return moment;
   };
