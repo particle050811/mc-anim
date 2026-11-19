@@ -5,7 +5,7 @@
 // 存位移不存方向：只有一个光源时，相邻探针的位移线性插值正好是插值点到光源的位移，着色时能从表面那一点（不是半格外的探针）算朝向。
 // 一层分几次画（按行切），每次之间让出主线程，免得一次画太久被显卡看门狗掐掉。
 import * as THREE from 'three';
-import { BRICK, cellOf, LEVEL_D, type LightSet, type LightWindow } from './光体.ts';
+import { BRICK, cellOf, LEVEL_D, type LightScheme, type LightSet, type LightWindow } from './光体.ts';
 
 const TEX_W = 4096;
 const OCC_MAX = 3;
@@ -33,6 +33,10 @@ uniform float recvCell;
 uniform ivec3 recvDims;
 uniform ivec3 brickDims;
 uniform float minLight;
+// 试看方案（光体.ts 的 LightScheme）：0 现状；3 圆影（级 = 发光级 − 距离 ÷ 米每级，p 次方软最大）
+uniform int schemeKind;
+uniform float metersPerLevel;
+uniform float pNorm;
 layout( location = 0 ) out vec4 outS;
 layout( location = 1 ) out vec4 outV;
 
@@ -88,6 +92,7 @@ void main() {
   vec3 S = vec3( 0.0 );
   vec3 V = vec3( 0.0 );
   vec3 U = vec3( 0.0 );
+  float A = 0.0;
   for ( int i = 0; i < cnt; i ++ ) {
     int t = int( fetchAt( indexTex, off + i ).r ) * 4;
     vec4 a = fetchAt( lightTex, t );
@@ -100,6 +105,19 @@ void main() {
     int fl = int( c.w );
     float w = ( ( u < a.w && ( fl & 1 ) != 0 ) || ( u > a.w && ( fl & 2 ) != 0 ) ) ? 1.0 : max( 0.0, 1.0 - abs( u - a.w ) );
     if ( w <= 0.0 ) continue;
+    if ( schemeKind == 3 ) {
+      if ( d >= dv.w ) continue;
+      float Lc = max( c.r, max( c.g, c.b ) );
+      float xl = Lc - max( 1.0, d - e.w ) / ( 15.0 * metersPerLevel );
+      if ( xl <= 0.0 ) continue;
+      float vis = visibility( p, a.xyz, d, e.w );
+      if ( vis <= 0.0 ) continue;
+      float ap = w * pow( xl * vis, pNorm );
+      A += ap;
+      S += ap * c.rgb / Lc;
+      V += ap * toL;
+      continue;
+    }
     float q = d * d / ( dv.w * dv.w );
     if ( q >= 1.0 ) continue;
     float win = 1.0 - q * q;
@@ -114,8 +132,32 @@ void main() {
     V += el * toL;
     U += el * ( d > 1e-4 ? toL / d : vec3( 0.0 ) );
   }
+  if ( schemeKind == 3 ) {
+    if ( A <= 0.0 ) {
+      outS = vec4( 0.0, 0.0, 0.0, 1.0 );
+      outV = vec4( 0.0 );
+      return;
+    }
+    float xs = pow( A, 1.0 / pNorm );
+    vec3 hue = S / A;
+    hue /= max( 1e-5, dot( hue, vec3( 0.2126, 0.7152, 0.0722 ) ) );
+    outS = vec4( hue * xs, 1.0 );
+    outV = vec4( V / A * xs, xs );
+    return;
+  }
   outS = vec4( S, 1.0 );
   outV = vec4( V, length( U ) );
+}`;
+
+// 试看方案 原版、圆洪水：探针在工人里按洪水填充算好（光体.ts 的 levelField），这里照抄进探针图；来光方向不用
+const copyFragment = /* glsl */ `
+precision highp float;
+uniform sampler2D fieldTex;
+layout( location = 0 ) out vec4 outS;
+layout( location = 1 ) out vec4 outV;
+void main() {
+  outS = texelFetch( fieldTex, ivec2( gl_FragCoord.xy ), 0 );
+  outV = vec4( 0.0 );
 }`;
 
 const floatTexture = (data: Float32Array, perTexel: 1 | 4) => {
@@ -163,12 +205,18 @@ const cellsPerDraw = 1 << 16;
 /**
  * 算一层探针，画进 target。occs：占用格，第 0 个是探针这一层，往后是更粗的层。
  */
-export const gatherProbes = async (gl: THREE.WebGLRenderer, recv: LightWindow, occs: { w: LightWindow; tex: THREE.Data3DTexture }[], set: LightSet, target: THREE.WebGLRenderTarget, minLight: number) => {
+export const gatherProbes = async (gl: THREE.WebGLRenderer, recv: LightWindow, occs: { w: LightWindow; tex: THREE.Data3DTexture }[], set: LightSet, target: THREE.WebGLRenderTarget, minLight: number, scheme?: LightScheme, field?: Float32Array) => {
+  const fieldTex = field ? new THREE.DataTexture(field, recv.W, recv.H * recv.D, THREE.RGBAFormat, THREE.FloatType) : null;
+  if (fieldTex) {
+    fieldTex.minFilter = fieldTex.magFilter = THREE.NearestFilter;
+    fieldTex.generateMipmaps = false;
+    fieldTex.needsUpdate = true;
+  }
   const lightTex = floatTexture(set.lights, 4);
   const brickTex = floatTexture(set.bricks, 4);
   const indexTex = floatTexture(set.index, 1);
   const pad = <T,>(xs: T[], fill: T) => [...xs, ...Array.from({ length: OCC_MAX - xs.length }, () => fill)];
-  const material = new THREE.RawShaderMaterial({
+  const material = fieldTex ? new THREE.RawShaderMaterial({ glslVersion: THREE.GLSL3, vertexShader: vertex, fragmentShader: copyFragment, depthTest: false, depthWrite: false, uniforms: { fieldTex: { value: fieldTex } } }) : new THREE.RawShaderMaterial({
     glslVersion: THREE.GLSL3,
     vertexShader: vertex,
     fragmentShader: fragment,
@@ -190,6 +238,9 @@ export const gatherProbes = async (gl: THREE.WebGLRenderer, recv: LightWindow, o
       recvDims: { value: [recv.W, recv.H, recv.D] },
       brickDims: { value: [Math.ceil(recv.W / BRICK), Math.ceil(recv.H / BRICK), Math.ceil(recv.D / BRICK)] },
       minLight: { value: minLight },
+      schemeKind: { value: scheme?.kind === '圆影' ? 3 : 0 },
+      metersPerLevel: { value: scheme?.metersPerLevel ?? 1 },
+      pNorm: { value: scheme?.p ?? 4 },
     },
   });
   const mesh = new THREE.Mesh(quad, material);
@@ -220,5 +271,6 @@ export const gatherProbes = async (gl: THREE.WebGLRenderer, recv: LightWindow, o
     lightTex.dispose();
     brickTex.dispose();
     indexTex.dispose();
+    fieldTex?.dispose();
   }
 };

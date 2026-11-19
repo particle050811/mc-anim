@@ -7,13 +7,13 @@ import { buildPackTables, type SectionData } from '../voxel/区段包.ts';
 import { variesByPos } from '../voxel/群系色.ts';
 import { importedSectionVoxels, type SectionContext, type SectionPackInfo, type CutBox, type FlattenArea } from '../voxel/导入区段.ts';
 import { sectionKey } from '../voxel/区段.ts';
-import { buildLightSet, emitColors, fillWindow, occupancy, sectionCodes, stampExtra, windowKey, type ExtraCell, type LayerCodes, type LightLayerData, type LightWindow } from './光体.ts';
+import { buildLightSet, emitColors, levelField, type LightScheme, fillWindow, occupancy, sectionCodes, stampExtra, windowKey, type ExtraCell, type LayerCodes, type LightLayerData, type LightWindow } from './光体.ts';
 import { encodeLayer, gzipBytes } from './光体缓存.ts';
 
 export type LightWorkerMessage =
   | { type: '来源'; ctx: number; info: SectionPackInfo; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
   // extra：地形外另摆的方块（光体.ts 的 stampExtra），extraKey 是它的键（空表 = 空串）
-  | { type: '建'; id: number; ctx: number; minLight: number; windows: LightWindow[]; need: boolean[]; sections: { data: SectionData }[]; drop: string[]; cacheKeys: (string | null)[]; extra: ExtraCell[]; extraKey: string }
+  | { type: '建'; id: number; ctx: number; minLight: number; windows: LightWindow[]; need: boolean[]; sections: { data: SectionData }[]; drop: string[]; cacheKeys: (string | null)[]; extra: ExtraCell[]; extraKey: string; scheme?: LightScheme }
   | { type: '网格'; id: number; layer: LayerCodes; minLight: number };
 export type { LightLayerData };
 /** cache：要存的层压好的缓存文件（下标同 windows） */
@@ -40,11 +40,19 @@ const build = (msg: Extract<LightWorkerMessage, { type: '建' }>): (LightLayerDa
     }
     return lastCodes[n]!.layer;
   });
-  return msg.windows.map((w, n) => (msg.need[n] ? { occ: occupancy(layers[n]!.codes), set: buildLightSet(w, layers.slice(0, n + 1), msg.minLight) } : null));
+  const sc = msg.scheme;
+  return msg.windows.map((w, n) => {
+    if (!msg.need[n]) return null;
+    const occ = occupancy(layers[n]!.codes);
+    if (sc && sc.kind !== '圆影') return { occ, set: emptySet(), field: levelField(layers[n]!, sc.kind === '圆洪水', sc.metersPerLevel) };
+    return { occ, set: buildLightSet(w, layers.slice(0, n + 1), msg.minLight, sc?.kind === '圆影' ? sc.metersPerLevel : undefined) };
+  });
 };
 
+const emptySet = () => ({ lights: new Float32Array(16), bricks: new Float32Array(4), index: new Float32Array(1), count: 0 });
+
 const transfers = (layers: (LightLayerData | null)[]) =>
-  layers.flatMap((l) => (l ? [l.occ.buffer, l.set.lights.buffer, l.set.bricks.buffer, l.set.index.buffer] : [])) as ArrayBuffer[];
+  layers.flatMap((l) => (l ? [l.occ.buffer, l.set.lights.buffer, l.set.bricks.buffer, l.set.index.buffer, ...(l.field ? [l.field.buffer] : [])] : [])) as ArrayBuffer[];
 
 // 消息按到达的顺序一条一条做完（压缓存要等），工人里的格码表不会被下一条插进来改
 let queue = Promise.resolve();

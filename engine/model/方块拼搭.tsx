@@ -9,6 +9,7 @@ import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from './parts.tsx';
 import { blockAtlas } from '../voxel/真实方块图集.ts';
+import { terrainLightGain, terrainLightGainHead, terrainLightGainBody } from '../light/光照配比.ts';
 import { blockProps, blockTint, faceStride, faceTable, voxelFromState } from '../voxel/真实方块表.ts';
 
 export type CellPos = readonly [number, number, number];
@@ -129,6 +130,12 @@ const makeMaterial = (c: PassKind) => {
   else if (c === '镂空') m = new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide });
   else if (c === '半透明') m = new THREE.MeshStandardMaterial({ ...common, transparent: true, depthWrite: false, side: THREE.DoubleSide });
   else m = new THREE.MeshStandardMaterial(common);
+  // 拼出来的方块算地形（如安息仪式的黑曜石底换掉了一层地面）：和地形一样乘地形受光倍
+  if (m instanceof THREE.MeshStandardMaterial)
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.terrainLightGain = terrainLightGain;
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\n${terrainLightGainHead}`).replace('#include <lights_fragment_end>', terrainLightGainBody);
+    };
   materials.set(c, m);
   return m;
 };

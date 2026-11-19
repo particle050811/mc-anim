@@ -27,6 +27,8 @@ export const lightVolumeUniforms = {
   lightVolDims: { value: Array.from({ length: LIGHT_LAYERS }, () => new THREE.Vector3(1, 1, 1)) },
   // x 强（0 = 还没建好，不取），y 软封顶，z 渐变米数
   lightVolK: { value: new THREE.Vector3() },
+  // 试看方案（光体.ts 的 LightScheme）：x 方案（0 现状、1 原版、2 圆洪水、3 圆影），y 曲线（0 原版、1 BSL、2 Complementary、3 Photon）
+  lightVolMode: { value: new THREE.Vector4() },
 };
 
 const HEAD = /* glsl */ `
@@ -42,6 +44,15 @@ uniform vec3 lightVolMin[${LIGHT_LAYERS}];
 uniform vec3 lightVolSize[${LIGHT_LAYERS}];
 uniform vec3 lightVolDims[${LIGHT_LAYERS}];
 uniform vec3 lightVolK;
+uniform vec4 lightVolMode;
+// 光照级 0～1 → 亮度（满级归一到 1）：各光影包的方块光曲线，出处见 光体.ts 的 LightScheme
+float lightVolCurve( float x ) {
+  x = clamp( x, 0.0, 1.0 );
+  if ( lightVolMode.y < 0.5 ) return x / ( 4.0 - 3.0 * x );
+  if ( lightVolMode.y < 1.5 ) { float b = 1.6 * pow( x, 10.0 ) + 0.6 * x; return b * b / 4.84; }
+  if ( lightVolMode.y < 2.5 ) return pow( 3.5 * pow( x, 8.0 ) + 2.1 * x, 2.25 ) / pow( 5.6, 2.25 );
+  return ( pow( x, 8.0 ) + 0.18 * x * x + 0.16 * x * ( 2.0 - x ) + min( 2.7 * pow( x, 12.0 ), 0.9 ) ) / 2.24;
+}
 // 点 p 在第 k 层里的贴图坐标；w 是离水平边的远近（0 在边上及外面，渐变米数以内往 1 走）
 vec3 lightVolUvw( vec3 p, int k, out float w ) {
   vec3 uvw = ( p - lightVolMin[k] ) / lightVolSize[k];
@@ -99,8 +110,15 @@ if ( lightVolK.x > 0.0 ) {
     float g = sl > 1e-6 ? min( 1.0, lvV.w / sl ) : 0.0;
     float vl = length( lvV.xyz );
     float nd = vl > 1e-6 ? max( 0.0, dot( lvN, lvV.xyz / vl ) ) : 0.0;
-    vec3 x = lvS * ( ( 1.0 - g ) * 0.5 + g * nd ) * lightVolK.x;
-    lightVolLit = x / ( 1.0 + x / lightVolK.y ) * ( ${gate} );
+    if ( lightVolMode.x < 0.5 ) {
+      vec3 x = lvS * ( ( 1.0 - g ) * 0.5 + g * nd ) * lightVolK.x;
+      lightVolLit = x / ( 1.0 + x / lightVolK.y ) * ( ${gate} );
+    } else {
+      // 试看方案：S 是 来光色（亮度 1）× 级；原版、圆洪水不看朝向，圆影按 0.6 + 0.4 cos
+      float lv = max( sl, 1e-6 );
+      float face = lightVolMode.x > 2.5 ? 0.6 + 0.4 * nd : 1.0;
+      lightVolLit = lvS / lv * lightVolCurve( sl ) * face * lightVolK.x * ( ${gate} );
+    }
     totalEmissiveRadiance += diffuseColor.rgb * lightVolLit;
   }
 }

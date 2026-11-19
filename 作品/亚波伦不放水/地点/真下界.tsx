@@ -20,7 +20,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { LevelParams } from '@engine/core/渲染级别.ts';
-import { useBlockGlow, useSelfLight } from '@engine/light/光照配比.ts';
+import { useBlockGlow, useSelfLight, useTerrainLightGain } from '@engine/light/光照配比.ts';
 import { trialFarM, useFarFog } from '@engine/light/高度雾.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
@@ -34,6 +34,7 @@ import soulFire1Png from 'asset:贴图/仪式/minecraft/block/soul_fire_1';
 import { LightVolume } from '@engine/light/光体组件.tsx';
 import type { ExtraBlock, LightVolumeParams } from '@engine/light/光体.ts';
 import { trialLightVolume } from '@engine/light/光体试看.ts';
+import { trialParams } from '@engine/core/试看.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
@@ -41,6 +42,8 @@ export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 export type NetherLight = {
   /** 光照图在方块光 0 级的颜色（sRGB 数值上的倍数，原版 [0.393, 0.323, 0.267]）；乘面明暗后折到线性 */
   baseLight: readonly [number, number, number];
+  /** 地形（体素地形、方块拼搭）的底光再乘几（sRGB 数值上，同 baseLight）；人物、模型照 baseLight。不给 = 1 */
+  terrainBase?: number;
   /** 发光倍：发光方块（含熔岩）的自发光 = 贴图原色 × 发光强度 × 这个数 */
   lavaBright: number;
   /** 雾：色（#rrggbb，也是底色）、从几格起（远雾开着不起作用）、到几格全满（远雾的 D） */
@@ -55,8 +58,15 @@ export type NetherLight = {
 export const netherVanilla: NetherLight = { baseLight: [0.393, 0.323, 0.267], lavaBright: 1, fog: { 色: '#330808', near: 25.6, far: 96 } };
 /** 整体提亮、雾放远（用户 11-10 嫌黑、要看清背景）：底光提到原版方块光约 12 级的亮度，雾推到 32 区块外才满，雾色提亮 */
 // 雾远（= 远雾的 D）1000：用户 11-16「地狱 我看 D1000 就够了」；包按镜头范围外扩 1000 烘（sourcing/worlds/下界-无结构-1110.toml）
-// 光体的强、软封顶、最小光是 Agent 暂定（用户 11-17 定做法「圆形的光」，数还没看过）
-export const netherBrighter: NetherLight = { baseLight: [0.86, 0.74, 0.64], lavaBright: 1.1, fog: { 色: '#5a1a12', near: 96, far: 1000 }, lightVolume: { strength: 1.5, knee: 1.5, minLight: 0.004 } };
+// 地形底光压到 0.7 倍、光体用「圆洪水」强 2（用户 11-19 看 预览/1119-1452-底光对比 定「0.7 圆洪水」：底光压下去，熔岩、火照亮周围才显得出来）；
+// 人物、模型补回原来的底光（用户 11-19 看 预览/1119-1518-下界新光-正片，人跟着变暗，定「人物补回原来的底光」）。软封顶、最小光是 Agent 暂定；圆洪水不用软封顶
+export const netherBrighter: NetherLight = {
+  baseLight: [0.86, 0.74, 0.64],
+  terrainBase: 0.7,
+  lavaBright: 1.1,
+  fog: { 色: '#5a1a12', near: 96, far: 1000 },
+  lightVolume: { strength: 2, knee: 1.5, minLight: 0.004, scheme: { kind: '圆洪水', curve: '原版', metersPerLevel: 1, p: 4 } },
+};
 
 /** 远雾的 D（格）= 雾远；试看 {"雾曲线": {"远": 格}} 盖掉，地形最远距离跟着换（用户 11-16 要比下界放大视距）。包烘了 x −512～2047、z −1536～1023 */
 export const netherFarM = (light: NetherLight) => trialFarM(light.fog.far);
@@ -104,6 +114,7 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
   const groupRef = useRef<THREE.Group>(null);
   useSelfLight(0);
   useBlockGlow(netherLight.lavaBright);
+  useTerrainLightGain(toLinear(netherLight.terrainBase ?? 1));
   useBlockTextureAnimation(netherAnimatedTextures, useCurrentSec());
   const farM = netherFarM(netherLight);
   useFarFog({ far: farM });
@@ -131,7 +142,9 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
     });
   });
   if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
-  const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * face), toLinear(netherLight.baseLight[1] * face), toLinear(netherLight.baseLight[2] * face));
+  // 试看「下界底光」：底光整体再乘一个倍数
+  const baseScale = trialParams<{ '倍'?: number }>('下界底光')?.['倍'] ?? 1;
+  const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * baseScale * face), toLinear(netherLight.baseLight[1] * baseScale * face), toLinear(netherLight.baseLight[2] * baseScale * face));
   const bottomColor = faceColor(faceShade.eastWest);
   const fillColor = (face: number) => faceColor(face).sub(bottomColor);
   return (

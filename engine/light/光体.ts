@@ -16,7 +16,21 @@ export type LightVolumeParams = {
   knee: number;
   /** 光小于它就不算（定每团的影响半径 = √(发光 / minLight)），越小照得越远、越慢 */
   minLight: number;
+  /** 试看「光体」的方案（光体试看.ts）；不给 = 现状（平方反比求和） */
+  scheme?: LightScheme;
 };
+
+/**
+ * 试看的几种方块光（用户 11-19「搞几个主流方案…渲染几帧给我看看」，出处见 预览/1119-1415-光源方案调研）：
+ * - 现状：平方反比求和 + 遮挡步进。
+ * - 原版：光照级洪水填充，6 邻每格减 1 级、几路取最大（原版 / 各光影包默认的光照图），再过一条亮度曲线；不看朝向、没有影子，墙挡光、会绕过拐角。
+ * - 圆洪水：同上，26 邻按欧氏步长（1、√2、√3）减级，光斑近似圆。
+ * - 圆影：级 = 发光级 − 欧氏距离 ÷ 米每级（不靠洪水，按团算），遮挡步进照旧（有影子），几路按 p 次方软最大合成（p 越大越接近原版取最大）。
+ * 曲线（着色时把级 0～1 换成亮度，都归一到满级 = 1）：原版 x/(4−3x)；BSL (1.6x¹⁰+0.6x)²；Complementary (3.5x⁸+2.1x)^2.25；Photon x⁸+0.18x²+0.16x(2−x)+min(2.7x¹²,0.9)。
+ */
+export type LightScheme = { kind: '原版' | '圆洪水' | '圆影'; curve: '原版' | 'BSL' | 'Complementary' | 'Photon'; metersPerLevel: number; p: number };
+export const schemeKinds = ['现状', '原版', '圆洪水', '圆影'] as const;
+export const schemeCurves = ['原版', 'BSL', 'Complementary', 'Photon'] as const;
 
 /** 一层：一格 2^L 米；水平窗口以镜头为中心按 snapM 米取整，往两边各 halfM 米；竖直是整个高度范围。从粗到细排 */
 export type Cascade = { L: number; snapM: number; halfM: number };
@@ -164,7 +178,7 @@ const lum = (r: number, g: number, b: number) => 0.2126 * r + 0.7152 * g + 0.072
 
 // 一团光：位置（按发光加权的重心）、各向同性发光 iso（rgb）、朝向发光 dir（Σ 亮度 × 面积 × 面法线）和它的颜色 dc（Σ 色 × 面积 ÷ Σ 亮度 × 面积，亮度为 1）。
 // 往方向 ω 的发光 = iso + max(0, dir·ω) × dc：熔岩海只露顶面，往斜上方越来越暗，从侧面、底下看不到（积分有限，大片熔岩不会越远越亮到发散）
-type Clump = { k: number; base: boolean; px: number; py: number; pz: number; wsum: number; iso: [number, number, number]; dir: [number, number, number]; dcol: [number, number, number]; dlum: number };
+type Clump = { k: number; base: boolean; px: number; py: number; pz: number; wsum: number; iso: [number, number, number]; dir: [number, number, number]; dcol: [number, number, number]; dlum: number; gmax: number; hue: [number, number, number] };
 
 /** 一层格码里露在空气里的发光格聚成各级团，加进 out（键：级|来源|全局团号）。skip：这个窗口里的格不要（交给更细的一层） */
 const addClumps = (out: Map<string, Clump>, src: LayerCodes, tag: number, skip: LightWindow | null) => {
@@ -203,12 +217,15 @@ const addClumps = (out: Map<string, Clump>, src: LayerCodes, tag: number, skip: 
       const s = 2 ** k;
       const key = `${k}|${tag}|${Math.floor(px / s)},${Math.floor(py / s)},${Math.floor(pz / s)}`;
       let cl0 = out.get(key);
-      if (!cl0) out.set(key, (cl0 = { k, base: k === w.L, px: 0, py: 0, pz: 0, wsum: 0, iso: [0, 0, 0], dir: [0, 0, 0], dcol: [0, 0, 0], dlum: 0 }));
+      if (!cl0) out.set(key, (cl0 = { k, base: k === w.L, px: 0, py: 0, pz: 0, wsum: 0, iso: [0, 0, 0], dir: [0, 0, 0], dcol: [0, 0, 0], dlum: 0, gmax: 0, hue: [0, 0, 0] }));
       cl0.px += px * weight;
       cl0.py += py * weight;
       cl0.pz += pz * weight;
       cl0.wsum += weight;
       for (let ch = 0; ch < 3; ch++) cl0.iso[ch] += isoK * c[ch]!;
+      // 圆影用：团里最亮的发光级（光色最大分量 = 级 / 15）和露面数加权的颜色
+      cl0.gmax = Math.max(cl0.gmax, c[0]!, c[1]!, c[2]!);
+      for (let ch = 0; ch < 3; ch++) cl0.hue[ch] += open * c[ch]!;
       if (dirK) {
         cl0.dir[0] += dirK * cl * nx;
         cl0.dir[1] += dirK * cl * ny;
@@ -226,13 +243,87 @@ export const LIGHT_FLOATS = 16;
 /** 一层探针要的团表：lights 团表，bricks 每砖 [起, 数, 0, 0]（砖按 (bz·BH + by)·BW + bx 排），index 团号 */
 export type LightSet = { lights: Float32Array; bricks: Float32Array; index: Float32Array; count: number };
 /** 一层要的：占用格、团表（光体工人出，光体缓存存） */
-export type LightLayerData = { occ: Uint8Array; set: LightSet };
+export type LightLayerData = { occ: Uint8Array; set: LightSet; field?: Float32Array };
+
+/**
+ * 光照级场（试看方案 原版、圆洪水）：从发光格往外按步长减级，每格取最大（Dial 桶队列，级按 1/32 取整）。
+ * 输出每格 RGBA：rgb = 来光色（亮度归一到 1）× 级 / 15，a = 1 是探针；挡光格全 0。整格不透明的发光方块（萤石）自己是挡光格、往邻格发光。
+ * 斜着走（圆洪水）要两侧的直邻格都不挡光，不从墙角缝里漏过去。
+ */
+export const levelField = (src: LayerCodes, round: boolean, metersPerLevel: number): Float32Array => {
+  const { w, codes, colors } = src;
+  const { W, H, D } = w;
+  const WH = W * H;
+  const N = codes.length;
+  const U = 32;
+  const cell = cellOf(w);
+  const val = new Int16Array(N);
+  const from = new Uint8Array(N);
+  const steps: { dx: number; dy: number; dz: number; cost: number }[] = [];
+  for (let dz = -1; dz <= 1; dz++)
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) {
+        const m = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+        if (m === 0 || (!round && m > 1)) continue;
+        steps.push({ dx, dy, dz, cost: Math.max(1, Math.round((cell * Math.sqrt(m) * U) / metersPerLevel)) });
+      }
+  const maxV = 15 * U;
+  const buckets: number[][] = Array.from({ length: maxV + 1 }, () => []);
+  for (let i = 0; i < N; i++) {
+    const c = codes[i]!;
+    if (c < 2) continue;
+    const col = colors[(c & (EMIT_OPAQUE - 1)) - 2]!;
+    const v = Math.round(15 * U * Math.max(col[0]!, col[1]!, col[2]!));
+    if (v <= val[i]!) continue;
+    val[i] = v;
+    from[i] = c & (EMIT_OPAQUE - 1);
+    buckets[v]!.push(i);
+  }
+  for (let v = maxV; v > 0; v--) {
+    const list = buckets[v]!;
+    for (let n = 0; n < list.length; n++) {
+      const i = list[n]!;
+      if (val[i] !== v) continue;
+      const x = i % W, y = ((i - x) / W) % H, z = (i - x - y * W) / WH;
+      for (const s of steps) {
+        const nv = v - s.cost;
+        if (nv <= 0) continue;
+        const xx = x + s.dx, yy = y + s.dy, zz = z + s.dz;
+        if (xx < 0 || yy < 0 || zz < 0 || xx >= W || yy >= H || zz >= D) continue;
+        const j = (zz * H + yy) * W + xx;
+        if (isBlocking(codes[j]!) || nv <= val[j]!) continue;
+        if (s.dx && (s.dy || s.dz) && isBlocking(codes[i + s.dx]!)) continue;
+        if (s.dy && (s.dx || s.dz) && isBlocking(codes[i + s.dy * W]!)) continue;
+        if (s.dz && (s.dx || s.dy) && isBlocking(codes[i + s.dz * WH]!)) continue;
+        val[j] = nv;
+        from[j] = from[i]!;
+        buckets[nv]!.push(j);
+      }
+    }
+    buckets[v] = [];
+  }
+  const out = new Float32Array(N * 4);
+  for (let i = 0; i < N; i++) {
+    if (isBlocking(codes[i]!)) continue;
+    out[i * 4 + 3] = 1;
+    const v = val[i]!;
+    if (!v) continue;
+    const col = colors[from[i]! - 2]!;
+    const l = lum(col[0]!, col[1]!, col[2]!) || 1;
+    const k = v / maxV;
+    out[i * 4] = (col[0]! / l) * k;
+    out[i * 4 + 1] = (col[1]! / l) * k;
+    out[i * 4 + 2] = (col[2]! / l) * k;
+  }
+  return out;
+};
 
 /**
  * 探针层 receiver 的团表。sources 从粗到细，最后一个是探针这一层自己；每一层只取不在更细一层窗口里的格（每处的光只算一次）。
  * 团按 级、来源、位置排（结果和 Map 的插入顺序无关），各砖里的团号从小到大。
  */
-export const buildLightSet = (receiver: LightWindow, sources: readonly LayerCodes[], minLight: number): LightSet => {
+export const buildLightSet = (receiver: LightWindow, sources: readonly LayerCodes[], minLight: number, metersPerLevel?: number): LightSet => {
+  // metersPerLevel：试看方案「圆影」——团表换成 [位置 级] [色（最大分量 = 发光级 / 15） 标记] [0 0 0 照到多远] [0 0 0 团半边长]
   const clumps = new Map<string, Clump>();
   sources.forEach((s, n) => addClumps(clumps, s, n, n + 1 < sources.length ? sources[n + 1]!.w : null));
   const keys = [...clumps.keys()].sort();
@@ -240,12 +331,22 @@ export const buildLightSet = (receiver: LightWindow, sources: readonly LayerCode
   for (const key of keys) {
     const c = clumps.get(key)!;
     if (c.wsum <= 0) continue;
+    if (metersPerLevel !== undefined) {
+      if (c.gmax > 0) list.push({ c, R: 15 * c.gmax * metersPerLevel + 0.5 * 2 ** c.k });
+      continue;
+    }
     const jmax = lum(c.iso[0], c.iso[1], c.iso[2]) + Math.hypot(c.dir[0], c.dir[1], c.dir[2]);
     list.push({ c, R: Math.sqrt(jmax / minLight) });
   }
   const lights = new Float32Array(list.length * LIGHT_FLOATS);
   list.forEach(({ c, R }, n) => {
     const o = n * LIGHT_FLOATS;
+    if (metersPerLevel !== undefined) {
+      const hmax = Math.max(c.hue[0], c.hue[1], c.hue[2]) || 1;
+      const g = c.gmax / hmax;
+      lights.set([c.px / c.wsum, c.py / c.wsum, c.pz / c.wsum, c.k, c.hue[0] * g, c.hue[1] * g, c.hue[2] * g, (c.base ? 1 : 0) + (c.k === KMAX ? 2 : 0), 0, 0, 0, R, 0, 0, 0, 0.5 * 2 ** c.k], o);
+      return;
+    }
     lights.set([c.px / c.wsum, c.py / c.wsum, c.pz / c.wsum, c.k, ...c.iso, (c.base ? 1 : 0) + (c.k === KMAX ? 2 : 0), ...c.dir, R], o);
     const dl = c.dlum || 1;
     lights.set([c.dcol[0] / dl, c.dcol[1] / dl, c.dcol[2] / dl, 0.5 * 2 ** c.k], o + 12);

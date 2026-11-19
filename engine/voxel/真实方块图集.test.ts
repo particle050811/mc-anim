@@ -58,9 +58,9 @@ describe('方块图集', () => {
     expect(hash(...allLevels(a.original))).toMatchInlineSnapshot(`"ff919fc75bd3c4dda2ee65f59b4017ebe6a8ff0c046eeb8c391eebd3804f5abe"`);
     expect(hash(...allLevels(a.solid))).toMatchInlineSnapshot(`"b1ed730fe126b7192cc3237d81e9dadd2d9bd7e500cb0bd3b19fed2ef5856d1a"`);
     expect(hash(atlas.blockAtlasGlsl())).toMatchInlineSnapshot(`"d6dd78968605f7f960fbd919567955526c7be4add9effbd04c08233b6bc82034"`);
-    // 花草 11-16 改成两面画（网格.ts 文件头），着色器另记；别的四类和以前一样
-    expect(hash(...(['实心', '镂空', '实心树叶', '水'] as const).map((k) => shaderSource(materialModule, k)))).toMatchInlineSnapshot(`"c1a6add1296ce99f11d0894ef25013f962aee08c64e549688b8bf3aa21e8a76d"`);
-    expect(hash(shaderSource(materialModule, '花草'))).toMatchInlineSnapshot(`"2990a763237a2a205fb88270cb7a004159b7927152b4574ca8642e324a6eb46f"`);
+    // 花草 11-16 改成两面画（网格.ts 文件头），着色器另记；别的四类和以前一样。11-19 五类都加了地形受光倍（光照配比.ts，默认 1 乘出来逐位不变）
+    expect(hash(...(['实心', '镂空', '实心树叶', '水'] as const).map((k) => shaderSource(materialModule, k)))).toMatchInlineSnapshot(`"bd5267cad99e9cfdf58652a8c76edfbb2149e8638ef31fc808306abe43b0ff03"`);
+    expect(hash(shaderSource(materialModule, '花草'))).toMatchInlineSnapshot(`"2b2f6de4272e16a05ca2e85340414e5aef102006375f160992a43b3df1465bbf"`);
   });
   it.each([2, 4])('格边长 16 × %i：最近邻放大的图集往下缩 log2(倍) 级后和原版图集逐字节一样，着色器按格边长取级别', async (factor) => {
     // 没有全透明像素的贴图（全透明的颜色按最近不透明像素补，放大后先后不同，补出来不一样）
