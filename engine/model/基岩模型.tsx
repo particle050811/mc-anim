@@ -26,7 +26,8 @@ export type BedrockCube = {
   rotation?: N3;
   mirror?: boolean; // box UV 左右镜像
 };
-export type BedrockBone = { name: string; parent?: string; pivot: N3; rotation?: N3; mirror?: boolean; cubes?: BedrockCube[] };
+export type BoneQuad = { points: [N3, N3, N3, N3]; normals?: [N3, N3, N3, N3]; texels: [[number, number], [number, number], [number, number], [number, number]] };
+export type BedrockBone = { name: string; parent?: string; pivot: N3; rotation?: N3; mirror?: boolean; cubes?: BedrockCube[]; quads?: BoneQuad[] };
 // texture：贴图像素。导出的 JSON 里只有尺寸，组件里用 png() 读贴图资产再填进来
 export type BedrockModel = { texW: number; texH: number; bones: BedrockBone[]; texture: EntityTexture };
 
@@ -37,15 +38,29 @@ const degToRad = Math.PI / 180;
 const euler = (r: number[]) => new THREE.Euler(-r[0] * degToRad, -r[1] * degToRad, r[2] * degToRad, 'ZYX');
 
 // 一根骨骼上所有 cube 合成一个几何体，顶点以骨骼 pivot 为原点
-const boneGeometry = (bone: BedrockBone, texW: number, texH: number): THREE.BufferGeometry | null => {
-  if (!bone.cubes?.length) return null;
+export const boneGeometry = (bone: BedrockBone, texW: number, texH: number): THREE.BufferGeometry | null => {
+  if (!bone.cubes?.length && !bone.quads?.length) return null;
   const pos: number[] = [];
   const nor: number[] = [];
   const uvs: number[] = [];
   const idx: number[] = [];
   const bp = new THREE.Vector3(-bone.pivot[0], bone.pivot[1], bone.pivot[2]);
 
-  for (const cube of bone.cubes) {
+  for (const quad of bone.quads ?? []) {
+    const points = quad.points.map(([east, up, south]) => new THREE.Vector3(-east, up, south).sub(bp));
+    const normal = new THREE.Vector3().subVectors(points[3], points[0]).cross(new THREE.Vector3().subVectors(points[1], points[0])).normalize();
+    const start = pos.length / 3;
+    for (const [corner, point] of points.entries()) {
+      pos.push(point.x, point.y, point.z);
+      const direction = quad.normals?.[corner];
+      if (direction) nor.push(-direction[0], direction[1], direction[2]);
+      else nor.push(normal.x, normal.y, normal.z);
+      uvs.push(quad.texels[corner][0] / texW, quad.texels[corner][1] / texH);
+    }
+    idx.push(start, start + 3, start + 2, start, start + 2, start + 1);
+  }
+
+  for (const cube of bone.cubes ?? []) {
     const inf = cube.inflate ?? 0;
     const [sx, sy, sz] = cube.size;
     const x0 = -(cube.origin[0] + sx) - inf;

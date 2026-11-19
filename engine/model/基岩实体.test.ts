@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { geckoLibController } from '../anim/动画控制器.ts';
 import { parseAnimationFile } from '../anim/基岩动画.ts';
 import { animationPose, splitByGlow, swapModelMaterial } from './基岩实体.tsx';
-import type { BedrockModel } from './基岩模型.tsx';
+import type { BedrockModel, BoneQuad } from './基岩模型.tsx';
 
 const blockCube = { origin: [0, 0, 0] as [number, number, number], size: [1, 1, 1] as [number, number, number], uv: [0, 0] as [number, number] };
 const bedrockModel: BedrockModel = {
@@ -29,6 +29,14 @@ describe('按发光拆分', () => {
   it('没有发光方块时不拆', () => {
     const isGlow = () => false;
     expect(splitByGlow(bedrockModel, isGlow)).toEqual({ bodyPart: bedrockModel, glowModel: null });
+  });
+
+  it('面片也只落在一个材质层，眼睛发光不能把祖先的脸重复画一遍', () => {
+    const quad: BoneQuad = { points: [[0, 1, 0], [1, 1, 0], [1, 0, 0], [0, 0, 0]], texels: [[0, 0], [1, 0], [1, 1], [0, 1]] };
+    const model = { ...bedrockModel, bones: bedrockModel.bones.map(bone => ({ ...bone, cubes: undefined, quads: [quad] })) };
+    const split = splitByGlow(model);
+    expect(split.bodyPart.bones.filter(bone => bone.quads).map(bone => bone.name)).toEqual(['root', 'head', 'eyeDot']);
+    expect(split.glowModel!.bones.filter(bone => bone.quads).map(bone => bone.name)).toEqual(['ysmGlowEye']);
   });
 });
 

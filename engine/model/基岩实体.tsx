@@ -24,13 +24,13 @@ export const splitByGlow = (bedrockModel: BedrockModel, isGlow: (boneName: strin
   const parentOf = new Map(bedrockModel.bones.map((b) => [b.name, b.parent]));
   const kept = new Set<string>();
   for (const b of bedrockModel.bones) {
-    if (!isGlow(b.name) || !b.cubes?.length) continue;
+    if (!isGlow(b.name) || (!b.cubes?.length && !b.quads?.length)) continue;
     for (let n: string | undefined = b.name; n && !kept.has(n); n = parentOf.get(n)) kept.add(n);
   }
   const partition = kept.size
     ? {
-        bodyPart: { ...bedrockModel, bones: bedrockModel.bones.map((b) => (isGlow(b.name) ? { ...b, cubes: undefined } : b)) },
-        glowModel: { ...bedrockModel, bones: bedrockModel.bones.filter((b) => kept.has(b.name)).map((b): BedrockBone => (isGlow(b.name) ? b : { ...b, cubes: undefined })) },
+        bodyPart: { ...bedrockModel, bones: bedrockModel.bones.map((b) => (isGlow(b.name) ? { ...b, cubes: undefined, quads: undefined } : b)) },
+        glowModel: { ...bedrockModel, bones: bedrockModel.bones.filter((b) => kept.has(b.name)).map((b): BedrockBone => (isGlow(b.name) ? b : { ...b, cubes: undefined, quads: undefined })) },
       }
     : { bodyPart: bedrockModel, glowModel: null };
   splitMap.set(isGlow, partition);
