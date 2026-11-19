@@ -4,6 +4,8 @@
 // - 激活（20 刻后）起每刻 13 颗 RAIN 从云面落下；
 // - 云下有目标时每刻 5% 概率落一道雷：SThunderBoltPacket 从云心到目标半身高，颜色 11660252 = 0xB1EBDC，寿命 10 刻，thunderBolt 预设。
 // 自己定的：只下 60 刻；落雷按种子抽签（一刻一次 5%），一道都没抽中就在激活后 20 刻补一道；SPELL_CLOUD 颜色直接取 0x434343 乘贴图（按 ×0.5 算会黑成一团）。
+// 下界里照样下 RAIN（蓝雨滴）：MonsoonCloud、AbstractSpellCloud、MonsoonSpell 和天启的 AbstractSpellCloudMixin 都不判维度，游戏里在下界放也是这样。
+// 5-击败 的死亡画面里那阵蓝雨就是它：齐放时扔的季风被 余术.ts 接着放完，雨下到段内约 3.3 秒、云约 3.8 秒散。用户 11-19 定留着照游戏，不改。
 // 没做：目标受伤、痉挛效果。落雷的声音按 种子 1 排在元数据里，别的种子画面里的落雷刻不同。
 import React from 'react';
 import { defineSpellPerformance } from '../定义.tsx';
