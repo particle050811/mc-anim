@@ -56,7 +56,7 @@ export const isRenderCode = (p: string) => renderLayerPrefixes.some((x) => p.sta
 // 区段模型只做 TypedArray 与字节转换，编码、检查和浏览器共用同一份格式定义。
 const enginePureModules = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '预载', '出帧', '按时取值', '核对段'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts', 'engine/core/调试开关.ts', 'engine/core/数据读取.ts');
 export const isPureModule = (p: string) =>
-  enginePureModules.includes(p) ||
+  enginePureModules.includes(p) || p === 'engine/anim/动作体检.ts' ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||
   /^作品\/[^/]+\/(段|核对)\/[^/]+\/段\.ts$/.test(p) ||
   /^作品\/[^/]+\/场\/[^/]+\/(时间线|末态)\.ts$/.test(p) ||

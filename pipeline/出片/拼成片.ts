@@ -28,6 +28,8 @@ import { unnormalizedFile, concatUnnormalized } from '../合成/交付.ts';
 import { shareAudioKbps, compressShareAudio, encodeShareVersion, measureLoudness } from '../合成/成片.ts';
 import { placeFilmSubtitles } from '../合成/段字幕.ts';
 import { srt, subtitleTableTsv } from '../合成/字幕.ts';
+import { checkFilmClock, packetClockArgs } from './视频时钟.ts';
+import { verifyWorkMotion } from '../验收/动作体检命令.ts';
 
 const targetLoudness = -16;
 const truePeakLimit = -1;
@@ -41,6 +43,8 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
   const startMs = Date.now();
   const allSegments = await loadAllSegments();
   const trial = opts.trial;
+  const mainCut = allSegments.filter(segment => segment.章 !== '核对');
+  if (!trial && segments.length === mainCut.length && segments.every((segment, index) => segment.key === mainCut[index]?.key)) await verifyWorkMotion();
   const timer = stageTiming(opts.runRecord.stage, `${trial ? 'film试看' : 'film'}:${workName()}/${opts.name}:${opts.level}`);
   let outputs: FilmPiece[];
   let dir: string;
@@ -95,13 +99,14 @@ export const assembleFilm = async (segments: SegInfo[], opts: { level: RenderLev
 
   // 画面：直接拷流接起来，和声音封进一个 mp4
   const concatListPath = path.join(workDir, '接.txt');
-  fs.writeFileSync(concatListPath, outputs.map((r) => `file '${r.画面.replace(/'/g, "'\\''")}'\n`).join(''));
+  fs.writeFileSync(concatListPath, outputs.map((r) => `file '${r.画面.replace(/'/g, "'\\''")}'\nduration ${(r.outputFrames / filmTier.fps).toFixed(9)}\n`).join(''));
   const filmPath = path.join(dir, `${opts.name}.mp4`);
   const writingPath = path.join(workDir, '成片.写入中.mp4');
-  await runCmd(lowPriority([ffmpeg, '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-i', finishedAudioPath, '-map', '0:v', '-map', '1:a', '-c', 'copy', '-movflags', '+faststart', writingPath]));
+  await runCmd(lowPriority([ffmpeg, '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-i', finishedAudioPath, '-map', '0:v', '-map', '1:a', '-c', 'copy', ...packetClockArgs(filmTier.fps), '-movflags', '+faststart', writingPath]));
   const totalFrames = outputs.reduce((a, r) => a + r.outputFrames, 0);
   const outputFrames = videoInfo(writingPath).frameCount;
   if (outputFrames !== totalFrames) throw new Error(`成片 ${outputFrames} 帧，各段加起来是 ${totalFrames} 帧`);
+  checkFilmClock(writingPath, filmTier.fps, totalFrames);
   fs.renameSync(writingPath, filmPath);
   timer('接画面');
 

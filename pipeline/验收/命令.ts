@@ -35,6 +35,7 @@ import { checkSelectedSegCues, runCuesBeforeRender } from '../段框架/自动.t
 import { parseFrames, runPerFrame } from './逐帧校验.ts';
 import { planDiff, type SegFrame } from './对比配对.ts';
 import { runDiff } from './对比报告.ts';
+import { runMotionAudit } from './动作体检命令.ts';
 
 const level = '视频' as const;
 
@@ -83,8 +84,9 @@ const perFrameNote = '只用来查同一份代码走不同路径（单帧、跳�
 
 const verifyCmd: Command = {
   usage: 'verify [<选择器…>] [--render] [--to-preview <主题>]；verify accept <段…> --reason <…> [--render]；verify backfill [<选择器…>]；verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名> [--no-images]|--compare <名> [--tolerance <级>] [--keep-images <目录>]',
-  note: `指纹变了的段抽帧和认可版比（比切片，按输出帧；--render 先把缺的切片渲出来），超过阈值就要 anim verify accept；认可记录是旧档的（1440p、编排帧数）报要重新认可。frames：${perFrameNote}`,
+  note: `verify motion [--video 成片] [--out 新报告.json] [--trace 起帧-止帧] 验动作轨、碰撞对及显示时间；trace 需与 out 同用。指纹变了的段抽帧和认可版比（比切片，按输出帧；--render 先把缺的切片渲出来），超过阈值就要 anim verify accept；认可记录是旧档的（1440p、编排帧数）报要重新认可。frames：${perFrameNote}`,
   跑: async (args, runRecord) => {
+    if (args[0] === 'motion') return runMotionAudit(args.slice(1));
     if (args[0] === 'accept') return acceptCmd.跑(args.slice(1), runRecord);
     if (args[0] === 'backfill') return backfillRef.跑(args.slice(1), runRecord);
     if (args[0] === 'frames') return perFrameCmd.跑(args.slice(1), runRecord);

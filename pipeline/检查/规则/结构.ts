@@ -22,7 +22,7 @@ export const layerOf = (p: string): PathLayer => {
   if (p.startsWith('库/')) return { name: '库' };
   const m = /^作品\/[^/]+\/(场|段|核对)\/([^/]+)\//.exec(p);
   if (m) return { name: m[1] as '场' | '段' | '核对', key: m[2] };
-  if (/^作品\/[^/]+\/(注册\.tsx|index\.ts)$/.test(p)) return { name: '注册' };
+  if (/^作品\/[^/]+\/(注册\.tsx|index\.ts|动作体检\.ts)$/.test(p)) return { name: '注册' };
   if (p.startsWith('作品/')) return { name: '作品公共' };
   if (p.startsWith('pipeline/')) return { name: 'pipeline' };
   return { name: '其他' };

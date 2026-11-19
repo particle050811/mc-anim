@@ -11,7 +11,8 @@ import type { RunRecord } from '../运行记录/记录.ts';
 const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-拼成片测试-'));
 process.env.ANIM_DATA = dataRoot;
 
-const fake = vi.hoisted(() => ({ segments: [] as unknown[], outputs: [] as unknown[] }));
+const fake = vi.hoisted(() => ({ segments: [] as unknown[], outputs: [] as unknown[], audit: vi.fn() }));
+vi.mock('../验收/动作体检命令.ts', () => ({ verifyWorkMotion: fake.audit }));
 vi.mock('./渲段.ts', () => ({ renderSegments: async () => fake.outputs }));
 vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<object>()), loadAllSegments: async () => fake.segments }));
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<object>()), workName: () => '测试' }));
@@ -61,7 +62,11 @@ describe.skipIf(!hasFfmpeg)('拼成片', () => {
   afterAll(() => fs.rmSync(dataRoot, { recursive: true, force: true }));
 
   it('两段拷流接成一条：总帧数是各段输出帧之和，拼接表、manifest 记全片起帧（B 站时间轴按它切段），声音按段长截、拉到 −16 LUFS', async () => {
-    const { dir, film: filmPath, manifest } = await assembleFilm(fake.segments as SegInfo[], { level: '预览', name: '两段', bounds: ['甲', '乙'], runRecord: makeRunRecord() });
+    const mainCut = fake.segments as SegInfo[];
+    fake.segments = [{ ...makeSeg('核对-试看', 1), 章: '核对' }, ...mainCut];
+    const { dir, film: filmPath, manifest } = await assembleFilm(mainCut, { level: '预览', name: '两段', bounds: ['甲', '乙'], runRecord: makeRunRecord() });
+    expect(fake.audit).toHaveBeenCalledOnce();
+    fake.segments = mainCut;
     expect(videoInfo(filmPath).frameCount).toBe(213);
     expect(manifest.totalFrameCount).toBe(213);
     expect(manifest.segment.map((s) => [s.key, s.frameCount, s.filmStartFrame])).toEqual([
