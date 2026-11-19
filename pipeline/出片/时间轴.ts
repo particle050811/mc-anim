@@ -4,7 +4,8 @@
 // 被截断（cutAtSegEnd）和接续用 段框架/声音接缝.ts 的同一个判断。
 import { emptySoundTable, type SoundTable } from '../../engine/段/声音助手.ts';
 import { sceneSoundSlice, definitelyDisjoint } from '../../engine/段/场声音.ts';
-import { cueGain, segFrameCount, type AssetCue, type LineCue, type SegmentDef } from '../../engine/段/段定义.ts';
+import { segFrameCount, type AssetCue, type LineCue, type SegmentDef } from '../../engine/段/段定义.ts';
+import { cueGainAt } from '../../engine/段/音量包络.ts';
 import { segPlayPlan } from '../../engine/段/放法.ts';
 import { endGain, seamSegOf, seamStatus } from '../段框架/声音接缝.ts';
 import type { SourceSeg, WorkSource } from './作品源.ts';
@@ -30,7 +31,7 @@ export type TimelineAudio = {
   rate: number;
   loop: boolean;
   gainDb: number | null;
-  /** 末尾增益，算上淡出（cueGain 在 cue 末尾取值）；淡到 0 给 null，播放器退回 gainDb 按 fadeOutSec 画斜线 */
+  /** 末尾增益，算上淡出、包络表（cueGainAt 在 cue 末尾取值）；淡到 0 给 null，播放器退回 gainDb 按 fadeOutSec 画斜线 */
   endGainDb: number | null;
   fadeOutSec: number | null;
   /** 同一个声音的几截：场声音是 场声音:<名>；段里自己写、下一段从段头接着放的（声音接缝认得出的）是 接续:<头一截的 id>；
@@ -193,7 +194,7 @@ export const computeTimeline = (src: WorkSource, keys: readonly string[], fps: n
       const info = src.measure(c.asset) ?? s.soundTable?.asset[c.asset];
       audio.push({
         id, segment: s.key, kind: audioKind(c.asset, false), name: c.name, asset: c.asset, startSec: r6(segStart + c.sec), durSec: r6(c.长秒), inSec: r6(c.入点秒 ?? 0), rate: c.速率 ?? 1, loop: Boolean(c.循环),
-        gainDb: toDb(cueGain(c, 0)), endGainDb: toDb(endGain(c)), fadeOutSec: c.fadeOutSec ?? null, group, fileDurSec: info ? r6(info.duration) : null,
+        gainDb: toDb(cueGainAt(c, 0)), endGainDb: toDb(endGain(c)), fadeOutSec: c.fadeOutSec ?? null, group, fileDurSec: info ? r6(info.duration) : null,
         cutAtSegEnd: status.state === 'cut', cutReason: c.cutReason ?? null,
       });
     });

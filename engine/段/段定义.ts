@@ -16,6 +16,9 @@ const msTolerance = 5e-4 + 1e-9;
 export type LineCue = { sec: number; lines: string; 接上段?: true; 长秒?: number; asset?: undefined };
 /** 逐格增益：第 i 项是起放后第 i ÷ 每秒 秒那一刻的值，格之间线性插值（按时取值.ts 的 interpTable）。第 6、7 章照母版一帧一个值，每秒 24 */
 export type PerCellGain = { perSec: number; value: readonly number[] };
+/** 音量包络表（engine/段/音量包络.ts 生成）：乘在 增益（含淡出）上的倍数，第 i 项是起放后第 startSec + i ÷ 每秒 秒那一刻的值，格间线性插值、表前表后取头尾。
+ *  格落在段的输出帧上（cue 起点不在帧上也一样），表只铺音量在变的那一截 */
+export type EnvelopeTable = { perSec: number; startSec: number; value: readonly number[] };
 /** 音效、配乐 cue（资产 id 以 配乐/ 开头的算配乐）：照母版里实际的放法（旧项目 exportSfx 收的 SfxClipLog）。
  *  秒：段内第几秒起放；长秒：放几秒（截断，含段尾）；入点秒：从文件第几秒放起；速率：变速变调；循环：放完绕回文件头；
  *  增益：乘到文件上的音量（含音效总线、距离衰减），一个数是整声都一样，逐格增益是随时间变；淡出秒：最后几秒线性淡到 0，只和一个数的 增益 配；
@@ -31,6 +34,8 @@ export type AssetCue = {
   循环?: true;
   增益?: number | PerCellGain;
   fadeOutSec?: number;
+  /** 随时间变的音量乘子（场时间线的 gainAutomation、放() 的 gainEnvelope），读法用 音量包络.ts 的 cueGainAt */
+  envelope?: EnvelopeTable;
   /** 故意截在段尾的原因（pipeline/段框架/声音接缝.ts 不报）；不进混音 */
   cutReason?: string;
   lines?: undefined;

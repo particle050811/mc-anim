@@ -10,6 +10,12 @@ const soundTable: SoundTable = {
       "loudness": -11,
       "sha": "210a1de4eb5a"
     },
+    "配乐/结算舞/DreamFunk忘情牛肉面": {
+      "duration": 89.071927,
+      "peakDb": 0.2,
+      "loudness": -8.4,
+      "sha": "d63001f27774"
+    },
     "音效/ambient.nether_wastes.mood.1": {
       "duration": 8.809,
       "peakDb": -11.8,
@@ -51,6 +57,12 @@ const soundTable: SoundTable = {
       "peakDb": 0.4,
       "loudness": -70,
       "sha": "f69421ba0522"
+    },
+    "音效/诡厄巫法/goety.apostle_prepare_spell.1": {
+      "duration": 3.871746,
+      "peakDb": 0.5,
+      "loudness": -10.1,
+      "sha": "29c8a8dd5c2c"
     },
     "音效/诡厄巫法/goety.heavy_woosh.1": {
       "duration": 1.48542,

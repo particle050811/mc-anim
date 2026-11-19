@@ -179,12 +179,13 @@ describe('第 4 幕 轰炸', () => {
     expect(events.volleyCast.sec - events.wheelOpenDone.sec).toBeCloseTo(qiFangShot.castStart, 9);
     const battleSound = timeline.sound!.find((x) => x.name === '战斗曲')!;
     const battleCue = timeline.sound!.find((x) => x.name === '战斗曲-齐放')!;
-    expect(battleSound.startSec).toBe(events.yaBoLunAppears.sec);
+    // 用户 11-19 选 F：比现身早 1.5 秒淡入
+    expect(battleSound.startSec).toBeCloseTo(events.yaBoLunAppears.sec - 1.5, 9);
     expect(battleSound.endSec).toBe(events.volleyCast.sec);
     expect(battleSound.入点秒! + battleSound.endSec! - battleSound.startSec).toBeCloseTo(27, 9);
     expect(battleCue.startSec).toBe(events.volleyCast.sec);
     expect(battleCue.入点秒).toBe(27);
-    console.log(`战斗曲：现身 ${events.yaBoLunAppears.sec.toFixed(3)} 秒起从 ${battleSound.入点秒!.toFixed(3)} 秒放，${events.volleyCast.sec.toFixed(3)} 秒（齐放出手）接后一条`);
+    console.log(`战斗曲：${battleSound.startSec.toFixed(3)} 秒起从 ${battleSound.入点秒!.toFixed(3)} 秒放，${events.volleyCast.sec.toFixed(3)} 秒（齐放出手）接后一条`);
   });
 });
 

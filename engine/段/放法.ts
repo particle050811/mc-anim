@@ -1,7 +1,8 @@
 // 段的 cue 表 → 母版里每一声怎么放（从段内第几秒起、放几秒、文件里从第几秒起、变速、循环、随时间的增益）。<SegSound>（段画面.tsx）照它挂 <Audio>。
 // 不依赖 React，单独测。cue 都是秒（段定义.ts），不对齐到任何帧网格（docs/决策/0015-原生60帧.md）。资产 cue 从 cue 的秒起、放 长秒、文件从 入点秒 起、按 cue 增益；
 // 台词 cue 同 pipeline/合成/台词落点.ts 的 台词头们：文件头 = 开口 − 开口秒，从文件头放到文件完多 台词尾余秒、段尾或同一句的下一截为止（段头之前的跳过）。
-import { cueGain, lineTailSec, segDurSec, type SegmentDef, type AssetCue } from './段定义.ts';
+import { lineTailSec, segDurSec, type SegmentDef, type AssetCue } from './段定义.ts';
+import { cueGainAt } from './音量包络.ts';
 import type { SoundTable } from './声音助手.ts';
 
 export type SoundItem = {
@@ -32,7 +33,7 @@ const assetSound = (c: AssetCue): SoundItem => {
     入点秒: c.入点秒 ?? 0,
     速率: c.速率 ?? 1,
     循环: Boolean(c.循环),
-    增益: (t) => cueGain(c, t),
+    增益: (t) => cueGainAt(c, t),
   };
 };
 

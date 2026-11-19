@@ -2,7 +2,8 @@
 // 起因：放() 默认「放到文件完、截到段尾」，下一段不会接着放；前一段改短了，切点就挪到声音还很响的地方，没人发现（用户 11-19 听出亚波伦 8～9 秒雷声断了，
 // 说「总是顾头不顾尾」，要像单元测试那样查）。场时间线上的跨段声音（场声音.ts）照理接得上，这里也一并核成片里真的接上了。
 // 已有的、用户看过听过的问题记在作品的 声音接缝基线.tsv 里放行（元规则 1：看过的实现为准），新冒出来的才报错。
-import { segFps, segDurSec, isPerCell, cueGain, type AssetCue, type SegmentDef } from '../../engine/段/段定义.ts';
+import { segFps, segDurSec, isPerCell, type AssetCue, type SegmentDef } from '../../engine/段/段定义.ts';
+import { cueGainAt, envelopeTableAt } from '../../engine/段/音量包络.ts';
 import type { AudioInfo } from '../../engine/段/声音助手.ts';
 
 export type SeamSeg = { key: string; durSec: number; cues: readonly AssetCue[] };
@@ -31,8 +32,8 @@ const fileEndSec = (c: AssetCue, info: AudioInfo) => {
   return c.循环 ? pos % info.duration : pos;
 };
 
-/** 末尾增益（逐格的取最后一格；带淡出的到末尾是 0） */
-export const endGain = (c: AssetCue) => (isPerCell(c.增益) ? c.增益.value[c.增益.value.length - 1]! : cueGain(c, c.长秒));
+/** 末尾增益（逐格的取最后一格；带淡出的到末尾是 0；乘上包络表在末尾的倍数） */
+export const endGain = (c: AssetCue) => (isPerCell(c.增益) ? c.增益.value[c.增益.value.length - 1]! * (c.envelope ? envelopeTableAt(c.envelope, c.长秒) : 1) : cueGainAt(c, c.长秒));
 
 /** 一条 cue 在段缝上的状况：没放到段尾、量不到时长、放到段尾但文件放完或已静音（都不用管）；被截掉（下一段不接）；下一段从段头接着放（cont 是接上的那条） */
 export type SeamStatus =
@@ -85,7 +86,7 @@ export const checkSoundSeams = (segs: readonly SeamSeg[], measure: (id: string) 
       if (Math.abs(got - want) > maxJumpSec)
         issues.push({ baselineKey: `${seg.key}\t${c.name}\t跳位`, text: `${seg.key} → ${next!.key}「${c.name}」接缝跳了：前一截放到文件第 ${want.toFixed(3)} 秒，后一截从第 ${got.toFixed(3)} 秒接（差 ${((got - want) * 1000).toFixed(0)} 毫秒）` });
       if (isPerCell(c.增益) || isPerCell(cont.增益)) continue;
-      const jumpDb = dbOf(cueGain(cont, 0)) - dbOf(endGain(c));
+      const jumpDb = dbOf(cueGainAt(cont, 0)) - dbOf(endGain(c));
       if (Math.abs(jumpDb) > maxGainJumpDb) issues.push({ baselineKey: `${seg.key}\t${c.name}\t跳音量`, text: `${seg.key} → ${next!.key}「${c.name}」接缝音量跳了 ${jumpDb > 0 ? '+' : ''}${jumpDb.toFixed(1)} dB` });
     }
   });
