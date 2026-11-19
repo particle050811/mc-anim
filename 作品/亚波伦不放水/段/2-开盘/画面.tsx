@@ -86,7 +86,7 @@ export default definePicture(seg, soundUrl, () => {
     <TerraceCanvas ritualStructure cameraRig={cameraRig} ui={<YaBoLunHealthBar width={aspect.width} s={guiScale} healthRatio={1} />}>
       {/* 仪式做完后留在台地上的结构：方案的 总秒 之后就是静态的结构和火 */}
       <group position={altar}>
-        <RestRitualPerformance sec={timeline.events.summonDone.sec - timeline.events.placeRing.sec + w} plan={summonPlans.短} />
+        <RestRitualPerformance sec={timeline.events.summonDone.sec - timeline.events.placeMedal.sec + w} plan={summonPlans.短} />
       </group>
       <GirlYaBoLun {...yaBoLun.props} bonePose={yaBoLunPose} holdWand />
       {disc && wand && <>

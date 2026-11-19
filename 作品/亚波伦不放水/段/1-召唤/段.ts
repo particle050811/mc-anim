@@ -30,7 +30,7 @@ export default windowSeg(timeline, {
     // 仪式：多选一的取第一个；扣灵魂（幽匿催发体绽放声，13 个文件）一秒一声，轮着用
     let cycleIndex = 0;
     for (const summonSound of summonSounds(summonPlans.短)) {
-      const sec = events.placeRing + summonSound.sec;
+      const sec = events.placeMedal + summonSound.sec;
       if (summonSound.name.startsWith('扣灵魂')) {
         sounds.push(play(summonSound.asset[cycleIndex++ % summonSound.asset.length]!, sec, { peakDb: -18, name: summonSound.name }));
         continue;

@@ -23,7 +23,7 @@ const Content: React.FC<{ v: View }> = ({ v }) => {
     return (
       <>
         {offerings.map((offering, i) => (
-          <group key={offering.name} position={[((i % 6) - 2.5) * 1.5, 0, i < 6 ? 2.4 : 0.8]} scale={2}>
+          <group key={i} position={[(i - (offerings.length - 1) / 2) * 1.5, 0, 1.6]} scale={2}>
             <Offering name={offering.name} sec={0} />
           </group>
         ))}
