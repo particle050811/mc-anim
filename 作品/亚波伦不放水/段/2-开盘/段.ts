@@ -1,7 +1,7 @@
 // 第 2 幕 偷袭（用户 11-11 重排）：史蒂夫拿断曜流光潜行挥剑冲两次，第一次她瞬移走，第二次她往上一拉、他从她脚底下冲过去；
 // 她拉升里转身、伸杖、杖尖张盘，慢放、镜头绕着她转，停在祭坛上空 12 格、盘张开、杖指着他。窗口、声音 cue。纯模块。
 // 声音的时刻按世界秒排（场/1-台地/开盘拍.ts、开盘时刻.ts），放的时候换成片秒（慢放里的声音落在慢下来的画面上，本身不放慢，只有拉升那阵风压低了放）。
-// 响度三档（同 声音表.md 6.1 节）：主要（冲刺、瞬移、张盘）峰值 −10 dBFS，次要（脚步、风、瞬移前兆）−18 dBFS。
+// 响度三档（同 声音表.md 6.1 节）：主要（冲刺、瞬移，场时间线上的张盘也是）峰值 −10 dBFS，次要（脚步、风、瞬移前兆）−18 dBFS。
 // 一个事件有几个文件的挑哪个、多响、拉升那阵风放慢多少都是 Agent 取的，用户没听过。
 import { windowSeg } from '@engine/段/窗口段.ts';
 import { realNetherPack } from '../../地点/真下界位置.ts';
@@ -49,8 +49,7 @@ export default windowSeg(timeline, {
     // 瞬移：开始冒烟时前兆，挪过去那一下传送声
     playAt('音效/诡厄巫法/goety.apostle_pre_teleport', beats.smokeStart, { peakDb: peakDb, name: '瞬移前兆' });
     playAt('音效/诡厄巫法/goety.apostle_teleport.1', beats.移, { peakDb: mainPeakDb, name: '瞬移' });
-    // 张盘（11-11 起又回到第 2 幕：她拉升里张开，用户「飞行的时候伸出法杖 圆环缓缓张开」）
-    playAt('音效/诡厄巫法/goety.apostle_prepare_spell.1', beats.openWheelSec, { peakDb: mainPeakDb, name: '张盘' });
+    // 张盘（她拉升里张开，用户 11-11「飞行的时候伸出法杖 圆环缓缓张开」）响过段尾，在场时间线上
     return sounds;
   },
 });

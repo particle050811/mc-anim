@@ -39,24 +39,64 @@ const timelineDef = {
 } as const;
 /** 现身到第 4 幕出手几秒：先把事件解一遍再取，第 2 幕怎么改长短、改接法，战斗曲的入点都跟着走 */
 const appearToCastSec = ((events) => events.volleyCast.sec - events.yaBoLunAppears.sec)(defineSceneTimeline(timelineDef).events);
+/** 战斗曲比现身早几秒进（这 1.5 秒等功率淡入，现身时满）。下面的配乐、音效音量走势都是用户 11-19 听了几版试听后选的 F：
+ *  两家 Gemini 盲听加实测，原来音乐比音效低 10～13 dB（「8～9 秒我都听不出来」），12.38 秒段缝上张盘被截、到出手音效之间有 85 毫秒空洞 */
+const musicLeadSec = 1.5;
 
 export default defineSceneTimeline({
   ...timelineDef,
   // 跨第 1～5 幕的配乐、环境（用户 11-11「音乐也配上」）。各幕自己的音效写在各段的 段.ts 里，不在这里。
-  // 起止、入点、响度都是 Agent 取的，用户没听过；起止一律按事件，幕长变了跟着走。
+  // 起止、入点、响度原是 Agent 取的；战斗曲的进出和响度、张盘、下面的音量走势是用户 11-19 听试听选的 F。起止一律按事件，幕长变了跟着走。
   sound: [
-    // 战斗曲：游戏里这一战放的就是它（启示录下界亚波伦默认曲）。她现身时进，安息仪式那段只有环境声。
+    // 战斗曲：游戏里这一战放的就是它（启示录下界亚波伦默认曲）。她现身前 1.5 秒淡入、现身时满，安息仪式那段只有环境声。
     // 曲子 22.2 秒起收小、24.7 秒起往上推、27.0 秒重新砸进来：砸进来那一下落在 齐放出手（第一轮法术离手、开始狂轰滥炸那一刻；用户 11-11 要卡在出手上）。
-    // 拆两条：前一条放到 齐放出手 截掉，后一条从 齐放出手 起从 27.0 秒放；前一条的入点 = 27.0 − 现身到齐放出手的秒数，两条首尾接上、听不出缝，
+    // 拆两条：前一条放到 齐放出手 截掉，后一条从 齐放出手 起从 27.0 秒放；前一条的入点 = 27.0 − 前一条起到齐放出手的秒数，两条首尾接上、听不出缝，
     // 第 2 幕怎么改长短，砸的那一下都还在出手那一刻（现身后几秒现算，不抄数）
-    { asset: '配乐/亚波伦/決戦の刻', name: '战斗曲', 在: 'yaBoLunAppears', end: 'volleyCast', 入点秒: 27 - appearToCastSec, loudness: -22 },
-    // 他死在第 4 幕最后一刻：倒下前半秒开始淡，死后两秒淡完
-    { asset: '配乐/亚波伦/決戦の刻', name: '战斗曲-齐放', 在: 'volleyCast', end: { after: 'volleyDone', addSec: 2 }, 入点秒: 27, loudness: -22, fadeOutSec: 2.5 },
+    // 响度 −19（用户 11-19 选 F：比原来的 −22 整体抬 3 dB）；淡入、出手前再抬、收尾的淡出在下面的 gainAutomation
+    { asset: '配乐/亚波伦/決戦の刻', name: '战斗曲', 在: { after: 'yaBoLunAppears', addSec: -musicLeadSec }, end: 'volleyCast', 入点秒: 27 - appearToCastSec - musicLeadSec, loudness: -19 },
+    // 他死在第 4 幕最后一刻：死前 0.122 秒起等功率淡出，死后 1.028 秒淡完就停
+    { asset: '配乐/亚波伦/決戦の刻', name: '战斗曲-齐放', 在: 'volleyCast', end: { after: 'volleyDone', addSec: 1.028 }, 入点秒: 27, loudness: -19 },
     // 现身的雷声（7 秒）和她甩杖那阵风都响过 召唤完，原来写在 1-召唤 的 段.ts 里，被段尾一刀截掉（用户 11-19 听出 8～9 秒不连续）；挪到这里跨进第 2 幕放完
     { asset: '音效/entity.lightning_bolt.thunder.1', name: '现身雷声', 在: 'yaBoLunAppears', peakDb: -10 },
     { asset: '音效/诡厄巫法/goety.wind.1', name: '甩杖', 在: { after: 'yaBoLunAppears', addSec: staffFlick[0] }, peakDb: -18 },
+    // 张盘响过第 2 幕段尾（文件还剩 1.65 秒），原来写在 2-开盘 的 段.ts 里被截在段缝上、到出手音效之间空了 85 毫秒（用户 11-19 选 F 时挪上来）
+    { asset: '音效/诡厄巫法/goety.apostle_prepare_spell.1', name: '张盘', 在: 'wheelOpens', peakDb: -10 },
     // 下界荒地氛围垫底：mood.2 是 18 秒的长低鸣，从开头垫到现身以后、渐弱在曲子底下，文件自己放完（尾巴已经很轻，不截）；他死后曲子淡掉，再接一条 mood.1（8.8 秒）垫到第 5 幕完
     { asset: '音效/ambient.nether_wastes.mood.2', name: '下界氛围-开场', 在: '开始', loudness: -28 },
     { asset: '音效/ambient.nether_wastes.mood.1', name: '下界氛围-击败', 在: { after: 'volleyDone', addSec: 1 }, loudness: -28 },
+  ],
+  // 音量走势（用户 11-19 选 F，依据见 musicLeadSec）：增益按倍数在两点之间插，cosine 是半余弦缓动
+  gainAutomation: [
+    // 战斗曲：早进 1.5 秒等功率淡入；出手前 1.272 → 0.772 秒再抬 3 dB 保持到收尾；死前 0.122 秒起等功率淡出，死后 1.028 秒归零
+    {
+      target: { names: ['战斗曲', '战斗曲-齐放'] },
+      points: [
+        { 在: { after: 'yaBoLunAppears', addSec: -musicLeadSec }, db: -Infinity },
+        { 在: 'yaBoLunAppears', db: 0, curve: 'equalPowerIn' },
+        { 在: { after: 'volleyCast', addSec: -1.272 }, db: 0 },
+        { 在: { after: 'volleyCast', addSec: -0.772 }, db: 3, curve: 'cosine' },
+        { 在: { after: 'volleyDone', addSec: -0.122 }, db: 3 },
+        { 在: { after: 'volleyDone', addSec: 1.028 }, db: -Infinity, curve: 'equalPowerOut' },
+      ],
+    },
+    // 非配乐（音效、环境、雷声、张盘）出手前收一下：−7 dB 再回来，回满在出手前 5 毫秒，让出手那一声冒出来（跨 12.38 秒的段缝）
+    {
+      target: { kind: '非配乐' },
+      points: [
+        { 在: { after: 'volleyCast', addSec: -0.172 }, db: 0 },
+        { 在: { after: 'volleyCast', addSec: -0.042 }, db: -7, curve: 'cosine' },
+        { 在: { after: 'volleyCast', addSec: -0.005 }, db: 0, curve: 'cosine' },
+      ],
+    },
+    // 非配乐在轰炸里整体压 3 dB，给音乐让出来；他死前回到原样
+    {
+      target: { kind: '非配乐' },
+      points: [
+        { 在: { after: 'volleyCast', addSec: 0.128 }, db: 0 },
+        { 在: { after: 'volleyCast', addSec: 0.428 }, db: -3, curve: 'cosine' },
+        { 在: { after: 'volleyDone', addSec: -0.222 }, db: -3 },
+        { 在: { after: 'volleyDone', addSec: -0.072 }, db: 0, curve: 'cosine' },
+      ],
+    },
   ],
 });
