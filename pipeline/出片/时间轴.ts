@@ -30,6 +30,7 @@ export type TimelineAudio = {
   rate: number;
   loop: boolean;
   gainDb: number | null;
+  /** 末尾增益，算上淡出（cueGain 在 cue 末尾取值）；淡到 0 给 null，播放器退回 gainDb 按 fadeOutSec 画斜线 */
   endGainDb: number | null;
   fadeOutSec: number | null;
   /** 跨段的同一个声音：场声音是 场声音:<名>；段里自己写、下一段从段头接着放的（声音接缝认得出的）是 接续:<头一截的 id>；不跨段的 null */
