@@ -7,15 +7,15 @@ import type { ArrowRainShot } from '../零件/甲/落雨.ts';
 
 /** 引导放多久：游戏里按住就一直放；片里只放 60 刻（自己定的） */
 export const absZeroReleaseTicks = 60;
-const domainRadius = 24; // 12 + 下界魔杖 12
+export const domainRadius = 24; // 12 + 下界魔杖 12
 const halfSide = domainRadius * 2; // radius4 / 2：x、y、z 各 ±48
 
 /** 每刻 1 颗 IceSpear，生在「施法者头顶天花板」(这里取 脚底 + 15 格，没有天花板) 周围 ±48 格的立方体，朝施法者脚底射，散布 20～30（四分之一的概率几乎不散） */
-export const iceSpears = (from: Vec3, seed: number): ArrowRainShot[] => {
+export const iceSpears = (footAt: (ageSec: number) => Vec3, seed: number): ArrowRainShot[] => {
   const r = mulberry32(seed * 97 + 5);
-  const feet: Vec3 = [from[0], from[1], from[2] - 0.5];
-  const spawnCenter: Vec3 = [feet[0], feet[1], feet[2] + 15.5];
   return Array.from({ length: absZeroReleaseTicks }, (_, k) => {
+    const feet = footAt(k / 20);
+    const spawnCenter: Vec3 = [feet[0], feet[1], feet[2] + 15.5];
     const spawnJitter = () => (r() * 2 - 1) * halfSide;
     let spawnPos: Vec3 = [spawnCenter[0] + spawnJitter(), spawnCenter[1] + spawnJitter(), spawnCenter[2] + spawnJitter()];
     // 游戏里生在方块里会重抽竖直 ±2；这里地面以下当方块处理

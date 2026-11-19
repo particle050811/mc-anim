@@ -22,13 +22,15 @@ import bigSoulFire8Png from 'asset:贴图/法术/goety/particle/big_soul_fire_8'
 import { mulberry32 } from '@engine/core/数学.ts';
 
 const animFrames = [bigSoulFire1Png, bigSoulFire2Png, bigSoulFire3Png, bigSoulFire4Png, bigSoulFire5Png, bigSoulFire6Png, bigSoulFire7Png, bigSoulFire8Png].map(png);
-const FlameBreath: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
+const FlameBreath: React.FC<SpellPerformanceProps> = ({ sec, from, target, seed, wandTipAt, targetFootAt }) => {
   const tick = sec * 20;
   const breathKind: BreathParticleClass = { frame: animFrames, 帧号: (age) => Math.floor(age / 2) % 8, 寿命: fireBreathParticleLifeTicks, 重力: -0.1, 摩擦: 0.96, jitterHoriz: 1 / 500, jitterVert: 0, ground: target[2] };
-  const dir = sub([target[0], target[1], target[2] + 0.9], from);
   const spawns: BreathBirth[] = [];
-  for (let n = Math.max(0, Math.floor(tick) - fireBreathParticleLifeTicks); n <= Math.min(Math.floor(tick), fireBreathDurTicks - 1); n++)
-    for (const spawn of scatterDragonBreath(from, dir, 10, 0.28, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(mulberry32(spawn.seed + 9)()) * 3 });
+  for (let n = Math.max(0, Math.floor(tick) - fireBreathParticleLifeTicks); n <= Math.min(Math.floor(tick), fireBreathDurTicks - 1); n++) {
+    const mouth = wandTipAt?.(n / 20) ?? from, foot = targetFootAt?.(n / 20) ?? target;
+    const dir = sub([foot[0], foot[1], foot[2] + 0.9], mouth);
+    for (const spawn of scatterDragonBreath(mouth, dir, 10, 0.28, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(mulberry32(spawn.seed + 9)()) * 3 });
+  }
   return <BreathParticles type={breathKind} spawns={spawns} sec={sec} />;
 };
 

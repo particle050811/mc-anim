@@ -35,6 +35,7 @@ export type DashSettings = {
   groundHeight: (x: number, y: number) => number;
   /** 算几刻，默认 旋刻 + 5 */
   刻数?: number;
+  horizontalMotion?: { gain: number; airDrag: number; groundDrag: number };
 };
 
 export type DashTrail = {
@@ -57,7 +58,8 @@ export const calcDash = (settings: DashSettings): DashTrail => {
   const elevationRad = (settings.elevationDeg * Math.PI) / 180;
   const pushSpeed = valetteinDash.pushSpeed;
   // 站在地上时竖直速度是 −0.0784（上一刻的重力），push 加在它上面
-  let v: [number, number, number] = [settings.dir[0] * Math.cos(elevationRad) * pushSpeed, settings.dir[1] * Math.cos(elevationRad) * pushSpeed, Math.sin(elevationRad) * pushSpeed + standingVertSpeed];
+  const horizontal = Math.cos(elevationRad) * pushSpeed * (settings.horizontalMotion?.gain ?? 1);
+  let v: [number, number, number] = [settings.dir[0] * horizontal, settings.dir[1] * horizontal, Math.sin(elevationRad) * pushSpeed + standingVertSpeed];
   let p: V3 = [...settings.start];
   let onGround = false; // setOnGround(false)
   const points: V3[] = [p];
@@ -65,7 +67,7 @@ export const calcDash = (settings: DashSettings): DashTrail => {
   let landTick = -1;
   const n = settings.刻数 ?? valetteinDash.spinTicks + 5;
   for (let k = 1; k <= n; k++) {
-    const drag = onGround ? groundDrag : airDrag;
+    const drag = onGround ? (settings.horizontalMotion?.groundDrag ?? groundDrag) : (settings.horizontalMotion?.airDrag ?? airDrag);
     // 先竖直、再水平（Entity.collide 先解 y）
     const prevGround = boxGroundHeight(settings.groundHeight, p[0], p[1]);
     let z = p[2] + v[2];

@@ -132,9 +132,9 @@ const SingleTuft: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick 
   );
 };
 
-const GhostFire: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
+const GhostFire: React.FC<SpellPerformanceProps> = ({ sec, target, seed, landAt = point => point }) => {
   const tick = sec * 20;
-  const tufts = tuftPoints(target, seed);
+  const tufts = tuftPoints(target, seed).map(landAt);
   return (
     <>
       {tufts.map((pos, i) => (

@@ -12,14 +12,14 @@ import meta, { shakeLifeTicks, shakeDurTicks, shockLandPoint } from './震撼.�
 
 const electricColor = hexColor(0xb1abf1);
 
-const Shock: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
+const Shock: React.FC<SpellPerformanceProps> = ({ sec, from, target, seed, wandTipAt, targetFootAt }) => {
   const tick = sec * 20;
   const pulseTicks: number[] = [];
   for (let n = Math.max(0, Math.ceil(tick - shakeLifeTicks)); n <= Math.min(Math.floor(tick), shakeDurTicks - 1); n++) pulseTicks.push(n);
   return (
     <>
       {pulseTicks.map((n) => (
-        <ElectricArc key={n} start={from} end={shockLandPoint(target)} settings={arcPresets.shock} 刻={tick - n} lifeTicks={shakeLifeTicks} 色={electricColor} seed={seed * 977 + n} />
+        <ElectricArc key={n} start={wandTipAt?.(n / 20) ?? from} end={shockLandPoint(targetFootAt?.(n / 20) ?? target)} settings={arcPresets.shock} 刻={tick - n} lifeTicks={shakeLifeTicks} 色={electricColor} seed={seed * 977 + n} />
       ))}
     </>
   );

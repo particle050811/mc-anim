@@ -2,7 +2,8 @@
 // 多圈是本片原创（用户 11-09 定「原版玩家法术轮盘只有一圈，我想改成多圈以容纳所有法术」），原版和启示录都只有一圈。
 // 最里一圈就是原版那一圈（内 30、外 60 GUI 像素，数见 库/界面/径向轮盘数.ts）；往外每圈再加一个环宽。
 // 每圈格数的上限：图标沿图标圆的间距不小于原版一圈放 20 格时的间距（2π × 45 / 20 ≈ 14.1 GUI 像素；图标 16 像素，原版 20 格时相邻图标本来就叠 2 像素）。
-import { radialWheelConst } from '@库/界面/径向轮盘数.ts';
+import { lerp, mod, smoothstep01 } from '@engine/core/数学.ts';
+import { cellRange, radialWheelConst } from '@库/界面/径向轮盘数.ts';
 
 export type SplitMode = '按周长' | '均分' | '填满内圈';
 
@@ -132,24 +133,36 @@ export const ringRotation = (k: number, tick: number, ringOpen: OpenClose = defa
 
 /** 盘心移出（原创，第 2 幕张盘；用户 11-11「现在是轮盘张开的时候 聚晶突然出现 / 应该是一开始都是从中心点蜷缩的 重叠的 移到正确的位置上」）：
  *  原版 GenericRadialMenu 弹开的 2.5 刻里只画带子，isReady() 了图标一下全冒出来（多圈轮盘 默认照这个）。
- *  移出：一开盘所有图标缩成一小团叠在圆心，各自沿半径往外走、边走边放大、带一点旋，那一圈弹完（第 k × 圈间隔刻 + 每圈刻 刻）正好落到格上、原大、旋转补完；
- *  走法缓起缓停（smoothstep），各圈同时起步、外圈走得久，三圈的图标差不多一个速度往外散。起缩放、卷是 Agent 取的，用户没看过 */
-export type MoveOut = {
-  /** 刚开盘时图标是原大的几倍 */
-  startScale: number;
-  /** 刚开盘时比落定的格多转几度（顺时针为正），走的路上转回去 */
-  roll: number;
-};
-
-export const defaultMoveOut: MoveOut = { startScale: 0.25, roll: -60 };
-
-/** 第 k 圈的图标在打开后第 刻 刻走到哪：比例 = 离圆心是落定半径的几成；缩放；卷 = 多转的弧度。那一圈弹完以后返回 null（照常画） */
-export const moveOutState = (k: number, tick: number, ringOpen: OpenClose = defaultOpenClose, moveOut: MoveOut = defaultMoveOut): { ratio: number; scale: number; roll: number } | null => {
+ *  图标从第一帧就是原大，叠在杖尖，再沿带一点旋转的弧线散到各圈。 */
+export const moveOutState = (k: number, tick: number, ringOpen: OpenClose = defaultOpenClose): { ratio: number; roll: number } | null => {
   const endTick = k * ringOpen.ringGapTick + ringOpen.ticksPerRing;
   if (tick >= endTick) return null;
-  const p = Math.max(0, tick) / endTick;
-  const e = p * p * (3 - 2 * p);
-  return { ratio: e, scale: moveOut.startScale + (1 - moveOut.startScale) * e, roll: (moveOut.roll * (1 - e) * Math.PI) / 180 };
+  const ratio = smoothstep01(tick / endTick);
+  return { ratio, roll: (-Math.PI / 3) * (1 - ratio) };
+};
+
+type IconOrbit = { radius: number; angle: number };
+
+export const moveOutSlot = (ring: number, cell: number, counts: readonly number[], tick: number, shape: RingShape, opening: OpenClose): IconOrbit & { carrier?: IconOrbit & { cell: number; settled: boolean } } => {
+  const orbit = (track: number, slot: number): IconOrbit => {
+    const moving = moveOutState(track, tick, opening);
+    return { radius: ringRadius(track, shape).iconRadius * (moving?.ratio ?? 1), angle: cellRange(slot, counts[track]!).中 + ringRotation(track, tick, opening) + (moving?.roll ?? 0) };
+  };
+  const parent = ring - 1;
+  if (ring !== counts.length - 1 || !counts[parent] || opening.ringGapTick <= 0 || tick >= openDoneTick(counts.length, opening)) return orbit(ring, cell);
+
+  const splitTick = openDoneTick(ring, opening);
+  const turn = 2 * Math.PI;
+  const spinOffset = ringRotation(ring, splitTick, opening) - ringRotation(parent, splitTick, opening);
+  const parentCount = counts[parent]!;
+  // 以分开那一刻选最近的格，跨第 0 格也沿短弧走；两圈反转时途中不换格。
+  const unwrapped = Math.round((cell / counts[ring]! + spinOffset / turn) * parentCount);
+  const parentCell = mod(unwrapped, parentCount);
+  const carrier = { ...orbit(parent, parentCell), cell: parentCell, settled: tick >= splitTick };
+  if (tick <= splitTick) return { radius: carrier.radius, angle: carrier.angle, carrier };
+  const blend = smoothstep01((tick - splitTick) / opening.ringGapTick);
+  const target = cellRange(cell, counts[ring]!).中 + ringRotation(ring, tick, opening) - Math.floor(unwrapped / parentCount) * turn;
+  return { radius: lerp(carrier.radius, ringRadius(ring, shape).iconRadius, blend), angle: lerp(carrier.angle, target, blend), carrier };
 };
 
 /** 收盘（原创，第 5 幕）：开始收后第 收刻 刻，照张开倒着走：最外圈先缩回、最里一圈最后缩回圆心（等效于张开到第「开完刻 − 收刻」刻）；

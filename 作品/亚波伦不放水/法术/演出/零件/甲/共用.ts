@@ -58,3 +58,6 @@ export const launchTrajectory = (startPos: Vec3, aim: Vec3, rate: number, opts: 
   }
   return { trajectory: parabola(startPos, throwTo(startPos, aim, best.n, opts), opts), arriveTick: best.n };
 };
+
+export const focusArrowPath = (from: Vec3, target: Vec3, highSpeed = 0, flightPower = 1) =>
+  launchTrajectory(from, aimPoint(target), (1.6 + highSpeed / 3) * flightPower, { drag: 0.99, 重力: 0.05 });

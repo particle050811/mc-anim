@@ -17,7 +17,7 @@ import { mulberry32 } from '@engine/core/数学.ts';
 
 const iceSpike: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
-  const { trajectory, arriveTick } = iceSpikePath(from, target, options?.highSpeed);
+  const { trajectory, arriveTick } = iceSpikePath(from, target, options?.highSpeed, options?.flightPower);
   const r = mulberry32(seed * 3 + 1);
   const snow = eachTick(1, Math.min(tick, arriveTick)).map((n) => {
     const speedVec = sub(trajectory(n + 1), trajectory(n));

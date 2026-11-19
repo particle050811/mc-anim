@@ -9,7 +9,7 @@
 // 没做：目标着火、受伤。
 import React from 'react';
 import { defineSpellPerformance } from '../定义.tsx';
-import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import type { SpellPerformanceProps } from '../接口.ts';
 import { groundFireClass, bigFireLifetime, burningClass, defaultRadius, fieryPillarClass } from '../零件/丁粒子.ts';
 import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
 import meta, { blazeEruptTick, blazeWarmupTick } from './炽燃升腾.元.ts';
@@ -28,14 +28,14 @@ const ringCells = (radius: number): [number, number][] => {
 };
 const offsets = [...ringCells(3), ...ringCells(6)];
 
-const BlazeRise: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
+const BlazeRise: React.FC<SpellPerformanceProps> = ({ sec, target, seed, landAt = point => point }) => {
   const r = mulberry32(seed * 7919 + 31);
   const pillarEmbers: ParticleBirth[] = [];
   const flameColumn: ParticleBirth[] = [];
   const groundFlames: ParticleBirth[] = [];
   for (const [dx, dz] of offsets) {
     // 游戏 (x, z 南) → 场景 (x, −z)
-    const pillarBase: Vec3 = [target[0] + dx, target[1] - dz, target[2]];
+    const pillarBase = landAt([target[0] + dx, target[1] - dz, target[2]]);
     for (let t = 0; t < blazeWarmupTick; t++) {
       pillarEmbers.push({ 刻: t, 位: [pillarBase[0] + (r() - 0.5) * 0.5, pillarBase[1] + (r() - 0.5) * 0.5, pillarBase[2] + 0.5], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: bigFireLifetime, radius: defaultRadius(r) * 3, seed: 1 });
     }

@@ -28,7 +28,7 @@ const bounceHeight = (initSpeed: number, age: number): number | null => {
   return prev + (y - prev) * (age - Math.floor(age));
 };
 
-const GroundQuake: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
+const GroundQuake: React.FC<SpellPerformanceProps> = ({ sec, from, target, seed, landAt = point => point }) => {
   const tick = sec * 20;
   const horizontalDist = Math.hypot(target[0] - from[0], target[1] - from[1]) || 1;
   const forward = [(target[0] - from[0]) / horizontalDist, (target[1] - from[1]) / horizontalDist];
@@ -47,7 +47,7 @@ const GroundQuake: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: 
       const x = Math.floor(from[0] + forward[0] * i + perpendicular[0] * sideOffset) + 0.5;
       const y = Math.floor(from[1] + forward[1] * i + perpendicular[1] * sideOffset) + 0.5;
       groundBlocks.push(
-        <mesh key={`${i}-${colIndex}`} position={[x, y, target[2] - 0.5 + height]} material={material}>
+        <mesh key={`${i}-${colIndex}`} position={[x, y, landAt([x, y, target[2]])[2] - 0.5 + height]} material={material}>
           <boxGeometry args={[1, 1, 1]} />
         </mesh>,
       );

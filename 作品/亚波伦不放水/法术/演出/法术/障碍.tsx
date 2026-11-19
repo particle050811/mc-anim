@@ -19,10 +19,10 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const monolithModel = getModel(monolithModelData, 'MonolithModel');
 const image = png(totemicWallPng);
 
-const obstacle: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
+const obstacle: React.FC<SpellPerformanceProps> = ({ sec, target, seed, landAt = point => point }) => {
   const tick = sec * 20;
   const age = wallAge(tick);
-  const positions = wallPositions(target);
+  const positions = wallPositions(target).map(landAt);
   const smokeSpawns: ParticleSpawn[] = positions.flatMap((pos, i) => {
     const n = 10 + Math.floor(mulberry32(seed * 37 + i)() * 35);
     return Array.from({ length: n }, (_, k): ParticleSpawn => ({ kind: 'poof', 刻: 0, p: [pos[0], pos[1], pos[2]], seed: seed * 5000 + i * 60 + k }));

@@ -31,13 +31,13 @@ const white: readonly [number, number, number] = [1, 1, 1];
 const bigThunderColor = hexColor(0x6464dc);
 const smallThunderColor = hexColor(0xb1abf1);
 
-const TridentStorm: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
+const TridentStorm: React.FC<SpellPerformanceProps> = ({ sec, from, target, seed, landAt = point => point }) => {
   const tick = sec * 20;
   return (
     <>
       {prongOffsets.map(([x, z], i) => {
         const r = mulberry32(seed * 883 + i);
-        const pos: Vec3 = [from[0] + x, from[1] - z, target[2]];
+        const pos = landAt([from[0] + x, from[1] - z, target[2]]);
         const landTick = prongWarnTicks + Math.floor(r() * 61);
         const blastTick = landTick + prongBlastGapTicks;
         const active = tick >= landTick;

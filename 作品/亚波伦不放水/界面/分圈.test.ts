@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { radialWheelConst, cellAngle, WheelState } from '@库/界面/径向轮盘数.ts';
 import { spellTable } from '../法术/法术表.ts';
-import { splitRings, ringRadius, ringCapacity, RingState, openDoneTick, retractRingState, minRingCount, moveOutState, placeCells, fitScale, defaultOpenClose, defaultRingShape, defaultMoveOut, type SplitMode } from './分圈.ts';
+import { splitRings, ringRadius, ringCapacity, RingState, ringRotation, openDoneTick, retractRingState, minRingCount, moveOutState, moveOutSlot, placeCells, fitScale, defaultOpenClose, defaultRingShape, type SplitMode } from './分圈.ts';
 import { schoolOrder, sortSpells, arrangeWheel, pickSpells } from './轮盘法术.ts';
 
 const sum = (values: readonly number[]) => values.reduce((a, b) => a + b, 0);
@@ -112,23 +112,64 @@ describe('开合', () => {
     expect(retractRingState(1, 100, 2, 3)!.angleRad).toBeCloseTo(RingState(1, 100)!.angleRad, 12);
   });
 
-  it('盘心移出：开盘时各圈图标都缩在圆心，那一圈弹完正好落定（之后 null，照常画），中间往外走、变大、旋转都不回头', () => {
+  it('盘心移出：开盘时各圈图标都缩在圆心，那一圈弹完正好落定（之后 null，照常画），中间往外走、旋转都不回头', () => {
     for (const k of [0, 1, 2]) {
-      expect(moveOutState(k, 0)).toEqual({ ratio: 0, scale: defaultMoveOut.startScale, roll: (defaultMoveOut.roll * Math.PI) / 180 });
+      expect(moveOutState(k, 0)).toEqual({ ratio: 0, roll: -Math.PI / 3 });
       const endTick = k * defaultOpenClose.ringGapTick + defaultOpenClose.ticksPerRing;
       expect(moveOutState(k, endTick)).toBeNull();
       expect(RingState(k, endTick)!.animating).toBe(false);
       expect(RingState(k, endTick - 1e-6)!.animating).toBe(true);
       const endState = moveOutState(k, endTick - 1e-6)!;
-      expect([endState.ratio, endState.scale, endState.roll]).toEqual([expect.closeTo(1, 6), expect.closeTo(1, 6), expect.closeTo(0, 6)]);
+      expect([endState.ratio, endState.roll]).toEqual([expect.closeTo(1, 6), expect.closeTo(0, 6)]);
       let prev = moveOutState(k, 0)!;
       for (let tick = 0.1; tick < endTick; tick += 0.1) {
         const curState = moveOutState(k, tick)!;
         expect(curState.ratio).toBeGreaterThanOrEqual(prev.ratio);
-        expect(curState.scale).toBeGreaterThanOrEqual(prev.scale);
         expect(Math.abs(curState.roll)).toBeLessThanOrEqual(Math.abs(prev.roll));
         prev = curState;
       }
+    }
+  });
+});
+
+describe('最外圈分段移出', () => {
+  it.each([71, 128])('%i 格：全程跟同一枚次外圈聚晶；分流、落定两端的速度都接得上', (count) => {
+    const counts = splitRings(count);
+    const outer = counts.length - 1;
+    const opening = { ...defaultOpenClose, spinStartTick: 1220 };
+    const split = openDoneTick(outer, opening);
+    const end = openDoneTick(outer + 1, opening);
+    const epsilon = 1e-4;
+    const pos = ({ radius, angle }: { radius: number; angle: number }) => [radius * Math.cos(angle), radius * Math.sin(angle)] as const;
+    const slots = new Set<number>();
+    for (let cell = 0; cell < counts[outer]!; cell++) {
+      const at = (tick: number) => moveOutSlot(outer, cell, counts, tick, defaultRingShape, opening);
+      const parent = at(split).carrier!.cell;
+      slots.add(parent);
+      for (const tick of [0, split / 2, split - epsilon, split]) {
+        const carrier = moveOutSlot(outer - 1, parent, counts, tick, defaultRingShape, opening);
+        expect(at(tick)).toMatchObject({ radius: carrier.radius, angle: carrier.angle, carrier: { cell: parent } });
+      }
+      const mid = at((split + end) / 2);
+      const targetAngle = cellAngle(cell, counts[outer]!) + ringRotation(outer, (split + end) / 2, opening);
+      expect(mid.radius).toBe((ringRadius(outer - 1).iconRadius + ringRadius(outer).iconRadius) / 2);
+      expect(Math.cos(mid.angle - targetAngle)).toBeGreaterThan(0.99);
+      for (const boundary of [split, end]) {
+        const before = pos(at(boundary - epsilon)), on = pos(at(boundary)), after = pos(at(boundary + epsilon));
+        for (const axis of [0, 1] as const) expect(Math.abs(after[axis] - 2 * on[axis] + before[axis]) / epsilon).toBeLessThan(0.01);
+      }
+      expect(at(end).radius).toBe(ringRadius(outer).iconRadius);
+      expect(at(end).angle).toBeCloseTo(cellAngle(cell, counts[outer]!) + ringRotation(outer, end, opening), 10);
+    }
+    expect(slots.size).toBe(counts[outer - 1]);
+  });
+
+  it('只有一圈没有可跟随的格；圈间隔为零仍能同时落定', () => {
+    for (const counts of [[12], [12, 19]]) {
+      const outer = counts.length - 1;
+      const opening = { ...defaultOpenClose, ringGapTick: 0 };
+      expect(moveOutSlot(outer, 0, counts, 1.25, defaultRingShape, opening).radius).toBe(ringRadius(outer).iconRadius / 2);
+      expect(moveOutSlot(outer, 0, counts, 2.5, defaultRingShape, opening).carrier).toBeUndefined();
     }
   });
 });

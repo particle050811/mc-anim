@@ -40,10 +40,10 @@ const pulseFrames = [minePulse1Png, minePulse2Png, minePulse3Png, minePulse4Png]
 const sparkParticleClass: ParticleClass = { frame: [bigElectric1Png, bigElectric2Png, bigElectric3Png].map(png), 选帧: '按年龄', blend: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
 const redBurstParticleClass: ParticleClass = { frame: [generic7Png, generic6Png, generic5Png, generic4Png, generic3Png, generic2Png, generic1Png, generic0Png].map(png), 选帧: '随机', 摩擦: 0.96, 色: [0.44, 0.05, 0.02], size: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5 };
 
-const scatter: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
+const scatter: React.FC<SpellPerformanceProps> = ({ sec, from, target, seed, landAt = point => point }) => {
   const tick = sec * 20;
   const wholeTick = Math.floor(tick);
-  const positions = minePositions(from, target);
+  const positions = minePositions(from, target).map(landAt);
   const sparks: ParticleBirth[] = [];
   const redBurst: ParticleBirth[] = [];
   positions.forEach((pos, i) => {

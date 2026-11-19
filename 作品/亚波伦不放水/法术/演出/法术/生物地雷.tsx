@@ -43,7 +43,7 @@ const white: readonly [number, number, number] = [1, 1, 1];
 const acidColor = hexColor(0x20b33e);
 
 type Mine = { 位: Vec3; blastTick: number };
-const mineRow = (target: Vec3, seed: number): Mine[] =>
+const mineRow = (target: Vec3, seed: number, landAt: (point: Vec3) => Vec3): Mine[] =>
   Array.from({ length: bioMineCount }, (_, i) => {
     const r = mulberry32(seed * 449 + i);
     let [x, y] = [4, 0];
@@ -53,12 +53,12 @@ const mineRow = (target: Vec3, seed: number): Mine[] =>
     }
     let blastTick = bioMineLifeTicks;
     while (blastTick < bioMineLatestTick && Math.floor(r() * 8) !== 0) blastTick++;
-    return { 位: [target[0] + x, target[1] + y, target[2]] as const, blastTick };
+    return { 位: landAt([target[0] + x, target[1] + y, target[2]]), blastTick };
   });
 
-const bioMine: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
+const bioMine: React.FC<SpellPerformanceProps> = ({ sec, target, seed, landAt = point => point }) => {
   const tick = sec * 20;
-  const bolts = mineRow(target, seed);
+  const bolts = mineRow(target, seed, landAt);
   const acidSpawns: ParticleBirth[] = [];
   bolts.forEach((mine, i) => {
     const r = mulberry32(seed * 677 + i);

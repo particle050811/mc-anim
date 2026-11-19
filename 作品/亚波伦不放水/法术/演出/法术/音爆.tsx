@@ -6,18 +6,30 @@ import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { addVec, sub, scaleVec, vecLength, unitVec } from '../零件/弹道.ts';
 import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
-import meta from './音爆.元.ts';
+import { vanillaParticleAtlas } from '@库/特效/原版粒子.tsx';
+import { visibleVanillaParticles } from '@库/特效/原版粒子状态.ts';
+import { ParticleQuads, type Particle } from '@库/特效/粒子面片.tsx';
+import meta, { receiverWaveSprite, sonicWaveCount } from './音爆.元.ts';
 
-const sonicBoom: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
+const sonicBoom: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const eye: Vec3 = [target[0], target[1], target[2] + 1.62];
   const startToEyeDiff = sub(eye, from);
   const dir = unitVec(startToEyeDiff);
-  const spawnCount = Math.floor(vecLength(startToEyeDiff)) + 6;
+  const spawnCount = sonicWaveCount(vecLength(startToEyeDiff), options?.receivingSonic);
   const spawns: ParticleSpawn[] = Array.from({ length: spawnCount }, (_, k) => {
     const p = addVec(from, scaleVec(dir, k + 1));
     return { kind: 'sonic_boom', 刻: 0, p: [p[0], p[1], p[2]], seed: seed * 101 + k };
   });
-  return <VanillaParticles spawns={spawns} sec={sec} />;
+  if (!options?.receivingSonic) return <VanillaParticles spawns={spawns} sec={sec} />;
+  const { opaque } = visibleVanillaParticles(spawns, sec * 20);
+  const fronts = opaque.flatMap((state, index): Particle[] => {
+    const sprite = receiverWaveSprite(spawnCount - 1 - index, sec);
+    if (!sprite) return [];
+    const native = sprite === 'native';
+    return [{ p: state.p, uv: vanillaParticleAtlas.uv[native ? state.tex : sprite],
+      half: state.half * (native ? 1 : 0.92 + 0.42 * sec), color: native ? state.color : [1, 1, 1], alpha: state.alpha }];
+  });
+  return <ParticleQuads tex={vanillaParticleAtlas.tex} items={fronts} />;
 };
 
 export default defineSpellPerformance(meta, sonicBoom);

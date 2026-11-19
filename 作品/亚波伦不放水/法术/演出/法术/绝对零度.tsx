@@ -14,21 +14,18 @@ import { ArrowRainGroup } from '../零件/甲/落雨画.tsx';
 import { frostFlowerClass } from '../零件/丁粒子.ts';
 import { frostRingSpawns, FrostWall } from '../零件/丁霜.tsx';
 import { TexturedParticles } from '../零件/粒子.tsx';
-import meta, { iceSpears } from './绝对零度.元.ts';
+import meta, { absZeroReleaseTicks, domainRadius, iceSpears } from './绝对零度.元.ts';
 import iceSpikePng from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
 
-const domainRadius = 24;
 const ringTicks = [0, 40];
 
-const AbsoluteZero: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
-  // 法阵、边界环围着施法者水平位置，高度取目标脚底的地面（起点在演出里悬在空中）
-  const feet: [number, number, number] = [from[0], from[1], target[2]];
-  const frostSpawns = ringTicks.flatMap((t, i) => frostRingSpawns(seed * 41 + i, feet, domainRadius, t));
+const AbsoluteZero: React.FC<SpellPerformanceProps> = ({ sec, from, casterFootAt = () => from, seed }) => {
+  const frostSpawns = ringTicks.flatMap((tick, index) => tick > sec * 20 ? [] : frostRingSpawns(seed * 41 + index, casterFootAt(tick / 20), domainRadius, tick));
   return (
     <>
-      <FrostWall 位={feet} radius={domainRadius} 刻={sec * 20} />
+      {sec * 20 < absZeroReleaseTicks && <FrostWall 位={casterFootAt(sec)} radius={domainRadius} 刻={sec * 20} />}
       <TexturedParticles type={frostFlowerClass} spawns={frostSpawns} sec={sec} />
-      <ArrowRainGroup projectiles={iceSpears(from, seed)} sec={sec} image={png(iceSpikePng)} fogColor={[1, 1, 1]} seed={seed} />
+      <ArrowRainGroup projectiles={iceSpears(casterFootAt, seed)} sec={sec} image={png(iceSpikePng)} fogColor={[1, 1, 1]} seed={seed} />
     </>
   );
 };

@@ -8,6 +8,10 @@ export interface SpellPerformanceProps {
   readonly sec: number;
   /** 法术从哪出来：轮盘上那一格或杖尖 */
   readonly from: Vec3;
+  readonly casterFootAt?: (ageSec: number) => Vec3;
+  readonly wandTipAt?: (ageSec: number) => Vec3;
+  readonly targetFootAt?: (ageSec: number) => Vec3;
+  readonly landAt?: (point: Vec3) => Vec3;
   /** 打谁：史蒂夫脚底中心 */
   readonly target: Vec3;
   /** 这一发自己的随机数种子；同一个种子每帧算出来一样 */
@@ -20,10 +24,12 @@ export interface SpellPerformanceProps {
 export interface SpellOptions {
   /** 高速附魔（Velocity，聚晶满级 5）的级数：弹速照各法术 SpellResult 里的公式加 */
   readonly highSpeed?: number;
+  readonly flightPower?: number;
   /** 施法（蓄力）刻数：演出里含蓄力那一段的法术（卫射、撕裂）照它演；晋升之环 4 倍施法速度这种在宿主里先算好 */
   readonly castTick?: number;
   /** 不画落雷预警圈（雷暴） */
   readonly noWarningRing?: boolean;
+  readonly receivingSonic?: true;
 }
 
 export interface SpellSound {

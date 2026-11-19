@@ -17,7 +17,7 @@ import diamondSwordPng from 'asset:贴图/法术/minecraft/item/diamond_sword';
 
 const magicSword: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
-  const { trajectory, arriveTick } = magicSwordPath(from, target, options?.highSpeed);
+  const { trajectory, arriveTick } = magicSwordPath(from, target, options?.highSpeed, options?.flightPower);
   const particles: ParticleSpawn[] = eachTick(1, Math.min(tick, arriveTick)).map((n) => {
     const speedVec = sub(trajectory(n + 1), trajectory(n));
     const p = addVec(trajectory(n), scaleVec(speedVec, 0.75));

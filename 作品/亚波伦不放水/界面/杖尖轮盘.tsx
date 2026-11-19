@@ -24,8 +24,10 @@ export const WandTipWheel: React.FC<
   const cacheKey = JSON.stringify([staff, placement]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const matrix = useMemo(() => discMatrix(staffTipPlatePose(staff, placement)), [cacheKey]);
+  const charge = Math.max(0, ...Object.values(ringParams.flash ?? {}));
   return (
     <group matrix={matrix} matrixAutoUpdate={false}>
+      {charge > 0 && <pointLight color="#ffe4b8" intensity={7 * charge} distance={4} decay={2} />}
       <WheelWorldPlane draw={(canvasPos) => drawMultiRingWheel(canvasPos, ringParams)} radius={Math.max(128, wheelOuterRadius(ringParams) + 4)} cellsPerPixel={cellsPerPixel} deps={[JSON.stringify(ringParams)]} renderOrder={renderOrder} />
     </group>
   );

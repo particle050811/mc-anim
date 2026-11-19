@@ -50,12 +50,12 @@ const sparkParticleClass: ParticleClass = { frame: [electric1Png,electric2Png,el
 const bigSparkParticleClass: ParticleClass = { frame: [bigElectric1Png, bigElectric2Png, bigElectric3Png].map(png), 选帧: '按年龄', blend: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
 const burstParticleClass: ParticleClass = { frame: [circleExplode1Png, circleExplode2Png, circleExplode3Png, circleExplode4Png, circleExplode5Png, circleExplode6Png, circleExplode7Png, circleExplode8Png].map(png), 选帧: '按年龄', blend: '半透明', 色: yellow };
 
-const dash: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed }) => {
+const dash: React.FC<SpellPerformanceProps> = ({ sec, from, target, casterFootAt, seed }) => {
   const tick = sec * 20;
   const end = addVec(target, [0, 0, 0.9]);
   const dir = unitVec(sub(end, from));
   const chargeTicks = Math.min(20, Math.max(1, Math.ceil((vecLength(sub(end, from)) - 1.5) / 2.5)));
-  const dashPos = (k: number): Vec3 => addVec(from, scaleVec(dir, 2.5 * Math.min(k, chargeTicks)));
+  const dashPos = (k: number): Vec3 => casterFootAt ? addVec(casterFootAt(k / 20), [0, 0, 0.5]) : addVec(from, scaleVec(dir, 2.5 * Math.min(k, chargeTicks)));
   const r = mulberry32(seed * 7919 + 29);
   const winds: WindBirth[] = Array.from({ length: 4 }, (_, i) => ({ 刻: 0, originAt: (k) => addVec(dashPos(k), [0, 0, -0.5]), width: 2, height: (2 * r() - 1) * 0.5, seed: seed * 1009 + i }));
   const bigSparks: ParticleBirth[] = [];

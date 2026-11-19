@@ -22,9 +22,9 @@ import { mulberry32 } from '@engine/core/数学.ts';
 const quickGrowingVineModel = getModel(quickGrowingVineModelData, 'QuickGrowingVineModel');
 const [burstAnim, idleAnim, burrowAnim] = [getAnim(quickGrowingVineAnims, 'BURST'), getAnim(quickGrowingVineAnims, 'IDLE'), getAnim(quickGrowingVineAnims, 'BURROW')];
 
-const overgrowth: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
+const overgrowth: React.FC<SpellPerformanceProps> = ({ sec, target, seed, landAt = point => point }) => {
   const tick = sec * 20;
-  const positions = vinePositions(target);
+  const positions = vinePositions(target).map(landAt);
   const debris: DebrisBirth[] = positions.flatMap((pos, i) => [
     ...scatterInCircle([pos[0], pos[1], pos[2] + 0.25], 1, vineEmergeTick(i), seed * 53 + i),
     ...scatterInCircle([pos[0], pos[1], pos[2] + 0.25], 1, vineEmergeTick(i) + vineLifeTicks, seed * 59 + i),

@@ -80,8 +80,8 @@ const straighten = (targetAngle: number, tick: number) => {
 
 const SoulBeam: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
   const tick = sec * 20;
-  const trajectory = soulBeamPath(from, target, options?.highSpeed);
-  const hitTick = soulBeamHitTick(from, target, options?.highSpeed);
+  const trajectory = soulBeamPath(from, target, options?.highSpeed, options?.flightPower);
+  const hitTick = soulBeamHitTick(from, target, options?.highSpeed, options?.flightPower);
   const hitPos = trajectoryPos(trajectory, hitTick);
   const centerAt = (t: number): Vec3 => addVec(trajectoryPos(trajectory, t), [0, 0, entityHeight / 2]);
   // 飞行方向不变（加速方向固定），取稳态的方向当目标角

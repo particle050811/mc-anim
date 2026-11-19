@@ -4,9 +4,8 @@
 // - 40 刻后落雷：CircleExplode（0xB1EBDC，大小 3）、SphereExplode（同色，大小 3）、一道 lightningBolt 从高空劈下（寿命 10 刻）、
 //   施法者头顶也劈一道往天上去的（寿命 10 刻）、16 道 shock 小电弧（从落点上方 1 格往四周偏 ±4，寿命 12 刻）。
 // 选项 无预警圈：不画预警圈，落雷照旧（亚波伦第 4 幕连放时地上铺满白圈，用户 11-11「雷暴预警圈全部删掉」；核对段照旧画）。
-// 这里把 目标 当成目标脚底；起点只取水平位置（围着施法者的那批也落在目标脚底的地面高度）。
 // 自己定的：只放到第 50 刻；闪电起点取 40 格高（游戏里 250 格，画面里看不出差别）。
-// 没做：GatherTrailParticle 八条汇聚拖尾；落点不贴地（取目标脚底高度，没有 moveDownToGround）；伤害、痉挛。
+// 没做：GatherTrailParticle 八条汇聚拖尾；伤害、痉挛。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { defineSpellPerformance } from '../定义.tsx';
@@ -24,17 +23,18 @@ const warningImg = png(aoeIndicatorPng);
 const thunderColor = hexColor(11660252);
 const white = hexColor(0xffffff);
 
-const Thunderstorm: React.FC<SpellPerformanceProps> = ({ sec: sec, from, target: target, seed: seed, options }) => {
+const Thunderstorm: React.FC<SpellPerformanceProps> = ({ sec, from, target, seed, options, casterFootAt, targetFootAt, landAt = point => point }) => {
   const tick = sec * 20;
-  const boltBase: Vec3 = [from[0], from[1], from[2] + 1.5];
   return (
     <>
       {strikePoints(seed).map((p, i) => {
-        const baseCenter = p.nearTarget ? target : from;
-        // 圈和落雷都贴目标脚底的地面高度（起点悬在演出机位的空中，围着它的那批也落到地面）
-        const pos: Vec3 = [baseCenter[0] + p.offsetX, baseCenter[1] - p.offsetZ, target[2]];
         const age = tick - p.生;
         const strikeAge = age - stormWarnTicks;
+        if (age < 0 || strikeAge >= 12) return null;
+        const baseCenter = p.nearTarget ? targetFootAt?.(p.生 / 20) ?? target : casterFootAt?.(p.生 / 20) ?? from;
+        const pos = landAt([baseCenter[0] + p.offsetX, baseCenter[1] - p.offsetZ, target[2]]);
+        const caster = casterFootAt?.((p.生 + stormWarnTicks) / 20) ?? from;
+        const boltBase: Vec3 = [caster[0], caster[1], caster[2] + 1.5];
         const r = mulberry32(seed * 733 + i);
         return (
           <React.Fragment key={i}>
