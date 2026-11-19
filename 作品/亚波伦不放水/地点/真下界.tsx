@@ -34,6 +34,7 @@ import soulFire1Png from 'asset:贴图/仪式/minecraft/block/soul_fire_1';
 import { LightVolume } from '@engine/light/光体组件.tsx';
 import type { ExtraBlock, LightVolumeParams } from '@engine/light/光体.ts';
 import { trialLightVolume } from '@engine/light/光体试看.ts';
+import { trialParams } from '@engine/core/试看.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
@@ -131,7 +132,9 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
     });
   });
   if (t && t.origin.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.origin}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
-  const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * face), toLinear(netherLight.baseLight[1] * face), toLinear(netherLight.baseLight[2] * face));
+  // 试看「下界底光」：底光整体乘一个倍数（用户 11-19 问「有没有考虑削弱一下基准亮度」）
+  const baseScale = trialParams<{ 倍?: number }>('下界底光')?.['倍'] ?? 1;
+  const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * baseScale * face), toLinear(netherLight.baseLight[1] * baseScale * face), toLinear(netherLight.baseLight[2] * baseScale * face));
   const bottomColor = faceColor(faceShade.eastWest);
   const fillColor = (face: number) => faceColor(face).sub(bottomColor);
   return (
