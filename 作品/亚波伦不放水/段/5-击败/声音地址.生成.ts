@@ -14,6 +14,7 @@ import sound6 from "asset:音效/诡厄巫法/goety.heavy_woosh.2";
 const soundUrl: SoundUrl = {
   urls: {
     "配乐/亚波伦/決戦の刻": privateMusic("配乐/亚波伦/決戦の刻"),
+    "配乐/结算舞/DreamFunk忘情牛肉面": privateMusic("配乐/结算舞/DreamFunk忘情牛肉面"),
     "音效/ambient.nether_wastes.mood.1": sound0,
     "音效/block.beacon.deactivate": sound1,
     "音效/entity.generic.small_fall": sound2,
