@@ -2,6 +2,7 @@
 // 主干从落点往上 8 段、每段 16 格（共 128 格），每段水平随机偏 ±5 格；另有 2 条分叉，从主干第 6、5 段起各往下 3 段，每段偏 ±15 格。
 // 每段是一根方截面的细柱，同一条路径叠 4 层、宽度 0.1 / 0.3 / 0.5 / 0.7 格，颜色 (0.45, 0.45, 0.5)、加色混合，所以芯最亮、外圈淡蓝白。
 // 游戏里一道闪电形状不变、亮度闪几下；这里 flash（0～1）控制亮度，seed 换形状。原点是落点，Z 朝上。
+// nearFade [起, 止]（格，可不给）：离镜头不到 起 的部分不画、到 止 画全。劈在镜头主人身上时主干穿过眼睛，镜头在加色方柱里面会整屏发白。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { mulberry32 } from '../../engine/core/数学.ts';
@@ -75,21 +76,34 @@ const boltGeometry = (seed: number) => {
   return geometry;
 };
 
-export const LightningBolt: React.FC<{ seed?: number; flash?: number; position?: [number, number, number] }> = ({ seed = 7, flash = 1, position }) => {
+export const LightningBolt: React.FC<{ seed?: number; flash?: number; position?: [number, number, number]; nearFade?: readonly [number, number]}> = ({ seed = 7, flash = 1, position, nearFade }) => {
   const geo = useMemo(() => boltGeometry(seed), [seed]);
-  const mat = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color(0.45, 0.45, 0.5).multiplyScalar(0.3 * 2.5),
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        fog: false,
-        toneMapped: false,
-      }),
-    [],
-  );
+  const [fadeStart, fadeEnd] = nearFade ?? [0, 0];
+  const mat = useMemo(() => {
+    const m = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0.45, 0.45, 0.5).multiplyScalar(0.3 * 2.5),
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      fog: false,
+      toneMapped: false,
+    });
+    if (fadeEnd > 0) {
+      // 距离要在像素里量：一段柱子的面是 16 格长的大三角，按顶点量再插值，贴着眼睛那点会插成两端的平均、淡不掉
+      m.onBeforeCompile = (shader) => {
+        shader.uniforms.nearFade = { value: new THREE.Vector2(fadeStart, fadeEnd) };
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vViewPos;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvViewPos = mvPosition.xyz;');
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vViewPos;\nuniform vec2 nearFade;')
+          .replace('#include <alphatest_fragment>', '#include <alphatest_fragment>\ndiffuseColor.a *= smoothstep( nearFade.x, nearFade.y, length( vViewPos ) );');
+      };
+      m.customProgramCacheKey = () => '闪电近淡';
+    }
+    return m;
+  }, [fadeStart, fadeEnd]);
   mat.opacity = flash;
   if (flash <= 0) return null;
   return (

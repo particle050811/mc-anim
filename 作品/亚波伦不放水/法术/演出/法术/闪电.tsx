@@ -3,10 +3,11 @@
 // - 实体的命（LightningBolt.tick）：life 从 2 起每刻 −1；小于 0 之后，每刻有机会（life < −nextInt(10)）再闪一轮：flashes −1、life 回 1、换一个形状；flashes（1～3）用完就消失。
 //   实体活着的时候闪电一直画着，每轮换一次形状。
 // 和游戏的差别：库里的 LightningBolt 自带一盏照亮四周的灯，这里跟着闪电一直亮；游戏里只有 life ≥ 0 的那几刻天空发白。没做天空发白、点火。
-import React from 'react';
+import React, { useContext } from 'react';
 import { LightningBolt } from '@库/特效/闪电.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
+import { nearFadeContext } from '../零件/面片.tsx';
 import meta, { lightningMaxTicks } from './闪电.元.ts';
 import { mulberry32 } from '@engine/core/数学.ts';
 
@@ -32,11 +33,13 @@ const makeBolts = (seed: number): { bolts: { startTick: number; shapeSeed: numbe
 };
 
 const Lightning: React.FC<SpellPerformanceProps> = ({ sec: sec, target: target, seed: seed }) => {
+  // 段开了近镜淡就接上（第一人称劈在他身上，穿过眼睛那一截淡掉，用户 11-20「不要挡住太多的画面」）
+  const nearFade = useContext(nearFadeContext);
   const tick = sec * 20;
   const { bolts: flashes, endTick } = makeBolts(seed);
   if (tick >= endTick) return null;
   const bolt = [...flashes].reverse().find((x) => x.startTick <= tick)!;
-  return <LightningBolt seed={bolt.shapeSeed} flash={1} position={[target[0], target[1], target[2]]} />;
+  return <LightningBolt seed={bolt.shapeSeed} flash={1} position={[target[0], target[1], target[2]]} nearFade={nearFade ?? undefined} />;
 };
 
 export default defineSpellPerformance(meta, Lightning);

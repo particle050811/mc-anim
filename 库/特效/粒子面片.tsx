@@ -22,12 +22,14 @@ attribute float iHalf;
 attribute vec4 iUv;
 attribute vec4 iColor;
 varying vec2 vUv;
+uniform vec2 nearFade;
 varying vec4 vColor;
 void main() {
   // 右（corner.x = 1）取 U1，上（corner.y = 1）取 V0
   vUv = vec2(mix(iUv.x, iUv.z, corner.x * 0.5 + 0.5), mix(iUv.w, iUv.y, corner.y * 0.5 + 0.5));
   vColor = iColor;
   vec4 mvPosition = modelViewMatrix * vec4(iCenter, 1.0);
+  if (nearFade.y > 0.0) vColor.a *= smoothstep(nearFade.x, nearFade.y, length(mvPosition.xyz) - iHalf);
   mvPosition.xy += corner * iHalf;
   gl_Position = projectionMatrix * mvPosition;
   #include <logdepthbuf_vertex>
@@ -59,12 +61,14 @@ const s2l = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 
 // `tex`：贴图（DataTexture，sRGB）；`items`：这一帧要画的粒子；`translucent`：半透明混合（游戏的 PARTICLE_SHEET_TRANSLUCENT），否则不透明；
 // `depthWrite`：写不写深度。游戏的半透明粒子也写深度，成百上千个叠在一起的（气流.tsx）要关掉，
 // 否则先画的近处粒子会把后画的远处挡掉（实例不排序），叠不出浓淡。
-export const ParticleQuads: React.FC<{ tex: THREE.Texture; items: Particle[]; translucent?: boolean; alphaTest?: number; depthWrite?: boolean }> = ({
+// `nearFade`：[起, 止] 格，粒子离镜头的距离减去半边长不到 起 就不画、到 止 画全；不给 = 不淡，和游戏一样（镜头在被打的人眼里时，炸在身上的粒子会放大成整屏色块）。
+export const ParticleQuads: React.FC<{ tex: THREE.Texture; items: Particle[]; translucent?: boolean; alphaTest?: number; depthWrite?: boolean; nearFade?: readonly [number, number] }> = ({
   tex,
   items,
   translucent = false,
   alphaTest = 0.1,
   depthWrite = true,
+  nearFade,
 }) => {
   const count = items.length;
   const cap = Math.max(16, 2 ** Math.ceil(Math.log2(Math.max(1, count))));
@@ -78,7 +82,7 @@ export const ParticleQuads: React.FC<{ tex: THREE.Texture; items: Particle[]; tr
     geometry.setAttribute('iUv', new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4));
     geometry.setAttribute('iColor', new THREE.InstancedBufferAttribute(new Float32Array(cap * 4), 4));
     const mat = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null }, alphaTest: { value: alphaTest } }]),
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null }, alphaTest: { value: alphaTest }, nearFade: { value: new THREE.Vector2(0, 0) } }]),
       vertexShader: VERT,
       fragmentShader: FRAG,
       fog: true,
@@ -95,6 +99,7 @@ export const ParticleQuads: React.FC<{ tex: THREE.Texture; items: Particle[]; tr
     (mesh.material as THREE.Material).dispose();
   }, [geo, mesh]);
   (mesh.material as THREE.ShaderMaterial).uniforms.map.value = tex;
+  ((mesh.material as THREE.ShaderMaterial).uniforms.nearFade!.value as THREE.Vector2).set(nearFade?.[0] ?? 0, nearFade?.[1] ?? 0);
   const centerAttr = geo.getAttribute('iCenter') as THREE.InstancedBufferAttribute;
   const halfAttr = geo.getAttribute('iHalf') as THREE.InstancedBufferAttribute;
   const uvAttr = geo.getAttribute('iUv') as THREE.InstancedBufferAttribute;
