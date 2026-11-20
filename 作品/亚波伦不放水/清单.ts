@@ -24,6 +24,7 @@ export const manifest: readonly ManifestEntry[] = [
   { key: '核对-史蒂夫关节', 章: '核对' },
   { key: '核对-安息仪式', 章: '核对' },
   { key: '核对-法术录制', 章: '核对' },
+  { key: '核对-头像', 章: '核对' },
   { key: '1-召唤', 章: 1 },
   { key: '2-开盘', 章: 2 },
   { key: '4-齐放', 章: 4 },
