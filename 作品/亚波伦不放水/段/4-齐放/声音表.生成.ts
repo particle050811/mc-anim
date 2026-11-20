@@ -52,6 +52,12 @@ const soundTable: SoundTable = {
       "loudness": -17.5,
       "sha": "a49e4572828f"
     },
+    "音效/entity.blaze.ambient.2": {
+      "duration": 2.5,
+      "peakDb": -0.5,
+      "loudness": -15.6,
+      "sha": "ced1f87d6a68"
+    },
     "音效/entity.blaze.burn": {
       "duration": 1.82059,
       "peakDb": -3.8,
@@ -214,6 +220,12 @@ const soundTable: SoundTable = {
       "loudness": -29.7,
       "sha": "419b38043691"
     },
+    "音效/item.crossbow.loading_middle.2": {
+      "duration": 1.035125,
+      "peakDb": -5.6,
+      "loudness": -29.7,
+      "sha": "419b38043691"
+    },
     "音效/item.totem.use": {
       "duration": 3.422667,
       "peakDb": 1.7,
@@ -321,6 +333,12 @@ const soundTable: SoundTable = {
       "peakDb": 0.7,
       "loudness": -13.5,
       "sha": "efed0df2e97e"
+    },
+    "音效/诡厄巫法/goety.corrupt_beam_start.2": {
+      "duration": 3.105465,
+      "peakDb": -2.3,
+      "loudness": -24,
+      "sha": "aa2c12ab903f"
     },
     "音效/诡厄巫法/goety.dirt_debris.1": {
       "duration": 1.188571,
@@ -693,6 +711,12 @@ const soundTable: SoundTable = {
       "peakDb": -9.7,
       "loudness": -25.9,
       "sha": "99dfe31aad93"
+    },
+    "音效/诡厄巫法/goety.wind.2": {
+      "duration": 1.998292,
+      "peakDb": -8.6,
+      "loudness": -24.6,
+      "sha": "48969cedd3fb"
     },
     "音效/诡厄巫法/goety.wind_blast.1": {
       "duration": 2.75,
