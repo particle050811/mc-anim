@@ -25,12 +25,12 @@ it('盘上每种聚晶都接到真实出手及已注册画面；炼狱由独立�
   expect(sounds.some(sound => volleyLayers.some(layer => sound.name.startsWith(`施放-${layer.id}-`)))).toBe(true);
 });
 
-it('引导只启动一次，留场不重叠；补演的首个实例全部在侧镜结束前有画面', () => {
+it('引导演完接着放到他死、留场不重叠；补演的首个实例全部在侧镜结束前有画面', () => {
   expect(volleyLayers).toHaveLength(43);
   for (const layer of volleyLayers) {
     const launches = castTable.filter(cast => cast.id === layer.id);
     expect(launches[0]!.sec - actStart).toBeLessThan(1.8);
-    if (!layer.period) expect(launches).toHaveLength(1);
+    if (!layer.period) expect(launches.at(-1)!.end! - actStart).toBeGreaterThanOrEqual(deathTime - 1e-9);
     for (const [index, cast] of launches.entries()) {
       expect(cast.end!).toBeGreaterThan(cast.sec);
       if (index) expect(cast.sec + 1e-8).toBeGreaterThanOrEqual(launches[index - 1]!.end!);

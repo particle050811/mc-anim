@@ -233,8 +233,8 @@ const layeredLaunches = volleyLayers.flatMap((layer, index) => {
     const timing = spellDuration(getSpellMeta(layer.id), launchFrom(cast, approxSceneCtx), launchTarget(cast, approxSceneCtx), cast.options);
     const lifetime = Math.max(1, Math.ceil(timing.长秒 * 60));
     launches.push({ ...cast, end: cast.sec + lifetime / 60, ...(timing.hitSec !== undefined && !layer.fromCaster && (!layer.field || layer.id === 'ghost_fire') && { hitSec: cast.sec + timing.hitSec }) });
-    if (!layer.period) break;
-    frame += Math.max(layer.period * 3, lifetime);
+    // 没写间隔的（引导类）演完当帧再放一发，一直放到他死（用户 11-20「放完了就继续放了」）
+    frame += Math.max((layer.period ?? 0) * 3, lifetime);
   }
   return launches;
 });
