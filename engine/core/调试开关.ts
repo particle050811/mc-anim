@@ -120,6 +120,17 @@ export const debugSwitches = [
     files: ['engine/core/试看.ts', 'pipeline/渲/地形注入.ts'],
   },
   {
+    name: '齐放大招余波',
+    kind: 'trial',
+    purpose: '亚波伦不放水 4-齐放 第一人称：大招打到他以后再留几秒（现状 0 = 打到就不画；星辉、虚烁、绽放炸在他身上会盖住大半屏）',
+    changesPicture: true,
+    inFingerprint: false,
+    readers: all,
+    format: '秒，如 0.2；"全" = 照原长',
+    files: ['作品/亚波伦不放水/段/4-齐放/受击视角.ts'],
+    note: '用户 11-20「只要不把屏幕全部挡住就行了 或者你按各种程度截几张帧 然后让我决定」，定了就写成默认值、删掉这一项',
+  },
+  {
     name: '细分门槛',
     kind: 'trial',
     purpose: '视频级的区段细分门槛（输出像素），盖掉 2.25',
