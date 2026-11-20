@@ -28,8 +28,9 @@ export default windowSeg(timeline, {
       play('音效/诡厄巫法/goety.apostle_cast_spell.1', castStart, { peakDb: mainPeakDb, name: '齐放' }),
       // 她每一下冲：一声破风
       ...dashRanges.map((c, i) => play(roundRobin('音效/诡厄巫法/goety.heavy_woosh', 5, i), c.start, { peakDb: peakDb, name: `冲${i + 1}` })),
-      // 每一发的起手、出手、飞行、命中（场/1-台地/齐放声.ts）
-      ...massCastSounds().map((x) => play(x.asset, x.sec, { peakDb: x.peakDb, name: x.name, ...(x.速率 ? { 速率: x.速率 } : {}) })),
+      // 每一发的起手、出手、飞行、命中（场/1-台地/齐放声.ts）。他死那一刻画面硬切到 5-击败，还没响完的跟着断：
+      // 11-19 起就这样、用户听过（原来记在 声音接缝基线.tsv）；11-20 补演连放到他死，这类截断随出手多了，统一在这写明是故意的
+      ...massCastSounds().map((x) => play(x.asset, x.sec, { peakDb: x.peakDb, name: x.name, ...(x.速率 ? { 速率: x.速率 } : {}), cutReason: '他死，硬切到 5-击败，轰炸声跟着停' })),
       // 索命劈中（打击停顿 16 帧的开头）：雷霆、闪电劈，游戏里两个一起响；同一刻晋升之环炸开，照不死图腾响 item.totem.use
       play('音效/诡厄巫法/goety.thunderbolt.1', killingPause.start, { peakDb: mainPeakDb, name: '索命' }),
       play('音效/entity.lightning_bolt.impact.1', killingPause.start, { peakDb: mainPeakDb, name: '索命-劈' }),
