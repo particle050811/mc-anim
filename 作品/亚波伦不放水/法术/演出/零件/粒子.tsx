@@ -2,16 +2,22 @@
 // 每种粒子把自己构造函数、tick 里的常数填成一个 粒子类，再给一张出生表。
 // 原版粒子（flame、smoke、poof、portal、witch、enchant、explosion、sonic_boom、splash、crimson_spore）库里已经照抄过，直接用下面转出口的 VanillaParticles。
 // 画网格不画方片的粒子（环、球、带子：CircleExplode、Shockwave、SphereExplode、Smash、Wind、GatherTrail、SummonTrail、WaterTrail、WindBlow、AbsorbTrail）不走这里，各自照类写（带子用 束.tsx 的 带，贴地的环用 地面贴花）。
-import React from 'react';
+import React, { useContext } from 'react';
 import type { Png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { interpPathPos, particleInitVel, particlePath, ParticlePhysics } from '@库/特效/粒子面片.tsx';
 import type { Vec3 } from '../接口.ts';
-import { facePatch, QuadGroup, sequenceFrame, type QuadItem } from './面片.tsx';
+import { facePatch, nearFadeContext, QuadGroup, sequenceFrame, type QuadItem } from './面片.tsx';
 import type { Blend, RgbColor } from './材质.ts';
 import { mulberry32 } from '@engine/core/数学.ts';
 
-export { serverSendParticles, VanillaParticles, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
+import { VanillaParticles as LibraryVanillaParticles } from '@库/特效/原版粒子.tsx';
+export { serverSendParticles, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
+/** 库里的原版粒子接上段开的近镜淡（面片.tsx）：第一人称受击时，法术炸在他身上的爆炸、烟不再放大成整屏色块（用户 11-20「不要挡住太多的画面」） */
+export const VanillaParticles: React.FC<React.ComponentProps<typeof LibraryVanillaParticles>> = (props) => {
+  const nearFade = useContext(nearFadeContext);
+  return <LibraryVanillaParticles {...props} nearFade={props.nearFade ?? nearFade ?? undefined} />;
+};
 export { particleInitVel as vanillaParticleInitSpeed };
 
 export interface ParticleClass {

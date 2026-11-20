@@ -155,7 +155,7 @@ const ATLAS = (() => {
 export const vanillaParticleAtlas = ATLAS;
 
 // 画一批粒子。秒：当前时间（和出生的 刻 同一个钟，秒×20 = 刻）；size：整体放大
-export const VanillaParticles: React.FC<{ spawns: ParticleSpawn[]; sec: number; size?: number }> = ({ spawns, sec: sec, size = 1 }) => {
+export const VanillaParticles: React.FC<{ spawns: ParticleSpawn[]; sec: number; size?: number; nearFade?: readonly [number, number] }> = ({ spawns, sec: sec, size = 1, nearFade }) => {
   const tick = sec * 20;
   const { op, tr } = useMemo(() => {
     const { opaque, translucent } = visibleVanillaParticles(spawns, tick);
@@ -164,8 +164,8 @@ export const VanillaParticles: React.FC<{ spawns: ParticleSpawn[]; sec: number; 
   }, [spawns, tick, size]);
   return (
     <>
-      <ParticleQuads tex={ATLAS.tex} items={op} />
-      <ParticleQuads tex={ATLAS.tex} items={tr} translucent depthWrite={false} />
+      <ParticleQuads tex={ATLAS.tex} items={op} nearFade={nearFade} />
+      <ParticleQuads tex={ATLAS.tex} items={tr} translucent depthWrite={false} nearFade={nearFade} />
     </>
   );
 };
