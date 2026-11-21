@@ -1,9 +1,11 @@
+import { unreadableEnvError } from '../环境/环境变量名.ts';
 import { oldNameError } from './旧名.ts';
 
-// 旧的中文命令、参数先查掉（旧名.ts），快路径和完整路由都走这一处
-const oldNames = oldNameError(process.argv.slice(2));
-if (oldNames) {
-    console.error(oldNames);
+// 入口先查两样，查到就报错退出 2、不执行，快路径和完整路由都走这一处：
+// 环境里读不回来的变量名（Node 一起 Worker 就段错误，见 环境/环境变量名.ts）；旧的中文命令、参数（旧名.ts）
+const entryError = unreadableEnvError() ?? oldNameError(process.argv.slice(2));
+if (entryError) {
+    console.error(entryError);
     process.exitCode = 2;
 }
 // 调度快路径不加载 Remotion、作品注册和全命令表；全局参数、帮助、调试走完整路由，行为才和别的命令一样。
