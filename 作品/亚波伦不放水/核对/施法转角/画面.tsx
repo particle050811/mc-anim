@@ -10,26 +10,19 @@ import { staffTipPlatePose } from '../../界面/杖尖盘位姿.ts';
 import { RestRitualPerformance } from '../../特效/安息仪式.tsx';
 import { summonPlans } from '../../特效/安息仪式时序.ts';
 import { altar } from '../../场/1-台地/布局.ts';
-import { actDur, beats, toWorldSec } from '../../场/1-台地/开盘拍.ts';
-import { orbitRig, releaseRig } from '../../场/1-台地/绕拍.ts';
-import { actStart, act2WheelParams, perform, wheelPlace, cellsPerPixel, steveStateAt } from '../../场/1-台地/编排-开盘.ts';
-import { wheelParams, secAt, perform as releasePerformance } from '../../场/1-台地/编排-齐放.ts';
+import { beats } from '../../场/1-台地/开盘拍.ts';
+import { act2WheelParams, wheelPlace, cellsPerPixel, steveStateAt } from '../../场/1-台地/编排-开盘.ts';
+import { wheelParams } from '../../场/1-台地/编排-齐放.ts';
 import { TerraceCanvas, aspect } from '../../场/1-台地/台地场.tsx';
 import timeline from '../../场/1-台地/时间线.ts';
-import { chestToDiscPx, replayStartSec, reviewCamera, turnSample } from './选角.ts';
+import { chestToDiscPx, replayStartSec } from './选角.ts';
+import { castTurnShot } from './机位.ts';
 
 export default function CastTurnReview() {
   const sec = useCurrentSec();
-  const { beforePeakSec, orbitOffsetDeg } = turnSample(sec);
-  const clipSec = actDur - beforePeakSec;
-  const worldSec = beforePeakSec === 0 ? beats.endSec : toWorldSec(clipSec);
-  const atPeak = beforePeakSec === 0;
-  const time = atPeak ? secAt(0) : actStart + worldSec;
-  const performance = atPeak ? releasePerformance : perform;
-  const actor = performance.在(time).props;
+  const { beforePeakSec, worldSec, atPeak, time, performance, actor, rig, measuredDeg } = castTurnShot(sec);
   const staff = performance.杖(time);
   const wheel = atPeak ? wheelParams(time) : act2WheelParams(time);
-  const { rig, measuredDeg } = reviewCamera(atPeak ? releaseRig(0) : orbitRig(clipSec), actor.pose.loc, orbitOffsetDeg);
   const gapPx = chestToDiscPx(rig, actor.pose.loc, staffTipPlatePose(staff, wheelPlace).心, aspect);
   return (
     <TerraceCanvas ritualStructure cameraRig={rig} ui={<>

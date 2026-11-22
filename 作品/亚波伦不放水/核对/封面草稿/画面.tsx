@@ -9,25 +9,25 @@ import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { CheckCanvas, ZUp } from '@engine/段/核对画面.tsx';
 import { smoothstep01 } from '@engine/core/数学.ts';
-import { type Cam, sightDir } from '@engine/core/机位.ts';
+import type { Cam } from '@engine/core/机位.ts';
 import { hash2 } from '@engine/core/噪声.ts';
-import { placeCamera } from '@engine/core/three换算.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
-import { useCurrentSec, useViewIndex } from '@engine/段/时间.tsx';
+import { checkViewAt } from '@engine/段/核对段.ts';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { Steve, steveLookAt, stevePose } from '@库/角色/史蒂夫.tsx';
 import netherrackPng from 'asset:贴图/方块/下界岩';
 import magmaBlockPng from 'asset:贴图/方块/岩浆块';
 import lavaPng from 'asset:贴图/方块/熔岩';
 import type { MultiRingParams } from '../../界面/多圈轮盘.tsx';
 import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
-import { GirlYaBoLun, hover, holdWandPose, stand } from '../../角色/娘化亚波伦.tsx';
+import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
 import { AntiDark } from '../../角色/防暗.tsx';
 import { HeldNetherWand, staffHeadCore } from '../../物品/下界魔杖.tsx';
 import { RevelationCageGlow } from '../../特效/炼狱结界辉线.tsx';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { netherBrighter, RealNether } from '../../地点/真下界.tsx';
-import { staffRig } from '../../界面/指杖机位.ts';
 import { plans, type Plan } from './视图.ts';
+import { coverCameraFar, coverPose, coverTerrain, placeCoverCamera } from './机位.ts';
 
 const fogColor = '#3a0a07';
 const zenithColor = '#050102';
@@ -196,7 +196,7 @@ const LightSpot: React.FC<{ 位: readonly number[]; 大: number; 色: string; st
 const PlaceRig: React.FC<{ cameraRig: Cam; far?: number }> = ({ cameraRig, far }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
-  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, size.width / size.height, far ? { far } : {});
+  placeCoverCamera(camera as THREE.PerspectiveCamera, cameraRig, size.width / size.height, far);
   return null;
 };
 
@@ -206,57 +206,12 @@ const Cage: React.FC<{ settings: NonNullable<Plan['cage']> }> = ({ settings }) =
   </group>
 );
 
-/**
- * 斜着看盘的机位（视图.ts 的 斜看盘）：杖的方向 d 在镜头坐标里要等于 sinθ·(cosφ·右 − sinφ·上) + cosθ·前（cosθ = 扁，φ = 斜），镜头不滚转。
- * 设镜头朝向的方位角 α（从北往东）、仰角 ε，h = d 的水平分量投到镜头朝向上的长度：(h, d.z) 转 −ε 得 (cosθ, −sinθ·sinφ)，解出 h、ε，再由 h 解 α（取杖指向画面右边的那个解）
- */
-const diagLookRig = (d: readonly number[], aimCenter: readonly number[], settings: NonNullable<Plan['obliqueWheel']>, lens: number, aspectRatio: number): Cam => {
-  const θ = Math.acos(settings.flatten);
-  const upComp = -Math.sin(θ) * Math.sin((settings.angleDeg * Math.PI) / 180);
-  const h2 = settings.flatten ** 2 + upComp ** 2 - d[2]! ** 2;
-  const horizLen = Math.hypot(d[0]!, d[1]!);
-  if (h2 < 0 || Math.sqrt(h2) > horizLen) throw new Error('封面草稿：杖这么陡，摆不出要的 扁、斜（镜头不滚转）');
-  const h = Math.sqrt(h2);
-  const ε = Math.atan2(d[2]!, h) - Math.atan2(upComp, settings.flatten);
-  const α = Math.atan2(d[0]!, d[1]!) - Math.acos(h / horizLen);
-  const forward = [Math.cos(ε) * Math.sin(α), Math.cos(ε) * Math.cos(α), Math.sin(ε)];
-  const right = [Math.cos(α), -Math.sin(α), 0];
-  const up = [-Math.sin(ε) * Math.sin(α), -Math.sin(ε) * Math.cos(α), Math.cos(ε)];
-  // 圆心那个深度上画面的宽、高（格）：把镜头横着、竖着挪，圆心就落到 盘心 给的位置
-  const width = (2 * settings.dist * 18) / lens;
-  const [shiftRight, shiftUp] = [-(settings.wheelCenter[0] - 0.5) * width, (settings.wheelCenter[1] - 0.5) * (width / aspectRatio)];
-  const pos = [0, 1, 2].map((i) => aimCenter[i]! - forward[i]! * settings.dist + right[i]! * shiftRight + up[i]! * shiftUp) as [number, number, number];
-  return { pos, tgt: [pos[0] + forward[0]!, pos[1] + forward[1]!, pos[2] + forward[2]!], lens };
-};
-
 const Scene: React.FC<{ v: Plan }> = ({ v }) => {
   const aspectRatio = useThree((s) => s.size.width / s.size.height);
   const params: MultiRingParams = { 放: v.wheel.放, 刻: 40, dimLevel: v.wheel.dimLevel };
+  const { yaBoLunProps, newGrip, gripOffset, staff, cameraRig } = coverPose(v, aspectRatio);
   const yaBoLun = v.yaBoLun;
-  const yaBoLunProps = { pose: { loc: [...yaBoLun.位], yaw: yaBoLun.yaw ?? 180 }, sec: 1.4, act: yaBoLun.act === '悬停' ? hover : stand, bonePose: yaBoLun.bonePose };
-  // 杖尖在哪、朝哪：和画她用同一份属性算
-  // 杖握在手里是六稿起的挂法；五稿及以前的旧案照旧握法画，画面不动
-  const newGrip = !!v.obliqueWheel || !!v.pointWand;
-  const gripOffset = v.pointWand?.gripOffset;
-  const staff = holdWandPose({ ...yaBoLunProps, gripOffset, oldGrip: !newGrip });
-  // 盘心居中的方案：镜头朝向不变（手臂的角度是照这个朝向搜的），整个平移到光轴穿过圆心（杖尖再沿杖身伸出 离尖）
-  const cameraRig = useMemo((): Cam => {
-    const aimCenter = [0, 1, 2].map((i) => staff.tip[i]! + staff.axis[i]! * (v.wheel.placement.tipOffset ?? 0));
-    if (v.obliqueWheel) return diagLookRig(staff.axis, aimCenter, v.obliqueWheel, v.cameraRig.lens, aspectRatio);
-    if (v.pointWand?.lookMid) {
-      // 扫角度用：镜头位置照 θ 反算，但对准盘心和她胸口的中点，哪个角度她和盘都在画里
-      const camPos = staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, dist: v.pointWand.dist, lens: v.cameraRig.lens, discCenterPicture: [0.5, 0.5], aspectRatio }).pos;
-      const chest = [v.yaBoLun.位[0], v.yaBoLun.位[1], v.yaBoLun.位[2] + 1];
-      return { pos: camPos, tgt: [0, 1, 2].map((i) => (aimCenter[i]! + chest[i]!) / 2) as [number, number, number], lens: v.cameraRig.lens };
-    }
-    if (v.pointWand) return staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, dist: v.pointWand.dist, lens: v.cameraRig.lens, discCenterPicture: v.pointWand.wheelCenter, aspectRatio });
-    if (!v.wheelCentered) return v.cameraRig;
-    const viewDir = sightDir(v.cameraRig);
-    const depth = [0, 1, 2].reduce((sum, i) => sum + (aimCenter[i]! - v.cameraRig.pos[i]!) * viewDir[i]!, 0);
-    const moveVec = [0, 1, 2].map((i) => aimCenter[i]! - v.cameraRig.pos[i]! - viewDir[i]! * depth);
-    const shiftPoint = (p: readonly number[]) => [p[0]! + moveVec[0]!, p[1]! + moveVec[1]!, p[2]! + moveVec[2]!] as [number, number, number];
-    return { ...v.cameraRig, pos: shiftPoint(v.cameraRig.pos), tgt: shiftPoint(v.cameraRig.tgt) };
-  }, [v, staff, aspectRatio]);
+  const [terrain] = coverTerrain(v, cameraRig);
   // 盘的圆心：默认就是杖尖；要退后的顺着镜头到杖尖的视线挪，画面上位置不变
   const eye = cameraRig.pos;
   const eyeToTip = Math.hypot(staff.tip[0] - eye[0], staff.tip[1] - eye[1], staff.tip[2] - eye[2]);
@@ -268,7 +223,7 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
   const { facing, ...placement } = v.wheel.placement;
   return (
     <>
-      <PlaceRig cameraRig={cameraRig} far={v.farView ? 1400 : undefined} />
+      <PlaceRig cameraRig={cameraRig} far={coverCameraFar(v)} />
       {v.farView ? <ScreenAo /> : <fog attach="fog" args={[fogColor, 16, 70]} />}
       <ZUp>
         {!v.farView && <SkyDome 心={cameraRig.pos} />}
@@ -281,7 +236,7 @@ const Scene: React.FC<{ v: Plan }> = ({ v }) => {
             <directionalLight position={[2, 7, -4]} color="#ff8a5c" intensity={0.35 * Math.PI} />
           </>
         )}
-        {v.farView ? <RealNether cameraPos={cameraRig.pos} 光={netherBrighter} /> : <Terrain />}
+        {terrain ? <RealNether cameraPos={cameraRig.pos} 光={netherBrighter} /> : <Terrain />}
         <AntiDark lift={v.figureBrighten ?? 0}>{newGrip ? <GirlYaBoLun {...yaBoLunProps} holdWand gripOffset={gripOffset} wandOverlay={wandGlow} /> : <GirlYaBoLun {...yaBoLunProps} attach={wandMount} />}</AntiDark>
         {v.steve && <Steve pose={steveLookAt(stevePose(v.steve.位, 0), [...(v.steve.看 ?? headPos)])} mcLight={1} />}
         {v.cage && <Cage settings={v.cage} />}
@@ -314,7 +269,7 @@ const CropFrame: React.FC<{ centerLine: number }> = ({ centerLine }) => {
 const picture: React.FC = () => {
   const { width, height } = useVideoConfig();
   const sec = useCurrentSec();
-  const v = plans[Math.min(plans.length - 1, useViewIndex())]!;
+  const v = checkViewAt(plans, sec);
   // 每个方案那一秒的前半是干净的构图，后半叠裁切参考框和方案名
   const annotationBlink = sec % 1 >= 0.5;
   return (
