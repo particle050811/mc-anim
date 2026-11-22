@@ -19,9 +19,8 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { LevelParams } from '@engine/core/渲染级别.ts';
 import { useBlockGlow, useSelfLight, useTerrainLightGain } from '@engine/light/光照配比.ts';
-import { trialFarM, useFarFog } from '@engine/light/高度雾.ts';
+import { useFarFog } from '@engine/light/高度雾.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { voxelMaterial } from '@engine/voxel/材质.ts';
@@ -32,49 +31,19 @@ import fire1Png from 'asset:贴图/方块动画/minecraft/block/fire_1';
 import soulFire0Png from 'asset:贴图/仪式/minecraft/block/soul_fire_0';
 import soulFire1Png from 'asset:贴图/仪式/minecraft/block/soul_fire_1';
 import { LightVolume } from '@engine/light/光体组件.tsx';
-import type { ExtraBlock, LightVolumeParams } from '@engine/light/光体.ts';
-import { trialLightVolume } from '@engine/light/光体试看.ts';
+import type { ExtraBlock } from '@engine/light/光体.ts';
 import { trialParams } from '@engine/core/试看.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
+import { netherFarM, netherLightVolume, realNetherView, type NetherLight } from './真下界视图.ts';
 
 export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
-
-export type NetherLight = {
-  /** 光照图在方块光 0 级的颜色（sRGB 数值上的倍数，原版 [0.393, 0.323, 0.267]）；乘面明暗后折到线性 */
-  baseLight: readonly [number, number, number];
-  /** 地形（体素地形、方块拼搭）的底光再乘几（sRGB 数值上，同 baseLight）；人物、模型照 baseLight。不给 = 1 */
-  terrainBase?: number;
-  /** 发光倍：发光方块（含熔岩）的自发光 = 贴图原色 × 发光强度 × 这个数 */
-  lavaBright: number;
-  /** 雾：色（#rrggbb，也是底色）、从几格起（远雾开着不起作用）、到几格全满（远雾的 D） */
-  fog: { 色: string; near: number; far: number };
-  /** 地形最远画到多远（格）；不给 = 雾.远 */
-  renderFar?: number;
-  /** 光体（发光方块照亮周围）；不给 = 不开 */
-  lightVolume?: LightVolumeParams;
-};
-
-/** 照原版：亮度滑块 50%、视距 32 区块时的下界荒地 */
-export const netherVanilla: NetherLight = { baseLight: [0.393, 0.323, 0.267], lavaBright: 1, fog: { 色: '#330808', near: 25.6, far: 96 } };
-/** 整体提亮、雾放远（用户 11-10 嫌黑、要看清背景）：底光提到原版方块光约 12 级的亮度，雾推到 32 区块外才满，雾色提亮 */
-// 雾远（= 远雾的 D）1000：用户 11-16「地狱 我看 D1000 就够了」；包按镜头范围外扩 1000 烘（sourcing/worlds/下界-无结构-1110.toml）
-// 地形底光压到 0.7 倍、光体用「圆洪水」强 2（用户 11-19 看 预览/1119-1452-底光对比 定「0.7 圆洪水」：底光压下去，熔岩、火照亮周围才显得出来）；
-// 人物、模型补回原来的底光（用户 11-19 看 预览/1119-1518-下界新光-正片，人跟着变暗，定「人物补回原来的底光」）。软封顶、最小光是 Agent 暂定；圆洪水不用软封顶
-export const netherBrighter: NetherLight = {
-  baseLight: [0.86, 0.74, 0.64],
-  terrainBase: 0.7,
-  lavaBright: 1.1,
-  fog: { 色: '#5a1a12', near: 96, far: 1000 },
-  lightVolume: { strength: 2, knee: 1.5, minLight: 0.004, scheme: { kind: '圆洪水', curve: '原版', metersPerLevel: 1, p: 4 } },
-};
-
-/** 远雾的 D（格）= 雾远；试看 {"雾曲线": {"远": 格}} 盖掉，地形最远距离跟着换（用户 11-16 要比下界放大视距）。包烘了 x −512～2047、z −1536～1023 */
-export const netherFarM = (light: NetherLight) => trialFarM(light.fog.far);
+export { netherVanilla, netherBrighter, netherFarM, type NetherLight } from './真下界视图.ts';
 
 // 面明暗（下界 constantAmbientLight）：东西 0.6、南北 0.8、上下 0.9
 const faceShade = { eastWest: 0.6, northSouth: 0.8, upDown: 0.9 };
 const toLinear = (v: number) => v ** 2.2;
 const noCuts: LandmarkCutout[] = [];
+const noPlace = () => {};
 
 let lavaMaterial: THREE.Material | null = null;
 const getLavaMaterial = (waterMaterial: THREE.Material) => {
@@ -116,8 +85,9 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
   useBlockGlow(netherLight.lavaBright);
   useTerrainLightGain(toLinear(netherLight.terrainBase ?? 1));
   useBlockTextureAnimation(netherAnimatedTextures, useCurrentSec());
-  const farM = netherFarM(netherLight);
-  useFarFog({ far: farM });
+  useFarFog({ far: netherFarM(netherLight) });
+  // 视距、门槛、高度、光体开不开照地形视图（加载计划在 Node 里读同一份）；相机由外面摆
+  const view = realNetherView(cameraPos, netherLight, noPlace);
   // 雾、底色挂在场景上（<fog attach> 在场景组里挂不到 scene）
   const fog = scene.fog instanceof THREE.Fog ? scene.fog : (scene.fog = new THREE.Fog(netherLight.fog.色, netherLight.fog.near, netherLight.fog.far));
   fog.color.set(netherLight.fog.色);
@@ -155,9 +125,8 @@ export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLig
       <directionalLight color={fillColor(faceShade.upDown)} position={[0, 0, -1]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
-      {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      <LightVolume t={t} center={cameraPos} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} params={trialLightVolume(netherLight.lightVolume) ?? netherLight.lightVolume} extraBlocks={lightBlocks} />
-      {t && <VoxelWorld worldKey={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? farM} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
+      <LightVolume t={t} center={cameraPos} heightRange={view.heightRange!} params={netherLightVolume(netherLight)} extraBlocks={lightBlocks} />
+      {t && <VoxelWorld worldKey={t.key + (carve?.keySuffix ?? '')} source={t.source} center={cameraPos as number[]} pixel={view.pixel} far={view.farM} heightRange={view.heightRange} />}
     </group>
   );
 };
