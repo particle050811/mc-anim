@@ -15,6 +15,7 @@ import { OnerFrame, type Riders } from '../../场/6-暮色森林/一镜到底/�
 import * as choreo from '../../场/6-暮色森林/6-1-9b/编排.ts';
 import * as landing from '../../场/6-暮色森林/6-1-9b/落地编排.ts';
 import { mouthAt } from '../../配音/口型.ts';
+import { afterLandingShot } from './机位.ts';
 import brickUri from 'asset:贴图/镜头/6-1-9b/城堡砖';
 
 const BRICK = png(brickUri); // twilightforest:block/castle_brick（城堡砖、符文城堡砖的 particle 贴图都是它）
@@ -75,7 +76,7 @@ export const tweakRiders = (t: number) => (onerRiders: Riders): Riders => {
 };
 
 export const AfterLandingView: React.FC<{ t: number; cam?: ReturnType<typeof choreo.camPose> }> = ({ t, cam: camOverride }) => (
-  <OnerFrame g={choreo.toOnerSec(t)} cam={camOverride ?? choreo.camPose(t)} ahead={camOverride ? undefined : { sec: t, at: choreo.camPose }} tweakRiders={tweakRiders(t)} extra={<LandingParticles g={choreo.toOnerSec(t)} />} />
+  <OnerFrame {...afterLandingShot(t, camOverride)} tweakRiders={tweakRiders(t)} extra={<LandingParticles g={choreo.toOnerSec(t)} />} />
 );
 
 // 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（definePicture 自动挂）；t 是段内秒
