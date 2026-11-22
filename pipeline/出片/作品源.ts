@@ -1,5 +1,5 @@
 // 成片时间轴、anim impact 要的一部作品的「源」：清单顺序的各正片段（段.ts、声音表.生成.ts）、各场的场时间线、作品的动作体检逐帧采样。
-// 按给的代码根用 esbuild 打包加载（验收/打包加载.ts），所以既能读本检出，也能读别的检出、git archive 出来的旧提交：两边用同一套算法（本检出的 时间轴.ts）算，
+// 按给的代码根用 esbuild 打包加载（源码/打包加载.ts），所以既能读本检出，也能读别的检出、git archive 出来的旧提交：两边用同一套算法（本检出的 时间轴.ts）算，
 // 比的才只是作品数据的差别。两次打包：先只打清单拿段目录，再把各段、场时间线、动作体检打进一个包，同一个模块只有一份。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +10,7 @@ import type { AudioInfo, SoundTable } from '../../engine/段/声音助手.ts';
 import type { SegmentDef } from '../../engine/段/段定义.ts';
 import { knownAudioMeasure } from '../段框架/音频数.ts';
 import { applySwap, readAssetLock, workAssetLockPath, type AssetLock } from '../资产/资产锁.ts';
-import { importBundled } from '../验收/打包加载.ts';
+import { importBundled } from '../源码/打包加载.ts';
 
 export type SourceSeg = { key: string; serial: string | null; def: SegmentDef; soundTable: SoundTable | null };
 /** 场时间线里时间轴要的两样（老段接续做的时间线可能都没有） */
