@@ -439,7 +439,7 @@ export const worldCommand: Record<string, Command> = {
     usage: `world ${Object.values(subCommands)
       .map((c) => c.usage.split(' ')[0])
       .join('|')} …`,
-    note: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；bake-dh 从存档里 Distant Horizons 的 LOD 库烘各处细度不一的区段包（声明的 [dh]，过资源闸）；transcode 把旧格式的包转成现行格式（格式 4 只换容器、区段字节不变）、没做可见变换的做上（只写新版本目录，逐格、逐网格或逐区段字节核对）；decoder 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度；trim 按全片用到的级裁地形包（--import 登记别的机器裁好的）、cover 量段的地形覆盖。anim world help 看各子命令',
+    note: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；bake-dh 从存档里 Distant Horizons 的 LOD 库烘各处细度不一的区段包（声明的 [dh]，过资源闸）；transcode 把旧格式的包转成现行格式（格式 4 只换容器、区段字节不变）、没做可见变换的做上（只写新版本目录，逐格、逐网格或逐区段字节核对）；decoder 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度；trim 按全片的加载计划裁地形包（--import 登记别的机器裁好的）、plan 照段的地形视图算加载计划（--check 和出片记的地形用量比）。anim world help 看各子命令',
     跑: async (args, runRecord) => {
       const [subcommand, ...rest] = args;
       if (!subcommand || subcommand === 'help' || subcommand === '--help') {

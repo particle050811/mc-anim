@@ -1,4 +1,4 @@
-// 区段包的元数据：只读 包.json 和 粗图.bin.gz，推出粗高度图、各处能不能再细分、竖直范围、哪些区段有地。不取模型、不碰工人池，纯模块，Node 里算地形覆盖也用。
+// 区段包的元数据：只读 包.json 和 粗图.bin.gz，推出粗高度图、各处能不能再细分、竖直范围、哪些区段有地。不取模型、不碰工人池，纯模块，Node 里算加载计划也用。
 // 推导和 engine/voxel/导入地形.ts 的 loadPack、buildTerrain 是同一套（那边还没改走数据源，暂时两份，由 地形元数据.test.ts 的对照守着）。
 import type { DataSource } from '../core/数据读取.ts';
 import { formatVersion, hasSection, decodePackMaps, decodeSplittable, packMapsFileName, type PackageInfo, type CoarseHeightMap } from './区段包.ts';

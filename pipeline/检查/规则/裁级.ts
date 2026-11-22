@@ -15,7 +15,7 @@ import type { CheckContext, CheckReport } from '../../源码/上下文.ts';
 type Entry = { version: string; trimmed?: { version: string; from: string } };
 const tablePath = 'assets/地形版本.json';
 
-export const checkTerrainCover = async (c: CheckContext, report: CheckReport) => {
+export const checkTerrainTrim = async (c: CheckContext, report: CheckReport) => {
   const table = ((c.readJson(tablePath) ?? {}) as { pack?: Record<string, Entry> }).pack ?? {};
   const trimmed = Object.entries(terrainPolicies(table)).filter(([, v]) => v.trimmed);
   if (!trimmed.length) return;

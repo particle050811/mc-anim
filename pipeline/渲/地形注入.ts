@@ -38,7 +38,7 @@ export const readVersions = (fullVersions: Record<string, string>, mode: Terrain
       const registered = entries[pack];
       const entry = registered?.version === version ? registered : Object.values(registered?.policies ?? {}).find((v) => v.version === version);
       if (mode === '正式' && entry?.trimmed && entry.version === version) return [pack, entry.trimmed.version];
-      // 完整优先：地形覆盖用，光体冷缓存会取区段，读完整包才不被旧留表卡住；本机只有裁过的就读裁过的
+      // 完整优先：加载计划用，读完整包才不被旧留表卡住；本机只有裁过的就读裁过的
       if (mode === '完整优先' && entry?.trimmed && entry.version === version && !fs.existsSync(path.join(terrainRoot(), pack, version))) return [pack, entry.trimmed.version];
       if (mode === '完整' && registered?.policies && entry?.trimmed && !fs.existsSync(path.join(terrainRoot(), pack, version)) && fs.existsSync(path.join(terrainRoot(), pack, entry.trimmed.version))) {
         console.warn(`${pack} 完整版不在本机，读裁级版；缺级时取已有区段，请重算定级、重烘或下载完整包。`);

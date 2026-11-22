@@ -67,7 +67,7 @@ export const registeredTerrainEntries = (): Record<string, TerrainRecord> => {
 };
 export const readTerrainEntries = (trial?: number | 'copy'): Record<string, TerrainRecord> =>
   terrainPolicies(registeredTerrainEntries(), trial);
-/** 包 → 完整包的版本。指纹的地形项记它（裁过的包从它派生，重裁不让段过期，一致由 anim check 的 地形覆盖 保证） */
+/** 包 → 完整包的版本。指纹的地形项记它（裁过的包从它派生，重裁不让段过期，够不够用由 anim check 的 terrain 规则按加载计划查） */
 export const readTerrainVersionTable = (): Record<string, string> => Object.fromEntries(Object.entries(readTerrainEntries()).map(([k, v]) => [k, v.version]));
 
 /** 段声明的包 → 登记的版本，键排好。指纹的地形项用它；切片的页面直接拿算好的这份，不重读表（渲/地形注入.ts） */

@@ -1,5 +1,5 @@
 // Node 里的数据源（engine/core/数据读取.ts 的接口）：路径和页面一样相对 public 目录写，第一段（terrain、solveCache、私有配乐、lightVolume）
-// 按 pipeline/资产/public链接.ts 的表换成数据根里的目录，直接读盘，不经 run/public 的链接。地形覆盖这类在 Node 里跑 engine 纯函数的工具用。
+// 按 pipeline/资产/public链接.ts 的表换成数据根里的目录，直接读盘，不经 run/public 的链接。加载计划这类在 Node 里跑 engine 纯函数的工具用。
 import fs from 'node:fs';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';

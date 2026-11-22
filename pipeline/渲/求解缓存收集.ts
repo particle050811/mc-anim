@@ -14,7 +14,7 @@ type PageLike = { _client: () => { send: (method: string, params: object) => Pro
 /**
  * 接到浏览器上：之后每个页面关掉前跑一次 收（拿 求值 在页面里取字符串）。页面崩了、已经跳走了就收不到，算了；在收的任务放进 在收，给调用方等。
  * onOpen：每开一页报一个「这页收完了」的 Promise（收出错也算收完）。renderFrames 返回时 Remotion 还没关页（它在 finally 里关、不等），
- * 只等 在收 会扑空；非收到不可的（地形覆盖.ts）等这个
+ * 只等 在收 会扑空；非收到不可的等这个
  */
 export const beforeClose = (browser: HeadlessBrowser, inFlight: Set<Promise<void>>, collect: (evaluate: (expression: string) => Promise<string>) => Promise<void>, onOpen?: (collected: Promise<void>) => void) => {
   const b = browser as unknown as { newPage: (...a: unknown[]) => Promise<PageLike> };

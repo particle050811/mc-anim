@@ -6,7 +6,7 @@
 // 某个包的版本和记录的不一样：那个包的区段作废重记，已量帧清零。
 import fs from 'node:fs';
 import type { HeadlessBrowser } from '@remotion/renderer';
-import { terrainUsageSegEnv, terrainCoverEnv } from '../../engine/段/地形环境.ts';
+import { terrainUsageSegEnv } from '../../engine/段/地形环境.ts';
 import { readTerrainEntries } from '../指纹/指纹.ts';
 import { workName } from '../环境/作品.ts';
 import { dataPath } from '../环境/配置.ts';
@@ -97,7 +97,7 @@ export const startWholeMeasure = (segKey: string, fingerprint: string, work = wo
   pendingFingerprints.set(`${work}/${segKey}`, fingerprint);
 };
 
-const collectPageExpr = `JSON.stringify({ segment: window.process?.env?.[${JSON.stringify(terrainUsageSegEnv)}] ?? null, cover: Boolean(window.process?.env?.[${JSON.stringify(terrainCoverEnv)}]), pack: Object.fromEntries([...(window.terrainUsage ?? new Map())].map(([name, v]) => [name, { version: v.version, sections: [...v.sections] }])) })`;
+const collectPageExpr = `JSON.stringify({ segment: window.process?.env?.[${JSON.stringify(terrainUsageSegEnv)}] ?? null, pack: Object.fromEntries([...(window.terrainUsage ?? new Map())].map(([name, v]) => [name, { version: v.version, sections: [...v.sections] }])) })`;
 
 /** 页面读的是裁过的包时记成它的完整包版本：正式出片读裁过的、往细里看读完整的，记录不因此来回清零（docs/世界.md「裁级」） */
 const asFullVersions = (packs: PageUsage): PageUsage => {
@@ -105,11 +105,11 @@ const asFullVersions = (packs: PageUsage): PageUsage => {
   return Object.fromEntries(Object.entries(packs).map(([p, u]) => [p, entries[p]?.trimmed?.version === u.version ? { ...u, version: entries[p]!.version } : u]));
 };
 
-/** 接到浏览器上：之后每个页面关掉前收走它的用量。读 Composition 列表的页面没传段名，不记；地形覆盖的页面另有记录（地形覆盖.ts），不记 */
+/** 接到浏览器上：之后每个页面关掉前收走它的用量。读 Composition 列表的页面没传段名，不记 */
 export const collectTerrainUsage = (browser: HeadlessBrowser) =>
   beforeClose(browser, inFlight, async (evaluate) => {
-    const { segment: workSegKey, cover, pack: pagePacks } = JSON.parse(await evaluate(collectPageExpr)) as { segment: string | null; cover: boolean; pack: PageUsage };
-    if (!workSegKey || cover || !Object.keys(pagePacks).length) return;
+    const { segment: workSegKey, pack: pagePacks } = JSON.parse(await evaluate(collectPageExpr)) as { segment: string | null; pack: PageUsage };
+    if (!workSegKey || !Object.keys(pagePacks).length) return;
     const packs = asFullVersions(pagePacks);
     const slashIndex = workSegKey.indexOf('/');
     const [work, segKey] = [workSegKey.slice(0, slashIndex), workSegKey.slice(slashIndex + 1)];

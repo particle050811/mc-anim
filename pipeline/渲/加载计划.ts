@@ -1,5 +1,5 @@
 // 加载计划：照段的地形视图（<段目录>/地形视图.ts，engine/voxel/地形视图.ts）在 Node 里算每个区段头一次用到的帧，不开页面。
-// 读法同出片前的地形覆盖（完整包优先，本机只有裁过的就读裁过的），存 <数据根>/cache/加载计划/<作品>/<段>.json，按计划指纹（段画面指纹去掉平台）认，旧了当场重算（一段几秒）。
+// 读完整包优先（本机只有裁过的就读裁过的，readVersions 的 完整优先），存 <数据根>/cache/加载计划/<作品>/<段>.json，按计划指纹（段画面指纹去掉平台）认，旧了当场重算（一段几秒）。
 // 裁级（anim world trim）、暮色航线烘焙（bake-far）、check 的缺级都读这一份（docs/世界.md「裁级」）。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -15,7 +15,8 @@ import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { stableJson } from '../指纹/指纹.ts';
 import { readWorkAssetLock } from '../资产/资产锁.ts';
 import { readVersions, terrainReadVersions } from './地形注入.ts';
-import { readCover } from './地形覆盖.ts';
+import { decodeFrameRanges, readTerrainUsage, type TerrainUsageRecord } from './地形用量.ts';
+import { readTerrainTable } from '../世界/版本.ts';
 import { segmentProducts } from './段产物.ts';
 import { nodeDataSource } from '../世界/node数据源.ts';
 
@@ -111,21 +112,62 @@ export const packPlan = async (pack: string, log: (s: string) => void = () => {}
   return { used, segCount };
 };
 
-/** 和地形覆盖逐个区段比：返回不一样的说明，空 = 一样 */
-export const compareWithCover = (plan: SegPlan): string[] => {
-  const cover = readCover(plan.work, plan.segment);
-  if (!cover) return [`${plan.segment}：没有地形覆盖可比（anim world cover ${plan.segment}）`];
-  const out: string[] = [];
-  if (cover.frameCount !== plan.frameCount) out.push(`${plan.segment}：帧数 覆盖 ${cover.frameCount}、计划 ${plan.frameCount}`);
-  for (const pack of new Set([...Object.keys(cover.pack), ...Object.keys(plan.pack)])) {
-    const a = cover.pack[pack]?.sections ?? {}, b = plan.pack[pack]?.sections ?? {};
-    if (cover.pack[pack] && plan.pack[pack] && cover.pack[pack].version !== plan.pack[pack].version) out.push(`${plan.segment} ${pack}：版本 覆盖 ${cover.pack[pack].version}、计划 ${plan.pack[pack].version}`);
-    const onlyCover = Object.keys(a).filter((k) => !(k in b)), onlyPlan = Object.keys(b).filter((k) => !(k in a));
-    const moved = Object.keys(a).filter((k) => k in b && a[k] !== b[k]);
-    if (onlyCover.length || onlyPlan.length || moved.length)
-      out.push(`${plan.segment} ${pack}：覆盖 ${Object.keys(a).length}、计划 ${Object.keys(b).length}；只覆盖有 ${onlyCover.length}（${onlyCover.slice(0, 4).map((k) => `${k}@${a[k]}`).join(' ')}）、只计划有 ${onlyPlan.length}（${onlyPlan.slice(0, 4).map((k) => `${k}@${b[k]}`).join(' ')}）、首帧不同 ${moved.length}（${moved.slice(0, 4).map((k) => `${k} ${a[k]}→${b[k]}`).join(' ')}）`);
-  }
+const parentKey = (k: string) => {
+  const [L, i, j] = k.split('|').map(Number) as [number, number, number];
+  return `${L + 1}|${i >> 1}|${j >> 1}`;
+};
+const ancestry = (k: string, top: number) => {
+  const out = [k];
+  for (let x = k; Number(x.slice(0, x.indexOf('|'))) < top; ) out.push((x = parentKey(x)));
   return out;
+};
+
+/**
+ * 和整段出片时页面记下的地形用量（渲/地形用量.ts）逐个区段比：地形视图和画面不是一份、改了一边忘了另一边，就对不上。返回不一样的说明，空 = 一样。
+ * 普通包两边该一模一样。暮色航线包（登记了 policies / policyFrom 的）计划记世界的完整需求，页面记的是按包里有的级换过的（resolveSections 换成最近的祖先），
+ * 所以只核：页面读的每块都是计划要的或它的祖先，计划要的每块页面都读了它或它的祖先。
+ * 用量没有、或没记全段每一帧的（只出过几帧静帧），给 unknown：比不了，不算不一样
+ */
+export const compareWithUsage = (plan: SegPlan, usage: TerrainUsageRecord | null): { unknown: string } | { diffs: string[] } => {
+  if (!usage) return { unknown: '没有地形用量（整段出片一次才有，<数据根>/run/地形用量/）' };
+  const frames = new Set(decodeFrameRanges(usage.measuredFrames));
+  const missingFrames = Array.from({ length: plan.frameCount }, (_, f) => f).filter((f) => !frames.has(f)).length;
+  if (missingFrames) return { unknown: `地形用量只记了 ${plan.frameCount - missingFrames}/${plan.frameCount} 帧（整段出片一次才全）` };
+  const table = readTerrainTable().pack;
+  const out: string[] = [];
+  const packs = new Set([...Object.keys(plan.pack), ...Object.entries(usage.pack).filter(([, u]) => u.sections.length).map(([p]) => p)]);
+  for (const pack of packs) {
+    const planned = plan.pack[pack], used = usage.pack[pack];
+    if (planned && used && planned.version !== used.version) {
+      out.push(`${plan.segment} ${pack}：版本 计划 ${planned.version}、出片 ${used.version}`);
+      continue;
+    }
+    const P = new Set(Object.keys(planned?.sections ?? {})), U = new Set(used?.sections ?? []);
+    const entry = table[pack];
+    const resolved = !!entry && ('policies' in entry || 'policyFrom' in entry);
+    let onlyUsage: string[], onlyPlan: string[];
+    if (!resolved) {
+      onlyUsage = [...U].filter((k) => !P.has(k));
+      onlyPlan = [...P].filter((k) => !U.has(k));
+    } else {
+      const top = Math.max(0, ...[...P, ...U].map((k) => Number(k.slice(0, k.indexOf('|')))));
+      const planAncestry = new Set([...P].flatMap((k) => ancestry(k, top)));
+      onlyUsage = [...U].filter((k) => !planAncestry.has(k));
+      onlyPlan = [...P].filter((k) => !ancestry(k, top).some((x) => U.has(x)));
+    }
+    if (onlyUsage.length || onlyPlan.length)
+      out.push(`${plan.segment} ${pack}：计划 ${P.size}、出片 ${U.size}；出片读了计划没有的 ${onlyUsage.length}（${onlyUsage.slice(0, 4).join(' ')}）、计划有出片没读的 ${onlyPlan.length}（${onlyPlan.slice(0, 4).map((k) => `${k}@${planned!.sections[k]}`).join(' ')}）`);
+  }
+  return { diffs: out };
+};
+
+/** 用量是不是这一版段整段出片时记的（指纹对得上）：对得上才能拿来核计划，段改过了对不上是正常的 */
+export const usageIsCurrent = async (allSegments: readonly SegInfo[], segs: readonly SegInfo[]) => {
+  const products = await segmentProducts(allSegments, segs, '视频');
+  return segs.map((s, i) => {
+    const usage = readTerrainUsage(workName(), s.key);
+    return { segment: s, usage, current: !!usage && usage.fingerprint === products[i]!.pictureFingerprint.fingerprint };
+  });
 };
 
 export const writePlan = (plan: SegPlan) => {

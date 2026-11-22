@@ -1,7 +1,7 @@
 // 加载计划：照段的地形视图（地形视图.ts）逐帧挑区段，记下每个区段头一次用到是段内第几帧。
 // 挑区段和体素世界每帧调的是同一个函数（选区段.ts 的 prepareSelection），地形源选级那几样也和页面上共用（导入选级.ts、远景兜底采样.ts 的 fallbackSelection），只是不取区段字节，
-// 所以 Node 里几秒算完的就是渲染时会要的，不用开 4K 页面逐帧过（anim world cover 每帧要等 100 多毫秒的合成，选级本身不到 1%）。
-// 记法照地形覆盖：航线包关掉 resolveSections、按世界的完整需求记（导入地形.ts 的 isCoverRun 那一路），光体照 sectionData。
+// 所以 Node 里几秒算完的就是渲染时会要的，不用开 4K 页面逐帧过（4K 页面每帧光合成就要 100 多毫秒，选级本身不到 1%）。
+// 航线包不按包里现有的级换（不调 resolveSections），记世界的完整需求：裁级、烘航线包要的是这个，不看现在烘了哪几级；光体照 sectionData。
 import * as THREE from 'three';
 import type { DataSource } from '../core/数据读取.ts';
 import { topClock } from '../core/拼段时序.ts';
@@ -59,7 +59,7 @@ export const importedPlanWorld = (pack: string, overlay?: string): TerrainWorld 
   },
 });
 
-/** 每个包：区段键 → 头一次用到的段内帧（同 地形覆盖 的 sections） */
+/** 每个包：区段键 → 头一次用到的段内帧 */
 export type PlanFirstUse = Record<string, Record<string, number>>;
 
 export const planSegment = async (decl: TerrainViewDecl, frameCount: number, fps: number, src: DataSource, dirOf: (pack: string) => string): Promise<PlanFirstUse> => {

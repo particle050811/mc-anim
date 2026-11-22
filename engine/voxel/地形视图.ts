@@ -12,7 +12,7 @@ import type { Lookahead, SelectionSource } from './选区段.ts';
 export type PlanWorld = {
   source: SelectionSource;
   heightRange: [number, number];
-  /** 体素世界这一帧挑出来的（同 地形源的 prefetch 在地形覆盖时记的） */
+  /** 体素世界这一帧挑出来的记到哪几个包（航线包记没换级的完整需求，同 导入地形.ts 的 recordReads 记法） */
   reads: (list: SectionId[]) => [string, string[]][];
   /** 旁路读者（光体）要的（同 导入地形.ts 的 sectionData） */
   bypassReads: (qs: SectionId[]) => [string, string[]][];

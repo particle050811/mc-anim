@@ -1,4 +1,4 @@
-// 导入包为主、远景兜底的地形（engine/voxel/主世界地形.ts 的 buildOverworld）上一处的地物顶和竖直范围。纯模块：Node 里算地形覆盖也要同一份。
+// 导入包为主、远景兜底的地形（engine/voxel/主世界地形.ts 的 buildOverworld）上一处的地物顶和竖直范围。纯模块：Node 里算加载计划也要同一份。
 import { coarseHeightAt, type CoarseHeightMap } from './区段包.ts';
 import { distantTop, type DistantGrid } from './远景网格.ts';
 import { seamCorrection, type Seam } from './交界修正.ts';

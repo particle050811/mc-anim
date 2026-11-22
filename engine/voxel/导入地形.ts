@@ -22,7 +22,7 @@ import { resolveRouteSections, type RouteIndex } from './航线区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { importedContains, importedSampler, readsByPack } from './导入选级.ts';
 import { packDir } from './区段包位置.ts';
-import { recordSectionRead, isCoverRun, noteCoverWorld } from './地形用量.ts';
+import { recordSectionRead } from './地形用量.ts';
 import { variesByPos } from './群系色.ts';
 import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type SectionContext, type SectionPackInfo } from './导入区段.ts';
 import { fetchSectionsInPool, registerSource, registerModel, type SectionResult } from './区段工人池.ts';
@@ -122,7 +122,7 @@ const missingSectionError = (pack: TerrainPack, fileName: string, section: Secti
   new Error(
     pack.info.trim
       ? `缺级：地形包 ${pack.name}（${pack.dir}）是从完整包 ${pack.info.trim.from} 裁过的，没有区段 ${sectionKey(section)}（第 ${section.L} 级，粗高度图说那里有地）。` +
-        `段的镜头或挑区段改过、留表没跟上：重裁 anim world trim ${pack.name}（先重量改过的段，再从完整包裁），anim check 的 地形覆盖 会列出缺的段和帧`
+        `段的镜头或挑区段改过、留表没跟上：重裁 anim world trim ${pack.name}（按各段的加载计划从完整包裁），anim check 的 terrain 规则会列出缺的段和帧`
       : `${pack.dir}/${fileName} 里没有区段 ${sectionKey(section)}（粗高度图说有）`,
   );
 // 取这几个区段：按块文件分组，块里按偏移排好、挨着的并成一次活交给工人；给了来源 `ctx` 的工人顺手换好体素块，放进 `ready`。返回每个区段取齐的 Promise。
@@ -218,7 +218,7 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   };
   const source: VoxelSource = {
     采样: sample,
-    ...(resolve && !isCoverRun() ? { resolveSections: resolve } : {}),
+    ...(resolve ? { resolveSections: resolve } : {}),
     coarsestLevel: pack.info.coarsestLevel,
     toScene: (g) => [g[0]! - ox, oz - g[2]!, g[1]! - oy],
     sections: (section) => {
@@ -233,12 +233,6 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
     transferOwnership: true,
     ...(pack.canSplit ? { canSplit: pack.canSplit } : {}),
     prefetch: (qs, guessed) => {
-      // 地形覆盖（engine/voxel/地形用量.ts）：只记这一帧要的区段，不取
-      if (isCoverRun()) {
-        noteCoverWorld(pack.name);
-        if (!guessed) recordReads((pack.route ? qs : qs.filter(contains)).map(sectionKey));
-        return undefined;
-      }
       const round = ++pack.round;
       const waits = new Set<Promise<void>>();
       const toLoad: SectionId[] = [];

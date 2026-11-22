@@ -13,7 +13,7 @@
 // 挑区段时视野往背着光的方向多留 300 米：画面外、光源那边的块（树、山）也会把影子投进画面。
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
-import { cancelRender, continueRender, delayRender, getRemotionEnvironment, Internals } from 'remotion';
+import { cancelRender, continueRender, delayRender, getRemotionEnvironment } from 'remotion';
 import { useFrameRate, useSecLeft, useSecSinceStart } from '../段/时间.tsx';
 import * as THREE from 'three';
 import { makeFrustumTest } from './视锥.ts';
@@ -29,7 +29,6 @@ import { sectionKey, sectionBounds, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 import { prepareSelection, routeTrial, statCamera, ownFrustumTest, baselineMaxCellPixels, type RouteState, type Route, type Lookahead } from './选区段.ts';
 import { coarsenessStats, switchStats, type FramePick } from './航线定级统计.ts';
-import { isCoverRun, setCoverFrame } from './地形用量.ts';
 
 // 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）。
 // 下面两个上限都至少放大到装得下这一帧要画的面（`frameSlack` 倍）：照一帧 560 万面定的，穿塔一帧已过千万面，定死的话每帧都在挤
@@ -191,7 +190,6 @@ const distToBox = (b: number[], p: number[]) =>
 export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center: camPos, pixel: splitPixels, far: farM, heightRange: heightRange = [-30, 140], shadowLightDir }) => {
   const camera = useThree((st) => st.camera) as THREE.PerspectiveCamera;
   const size = useThree((st) => st.size);
-  const timelineFrame = Internals.Timeline.useTimelinePosition(); // 整段的帧号，地形覆盖记帧用
   const advance = useThree((st) => st.advance);
   const gl = useThree((st) => st.gl);
   const [, forceRedraw] = useState(0);
@@ -243,14 +241,6 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
     world.本 = { 位: _position.clone(), dirQuat: _orientation.clone(), 心: [...camPos], projection: camera.projectionMatrix.clone(), pixelAngle: pixelAngle };
   }
   debug.logPick(list);
-  // 地形覆盖（engine/voxel/地形用量.ts）：挑出来的照常报给来源记下（来源这时只记不取），这一帧什么都不建、不画、不预取。挑法和正常渲染是同一段代码，裁级的留表就从这里来。
-  // 挑出 0 个也报：来源借此记下「有体素世界从这个包挑」，整段挑过却一个没记下时 pipeline 报错（pipeline/渲/地形覆盖.ts）
-  const coverRun = isCoverRun();
-  if (coverRun) {
-    setCoverFrame(timelineFrame);
-    source.prefetch?.(list);
-  }
-  const drawList = coverRun ? [] : list;
   const putEntry = (section: SectionId, entry: Entry) => {
     const k = sectionKey(section);
     if (cache.has(k)) return;
@@ -259,7 +249,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   };
   // 没建的区段都交给网格池在后台建（见 网格池.ts）：这一帧先不画、用 delayRender 拦住截图，建齐了重画一次再放行。
   // 导入的地形要先从包里取区段（fetch），没取到的等取齐了再建
-  const unbuilt = drawList.filter((q) => !cache.has(sectionKey(q)));
+  const unbuilt = list.filter((q) => !cache.has(sectionKey(q)));
   // 预取进来的（猜的）这一帧真要了：也告诉来源一声，让它把这几块补记进地形用量
   const unkept = unbuilt.filter((q) => {
     const rec = kept.get(keptKey(worldKey, q));
@@ -354,14 +344,14 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   const frameClock = world.clock;
   const keptStamp = ++keptClock;
   // 裙边（lib/体素/网格.ts 文件头）：这一侧同一级的邻居这一帧也在画，裙边就藏在它的地面底下，不画
-  const drawnKeys = new Set(drawList.map(sectionKey));
+  const drawnKeys = new Set(list.map(sectionKey));
   const skirtFlags = (q: SectionId) => [
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i + 1, j: q.j })),
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i - 1, j: q.j })),
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i, j: q.j + 1 })),
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i, j: q.j - 1 })),
   ];
-  for (const section of drawList) {
+  for (const section of list) {
     const entry = cache.get(sectionKey(section));
     if (!entry) continue;
     entry.used = ++world.clock;
@@ -385,7 +375,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   if (shadowBatch.items.length && !debug.noShadow) group.add(shadowBatch);
   // 这一帧用到的块不能被清掉
   let drawnFaces = 0;
-  for (const section of drawList) drawnFaces += cache.get(sectionKey(section))?.faceCount ?? 0;
+  for (const section of list) drawnFaces += cache.get(sectionKey(section))?.faceCount ?? 0;
   const cacheLimit = Math.max(maxCachedFaces, drawnFaces * frameSlack.cache);
   if (world.faceCount > cacheLimit) {
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
@@ -504,7 +494,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ worldKey, source, center
   // 预取下一帧：这一帧放行以后（排在上面那个 effect 后面，再让出一轮）才开始，不占出这一帧的时间
   useEffect(() => {
     const { prevPrev, 上: prevPose, 本: current } = world;
-    if (coverRun || !allBuilt || !current || world.prefetchedPose === current || !getRemotionEnvironment().isRendering) return;
+    if (!allBuilt || !current || world.prefetchedPose === current || !getRemotionEnvironment().isRendering) return;
     world.prefetchedPose = current;
     const look = lookaheads.get(camera);
     if (look) {
