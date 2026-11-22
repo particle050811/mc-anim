@@ -22,7 +22,7 @@ import { packDir } from './区段包位置.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 import { waterFreezes, distantSection, distantBiome, distantTop, readDistantGrid, type DistantGrid } from './远景.ts';
 import { readSeam, seamBasisMatches, seamCorrection, type Seam } from './交界修正.ts';
-import { fallbackHeightRange, fallbackSampler } from './远景兜底采样.ts';
+import { fallbackSelection } from './远景兜底采样.ts';
 import { coarseSeaPlant } from './远景海底.ts';
 import { coarseGroundPlant } from './远景地面草.ts';
 
@@ -176,13 +176,10 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
   const correction = seam ? seamCorrection(seam, origin) : undefined;
   const coarseHeights = imported.coarse;
   const baseSource = imported.source;
-  const groundAt = fallbackSampler(coarseHeights, grid, seam, origin);
+  const selection = fallbackSelection(coarseHeights, baseSource.coarsestLevel, imported.heightRange, grid, seam, origin);
+  const groundAt = selection.groundAt;
   const source: VoxelSource = {
-    coarsestLevel: baseSource.coarsestLevel,
-    采样: (x, y, out) => {
-      out.z = groundAt(x, y);
-      out.crown = 0;
-    },
+    ...selection.source,
     sections: (section) => {
       const voxels = baseSource.sections(section);
       if (!voxels) return distantSection(grid, origin, section, undefined, correction);
@@ -200,7 +197,7 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
   };
   return {
     source: source,
-    heightRange: fallbackHeightRange(imported.heightRange, grid, origin, 26),
+    heightRange: selection.heightRange,
     位置: imported.位置,
     ground: groundAt,
   };

@@ -20,6 +20,7 @@ import { readModel, modelFileName } from './区段模型.ts';
 import { formatVersion, sectionInTile, tileFileName, tilePrefixLen, tileHeaderGuessCap, tileHeaderLength, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodePackMaps, decodeSplittable, findInTile, packMapsFileName, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap, type TileIndex } from './区段包.ts';
 import { resolveRouteSections, type RouteIndex } from './航线区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
+import { importedContains, importedSampler, readsByPack } from './导入选级.ts';
 import { packDir } from './区段包位置.ts';
 import { recordSectionRead, isCoverRun, noteCoverWorld } from './地形用量.ts';
 import { variesByPos } from './群系色.ts';
@@ -202,24 +203,18 @@ const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas
   // 游戏方块范围（from、to 都含）→ 场景盒子 [x0, y0, z0, x1, y1, z1]
   const toSceneBox = (m: { from: number[]; to: number[] }) => [m.from[0] - ox, oz - 1 - m.to[2], m.from[1] - oy, m.to[0] + 1 - ox, oz - m.from[2], m.to[1] + 1 - oy];
   const cutBoxes: CutBox[] = cutouts.map((m) => ({ boxes: toSceneBox(m), 留: m.留 ? globRegex(m.留) : null }));
-  // `选区段` 拿 `采样` 的 z 当这一带的地物顶。没数据的地方给 0 而不是 −Infinity：`选区段` 只在区段中心取一次，粗级大区段中心没数据、角上有数据时，按无限远算就永远不细分
-  const sample: TerrainSampler = (x, y, out) => {
-    const height = coarseHeightAt(pack.coarseHeights, x, y);
-    out.z = height === -Infinity ? pack.route?.outside ?? 0 : height;
-    out.crown = 0;
-  };
+  const sample = importedSampler(pack.coarseHeights, pack.route?.outside);
   const ctx: SectionContext = { info: pack.info, tables: pack.tables, variesByPos: pack.variesByPos, cutBoxes, flattenAreas };
   // 工人那边只要换体素块用的几项，粗高度图不发
   const workerCtx = registerSource({ origin: pack.info.origin, state: pack.info.state, biome: pack.info.biome }, cutBoxes, flattenAreas);
   const ready = new Map<string, ReadyVoxels>();
   // 替下一帧先取、还没记进地形用量的区段：哪一帧真要到了才记，没用上的不记（用量只记画面真用到的）
   const unrecorded = new Set<string>();
-  const contains = (q: SectionId) => pack.route ? pack.route.keys.has(sectionKey(q)) : hasSection(pack.coarseHeights, q);
+  const contains = importedContains(pack.coarseHeights, pack.route?.keys);
   const resolve = pack.route ? resolveRouteSections(pack.route.keys, pack.info.coarsestLevel) : undefined;
+  const overlayReads = pack.overlay && { pack: pack.overlay.pack.name, keys: pack.overlay.keys };
   const recordReads = (keys: string[]) => {
-    recordSectionRead(pack.name, keys); // 航线按世界的完整需求规划，含覆盖块。
-    const layer = pack.overlay;
-    if (layer) recordSectionRead(layer.pack.name, keys.filter((key) => layer.keys.has(key)));
+    for (const [name, ks] of readsByPack(pack.name, keys, overlayReads)) recordSectionRead(name, ks);
   };
   const source: VoxelSource = {
     采样: sample,
