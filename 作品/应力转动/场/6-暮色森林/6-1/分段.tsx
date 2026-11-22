@@ -9,7 +9,7 @@ import { official } from '../6-1-2/动作改进.ts';
 import { NagaDamageLayer } from '../6-1-2/伤害数字层.tsx';
 import { TakeOff } from '../6-1-3/起飞.tsx';
 import { OnerSegment } from '../一镜到底/画面.tsx';
-import { segments, frameCountOf, compositionId, CUT_STEPS_PER_SEC, type SegmentId, type SegmentSource } from './段界.ts';
+import { segments, clipsOf, frameCountOf, compositionId, CUT_STEPS_PER_SEC, type SegmentId, type SegmentSource } from './段界.ts';
 
 const Naga: React.FC = () => <NagaBlockout {...official} />;
 const NagaDamage: React.FC = () => <NagaDamageLayer {...official} />;
@@ -19,7 +19,7 @@ const sourceComponents: Record<SegmentSource, React.FC> = { '6-1-1': EnterForest
 
 const Empty: React.FC = () => null; // 透明层里没有数字的截
 const piecesOf = (id: SegmentId, components: Partial<Record<SegmentSource, React.FC>>): (Clip & { picture: React.FC })[] =>
-  segments.find((s) => s.id === id)!.cuts.map((p) => ({ segment: p.源, picture: components[p.源] ?? Empty, 从: p.从, dest: p.dest }));
+  clipsOf(id).map((c) => ({ ...c, picture: components[c.segment] ?? Empty }));
 
 const shots = segments.map((s) => {
   const pieces = piecesOf(s.id, sourceComponents);

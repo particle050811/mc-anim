@@ -37,5 +37,7 @@ export type SegmentId = (typeof segments)[number]['id'];
 const segmentOf = (id: SegmentId) => segments.find((s) => s.id === id)!;
 export const pieceFrames = (pieces: readonly Clip[]) => pieces.reduce((n, p) => n + p.dest - p.从, 0);
 export const frameCountOf = (id: SegmentId) => pieceFrames(segmentOf(id).cuts);
+// 拼段（拼段时序.ts）用的截表：源组件记成 segment
+export const clipsOf = (id: SegmentId) => segmentOf(id).cuts.map((p) => ({ segment: p.源 as SegmentSource, 从: p.从, dest: p.dest }));
 export const compositionId = (id: SegmentId) => `${id}-${segmentOf(id).name}`;
 
