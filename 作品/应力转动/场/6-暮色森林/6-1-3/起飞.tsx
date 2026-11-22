@@ -11,7 +11,6 @@ import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { FlightRig } from '../../../地点/飞行镜头.tsx';
 import { TwilightLighting, twilightFogNear } from '@engine/light/暮色光照.tsx';
-import { twilightSunDir } from '@engine/light/光照配比.ts';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { LiYing } from '@库/角色/李樱.tsx';
 import { RideBroom } from '@库/角色/骑扫帚.tsx';
@@ -21,6 +20,7 @@ import { LandmarkPlacement, TwilightTerrain } from '../../../地点/暮色新世
 import { farViewLighting, twilightFarViewM } from '../../../地点/暮色新世界/超远景.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import * as choreo from './编排.ts';
+import { takeOffCamera, takeOffTwilight } from './机位.ts';
 import { mouthAt } from '../../../配音/口型.ts';
 import { LichScene } from '../6-1-5/戏.tsx';
 import { pierceTimes } from '../一镜到底/路线.ts';
@@ -30,10 +30,8 @@ const sheath = <WornSheath />;
 export const TakeOff: React.FC = () => {
   const t = useCurrentSec();
   const { width, height } = useVideoConfig();
-  const local = choreo.camera(t);
   const origin = choreo.courtyard.origin;
-  const toWorld = (p: number[]) => [p[0] + origin[0], p[1] + origin[1], p[2] + origin[2]];
-  const cam = { ...local, pos: toWorld(local.pos), tgt: toWorld(local.tgt) };
+  const cam = takeOffCamera(t);
   const broom = choreo.broom(t);
   const riders = choreo.riders(t);
   const ly = choreo.liyingOnFoot(t);
@@ -49,7 +47,7 @@ export const TakeOff: React.FC = () => {
         {/* 屏幕空间 AO：同 6-1-2、一镜到底一直开着（云也画在它里面） */}
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <TwilightTerrain camPos={cam.pos} landmarks={['娜迦庭院']} t={choreo.T612 + t} clearPlants={choreo.clearPlants(t)} shadowLightDir={twilightSunDir} farView={choreo.farView()} />
+          <TwilightTerrain camPos={cam.pos} landmarks={['娜迦庭院']} t={choreo.T612 + t} clearPlants={choreo.clearPlants(t)} {...takeOffTwilight()} />
           {/* 巫妖怪塔：起飞朝东南 135° 以后它就在正前方 2 公里（直航，用户 10-05「为什么起飞的时候就不能把那个扫帚摆好方向」），升上林海以后地平线上看得见塔尖。
               一镜到底（6-1-4+5）从第 0 帧起画它，这里不画的话末帧接 6-1-4+5 首帧时塔尖一下子冒出来（整合时逐像素比出来的）。
               时间照一镜到底的口径：6-1-3 末帧 = 一镜到底第 0 帧（物理时间 0），塔还没被撞 */}

@@ -24,7 +24,8 @@ import { overworldWindowView } from '@engine/voxel/主世界地形.ts';
 import { SKY, SkyDome, SunLight, OverworldWaterSky, twilightFogColor } from '@engine/light/天空.tsx';
 import { PortalParticles } from '@库/特效/传送粒子.tsx';
 import { LightningBolt } from '@库/特效/闪电.tsx';
-import { courtyardToWorld, courtyardLightDir, courtyardLightGain } from '../6-1-2/娜迦参考模型.tsx';
+import { courtyardLightDir, courtyardLightGain } from '../6-1-2/机位.ts';
+import { enterForestCamera, enterForestTwilight, placeEnterForestCamera } from './机位.ts';
 import { LandmarkPlacement, TwilightTerrain } from '../../../地点/暮色新世界.tsx';
 import { shadowFarFor, TwilightClouds, TwilightSunLight, useTwilightFog } from '@engine/light/暮色光照.tsx';
 import { VIEW_FOG } from '@engine/voxel/视距.ts';
@@ -33,8 +34,6 @@ import * as choreo from './编排.ts';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad, mulberry32 } from '@engine/core/数学.ts';
-import { sceneToThree } from '@engine/core/three换算.ts';
-import { lensToFov } from '@engine/core/机位.ts';
 import { trialFarM } from '@engine/light/高度雾.ts';
 // 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口是段内秒（cue 在 段/6-进入森林/段.ts）。mouthAt 按 帧 ÷ 每秒 算，这里 帧 写的是秒、每秒给 1
 const lineCues = [{ id: '6-1-1-李樱-出征暮色', frame: 4 / 24 }];
@@ -46,18 +45,7 @@ const Rig: React.FC<{ t: number }> = ({ t }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
-  const c0 = choreo.camera(t);
-  const tf = choreo.world(t) === 'tf';
-  const worldCam = tf ? { ...c0, pos: courtyardToWorld(c0.pos), tgt: courtyardToWorld(c0.tgt) } : { ...c0, pos: islandToWorld(c0.pos), tgt: islandToWorld(c0.tgt) };
-  const cam = camera as THREE.PerspectiveCamera;
-  // 焦距按 36mm 横向画幅换算，three.js 用竖向视角
-  cam.fov = lensToFov(worldCam.lens, size.width / size.height);
-  cam.near = 0.05;
-  cam.far = tf ? 2000 : 60000;
-  cam.position.copy(sceneToThree(worldCam.pos));
-  cam.up.set(0, 1, 0);
-  cam.lookAt(sceneToThree(worldCam.tgt));
-  cam.updateProjectionMatrix();
+  placeEnterForestCamera(camera as THREE.PerspectiveCamera, t, size.width / size.height);
   return null;
 };
 
@@ -158,7 +146,7 @@ const TwilightForest: React.FC<{ t: number; sec: number }> = ({ t, sec }) => {
     <>
       {/* 主光同 6-1-2 的庭院（70°/28°、0.75 倍，2026-10-13 起），不放进平移的组（平行光的目标在世界原点） */}
       <TwilightSunLight shadowFar={shadowFarFor(VIEW_FOG.far)} lightDir={courtyardLightDir} gain={courtyardLightGain} />
-      <TwilightTerrain camPos={courtyardToWorld(choreo.camera(t).pos)} landmarks={nagaLandmarks} t={sec} shadowLightDir={courtyardLightDir} />
+      <TwilightTerrain camPos={enterForestCamera(t).pose.pos} landmarks={nagaLandmarks} t={sec} {...enterForestTwilight} />
       <TwilightClouds sun={courtyardLightDir} />
       <LandmarkPlacement name="娜迦庭院">
         {/* 暮色森林没有太阳：深蓝天、星星、地平线一圈薄荷绿，主光、天光、云都和 6-1-2 一样 */}
