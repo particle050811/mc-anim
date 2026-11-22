@@ -1,6 +1,7 @@
 {
   "name": "mc-anim",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "exports": {
     "./库/*": "./库/*",

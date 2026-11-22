@@ -1,4 +1,4 @@
-// 高度雾：在 three 的线性雾 / 指数平方雾上叠一层解析指数高度雾（照 Photon 的 include/fog/overworld/analytic.glsl，Photon 许可证允许个人修改和再分发部分代码），
+// 高度雾：在 three 的线性雾 / 指数平方雾上叠一层解析指数高度雾（照 Photon 的 include/fog/overworld/analytic.glsl，Photon Shaders License Agreement，全文见 engine/light/大气/Photon-LICENSE.txt），
 // 低处浓、高处淡，高空往下看谷底先被雾填上、山脊露在外面，0.2～5 公里也有远近层次（用户 10-04 定）。
 // 改的是 three 的 fog_* 着色块，所有材质（three 自带的、onBeforeCompile 改过的、合并了 UniformsLib.fog 的 ShaderMaterial）走同一套。
 // 浓度：密度(h) = 浓度 × 2^(−(h − 起点) / 半衰)（每米），沿视线积分有解析解（Photon 的 air_fog_analytic_airmass），透过率 = exp(−积分)；

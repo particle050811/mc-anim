@@ -2,6 +2,7 @@
 // 一份 云配置 = 几层云（层数不设上限，用户 11-04「肯定要允许超过三层」），每层自己的算法、高度、厚、覆盖……，加上整份的天气、曝光、质量档。纯模块（测试直接引）。
 // 高度都是世界高度（格），进 Photon 的「云空间」时离海平面的高度 × 云空间倍数（同 engine/light/大气/云.ts 的 CLOUDS_SCALE）。
 // 天气 → 各层覆盖、细节、消光照 Photon 的 get_clouds_parameters（同 大气/云.ts 的 cloudParams，那边应力转动在用、一行不改，这里抄一份）。
+// 这部分移植自 Photon：Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 engine/light/大气/Photon-LICENSE.txt。
 import { clamp01, easeOutQuad, lerp, linearstep, smoothstep, smoothstep01 } from '@engine/core/数学.ts';
 
 /** 方块到云空间的倍数（同 大气/云.ts 的 CLOUDS_SCALE，用户 10-14 定的 3） */
