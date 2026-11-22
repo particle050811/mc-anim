@@ -15,6 +15,9 @@ export const checkSeg = (o: { sec: number; aspect?: { width: number; height: num
   return defineSeg({ scene: '核对', sec: o.sec, width, height, terrain: o.terrain ?? [] });
 };
 
+/** 一秒一个视图：第 sec 秒的视图（过了最后一个停在最后一个）；画面的 useCheckView 和加载计划都走这里。取整同 时间.tsx 的 useViewIndex */
+export const checkViewAt = <V,>(views: readonly V[], sec: number): V => views[Math.min(views.length - 1, Math.max(0, Math.floor(sec + 1e-9)))]!;
+
 /** 视图一个接一个排在时间上，各占 length 秒：总长，和第 sec 秒落在哪个视图、是它的第几秒（过了段尾停在最后一个视图的末尾） */
 export const sequenceViews = <V extends { length: number }>(views: readonly V[]) => ({
   totalSec: views.reduce((sum, v) => sum + v.length, 0),

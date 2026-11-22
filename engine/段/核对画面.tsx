@@ -6,15 +6,15 @@ import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import * as THREE from 'three';
 import { canvasDpr } from '../core/渲染级别.ts';
-import { sceneToThree } from '../core/three换算.ts';
-import type { CheckShot } from './核对段.ts';
-import { useViewIndex } from './时间.tsx';
+import { placeEyeCamera } from '../core/three换算.ts';
+import { checkViewAt, type CheckShot } from './核对段.ts';
+import { useCurrentSec } from './时间.tsx';
 
 /** 中性灰台子的颜色：底色（页面和画布清屏）、地面 */
 export const checkGrey = { background: '#5a5e66', ground: '#8a8f98' } as const;
 
 /** 一秒一个视图：当前这一秒的视图（过了最后一个停在最后一个） */
-export const useCheckView = <V,>(views: readonly V[]): V => views[Math.min(views.length - 1, useViewIndex())]!;
+export const useCheckView = <V,>(views: readonly V[]): V => checkViewAt(views, useCurrentSec());
 
 type CanvasProps = Omit<React.ComponentProps<typeof ThreeCanvas>, 'dpr' | 'gl'> & {
   /** 画布清屏色（<color attach="background">）；不给就透明，露出页面底色 */
@@ -33,21 +33,11 @@ export const CheckCanvas: React.FC<CanvasProps> = ({ background, antialias = tru
 );
 
 /** 透视机位：中性色调映射、曝光 1，眼和看的点是场景坐标。aspect 不给用画布的 */
-export const CheckCamera: React.FC<CheckShot & { near?: number; far?: number; aspect?: number }> = ({ eye, target, fov, up, near = 0.05, far = 256, aspect }) => {
+export const CheckCamera: React.FC<CheckShot & { near?: number; far?: number; aspect?: number }> = (props) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
-  const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = fov;
-  if (aspect !== undefined) cam.aspect = aspect;
-  cam.near = near;
-  cam.far = far;
-  cam.position.copy(sceneToThree(eye));
-  if (up) cam.up.copy(sceneToThree(up));
-  else cam.up.set(0, 1, 0);
-  cam.lookAt(sceneToThree(target));
-  cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
+  placeEyeCamera(camera as THREE.PerspectiveCamera, props);
   return null;
 };
 
