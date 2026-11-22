@@ -165,7 +165,7 @@ export const debugSwitches = [
     fullTerrain: true,
     format: '{"秒"?: 往后看几秒 | "整段", "门槛"?: 输出像素（画质门槛 2.25）, "留细"?: true|false, "下限"?: 提前细分出来的一格至少几个输出像素, "格"?: 每秒几个格点（2 的幂，默认 16）}',
     keys: ['秒', '门槛', '留细', '下限', '格'],
-    files: ['engine/voxel/世界.tsx'],
+    files: ['engine/voxel/选区段.ts'],
     note: '应力转动的飞行镜头默认：秒 5、留细、门槛 4.5、下限 1.125（作品/应力转动/默认.ts 的 FLIGHT_ROUTE_LOD）；整个关掉用 {"关": ["航线定级"]}。门槛比 6 再粗要把「格」加到 64。做法见 engine/voxel/航线定级.ts',
   },
   {
@@ -178,7 +178,7 @@ export const debugSwitches = [
     fullTerrain: true,
     format: 'true 或 {"扫帧": n} 或 {"选级偏帧": ±n}',
     keys: ['扫帧', '选级偏帧'],
-    files: ['engine/voxel/世界.tsx'],
+    files: ['engine/voxel/选区段.ts', 'engine/voxel/世界.tsx'],
     note: 'true 的那一行用 bench --verbose 的 .log 看；扫帧配 still 出一帧。选级偏帧：同一帧出偏 0 和偏 −30 两张，anim diff 的差就是半秒里切级改掉的像素（只有它改画面）。只有登记了航线的飞行镜头有',
   },
   {
@@ -250,7 +250,7 @@ export const debugSwitches = [
   off('天色雾', '暮色雾色往视线方向天色靠的那一份（远雾要的色带照旧登记）', ['engine/light/高度雾.ts'], { note: replacedByFarFog }),
   off('天空', '穹顶（暮色色带、Photon 天空）连星星、太阳；露出场景背景色（主世界是黑的），云照旧', ['engine/light/天空.tsx']),
   off('云', 'Photon 云那一遍和原版方块云', ['engine/light/大气/云.ts', 'engine/light/天空.tsx'], { note: '云投在地形上的影子还在（体素材质里，等 engine/voxel 那批）' }),
-  off('航线定级', '登记了航线的飞行镜头不按航线定级，回到每帧按画质门槛现选（用户 11-17 定航线定级之前的做法）', ['engine/voxel/世界.tsx'], { fullTerrain: true }),
+  off('航线定级', '登记了航线的飞行镜头不按航线定级，回到每帧按画质门槛现选（用户 11-17 定航线定级之前的做法）', ['engine/voxel/选区段.ts'], { fullTerrain: true }),
   off('粒子', 'ParticleQuads 画的实例化粒子面片（方块碎屑、粉尘、气流这类）', ['库/特效/粒子面片.tsx'], { note: '振动、尖啸声波这类自己建面片的特效不管' }),
   off('阴影', '地形投影', ['engine/voxel/'], { pending: voxelPending, note: voxelNote }),
   off('AO', '屏幕 AO', ['engine/voxel/屏幕AO.tsx'], { pending: voxelPending, note: voxelNote }),

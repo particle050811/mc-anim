@@ -1,5 +1,5 @@
 // 每帧挑区段：给定摆好的相机、画幅、视距、地形源（只用选级那几项）和航线登记，挑出这一帧要的区段。
-// 体素世界（世界.tsx）每次渲染调它；加载计划（pipeline/世界/加载计划.ts）在 Node 里照段的地形视图逐帧调同一个函数，所以两边挑出来的一定一样。
+// 体素世界（世界.tsx）每次渲染调它；加载计划（engine/voxel/加载计划.ts，pipeline/渲/加载计划.ts 调）在 Node 里照段的地形视图逐帧调同一个函数，所以两边挑出来的一定一样。
 // 不碰 React、不碰 WebGL：相机只读位姿和投影矩阵，地形源只读 采样、canSplit、coarsestLevel、resolveSections。
 import * as THREE from 'three';
 import { newSurface } from './地表.ts';
