@@ -1,12 +1,9 @@
 // 6-1-1 进入森林的机位和地形视图：进入森林.tsx 的画面和加载计划（段的 地形视图.ts）读同一份。纯模块，不碰 React。
 // 两块画布：海岛（主世界-116 的基地小岛）和暮色（娜迦庭院），按 编排.ts 的 world 换
 import type * as THREE from 'three';
-import { LevelParams } from '@engine/core/渲染级别.ts';
-import { trialFarM } from '@engine/light/高度雾.ts';
-import { overworldDistantPack, overworldPack, overworldWindowView } from '@engine/voxel/主世界地形.ts';
-import { overworldPlanWorld } from '@engine/voxel/加载计划.ts';
 import type { TerrainCanvasView } from '@engine/voxel/地形视图.ts';
 import { islandToWorld } from '../../../地点/基地小岛.tsx';
+import { baseIslandVoxel, baseIslandWorld } from '../../../地点/基地小岛视图.ts';
 import { twilightViewParts } from '../../../地点/暮色新世界/地形世界.ts';
 import { placeFlightCamera } from '../../../地点/飞行机位.ts';
 import { courtyardLightDir, courtyardToWorld } from '../6-1-2/机位.ts';
@@ -27,12 +24,11 @@ export const placeEnterForestCamera = (camera: THREE.PerspectiveCamera, t: numbe
 // 暮色那半的 TwilightTerrain：主光同 6-1-2 的庭院，不开超远景
 export const enterForestTwilight = { shadowLightDir: courtyardLightDir };
 
-const islandWorld = overworldPlanWorld(overworldPack, overworldDistantPack);
-/** 段内第 sec 秒的地形视图。海岛那半照 基地小岛.tsx 的 BaseIslandTerrain：门槛是视频级的，最远 overworldWindowView.farM */
+/** 段内第 sec 秒的地形视图。海岛那半是 基地小岛.tsx 的 BaseIslandTerrain，参数同它读 基地小岛视图.ts */
 export const enterForestTerrainView = (sec: number): TerrainCanvasView[] => {
   const t = sec + choreo.T0;
   const place = (camera: THREE.PerspectiveCamera, aspect: number) => placeEnterForestCamera(camera, t, aspect);
   return enterForestCamera(t).tf
     ? [{ canvas: '6-1-1 暮色', place, ...twilightViewParts(enterForestTwilight) }]
-    : [{ canvas: '6-1-1 海岛', place, world: islandWorld, farM: trialFarM(overworldWindowView.farM), pixel: LevelParams.视频.pixel }];
+    : [{ canvas: '6-1-1 海岛', place, world: baseIslandWorld, ...baseIslandVoxel }];
 };
