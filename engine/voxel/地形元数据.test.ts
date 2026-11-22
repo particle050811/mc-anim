@@ -10,7 +10,7 @@ vi.mock('./区段模型.ts', async (orig) => ({ ...(await orig<typeof import('./
 vi.mock('./冻结粗高度.ts', () => ({ checkFrozenCoarse: () => {} }));
 vi.mock('./区段工人池.ts', () => ({ fetchSectionsInPool: async () => [], registerSource: () => 1, registerModel: () => {} }));
 const recorded: string[][] = [];
-vi.mock('./地形用量.ts', () => ({ recordSectionRead: (_pack: string, keys: string[]) => recorded.push(keys), isCoverRun: () => false }));
+vi.mock('./地形用量.ts', () => ({ recordSectionRead: (_pack: string, keys: string[]) => recorded.push(keys) }));
 let currentInfo: PackageInfo;
 let currentMaps: Uint8Array;
 vi.mock('../core/数据源.ts', () => ({ dataUrl: (rel: string) => `/${rel}`, fetchJson: async () => currentInfo, fetchGunzip: async () => currentMaps.slice().buffer, loadOnce: <T,>(_k: string, load: () => Promise<T>) => load() }));

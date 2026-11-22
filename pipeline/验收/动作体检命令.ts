@@ -8,7 +8,7 @@ import { codeRoot } from '../环境/路径.ts';
 import { lowPriority, runCapture } from '../环境/子进程.ts';
 import { passGate } from '../闸/闸.ts';
 import { readWorkAssetLock } from '../资产/资产锁.ts';
-import { importBundled } from './打包加载.ts';
+import { importBundled } from '../源码/打包加载.ts';
 import { auditCadence } from './成片节拍.ts';
 
 const loadMotion = async (entry: string): Promise<MotionProfile> => (await importBundled({ file: entry }, { codeRoot: codeRoot(), lock: readWorkAssetLock(workRoot()) })).default as MotionProfile;

@@ -22,6 +22,7 @@ import { TomeRecipeWindow } from '@库/界面/古卷.tsx';
 import { FuelWindow, MailleWindow } from '@库/界面/匠魂.tsx';
 import { CompassUi } from '@库/界面/结构罗盘.tsx';
 import * as choreo from './编排.ts';
+import { basePlanNear } from './地形视图.ts';
 import { mouthAt } from '../../../配音/口型.ts';
 import { rad } from '@engine/core/数学.ts';
 import { trialFarM } from '@engine/light/高度雾.ts';
@@ -55,7 +56,7 @@ export const BasePlanSegment: React.FC<{ segment: choreo.SegmentName }> = ({ seg
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
         <FlightFog visibility={choreo.VISIBILITY} far={trialFarM(overworldWindowView.farM)} />
-        <FlightRig c={cam} near={0.02} ahead={{ sec, at: choreo.camera }} />
+        <FlightRig c={cam} near={basePlanNear} ahead={{ sec, at: choreo.camera }} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <FlightSky camPos={cam.pos} />

@@ -9,49 +9,19 @@ import { CascadedShadow, quarterOctaveCeil } from '@engine/light/级联阴影.ts
 import { SKY, SkyDome } from '@engine/light/天空.tsx';
 import { overworldMix } from '@engine/light/光照配比.ts';
 import { OverworldSky, SUN_OW } from './主世界光照.tsx';
-import { rad } from '@engine/core/数学.ts';
-import { sceneToThree } from '@engine/core/three换算.ts';
-import { lensToFov } from '@engine/core/机位.ts';
 import { useFarFog } from '@engine/light/高度雾.ts';
 import { useLookahead } from '@engine/voxel/世界.tsx';
-import { FLIGHT_ROUTE_LOD } from '../默认.ts';
-export type CamPose = { pos: number[]; tgt: number[]; lens: number; roll?: number };
-// 把机位摆进相机（FlightRig 自己的相机、按航线往后看的相机共用）
-const placeCamera = (cam: THREE.PerspectiveCamera, camPose: CamPose, aspect: number, near: number, far: number) => {
-  cam.fov = lensToFov(camPose.lens, aspect);
-  cam.near = near;
-  cam.far = far;
-  cam.position.copy(sceneToThree(camPose.pos));
-  cam.up.set(0, 1, 0);
-  cam.lookAt(sceneToThree(camPose.tgt));
-  if (camPose.roll) cam.rotateZ(-rad(camPose.roll));
-  cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
-};
+import { flightFar, flightLookRoute, flightNear, placeFlightCamera, type CamPose, type FlightRoute } from './飞行机位.ts';
+export type { CamPose } from './飞行机位.ts';
 // ahead：航线。sec = 这一帧的航线秒，at = 按航线秒取机位（各段 编排.ts 查表算的，同 c 的来处；只许看航线秒），
-// 给了体素世界就按航线提前备区段、地形按航线定级（engine/voxel/世界.tsx 的 `useLookahead`；定级参数是全片默认 FLIGHT_ROUTE_LOD，各镜头不另给）。
-// range = 这条航线连着飞的起止秒，一条航线拆成几截拼时给（见 世界.tsx 的 `Route`）
-export type FlightRoute = { sec: number; at: (sec: number) => CamPose; range?: readonly [number, number] };
-export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahead?: FlightRoute }> = ({ c: camPose, near = 0.05, far = 150000, ahead }) => {
+export type { FlightRoute } from './飞行机位.ts';
+export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number; ahead?: FlightRoute }> = ({ c: camPose, near = flightNear, far = flightFar, ahead }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  placeCamera(cam, camPose, size.width / size.height, near, far);
-  useLookahead(
-    camera,
-    ahead && {
-      sec: ahead.sec,
-      range: ahead.range,
-      lod: FLIGHT_ROUTE_LOD,
-      at: (sec, target) => {
-        const pose = ahead.at(sec);
-        target.aspect = size.width / size.height; // R3F 只替它自己的相机设
-        placeCamera(target, pose, size.width / size.height, near, far);
-        return pose.pos;
-      },
-    },
-  );
+  placeFlightCamera(cam, camPose, size.width / size.height, near, far);
+  useLookahead(camera, ahead && flightLookRoute(ahead, size.width / size.height, near, far));
   return null;
 };
 

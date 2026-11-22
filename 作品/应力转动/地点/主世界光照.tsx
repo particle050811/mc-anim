@@ -7,11 +7,8 @@ import { Atmosphere } from '@engine/light/大气组件.tsx';
 import { PhotonClouds } from '@engine/light/大气/云.ts';
 import { borderTownPos } from './主世界116.ts';
 
-// 正西、仰角 20°（用户 10-15 定）：6-2-5 航线一路往西，太阳在前方、画面上方，逆光，影子朝镜头拉长
-export const SUN_OW: [number, number, number] = [-0.94, 0, 0.342];
-// 太阳投影用的光向（单位向量，体素地形的投影网格和日光要同一个，见 lib/飞行镜头.tsx 的 `OverworldSunLight`）
-const sunLen = Math.hypot(...SUN_OW);
-export const SUN_OW_DIR: [number, number, number] = [SUN_OW[0] / sunLen, SUN_OW[1] / sunLen, SUN_OW[2] / sunLen];
+import { SUN_OW } from './主世界日向.ts';
+export { SUN_OW, SUN_OW_DIR } from './主世界日向.ts';
 
 // 6-3 下坠穿过的那一片（用户 10-14：云照视频，下降时加一朵就行），在高积云层（6-3-4 跟拍穿过）：下坠路线在城局部 (0, 119) → (−0.5, 100.5)
 const fallCloud: [number, number, number] = [borderTownPos[0], borderTownPos[1] + 110, 150];

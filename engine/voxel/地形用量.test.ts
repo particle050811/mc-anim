@@ -1,17 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { terrainVersionEnv, terrainUsageSegEnv, terrainCoverEnv } from '../段/地形环境.ts';
+import { terrainVersionEnv, terrainUsageSegEnv } from '../段/地形环境.ts';
 import { packDir } from './区段包位置.ts';
-import { noteCoverWorld, recordSectionRead, setCoverFrame } from './地形用量.ts';
+import { recordSectionRead } from './地形用量.ts';
 
-const g = globalThis as { terrainUsage?: Map<string, { version: string; sections: Set<string> }>; terrainCoverFirst?: Map<string, Map<string, number>>; terrainCoverWorlds?: Set<string>; terrainCoverFrame?: number };
+const g = globalThis as { terrainUsage?: Map<string, { version: string; sections: Set<string> }> };
 afterEach(() => {
   delete process.env[terrainVersionEnv];
   delete process.env[terrainUsageSegEnv];
-  delete process.env[terrainCoverEnv];
   delete g.terrainUsage;
-  delete g.terrainCoverFirst;
-  delete g.terrainCoverWorlds;
-  delete g.terrainCoverFrame;
 });
 
 describe('地形用量', () => {
@@ -34,22 +30,4 @@ describe('地形用量', () => {
     expect(() => recordSectionRead('甲', ['0|1|2'])).toThrow(/要经 packDir/);
   });
 
-  it('覆盖页：记每个区段头一次用到的帧，和体素世界从哪些包挑过（挑出 0 个也算）；不是覆盖页不记', () => {
-    process.env[terrainVersionEnv] = JSON.stringify({ 甲: 'v1', 乙: 'v2' });
-    process.env[terrainUsageSegEnv] = '作品/段';
-    noteCoverWorld('甲');
-    expect(g.terrainCoverWorlds).toBeUndefined();
-    process.env[terrainCoverEnv] = '段';
-    packDir('甲');
-    packDir('乙');
-    setCoverFrame(5);
-    recordSectionRead('甲', ['0|1|2']);
-    noteCoverWorld('甲');
-    setCoverFrame(3);
-    recordSectionRead('甲', ['0|1|2', '1|0|0']);
-    noteCoverWorld('乙');
-    expect(Object.fromEntries(g.terrainCoverFirst!.get('甲')!)).toEqual({ '0|1|2': 3, '1|0|0': 3 });
-    expect([...g.terrainCoverWorlds!]).toEqual(['甲', '乙']);
-    expect(g.terrainCoverFirst!.has('乙')).toBe(false);
-  });
 });

@@ -15,9 +15,9 @@
 import React, { useEffect } from 'react';
 import { cancelRender } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
-import { LevelParams } from '@engine/core/渲染级别.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
-import { useOverworldTerrain, overworldPack, overworldDistantPack, overworldWindowView } from '@engine/voxel/主世界地形.ts';
+import { useOverworldTerrain } from '@engine/voxel/主世界地形.ts';
+import { baseIslandDistantPack, baseIslandPack, baseIslandVoxel } from './基地小岛视图.ts';
 import { overworldOrigin, gameToScene } from './主世界116.ts';
 import { basePoolBlock, baseIslandDigBoxes } from './基地小岛挖框.ts';
 import { trialFarM } from '@engine/light/高度雾.ts';
@@ -33,15 +33,15 @@ export const islandOffset: V3 = [1373.5 + (poolBlock.x - 1372) - overworldOrigin
 export const islandToWorld = (p: number[]): V3 => [p[0] + islandOffset[0], p[1] + islandOffset[1], p[2] + islandOffset[2]];
 
 
-// 地形只画到 overworldWindowView.farM（30 公里）：这几段镜头都在岛上贴着地面，远雾在 30 公里拉满成天色，再远画了也看不见
+// 地形的包和参数见 基地小岛视图.ts
 export const BaseIslandTerrain: React.FC<{ camPos: number[] }> = ({ camPos: camPos }) => {
-  const terrain = useOverworldTerrain(overworldPack, overworldDistantPack, baseIslandDigBoxes, undefined, '基地小岛');
+  const terrain = useOverworldTerrain(baseIslandPack, baseIslandDistantPack, baseIslandDigBoxes, undefined, '基地小岛');
   useEffect(() => {
     if (!terrain) return;
     const packOrigin = terrain.位置([0, 0, 0]);
     const expectedOrigin = gameToScene([0, 0, 0]);
-    if (packOrigin.some((v, i) => Math.abs(v - expectedOrigin[i]) > 1e-6)) cancelRender(new Error(`基地小岛：区段包 ${overworldPack} 的原点变了（${packOrigin} ≠ ${expectedOrigin}），改 主世界116.ts 的 overworldOrigin`));
+    if (packOrigin.some((v, i) => Math.abs(v - expectedOrigin[i]) > 1e-6)) cancelRender(new Error(`基地小岛：区段包 ${baseIslandPack} 的原点变了（${packOrigin} ≠ ${expectedOrigin}），改 主世界116.ts 的 overworldOrigin`));
   }, [terrain]);
   if (!terrain) return null;
-  return <VoxelWorld worldKey={terrain.key} source={terrain.source} center={camPos} pixel={LevelParams.视频.pixel} far={trialFarM(overworldWindowView.farM)} heightRange={terrain.heightRange} />;
+  return <VoxelWorld worldKey={terrain.key} source={terrain.source} center={camPos} pixel={baseIslandVoxel.pixel} far={trialFarM(baseIslandVoxel.farM)} heightRange={terrain.heightRange} />;
 };

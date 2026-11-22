@@ -20,9 +20,9 @@ import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
 import * as fallChoreo from '../../../地点/边城/6-3-下坠/编排.ts';
 import { SlabFloor } from '../../../地点/边城/6-3-下坠/竖井.tsx';
 import { PursuerScene } from '../../../地点/边城/6-3-8/画面.tsx';
-import { lastSec as lastSec6 } from '../../../地点/边城/6-3-8/编排.ts';
 import * as choreo from './编排.ts';
 import * as pit from './坑口.ts';
+import { inPitShot, pitSceneT } from './地形视图.ts';
 import { rad } from '@engine/core/数学.ts';
 
 // 7-4 的灯照主世界的配比（用户 10-15 定，lib/飞行镜头.tsx 的 FlightSky：直射 8.4、天光 1.0、环境光 0.17），屋里自己补的光按同样的比例压（天光 ×0.77、环境光 ×0.34）
@@ -43,8 +43,7 @@ export const RoomLights: React.FC<{ lights: { p: number[]; strength: number }[] 
   </>
 );
 
-// 镜头 1：6-3-10 末帧那一刻的场景（碎块、竖井都停在那时候），人按段内秒动
-const pitSceneT = lastSec6;
+// 镜头 1：6-3-10 末帧那一刻的场景（碎块、竖井都停在那时候），人按段内秒动；哪几秒是坑口、停在哪一刻见 地形视图.ts
 const PitPicture: React.FC<{ sec: number }> = ({ sec }) => {
   const liu = pit.leaperPose("刘", sec);
   const huang = pit.leaperPose("黄", sec);
@@ -70,7 +69,7 @@ const PitPicture: React.FC<{ sec: number }> = ({ sec }) => {
   );
 };
 
-export const ReportPicture: React.FC<{ sec: number }> = ({ sec }) => (sec < choreo.shot1End ? <PitPicture sec={sec} /> : <RoomPicture sec={sec} />);
+export const ReportPicture: React.FC<{ sec: number }> = ({ sec }) => (inPitShot(sec) ? <PitPicture sec={sec} /> : <RoomPicture sec={sec} />);
 
 const RoomPicture: React.FC<{ sec: number }> = ({ sec }) => {
   const { width, height } = useVideoConfig();

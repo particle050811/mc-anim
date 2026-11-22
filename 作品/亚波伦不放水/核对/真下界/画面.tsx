@@ -3,10 +3,9 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { CheckCamera, CheckCanvas, CheckLabel, useCheckView, ZUp } from '@engine/段/核对画面.tsx';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
-import { netherVanilla, netherBrighter, RealNether } from '../../地点/真下界.tsx';
+import { RealNether } from '../../地点/真下界.tsx';
 import { aspect, views } from './视图.ts';
-
-const lightTables = { 原版: netherVanilla, 提亮: netherBrighter };
+import { lightTables, viewCamera } from './地形视图.ts';
 
 const picture: React.FC = () => {
   const v = useCheckView(views);
@@ -14,7 +13,7 @@ const picture: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: lightSetup.fog.色 }}>
       <CheckCanvas width={aspect.width} height={aspect.height} gl={{ logarithmicDepthBuffer: true }}>
-        <CheckCamera eye={v.眼} target={v.看} fov={70} far={4096} aspect={aspect.width / aspect.height} />
+        <CheckCamera {...viewCamera(v)} />
         <ScreenAo />
         <ZUp>
           <RealNether cameraPos={v.眼} 光={lightSetup} />

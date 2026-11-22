@@ -205,8 +205,8 @@ describe('2-03 绕拍（用户 11-11「我要环绕 180 度」）', async () => 
 
   it('正片开盘全开近景：双眼不隔盘、脸朝镜头，盘完整且比人物小', async () => {
     const { perform, wheelPlace, wheelRadius, act2WheelParams } = await import('./编排-开盘.ts');
-    const { actTwoShotTable } = await import('../../段/2-开盘/画面.tsx');
-    const { pickShot } = await import('./台地场.tsx');
+    const { actTwoShotTable } = await import('../../段/2-开盘/机位.ts');
+    const { pickShot } = await import('./台地机位.ts');
     const { animSkeletonTable, GirlYaBoLunCreature } = await import('../../角色/娘化亚波伦.tsx');
     const { pictureSelfCheck } = await import('../../界面/指杖机位.ts');
     const { staffTipPlatePose } = await import('../../界面/杖尖盘位姿.ts');

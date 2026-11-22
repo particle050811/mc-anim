@@ -24,7 +24,7 @@ import * as THREE from 'three';
 import { GAME_NAGA } from '@库/角色/娜迦实机.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera } from '@库/界面/伤害数字.tsx';
 import { JadeTooltip, jadeScalePerWidth } from '@库/界面/Jade.tsx';
-import { courtyardToWorld, nagaShotCam, type NagaShotProps } from './娜迦参考模型.tsx';
+import { courtyardToWorld, nagaShotCam, type NagaShotProps } from './机位.ts';
 import { nagaWarp } from './动作改进.ts';
 import * as choreo from './编排.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';

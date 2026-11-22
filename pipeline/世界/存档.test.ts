@@ -141,7 +141,7 @@ describe('体素库', () => {
     expect(deps.filter(p => p.startsWith('asset:')).sort()).toEqual(['asset:数据/体素/远景地面草', 'asset:数据/体素/远景海底', 'asset:数据/场景/关键帧/方块表', 'asset:数据/场景/关键帧/群系色']);
   });
 
-  // 数据源接口和经它读数据的纯函数：node数据源.ts、远景/打包.ts（动态 import 远景网格.ts）、Node 里算地形覆盖都执行它们
+  // 数据源接口和经它读数据的纯函数：node数据源.ts、远景/打包.ts（动态 import 远景网格.ts）、Node 里算加载计划都执行它们
   it('数据源接口、远景网格、交界修正、地形元数据、远景兜底采样的闭包里没有 react、three、remotion', async () => {
     const externalImports = await externalImportsOf(['engine/core/数据读取.ts', 'engine/core/内存数据源.ts', 'engine/voxel/远景网格.ts', 'engine/voxel/交界修正.ts', 'engine/voxel/地形元数据.ts', 'engine/voxel/远景兜底采样.ts']);
     expect(externalImports.filter((p) => /^(react|three|remotion|@remotion\/)/.test(p))).toEqual([]);

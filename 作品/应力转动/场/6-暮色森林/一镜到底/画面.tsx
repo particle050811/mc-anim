@@ -7,7 +7,6 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { FlightRig } from '../../../地点/飞行镜头.tsx';
 import { TwilightLighting, twilightFogFar, clampFogToEdge, TWILIGHT_CRUISE_FOG_FAR } from '@engine/light/暮色光照.tsx';
-import { twilightSunDir } from '@engine/light/光照配比.ts';
 import { LevelParams, type RenderLevel, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
@@ -18,7 +17,7 @@ import { WornSheath } from '@库/物品/拔刀剑.tsx';
 import { SpearInHand } from '@库/物品/下界合金长矛.tsx';
 import { ItemPickup, type PickupItem } from '@库/特效/物品拾取.tsx';
 import { TwilightTerrain, twilightLandmark, twilightHeightAboveGround, viewEdgeDistance, type TwilightLandmarkName } from '../../../地点/暮色新世界.tsx';
-import { cruiseFogFar, farViewOf, farViewLighting, twilightFarViewM, TWILIGHT_FAR_VIEW, type TwilightFarView } from '../../../地点/暮色新世界/超远景.ts';
+import { cruiseFogFar, farViewLighting, type TwilightFarView } from '../../../地点/暮色新世界/超远景.ts';
 import * as P613 from '../6-1-3/编排.ts';
 import * as castleChoreo from '../6-1-9/编排.ts';
 import { LichScene, lichRiderTweak } from '../6-1-5/戏.tsx';
@@ -26,7 +25,8 @@ import { HydraScene } from '../6-1-6/戏.tsx';
 import { UrGhastScene, AlphaYetiScene } from '../6-1-7/戏.tsx';
 import { SnowQueenScene } from '../6-1-8/戏.tsx';
 import { GiantScene } from '../6-1-8b/戏.tsx';
-import { cameraAt, type Cam } from './镜头.ts';
+import type { Cam } from './镜头.ts';
+import { onerSegmentFarView, onerShot, onerTerrain, type OnerAhead } from './地形视图.ts';
 import * as route from './路线.ts';
 import { SpearDrill, LootLayer, drillGhost, drillSpin } from './战利品.tsx';
 import { rad, smoothstep01, lerp } from '@engine/core/数学.ts';
@@ -187,10 +187,10 @@ const isNear = (landmark: TwilightLandmarkName, camPos: number[], maxDist = 1600
 // `extra`：另外画进场景的东西（场景坐标 Z 朝上）；`loot={false}` 不画战利品箱和掉落物（封面.tsx）
 // `farView`：超远景（暮色新世界/超远景.ts），不给不开；6-穿塔斩首领（`OnerSegment`）给，6-落地后、封面不给（用户 11-07 只定了两个飞行段）
 export type Riders = ReturnType<typeof ridersAt>;
-export const OnerFrame: React.FC<{ g: number; cam?: Cam; ahead?: { sec: number; at: (sec: number) => Cam }; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: TwilightFarView } & Partial<LevelParams>> = ({
+export const OnerFrame: React.FC<{ g: number; cam?: Cam; ahead?: OnerAhead; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: TwilightFarView } & Partial<LevelParams>> = ({
   g,
   cam: camOverride,
-  ahead = camOverride ? undefined : { sec: g, at: cameraAt },
+  ahead: aheadProp,
   level: level = '视频',
   screenAo: AO = true,
   tweakRiders,
@@ -199,11 +199,10 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; ahead?: { sec: number; 
   farView: officialFar,
   ...overrides
 }) => {
-  const far = farViewOf(officialFar);
-  const { pixel: lodPixels, far: farLevel, dpr } = { ...LevelParams[level], ...overrides };
-  const farDist = far ? twilightFarViewM(farLevel) : farLevel;
+  // 机位、航线、地形参数照 地形视图.ts（加载计划读同一份）
+  const { far, farDist, dpr, twilight } = onerTerrain({ farView: officialFar, level, ...overrides });
   const { width, height } = useVideoConfig();
-  const cam = camOverride ?? cameraAt(g);
+  const { cam, ahead } = onerShot(g, camOverride, aheadProp);
   const broom = route.broom(g);
   const physT = broom.T;
   const riders = tweakRiders ? tweakRiders(ridersAt(g, physT)) : ridersAt(g, physT);
@@ -223,7 +222,7 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; ahead?: { sec: number; 
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(dpr)}>
         <TwilightLighting camPos={cam.pos} fogFar={fogFar} aboveGround={aboveGround} {...farViewLighting(far)} farFog={far ? { far: farDist } : undefined} />
-        <FlightRig c={cam} near={0.05} far={150000} ahead={ahead} />
+        <FlightRig c={cam} ahead={ahead} />
         {AO && <ScreenAo />}{/* 照 Voxy 的屏幕空间 AO（用户 10-03），默认开，关掉传 屏幕AO={false} */}
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {indoorLights.map((p, i) => (
@@ -234,10 +233,7 @@ export const OnerFrame: React.FC<{ g: number; cam?: Cam; ahead?: { sec: number; 
             landmarks={[...(isNear('娜迦庭院', cam.pos, nagaDrawDist(fogFar, far)) ? ['娜迦庭院' as const] : []), ...(isNear('终焉高原城堡', cam.pos) ? ['终焉高原城堡' as const] : [])]}
             t={P613.T612 + P613.beats.last + g}
             clearPlants={P613.CLEAR_PLANTS}
-            pixel={lodPixels}
-            far={farDist}
-            shadowLightDir={twilightSunDir}
-            farView={officialFar}
+            {...twilight}
           />
           {isNear('巫妖怪塔', cam.pos) && <LichScene t={route.localTime('巫妖', g)} camPos={cam.pos} />}
           {isNear('九头蛇巢穴', cam.pos) && <HydraScene t={route.localTime('九头蛇', g)} broom={broom.位置} />}
@@ -262,7 +258,7 @@ export const OnerSegment: React.FC<{ start: number }> = ({ start: start }) => {
   const sec = useCurrentSec();
   return (
     <AbsoluteFill>
-      <OnerFrame g={start + sec} farView={TWILIGHT_FAR_VIEW} />
+      <OnerFrame g={start + sec} farView={onerSegmentFarView} />
     </AbsoluteFill>
   );
 };

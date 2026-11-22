@@ -29,18 +29,18 @@ import { BorderTown } from '../../../地点/边城轮廓.tsx';
 import { borderTownPos } from '../../../地点/主世界116.ts';
 import { SKY, SkyDome, OverworldWaterSky } from '@engine/light/天空.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
-import { OverworldSky, SUN_OW, SUN_OW_DIR } from '../../../地点/主世界光照.tsx';
+import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
 import { overworldMix } from '@engine/light/光照配比.ts';
 import * as choreo from '../../../地点/边城/6-3-下坠/编排.ts';
 import * as timeline from '../../../地点/边城/6-3-下坠/时间线.ts';
 import { AncientCity, SlabFloor, ShaftWalls, UnderFog, UNDER_BACKGROUND } from '../../../地点/边城/6-3-下坠/竖井.tsx';
 import { ShaftFill } from '../../../地点/边城/6-3-下坠/填块.tsx';
 import { useFallTerrain } from '../../../地点/边城/6-3-下坠/地形.ts';
+import { fallCamAt, fallNear, fallPreLeapAt, fallUnder, fallVoxel } from './地形视图.ts';
 import { GuchengLight } from '../../../地点/古城.tsx';
 import { BlockDebris, type FxParams } from '../../../地点/边城/6-3-下坠/碎块.tsx';
 import { LiYingGoldGlow, GoldGlowBurst } from '../../../特效/锤击金光.tsx';
-import { backToTown, NEEDLE_SETTLED } from '../6-3-1/编排.ts';
-import { onBroomState } from '../6-3-2/扫帚上.ts';
+import { NEEDLE_SETTLED } from '../6-3-1/编排.ts';
 import { HeldCompass } from '../6-3-1/指南针.tsx';
 import { JiuhuHandCompass } from '../../../角色/九胡持指南针.tsx';
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
@@ -127,12 +127,10 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
   const physSec = timeline.physicalTime(globalSec);
   const imp = timeline.impactTime();
   const after = physSec >= imp;
-  // 6-3-1、6-3-2（T < 0）：机位、两人姿势、李樱手里的指南针换成 6-3-1/编排.ts、6-3-2/扫帚上.ts 的。
-  // 正好落在 6-3-1 止上的那一刻算 6-3-2（段表是累加出来的秒，1e-9 是浮点余量）
-  const preLeapAt = (s: number) => (s < timeline.segTable['6-3-1'].end - 1e-9 ? backToTown(s) : s < 0 ? onBroomState(s) : null);
-  const preLeap = preLeapAt(globalSec);
-  const cam = preLeap?.cam ?? choreo.camPose(globalSec);
-  const under = cam.pos[2] < choreo.groundZ - 0.5;
+  // 机位、挂不挂地形照地形视图（加载计划读同一份）
+  const preLeap = fallPreLeapAt(globalSec);
+  const cam = fallCamAt(globalSec);
+  const under = fallUnder(cam);
   // 已看过的顺序画面在入井后保留了入井前最后一帧的大气后期和云影。
   // 明确从时间线求这台参考相机，而不是沿用浏览器实际渲过的上一帧；地下雾和灯不变。
   const atmosphereReference = useMemo(() => {
@@ -214,7 +212,7 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
     <AbsoluteFill style={{ backgroundColor: UNDER_BACKGROUND }}>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
         {under ? <UnderFog /> : <FlightFog visibility={timeline.start.visibility} />}
-        <FlightRig c={cam} near={0.02} ahead={{ sec: globalSec, at: (sec) => preLeapAt(sec)?.cam ?? choreo.camPose(sec) }} />
+        <FlightRig c={cam} near={fallNear} ahead={{ sec: globalSec, at: fallCamAt }} />
         <ScreenAo atmosphereCamera={under ? atmosphereReference?.camera : undefined} />
         <OverworldSky active={!under} />
         {/* 入井后旧顺序画面的水面停在最后有天空的帧；显式接住这个时刻，不能随跳帧历史停在别处，也不能被天空卸载复位。 */}
@@ -222,7 +220,7 @@ export const FallScene: React.FC<{ T: number; segment: timeline.SegmentName }> =
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {cam.pos[2] < choreo.caveCeilingZ ? <GuchengLight /> : <Lights camPos={cam.pos} dome={!under} />}
           {/* 地形：坑和竖井那一圈在导入的地形里一直是挖开的（地形.ts），砸穿以前城的地面盖在上面 */}
-          {!under && <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />}
+          {!under && <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cam.pos} pixel={fallVoxel.pixel} far={fallVoxel.farM} heightRange={terrain.heightRange} shadowLightDir={fallVoxel.shadowLightDir} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit?.holeRect} />
           </group>

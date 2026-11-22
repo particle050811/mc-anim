@@ -1,18 +1,18 @@
-// anim world trim | cover：按全片实际用到的级裁地形包（docs/世界.md「裁级」）。
+// anim world trim | plan：按全片的加载计划裁地形包（docs/世界.md「裁级」）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { UsageError, parseArgs } from '../../cli/参数.ts';
 import type { Command } from '../../cli/命令.ts';
-import { selectSegs } from '../../清单/清单.ts';
+import { loadAllSegments, selectSegs } from '../../清单/清单.ts';
 import { readTerrainTable } from '../版本.ts';
-import { measureCovers, packCover } from '../../渲/地形覆盖.ts';
 import { importTrimmed, registerTrimmed, trimPack } from './裁剪.ts';
+import { compareWithUsage, packPlan, planKeys, planSegs, usageIsCurrent, writePlan } from '../../渲/加载计划.ts';
 
 type SubCommand = { usage: string; 跑: (args: string[], runRecord: Parameters<Command['跑']>[1]) => Promise<number | void> };
 
 export const TRIM_COMMANDS: Record<string, SubCommand> = {
   trim: {
-    usage: 'trim <包…> [--no-register] [--keep <留表.tsv>] | trim --import <裁过的包目录>（按全片用到的级裁出地形包、登记；覆盖旧了的段先量）',
+    usage: 'trim <包…> [--no-register] [--keep <留表.tsv>] | trim --import <裁过的包目录>（按全片的加载计划裁出地形包、登记；计划旧了的段当场算）',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { value: ['--keep', '--import'], toggles: ['--no-register'] });
       if (p.value['--import']) {
@@ -31,9 +31,9 @@ export const TRIM_COMMANDS: Record<string, SubCommand> = {
         if (p.value['--keep']) {
           // 手给的留表（核对缺级报错用）：每行 L\ti\tj，照常补祖先和 L3 以上
           used = fs.readFileSync(path.resolve(p.value['--keep']), 'utf8').split('\n').filter(Boolean).map((l) => l.split('\t').join('|'));
-          console.log(`${pack}：照 ${p.value['--keep']} 裁，不量覆盖`);
+          console.log(`${pack}：照 ${p.value['--keep']} 裁，不算计划`);
         } else {
-          const c = await packCover(pack, { measure: true, runRecord, log: (s) => console.log(s) });
+          const c = await packPlan(pack, (s) => console.log(s));
           if (!c.segCount) throw new Error(`没有段声明地形包 ${pack}，不用裁`);
           used = c.used.keys();
           console.log(`${pack}：${c.segCount} 段用到 ${c.used.size} 个区段`);
@@ -49,15 +49,31 @@ export const TRIM_COMMANDS: Record<string, SubCommand> = {
       return 0;
     },
   },
-  cover: {
-    usage: 'cover <段…> [--to <独立目录>]（量段的地形覆盖：每帧挑哪些区段，存 <数据根>/cache/地形覆盖/；不出图不画，过放行闸、整批一张票）',
-    跑: async (args, runRecord) => {
-      const p = parseArgs(args, { value: ['--to'] });
+  plan: {
+    usage: 'plan <段…> [--check]（照段的地形视图在 Node 里算加载计划：每个区段头一次用到的帧，存 <数据根>/cache/加载计划/；--check 和整段出片时记的地形用量逐个区段比，查地形视图和画面是不是一份）',
+    跑: async (args) => {
+      const p = parseArgs(args, { toggles: ['--check'] });
       if (!p.位置.length) throw new UsageError('要给段（选择器同 anim film）');
       const segs = (await selectSegs(p.位置)).filter((s) => s.segment.terrain.length);
       if (!segs.length) throw new UsageError('选中的段都没声明地形包');
-      await measureCovers(segs, runRecord, undefined, undefined, p.value['--to']);
-      return 0;
+      let bad = 0;
+      const t0 = Date.now();
+      const allSegments = await loadAllSegments();
+      const plans = await planSegs(segs, await planKeys(allSegments, segs));
+      console.log(`${segs.length} 段 ${Date.now() - t0} 毫秒`);
+      const usages = p.toggles.has('--check') ? await usageIsCurrent(allSegments, segs) : [];
+      for (const [i, plan] of plans.entries()) {
+        writePlan(plan);
+        const counts = Object.entries(plan.pack).map(([pack, r]) => `${pack} ${Object.keys(r.sections).length}`).join('、') || '没有区段';
+        const u = usages[i];
+        const r = u && compareWithUsage(plan, u.usage);
+        const diffs = r && 'diffs' in r ? r.diffs : [];
+        const verdict = !r ? '' : 'unknown' in r ? `，比不了：${r.unknown}` : `${diffs.length ? '，和出片的地形用量不一样' : '，和出片的地形用量一样'}${u.current ? '' : '（用量是段改动前整段出片时记的，镜头改过的话对不上是正常的）'}`;
+        console.log(`${plan.segment}：${plan.frameCount} 帧，${counts}${verdict}`);
+        for (const d of diffs) console.log(`  ${d}`);
+        if (diffs.length) bad++;
+      }
+      return bad ? 1 : 0;
     },
   },
 };

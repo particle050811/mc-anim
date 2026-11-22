@@ -10,7 +10,7 @@ import { defaultThreads, bakeWorld, loadEdits } from './烘焙/流程.ts';
 import { bakeRoutePacks, simulateFromLevel } from './远景/航线烘焙.ts';
 import { overlayName, bakeWorkOverlay } from './远景/作品覆盖层.ts';
 import { workName } from '../环境/作品.ts';
-import { packCover } from '../渲/地形覆盖.ts';
+import { packPlan } from '../渲/加载计划.ts';
 import { bakeDhWorld } from './dh/流程.ts';
 import { transcodePack } from './烘焙/转码.ts';
 import { buildDecoder } from './区段解码器.ts';
@@ -92,9 +92,9 @@ const subCommands: Record<string, SubCommand> = {
     },
   },
   'bake-far': {
-    usage: 'bake-far <世界> [--cover-dir <规划目录>] [--simulate-from 2|3|4|5|outside | --outside copy] [--no-register]',
+    usage: 'bake-far <世界> [--simulate-from 2|3|4|5|outside | --outside copy] [--no-register]',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { value: ['--simulate-from', '--cover-dir','--outside'], toggles: ['--no-register'] });
+      const p = parseArgs(args, { value: ['--simulate-from', '--outside'], toggles: ['--no-register'] });
       if (p.位置.length !== 1) throw new UsageError('要给一个暮色世界名');
       const world = readDecl(p.位置[0]!);
       const pack = world.farView?.sectionPack;
@@ -103,9 +103,8 @@ const subCommands: Record<string, SubCommand> = {
       if (p.value['--outside'] && (!copy || p.value['--simulate-from'])) throw new UsageError('--outside copy 与 --simulate-from 二选一');
       const policy = copy ? 'copy' : p.value['--simulate-from'] ?? String(simulateFromLevel);
       if (!copy && !['2', '3', '4', '5', 'outside'].includes(policy)) throw new UsageError('--simulate-from 只取 2、3、4、5 或 outside');
-      const directory = p.value['--cover-dir'];
-      const plan = await packCover(pack, { measure: false, ...(directory ? { override: { work: workName(), directory } } : {}) });
-      if (plan.stale.length) throw Error(`航线规划缺失或过期：${plan.stale.join('、')}；先在对应作品跑 anim world cover`);
+      // 留表照各作品的加载计划（旧了当场算）：航线包按世界的完整需求记，不看底包现在烘了哪几级
+      const plan = await packPlan(pack, (s) => console.log(s));
       const used = new Set(plan.used.keys());
       if (!used.size) throw Error('航线留表为空，不登记');
       const register = !p.toggles.has('--no-register');
@@ -440,7 +439,7 @@ export const worldCommand: Record<string, Command> = {
     usage: `world ${Object.values(subCommands)
       .map((c) => c.usage.split(' ')[0])
       .join('|')} …`,
-    note: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；bake-dh 从存档里 Distant Horizons 的 LOD 库烘各处细度不一的区段包（声明的 [dh]，过资源闸）；transcode 把旧格式的包转成现行格式（格式 4 只换容器、区段字节不变）、没做可见变换的做上（只写新版本目录，逐格、逐网格或逐区段字节核对）；decoder 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度；trim 按全片用到的级裁地形包（--import 登记别的机器裁好的）、cover 量段的地形覆盖。anim world help 看各子命令',
+    note: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；bake-dh 从存档里 Distant Horizons 的 LOD 库烘各处细度不一的区段包（声明的 [dh]，过资源闸）；transcode 把旧格式的包转成现行格式（格式 4 只换容器、区段字节不变）、没做可见变换的做上（只写新版本目录，逐格、逐网格或逐区段字节核对）；decoder 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度；trim 按全片的加载计划裁地形包（--import 登记别的机器裁好的）、plan 照段的地形视图算加载计划（--check 和出片记的地形用量比）。anim world help 看各子命令',
     跑: async (args, runRecord) => {
       const [subcommand, ...rest] = args;
       if (!subcommand || subcommand === 'help' || subcommand === '--help') {

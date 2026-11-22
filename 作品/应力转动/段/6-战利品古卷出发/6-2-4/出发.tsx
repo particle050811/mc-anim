@@ -24,6 +24,7 @@ import { BaseIslandTerrain } from '../../../地点/基地小岛.tsx';
 import { overworldWindowView } from '@engine/voxel/主世界地形.ts';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import * as choreo from './编排.ts';
+import { basePlanNear } from '../6-2-1/地形视图.ts';
 import { rad } from '@engine/core/数学.ts';
 import { trialFarM } from '@engine/light/高度雾.ts';
 // 九胡坐稳、搂住李樱的腰就开口（用户 10-17：出发时给九胡一句，场与场之间不冷场）；帧 写段内秒（mouthAt 每秒给 1）
@@ -43,7 +44,7 @@ export const SetOff: React.FC = () => {
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
         <FlightFog visibility={choreo.VISIBILITY} far={trialFarM(overworldWindowView.farM)} />
-        <FlightRig c={cam} near={0.02} ahead={{ sec: t, at: choreo.camera }} />
+        <FlightRig c={cam} near={basePlanNear} ahead={{ sec: t, at: choreo.camera }} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <FlightSky camPos={cam.pos} />
