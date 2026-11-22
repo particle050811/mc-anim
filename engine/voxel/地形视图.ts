@@ -3,6 +3,7 @@
 // 两边读同一份，算出来的区段才一定和渲染时要的一样。只放纯数据和纯函数，不碰 React、three 的场景。
 import type * as THREE from 'three';
 import type { DataSource } from '../core/数据读取.ts';
+import type { SeqClock } from '../core/拼段时序.ts';
 import type { V3 } from '../model/parts.tsx';
 import type { SectionId } from './区段.ts';
 import type { Lookahead, SelectionSource } from './选区段.ts';
@@ -28,7 +29,7 @@ export type TerrainCanvasView = {
   pixel: number; // VoxelWorld 的 pixel（输出像素）
   heightRange?: [number, number]; // 不给用地形源的
   shadowLightDir?: V3;
-  look?: Lookahead; // 镜头登记的航线（useLookahead）
+  look?: Lookahead; // 镜头登记的航线（useLookahead；secLeft、secSinceStart 取画布所在那一层的 SeqClock）
   /** 挂着体素地形的光体（engine/light/光体组件.tsx 的 LightVolume，开着光体参数时）：同它的 center、heightRange */
   light?: { center: readonly number[]; heightRange: readonly [number, number] };
 };
@@ -36,8 +37,8 @@ export type TerrainCanvasView = {
 export type TerrainViewDecl = {
   width: number; // 页面 CSS 像素，同 段.ts
   height: number;
-  /** 段内第 sec 秒挂着体素世界的画布；没有就是 [] */
-  at: (sec: number) => TerrainCanvasView[];
+  /** 段内第 sec 秒挂着体素世界的画布；没有就是 []。clock：这一帧在段这一层的时钟，拼段的用 拼段时序.ts 的 clockInStitch 换成截里的 */
+  at: (sec: number, clock: SeqClock) => TerrainCanvasView[];
 };
 
 export const defineTerrainView = (decl: TerrainViewDecl) => decl;

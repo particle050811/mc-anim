@@ -4,6 +4,7 @@
 // 记法照地形覆盖：航线包关掉 resolveSections、按世界的完整需求记（导入地形.ts 的 isCoverRun 那一路），光体照 sectionData。
 import * as THREE from 'three';
 import type { DataSource } from '../core/数据读取.ts';
+import { topClock } from '../core/拼段时序.ts';
 import { lightWindows, windowSections } from '../light/光体.ts';
 import { readPackMeta } from './地形元数据.ts';
 import { readDistantGrid } from './远景网格.ts';
@@ -75,7 +76,8 @@ export const planSegment = async (decl: TerrainViewDecl, frameCount: number, fps
     }
   };
   for (let frame = 0; frame < frameCount; frame++) {
-    for (const view of decl.at(frame / fps)) {
+    const clock = topClock(frame, frameCount, fps);
+    for (const view of decl.at(clock.sec, clock)) {
       if (!worlds.has(view.world.key)) worlds.set(view.world.key, view.world.open(src, dirOf));
       const w = await worlds.get(view.world.key)!;
       let holder = holders.get(view.canvas);
