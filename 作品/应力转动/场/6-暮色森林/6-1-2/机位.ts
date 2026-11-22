@@ -39,7 +39,8 @@ const defaultMazeLight: MazeLightPreset = '一镜';
 // 新机位：迅冲、俯拍斩击拉近，收刀换成参考的近景低机位（动作改进.ts 的 `cameraV2`）；
 // 收刀修前：不加收刀约束（修穿模以前的样子，核对用）；跟拍：机位跟着李樱（全身 / 腰间特写），只用来新旧对比、核对穿模
 export type NagaShotProps = { mazeLight?: MazeLightPreset; motionImproved?: boolean; hitStopSec?: number; newCams?: boolean; preSheathFix?: boolean; followMode?: '全身' | '腰' };
-export type CamPose = { lens: number; pos: number[]; tgt: number[] };
+// 机位的类型照编排（编排/镜头.ts）的，不另写一份
+export type CamPose = ReturnType<typeof choreo.camera>;
 const followCamPose = (t: number, mode: '全身' | '腰'): CamPose => {
   const [x, y, z] = choreo.liyingLoc(t);
   return mode === '全身'
