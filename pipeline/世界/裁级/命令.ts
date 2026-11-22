@@ -7,6 +7,7 @@ import { selectSegs } from '../../清单/清单.ts';
 import { readTerrainTable } from '../版本.ts';
 import { measureCovers, packCover } from '../../渲/地形覆盖.ts';
 import { importTrimmed, registerTrimmed, trimPack } from './裁剪.ts';
+import { compareWithCover, planSeg, viewFile, writePlan } from '../加载计划/计划.ts';
 
 type SubCommand = { usage: string; 跑: (args: string[], runRecord: Parameters<Command['跑']>[1]) => Promise<number | void> };
 
@@ -47,6 +48,32 @@ export const TRIM_COMMANDS: Record<string, SubCommand> = {
         }
       }
       return 0;
+    },
+  },
+  plan: {
+    usage: 'plan <段…> [--check]（照段的地形视图在 Node 里算加载计划：每个区段头一次用到的帧，存 <数据根>/cache/加载计划/；--check 和地形覆盖逐个区段比）',
+    跑: async (args) => {
+      const p = parseArgs(args, { toggles: ['--check'] });
+      if (!p.位置.length) throw new UsageError('要给段（选择器同 anim film）');
+      const segs = (await selectSegs(p.位置)).filter((s) => s.segment.terrain.length);
+      if (!segs.length) throw new UsageError('选中的段都没声明地形包');
+      let bad = 0;
+      for (const s of segs) {
+        if (!fs.existsSync(viewFile(s))) {
+          console.log(`${s.key}：还没有 地形视图.ts`);
+          bad++;
+          continue;
+        }
+        const t0 = Date.now();
+        const plan = await planSeg(s);
+        writePlan(plan);
+        const counts = Object.entries(plan.pack).map(([pack, r]) => `${pack} ${Object.keys(r.sections).length}`).join('、') || '没有区段';
+        const diffs = p.toggles.has('--check') ? compareWithCover(plan) : [];
+        console.log(`${s.key}：${plan.frameCount} 帧 ${Date.now() - t0} 毫秒，${counts}${p.toggles.has('--check') ? (diffs.length ? '，和覆盖不一样' : '，和覆盖一样') : ''}`);
+        for (const d of diffs) console.log(`  ${d}`);
+        if (diffs.length) bad++;
+      }
+      return bad ? 1 : 0;
     },
   },
   cover: {

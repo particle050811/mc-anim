@@ -30,7 +30,7 @@ export const segRenderEnv = (segKey: string, terrainFiles: Record<string, string
  * 完整包版本和登记的一样、又登记了裁过的，正式就读裁过的；不一样（表在批次中途改了）照旧读完整包那一版（只增不改，还在）。
  */
 export type TerrainReadMode = '正式' | '完整' | '完整优先';
-const readVersions = (fullVersions: Record<string, string>, mode: TerrainReadMode): Record<string, string> => {
+export const readVersions = (fullVersions: Record<string, string>, mode: TerrainReadMode): Record<string, string> => {
   const entries = registeredTerrainEntries();
   return Object.fromEntries(
     Object.entries(fullVersions).map(([pack, version]) => {
