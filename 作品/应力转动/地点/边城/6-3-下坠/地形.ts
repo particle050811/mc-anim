@@ -6,7 +6,7 @@ import { useOverworldTerrain } from '@engine/voxel/主世界地形.ts';
 import { borderTownFlatten, shaftCutouts } from '../../边城地基.ts';
 import { overworldPackName, gameToScene } from '../../主世界116.ts';
 import { shaftCellCenter, shaftHalfWidth } from './编排.ts';
-import { fallTerrainWorld } from './地形世界.ts';
+import { fallDistantPack, fallPack } from './地形世界.ts';
 
 const shaftCutout = shaftCutouts(shaftCellCenter(), shaftHalfWidth - 0.5);
 const townFlatten = borderTownFlatten();
@@ -17,7 +17,7 @@ for (const b of shaftCutout) {
 }
 
 export const useFallTerrain = () => {
-  const t = useOverworldTerrain(fallTerrainWorld.pack, fallTerrainWorld.distant, shaftCutout, townFlatten, '边城整平');
+  const t = useOverworldTerrain(fallPack, fallDistantPack, shaftCutout, townFlatten, '边城整平');
   if (!t) return null;
   // 编排按 主世界116.ts 写死的包原点算航线和城址，导入包换了原点要一起改
   const importOrigin = t.位置([0, 0, 0]);

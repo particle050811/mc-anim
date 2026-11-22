@@ -1,5 +1,7 @@
-// 第 3 场（边城、下坠、追兵）的体素世界读哪个地形，纯数据：地形.ts 的 useFallTerrain 照它取，各段的地形视图（加载计划）照它在 Node 里搭选级用的地形源
-import type { TerrainWorld } from '@engine/voxel/地形视图.ts';
+// 边城下坠几镜读的地形（地形.ts 的 useFallTerrain 和加载计划共用）
+import { overworldPlanWorld } from '@engine/voxel/加载计划.ts';
 import { overworldPackName } from '../../主世界116.ts';
 
-export const fallTerrainWorld: TerrainWorld = { kind: '主世界', pack: overworldPackName, distant: `${overworldPackName}-远景` };
+export const fallPack = overworldPackName;
+export const fallDistantPack = `${overworldPackName}-远景`;
+export const fallTerrainWorld = overworldPlanWorld(fallPack, fallDistantPack);
