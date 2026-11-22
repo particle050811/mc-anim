@@ -23,6 +23,7 @@ import { ShaftFill } from '../6-3-下坠/填块.tsx';
 import { useFallTerrain } from '../6-3-下坠/地形.ts';
 import { BlockDebris, type FxParams } from '../6-3-下坠/碎块.tsx';
 import * as choreo from './编排.ts';
+import { pursuerFar, pursuerNear, pursuerTerrainView } from './地形视图.ts';
 import { withTalkNod } from '../../../配音/口型.ts';
 import { rad } from '@engine/core/数学.ts';
 
@@ -53,7 +54,9 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
   const fxParams = fx();
   const physSec = choreo.fallTime(t);
   const pit = fallChoreo.crater();
-  const under = cam.pos[2] < fallChoreo.groundZ - 0.5;
+  // 挂不挂地形、近裁面、视距、门槛都照地形视图（加载计划在 Node 里读同一份）
+  const [view] = pursuerTerrainView(t, cam);
+  const under = !view;
   const huang = choreo.huangPanState(t);
   const liu = choreo.liuXinzhongState(t);
   if (!terrain) return null;
@@ -61,12 +64,12 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
     <AbsoluteFill style={{ backgroundColor: UNDER_BACKGROUND }}>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
         {under ? <UnderFog /> : <FlightFog visibility={fallTimeline.start.visibility} />}
-        <FlightRig c={cam} near={0.02} />
+        <FlightRig c={cam} near={pursuerNear} far={pursuerFar} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 灯：同 6-3-下坠/画面.tsx 地面上那一套（天空穹顶跟着镜头） */}
           <FlightSky camPos={cam.pos} photon={!under} />
-          {!under && <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} />}
+          {view && <VoxelWorld worldKey={terrain.key} source={terrain.source} center={cam.pos} pixel={view.pixel} far={view.farM} heightRange={terrain.heightRange} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit.holeRect} />
             {!actors && t < choreo.cues.cutToPit && <VanillaParticles spawns={splashes()} sec={t} />}
