@@ -1,7 +1,7 @@
 // 航线定级的试看参数用到时才取：直接 import 世界.tsx，不 mock、不重载模块，换环境变量就是换一组试看。
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { trialEnvName } from '../core/试看.ts';
-import { resolveRouteLod, type RouteLod } from './世界.tsx';
+import { resolveRouteLod, type RouteLod } from './选区段.ts';
 
 const lod: RouteLod = { lookSec: 2, hold: true, thresholdScale: 2, floorScale: 0.5 };
 const setTrial = (table: object) => vi.stubEnv(trialEnvName, JSON.stringify(table));
