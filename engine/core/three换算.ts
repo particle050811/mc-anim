@@ -23,6 +23,21 @@ export const placeCamera = (cam: THREE.PerspectiveCamera, c: Cam, aspectRatio: n
   return cam;
 };
 
+/** 按眼、看的点、竖直视角（度）摆透视相机（核对段的 CheckCamera；加载计划在 Node 里照它摆）。up 不给是 three 的 +Y；aspect 不给不动相机原来的宽高比 */
+export const placeEyeCamera = (cam: THREE.PerspectiveCamera, o: { eye: readonly number[]; target: readonly number[]; fov: number; up?: readonly number[]; near?: number; far?: number; aspect?: number }) => {
+  cam.fov = o.fov;
+  if (o.aspect !== undefined) cam.aspect = o.aspect;
+  cam.near = o.near ?? 0.05;
+  cam.far = o.far ?? 256;
+  cam.position.copy(sceneToThree(o.eye));
+  if (o.up) cam.up.copy(sceneToThree(o.up));
+  else cam.up.set(0, 1, 0);
+  cam.lookAt(sceneToThree(o.target));
+  cam.updateProjectionMatrix();
+  cam.updateMatrixWorld();
+  return cam;
+};
+
 /** 新建一台摆好的透视相机（画布外算投影用，比如伤害数字、头顶气泡；同 库/界面/伤害数字.tsx 的 makePerspectiveCamera，那边近、远是 0.1、1200） */
 export const makeCamera = (c: Cam, width: number, height: number, options?: PlaceCameraOptions) => placeCamera(new THREE.PerspectiveCamera(), c, width / height, options);
 
