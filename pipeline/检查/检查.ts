@@ -30,7 +30,7 @@ export const ruleTable: Record<RuleKind, { note: string; 跑: (c: CheckContext, 
   dupes: { note: 'lerp、toThree、Cam 这类共用函数不许新写副本（import engine/core、库 的正本）；旧副本冻在 docs/副本表.tsv，只许减少', 跑: copyRule },
   time: { note: '段、场、库的画面按秒写，不直接调 useCurrentFrame()（用 engine/段/时间.tsx），没有例外', 跑: time },
   idents: { note: '代码里不新增中文标识符（字符串、注释、文件名不算）；现有的冻在 pipeline/检查/中文标识符基线.txt，只许减少', 跑: hanIdentifierRule },
-  terrain: { note: '裁过的地形包够全片用：段的地形覆盖（anim world cover 量的、按段指纹认）用到的区段都在留表里，裁过的包是从现登记的完整包裁的；覆盖旧了只提示；--fast 跳过', 跑: checkTerrainCover },
+  terrain: { note: '裁过的地形包够全片用：段的加载计划（地形视图在 Node 里算的、按段指纹认，旧了当场算）用到的区段都在留表里，裁过的包是从现登记的完整包裁的；声明了地形包的段都有地形视图；--fast 跳过', 跑: checkTerrainCover },
   debug: { note: '试看名、「关」的项、调试环境变量和登记表 engine/core/调试开关.ts 两头对得上：用到的都登记了、登记了的有人用、落点在、占位行被用到就去掉占位', 跑: checkDebugSwitches },
 };
 

@@ -3,17 +3,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { UsageError, parseArgs } from '../../cli/参数.ts';
 import type { Command } from '../../cli/命令.ts';
-import { selectSegs } from '../../清单/清单.ts';
+import { loadAllSegments, selectSegs } from '../../清单/清单.ts';
 import { readTerrainTable } from '../版本.ts';
-import { measureCovers, packCover } from '../../渲/地形覆盖.ts';
+import { measureCovers } from '../../渲/地形覆盖.ts';
 import { importTrimmed, registerTrimmed, trimPack } from './裁剪.ts';
-import { compareWithCover, planSeg, viewFile, writePlan } from '../加载计划/计划.ts';
+import { compareWithCover, packPlan, planKeys, planSegs, writePlan } from '../../渲/加载计划.ts';
 
 type SubCommand = { usage: string; 跑: (args: string[], runRecord: Parameters<Command['跑']>[1]) => Promise<number | void> };
 
 export const TRIM_COMMANDS: Record<string, SubCommand> = {
   trim: {
-    usage: 'trim <包…> [--no-register] [--keep <留表.tsv>] | trim --import <裁过的包目录>（按全片用到的级裁出地形包、登记；覆盖旧了的段先量）',
+    usage: 'trim <包…> [--no-register] [--keep <留表.tsv>] | trim --import <裁过的包目录>（按全片的加载计划裁出地形包、登记；计划旧了的段当场算）',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { value: ['--keep', '--import'], toggles: ['--no-register'] });
       if (p.value['--import']) {
@@ -32,9 +32,9 @@ export const TRIM_COMMANDS: Record<string, SubCommand> = {
         if (p.value['--keep']) {
           // 手给的留表（核对缺级报错用）：每行 L\ti\tj，照常补祖先和 L3 以上
           used = fs.readFileSync(path.resolve(p.value['--keep']), 'utf8').split('\n').filter(Boolean).map((l) => l.split('\t').join('|'));
-          console.log(`${pack}：照 ${p.value['--keep']} 裁，不量覆盖`);
+          console.log(`${pack}：照 ${p.value['--keep']} 裁，不算计划`);
         } else {
-          const c = await packCover(pack, { measure: true, runRecord, log: (s) => console.log(s) });
+          const c = await packPlan(pack, (s) => console.log(s));
           if (!c.segCount) throw new Error(`没有段声明地形包 ${pack}，不用裁`);
           used = c.used.keys();
           console.log(`${pack}：${c.segCount} 段用到 ${c.used.size} 个区段`);
@@ -58,18 +58,14 @@ export const TRIM_COMMANDS: Record<string, SubCommand> = {
       const segs = (await selectSegs(p.位置)).filter((s) => s.segment.terrain.length);
       if (!segs.length) throw new UsageError('选中的段都没声明地形包');
       let bad = 0;
-      for (const s of segs) {
-        if (!fs.existsSync(viewFile(s))) {
-          console.log(`${s.key}：还没有 地形视图.ts`);
-          bad++;
-          continue;
-        }
-        const t0 = Date.now();
-        const plan = await planSeg(s);
+      const t0 = Date.now();
+      const plans = await planSegs(segs, await planKeys(await loadAllSegments(), segs));
+      console.log(`${segs.length} 段 ${Date.now() - t0} 毫秒`);
+      for (const plan of plans) {
         writePlan(plan);
         const counts = Object.entries(plan.pack).map(([pack, r]) => `${pack} ${Object.keys(r.sections).length}`).join('、') || '没有区段';
         const diffs = p.toggles.has('--check') ? compareWithCover(plan) : [];
-        console.log(`${s.key}：${plan.frameCount} 帧 ${Date.now() - t0} 毫秒，${counts}${p.toggles.has('--check') ? (diffs.length ? '，和覆盖不一样' : '，和覆盖一样') : ''}`);
+        console.log(`${plan.segment}：${plan.frameCount} 帧，${counts}${p.toggles.has('--check') ? (diffs.length ? '，和覆盖不一样' : '，和覆盖一样') : ''}`);
         for (const d of diffs) console.log(`  ${d}`);
         if (diffs.length) bad++;
       }
