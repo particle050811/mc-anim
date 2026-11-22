@@ -1,6 +1,6 @@
 // terrain：裁过的地形包够不够全片用（docs/世界.md「裁级」）。用加载计划（渲/加载计划.ts，按段指纹认，旧了当场在 Node 里算，一段几秒）：
 // - 计划用到的区段裁过的包里没有：违规，列段、头一次用到的帧、区段和重裁命令（不重裁，出片那一帧会报「缺级」）；
-// - 声明了地形包的段没有地形视图：违规（算不了计划）；
+// - 声明了地形包的段没有地形视图：违规（算不了计划）；要读的包本机没有：提示；
 // - 裁过的包不是从现登记的完整包裁的：违规，重裁。
 // 要算段指纹，--fast 跳过。
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ import path from 'node:path';
 import { codeRoot } from '../../环境/路径.ts';
 import { dataPath } from '../../环境/配置.ts';
 import { loadAllSegments } from '../../清单/清单.ts';
-import { freshPlans, inWork, segsUsingPacks } from '../../渲/加载计划.ts';
+import { freshPlans, inWork, packsMissingLocally, segsUsingPacks } from '../../渲/加载计划.ts';
 import type { CheckContext, CheckReport } from '../../源码/上下文.ts';
 
 type Entry = { version: string; trimmed?: { version: string; from: string } };
@@ -35,7 +35,12 @@ export const checkTerrainTrim = async (c: CheckContext, report: CheckReport) => 
   };
   await inWork(c.workName, async () => {
     const allSegments = await loadAllSegments();
-    const segs = segsUsingPacks(allSegments, trimmed.map(([p]) => p));
+    const declared = segsUsingPacks(allSegments, trimmed.map(([p]) => p));
+    if (!declared.length) return;
+    // 没拉地形包的检出（刚 clone）算不了计划，只提示，不算违规
+    const absent = declared.map((s) => ({ s, packs: packsMissingLocally(s) })).filter((x) => x.packs.length);
+    if (absent.length) report.notice(`${absent.length} 段要读的地形包不在本机（${[...new Set(absent.flatMap((x) => x.packs))].join('、')}），查不了裁级缺不缺：anim assets pull`);
+    const segs = declared.filter((s) => !absent.some((x) => x.s === s));
     if (!segs.length) return;
     let plans;
     try {

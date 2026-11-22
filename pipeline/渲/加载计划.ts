@@ -9,7 +9,7 @@ import type { TerrainViewDecl } from '../../engine/voxel/地形视图.ts';
 import { segFps, segFrameCount } from '../../engine/段/段定义.ts';
 import { importBundled } from '../源码/打包加载.ts';
 import { codeRoot } from '../环境/路径.ts';
-import { dataPath } from '../环境/配置.ts';
+import { dataPath, terrainRoot } from '../环境/配置.ts';
 import { workName, workRoot, listWorks, getSpecifiedWork, setSpecifiedWork } from '../环境/作品.ts';
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { stableJson } from '../指纹/指纹.ts';
@@ -34,6 +34,12 @@ const requireView = (s: SegInfo) => {
 /** 计划指纹：段画面指纹去掉平台（Mac 和 Windows 算的一样）；段改了、引擎改了、地形包版本改了都会变 */
 export const planKeys = async (allSegments: readonly SegInfo[], segments: readonly SegInfo[]) =>
   (await segmentProducts(allSegments, segments, '视频')).map((p) => crypto.createHash('sha256').update(stableJson({ ...p.pictureFingerprint.items, platform: undefined })).digest('hex'));
+
+/** 段要读的地形包本机没有的（没 anim assets pull 的检出）：这样的段算不了计划 */
+export const packsMissingLocally = (s: SegInfo) =>
+  Object.entries(readVersions(terrainReadVersions(s.key, s.segment.terrain), '完整优先'))
+    .filter(([pack, version]) => !fs.existsSync(path.join(terrainRoot(), pack, version)))
+    .map(([pack]) => pack);
 
 /** 当场算这几段（同一部作品）：所有视图打进一个包，three 只有一份、只过一次 esbuild */
 export const planSegs = async (segs: readonly SegInfo[], keys: readonly string[] = segs.map(() => '')): Promise<SegPlan[]> => {
