@@ -17,7 +17,16 @@
       "visibility": "发布",
       "fileCount": 27,
       "size": 219947240,
-      "manifestSha256": "2c5229e7eeb795e43280c983b24af0b3a906a70abb098128a191dd33aed4f40b"
+      "manifestSha256": "2c5229e7eeb795e43280c983b24af0b3a906a70abb098128a191dd33aed4f40b",
+      "trimmed": {
+        "version": "7cbd6e367b7b",
+        "from": "9507da09100d",
+        "keepSha256": "c07689af7ef36980a67ca6663b74004d193e424501d46182d8bd5dd58734dfc1",
+        "method": "只留用到的：每处留全片用到的最细级和比它粗的级，L3～L6 全留（用户 11-17 定）",
+        "fileCount": 29,
+        "size": 60447437,
+        "manifestSha256": "fe5a2d6e88e95e48329fed0f6c0c0f2793c338a8cbc494b81a87bf1b4ce5598b"
+      }
     },
     "主世界-116-远景": {
       "version": "811fc551250c",
@@ -74,7 +83,16 @@
       "visibility": "发布",
       "fileCount": 8,
       "size": 16752148,
-      "manifestSha256": "6d7805c9ab2f7010a430797f4258769c67f7bc056b664affc9d36171f66a9c0e"
+      "manifestSha256": "6d7805c9ab2f7010a430797f4258769c67f7bc056b664affc9d36171f66a9c0e",
+      "trimmed": {
+        "version": "6aa44bc36f98",
+        "from": "6ff1215ac1f2",
+        "keepSha256": "aaff712fedc131a4f74479675d850e72dc08df0eba91c9b930debbda4d4071c6",
+        "method": "只留用到的：每处留全片用到的最细级和比它粗的级，L3～L6 全留（用户 11-17 定）",
+        "fileCount": 10,
+        "size": 10338242,
+        "manifestSha256": "985c32c72f7948014908345a908a14ebfac746297abaf05d0ae49366f1295f6a"
+      }
     },
     "古城放大幽匿-20260930": {
       "version": "f2b6046d6fb9",
