@@ -5,7 +5,7 @@ import { segFps } from '@engine/段/段定义.ts';
 import { defineTerrainView, type TerrainCanvasView } from '@engine/voxel/地形视图.ts';
 import { flyoverTerrainView } from '../../地点/边城/6-2-5/地形视图.ts';
 import { segmentTable } from '../../地点/边城/6-2-5/编排.ts';
-import { fallTerrainView } from '../../地点/边城/6-3-下坠/地形视图.ts';
+import { fallTerrainView } from '../../场/6-边城/6-3-下坠/地形视图.ts';
 import { segTable } from '../../地点/边城/6-3-下坠/时间线.ts';
 import { ponderLayerAt } from '../../地点/边城/6-3-2/世界层.ts';
 import seg from './段.ts';

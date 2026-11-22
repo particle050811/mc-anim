@@ -2,7 +2,7 @@
 import { clockInStitch, stitchSpans } from '@engine/core/拼段时序.ts';
 import { segFps } from '@engine/段/段定义.ts';
 import { defineTerrainView } from '@engine/voxel/地形视图.ts';
-import { fallTerrainView } from '../../地点/边城/6-3-下坠/地形视图.ts';
+import { fallTerrainView } from '../../场/6-边城/6-3-下坠/地形视图.ts';
 import { segTable } from '../../地点/边城/6-3-下坠/时间线.ts';
 import seg from './段.ts';
 import { cuts, perSec } from './截表.ts';

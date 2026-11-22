@@ -3,13 +3,13 @@ import type { SeqClock } from '@engine/core/拼段时序.ts';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { overworldFarM } from '@engine/voxel/主世界地形.ts';
 import type { TerrainCanvasView } from '@engine/voxel/地形视图.ts';
-import { backToTown } from '../../../场/6-边城/6-3-1/编排.ts';
-import { onBroomState } from '../../../场/6-边城/6-3-2/扫帚上.ts';
-import { flightTerrainView } from '../../飞行机位.ts';
-import { SUN_OW_DIR } from '../../主世界日向.ts';
-import * as choreo from './编排.ts';
-import * as timeline from './时间线.ts';
-import { fallTerrainWorld } from './地形世界.ts';
+import { backToTown } from '../6-3-1/编排.ts';
+import { onBroomState } from '../6-3-2/扫帚上.ts';
+import { flightTerrainView } from '../../../地点/飞行机位.ts';
+import { SUN_OW_DIR } from '../../../地点/主世界日向.ts';
+import * as choreo from '../../../地点/边城/6-3-下坠/编排.ts';
+import * as timeline from '../../../地点/边城/6-3-下坠/时间线.ts';
+import { fallTerrainWorld } from '../../../地点/边城/6-3-下坠/地形世界.ts';
 
 export const fallNear = 0.02;
 /** 体素世界的参数（far 同 useOverworldTerrain 的 farM） */

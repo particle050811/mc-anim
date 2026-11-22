@@ -36,7 +36,7 @@ import * as timeline from '../../../地点/边城/6-3-下坠/时间线.ts';
 import { AncientCity, SlabFloor, ShaftWalls, UnderFog, UNDER_BACKGROUND } from '../../../地点/边城/6-3-下坠/竖井.tsx';
 import { ShaftFill } from '../../../地点/边城/6-3-下坠/填块.tsx';
 import { useFallTerrain } from '../../../地点/边城/6-3-下坠/地形.ts';
-import { fallCamAt, fallNear, fallPreLeapAt, fallUnder, fallVoxel } from '../../../地点/边城/6-3-下坠/地形视图.ts';
+import { fallCamAt, fallNear, fallPreLeapAt, fallUnder, fallVoxel } from './地形视图.ts';
 import { GuchengLight } from '../../../地点/古城.tsx';
 import { BlockDebris, type FxParams } from '../../../地点/边城/6-3-下坠/碎块.tsx';
 import { LiYingGoldGlow, GoldGlowBurst } from '../../../特效/锤击金光.tsx';
