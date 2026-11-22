@@ -27,11 +27,11 @@ import {
 } from '@库/界面/思索场景.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import { FallScene } from '../../../场/6-边城/6-3-下坠/画面.tsx';
-import { segTable, tick, liYingFall } from '../../../地点/边城/6-3-下坠/时间线.ts';
+import { tick, liYingFall } from '../../../地点/边城/6-3-下坠/时间线.ts';
 import * as LY from '../../../地点/边城/6-3-下坠/编排/李樱.ts';
 import { liYingHip } from '../../../地点/边城/6-3-下坠/编排/金光.ts';
 import * as choreo from '../../../地点/边城/6-3-2/编排.ts';
-import { uiOpen } from '../../../地点/边城/6-3-2/台词.ts';
+import { ponderLayerAt } from '../../../地点/边城/6-3-2/世界层.ts';
 import { glowCamAt, ponderCamAt, ponderLayerOpacity, tMatch, transitionW } from '../../../地点/边城/6-3-2/转场.ts';
 import ponderTextAsset from 'asset:数据/镜头/6-3-2/文案';
 import { assetDir } from '@engine/core/资产目录.ts';
@@ -288,10 +288,8 @@ const RollerItem: React.FC = () => {
 export const PonderSegment: React.FC<{ world?: boolean; sec?: number }> = ({ world: showWorld = true, sec: secOverride }) => {
   const cur = useCurrentSec();
   const sec = secOverride ?? cur;
-  const T = segTable['6-3-2'].start + sec;
-  const t = sec - uiOpen; // 思索场景时间（开界面以前是负的）
-  // 整层（底色、场景板、李樱）：开界面时淡入盖住扫帚，6-3-3 开头淡掉露出真的俯冲；标题、按钮、说明框另外在关界面时淡掉
-  const layerOpacity = T > 0 ? ponderLayerOpacity(T) : t < choreo.cues.close[0] ? choreo.uiOpacityAt(t) : 1;
+  // 整层（底色、场景板、李樱）的淡入淡出见 世界层.ts；标题、按钮、说明框另外在关界面时淡掉
+  const { T, t, layerOpacity } = ponderLayerAt(sec);
   const chrome = choreo.uiOpacityAt(t);
   const sceneTime = Math.min(Math.max(t, 0), choreo.sceneDuration);
   const captions = ponderText.说明.map((text, i) => {
