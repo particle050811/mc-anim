@@ -10,17 +10,16 @@ import React, { useMemo } from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
 import { useImportedTerrain } from '@engine/voxel/导入地形.ts';
 import { sectionKey } from '@engine/voxel/区段.ts';
-import { coarseHeightAt, hasSection } from '@engine/voxel/区段包.ts';
-import { frozenCoarse } from '@engine/voxel/冻结粗高度.ts';
 import { limitToOriginal } from '@engine/voxel/航线区段包.ts';
 import type { VoxelSource } from '@engine/voxel/生成.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { NagaCourtyard } from './娜迦庭院.tsx';
 import { FinalCastle } from './终焉高原城堡.tsx';
-import { twilightFrozen, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
+import type { TwilightLandmarkName } from './暮色新世界/地标表.ts';
 import { frameByName, landmarkHideOutsideCore, castleMeshHide } from './暮色新世界/摆放.ts';
-import { twilightOverlayPack, twilightSectionPack, farViewOf, twilightFarViewM, type TwilightFarView } from './暮色新世界/超远景.ts';
+import { twilightOverlayPack, twilightSectionPack, type TwilightFarView } from './暮色新世界/超远景.ts';
+import { archiveHeightRange, archiveSelection, twilightTerrainParams } from './暮色新世界/地形世界.ts';
 
 export { twilightPackName, twilightFrozen, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 export {
@@ -45,28 +44,18 @@ export {
 // 超远景：这一镜的正式超远景（暮色新世界/超远景.ts，不给 = 不开，试看能盖掉）
 type TerrainProps = { camPos: number[]; landmarks?: TwilightLandmarkName[]; t?: number; clearPlants?: number[][]; pixel?: number; far?: number; shadowLightDir?: V3; farView?: TwilightFarView };
 const noCutouts: [] = [];
-const originalCoarse = frozenCoarse(twilightFrozen);
-const originalTop = originalCoarse.height.reduce((top, height) => Math.max(top, height), -Infinity);
 
 // 作品覆盖层只换整块；不开超远景的镜头仍用原存档边界选级，不能把原来没有的地平线带进庭院。
+// 开不开、最远、门槛和存档范围的选级都在 暮色新世界/地形世界.ts（加载计划读同一份）
 export const TwilightTerrain: React.FC<TerrainProps> = (props) => {
   const terrain = useImportedTerrain(twilightSectionPack, noCutouts, undefined, twilightOverlayPack);
-  const showDistant = !!farViewOf(props.farView);
+  const { distant: showDistant, farM: far, pixel } = twilightTerrainParams(props);
   const view = useMemo(() => {
     if (!terrain || showDistant) return terrain;
     const { source, route } = terrain;
     if (!route) throw Error('暮色底包缺区段索引');
     const localSource: VoxelSource = {
-      ...source,
-      采样: (x, y, sample) => {
-        const height = coarseHeightAt(originalCoarse, x, y);
-        sample.z = height === -Infinity ? 0 : height;
-        sample.crown = 0;
-      },
-      resolveSections: (requests, guessed) => {
-        const inside = requests.filter((section) => hasSection(originalCoarse, section));
-        return source.resolveSections?.(inside, guessed) ?? inside;
-      },
+      ...archiveSelection(source),
       sections: (section) => {
         const grid = source.sections(section);
         const edge = route.edges[sectionKey(section)];
@@ -75,11 +64,10 @@ export const TwilightTerrain: React.FC<TerrainProps> = (props) => {
         return limitToOriginal(grid, edge, simulated);
       },
     };
-    return { key: `${terrain.key}:存档范围`, source: localSource, heightRange: [terrain.heightRange[0], originalTop] as [number, number] };
+    return { key: `${terrain.key}:存档范围`, source: localSource, heightRange: archiveHeightRange(terrain.heightRange) };
   }, [terrain, showDistant]);
   if (!view) return null;
-  const far = props.far ?? (showDistant ? twilightFarViewM(LevelParams.视频.far) : LevelParams.视频.far);
-  return <TerrainView terrain={view} {...props} far={far} />;
+  return <TerrainView terrain={view} {...props} far={far} pixel={pixel} />;
 };
 const TerrainView: React.FC<TerrainProps & { terrain: { key: string; source: VoxelSource; heightRange: [number, number] } }> = ({
   terrain,
